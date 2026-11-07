@@ -1,0 +1,2630 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2453219839747877" crossorigin="anonymous"></script>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Ragdoll Mayhem Arena — Interactive Physics Sandbox</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-display: 'Fredoka', sans-serif;
+      --font-sans: 'Inter', sans-serif;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: var(--font-sans);
+      touch-action: manipulation;
+    }
+    .font-display {
+      font-family: var(--font-display);
+    }
+    .hidden {
+      display: none !important;
+    }
+    #arenaCanvas {
+      touch-action: none;
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+    #arenaCanvas:active {
+      cursor: grabbing;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      height: 5px;
+      width: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: 9999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.35);
+      border-radius: 9999px;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+    .animate-pulse-subtle {
+      animation: pulseGlow 2s infinite ease-in-out;
+    }
+    @keyframes floatBubble {
+      0% { opacity: 0; transform: translate(-50%, 8px) scale(0.9); }
+      15% { opacity: 1; transform: translate(-50%, 0px) scale(1); }
+      85% { opacity: 1; transform: translate(-50%, -4px) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -12px) scale(0.95); }
+    }
+    .speech-bubble-anim {
+      animation: floatBubble 2.6s forwards ease-out;
+    }
+  </style>
+</head>
+<body class="flex flex-col h-full w-full bg-slate-950 text-slate-100 select-none overflow-hidden">
+
+  <!-- TOP HUD BAR -->
+  <header class="shrink-0 bg-slate-900/95 border-b border-slate-800 px-2.5 py-2 z-20 shadow-lg">
+    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <!-- Left: Brand + Character Pill + Level -->
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/20 to-rose-500/20 border border-amber-500/40 rounded-xl px-2.5 py-1">
+          <span id="hudCharIcon" class="text-xl leading-none">🎩</span>
+          <div class="leading-tight">
+            <div class="flex items-center gap-1.5">
+              <span id="hudCharName" class="font-display font-bold text-xs sm:text-sm text-amber-300 truncate max-w-[110px] sm:max-w-[160px]">Sir Reginald</span>
+              <span id="hudLevelBadge" class="bg-amber-500 text-slate-950 font-bold text-[10px] px-1.5 py-0.2 rounded-full">Lv.1</span>
+            </div>
+            <div class="w-24 sm:w-32 h-1.5 bg-slate-800 rounded-full overflow-hidden mt-0.5 border border-slate-700">
+              <div id="hudHpBar" class="h-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-150" style="width: 100%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coins & Combo Pill -->
+        <div class="flex items-center gap-2 bg-slate-800/90 border border-slate-700 rounded-xl px-2.5 py-1">
+          <div class="flex items-center gap-1">
+            <span class="text-amber-400 text-sm">🪙</span>
+            <span id="hudCoins" class="font-display font-bold text-xs sm:text-sm text-amber-300">250</span>
+          </div>
+          <div class="h-3.5 w-[1px] bg-slate-700"></div>
+          <div class="flex items-center gap-1" title="Combo Multiplier">
+            <span class="text-rose-400 text-xs">⚡</span>
+            <span id="hudCombo" class="font-display font-bold text-xs text-rose-300">x1</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Action Controls (Auto-Drone, Tether, Audio, Save/Load, Restart) -->
+      <div class="flex items-center gap-1.5 ml-auto">
+        <button id="btnToggleAutoBot" type="button" onclick="toggleAutoBot()" class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all bg-emerald-500/20 border-emerald-400/50 text-emerald-300 hover:bg-emerald-500/30" title="Auto-Mayhem Drone keeps playing even while minimized or closed">
+          <span>🤖</span>
+          <span class="hidden sm:inline">Auto-Bot:</span>
+          <span id="autoBotStatusText">ON</span>
+        </button>
+
+        <button id="btnToggleTether" type="button" onclick="toggleCeilingTether()" class="flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-semibold border transition-all bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" title="Toggle Ceiling Rope Tether">
+          <span>🪢</span>
+          <span id="tetherStatusText" class="hidden md:inline">Rope: OFF</span>
+        </button>
+
+        <button id="btnSoundToggle" type="button" onclick="toggleSound()" class="p-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 text-xs sm:text-sm" title="Toggle Sound Effects">
+          <span id="soundIcon">🔊</span>
+        </button>
+
+        <button id="btnOpenSaveModal" type="button" onclick="openModal('saveModal')" class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-all">
+          <span>💾</span>
+          <span>Saves</span>
+          <span id="saveSlotCountBadge" class="bg-indigo-900/80 text-indigo-200 px-1.5 py-0.2 rounded-full text-[10px]">1</span>
+        </button>
+
+        <button id="btnOpenRestartModal" type="button" onclick="openModal('restartModal')" class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-rose-600/90 hover:bg-rose-500 text-white shadow-sm transition-all" title="Heal Character or Restart Game">
+          <span>🔄</span>
+          <span class="hidden sm:inline">Restart</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN ARENA STAGE -->
+  <main class="relative flex-1 w-full overflow-hidden bg-slate-950">
+    <canvas id="arenaCanvas"></canvas>
+
+    <!-- Floating Status / Persistence Pill (Top-Left of Canvas) -->
+    <div class="absolute top-2.5 left-2.5 z-10 flex flex-wrap items-center gap-1.5 pointer-events-none">
+      <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 rounded-full px-2.5 py-1 flex items-center gap-1.5 text-[11px] text-slate-300 shadow">
+        <span id="liveSaveDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="liveSaveLabel">Auto-Saved • Background Play Active</span>
+      </div>
+      <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 rounded-full px-2.5 py-1 text-[11px] text-amber-300 font-medium shadow">
+        <span>Hits: </span><strong id="hudHits">0</strong>
+        <span class="mx-1 text-slate-600">|</span>
+        <span>KO's: </span><strong id="hudKos">0</strong>
+      </div>
+    </div>
+
+    <!-- Quick Action Floating Buttons (Top-Right of Canvas) -->
+    <div class="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5">
+      <button id="btnQuickSave" type="button" onclick="quickSaveManual()" class="bg-slate-900/85 hover:bg-slate-800 backdrop-blur-md border border-slate-700 text-slate-200 rounded-full px-2.5 py-1 text-[11px] font-medium flex items-center gap-1 shadow transition">
+        <span>⚡</span><span>Quick Save</span>
+      </button>
+      <button id="btnCenterRagdoll" type="button" onclick="recenterCharacter()" class="bg-slate-900/85 hover:bg-slate-800 backdrop-blur-md border border-slate-700 text-slate-200 rounded-full px-2.5 py-1 text-[11px] font-medium flex items-center gap-1 shadow transition" title="Center & Stand Up">
+        <span>🎯</span><span>Center</span>
+      </button>
+      <button id="btnInfoModal" type="button" onclick="openModal('infoModal')" class="bg-slate-900/85 hover:bg-slate-800 backdrop-blur-md border border-slate-700 text-slate-300 rounded-full w-7 h-7 flex items-center justify-center text-xs shadow transition" title="How to Play & About">
+        ℹ️
+      </button>
+    </div>
+
+    <!-- Character Speech Bubble Overlay -->
+    <div id="speechBubble" class="hidden absolute z-10 pointer-events-none bg-white text-slate-900 font-display font-bold text-xs sm:text-sm px-3 py-1.5 rounded-2xl shadow-xl border-2 border-slate-900 max-w-[220px] text-center">
+      <span id="speechBubbleText">Ouch! Watch the suit!</span>
+    </div>
+
+    <!-- Background / Offline Catch-up Toast Banner -->
+    <div id="offlineBanner" class="hidden absolute top-12 left-1/2 -translate-x-1/2 z-20 w-[92%] max-w-md bg-indigo-950/95 backdrop-blur-md border border-indigo-400/50 rounded-2xl p-3 shadow-2xl">
+      <div class="flex items-start justify-between gap-2">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-lg shrink-0">
+            🤖
+          </div>
+          <div>
+            <div class="font-display font-bold text-xs sm:text-sm text-indigo-200" id="offlineBannerTitle">Session Restored & Background Progress!</div>
+            <p class="text-[11px] text-indigo-300/90 mt-0.5" id="offlineBannerDesc">Your game continued while minimized/closed.</p>
+          </div>
+        </div>
+        <button id="btnDismissOffline" type="button" onclick="dismissOfflineBanner()" class="text-indigo-300 hover:text-white text-xs px-2 py-1 rounded-lg bg-indigo-900/60">✕</button>
+      </div>
+    </div>
+
+    <!-- In-Page Toast Notification -->
+    <div id="toastBanner" class="hidden fixed bottom-36 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 border border-amber-400/50 text-amber-200 px-3.5 py-2 rounded-xl shadow-2xl text-xs font-semibold flex items-center gap-2 pointer-events-none">
+      <span id="toastIcon">✨</span>
+      <span id="toastText">Saved!</span>
+    </div>
+  </main>
+
+  <!-- BOTTOM CONTROL DOCK (MOBILE-FRIENDLY TABS + CAROUSEL) -->
+  <section class="shrink-0 bg-slate-900/95 border-t border-slate-800 z-20">
+    <div class="max-w-6xl mx-auto px-2 pt-1.5 pb-2">
+      <!-- Category Tabs + Active Tool Indicator -->
+      <div class="flex items-center justify-between gap-1 mb-1.5 overflow-x-auto custom-scroll pb-0.5">
+        <div class="flex items-center gap-1">
+          <button id="tabBtnTools" type="button" onclick="switchDockTab('tools')" class="dock-tab px-2.5 py-1 rounded-lg text-xs font-display font-bold transition flex items-center gap-1 bg-amber-500 text-slate-950">
+            <span>🔨</span><span>Arsenal</span>
+          </button>
+          <button id="tabBtnChars" type="button" onclick="switchDockTab('chars')" class="dock-tab px-2.5 py-1 rounded-lg text-xs font-display font-bold transition flex items-center gap-1 bg-slate-800 text-slate-300 hover:bg-slate-700">
+            <span>🎭</span><span>Characters (6)</span>
+          </button>
+          <button id="tabBtnUpgrades" type="button" onclick="switchDockTab('upgrades')" class="dock-tab px-2.5 py-1 rounded-lg text-xs font-display font-bold transition flex items-center gap-1 bg-slate-800 text-slate-300 hover:bg-slate-700">
+            <span>🤖</span><span>Auto-Bots & Perks</span>
+          </button>
+          <button id="tabBtnArena" type="button" onclick="switchDockTab('arena')" class="dock-tab px-2.5 py-1 rounded-lg text-xs font-display font-bold transition flex items-center gap-1 bg-slate-800 text-slate-300 hover:bg-slate-700">
+            <span>🎨</span><span>Stage & Hats</span>
+          </button>
+        </div>
+
+        <div class="hidden sm:flex items-center gap-1.5 text-[11px] text-slate-400 shrink-0">
+          <span>Active Tool:</span>
+          <strong id="activeToolLabel" class="text-amber-300">✋ Gravity Grab</strong>
+        </div>
+      </div>
+
+      <!-- Dock Content Panels -->
+      <!-- 1. ARSENAL TOOLS -->
+      <div id="dockPanelTools" class="flex items-center gap-2 overflow-x-auto custom-scroll py-1"></div>
+
+      <!-- 2. CHARACTER LINEUP -->
+      <div id="dockPanelChars" class="hidden flex items-center gap-2 overflow-x-auto custom-scroll py-1"></div>
+
+      <!-- 3. AUTO-BOTS & UPGRADES -->
+      <div id="dockPanelUpgrades" class="hidden flex items-center gap-2 overflow-x-auto custom-scroll py-1"></div>
+
+      <!-- 4. ARENA & HATS -->
+      <div id="dockPanelArena" class="hidden flex items-center gap-2 overflow-x-auto custom-scroll py-1"></div>
+    </div>
+  </section>
+
+  <!-- MODAL: SAVE / LOAD / DELETE SAVES MANAGER -->
+  <div id="saveModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/60">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">💾</span>
+          <div>
+            <h2 class="font-display font-bold text-base text-white">Save Manager & Cloud-Free Persistence</h2>
+            <p class="text-[11px] text-slate-400">Auto-saves every change & continues while minimized or closed</p>
+          </div>
+        </div>
+        <button id="btnCloseSaveModal" type="button" onclick="closeModal('saveModal')" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-sm">✕</button>
+      </div>
+
+      <div class="p-4 overflow-y-auto custom-scroll space-y-4 text-xs">
+        <!-- Create New Save Slot -->
+        <div class="bg-slate-800/70 border border-slate-700/80 rounded-xl p-3">
+          <label for="saveSlotNameInput" class="block font-semibold text-slate-200 mb-1.5">Create or Overwrite a Named Save Slot</label>
+          <div class="flex gap-2">
+            <input id="saveSlotNameInput" type="text" maxlength="28" placeholder="e.g., Boss Max Turrets Run" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500" />
+            <button id="btnCreateSaveSlot" type="button" onclick="createNewSaveSlot()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3.5 py-2 rounded-xl shrink-0 transition">
+              + Save Current
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Auto-Save Card -->
+        <div class="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-3 flex items-center justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span class="font-bold text-emerald-300">Live Auto-Save (Refresh & Close Protected)</span>
+            </div>
+            <p id="autoSaveTimestampText" class="text-[11px] text-slate-400 mt-0.5">Last synced: Just now</p>
+          </div>
+          <button id="btnForceAutoSave" type="button" onclick="saveLiveState(true)" class="bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-400/40 text-emerald-200 px-3 py-1.5 rounded-xl font-semibold shrink-0">
+            Sync Now
+          </button>
+        </div>
+
+        <!-- Saved Slots List -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-semibold text-slate-300">Saved Game Slots (Save, Load, or Delete)</span>
+            <button id="btnDeleteAllSavesPrompt" type="button" onclick="promptDeleteAllSaves()" class="text-[11px] text-rose-400 hover:text-rose-300 underline">
+              Clear All Manual Slots
+            </button>
+          </div>
+          <div id="saveSlotsContainer" class="space-y-2"></div>
+        </div>
+
+        <!-- Delete Confirmation Banner (In-page, hidden by default) -->
+        <div id="deleteConfirmBox" class="hidden bg-rose-950/70 border border-rose-500/60 rounded-xl p-3">
+          <p id="deleteConfirmText" class="text-rose-200 font-medium mb-2">Are you sure you want to delete this save slot?</p>
+          <div class="flex items-center justify-end gap-2">
+            <button id="btnCancelDeleteSave" type="button" onclick="cancelDeleteSave()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">Cancel</button>
+            <button id="btnConfirmDeleteSave" type="button" onclick="confirmDeleteSave()" class="px-3 py-1.5 rounded-lg bg-rose-600 text-white font-semibold hover:bg-rose-500">Yes, Delete</button>
+          </div>
+        </div>
+
+        <!-- Export / Import Backup Code -->
+        <div class="bg-slate-800/50 border border-slate-700/70 rounded-xl p-3 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-300">Backup Save String (Export / Import)</span>
+            <button id="btnExportSaveCode" type="button" onclick="exportSaveString()" class="text-[11px] bg-slate-700 hover:bg-slate-600 text-slate-200 px-2.5 py-1 rounded-lg">
+              📋 Copy Backup Code
+            </button>
+          </div>
+          <div class="flex gap-2">
+            <input id="importSaveCodeInput" type="text" placeholder="Paste exported save code here..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-1.5 text-[11px] text-slate-200" />
+            <button id="btnImportSaveCode" type="button" onclick="importSaveString()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-3 py-1.5 rounded-xl shrink-0">
+              Import
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: RESTART / RESET GAME -->
+  <div id="restartModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🔄</span>
+          <h2 class="font-display font-bold text-base text-white">Respawn or Restart Game</h2>
+        </div>
+        <button id="btnCloseRestartModal" type="button" onclick="closeModal('restartModal')" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-sm">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <!-- Option 1: Soft Arena Reset -->
+        <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-3 flex items-center justify-between gap-3">
+          <div>
+            <div class="font-bold text-emerald-300 text-sm">1. Heal & Reset Arena Stage</div>
+            <p class="text-slate-400 mt-0.5">Restores character HP to 100%, clears hazards/decals, and re-centers the ragdoll. Keeps all your coins, level, and unlocked items.</p>
+          </div>
+          <button id="btnSoftResetArena" type="button" onclick="softResetArena()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3.5 py-2 rounded-xl shrink-0">
+            Heal & Center
+          </button>
+        </div>
+
+        <!-- Option 2: Hard Factory Restart -->
+        <div class="bg-rose-950/40 border border-rose-500/40 rounded-xl p-3 space-y-2.5">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <div class="font-bold text-rose-300 text-sm">2. Full Game Restart (New Game)</div>
+              <p class="text-slate-400 mt-0.5">Resets coins (back to 250), level, stats, and locked items for a brand-new run. Manual save slots are preserved unless you toggle below.</p>
+            </div>
+          </div>
+          <label class="flex items-center gap-2 text-slate-300 cursor-pointer pt-1">
+            <input id="chkWipeManualSaves" type="checkbox" class="rounded border-slate-600 text-rose-600 focus:ring-rose-500" />
+            <span>Also delete all manual save slots</span>
+          </label>
+          <div class="pt-1 flex justify-end">
+            <button id="btnHardRestartGame" type="button" onclick="hardRestartGame()" class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-4 py-2 rounded-xl w-full sm:w-auto">
+              ⚠️ Confirm Full Game Restart
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: HOW TO PLAY & ABOUT -->
+  <div id="infoModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 shadow-2xl space-y-3 text-xs">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <h2 class="font-display font-bold text-base text-amber-300">🎪 Ragdoll Mayhem Arena Guide</h2>
+        <button id="btnCloseInfoModal" type="button" onclick="closeModal('infoModal')" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-sm">✕</button>
+      </div>
+      <div class="space-y-2 text-slate-300 leading-relaxed">
+        <p>Inspired by <a href="https://play.google.com/store/apps/details?id=com.playgendary.ktb2&hl=en" target="_blank" rel="noopener noreferrer" class="text-amber-400 underline font-semibold">Kick the Buddy: Forever</a>, this physics sandbox lets you pick from a lineup of 6 quirky ragdoll characters and test out slapstick props, sci-fi gadgets, and elemental hazards.</p>
+        <ul class="list-disc pl-4 space-y-1 text-slate-300">
+          <li><strong>Touch & Drag:</strong> Use <em>Gravity Grab</em> to grab any limb and fling the character off the walls, or tap anywhere in the arena to fire/spawn your selected prop.</li>
+          <li><strong>Character Lineup:</strong> Switch anytime between Sir Reginald, CLANK-9000, Zorp the Alien, Lord Bonesworth, Gloop the Slime, and Capt. Cardboard.</li>
+          <li><strong>Refresh & Minimize Proof:</strong> Every coin, hit, unlock, and ragdoll state is saved automatically. When you minimize or close the browser with <strong>Auto-Bot ON</strong>, your drones keep racking up hits and coins in the background!</li>
+        </ul>
+      </div>
+      <div class="pt-2 flex justify-end">
+        <button id="btnGotItInfo" type="button" onclick="closeModal('infoModal')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl">Let's Play!</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. GAME CATALOGS: CHARACTER LINEUP, ARSENAL TOOLS, UPGRADES, STAGES, HATS
+    // =========================================================================
+    const CHARACTERS = [
+      {
+        id: 'boss',
+        name: 'Sir Reginald',
+        role: 'The Grumpy CEO',
+        icon: '🎩',
+        cost: 0,
+        gravityScale: 1.0,
+        bounciness: 0.55,
+        headColor: '#fcd34d',
+        torsoColor: '#1e293b',
+        limbColor: '#334155',
+        accentColor: '#ef4444',
+        voicePitch: 95,
+        voiceWave: 'sawtooth',
+        quips: [
+          "That's coming out of your bonus!",
+          "Did you schedule a meeting for this?!",
+          "My monocle! Call legal!",
+          "Synergy levels critically low!",
+          "Unhand my quarterly projections!"
+        ]
+      },
+      {
+        id: 'robot',
+        name: 'CLANK-9000',
+        role: 'Glitchy Test Bot',
+        icon: '🤖',
+        cost: 0,
+        gravityScale: 1.15,
+        bounciness: 0.65,
+        headColor: '#94a3b8',
+        torsoColor: '#475569',
+        limbColor: '#64748b',
+        accentColor: '#38bdf8',
+        voicePitch: 190,
+        voiceWave: 'square',
+        quips: [
+          "ERROR 404: PAIN MODULE OVERFLOW!",
+          "REBOOTING DIGNITY.EXE...",
+          "MY WARRANTY DOES NOT COVER MALLETS!",
+          "BEEP BOOP—CRITICAL DENT DETECTED!",
+          "WHO PROGRAMMED THIS GRAVITY?!"
+        ]
+      },
+      {
+        id: 'alien',
+        name: 'Zorp the Petty',
+        role: 'Low-G Invader',
+        icon: '👽',
+        cost: 0,
+        gravityScale: 0.62,
+        bounciness: 0.78,
+        headColor: '#4ade80',
+        torsoColor: '#7c3aed',
+        limbColor: '#22c55e',
+        accentColor: '#f472b6',
+        voicePitch: 310,
+        voiceWave: 'sine',
+        quips: [
+          "Take me to your manager!",
+          "Earth physics are so primitive!",
+          "My mothership is leaving a 1-star review!",
+          "Watch the antennae, earthling!",
+          "I came in peace... mostly!"
+        ]
+      },
+      {
+        id: 'skeleton',
+        name: 'Lord Bonesworth',
+        role: 'Dramatic Skeleton',
+        icon: '💀',
+        cost: 150,
+        gravityScale: 0.85,
+        bounciness: 0.7,
+        headColor: '#f8fafc',
+        torsoColor: '#cbd5e1',
+        limbColor: '#e2e8f0',
+        accentColor: '#a855f7',
+        voicePitch: 135,
+        voiceWave: 'triangle',
+        quips: [
+          "Not the funny bone!",
+          "Alas, poor Bonesworth!",
+          "I'm literally falling to pieces!",
+          "Drink more milk, they said!",
+          "Rattle me timbers!"
+        ]
+      },
+      {
+        id: 'slime',
+        name: 'Barnaby Gloop',
+        role: 'Bouncy Jelly Monster',
+        icon: '🟢',
+        cost: 300,
+        gravityScale: 0.75,
+        bounciness: 0.92,
+        headColor: '#2dd4bf',
+        torsoColor: '#14b8a6',
+        limbColor: '#5eead4',
+        accentColor: '#facc15',
+        voicePitch: 250,
+        voiceWave: 'sine',
+        quips: [
+          "Boing! That actually tickled!",
+          "Maximum wobble achieved!",
+          "You can't bruise 100% gelatin!",
+          "Squish me once, shame on you!",
+          "Wheeee! Bounce mode engaged!"
+        ]
+      },
+      {
+        id: 'cardboard',
+        name: 'Capt. Cardboard',
+        role: 'DIY Crash Dummy',
+        icon: '📦',
+        cost: 500,
+        gravityScale: 0.78,
+        bounciness: 0.62,
+        headColor: '#d97706',
+        torsoColor: '#b45309',
+        limbColor: '#92400e',
+        accentColor: '#fde047',
+        voicePitch: 165,
+        voiceWave: 'triangle',
+        quips: [
+          "FRAGILE: Handle with zero care!",
+          "Hey, don't bend the shipping label!",
+          "100% recycled chaos!",
+          "More duct tape required!",
+          "Express delivery to the wall!"
+        ]
+      }
+    ];
+
+    const TOOLS = [
+      { id: 'grab', name: 'Gravity Grab', icon: '✋', cost: 0, damage: 6, coins: 4, desc: 'Grab & fling any limb!' },
+      { id: 'mallet', name: 'Giant Mallet', icon: '🔨', cost: 0, damage: 18, coins: 12, desc: 'Heavy cartoon bonk + stars' },
+      { id: 'pie', name: 'Cream Pie', icon: '🥧', cost: 0, damage: 10, coins: 9, desc: 'Splatters sweet whipped cream' },
+      { id: 'glove', name: 'Spring Punch', icon: '🥊', cost: 100, damage: 24, coins: 16, desc: 'High-velocity knockout punch' },
+      { id: 'anvil', name: '10-Ton Anvil', icon: '⚓', cost: 220, damage: 35, coins: 24, desc: 'Drops a heavy crushing anvil' },
+      { id: 'laser', name: 'Plasma Blaster', icon: '🔫', cost: 380, damage: 28, coins: 22, desc: 'Rapid-fire sci-fi energy bolts' },
+      { id: 'freeze', name: 'Cryo Freeze', icon: '❄️', cost: 520, damage: 20, coins: 25, desc: 'Freezes joints in solid ice' },
+      { id: 'lightning', name: 'Tesla Storm', icon: '⚡', cost: 750, damage: 45, coins: 36, desc: 'High-voltage ceiling strike' },
+      { id: 'vortex', name: 'Zero-G Vortex', icon: '🌀', cost: 1000, damage: 32, coins: 42, desc: 'Swirling black-hole spin' },
+      { id: 'smoothie', name: 'Heal Smoothie', icon: '🥤', cost: 0, damage: -40, coins: 8, desc: 'Heals HP & showers confetti!' }
+    ];
+
+    const UPGRADES = [
+      { id: 'drone_rate', name: 'Auto-Drone Speed', icon: '🛸', baseCost: 120, desc: 'Fires faster (even while minimized/closed!)' },
+      { id: 'coin_mult', name: 'Coin Magnet', icon: '🧲', baseCost: 180, desc: '+35% coins per hit & offline tick' },
+      { id: 'bounciness', name: 'Trampoline Walls', icon: '🎪', baseCost: 150, desc: 'Increases wall bounce & slam bonuses' },
+      { id: 'unlock_all', name: 'Sandbox Master Key', icon: '🔑', baseCost: 0, desc: 'Toggle instant unlock of all items & characters' }
+    ];
+
+    const ARENAS = [
+      { id: 'lab', name: 'Padded Test Lab', icon: '🧪', bgTop: '#0f172a', bgBottom: '#1e293b', gridColor: 'rgba(148,163,184,0.08)', floorColor: '#334155' },
+      { id: 'office', name: 'Executive Suite', icon: '🏢', bgTop: '#1e1b4b', bgBottom: '#312e81', gridColor: 'rgba(199,210,254,0.08)', floorColor: '#4338ca' },
+      { id: 'scifi', name: 'Cyber Reactor', icon: '🛸', bgTop: '#022c22', bgBottom: '#064e3b', gridColor: 'rgba(52,211,153,0.1)', floorColor: '#047857' },
+      { id: 'volcano', name: 'Magma Chamber', icon: '🌋', bgTop: '#450a0a', bgBottom: '#7f1d1d', gridColor: 'rgba(248,113,113,0.1)', floorColor: '#991b1b' }
+    ];
+
+    const HATS = [
+      { id: 'none', name: 'No Hat', icon: '🚫' },
+      { id: 'crown', name: 'Royal Crown', icon: '👑' },
+      { id: 'propeller', name: 'Propeller Cap', icon: '🧢' },
+      { id: 'viking', name: 'Viking Helm', icon: ' horned ' },
+      { id: 'party', name: 'Party Cone', icon: '🎉' },
+      { id: 'halo', name: 'Angel Halo', icon: '😇' }
+    ];
+
+    // =========================================================================
+    // 2. PERSISTENT STATE & SAVE STORAGE ENGINE
+    // =========================================================================
+    const LIVE_STORAGE_KEY = 'ragdoll_mayhem_live_state_v1';
+    const SLOTS_STORAGE_KEY = 'ragdoll_mayhem_save_slots_v1';
+
+    function createDefaultState() {
+      return {
+        version: 1,
+        coins: 250,
+        totalHits: 0,
+        totalKos: 0,
+        xp: 0,
+        level: 1,
+        selectedCharId: 'boss',
+        selectedToolId: 'grab',
+        selectedArenaId: 'lab',
+        selectedHatId: 'none',
+        unlockedChars: ['boss', 'robot', 'alien'],
+        unlockedTools: ['grab', 'mallet', 'pie', 'smoothie'],
+        sandboxUnlocked: false,
+        autoBotActive: true,
+        tetherEnabled: false,
+        soundEnabled: true,
+        upgrades: {
+          drone_rate: 1,
+          coin_mult: 1,
+          bounciness: 1
+        },
+        charHp: 100,
+        charMaxHp: 100,
+        charScale: 1.0,
+        frozenTimer: 0,
+        dizzyTimer: 0,
+        ragdollSnapshot: null,
+        lastActiveTimestamp: Date.now(),
+        lastSavedLabel: 'Just now'
+      };
+    }
+
+    let state = createDefaultState();
+    let saveSlots = [];
+    let pendingDeleteSlotId = null;
+
+    function safeStorageGet(key) {
+      try {
+        return localStorage.getItem(key);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function safeStorageSet(key, val) {
+      try {
+        localStorage.setItem(key, val);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    // Capture current ragdoll node coordinates so even mid-air pose survives refresh
+    function captureRagdollSnapshot() {
+      if (!ragdoll || !ragdoll.points || !canvas.width) return null;
+      return {
+        normX: ragdoll.points[1].x / canvas.width,
+        normY: ragdoll.points[1].y / canvas.height,
+        vx: ragdoll.points[1].x - ragdoll.points[1].oldX,
+        vy: ragdoll.points[1].y - ragdoll.points[1].oldY
+      };
+    }
+
+    function saveLiveState(showToastFeedback = false) {
+      state.lastActiveTimestamp = Date.now();
+      state.ragdollSnapshot = captureRagdollSnapshot();
+      safeStorageSet(LIVE_STORAGE_KEY, JSON.stringify(state));
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      state.lastSavedLabel = timeStr;
+      const autoSaveEl = document.getElementById('autoSaveTimestampText');
+      if (autoSaveEl) {
+        autoSaveEl.textContent = 'Last synced: ' + timeStr;
+      }
+      if (showToastFeedback) {
+        showToast('💾 Live state synced!', '✨');
+      }
+    }
+
+    function loadSaveSlots() {
+      const raw = safeStorageGet(SLOTS_STORAGE_KEY);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            saveSlots = parsed;
+            return;
+          }
+        } catch (e) {}
+      }
+      // Initialize with 1 starter snapshot slot so the user immediately sees how slots work
+      saveSlots = [
+        {
+          id: 'slot_starter',
+          name: 'Starter Checkpoint',
+          timestamp: Date.now(),
+          data: JSON.parse(JSON.stringify(state))
+        }
+      ];
+      safeStorageSet(SLOTS_STORAGE_KEY, JSON.stringify(saveSlots));
+    }
+
+    function persistSaveSlots() {
+      safeStorageSet(SLOTS_STORAGE_KEY, JSON.stringify(saveSlots));
+      const badge = document.getElementById('saveSlotCountBadge');
+      if (badge) badge.textContent = String(saveSlots.length);
+    }
+
+    // =========================================================================
+    // 3. SYNTHESIZED WEB AUDIO SOUND ENGINE (NO EXTERNAL FILES NEEDED)
+    // =========================================================================
+    let audioCtx = null;
+
+    function ensureAudio() {
+      if (!state.soundEnabled) return null;
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtx = new AudioContextClass();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+      return audioCtx;
+    }
+
+    function playSoundEffect(type) {
+      if (!state.soundEnabled) return;
+      const ctx = ensureAudio();
+      if (!ctx) return;
+
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      const charObj = getSelectedCharacter();
+
+      if (type === 'hit') {
+        osc.type = charObj.voiceWave || 'triangle';
+        osc.frequency.setValueAtTime(charObj.voicePitch || 150, now);
+        osc.frequency.exponentialRampToValueAtTime(55, now + 0.14);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.005, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } else if (type === 'laser') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(720, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.12);
+        gain.gain.setValueAtTime(0.14, now);
+        gain.gain.exponentialRampToValueAtTime(0.005, now + 0.13);
+        osc.start(now);
+        osc.stop(now + 0.13);
+      } else if (type === 'anvil') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(95, now);
+        osc.frequency.exponentialRampToValueAtTime(32, now + 0.28);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.005, now + 0.29);
+        osc.start(now);
+        osc.stop(now + 0.29);
+      } else if (type === 'lightning') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(480, now);
+        osc.frequency.linearRampToValueAtTime(90, now + 0.25);
+        gain.gain.setValueAtTime(0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.005, now + 0.26);
+        osc.start(now);
+        osc.stop(now + 0.26);
+      } else if (type === 'heal') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(340, now);
+        osc.frequency.exponentialRampToValueAtTime(680, now + 0.2);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.005, now + 0.21);
+        osc.start(now);
+        osc.stop(now + 0.21);
+      } else if (type === 'unlock') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.setValueAtTime(660, now + 0.08);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.005, now + 0.24);
+        osc.start(now);
+        osc.stop(now + 0.24);
+      }
+    }
+
+    // =========================================================================
+    // 4. VERLET ARTICULATED RAGDOLL PHYSICS & ARENA ENGINE
+    // =========================================================================
+    const canvas = document.getElementById('arenaCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let ragdoll = null;
+    let particles = [];
+    let floatingTexts = [];
+    let activeProps = []; // Falling anvils, pies, laser bolts, vortices
+    let creamSplats = []; // Decals on character
+    let lightningBolts = [];
+    let draggedPoint = null;
+    let pointerPos = { x: 0, y: 0, down: false };
+    let comboCount = 1;
+    let comboDecayTimer = 0;
+    let speechCooldown = 0;
+    let screenShake = 0;
+    let autoBotShotTimer = 0;
+
+    function getSelectedCharacter() {
+      return CHARACTERS.find(c => c.id === state.selectedCharId) || CHARACTERS[0];
+    }
+
+    function getSelectedTool() {
+      return TOOLS.find(t => t.id === state.selectedToolId) || TOOLS[0];
+    }
+
+    function getSelectedArena() {
+      return ARENAS.find(a => a.id === state.selectedArenaId) || ARENAS[0];
+    }
+
+    class Ragdoll {
+      constructor(centerX, centerY) {
+        this.points = [];
+        this.sticks = [];
+        this.build(centerX, centerY);
+      }
+
+      addPoint(x, y, radius, mass = 1) {
+        const pt = { x, y, oldX: x, oldY: y, radius, mass, pinned: false };
+        this.points.push(pt);
+        return pt;
+      }
+
+      addStick(p0, p1, stiffness = 0.9) {
+        const dx = p1.x - p0.x;
+        const dy = p1.y - p0.y;
+        const length = Math.hypot(dx, dy);
+        this.sticks.push({ p0, p1, length, stiffness });
+      }
+
+      build(cx, cy) {
+        const s = state.charScale || 1.0;
+        // 0: Head, 1: Neck/Chest, 2: Pelvis
+        // 3: L Elbow, 4: L Hand, 5: R Elbow, 6: R Hand
+        // 7: L Knee, 8: L Foot, 9: R Knee, 10: R Foot
+        const head = this.addPoint(cx, cy - 68 * s, 26 * s, 1.2);
+        const chest = this.addPoint(cx, cy - 22 * s, 18 * s, 1.6);
+        const pelvis = this.addPoint(cx, cy + 28 * s, 17 * s, 1.6);
+
+        const lElbow = this.addPoint(cx - 34 * s, cy - 12 * s, 10 * s, 0.8);
+        const lHand = this.addPoint(cx - 60 * s, cy + 12 * s, 11 * s, 0.8);
+        const rElbow = this.addPoint(cx + 34 * s, cy - 12 * s, 10 * s, 0.8);
+        const rHand = this.addPoint(cx + 60 * s, cy + 12 * s, 11 * s, 0.8);
+
+        const lKnee = this.addPoint(cx - 22 * s, cy + 66 * s, 11 * s, 0.9);
+        const lFoot = this.addPoint(cx - 26 * s, cy + 106 * s, 12 * s, 1.0);
+        const rKnee = this.addPoint(cx + 22 * s, cy + 66 * s, 11 * s, 0.9);
+        const rFoot = this.addPoint(cx + 26 * s, cy + 106 * s, 12 * s, 1.0);
+
+        // Spine & posture cross-bracing
+        this.addStick(head, chest, 0.95);
+        this.addStick(chest, pelvis, 0.95);
+        this.addStick(head, pelvis, 0.65);
+
+        // Arms
+        this.addStick(chest, lElbow, 0.9);
+        this.addStick(lElbow, lHand, 0.9);
+        this.addStick(chest, rElbow, 0.9);
+        this.addStick(rElbow, rHand, 0.9);
+
+        // Legs
+        this.addStick(pelvis, lKnee, 0.9);
+        this.addStick(lKnee, lFoot, 0.9);
+        this.addStick(pelvis, rKnee, 0.9);
+        this.addStick(rKnee, rFoot, 0.9);
+        this.addStick(lKnee, rKnee, 0.35);
+      }
+
+      update(width, height) {
+        const charObj = getSelectedCharacter();
+        const gravity = 0.48 * (charObj.gravityScale || 1.0) * (state.frozenTimer > 0 ? 0.25 : 1);
+        const friction = state.frozenTimer > 0 ? 0.92 : 0.985;
+        const bounceBoost = 1 + (state.upgrades.bounciness - 1) * 0.14;
+        const restitution = Math.min(0.95, (charObj.bounciness || 0.6) * bounceBoost);
+        const floorY = height - 24;
+
+        for (let i = 0; i < this.points.length; i++) {
+          const p = this.points[i];
+          if (p === draggedPoint) continue;
+
+          let vx = (p.x - p.oldX) * friction;
+          let vy = (p.y - p.oldY) * friction;
+
+          p.oldX = p.x;
+          p.oldY = p.y;
+          p.x += vx;
+          p.y += vy + gravity;
+
+          // Gentle upright posture spring when resting near floor and not tethered
+          if (!state.tetherEnabled && state.frozenTimer <= 0 && !draggedPoint) {
+            if (i === 0) p.y -= 0.38;
+            if (i === 2) p.y += 0.18;
+          }
+        }
+
+        // Ceiling Rope Tether constraint
+        if (state.tetherEnabled && this.points[1]) {
+          const anchorX = width * 0.5;
+          const anchorY = 20;
+          const p = this.points[1];
+          const dx = p.x - anchorX;
+          const dy = p.y - anchorY;
+          const dist = Math.hypot(dx, dy);
+          const maxLen = Math.min(height * 0.36, 175);
+          if (dist > maxLen && dist > 0.001) {
+            const diff = (dist - maxLen) / dist;
+            p.x -= dx * diff * 0.65;
+            p.y -= dy * diff * 0.65;
+          }
+        }
+
+        // Solve stick constraints (6 iterations for solid ragdoll feel)
+        const iterations = state.frozenTimer > 0 ? 10 : 6;
+        for (let iter = 0; iter < iterations; iter++) {
+          for (const s of this.sticks) {
+            const dx = s.p1.x - s.p0.x;
+            const dy = s.p1.y - s.p0.y;
+            const dist = Math.hypot(dx, dy) || 0.001;
+            const diff = (s.length - dist) / dist;
+            const stiff = state.frozenTimer > 0 ? 0.99 : s.stiffness;
+            const offsetX = dx * diff * 0.5 * stiff;
+            const offsetY = dy * diff * 0.5 * stiff;
+
+            if (s.p0 !== draggedPoint) {
+              s.p0.x -= offsetX;
+              s.p0.y -= offsetY;
+            }
+            if (s.p1 !== draggedPoint) {
+              s.p1.x += offsetX;
+              s.p1.y += offsetY;
+            }
+          }
+
+          // Arena Wall & Floor Collisions
+          for (const p of this.points) {
+            const vx = p.x - p.oldX;
+            const vy = p.y - p.oldY;
+            const speed = Math.hypot(vx, vy);
+
+            if (p.x < p.radius + 12) {
+              p.x = p.radius + 12;
+              p.oldX = p.x + vx * restitution;
+              if (speed > 13) onWallSlam(p.x, p.y, speed);
+            } else if (p.x > width - p.radius - 12) {
+              p.x = width - p.radius - 12;
+              p.oldX = p.x + vx * restitution;
+              if (speed > 13) onWallSlam(p.x, p.y, speed);
+            }
+
+            if (p.y < p.radius + 12) {
+              p.y = p.radius + 12;
+              p.oldY = p.y + vy * restitution;
+              if (speed > 13) onWallSlam(p.x, p.y, speed);
+            } else if (p.y > floorY - p.radius) {
+              p.y = floorY - p.radius;
+              p.oldY = p.y + vy * restitution;
+              p.oldX = p.x - vx * 0.88;
+              if (speed > 14) onWallSlam(p.x, p.y, speed);
+            }
+          }
+        }
+      }
+
+      applyImpulse(ix, iy, targetPoint = null) {
+        const pts = targetPoint ? [targetPoint] : this.points;
+        for (const p of pts) {
+          p.oldX -= ix / (p.mass || 1);
+          p.oldY -= iy / (p.mass || 1);
+        }
+      }
+
+      applyRadialBlast(bx, by, radius, power) {
+        for (const p of this.points) {
+          const dx = p.x - bx;
+          const dy = p.y - by;
+          const dist = Math.hypot(dx, dy) || 1;
+          if (dist < radius) {
+            const factor = (1 - dist / radius) * power;
+            p.oldX -= (dx / dist) * factor;
+            p.oldY -= (dy / dist) * factor - 4;
+          }
+        }
+      }
+    }
+
+    let wallSlamCooldown = 0;
+    function onWallSlam(x, y, speed) {
+      if (wallSlamCooldown > 0) return;
+      wallSlamCooldown = 12;
+      const slamDmg = Math.min(25, Math.round(speed * 0.65));
+      const slamCoins = Math.max(3, Math.round(speed * 0.45));
+      inflictHit(x, y, slamDmg, slamCoins, '💥 SLAM!');
+    }
+
+    function initRagdoll(useSnapshot = false) {
+      const w = canvas.width || 600;
+      const h = canvas.height || 420;
+      let cx = w * 0.5;
+      let cy = h * 0.46;
+
+      if (useSnapshot && state.ragdollSnapshot) {
+        cx = Math.max(80, Math.min(w - 80, state.ragdollSnapshot.normX * w));
+        cy = Math.max(80, Math.min(h - 100, state.ragdollSnapshot.normY * h));
+      }
+      ragdoll = new Ragdoll(cx, cy);
+      if (useSnapshot && state.ragdollSnapshot) {
+        ragdoll.applyImpulse(state.ragdollSnapshot.vx || 0, state.ragdollSnapshot.vy || 0);
+      }
+    }
+
+    // =========================================================================
+    // 5. HIT, DAMAGE, LEVELING & SPEECH REACTION SYSTEM
+    // =========================================================================
+    function inflictHit(x, y, baseDamage, baseCoins, badgeText = null, isOffline = false) {
+      const mult = 1 + (state.upgrades.coin_mult - 1) * 0.35;
+      comboCount = Math.min(12, comboCount + 1);
+      comboDecayTimer = 110;
+
+      const earnedCoins = Math.max(1, Math.round(baseCoins * mult * (1 + (comboCount - 1) * 0.12)));
+      state.coins += earnedCoins;
+
+      if (baseDamage > 0) {
+        state.totalHits += 1;
+        state.charHp = Math.max(0, state.charHp - baseDamage);
+        state.dizzyTimer = Math.min(90, state.dizzyTimer + 22);
+        state.xp += Math.round(baseDamage * 0.6) + 4;
+
+        // Check Level Up
+        const nextLvXp = state.level * 120;
+        if (state.xp >= nextLvXp) {
+          state.xp -= nextLvXp;
+          state.level += 1;
+          state.coins += state.level * 40;
+          if (!isOffline) {
+            spawnFloatingText(x, y - 40, `🎉 LEVEL ${state.level}! +${state.level * 40}🪙`, '#facc15', 16);
+            playSoundEffect('unlock');
+          }
+        }
+
+        // Check KO & Auto-Revive with Bonus Coins
+        if (state.charHp <= 0) {
+          state.totalKos += 1;
+          const koBonus = 45 * state.level;
+          state.coins += koBonus;
+          state.charHp = state.charMaxHp;
+          if (!isOffline) {
+            screenShake = 18;
+            spawnParticles(x, y, '#facc15', 28, 9);
+            spawnFloatingText(x, y - 28, `💥 K.O. BONUS! +${koBonus}🪙`, '#fb7185', 17);
+            triggerSpeechBubble("K.O.! Okay, okay, I yield!");
+          }
+        }
+      } else if (baseDamage < 0) {
+        // Healing item
+        state.charHp = Math.min(state.charMaxHp, state.charHp - baseDamage);
+        state.frozenTimer = 0;
+        state.dizzyTimer = 0;
+      }
+
+      if (!isOffline) {
+        playSoundEffect(baseDamage < 0 ? 'heal' : 'hit');
+        spawnParticles(x, y, baseDamage < 0 ? '#34d399' : '#fbbf24', 12, 6);
+        const label = badgeText ? `${badgeText} +${earnedCoins}🪙` : `+${earnedCoins}🪙`;
+        spawnFloatingText(x, y - 15, label, baseDamage < 0 ? '#34d399' : '#fde047', 13);
+
+        if (speechCooldown <= 0 && Math.random() < 0.42) {
+          const charObj = getSelectedCharacter();
+          const quip = charObj.quips[Math.floor(Math.random() * charObj.quips.length)];
+          triggerSpeechBubble(quip);
+        }
+        updateHud();
+        saveLiveState(false);
+      }
+    }
+
+    function triggerSpeechBubble(text) {
+      speechCooldown = 110;
+      const bubble = document.getElementById('speechBubble');
+      const bubbleText = document.getElementById('speechBubbleText');
+      if (!bubble || !bubbleText || !ragdoll) return;
+
+      bubbleText.textContent = text;
+      bubble.classList.remove('hidden', 'speech-bubble-anim');
+      void bubble.offsetWidth;
+      bubble.classList.add('speech-bubble-anim');
+
+      const head = ragdoll.points[0];
+      const bx = Math.max(110, Math.min(canvas.width - 110, head.x));
+      const by = Math.max(55, head.y - 54);
+      bubble.style.left = bx + 'px';
+      bubble.style.top = by + 'px';
+    }
+
+    function spawnParticles(x, y, color, count = 12, maxSpeed = 6) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 1 + Math.random() * maxSpeed;
+        particles.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 1.5,
+          radius: 2.5 + Math.random() * 4,
+          color,
+          alpha: 1,
+          decay: 0.022 + Math.random() * 0.02
+        });
+      }
+    }
+
+    function spawnFloatingText(x, y, text, color = '#fde047', size = 14) {
+      floatingTexts.push({
+        x: x + (Math.random() - 0.5) * 24,
+        y,
+        vy: -1.6,
+        text,
+        color,
+        size,
+        alpha: 1
+      });
+    }
+
+    // =========================================================================
+    // 6. ARSENAL TOOL INTERACTIONS
+    // =========================================================================
+    function useActiveToolAt(tx, ty) {
+      if (!ragdoll) return;
+      const tool = getSelectedTool();
+      const head = ragdoll.points[0];
+      const chest = ragdoll.points[1];
+
+      if (tool.id === 'grab') {
+        // Handled by drag, or if tapped away from body, give a telekinetic pull!
+        const dx = tx - chest.x;
+        const dy = ty - chest.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        ragdoll.applyImpulse((dx / dist) * 14, (dy / dist) * 14 - 5);
+        inflictHit(chest.x, chest.y, tool.damage, tool.coins, '✋ FLING!');
+        return;
+      }
+
+      if (tool.id === 'mallet') {
+        screenShake = 10;
+        activeProps.push({
+          type: 'mallet',
+          x: tx,
+          y: ty,
+          angle: -0.9,
+          life: 22
+        });
+        ragdoll.applyRadialBlast(tx, ty, 175, 22);
+        inflictHit(tx, ty, tool.damage, tool.coins, '🔨 BONK!');
+      } else if (tool.id === 'pie') {
+        // Launch cream pie from bottom edge toward tap or chest
+        const startX = tx < canvas.width * 0.5 ? 30 : canvas.width - 30;
+        const startY = canvas.height - 60;
+        const targetX = chest.x;
+        const targetY = head.y;
+        const angle = Math.atan2(targetY - startY, targetX - startX);
+        activeProps.push({
+          type: 'pie',
+          x: startX,
+          y: startY,
+          vx: Math.cos(angle) * 17,
+          vy: Math.sin(angle) * 17,
+          radius: 16,
+          life: 60
+        });
+      } else if (tool.id === 'glove') {
+        const fromLeft = tx <= chest.x;
+        const startX = fromLeft ? 20 : canvas.width - 20;
+        activeProps.push({
+          type: 'glove',
+          x: startX,
+          y: chest.y,
+          vx: fromLeft ? 24 : -24,
+          originX: startX,
+          originY: chest.y,
+          radius: 22,
+          life: 28
+        });
+        playSoundEffect('hit');
+      } else if (tool.id === 'anvil') {
+        activeProps.push({
+          type: 'anvil',
+          x: tx,
+          y: 25,
+          vx: 0,
+          vy: 4,
+          radius: 28,
+          hitDone: false,
+          life: 130
+        });
+        playSoundEffect('anvil');
+      } else if (tool.id === 'laser') {
+        const startX = tx < chest.x ? 24 : canvas.width - 24;
+        const startY = Math.max(60, ty - 40);
+        const angle = Math.atan2(chest.y - startY, chest.x - startX);
+        activeProps.push({
+          type: 'laser',
+          x: startX,
+          y: startY,
+          vx: Math.cos(angle) * 25,
+          vy: Math.sin(angle) * 25,
+          radius: 10,
+          life: 40
+        });
+        playSoundEffect('laser');
+      } else if (tool.id === 'freeze') {
+        state.frozenTimer = 180;
+        spawnParticles(chest.x, chest.y, '#38bdf8', 26, 7);
+        ragdoll.applyImpulse((Math.random() - 0.5) * 10, -8);
+        inflictHit(chest.x, chest.y, tool.damage, tool.coins, '❄️ FROZEN!');
+      } else if (tool.id === 'lightning') {
+        screenShake = 15;
+        playSoundEffect('lightning');
+        const pts = [];
+        let currX = tx;
+        let currY = 0;
+        while (currY < chest.y) {
+          pts.push({ x: currX, y: currY });
+          currY += 28;
+          currX += (chest.x - currX) * 0.35 + (Math.random() - 0.5) * 38;
+        }
+        pts.push({ x: chest.x, y: chest.y });
+        lightningBolts.push({ pts, alpha: 1.0 });
+        ragdoll.applyRadialBlast(chest.x, chest.y, 220, 26);
+        inflictHit(chest.x, chest.y, tool.damage, tool.coins, '⚡ ZAP!');
+      } else if (tool.id === 'vortex') {
+        activeProps.push({
+          type: 'vortex',
+          x: tx,
+          y: ty,
+          radius: 90,
+          life: 110
+        });
+        playSoundEffect('laser');
+      } else if (tool.id === 'smoothie') {
+        creamSplats = [];
+        spawnParticles(chest.x, chest.y, '#34d399', 28, 8);
+        spawnParticles(head.x, head.y, '#f472b6', 18, 7);
+        ragdoll.applyImpulse(0, -6);
+        inflictHit(chest.x, chest.y, tool.damage, tool.coins, '🥤 REFRESHED!');
+        triggerSpeechBubble("Ahhh! Strawberry protein boost!");
+      }
+    }
+
+    // =========================================================================
+    // 7. DRAWING CHARACTER ANATOMY, FACES, HATS & PROPS
+    // =========================================================================
+    function renderArena() {
+      const w = canvas.width;
+      const h = canvas.height;
+      const arena = getSelectedArena();
+
+      ctx.save();
+      if (screenShake > 0) {
+        const sx = (Math.random() - 0.5) * screenShake;
+        const sy = (Math.random() - 0.5) * screenShake;
+        ctx.translate(sx, sy);
+        screenShake *= 0.82;
+        if (screenShake < 0.5) screenShake = 0;
+      }
+
+      // Background Gradient
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, arena.bgTop);
+      grad.addColorStop(1, arena.bgBottom);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Subtle Grid
+      ctx.strokeStyle = arena.gridColor;
+      ctx.lineWidth = 1;
+      const step = 44;
+      for (let x = 0; x < w; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y < h; y += step) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      // Arena Floor
+      ctx.fillStyle = arena.floorColor;
+      ctx.fillRect(0, h - 24, w, 24);
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.beginPath();
+      ctx.moveTo(0, h - 24);
+      ctx.lineTo(w, h - 24);
+      ctx.stroke();
+
+      // Auto-Bot Hovering Turret Drone (Visual in Top-Left Arena)
+      if (state.autoBotActive) {
+        const droneX = 58 + Math.sin(Date.now() * 0.003) * 18;
+        const droneY = 68 + Math.cos(Date.now() * 0.004) * 8;
+        ctx.save();
+        ctx.translate(droneX, droneY);
+        ctx.fillStyle = '#1e293b';
+        ctx.strokeStyle = '#34d399';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#34d399';
+        ctx.beginPath();
+        ctx.arc(4, 0, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Ceiling Tether Rope
+      if (state.tetherEnabled && ragdoll) {
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 3.5;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(w * 0.5, 0);
+        ctx.lineTo(ragdoll.points[1].x, ragdoll.points[1].y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Draw Active Props (Vortices behind character)
+      for (const prop of activeProps) {
+        if (prop.type === 'vortex') {
+          ctx.save();
+          ctx.translate(prop.x, prop.y);
+          ctx.rotate(Date.now() * 0.015);
+          const vGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, prop.radius);
+          vGrad.addColorStop(0, 'rgba(168, 85, 247, 0.9)');
+          vGrad.addColorStop(0.5, 'rgba(59, 130, 246, 0.45)');
+          vGrad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+          ctx.fillStyle = vGrad;
+          ctx.beginPath();
+          ctx.arc(0, 0, prop.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      // Draw Ragdoll Character
+      if (ragdoll) {
+        drawRagdollCharacter(ragdoll);
+      }
+
+      // Draw Active Props (Foreground: Anvils, Pies, Gloves, Mallets, Lasers)
+      for (const prop of activeProps) {
+        ctx.save();
+        if (prop.type === 'mallet') {
+          ctx.translate(prop.x, prop.y);
+          ctx.rotate(prop.angle);
+          ctx.fillStyle = '#b45309';
+          ctx.fillRect(-6, 0, 12, 58);
+          ctx.fillStyle = '#ef4444';
+          ctx.strokeStyle = '#fef08a';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.roundRect(-34, -22, 68, 36, 8);
+          ctx.fill();
+          ctx.stroke();
+        } else if (prop.type === 'pie') {
+          ctx.translate(prop.x, prop.y);
+          ctx.fillStyle = '#fef3c7';
+          ctx.beginPath();
+          ctx.arc(0, 0, prop.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#f8fafc';
+          ctx.beginPath();
+          ctx.arc(0, -3, prop.radius * 0.75, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (prop.type === 'glove') {
+          // Spring line
+          ctx.strokeStyle = '#94a3b8';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(prop.originX, prop.originY);
+          ctx.lineTo(prop.x, prop.y);
+          ctx.stroke();
+          // Red Boxing Glove
+          ctx.fillStyle = '#dc2626';
+          ctx.strokeStyle = '#fef2f2';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y, prop.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        } else if (prop.type === 'anvil') {
+          ctx.translate(prop.x, prop.y);
+          ctx.fillStyle = '#334155';
+          ctx.strokeStyle = '#94a3b8';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.roundRect(-28, -18, 56, 36, 6);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = '#f8fafc';
+          ctx.font = 'bold 11px Inter';
+          ctx.textAlign = 'center';
+          ctx.fillText('10 TON', 0, 4);
+        } else if (prop.type === 'laser') {
+          ctx.fillStyle = '#38bdf8';
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 12;
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y, prop.radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // Draw Lightning Bolts
+      for (const bolt of lightningBolts) {
+        ctx.save();
+        ctx.strokeStyle = `rgba(250, 204, 21, ${bolt.alpha})`;
+        ctx.lineWidth = 5;
+        ctx.shadowColor = '#fde047';
+        ctx.shadowBlur = 16;
+        ctx.beginPath();
+        bolt.pts.forEach((pt, idx) => {
+          if (idx === 0) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x, pt.y);
+        });
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Draw Gravity Grab Line when dragging
+      if (draggedPoint && pointerPos.down) {
+        ctx.save();
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(draggedPoint.x, draggedPoint.y);
+        ctx.lineTo(pointerPos.x, pointerPos.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Draw Particles
+      for (const pt of particles) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, pt.alpha);
+        ctx.fillStyle = pt.color;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Draw Floating Combat Texts
+      for (const ft of floatingTexts) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, ft.alpha);
+        ctx.font = `700 ${ft.size}px Fredoka, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 3.5;
+        ctx.strokeText(ft.text, ft.x, ft.y);
+        ctx.fillStyle = ft.color;
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    function drawRagdollCharacter(rd) {
+      const charObj = getSelectedCharacter();
+      const p = rd.points;
+      const head = p[0];
+      const chest = p[1];
+      const pelvis = p[2];
+
+      ctx.save();
+      if (charObj.id === 'slime') {
+        ctx.globalAlpha = 0.88;
+      }
+
+      // Draw Limbs (Arms & Legs)
+      const limbPairs = [
+        [chest, p[3], 13], [p[3], p[4], 11],
+        [chest, p[5], 13], [p[5], p[6], 11],
+        [pelvis, p[7], 15], [p[7], p[8], 13],
+        [pelvis, p[9], 15], [p[9], p[10], 13]
+      ];
+
+      ctx.lineCap = 'round';
+      for (const [a, b, width] of limbPairs) {
+        ctx.strokeStyle = state.frozenTimer > 0 ? '#7dd3fc' : charObj.limbColor;
+        ctx.lineWidth = width * (state.charScale || 1);
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+
+      // Draw Torso Capsule
+      ctx.strokeStyle = state.frozenTimer > 0 ? '#38bdf8' : charObj.torsoColor;
+      ctx.lineWidth = 34 * (state.charScale || 1);
+      ctx.beginPath();
+      ctx.moveTo(chest.x, chest.y);
+      ctx.lineTo(pelvis.x, pelvis.y);
+      ctx.stroke();
+
+      // Character-specific Torso Details
+      const midX = (chest.x + pelvis.x) * 0.5;
+      const midY = (chest.y + pelvis.y) * 0.5;
+      if (charObj.id === 'boss') {
+        // Red power tie
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(chest.x, chest.y - 4);
+        ctx.lineTo(midX, midY + 8);
+        ctx.stroke();
+      } else if (charObj.id === 'robot') {
+        // Glowing reactor core
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(midX, midY, 8, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (charObj.id === 'skeleton') {
+        // Ribcage stripes
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 3;
+        for (let r = -10; r <= 10; r += 10) {
+          ctx.beginPath();
+          ctx.moveTo(midX - 10, midY + r);
+          ctx.lineTo(midX + 10, midY + r);
+          ctx.stroke();
+        }
+      }
+
+      // Draw Hands & Feet
+      for (const idx of [4, 6, 8, 10]) {
+        ctx.fillStyle = charObj.accentColor;
+        ctx.beginPath();
+        ctx.arc(p[idx].x, p[idx].y, p[idx].radius * 0.9, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Draw Head
+      const headAngle = Math.atan2(chest.y - head.y, chest.x - head.x) - Math.PI * 0.5;
+      ctx.save();
+      ctx.translate(head.x, head.y);
+      ctx.rotate(headAngle);
+
+      ctx.fillStyle = state.frozenTimer > 0 ? '#bae6fd' : charObj.headColor;
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 3;
+
+      if (charObj.id === 'cardboard' || charObj.id === 'robot') {
+        const r = head.radius;
+        ctx.beginPath();
+        ctx.roundRect(-r, -r, r * 2, r * 2, 7);
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, head.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // Facial Expression (Reacts dynamically to Dizzy / Hit / Calm)
+      const isDizzy = state.dizzyTimer > 0;
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2.5;
+
+      if (isDizzy) {
+        // X_X eyes
+        const drawX = (ex, ey) => {
+          ctx.beginPath();
+          ctx.moveTo(ex - 4, ey - 4);
+          ctx.lineTo(ex + 4, ey + 4);
+          ctx.moveTo(ex + 4, ey - 4);
+          ctx.lineTo(ex - 4, ey + 4);
+          ctx.stroke();
+        };
+        drawX(-9, -4);
+        drawX(9, -4);
+        // Wavy ouch mouth
+        ctx.beginPath();
+        ctx.arc(0, 10, 6, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        // Normal character eyes
+        ctx.beginPath();
+        ctx.arc(-9, -4, 3.5, 0, Math.PI * 2);
+        ctx.arc(9, -4, 3.5, 0, Math.PI * 2);
+        if (charObj.id === 'alien') {
+          ctx.arc(0, -12, 3.2, 0, Math.PI * 2);
+        }
+        ctx.fill();
+
+        // Boss Monocle
+        if (charObj.id === 'boss') {
+          ctx.strokeStyle = '#facc15';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(9, -4, 7, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Mouth / Grin
+        ctx.strokeStyle = '#0f172a';
+        ctx.beginPath();
+        if (charObj.id === 'boss') {
+          ctx.arc(0, 13, 7, Math.PI * 1.15, Math.PI * 1.85);
+        } else {
+          ctx.arc(0, 6, 8, 0.15 * Math.PI, 0.85 * Math.PI);
+        }
+        ctx.stroke();
+      }
+
+      // Equipped Hat Overlay
+      if (state.selectedHatId && state.selectedHatId !== 'none') {
+        const hatObj = HATS.find(h => h.id === state.selectedHatId);
+        if (hatObj) {
+          ctx.font = '22px sans-serif';
+          ctx.textAlign = 'center';
+          const hatIcon = hatObj.id === 'viking' ? '⚔️' : hatObj.icon;
+          ctx.fillText(hatIcon, 0, -head.radius - 4);
+        }
+      }
+
+      // Dizzy Orbiting Stars
+      if (state.dizzyTimer > 20) {
+        const t = Date.now() * 0.008;
+        ctx.font = '13px sans-serif';
+        ctx.fillText('⭐', Math.cos(t) * 26, -head.radius - 8 + Math.sin(t) * 5);
+        ctx.fillText('💫', Math.cos(t + Math.PI) * 26, -head.radius - 8 + Math.sin(t + Math.PI) * 5);
+      }
+
+      ctx.restore();
+      ctx.restore();
+    }
+
+    // =========================================================================
+    // 8. MAIN SIMULATION LOOP & BACKGROUND/OFFLINE ENGINE
+    // =========================================================================
+    function stepSimulation() {
+      const w = canvas.width;
+      const h = canvas.height;
+      if (!w || !h || !ragdoll) return;
+
+      if (wallSlamCooldown > 0) wallSlamCooldown--;
+      if (speechCooldown > 0) speechCooldown--;
+      if (state.frozenTimer > 0) state.frozenTimer--;
+      if (state.dizzyTimer > 0) state.dizzyTimer--;
+
+      if (comboDecayTimer > 0) {
+        comboDecayTimer--;
+        if (comboDecayTimer === 0) {
+          comboCount = 1;
+          updateHud();
+        }
+      }
+
+      // Dragging limb with pointer
+      if (draggedPoint && pointerPos.down) {
+        draggedPoint.x += (pointerPos.x - draggedPoint.x) * 0.45;
+        draggedPoint.y += (pointerPos.y - draggedPoint.y) * 0.45;
+      }
+
+      // Auto-Bot Turret firing automatically in real time
+      if (state.autoBotActive) {
+        autoBotShotTimer++;
+        const fireInterval = Math.max(24, 95 - (state.upgrades.drone_rate - 1) * 16);
+        if (autoBotShotTimer >= fireInterval) {
+          autoBotShotTimer = 0;
+          const chest = ragdoll.points[1];
+          const angle = Math.atan2(chest.y - 68, chest.x - 58);
+          activeProps.push({
+            type: 'laser',
+            x: 68,
+            y: 68,
+            vx: Math.cos(angle) * 19,
+            vy: Math.sin(angle) * 19,
+            radius: 8,
+            life: 45,
+            isAuto: true
+          });
+        }
+      }
+
+      ragdoll.update(w, h);
+
+      // Update Active Props
+      const chest = ragdoll.points[1];
+      const head = ragdoll.points[0];
+      for (let i = activeProps.length - 1; i >= 0; i--) {
+        const prop = activeProps[i];
+        prop.life--;
+
+        if (prop.type === 'mallet') {
+          prop.angle += 0.14;
+        } else if (prop.type === 'pie' || prop.type === 'laser' || prop.type === 'glove') {
+          prop.x += prop.vx;
+          prop.y += prop.vy;
+          const dist = Math.hypot(prop.x - chest.x, prop.y - chest.y);
+          const distHead = Math.hypot(prop.x - head.x, prop.y - head.y);
+          if (dist < 42 || distHead < 38) {
+            ragdoll.applyImpulse(prop.vx * 0.75, prop.vy * 0.75 - 4);
+            if (prop.type === 'pie') {
+              inflictHit(prop.x, prop.y, 10, 9, '🥧 SPLAT!');
+            } else if (prop.type === 'glove') {
+              screenShake = 12;
+              inflictHit(prop.x, prop.y, 24, 16, '🥊 K.O. PUNCH!');
+            } else {
+              inflictHit(prop.x, prop.y, prop.isAuto ? 8 : 28, prop.isAuto ? 6 : 22, prop.isAuto ? '🤖 AUTO' : '🔫 ZAP!');
+            }
+            prop.life = 0;
+          }
+        } else if (prop.type === 'anvil') {
+          prop.vy += 0.85;
+          prop.y += prop.vy;
+          const dist = Math.hypot(prop.x - head.x, prop.y - head.y);
+          if (!prop.hitDone && (dist < 52 || Math.hypot(prop.x - chest.x, prop.y - chest.y) < 52)) {
+            prop.hitDone = true;
+            screenShake = 16;
+            ragdoll.applyImpulse((Math.random() - 0.5) * 18, 22);
+            inflictHit(prop.x, prop.y, 35, 24, '⚓ CRUSHED!');
+          }
+          if (prop.y > h - 42) {
+            prop.y = h - 42;
+            prop.vy *= -0.35;
+          }
+        } else if (prop.type === 'vortex') {
+          for (const pt of ragdoll.points) {
+            const dx = prop.x - pt.x;
+            const dy = prop.y - pt.y;
+            const d = Math.hypot(dx, dy) || 1;
+            if (d < 220) {
+              pt.oldX -= (dx / d) * 1.4 - (dy / d) * 1.2;
+              pt.oldY -= (dy / d) * 1.4 + (dx / d) * 1.2;
+            }
+          }
+          if (prop.life % 20 === 0) {
+            inflictHit(prop.x, prop.y, 10, 14, '🌀 SPIN!');
+          }
+        }
+
+        if (prop.life <= 0) {
+          activeProps.splice(i, 1);
+        }
+      }
+
+      // Update Lightning
+      for (let i = lightningBolts.length - 1; i >= 0; i--) {
+        lightningBolts[i].alpha -= 0.08;
+        if (lightningBolts[i].alpha <= 0) lightningBolts.splice(i, 1);
+      }
+
+      // Update Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const pt = particles[i];
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.vy += 0.22;
+        pt.alpha -= pt.decay;
+        if (pt.alpha <= 0) particles.splice(i, 1);
+      }
+
+      // Update Floating Texts
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y += ft.vy;
+        ft.alpha -= 0.022;
+        if (ft.alpha <= 0) floatingTexts.splice(i, 1);
+      }
+    }
+
+    // Web Worker Heartbeat so simulation continues ticking even when browser is minimized!
+    function startBackgroundWorker() {
+      try {
+        const blob = new Blob([`
+          setInterval(() => { postMessage('tick'); }, 1000);
+        `], { type: 'application/javascript' });
+        const worker = new Worker(URL.createObjectURL(blob));
+        worker.onmessage = () => {
+          if (document.hidden && state.autoBotActive) {
+            processElapsedBackgroundTime(1, true);
+            saveLiveState(false);
+          }
+        };
+      } catch (e) {
+        // Fallback interval if Blob Worker is restricted
+        setInterval(() => {
+          if (document.hidden && state.autoBotActive) {
+            processElapsedBackgroundTime(1, true);
+            saveLiveState(false);
+          }
+        }, 1000);
+      }
+    }
+
+    // Calculate background progress when returning from minimized tab or closed browser
+    function processElapsedBackgroundTime(elapsedSeconds, silent = false) {
+      if (elapsedSeconds < 1) return;
+      const cappedSeconds = Math.min(elapsedSeconds, 86400); // Up to 24h offline catch-up
+      if (!state.autoBotActive) return;
+
+      const shotsPerSec = 0.65 + (state.upgrades.drone_rate - 1) * 0.25;
+      const totalAutoHits = Math.max(1, Math.floor(cappedSeconds * shotsPerSec));
+      const mult = 1 + (state.upgrades.coin_mult - 1) * 0.35;
+      const coinsEarned = Math.round(totalAutoHits * 5 * mult);
+      const xpEarned = Math.round(totalAutoHits * 3);
+
+      state.coins += coinsEarned;
+      state.totalHits += totalAutoHits;
+      state.xp += xpEarned;
+
+      while (state.xp >= state.level * 120) {
+        state.xp -= state.level * 120;
+        state.level += 1;
+      }
+
+      updateHud();
+
+      if (!silent && cappedSeconds >= 3) {
+        const banner = document.getElementById('offlineBanner');
+        const title = document.getElementById('offlineBannerTitle');
+        const desc = document.getElementById('offlineBannerDesc');
+        if (banner && title && desc) {
+          title.textContent = `Welcome Back! (${cappedSeconds}s Background Play)`;
+          desc.textContent = `While minimized/closed, Auto-Bot landed ${totalAutoHits} hits and earned +${coinsEarned} 🪙!`;
+          banner.classList.remove('hidden');
+        }
+      }
+    }
+
+    function dismissOfflineBanner() {
+      const banner = document.getElementById('offlineBanner');
+      if (banner) banner.classList.add('hidden');
+    }
+
+    // =========================================================================
+    // 9. POINTER / TOUCH EVENTS & RESIZE HANDLING
+    // =========================================================================
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = Math.max(300, Math.floor(rect.width));
+      canvas.height = Math.max(240, Math.floor(rect.height));
+      if (!ragdoll) {
+        initRagdoll(true);
+      } else {
+        // Keep ragdoll inside resized bounds
+        for (const p of ragdoll.points) {
+          p.x = Math.max(30, Math.min(canvas.width - 30, p.x));
+          p.y = Math.max(30, Math.min(canvas.height - 30, p.y));
+        }
+      }
+      renderArena();
+    }
+
+    function getCanvasCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches && e.touches[0] ? e.touches[0].clientY : e.clientY;
+      return {
+        x: (clientX - rect.left) * (canvas.width / rect.width),
+        y: (clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      ensureAudio();
+      const coords = getCanvasCoords(e);
+      pointerPos.x = coords.x;
+      pointerPos.y = coords.y;
+      pointerPos.down = true;
+
+      if (!ragdoll) return;
+
+      // Check if grabbing near a limb
+      let closest = null;
+      let minDist = 54;
+      for (const p of ragdoll.points) {
+        const d = Math.hypot(p.x - coords.x, p.y - coords.y);
+        if (d < minDist) {
+          minDist = d;
+          closest = p;
+        }
+      }
+
+      if (state.selectedToolId === 'grab' && closest) {
+        draggedPoint = closest;
+        inflictHit(closest.x, closest.y, 4, 3, '✊ GRAB!');
+      } else {
+        if (closest && state.selectedToolId === 'grab') {
+          draggedPoint = closest;
+        }
+        useActiveToolAt(coords.x, coords.y);
+      }
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (!pointerPos.down) return;
+      const coords = getCanvasCoords(e);
+      pointerPos.x = coords.x;
+      pointerPos.y = coords.y;
+    });
+
+    window.addEventListener('pointerup', () => {
+      if (draggedPoint) {
+        // Give fling boost on release
+        draggedPoint = null;
+        saveLiveState(false);
+      }
+      pointerPos.down = false;
+    });
+
+    // =========================================================================
+    // 10. UI DOCK RENDERING & CONTROLS
+    // =========================================================================
+    let currentDockTab = 'tools';
+
+    function switchDockTab(tab) {
+      currentDockTab = tab;
+      const tabs = ['tools', 'chars', 'upgrades', 'arena'];
+      const btnMap = {
+        tools: 'tabBtnTools',
+        chars: 'tabBtnChars',
+        upgrades: 'tabBtnUpgrades',
+        arena: 'tabBtnArena'
+      };
+      const panelMap = {
+        tools: 'dockPanelTools',
+        chars: 'dockPanelChars',
+        upgrades: 'dockPanelUpgrades',
+        arena: 'dockPanelArena'
+      };
+
+      for (const t of tabs) {
+        const btn = document.getElementById(btnMap[t]);
+        const panel = document.getElementById(panelMap[t]);
+        if (t === tab) {
+          btn.className = 'dock-tab px-2.5 py-1 rounded-lg text-xs font-display font-bold transition flex items-center gap-1 bg-amber-500 text-slate-950';
+          panel.classList.remove('hidden');
+        } else {
+          btn.className = 'dock-tab px-2.5 py-1 rounded-lg text-xs font-display font-bold transition flex items-center gap-1 bg-slate-800 text-slate-300 hover:bg-slate-700';
+          panel.classList.add('hidden');
+        }
+      }
+      renderDockPanels();
+    }
+
+    function renderDockPanels() {
+      // 1. Render Tools Panel
+      const toolsContainer = document.getElementById('dockPanelTools');
+      toolsContainer.innerHTML = TOOLS.map(t => {
+        const isUnlocked = state.sandboxUnlocked || state.unlockedTools.includes(t.id);
+        const isSelected = state.selectedToolId === t.id;
+        return `
+          <button type="button" onclick="selectOrBuyTool('${t.id}')"
+            class="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-xl border text-left transition ${
+              isSelected
+                ? 'bg-amber-500/20 border-amber-400 text-white shadow-md'
+                : isUnlocked
+                  ? 'bg-slate-800/90 border-slate-700 text-slate-200 hover:bg-slate-750'
+                  : 'bg-slate-900/90 border-slate-800 text-slate-400 hover:border-amber-500/50'
+            }">
+            <span class="text-xl">${t.icon}</span>
+            <div class="leading-tight">
+              <div class="font-display font-bold text-xs flex items-center gap-1">
+                <span>${t.name}</span>
+                ${isSelected ? '<span class="text-[10px] bg-amber-400 text-slate-950 px-1 rounded">ACTIVE</span>' : ''}
+              </div>
+              <div class="text-[10px] ${isUnlocked ? 'text-slate-400' : 'text-amber-400 font-semibold'}">
+                ${isUnlocked ? t.desc : `🔒 Unlock: ${t.cost} 🪙`}
+              </div>
+            </div>
+          </button>
+        `;
+      }).join('');
+
+      // 2. Render Character Lineup Panel
+      const charsContainer = document.getElementById('dockPanelChars');
+      charsContainer.innerHTML = CHARACTERS.map(c => {
+        const isUnlocked = state.sandboxUnlocked || state.unlockedChars.includes(c.id);
+        const isSelected = state.selectedCharId === c.id;
+        return `
+          <button type="button" onclick="selectOrBuyCharacter('${c.id}')"
+            class="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-xl border text-left transition ${
+              isSelected
+                ? 'bg-indigo-600/30 border-indigo-400 text-white shadow-md'
+                : isUnlocked
+                  ? 'bg-slate-800/90 border-slate-700 text-slate-200 hover:bg-slate-750'
+                  : 'bg-slate-900/90 border-slate-800 text-slate-400 hover:border-indigo-400/50'
+            }">
+            <span class="text-2xl">${c.icon}</span>
+            <div class="leading-tight">
+              <div class="font-display font-bold text-xs flex items-center gap-1">
+                <span>${c.name}</span>
+                ${isSelected ? '<span class="text-[10px] bg-indigo-400 text-slate-950 px-1 rounded">IN ARENA</span>' : ''}
+              </div>
+              <div class="text-[10px] ${isUnlocked ? 'text-slate-400' : 'text-amber-400 font-semibold'}">
+                ${isUnlocked ? c.role : `🔒 Unlock: ${c.cost} 🪙`}
+              </div>
+            </div>
+          </button>
+        `;
+      }).join('');
+
+      // 3. Render Upgrades & Auto-Bots Panel
+      const upgContainer = document.getElementById('dockPanelUpgrades');
+      upgContainer.innerHTML = UPGRADES.map(u => {
+        if (u.id === 'unlock_all') {
+          return `
+            <button type="button" onclick="toggleSandboxUnlockAll()"
+              class="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-xl border text-left transition ${
+                state.sandboxUnlocked
+                  ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200'
+                  : 'bg-slate-800/90 border-slate-700 text-slate-200'
+              }">
+              <span class="text-xl">${u.icon}</span>
+              <div class="leading-tight">
+                <div class="font-display font-bold text-xs">${u.name}: ${state.sandboxUnlocked ? 'ON' : 'OFF'}</div>
+                <div class="text-[10px] text-slate-400">${u.desc}</div>
+              </div>
+            </button>
+          `;
+        }
+        const lv = state.upgrades[u.id] || 1;
+        const cost = Math.round(u.baseCost * Math.pow(1.55, lv - 1));
+        return `
+          <button type="button" onclick="buyUpgrade('${u.id}')"
+            class="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-xl border bg-slate-800/90 border-slate-700 text-slate-200 hover:border-amber-400/60 text-left transition">
+            <span class="text-xl">${u.icon}</span>
+            <div class="leading-tight">
+              <div class="font-display font-bold text-xs flex items-center gap-1">
+                <span>${u.name}</span>
+                <span class="text-[10px] bg-slate-700 text-amber-300 px-1.5 rounded">Lv.${lv}</span>
+              </div>
+              <div class="text-[10px] text-amber-400 font-semibold">Upgrade: ${cost} 🪙 • <span class="text-slate-400 font-normal">${u.desc}</span></div>
+            </div>
+          </button>
+        `;
+      }).join('');
+
+      // 4. Render Stage & Hats Panel
+      const arenaContainer = document.getElementById('dockPanelArena');
+      const stageButtons = ARENAS.map(a => {
+        const active = state.selectedArenaId === a.id;
+        return `
+          <button type="button" onclick="selectArena('${a.id}')"
+            class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition ${
+              active ? 'bg-amber-500/20 border-amber-400 text-amber-200' : 'bg-slate-800 border-slate-700 text-slate-300'
+            }">
+            <span>${a.icon}</span><span>${a.name}</span>
+          </button>
+        `;
+      }).join('');
+
+      const hatButtons = HATS.map(h => {
+        const active = state.selectedHatId === h.id;
+        const iconDisp = h.id === 'viking' ? '⚔️' : h.icon;
+        return `
+          <button type="button" onclick="selectHat('${h.id}')"
+            class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition ${
+              active ? 'bg-indigo-500/25 border-indigo-400 text-indigo-200' : 'bg-slate-800 border-slate-700 text-slate-300'
+            }">
+            <span>${iconDisp}</span><span>${h.name}</span>
+          </button>
+        `;
+      }).join('');
+
+      const scaleBtn = `
+        <button type="button" onclick="cycleCharacterScale()"
+          class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl border bg-slate-800 border-slate-700 text-slate-200 text-xs font-semibold">
+          <span>🔍</span><span>Size: ${Math.round((state.charScale || 1) * 100)}%</span>
+        </button>
+      `;
+
+      arenaContainer.innerHTML = stageButtons + hatButtons + scaleBtn;
+    }
+
+    function selectOrBuyTool(toolId) {
+      const tool = TOOLS.find(t => t.id === toolId);
+      if (!tool) return;
+      const isUnlocked = state.sandboxUnlocked || state.unlockedTools.includes(toolId);
+
+      if (isUnlocked) {
+        state.selectedToolId = toolId;
+        updateHud();
+        renderDockPanels();
+        saveLiveState(false);
+      } else if (state.coins >= tool.cost) {
+        state.coins -= tool.cost;
+        state.unlockedTools.push(toolId);
+        state.selectedToolId = toolId;
+        playSoundEffect('unlock');
+        showToast(`Unlocked ${tool.name}!`, tool.icon);
+        updateHud();
+        renderDockPanels();
+        saveLiveState(false);
+      } else {
+        showToast(`Need ${tool.cost - state.coins} more 🪙 (or enable Sandbox Master Key in Perks!)`, '🔒');
+      }
+    }
+
+    function selectOrBuyCharacter(charId) {
+      const charObj = CHARACTERS.find(c => c.id === charId);
+      if (!charObj) return;
+      const isUnlocked = state.sandboxUnlocked || state.unlockedChars.includes(charId);
+
+      if (isUnlocked) {
+        state.selectedCharId = charId;
+        state.charHp = state.charMaxHp;
+        state.frozenTimer = 0;
+        state.dizzyTimer = 0;
+        initRagdoll(false);
+        playSoundEffect('unlock');
+        triggerSpeechBubble(charObj.quips[0]);
+        updateHud();
+        renderDockPanels();
+        saveLiveState(false);
+      } else if (state.coins >= charObj.cost) {
+        state.coins -= charObj.cost;
+        state.unlockedChars.push(charId);
+        state.selectedCharId = charId;
+        state.charHp = state.charMaxHp;
+        initRagdoll(false);
+        playSoundEffect('unlock');
+        showToast(`Unlocked ${charObj.name}!`, charObj.icon);
+        triggerSpeechBubble(charObj.quips[0]);
+        updateHud();
+        renderDockPanels();
+        saveLiveState(false);
+      } else {
+        showToast(`Need ${charObj.cost - state.coins} more 🪙 to unlock ${charObj.name}!`, '🔒');
+      }
+    }
+
+    function buyUpgrade(upgId) {
+      const upg = UPGRADES.find(u => u.id === upgId);
+      if (!upg) return;
+      const lv = state.upgrades[upgId] || 1;
+      const cost = Math.round(upg.baseCost * Math.pow(1.55, lv - 1));
+      if (state.coins >= cost) {
+        state.coins -= cost;
+        state.upgrades[upgId] = lv + 1;
+        playSoundEffect('unlock');
+        showToast(`${upg.name} upgraded to Lv.${lv + 1}!`, upg.icon);
+        updateHud();
+        renderDockPanels();
+        saveLiveState(false);
+      } else {
+        showToast(`Need ${cost - state.coins} more 🪙 for ${upg.name}!`, '🔒');
+      }
+    }
+
+    function toggleSandboxUnlockAll() {
+      state.sandboxUnlocked = !state.sandboxUnlocked;
+      playSoundEffect('unlock');
+      showToast(state.sandboxUnlocked ? '🔑 All Tools & Characters Unlocked!' : '🔑 Standard Progression Restored', '✨');
+      renderDockPanels();
+      saveLiveState(false);
+    }
+
+    function selectArena(arenaId) {
+      state.selectedArenaId = arenaId;
+      renderDockPanels();
+      saveLiveState(false);
+    }
+
+    function selectHat(hatId) {
+      state.selectedHatId = hatId;
+      renderDockPanels();
+      saveLiveState(false);
+    }
+
+    function cycleCharacterScale() {
+      const scales = [0.75, 1.0, 1.3];
+      const idx = scales.indexOf(state.charScale || 1.0);
+      state.charScale = scales[(idx + 1) % scales.length];
+      initRagdoll(false);
+      renderDockPanels();
+      saveLiveState(false);
+    }
+
+    function toggleAutoBot() {
+      state.autoBotActive = !state.autoBotActive;
+      updateHud();
+      saveLiveState(false);
+      showToast(state.autoBotActive ? '🤖 Auto-Bot ON (Continues while minimized/closed!)' : '🤖 Auto-Bot Paused', '🤖');
+    }
+
+    function toggleCeilingTether() {
+      state.tetherEnabled = !state.tetherEnabled;
+      updateHud();
+      saveLiveState(false);
+      showToast(state.tetherEnabled ? '🪢 Ceiling Rope Tether Attached!' : '🪢 Ceiling Rope Detached!', '🪢');
+    }
+
+    function toggleSound() {
+      state.soundEnabled = !state.soundEnabled;
+      updateHud();
+      saveLiveState(false);
+    }
+
+    function recenterCharacter() {
+      state.frozenTimer = 0;
+      state.dizzyTimer = 0;
+      initRagdoll(false);
+      saveLiveState(false);
+      showToast('🎯 Character Re-centered!', '🎯');
+    }
+
+    function updateHud() {
+      const charObj = getSelectedCharacter();
+      const toolObj = getSelectedTool();
+
+      document.getElementById('hudCharIcon').textContent = charObj.icon;
+      document.getElementById('hudCharName').textContent = charObj.name;
+      document.getElementById('hudLevelBadge').textContent = 'Lv.' + state.level;
+      document.getElementById('hudCoins').textContent = state.coins.toLocaleString();
+      document.getElementById('hudCombo').textContent = 'x' + comboCount;
+      document.getElementById('hudHits').textContent = state.totalHits.toLocaleString();
+      document.getElementById('hudKos').textContent = state.totalKos.toLocaleString();
+      document.getElementById('activeToolLabel').textContent = `${toolObj.icon} ${toolObj.name}`;
+
+      const hpPct = Math.max(0, Math.min(100, (state.charHp / state.charMaxHp) * 100));
+      document.getElementById('hudHpBar').style.width = hpPct + '%';
+
+      const autoBtn = document.getElementById('btnToggleAutoBot');
+      const autoText = document.getElementById('autoBotStatusText');
+      if (state.autoBotActive) {
+        autoText.textContent = 'ON';
+        autoBtn.className = 'flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all bg-emerald-500/20 border-emerald-400/50 text-emerald-300 hover:bg-emerald-500/30';
+      } else {
+        autoText.textContent = 'OFF';
+        autoBtn.className = 'flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700';
+      }
+
+      const tetherBtn = document.getElementById('btnToggleTether');
+      const tetherText = document.getElementById('tetherStatusText');
+      tetherText.textContent = state.tetherEnabled ? 'Rope: ON' : 'Rope: OFF';
+      tetherBtn.className = state.tetherEnabled
+        ? 'flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-semibold border transition-all bg-amber-500/20 border-amber-400/50 text-amber-300'
+        : 'flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-semibold border transition-all bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700';
+
+      document.getElementById('soundIcon').textContent = state.soundEnabled ? '🔊' : '🔇';
+    }
+
+    // =========================================================================
+    // 11. SAVE, LOAD, DELETE SAVES & RESTART MODAL FLOWS
+    // =========================================================================
+    function openModal(modalId) {
+      const m = document.getElementById(modalId);
+      if (!m) return;
+      m.classList.remove('hidden');
+      if (modalId === 'saveModal') {
+        renderSaveSlotsList();
+      }
+    }
+
+    function closeModal(modalId) {
+      const m = document.getElementById(modalId);
+      if (m) m.classList.add('hidden');
+      if (modalId === 'saveModal') {
+        cancelDeleteSave();
+      }
+    }
+
+    function renderSaveSlotsList() {
+      const container = document.getElementById('saveSlotsContainer');
+      const badge = document.getElementById('saveSlotCountBadge');
+      if (badge) badge.textContent = String(saveSlots.length);
+      if (!container) return;
+
+      if (saveSlots.length === 0) {
+        container.innerHTML = `
+          <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-4 text-center text-slate-400">
+            No manual save slots yet. Use "+ Save Current" above or "⚡ Quick Save" to create one!
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = saveSlots.map(slot => {
+        const d = slot.data || {};
+        const charObj = CHARACTERS.find(c => c.id === d.selectedCharId) || CHARACTERS[0];
+        const dateStr = new Date(slot.timestamp).toLocaleString([], {
+          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+        return `
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="text-2xl">${charObj.icon}</span>
+              <div class="min-w-0">
+                <div class="font-bold text-slate-100 truncate">${escapeHtml(slot.name)}</div>
+                <div class="text-[11px] text-slate-400">
+                  Lv.${d.level || 1} • ${(d.coins || 0).toLocaleString()} 🪙 • ${d.totalHits || 0} Hits • ${dateStr}
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 ml-auto">
+              <button type="button" onclick="overwriteSaveSlot('${slot.id}')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium" title="Overwrite with current state">
+                Save
+              </button>
+              <button type="button" onclick="loadSaveSlot('${slot.id}')" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
+                Load
+              </button>
+              <button type="button" onclick="promptDeleteSaveSlot('${slot.id}')" class="px-2 py-1 rounded-lg bg-rose-950/80 hover:bg-rose-800 text-rose-300 border border-rose-500/30" title="Delete this save">
+                🗑️
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, s => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[s]));
+    }
+
+    function createNewSaveSlot() {
+      const input = document.getElementById('saveSlotNameInput');
+      const customName = input && input.value.trim()
+        ? input.value.trim()
+        : `${getSelectedCharacter().name} • Lv.${state.level}`;
+
+      saveLiveState(false);
+      const newSlot = {
+        id: 'slot_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+        name: customName,
+        timestamp: Date.now(),
+        data: JSON.parse(JSON.stringify(state))
+      };
+      saveSlots.unshift(newSlot);
+      persistSaveSlots();
+      if (input) input.value = '';
+      renderSaveSlotsList();
+      showToast(`Saved "${customName}"!`, '💾');
+    }
+
+    function quickSaveManual() {
+      saveLiveState(false);
+      const name = `Quick Save (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+      const existingQuickIdx = saveSlots.findIndex(s => s.id === 'slot_quicksave');
+      const slotObj = {
+        id: 'slot_quicksave',
+        name,
+        timestamp: Date.now(),
+        data: JSON.parse(JSON.stringify(state))
+      };
+      if (existingQuickIdx >= 0) {
+        saveSlots[existingQuickIdx] = slotObj;
+      } else {
+        saveSlots.unshift(slotObj);
+      }
+      persistSaveSlots();
+      showToast('⚡ Quick Save updated!', '💾');
+    }
+
+    function overwriteSaveSlot(slotId) {
+      const slot = saveSlots.find(s => s.id === slotId);
+      if (!slot) return;
+      saveLiveState(false);
+      slot.timestamp = Date.now();
+      slot.data = JSON.parse(JSON.stringify(state));
+      persistSaveSlots();
+      renderSaveSlotsList();
+      showToast(`Updated "${slot.name}"!`, '💾');
+    }
+
+    function loadSaveSlot(slotId) {
+      const slot = saveSlots.find(s => s.id === slotId);
+      if (!slot || !slot.data) return;
+      state = Object.assign(createDefaultState(), JSON.parse(JSON.stringify(slot.data)));
+      state.lastActiveTimestamp = Date.now();
+      initRagdoll(true);
+      updateHud();
+      renderDockPanels();
+      saveLiveState(false);
+      closeModal('saveModal');
+      showToast(`Loaded "${slot.name}"!`, '📂');
+    }
+
+    function promptDeleteSaveSlot(slotId) {
+      pendingDeleteSlotId = slotId;
+      const slot = saveSlots.find(s => s.id === slotId);
+      const box = document.getElementById('deleteConfirmBox');
+      const txt = document.getElementById('deleteConfirmText');
+      if (box && txt && slot) {
+        txt.textContent = `Delete save slot "${slot.name}"? This cannot be undone.`;
+        box.classList.remove('hidden');
+      }
+    }
+
+    function promptDeleteAllSaves() {
+      if (saveSlots.length === 0) {
+        showToast('No manual save slots to delete.', 'ℹ️');
+        return;
+      }
+      pendingDeleteSlotId = '__ALL__';
+      const box = document.getElementById('deleteConfirmBox');
+      const txt = document.getElementById('deleteConfirmText');
+      if (box && txt) {
+        txt.textContent = `Delete all ${saveSlots.length} manual save slots? (Your live session remains active.)`;
+        box.classList.remove('hidden');
+      }
+    }
+
+    function cancelDeleteSave() {
+      pendingDeleteSlotId = null;
+      const box = document.getElementById('deleteConfirmBox');
+      if (box) box.classList.add('hidden');
+    }
+
+    function confirmDeleteSave() {
+      if (!pendingDeleteSlotId) return;
+      if (pendingDeleteSlotId === '__ALL__') {
+        saveSlots = [];
+        showToast('🗑️ Cleared all manual save slots.', '🗑️');
+      } else {
+        const idx = saveSlots.findIndex(s => s.id === pendingDeleteSlotId);
+        if (idx >= 0) {
+          const removed = saveSlots.splice(idx, 1)[0];
+          showToast(`Deleted "${removed.name}"`, '🗑️');
+        }
+      }
+      pendingDeleteSlotId = null;
+      persistSaveSlots();
+      cancelDeleteSave();
+      renderSaveSlotsList();
+    }
+
+    function exportSaveString() {
+      saveLiveState(false);
+      const code = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+      const input = document.getElementById('importSaveCodeInput');
+      if (input) {
+        input.value = code;
+        input.select();
+      }
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(code).catch(() => {});
+        } else {
+          document.execCommand('copy');
+        }
+      } catch (e) {}
+      showToast('📋 Backup code copied & placed in box!', '📋');
+    }
+
+    function importSaveString() {
+      const input = document.getElementById('importSaveCodeInput');
+      if (!input || !input.value.trim()) {
+        showToast('Paste a backup save code first!', '⚠️');
+        return;
+      }
+      try {
+        const decoded = JSON.parse(decodeURIComponent(escape(atob(input.value.trim()))));
+        if (decoded && typeof decoded.coins === 'number') {
+          state = Object.assign(createDefaultState(), decoded);
+          initRagdoll(true);
+          updateHud();
+          renderDockPanels();
+          saveLiveState(false);
+          closeModal('saveModal');
+          showToast('✅ Backup save imported!', '🎉');
+        } else {
+          showToast('Invalid save code format.', '⚠️');
+        }
+      } catch (e) {
+        showToast('Could not parse backup save code.', '⚠️');
+      }
+    }
+
+    // Soft & Hard Game Restart Actions
+    function softResetArena() {
+      state.charHp = state.charMaxHp;
+      state.frozenTimer = 0;
+      state.dizzyTimer = 0;
+      activeProps = [];
+      particles = [];
+      creamSplats = [];
+      initRagdoll(false);
+      updateHud();
+      saveLiveState(false);
+      closeModal('restartModal');
+      showToast('✨ Character Healed & Stage Reset!', '💚');
+    }
+
+    function hardRestartGame() {
+      const wipeManual = document.getElementById('chkWipeManualSaves')?.checked;
+      state = createDefaultState();
+      activeProps = [];
+      particles = [];
+      creamSplats = [];
+      comboCount = 1;
+      initRagdoll(false);
+      saveLiveState(false);
+
+      if (wipeManual) {
+        saveSlots = [];
+        persistSaveSlots();
+      }
+      updateHud();
+      renderDockPanels();
+      closeModal('restartModal');
+      showToast('🔄 Game Restarted Fresh!', '🎉');
+    }
+
+    // Toast Helper
+    let toastTimer = null;
+    function showToast(text, icon = '✨') {
+      const banner = document.getElementById('toastBanner');
+      const tIcon = document.getElementById('toastIcon');
+      const tText = document.getElementById('toastText');
+      if (!banner || !tIcon || !tText) return;
+
+      tIcon.textContent = icon;
+      tText.textContent = text;
+      banner.classList.remove('hidden');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        banner.classList.add('hidden');
+      }, 2400);
+    }
+
+    // =========================================================================
+    // 12. LIFECYCLE, VISIBILITY & UNLOAD PERSISTENCE HOOKS
+    // =========================================================================
+    function restoreSessionOnLoad() {
+      const rawLive = safeStorageGet(LIVE_STORAGE_KEY);
+      loadSaveSlots();
+
+      if (rawLive) {
+        try {
+          const parsed = JSON.parse(rawLive);
+          state = Object.assign(createDefaultState(), parsed);
+          const now = Date.now();
+          const elapsedSec = Math.floor((now - (state.lastActiveTimestamp || now)) / 1000);
+          if (elapsedSec >= 2) {
+            processElapsedBackgroundTime(elapsedSec, false);
+          }
+        } catch (e) {
+          state = createDefaultState();
+        }
+      } else {
+        state = createDefaultState();
+        saveLiveState(false);
+      }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        saveLiveState(false);
+      } else {
+        const now = Date.now();
+        const elapsedSec = Math.floor((now - (state.lastActiveTimestamp || now)) / 1000);
+        if (elapsedSec >= 2) {
+          processElapsedBackgroundTime(elapsedSec, false);
+        }
+        state.lastActiveTimestamp = Date.now();
+        saveLiveState(false);
+      }
+    });
+
+    window.addEventListener('pagehide', () => saveLiveState(false));
+    window.addEventListener('beforeunload', () => saveLiveState(false));
+    window.addEventListener('resize', resizeCanvas);
+
+    // Periodic auto-save every 2.5 seconds
+    setInterval(() => {
+      if (!document.hidden) {
+        saveLiveState(false);
+      }
+    }, 2500);
+
+    let animFrameId = null;
+    function gameLoop() {
+      stepSimulation();
+      renderArena();
+      animFrameId = requestAnimationFrame(gameLoop);
+    }
+
+    window.onload = () => {
+      restoreSessionOnLoad();
+      resizeCanvas();
+      initRagdoll(true);
+      updateHud();
+      renderDockPanels();
+      startBackgroundWorker();
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+      animFrameId = requestAnimationFrame(gameLoop);
+    };
+  </script>
+
+<style>
+  #jmfgames-ad-banner { position: fixed; bottom: 0; left: 0; right: 0; z-index: 9998;
+    text-align: center; display: none; }
+  #jmfgames-ad-banner.jmfgames-ads-live { display: block;
+    background: rgba(8,10,14,0.97); border-top: 1px solid #23282e; padding: 6px 4px 8px; }
+  #jmfgames-ad-banner .adsbygoogle { width: 100%; }
+</style>
+<div id="jmfgames-ad-banner">
+<!-- JMFgames Bottom Banner -->
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-2453219839747877"
+     data-ad-slot="1213815137"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<script>
+(function() {
+  var banner = document.getElementById('jmfgames-ad-banner');
+  if (!banner) return;
+  var ins = banner.querySelector('ins.adsbygoogle');
+  function isFilled() { return !!(ins && ins.querySelector('iframe')); }
+  function showBanner() {
+    if (banner.classList.contains('jmfgames-ads-live')) return;
+    banner.classList.add('jmfgames-ads-live');
+  }
+  if (isFilled()) { showBanner(); return; }
+  try {
+    var obs = new MutationObserver(function() { if (isFilled()) { obs.disconnect(); showBanner(); } });
+    if (ins) obs.observe(ins, { childList: true, subtree: true });
+    setTimeout(function() { try { obs.disconnect(); } catch (e) {} }, 20000);
+  } catch (e) {
+    setTimeout(function() { if (isFilled()) showBanner(); }, 5000);
+  }
+})();
+</script>
+</body>
+</html>
