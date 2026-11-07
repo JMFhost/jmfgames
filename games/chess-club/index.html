@@ -250,9 +250,13 @@
 
       <!-- Top Action Toolbar -->
       <div class="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 shrink-0 max-w-full">
+        <a href="https://jmfgames.com/" class="btn-active-press shrink-0 p-1.5 sm:p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition" title="Back to JMFgames home" aria-label="Back to JMFgames home">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        </a>
+
         <button id="btnOpenSetup" type="button" class="btn-active-press px-2.5 sm:px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold shadow flex items-center gap-1.5 transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-          <span>New / Setup</span>
+          <span>New<span class="hidden sm:inline"> / Setup</span></span>
         </button>
 
         <button id="btnOpenSaveManager" type="button" class="btn-active-press px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition">
@@ -3129,7 +3133,7 @@
       startClockTicker();
     });
   </script>
-<footer class="w-full max-w-6xl mx-auto px-3 sm:px-5 pb-6 pt-2 text-center text-[11px] text-slate-500">© 2026 JMFhost. All rights reserved. Chess Club and all its code, graphics and content are the property of JMFhost and may not be copied, reproduced, distributed or reused without written permission.</footer>
+<footer class="w-full max-w-6xl mx-auto px-3 sm:px-5 pb-6 pt-2 text-center text-[11px] text-slate-500"><a href="https://jmfgames.com/" class="font-semibold underline">← Back to JMFgames home</a><br>© 2026 JMFhost. All rights reserved. Chess Club and all its code, graphics and content are the property of JMFhost and may not be copied, reproduced, distributed or reused without written permission.</footer>
 <style>
   #jmfgames-ad-banner { position: fixed; bottom: 0; left: 0; right: 0; z-index: 9998;
     text-align: center; display: none; }
