@@ -1,13 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Privacy Policy — JMFgames</title>
+<script>(function(){try{var t=localStorage.getItem('jmfgames-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2453219839747877" crossorigin="anonymous"></script>
-<style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;line-height:1.6;color:#e8e8e8;background:#0f1420}a{color:#7db4ff}</style>
+<style>:root{--bg:#0f1420;--text:#e8e8e8;--muted:#9aa3b2;--link:#7db4ff;--surface:#181f2e;--border:#2a3347}html[data-theme="light"]{--bg:#f2f5f8;--text:#1a2233;--muted:#4d5a6b;--link:#0b57d0;--surface:#ffffff;--border:#d3dae2}body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;line-height:1.6;color:var(--text);background:var(--bg)}a{color:var(--link)}.theme-toggle{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:14px;cursor:pointer;float:right}</style>
 </head>
 <body>
+<button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle light and dark theme">☀️ Light</button>
 <h1>Privacy Policy</h1>
 <p><em>Last updated: November 7, 2026</em></p>
 <p>JMFgames is a free web games site run by JMFhost. You do not need an account to play, and we do not ask you to create one. We do not collect your name, email address or other personal information through the games themselves. If you email us at jmfhost@gmail.com, we will use your email only to reply to you.</p>
@@ -23,5 +25,16 @@
 <p>Questions about this policy? Email <a href="mailto:jmfhost@gmail.com">jmfhost@gmail.com</a>.</p>
 <p>© 2026 JMFgames. All rights reserved. All games, code, graphics and content on this site are the property of JMFhost and may not be copied, reproduced, distributed or reused without written permission.</p>
 <p><a href="/">← Back to JMFgames</a> · <a href="/about.html">About Us</a> · <a href="/contact.html">Contact Us</a></p>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  var btn=document.getElementById('themeToggle');
+  function label(t){ return t==='light' ? '🌙 Dark' : '☀️ Light'; }
+  function apply(t){ root.setAttribute('data-theme',t); if(btn) btn.textContent=label(t); try{localStorage.setItem('jmfgames-theme',t);}catch(e){} }
+  if(btn) btn.textContent=label(root.getAttribute('data-theme')||'dark');
+  if(btn) btn.addEventListener('click',function(){ apply(root.getAttribute('data-theme')==='light'?'dark':'light'); });
+})();
+</script>
 </body>
 </html>

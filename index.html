@@ -1,31 +1,37 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>JMFgames — Free Web Games, Play Instantly</title>
 <meta name="description" content="JMFgames is a free web games hub. Play free browser games instantly — no signup, no download. New games added regularly.">
+<script>(function(){try{var t=localStorage.getItem('jmfgames-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2453219839747877" crossorigin="anonymous"></script>
 <style>
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:960px;margin:0 auto;padding:0 20px 120px;line-height:1.6;color:#e8e8e8;background:#0f1420}
-a{color:#7db4ff}
+:root{--bg:#0f1420;--surface:#181f2e;--border:#2a3347;--text:#e8e8e8;--muted:#9aa3b2;--soft:#c2c9d6;--link:#7db4ff;--link-hover:#a8c8ff}
+html[data-theme="light"]{--bg:#f2f5f8;--surface:#ffffff;--border:#d3dae2;--text:#1a2233;--muted:#4d5a6b;--soft:#33405a;--link:#0b57d0;--link-hover:#0848ad}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:960px;margin:0 auto;padding:0 20px 120px;line-height:1.6;color:var(--text);background:var(--bg)}
+a{color:var(--link)}
+a:hover{color:var(--link-hover)}
 header{padding:36px 0 8px;text-align:center}
 header h1{font-size:42px;margin:0;letter-spacing:-1px}
-header p{color:#9aa3b2;margin:8px 0 0;font-size:18px}
+header p{color:var(--muted);margin:8px 0 0;font-size:18px}
 nav{text-align:center;margin:20px 0 32px}
 nav a{margin:0 10px}
-.featured{background:#181f2e;border:1px solid #2a3347;border-radius:16px;padding:28px;margin:0 0 28px}
+.theme-toggle{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:14px;cursor:pointer;margin-left:10px}
+.theme-toggle:hover{border-color:var(--link)}
+.featured{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;margin:0 0 28px}
 .featured h2{margin:0 0 8px;font-size:26px}
-.featured p{color:#c2c9d6}
+.featured p{color:var(--soft)}
 .play{display:inline-block;background:#00c805;color:#000;font-weight:700;text-decoration:none;padding:12px 26px;border-radius:10px;margin-top:12px}
 .play:hover{background:#00e006}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
-.card{background:#181f2e;border:1px solid #2a3347;border-radius:14px;padding:20px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
 .card h3{margin:0 0 6px}
-.card p{color:#9aa3b2;margin:0}
-.badge{display:inline-block;background:#2a3347;color:#c2c9d6;font-size:12px;padding:3px 9px;border-radius:20px;margin-bottom:10px}
+.card p{color:var(--muted);margin:0}
+.badge{display:inline-block;background:var(--border);color:var(--soft);font-size:12px;padding:3px 9px;border-radius:20px;margin-bottom:10px}
 section h2{margin:36px 0 14px}
-footer{text-align:center;padding:28px 12px 12px;font-size:13px;color:#9aa3b2}
+footer{text-align:center;padding:28px 12px 12px;font-size:13px;color:var(--muted)}
 #jmfgames-ad-banner{position:fixed;bottom:0;left:0;right:0;z-index:9998;text-align:center;display:none}
 #jmfgames-ad-banner.jmfgames-ads-live{display:block;background:rgba(8,10,14,.97);border-top:1px solid #23282e;padding:6px 4px 8px}
 #jmfgames-ad-banner .adsbygoogle{width:100%}
@@ -37,7 +43,7 @@ footer{text-align:center;padding:28px 12px 12px;font-size:13px;color:#9aa3b2}
 <p>Free web games. Play instantly — no signup, no download.</p>
 </header>
 <nav>
-<a href="/">Home</a> · <a href="/about.html">About Us</a> · <a href="/contact.html">Contact Us</a> · <a href="/privacy.html">Privacy Policy</a>
+<a href="/">Home</a> · <a href="/about.html">About Us</a> · <a href="/contact.html">Contact Us</a> · <a href="/privacy.html">Privacy Policy</a><button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle light and dark theme">☀️ Light</button>
 </nav>
 
 <div class="featured">
@@ -108,6 +114,17 @@ All games, code, graphics and content on this site are the property of JMFhost a
   } catch (e) {
     setTimeout(function() { if (isFilled()) showBanner(); }, 5000);
   }
+})();
+</script>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  var btn=document.getElementById('themeToggle');
+  function label(t){ return t==='light' ? '🌙 Dark' : '☀️ Light'; }
+  function apply(t){ root.setAttribute('data-theme',t); if(btn) btn.textContent=label(t); try{localStorage.setItem('jmfgames-theme',t);}catch(e){} }
+  if(btn) btn.textContent=label(root.getAttribute('data-theme')||'dark');
+  if(btn) btn.addEventListener('click',function(){ apply(root.getAttribute('data-theme')==='light'?'dark':'light'); });
 })();
 </script>
 </body>
