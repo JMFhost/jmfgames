@@ -39,6 +39,144 @@
     .hidden {
       display: none !important;
     }
+    /* High-Contrast Black Theme & Light Theme Overrides */
+    body.theme-dark {
+      background-color: #050811;
+      color: #f8fafc;
+    }
+    body.theme-light {
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+    body.theme-light header,
+    body.theme-light section {
+      background-color: rgba(255, 255, 255, 0.96) !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    body.theme-light main {
+      background-color: #e2e8f0 !important;
+    }
+    body.theme-light .bg-slate-950,
+    body.theme-light .bg-slate-900,
+    body.theme-light .bg-slate-900\/95,
+    body.theme-light .bg-slate-900\/85,
+    body.theme-light .bg-slate-900\/90,
+    body.theme-light .bg-slate-900\/60 {
+      background-color: rgba(255, 255, 255, 0.95) !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    body.theme-light .bg-slate-950\/80,
+    body.theme-light .bg-slate-950\/60 {
+      background-color: rgba(241, 245, 249, 0.92) !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    body.theme-light #saveModal,
+    body.theme-light #restartModal,
+    body.theme-light #infoModal {
+      background-color: rgba(15, 23, 42, 0.55) !important;
+    }
+    body.theme-light .bg-slate-800,
+    body.theme-light .bg-slate-800\/90,
+    body.theme-light .bg-slate-800\/80,
+    body.theme-light .bg-slate-800\/70,
+    body.theme-light .bg-slate-800\/50,
+    body.theme-light .bg-slate-700 {
+      background-color: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    body.theme-light .bg-slate-800:hover,
+    body.theme-light .bg-slate-800\/90:hover {
+      background-color: #e2e8f0 !important;
+    }
+    body.theme-light .border-slate-800,
+    body.theme-light .border-slate-700,
+    body.theme-light .border-slate-700\/80,
+    body.theme-light .border-slate-700\/70 {
+      border-color: #cbd5e1 !important;
+    }
+    body.theme-light .text-white,
+    body.theme-light .text-slate-100,
+    body.theme-light .text-slate-200,
+    body.theme-light .text-slate-300 {
+      color: #0f172a !important;
+    }
+    body.theme-light .text-slate-400 {
+      color: #334155 !important;
+    }
+    body.theme-light .text-amber-300,
+    body.theme-light .text-amber-200,
+    body.theme-light .text-amber-400 {
+      color: #b45309 !important;
+    }
+    body.theme-light .text-emerald-300,
+    body.theme-light .text-emerald-200 {
+      color: #047857 !important;
+    }
+    body.theme-light .text-rose-300,
+    body.theme-light .text-rose-200,
+    body.theme-light .text-rose-400 {
+      color: #be123c !important;
+    }
+    body.theme-light .text-indigo-200,
+    body.theme-light .text-indigo-300 {
+      color: #3730a3 !important;
+    }
+    /* Keep white text inside solid vibrant buttons in Light Theme */
+    body.theme-light .bg-indigo-600,
+    body.theme-light .bg-rose-600,
+    body.theme-light .bg-rose-600\/90,
+    body.theme-light .bg-emerald-600 {
+      color: #ffffff !important;
+    }
+    body.theme-light .bg-indigo-600 span,
+    body.theme-light .bg-rose-600 span,
+    body.theme-light .bg-rose-600\/90 span,
+    body.theme-light .bg-emerald-600 span {
+      color: #ffffff !important;
+    }
+    body.theme-light #saveSlotCountBadge {
+      background-color: rgba(255, 255, 255, 0.25) !important;
+      color: #ffffff !important;
+    }
+    body.theme-light .bg-amber-500\/20,
+    body.theme-light .bg-indigo-600\/30,
+    body.theme-light .bg-indigo-500\/25 {
+      background-color: #fef3c7 !important;
+      border-color: #d97706 !important;
+    }
+    body.theme-light .bg-emerald-500\/20,
+    body.theme-light .bg-emerald-950\/30,
+    body.theme-light .bg-emerald-600\/30 {
+      background-color: #d1fae5 !important;
+      border-color: #059669 !important;
+    }
+    body.theme-light .bg-rose-950\/40,
+    body.theme-light .bg-rose-950\/70,
+    body.theme-light .bg-rose-950\/80 {
+      background-color: #ffe4e6 !important;
+      border-color: #e11d48 !important;
+    }
+    body.theme-light #offlineBanner {
+      background-color: rgba(238, 242, 255, 0.98) !important;
+      border-color: #6366f1 !important;
+    }
+    body.theme-light #toastBanner {
+      background-color: rgba(255, 255, 255, 0.98) !important;
+      border-color: #d97706 !important;
+      color: #0f172a !important;
+    }
+    body.theme-light input[type="text"] {
+      background-color: #ffffff !important;
+      border-color: #94a3b8 !important;
+      color: #0f172a !important;
+    }
+    body.theme-light input[type="text"]::placeholder {
+      color: #64748b !important;
+    }
     #arenaCanvas {
       touch-action: none;
       display: block;
@@ -79,7 +217,7 @@
     }
   </style>
 </head>
-<body class="flex flex-col h-full w-full bg-slate-950 text-slate-100 select-none overflow-hidden">
+<body id="appBody" class="theme-dark flex flex-col h-full w-full bg-slate-950 text-slate-100 select-none overflow-hidden">
 
   <!-- TOP HUD BAR -->
   <header class="shrink-0 bg-slate-900/95 border-b border-slate-800 px-2.5 py-2 z-20 shadow-lg">
@@ -126,6 +264,11 @@
           <span id="tetherStatusText" class="hidden md:inline">Rope: OFF</span>
         </button>
 
+        <button id="btnThemeToggle" type="button" onclick="toggleThemeMode()" class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 text-xs font-semibold transition-all" title="Switch between Light and Black Theme">
+          <span id="themeIcon">🌙</span>
+          <span id="themeModeText">Black</span>
+        </button>
+
         <button id="btnSoundToggle" type="button" onclick="toggleSound()" class="p-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 text-xs sm:text-sm" title="Toggle Sound Effects">
           <span id="soundIcon">🔊</span>
         </button>
@@ -149,10 +292,10 @@
     <canvas id="arenaCanvas"></canvas>
 
     <!-- Floating Status / Persistence Pill (Top-Left of Canvas) -->
-    <div class="absolute top-2.5 left-2.5 z-10 flex flex-wrap items-center gap-1.5 pointer-events-none">
-      <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 rounded-full px-2.5 py-1 flex items-center gap-1.5 text-[11px] text-slate-300 shadow">
+    <div class="absolute top-2.5 left-2.5 z-10 flex flex-wrap items-center gap-1.5 pointer-events-none max-w-[calc(100%-20px)] sm:max-w-[calc(100%-260px)]">
+      <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 rounded-full px-2.5 py-1 flex items-center gap-1.5 text-[11px] text-slate-300 shadow min-w-0 max-w-full">
         <span id="liveSaveDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span id="liveSaveLabel">Auto-Saved • Background Play Active</span>
+        <span id="liveSaveLabel" class="truncate max-w-[150px] sm:max-w-none">Auto-Saved • Background Play Active</span>
       </div>
       <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 rounded-full px-2.5 py-1 text-[11px] text-amber-300 font-medium shadow">
         <span>Hits: </span><strong id="hudHits">0</strong>
@@ -162,7 +305,7 @@
     </div>
 
     <!-- Quick Action Floating Buttons (Top-Right of Canvas) -->
-    <div class="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5">
+    <div class="absolute top-[72px] right-2.5 z-10 flex flex-wrap items-center justify-end gap-1.5 sm:top-2.5 sm:flex-nowrap">
       <button id="btnQuickSave" type="button" onclick="quickSaveManual()" class="bg-slate-900/85 hover:bg-slate-800 backdrop-blur-md border border-slate-700 text-slate-200 rounded-full px-2.5 py-1 text-[11px] font-medium flex items-center gap-1 shadow transition">
         <span>⚡</span><span>Quick Save</span>
       </button>
@@ -549,10 +692,26 @@
     ];
 
     const ARENAS = [
-      { id: 'lab', name: 'Padded Test Lab', icon: '🧪', bgTop: '#0f172a', bgBottom: '#1e293b', gridColor: 'rgba(148,163,184,0.08)', floorColor: '#334155' },
-      { id: 'office', name: 'Executive Suite', icon: '🏢', bgTop: '#1e1b4b', bgBottom: '#312e81', gridColor: 'rgba(199,210,254,0.08)', floorColor: '#4338ca' },
-      { id: 'scifi', name: 'Cyber Reactor', icon: '🛸', bgTop: '#022c22', bgBottom: '#064e3b', gridColor: 'rgba(52,211,153,0.1)', floorColor: '#047857' },
-      { id: 'volcano', name: 'Magma Chamber', icon: '🌋', bgTop: '#450a0a', bgBottom: '#7f1d1d', gridColor: 'rgba(248,113,113,0.1)', floorColor: '#991b1b' }
+      {
+        id: 'lab', name: 'Padded Test Lab', icon: '🧪',
+        bgTop: '#070b14', bgBottom: '#111827', gridColor: 'rgba(148,163,184,0.09)', floorColor: '#1e293b',
+        lightBgTop: '#f8fafc', lightBgBottom: '#e2e8f0', lightGridColor: 'rgba(71,85,105,0.12)', lightFloorColor: '#cbd5e1'
+      },
+      {
+        id: 'office', name: 'Executive Suite', icon: '🏢',
+        bgTop: '#0f0e26', bgBottom: '#1e1b4b', gridColor: 'rgba(199,210,254,0.09)', floorColor: '#312e81',
+        lightBgTop: '#eef2ff', lightBgBottom: '#e0e7ff', lightGridColor: 'rgba(67,56,202,0.11)', lightFloorColor: '#c7d2fe'
+      },
+      {
+        id: 'scifi', name: 'Cyber Reactor', icon: '🛸',
+        bgTop: '#021f18', bgBottom: '#064e3b', gridColor: 'rgba(52,211,153,0.1)', floorColor: '#047857',
+        lightBgTop: '#ecfdf5', lightBgBottom: '#d1fae5', lightGridColor: 'rgba(4,120,87,0.12)', lightFloorColor: '#a7f3d0'
+      },
+      {
+        id: 'volcano', name: 'Magma Chamber', icon: '🌋',
+        bgTop: '#2a0606', bgBottom: '#7f1d1d', gridColor: 'rgba(248,113,113,0.1)', floorColor: '#991b1b',
+        lightBgTop: '#fff1f2', lightBgBottom: '#ffe4e6', lightGridColor: 'rgba(190,18,60,0.11)', lightFloorColor: '#fecdd3'
+      }
     ];
 
     const HATS = [
@@ -588,6 +747,7 @@
         autoBotActive: true,
         tetherEnabled: false,
         soundEnabled: true,
+        themeMode: 'dark',
         upgrades: {
           drone_rate: 1,
           coin_mult: 1,
@@ -1249,15 +1409,16 @@
         if (screenShake < 0.5) screenShake = 0;
       }
 
-      // Background Gradient
+      // Background Gradient (Adapts to Light or Black Theme)
+      const isLight = state.themeMode === 'light';
       const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, arena.bgTop);
-      grad.addColorStop(1, arena.bgBottom);
+      grad.addColorStop(0, isLight ? arena.lightBgTop : arena.bgTop);
+      grad.addColorStop(1, isLight ? arena.lightBgBottom : arena.bgBottom);
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
 
       // Subtle Grid
-      ctx.strokeStyle = arena.gridColor;
+      ctx.strokeStyle = isLight ? arena.lightGridColor : arena.gridColor;
       ctx.lineWidth = 1;
       const step = 44;
       for (let x = 0; x < w; x += step) {
@@ -1274,9 +1435,9 @@
       }
 
       // Arena Floor
-      ctx.fillStyle = arena.floorColor;
+      ctx.fillStyle = isLight ? arena.lightFloorColor : arena.floorColor;
       ctx.fillRect(0, h - 24, w, 24);
-      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.strokeStyle = isLight ? 'rgba(15,23,42,0.22)' : 'rgba(255,255,255,0.12)';
       ctx.beginPath();
       ctx.moveTo(0, h - 24);
       ctx.lineTo(w, h - 24);
@@ -1442,14 +1603,15 @@
         ctx.restore();
       }
 
-      // Draw Floating Combat Texts
+      // Draw Floating Combat Texts (High-contrast stroke in both Light & Black themes)
       for (const ft of floatingTexts) {
         ctx.save();
         ctx.globalAlpha = Math.max(0, ft.alpha);
         ctx.font = `700 ${ft.size}px Fredoka, sans-serif`;
         ctx.textAlign = 'center';
+        ctx.lineJoin = 'round';
         ctx.strokeStyle = '#0f172a';
-        ctx.lineWidth = 3.5;
+        ctx.lineWidth = isLight ? 4.5 : 3.5;
         ctx.strokeText(ft.text, ft.x, ft.y);
         ctx.fillStyle = ft.color;
         ctx.fillText(ft.text, ft.x, ft.y);
@@ -1481,17 +1643,33 @@
 
       ctx.lineCap = 'round';
       for (const [a, b, width] of limbPairs) {
+        const wScaled = width * (state.charScale || 1);
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = wScaled + 4;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+
         ctx.strokeStyle = state.frozenTimer > 0 ? '#7dd3fc' : charObj.limbColor;
-        ctx.lineWidth = width * (state.charScale || 1);
+        ctx.lineWidth = wScaled;
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
         ctx.lineTo(b.x, b.y);
         ctx.stroke();
       }
 
-      // Draw Torso Capsule
+      // Draw Torso Capsule with crisp border
+      const torsoW = 34 * (state.charScale || 1);
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = torsoW + 5;
+      ctx.beginPath();
+      ctx.moveTo(chest.x, chest.y);
+      ctx.lineTo(pelvis.x, pelvis.y);
+      ctx.stroke();
+
       ctx.strokeStyle = state.frozenTimer > 0 ? '#38bdf8' : charObj.torsoColor;
-      ctx.lineWidth = 34 * (state.charScale || 1);
+      ctx.lineWidth = torsoW;
       ctx.beginPath();
       ctx.moveTo(chest.x, chest.y);
       ctx.lineTo(pelvis.x, pelvis.y);
@@ -2190,6 +2368,29 @@
       showToast(state.tetherEnabled ? '🪢 Ceiling Rope Tether Attached!' : '🪢 Ceiling Rope Detached!', '🪢');
     }
 
+    function applyThemeMode() {
+      const body = document.getElementById('appBody') || document.body;
+      const isLight = state.themeMode === 'light';
+      body.classList.toggle('theme-light', isLight);
+      body.classList.toggle('theme-dark', !isLight);
+      document.documentElement.classList.toggle('dark', !isLight);
+
+      const themeIcon = document.getElementById('themeIcon');
+      const themeText = document.getElementById('themeModeText');
+      if (themeIcon) themeIcon.textContent = isLight ? '☀️' : '🌙';
+      if (themeText) themeText.textContent = isLight ? 'Light' : 'Black';
+    }
+
+    function toggleThemeMode() {
+      state.themeMode = state.themeMode === 'light' ? 'dark' : 'light';
+      applyThemeMode();
+      updateHud();
+      renderDockPanels();
+      renderArena();
+      saveLiveState(false);
+      showToast(state.themeMode === 'light' ? '☀️ Switched to Light Theme!' : '🌙 Switched to Black Theme!', state.themeMode === 'light' ? '☀️' : '🌙');
+    }
+
     function toggleSound() {
       state.soundEnabled = !state.soundEnabled;
       updateHud();
@@ -2238,6 +2439,7 @@
         : 'flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-semibold border transition-all bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700';
 
       document.getElementById('soundIcon').textContent = state.soundEnabled ? '🔊' : '🔇';
+      applyThemeMode();
     }
 
     // =========================================================================
@@ -2588,7 +2790,6 @@
       animFrameId = requestAnimationFrame(gameLoop);
     };
   </script>
-
 <style>
   #jmfgames-ad-banner { position: fixed; bottom: 0; left: 0; right: 0; z-index: 9998;
     text-align: center; display: none; }
