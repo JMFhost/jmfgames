@@ -6,7 +6,7 @@
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
-  <title>Jayden Puzzles — 1,000 High-Quality Realistic Jigsaw Puzzles</title>
+  <title>Jayden Puzzles — 18 High-Quality Realistic Jigsaw Puzzles</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -240,7 +240,7 @@
             <h1 class="text-base sm:text-xl font-extrabold tracking-tight theme-text-primary leading-tight">
               Jayden Puzzles
             </h1>
-            <span class="badge-pill">1,000 Realistic HD Puzzles</span>
+            <span class="badge-pill">18 Realistic HD Puzzles</span>
             <span id="autoSaveIndicator" class="badge-pill" title="Game state is continuously auto-saved">
               ✓ Auto-Saved
             </span>
@@ -261,11 +261,11 @@
           <span>🧩</span>
           <span>Play Board</span>
         </button>
-        <button id="navGalleryBtn" type="button" class="game-btn" title="Browse 1,000 High-Quality Realistic Puzzles Across 15 Categories">
+        <button id="navGalleryBtn" type="button" class="game-btn" title="Browse 18 High-Quality Realistic Puzzles Across 15 Categories">
           <span>🖼️</span>
           <span>Puzzles</span>
         </button>
-        <button id="surpriseMeTopBtn" type="button" class="game-btn" title="Load a random high-resolution realistic puzzle from #1 to #1,000">
+        <button id="surpriseMeTopBtn" type="button" class="game-btn" title="Load a random high-resolution realistic puzzle from #1 to #18">
           <span>🎲</span>
           <span>Random Puzzle</span>
         </button>
@@ -428,8 +428,8 @@
               <button id="sidebarRandomCategoryBtn" type="button" class="game-btn text-xs w-full" title="Play another realistic puzzle in this same category">
                 🎲 Next in Category
               </button>
-              <button id="sidebarBrowseAllBtn" type="button" class="game-btn text-xs w-full" title="Open the 1,000 realistic puzzle gallery">
-                🖼️ Browse 1,000
+              <button id="sidebarBrowseAllBtn" type="button" class="game-btn text-xs w-full" title="Open the 18 realistic puzzle gallery">
+                🖼️ Browse 18
               </button>
             </div>
           </div>
@@ -460,7 +460,7 @@
       </div>
     </section>
 
-    <!-- VIEW 2: 1,000 HIGH-QUALITY REALISTIC PUZZLE COLLECTION GALLERY -->
+    <!-- VIEW 2: 18 HIGH-QUALITY REALISTIC PUZZLE COLLECTION GALLERY -->
     <section id="galleryView" class="hidden flex-col gap-3">
       <div class="theme-surface border-2 rounded-xl p-3 sm:p-4 flex flex-col gap-3">
         <!-- Gallery Header -->
@@ -468,9 +468,9 @@
           <div>
             <div class="flex items-center gap-2 flex-wrap">
               <h2 class="text-lg sm:text-xl font-extrabold theme-text-primary">
-                Jayden Puzzles — 1,000 High-Quality Realistic Puzzles
+                Jayden Puzzles — 18 High-Quality Realistic Puzzles
               </h2>
-              <span id="galleryMatchingCountBadge" class="badge-pill">1,000 Realistic Puzzles Available</span>
+              <span id="galleryMatchingCountBadge" class="badge-pill">18 Realistic Puzzles Available</span>
             </div>
             <p class="text-xs sm:text-sm font-semibold theme-text-secondary mt-0.5">
               Every single puzzle is crafted from high-resolution photorealistic photography and fine artwork across Fantasy, Vintage, Christmas, Thanksgiving, Halloween, and 10 more categories!
@@ -479,7 +479,7 @@
           <div class="flex flex-wrap items-center gap-2">
             <button id="gallerySurpriseBtn" type="button" class="game-btn game-btn-primary text-xs sm:text-sm">
               <span>🎲</span>
-              <span>Surprise Me (Random #1–1,000)</span>
+              <span>Surprise Me (Random #1–18)</span>
             </button>
             <label for="customImageUpload" class="game-btn cursor-pointer text-xs sm:text-sm">
               <span>📷</span>
@@ -493,7 +493,7 @@
           </div>
         </div>
 
-        <!-- Search & Direct Puzzle Number Jumper (#1 to #1,000) -->
+        <!-- Search & Direct Puzzle Number Jumper (#1 to #18) -->
         <div class="theme-elevated border-2 rounded-xl p-2.5 sm:p-3 grid grid-cols-1 md:grid-cols-12 gap-2 items-center" style="border-color: var(--border-base);">
           <div class="md:col-span-6 flex items-center gap-2">
             <label for="gallerySearchInput" class="text-xs sm:text-sm font-extrabold theme-text-primary shrink-0">
@@ -506,9 +506,9 @@
           </div>
           <div class="md:col-span-6 flex flex-wrap items-center justify-end gap-2">
             <label for="jumpPuzzleNumberInput" class="text-xs sm:text-sm font-extrabold theme-text-primary">
-              🎯 Jump to Puzzle # (1–1,000):
+              🎯 Jump to Puzzle # (1–18):
             </label>
-            <input id="jumpPuzzleNumberInput" type="number" min="1" max="1000" value="1" class="w-28 rounded-lg px-2.5 py-2 text-xs sm:text-sm font-extrabold border-2 theme-surface" style="border-color: var(--btn-border);" />
+            <input id="jumpPuzzleNumberInput" type="number" min="1" max="18" value="1" class="w-28 rounded-lg px-2.5 py-2 text-xs sm:text-sm font-extrabold border-2 theme-surface" style="border-color: var(--btn-border);" />
             <button id="jumpPuzzlePlayBtn" type="button" class="game-btn game-btn-primary py-1.5 px-3 min-h-[38px] text-xs sm:text-sm">
               ▶ Play #
             </button>
@@ -538,7 +538,7 @@
         <!-- Pagination Bar Top -->
         <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t-2" style="border-color: var(--border-base);">
           <div class="text-xs sm:text-sm font-extrabold theme-text-secondary">
-            Showing Page <strong id="galleryPageNumberText">1</strong> of <strong id="galleryTotalPagesText">84</strong>
+            Showing Page <strong id="galleryPageNumberText">1</strong> of <strong id="galleryTotalPagesText">2</strong>
           </div>
           <div class="flex flex-wrap items-center gap-1.5">
             <button id="galleryPrevPageBtn" type="button" class="game-btn py-1 px-3 min-h-[36px] text-xs">
@@ -561,7 +561,7 @@
         <!-- Pagination Bar Bottom -->
         <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t-2" style="border-color: var(--border-base);">
           <span class="text-xs font-bold theme-text-muted">
-            All 1,000 puzzles in Jayden Puzzles are high-resolution photographic compositions saved locally for instant offline & online play.
+            All 18 puzzles in Jayden Puzzles are high-resolution photographic compositions saved locally for instant offline & online play.
           </span>
           <div class="flex flex-wrap items-center justify-center sm:justify-end gap-1.5 max-w-full">
             <button id="galleryBottomPrevBtn" type="button" class="game-btn py-1 px-3 min-h-[36px] text-xs">
@@ -795,7 +795,7 @@
       }
 
       // =========================================================================
-      // 2. 1,000 PHOTOREALISTIC PUZZLE CATALOG (16 Master Plates + Studio Framing/Grading)
+      // 2. 18 PHOTOREALISTIC PUZZLE CATALOG (18 Master Plates + Studio Framing/Grading)
       // =========================================================================
       const CATEGORIES = [
         "Fantasy",
@@ -1153,9 +1153,9 @@
         { label: "Cinema High-Dynamic Range", filter: "contrast(1.16) saturate(1.25)", tint: null }
       ];
 
-      const TOTAL_PUZZLES = 1000;
+      const TOTAL_PUZZLES = 18;
 
-      // Preloaded Image objects for all 16 master plates
+      // Preloaded Image objects for all 18 master plates
       const masterImageObjects = new Map();
       let allMastersLoaded = false;
 
@@ -1192,14 +1192,14 @@
 
       function getPuzzleDescriptorByIndex(indexNum) {
         const idx = Math.max(1, Math.min(TOTAL_PUZZLES, Math.floor(Number(indexNum) || 1)));
-        if (idx <= 16) {
+        if (idx <= MASTER_PLATES.length) {
           const m = MASTER_PLATES[idx - 1];
           return {
             index: idx,
             id: m.id,
             title: m.title,
             category: m.category,
-            description: `Original Studio Master Photograph • ${m.category} Collection (#${idx} of 1,000)`,
+            description: `Original Studio Master Photograph • ${m.category} Collection (#${idx} of 18)`,
             plate: m,
             cropIdx: 0,
             gradeIdx: 0,
@@ -1223,7 +1223,7 @@
           id: `jayden_hq_${idx}`,
           title: `${subjectTitle} (${grade.label.replace(" Edition", "")})`,
           category: category,
-          description: `${OPTICAL_CROPS[cropIdx].name} • ${grade.label} (#${idx} of 1,000)`,
+          description: `${OPTICAL_CROPS[cropIdx].name} • ${grade.label} (#${idx} of 18)`,
           plate: plate,
           cropIdx: cropIdx,
           gradeIdx: gradeIdx,
@@ -1235,7 +1235,7 @@
         if (!puzzleId) return getPuzzleDescriptorByIndex(1);
         const directPlate = MASTER_PLATES.find((p) => p.id === puzzleId);
         if (directPlate) {
-          return getPuzzleDescriptorByIndex(Math.min(16, directPlate.index));
+          return getPuzzleDescriptorByIndex(Math.min(TOTAL_PUZZLES, directPlate.index));
         }
         if (String(puzzleId).startsWith("jayden_hq_")) {
           const n = parseInt(String(puzzleId).replace("jayden_hq_", ""), 10);
@@ -2347,7 +2347,7 @@
       }
 
       // =========================================================================
-      // 10. STARTING, RESTORING & RESTARTING PUZZLES (#1 to #1,000)
+      // 10. STARTING, RESTORING & RESTARTING PUZZLES (#1 to #18)
       // =========================================================================
       function resolveDescriptorImageUrl(descriptor, customDataUrl, size = 580) {
         if (descriptor.id === "custom_upload" && customDataUrl) {
@@ -2496,7 +2496,7 @@
       }
 
       // =========================================================================
-      // 12. 1,000 REALISTIC PUZZLE GALLERY PAGINATION, FILTERING & SEARCH
+      // 12. 18 REALISTIC PUZZLE GALLERY PAGINATION, FILTERING & SEARCH
       // =========================================================================
       let activeGalleryCategory = "All";
       let activeSearchQuery = "";
