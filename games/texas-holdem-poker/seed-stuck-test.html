@@ -1,0 +1,7 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Seed stuck-save test (temporary)</title></head><body>
+<p>Seeding a stuck (un-dealt) autosave, then opening the game…</p>
+<script>
+try{ localStorage.setItem("holdem_royale_autosave_v1", JSON.stringify({players:[{},{},{},{},{},{}],hand:1,phase:"preflop",dealerId:"",currentId:null,deck:[],community:[]})); }catch(e){}
+location.href="/games/texas-holdem-poker/?v=1ef14e04";
+</script>
+</body></html>
