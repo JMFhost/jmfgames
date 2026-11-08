@@ -908,8 +908,8 @@
     };
 
     function createInitialBoard() {
-      // King at c=3 (left), Queen at c=4 (right of the King) as requested
-      const back = ["r", "n", "b", "k", "q", "b", "n", "r"];
+      // Standard setup: Queen on d-file (c=3, left of the King), King on e-file (c=4) — queen on her color
+      const back = ["r", "n", "b", "q", "k", "b", "n", "r"];
       const board = Array(8).fill(null).map(() => Array(8).fill(null));
       for (let c = 0; c < 8; c++) {
         board[0][c] = { type: back[c], color: "b" };
@@ -1120,7 +1120,7 @@
           }
         }
 
-        // Castling (supports King on c=3 with Queen on right at c=4, plus legacy c=4)
+        // Castling: King normally on c=4 (e-file); the c=3 branch is kept for old saved games that used the swapped setup
         const homeRank = color === "w" ? 7 : 0;
         if (r === homeRank && (c === 3 || c === 4) && !isSquareAttacked(board, homeRank, c, opp)) {
           const kRight = color === "w" ? st.castling.K : st.castling.k;
@@ -1325,22 +1325,7 @@
      * 4. 30-LEVEL CALIBRATED AI EVALUATION & SEARCH ENGINE
      *************************************************************************/
     const OPENING_BOOK = {
-      "rnbkqbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBKQBNR w KQkq -": [
-        { fromR: 6, fromC: 4, toR: 4, toC: 4 },
-        { fromR: 6, fromC: 3, toR: 4, toC: 3 },
-        { fromR: 7, fromC: 6, toR: 5, toC: 5 },
-        { fromR: 7, fromC: 1, toR: 5, toC: 2 }
-      ],
-      "rnbkqbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBKQBNR b KQkq e3": [
-        { fromR: 1, fromC: 4, toR: 3, toC: 4 },
-        { fromR: 1, fromC: 2, toR: 3, toC: 2 },
-        { fromR: 1, fromC: 3, toR: 3, toC: 3 }
-      ],
-      "rnbkqbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBKQBNR b KQkq d3": [
-        { fromR: 1, fromC: 3, toR: 3, toC: 3 },
-        { fromR: 0, fromC: 6, toR: 2, toC: 5 }
-      ],
-      "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -": [
+                        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -": [
         { fromR: 6, fromC: 4, toR: 4, toC: 4 }, // e4
         { fromR: 6, fromC: 3, toR: 4, toC: 3 }, // d4
         { fromR: 7, fromC: 6, toR: 5, toC: 5 }, // Nf3
@@ -1697,10 +1682,6 @@
         soundEnabled = typeof savedActive.soundEnabled === "boolean" ? savedActive.soundEnabled : true;
         setupSelectedSide = game.chosenColorMode || game.playerColor || "w";
         setupSelectedLevel = game.aiLevel || 1;
-        // Ensure unplayed initial board uses the new King (left, c=3) & Queen (right, c=4) setup
-        if (countTotalHalfMoves() === 0 && game.state.board[7][3] && game.state.board[7][3].type === "q") {
-          game.state.board = createInitialBoard();
-        }
         return true; // Restored existing session!
       }
       return false;
