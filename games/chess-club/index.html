@@ -417,18 +417,8 @@
       </div>
 
       <!-- Primary Game Control Bar (Mobile-friendly tap buttons) -->
-      <div class="w-full grid grid-cols-5 gap-1.5 sm:gap-2 pt-0.5">
-        <button id="btnUndo" type="button" class="btn-active-press py-2 px-2 rounded-xl glass-panel hover:bg-slate-800 text-slate-200 flex flex-col items-center justify-center gap-1 transition">
-          <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
-          <span class="text-[11px] font-semibold">Undo</span>
-        </button>
-
-        <button id="btnHint" type="button" class="btn-active-press py-2 px-2 rounded-xl glass-panel hover:bg-slate-800 text-slate-200 flex flex-col items-center justify-center gap-1 transition">
-          <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-          <span class="text-[11px] font-semibold">Hint</span>
-        </button>
-
-        <button id="btnFlip" type="button" class="btn-active-press py-2 px-2 rounded-xl glass-panel hover:bg-slate-800 text-slate-200 flex flex-col items-center justify-center gap-1 transition">
+      <div class="w-full grid grid-cols-3 gap-1.5 sm:gap-2 pt-0.5">
+                        <button id="btnFlip" type="button" class="btn-active-press py-2 px-2 rounded-xl glass-panel hover:bg-slate-800 text-slate-200 flex flex-col items-center justify-center gap-1 transition">
           <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
           <span class="text-[11px] font-semibold">Flip</span>
         </button>
@@ -1660,12 +1650,10 @@
         playerColor: actualPlayerColor, // 'w' or 'b'
         aiLevel: Math.max(1, Math.min(30, Number(aiLevel) || 1)),
         state: initialEngineState,
-        snapshots: [], // For undo
         moveLog: [],   // Array of { moveNum, whiteSan, blackSan }
         capturedByWhite: [], // black pieces captured by white
         capturedByBlack: [], // white pieces captured by black
         lastMove: null,
-        hintMove: null,
         status: "playing", // 'playing', 'checkmate', 'stalemate', 'draw_50', 'draw_rep', 'draw_mat'
         winner: null, // 'w', 'b', or 'draw'
         whiteTimeMs: GAME_TIME_LIMIT_MS,
@@ -1949,18 +1937,7 @@
     function executeMove(move) {
       if (!game || game.status !== "playing") return;
 
-      // Save undo snapshot before mutating
-      game.snapshots.push({
-        state: cloneState(game.state),
-        moveLog: JSON.parse(JSON.stringify(game.moveLog)),
-        capturedByWhite: [...game.capturedByWhite],
-        capturedByBlack: [...game.capturedByBlack],
-        lastMove: game.lastMove ? { ...game.lastMove } : null,
-        positionCounts: { ...game.positionCounts }
-      });
-      if (game.snapshots.length > 80) game.snapshots.shift();
-
-      const allLegal = generateLegalMoves(game.state);
+            const allLegal = generateLegalMoves(game.state);
       const san = formatSAN(game.state, move, allLegal);
       const moverColor = game.state.turn;
 
@@ -1985,7 +1962,6 @@
 
       game.state = applyMoveToState(game.state, move);
       game.lastMove = { fromR: move.fromR, fromC: move.fromC, toR: move.toR, toC: move.toC };
-      game.hintMove = null;
       selectedSquare = null;
       legalMovesForSelected = [];
       pendingPromotionMoves = null;
@@ -2064,64 +2040,6 @@
           executeMove(aiMove);
         }
       }, delay);
-    }
-
-    function handleUndo() {
-      if (!game || !game.snapshots || game.snapshots.length === 0) {
-        showToast("No moves to undo yet", "amber");
-        return;
-      }
-      cancelPendingAI();
-
-      // If it's player's turn and at least 2 snapshots exist, pop 2 so player gets their own turn back
-      let steps = 1;
-      if (game.state.turn === game.playerColor && game.snapshots.length >= 2) {
-        steps = 2;
-      }
-
-      let snap = null;
-      for (let i = 0; i < steps; i++) {
-        if (game.snapshots.length > 0) {
-          snap = game.snapshots.pop();
-        }
-      }
-      if (snap) {
-        game.state = snap.state;
-        game.moveLog = snap.moveLog;
-        game.capturedByWhite = snap.capturedByWhite;
-        game.capturedByBlack = snap.capturedByBlack;
-        game.lastMove = snap.lastMove;
-        game.positionCounts = snap.positionCounts;
-        game.status = "playing";
-        game.winner = null;
-        game.hintMove = null;
-        selectedSquare = null;
-        legalMovesForSelected = [];
-        document.getElementById("gameOverOverlay").classList.add("hidden");
-        persistActiveGame("Move Undone");
-        syncAllUI();
-        maybeTriggerAIMove();
-      }
-    }
-
-    function handleHint() {
-      if (!game || game.status !== "playing") return;
-      if (game.state.turn !== game.playerColor) {
-        showToast("Wait for your turn to request a hint", "amber");
-        return;
-      }
-      // Calculate a strong master-level hint (Level 24 strength)
-      const best = computeBestMoveForLevel(game.state, 24);
-      if (best) {
-        game.hintMove = best;
-        selectedSquare = { r: best.fromR, c: best.fromC };
-        legalMovesForSelected = generateLegalMoves(game.state).filter(m => m.fromR === best.fromR && m.fromC === best.fromC);
-        const fromAlg = squareToAlgebraic(best.fromR, best.fromC);
-        const toAlg = squareToAlgebraic(best.toR, best.toC);
-        showToast(`Hint: Try ${fromAlg} → ${toAlg}`, "emerald");
-        persistActiveGame();
-        drawBoard();
-      }
     }
 
     function startNewMatch(chosenColorMode, aiLevel) {
@@ -2455,38 +2373,7 @@
         }
       }
 
-      // 2. Draw Hint Arrow if active
-      if (game.hintMove) {
-        const fromScreen = boardToScreen(game.hintMove.fromR, game.hintMove.fromC);
-        const toScreen = boardToScreen(game.hintMove.toR, game.hintMove.toC);
-        const x1 = (fromScreen.sc + 0.5) * sqSize;
-        const y1 = (fromScreen.sr + 0.5) * sqSize;
-        const x2 = (toScreen.sc + 0.5) * sqSize;
-        const y2 = (toScreen.sr + 0.5) * sqSize;
-
-        ctx.save();
-        ctx.strokeStyle = "rgba(245, 158, 11, 0.88)";
-        ctx.fillStyle = "rgba(245, 158, 11, 0.88)";
-        ctx.lineWidth = sqSize * 0.14;
-        ctx.lineCap = "round";
-
-        const angle = Math.atan2(y2 - y1, x2 - x1);
-        const headLen = sqSize * 0.34;
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2 - Math.cos(angle) * (headLen * 0.6), y2 - Math.sin(angle) * (headLen * 0.6));
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(x2, y2);
-        ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6), y2 - headLen * Math.sin(angle - Math.PI / 6));
-        ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6));
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-      }
-
-      // 3. Draw Chess Pieces
+            // 3. Draw Chess Pieces
       for (let sr = 0; sr < 8; sr++) {
         for (let sc = 0; sc < 8; sc++) {
           const { r, c } = screenToBoard(sr, sc);
@@ -3047,9 +2934,7 @@
       showToast(soundEnabled ? "Sound effects enabled" : "Sound effects muted");
     });
 
-    // Primary Action Bar (Undo, Hint, Flip, Save/Load, Restart)
-    document.getElementById("btnUndo").addEventListener("click", handleUndo);
-    document.getElementById("btnHint").addEventListener("click", handleHint);
+    // Primary Action Bar (Flip, Save/Load, Restart)
     document.getElementById("btnFlip").addEventListener("click", () => {
       boardFlipped = !boardFlipped;
       persistActiveGame();
