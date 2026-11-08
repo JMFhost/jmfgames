@@ -1682,6 +1682,13 @@
         soundEnabled = typeof savedActive.soundEnabled === "boolean" ? savedActive.soundEnabled : true;
         setupSelectedSide = game.chosenColorMode || game.playerColor || "w";
         setupSelectedLevel = game.aiLevel || 1;
+        // Fix a saved game that still has the old swapped setup (King d1 / Queen
+        // e1): an unplayed saved game holds the old starting position, so rebuild
+        // it with the standard setup (Queen d1, King e1). In-progress games are
+        // left alone — their pieces have already moved.
+        if (countTotalHalfMoves() === 0 && game.state.board[7][3] && game.state.board[7][3].type === "k" && game.state.board[7][4] && game.state.board[7][4].type === "q") {
+          game.state.board = createInitialBoard();
+        }
         return true; // Restored existing session!
       }
       return false;
@@ -1736,6 +1743,12 @@
       pendingPromotionMoves = null;
       setupSelectedSide = game.chosenColorMode || game.playerColor;
       setupSelectedLevel = game.aiLevel;
+
+      // Same fix as on auto-restore: an unplayed slot save with the old swapped
+      // setup (King d1 / Queen e1) gets the standard starting position instead.
+      if (countTotalHalfMoves() === 0 && game.state.board[7][3] && game.state.board[7][3].type === "k" && game.state.board[7][4] && game.state.board[7][4].type === "q") {
+        game.state.board = createInitialBoard();
+      }
 
       persistActiveGame("Loaded Save");
       closeAllModals();
