@@ -292,7 +292,7 @@
   function setMusicOn(v) {
     musicOn = !!v; saveAudioSettings(); applyToggles();
     if (!musicOn) musicStop();
-    else if (musicActive && musicTune) musicPlay(musicTune); // resume the current game tune
+    else if (musicTune) musicPlay(musicTune); // resume the current game tune (musicStop clears musicActive, so guard on musicTune only)
   }
 
   window.JMFGAMES = {
@@ -726,6 +726,23 @@
   var bjShoe = [], bjPlayer = [], bjDealer = [], bjHoleDown = true;
   var bjState = 'bet'; // 'bet' | 'action' | 'result'
   var bjActionIdx = 0, bjMsg = '', bjPaused = false, bjWon = false, bjBlink = 0;
+  var bjSplitHands = null; // null = single hand; else [{cards, bet, done, result}]
+  var bjSplitIdx = 0;
+
+  function bjIsSoft(hand) {
+    var total = 0, aces = 0;
+    for (var i = 0; i < hand.length; i++) { total += bjCardValue(hand[i].r); if (hand[i].r === 1) aces++; }
+    if (aces === 0) return false;
+    var t = total, soft = aces;
+    while (t > 21 && soft > 0) { t -= 10; soft--; }
+    return soft > 0; // at least one Ace still counts as 11
+  }
+  function bjHandLabel(hand) {
+    var t = bjTotal(hand);
+    if (t > 21) return 'BUST ' + t;
+    if (bjIsSoft(hand)) return 'SOFT ' + t;
+    return '' + t;
+  }
 
   function bjNewShoe() {
     bjShoe = [];
@@ -758,12 +775,14 @@
   function bjAvailActions() {
     var a = ['HIT', 'STAND'];
     if (bjPlayer.length === 2 && bjBalance >= bjBet) a.push('DBL');
+    if (!bjSplitHands && bjPlayer.length === 2 && bjPlayer[0].r === bjPlayer[1].r && bjBalance >= bjBet) a.push('SPLIT');
     return a;
   }
   function startBlackjack() {
     bjState = 'bet';
     bjBet = Math.max(10, Math.min(bjBet, Math.floor(bjBalance / 10) * 10));
     bjPlayer = []; bjDealer = []; bjHoleDown = true;
+    bjSplitHands = null; bjSplitIdx = 0;
     bjMsg = ''; bjPaused = false; bjWon = false; bjActionIdx = 0;
     screen = 'play';
     JMFGAMES.musicPlay('bj');
@@ -812,6 +831,7 @@
     bjPlayer.push(bjDrawCard());
     JMFGAMES.beep(600, 0.05);
     if (bjIsBust(bjPlayer)) {
+      if (bjSplitHands) { bjFinishHand(); return; }
       bjMsg = 'BUST -$' + bjBet;
       bjNoteBest();
       bjEndHand();
@@ -821,9 +841,13 @@
       bjActionIdx = 0;
     }
   }
-  function bjStand() {
+  function bjDealerPlay() {
     bjHoleDown = false;
     while (bjTotal(bjDealer) < 17) bjDealer.push(bjDrawCard());
+  }
+  function bjStand() {
+    if (bjSplitHands) { bjFinishHand(); return; }
+    bjDealerPlay();
     bjResolve();
   }
   function bjDouble() {
@@ -833,12 +857,75 @@
     bjPlayer.push(bjDrawCard());
     JMFGAMES.beep(600, 0.05);
     if (bjIsBust(bjPlayer)) {
+      if (bjSplitHands) { bjFinishHand(); return; }
       bjMsg = 'BUST -$' + bjBet;
       bjNoteBest();
       bjEndHand();
     } else {
       bjStand();
     }
+  }
+  function bjSplit() {
+    var c1 = bjPlayer[0], c2 = bjPlayer[1];
+    var bet = bjBet;
+    bjBalance -= bet; bjSaveBalance(); // second bet, equal to the original
+    var isAces = (c1.r === 1);
+    bjSplitHands = [
+      { cards: [c1], bet: bet, done: false, result: '' },
+      { cards: [c2], bet: bet, done: false, result: '' }
+    ];
+    bjSplitHands[0].cards.push(bjDrawCard());
+    bjSplitHands[1].cards.push(bjDrawCard());
+    JMFGAMES.beep(700, 0.06);
+    if (isAces) {
+      // Split Aces: each hand gets exactly one card and stands.
+      bjSplitHands[0].done = true;
+      bjSplitHands[1].done = true;
+      bjSplitIdx = 0;
+      bjPlayer = bjSplitHands[0].cards; bjBet = bet;
+      bjDealerPlay();
+      bjResolveSplit();
+      return;
+    }
+    bjSplitIdx = 0;
+    bjPlayer = bjSplitHands[0].cards; bjBet = bet;
+    bjActionIdx = 0;
+    bjState = 'action';
+    if (bjTotal(bjPlayer) === 21) bjFinishHand(); // dealt 21 stands automatically
+  }
+  function bjFinishHand() {
+    // Sync the active split hand's bet, mark it done, advance or settle.
+    var hand = bjSplitHands[bjSplitIdx];
+    hand.bet = bjBet; hand.done = true;
+    bjSplitIdx++;
+    if (bjSplitIdx < bjSplitHands.length) {
+      var next = bjSplitHands[bjSplitIdx];
+      bjPlayer = next.cards; bjBet = next.bet;
+      bjActionIdx = 0;
+      bjState = 'action';
+      JMFGAMES.beep(700, 0.06);
+      if (bjTotal(bjPlayer) === 21) bjFinishHand(); // dealt 21 stands automatically
+    } else {
+      bjDealerPlay();
+      bjResolveSplit();
+    }
+  }
+  function bjResolveSplit() {
+    var dt = bjTotal(bjDealer);
+    var dealerBust = bjIsBust(bjDealer);
+    var net = 0;
+    for (var i = 0; i < bjSplitHands.length; i++) {
+      var h = bjSplitHands[i];
+      var pt = bjTotal(h.cards);
+      if (bjIsBust(h.cards)) { h.result = 'BUST'; net -= h.bet; }
+      else if (dealerBust || pt > dt) { bjBalance += h.bet * 2; h.result = 'WIN'; net += h.bet; }
+      else if (pt < dt) { h.result = 'LOSE'; net -= h.bet; }
+      else { bjBalance += h.bet; h.result = 'PUSH'; }
+    }
+    bjSaveBalance();
+    bjMsg = net > 0 ? ('WIN +$' + net) : (net < 0 ? ('LOSE -$' + (-net)) : 'PUSH');
+    bjNoteBest();
+    bjEndHand();
   }
   function bjResolve() {
     var pt = bjTotal(bjPlayer), dt = bjTotal(bjDealer);
@@ -879,6 +966,7 @@
     if (a === 'HIT') bjHit();
     else if (a === 'STAND') bjStand();
     else if (a === 'DBL') bjDouble();
+    else if (a === 'SPLIT') bjSplit();
   }
   function bjBack() {
     if (screen !== 'play' || bjPaused) return;
@@ -946,16 +1034,37 @@
       ctx.textAlign = 'left';
       return;
     }
-    var dTotal = bjHoleDown ? bjCardValue(bjDealer[0].r) : bjTotal(bjDealer);
-    ctx.fillText('DEALER ' + dTotal, 4, 22);
+    var dLabel = bjHoleDown ? ('DLR ' + bjCardValue(bjDealer[0].r)) : ('DLR ' + bjHandLabel(bjDealer));
+    ctx.fillText(dLabel, 4, 22);
     bjDrawHand(bjDealer, 8, 26, bjHoleDown);
-    var pTotal = bjTotal(bjPlayer);
-    ctx.fillText('YOU ' + pTotal, 4, 60);
-    bjDrawHand(bjPlayer, 8, 64, false);
-    ctx.fillText('BET $' + bjBet, 4, 100);
+    if (bjSplitHands) {
+      if (bjState === 'result') {
+        var h1 = bjSplitHands[0], h2 = bjSplitHands[1];
+        ctx.fillText('H1 ' + bjTotal(h1.cards) + ' ' + h1.result, 4, 60);
+        bjDrawHand(h1.cards, 8, 64, false);
+        ctx.fillText('H2 ' + bjTotal(h2.cards) + ' ' + h2.result, 4, 94);
+        bjDrawHand(h2.cards, 8, 98, false);
+        ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+        ctx.fillText(bjMsg, W / 2, 132);
+        ctx.font = '8px monospace';
+        ctx.fillText('A: NEXT  MENU: EXIT', W / 2, 140);
+        ctx.textAlign = 'left';
+      } else {
+        var active = bjSplitHands[bjSplitIdx];
+        var other = bjSplitHands[1 - bjSplitIdx];
+        ctx.fillText('H' + (bjSplitIdx + 1) + ' ' + bjHandLabel(active.cards), 4, 60);
+        bjDrawHand(active.cards, 8, 64, false);
+        var oStatus = other.done ? (bjIsBust(other.cards) ? 'BUST' : 'DONE') : '';
+        ctx.fillText('H' + (2 - bjSplitIdx) + ' ' + bjTotal(other.cards) + (oStatus ? ' ' + oStatus : '') + '  BET $' + active.bet, 4, 100);
+      }
+    } else {
+      ctx.fillText('YOU ' + bjHandLabel(bjPlayer), 4, 60);
+      bjDrawHand(bjPlayer, 8, 64, false);
+      ctx.fillText('BET $' + bjBet, 4, 100);
+    }
     if (bjState === 'action') {
       var acts = bjAvailActions();
-      var xs = acts.length === 3 ? [28, 80, 132] : [48, 112];
+      var xs = acts.length === 4 ? [20, 60, 100, 140] : (acts.length === 3 ? [28, 80, 132] : [48, 112]);
       ctx.font = '8px monospace';
       for (var i = 0; i < acts.length; i++) {
         var label = acts[i];
@@ -974,7 +1083,7 @@
       ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center';
       ctx.fillText('L/R PICK - A OK  B: STAND', W / 2, 140);
       ctx.textAlign = 'left';
-    } else if (bjState === 'result') {
+    } else if (bjState === 'result' && !bjSplitHands) {
       ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
       ctx.fillText(bjMsg, W / 2, 122);
       ctx.font = '8px monospace';
@@ -2369,16 +2478,17 @@ function chMoveStr(m) {
 
   var OV_LANE_Y = [31, 61, 91]; // lane centers
   var OV_DARK_X = 16, OV_SAINT_X = 144; // castle faces
-  // Saint mana income: 12/s vs the player's 8/s. Smarter decisions alone
-  // (tested at 8/s) only stretched games out (22s -> 26-28s) without
-  // changing the win rate — the player still won 100%. The player's
+  // Saint mana income: 20/s vs the player's 8/s. The Grandmaster AI
+  // (multi-lane defense + coordinated pushes, 0.7-1.1s think timer)
+  // is mana-hungry: at 12/s it actually lost MORE than the old AI
+  // (simple 80%, optimal 100%) because it could not afford both
+  // defense and pushes. 20/s is the smallest income that hits the
+  // targets (soak test, 40 games: simple 0%, optimal 5%, defensive
+  // 13%; 20 games seed 1000: optimal 10%, defensive 20%). The player's
   // units are individually stronger per mana (Demon ~265 power/mana vs
-  // Knight ~147, Beast ~132 vs Soldier ~87), so even perfect play cannot
-  // close the gap at equal income. 12/s is the smallest edge that makes
-  // the Saint clearly harder (soak test: simple player 100% -> 50%,
-  // optimal player 100% -> 0%); the simple player still wins half its
-  // games, so the Saint is hard, not unbeatable.
-  var OV_AI_INCOME = 12;
+  // Knight ~147), so the Saint needs the economy edge to be nearly
+  // unbeatable. Lane coverage is now multi-lane in every game.
+  var OV_AI_INCOME = 20;
   var ovMana = 160, ovAiMana = 160;
   var ovDarkHp = 1200, ovSaintHp = 1200;
   var ovLane = 1, ovUnitIdx = 0;
@@ -2478,75 +2588,95 @@ function chMoveStr(m) {
     }
     return false;
   }
-  // Weakest lane for the player to defend = fewest player units, then
-  // lowest player HP. Used for pushes.
-  function ovWeakestLane() {
-    var best = 0, bestScore = 1e9;
-    for (var lane = 0; lane < 3; lane++) {
-      var n = 0, hp = 0;
-      for (var i = 0; i < ovUnits.length; i++) {
-        var u = ovUnits[i];
-        if (u.side === 'p' && u.lane === lane) { n++; hp += u.hp; }
-      }
-      var sc = n * 1000 + hp;
-      if (sc < bestScore) { bestScore = sc; best = lane; }
+  // --- Grandmaster Saint AI ---
+  // Push coordination: the lane the AI is currently pushing, and how
+  // many more think ticks to keep reinforcing it (a Knight + Archer
+  // arrive together instead of scattered across lanes).
+  var ovPushLane = -1, ovPushTicks = 0;
+  // Player presence in a lane: units*1000 + HP (for weakest-lane picks).
+  function ovLanePlayerScore(lane) {
+    var n = 0, hp = 0;
+    for (var i = 0; i < ovUnits.length; i++) {
+      var u = ovUnits[i];
+      if (u.side === 'p' && u.lane === lane) { n++; hp += u.hp; }
     }
-    return best;
+    return n * 1000 + hp;
+  }
+  // Weakest lane for the player to defend = fewest player units, then
+  // lowest player HP. Ties are broken randomly (seeded) so the Saint
+  // pressures all three lanes instead of always picking lane 0.
+  function ovWeakestLane() {
+    var scores = [ovLanePlayerScore(0), ovLanePlayerScore(1), ovLanePlayerScore(2)];
+    var min = Math.min(scores[0], scores[1], scores[2]);
+    var cands = [];
+    for (var l = 0; l < 3; l++) { if (scores[l] <= min + 200) cands.push(l); }
+    return cands[Math.floor(Math.random() * cands.length)];
+  }
+  // Pick the push lane: keep reinforcing the current push lane while
+  // it is still weak, otherwise pick a (random tie-broken) weakest lane.
+  function ovPickPushLane() {
+    if (ovPushLane >= 0 && ovPushTicks > 0) {
+      var scores = [ovLanePlayerScore(0), ovLanePlayerScore(1), ovLanePlayerScore(2)];
+      var min = Math.min(scores[0], scores[1], scores[2]);
+      if (scores[ovPushLane] <= min + 200) { ovPushTicks--; return ovPushLane; }
+    }
+    var lane = ovWeakestLane();
+    ovPushLane = lane; ovPushTicks = 2;
+    return lane;
+  }
+  // Best counter unit for the most dangerous player unit in a lane.
+  // Returns null to save mana (e.g. waiting for a Knight vs a Demon).
+  function ovPickCounter(lane, danger, urgent) {
+    if (danger && (danger.letter === 'D' || danger.letter === 'G')) {
+      if (ovLaneHasKnight(lane)) {
+        if (ovAiMana >= 45) return OV_AI_UNITS[1]; // Archer DPS behind the Knight
+        if (ovAiMana >= 30) return OV_AI_UNITS[0]; // Soldier filler
+      } else {
+        if (ovAiMana >= 80) return OV_AI_UNITS[2]; // Knight tanks it
+        if (urgent && ovAiMana >= 45) return OV_AI_UNITS[1]; // delay
+        if (urgent && ovAiMana >= 30) return OV_AI_UNITS[0]; // delay
+      }
+      return null; // save for the Knight
+    }
+    if (ovAiMana >= 30) return OV_AI_UNITS[0]; // cheap Soldier is cost-effective vs Beasts
+    if (urgent && ovAiMana >= 45) return OV_AI_UNITS[1];
+    return null;
   }
   function ovAiSpawn() {
     // Decide what to do, then what to spawn. Saving mana (returning
     // without spawning) is a valid decision — the think timer fires
-    // again in ~1.2-1.8s, by which time more mana has accrued.
+    // again in ~0.7-1.1s, by which time more mana has accrued.
     var threats = [ovLaneThreat(0), ovLaneThreat(1), ovLaneThreat(2)];
-    var threatLane = 0, maxThreat = threats[0];
-    for (var l = 1; l < 3; l++) { if (threats[l] > maxThreat) { maxThreat = threats[l]; threatLane = l; } }
-    var pStr = ovSideStrength('p');
-    var danger = ovLaneDanger(threatLane);
-    var urgent = danger && danger.x > 115; // about to hit the castle
-
-    var def = null, lane = threatLane;
-
-    if (maxThreat >= 2.5) {
-      // DEFEND: counter the most dangerous player unit in the worst lane.
-      // Threshold 2.5 catches a Beast at mid-field (or two Beasts) early,
-      // before it reaches the castle; a Demon trips it immediately.
-      if (danger && (danger.letter === 'D' || danger.letter === 'G')) {
-        // Demon / Gorgon: Knight tanks it. If a Knight already holds the
-        // lane, add ranged DPS behind it; otherwise save for the Knight.
-        if (ovLaneHasKnight(threatLane)) {
-          if (ovAiMana >= 45) def = OV_AI_UNITS[1]; // Archer DPS
-          else if (ovAiMana >= 30) def = OV_AI_UNITS[0]; // Soldier filler
-          // else save for the Archer
-        } else {
-          if (ovAiMana >= 80) def = OV_AI_UNITS[2]; // Knight
-          else if (urgent && ovAiMana >= 45) def = OV_AI_UNITS[1]; // delay
-          else if (urgent && ovAiMana >= 30) def = OV_AI_UNITS[0]; // delay
-          // else save for the Knight (do not waste mana on a weak unit)
-        }
-      } else {
-        // Beast push (or mixed): cheap Soldier is cost-effective.
-        if (ovAiMana >= 30) def = OV_AI_UNITS[0];
-        else if (urgent && ovAiMana >= 45) def = OV_AI_UNITS[1];
-        // else save (Soldier is only 30; it will be affordable in <1s)
-      }
-    } else if (pStr < 8) {
-      // PUSH: player is weak — attack the lane they defend least, with
-      // the strongest unit affordable. Knight leads a sustained push.
-      lane = ovWeakestLane();
-      if (ovAiMana >= 80) def = OV_AI_UNITS[2];
-      else if (ovAiMana >= 45) def = OV_AI_UNITS[1];
-      else if (ovAiMana >= 30) def = OV_AI_UNITS[0];
-      // else save up for the push
-    } else {
-      // BUILD: no urgent threat and the player is not weak — hold mana
-      // for the next push/defense. Only spend if heavily banked.
-      if (ovAiMana >= 240) { lane = ovWeakestLane(); def = OV_AI_UNITS[2]; }
-      // else save
+    var order = [0, 1, 2].sort(function (a, b) { return threats[b] - threats[a]; });
+    // DEFEND: counter the worst lane, and the second lane too if it is
+    // also dangerous and mana allows. This is how the Saint fights in
+    // two lanes while pushing a third.
+    for (var di = 0; di < 2; di++) {
+      var lane = order[di];
+      if (threats[lane] < 2.0) break; // only defend real threats
+      var danger = ovLaneDanger(lane);
+      var urgent = danger && danger.x > 115;
+      var def = ovPickCounter(lane, danger, urgent);
+      if (!def) break; // saving for a counter; don't spend elsewhere
+      ovAiMana -= def.cost;
+      ovSpawn(def, 'a', lane);
+      if (ovAiMana < 30) break; // spent; save the rest
     }
-
-    if (!def) return; // saving mana for the right unit
-    ovAiMana -= def.cost;
-    ovSpawn(def, 'a', lane);
+    // PUSH: attack the weakest lane with the best affordable unit.
+    // Pushes happen even after defending, as long as mana allows — that
+    // is the multi-lane pressure. Only save if nothing is affordable.
+    var pushLane = ovPickPushLane();
+    var push = null;
+    if (ovAiMana >= 80) push = OV_AI_UNITS[2]; // Knight leads the push
+    else if (ovAiMana >= 45) push = OV_AI_UNITS[1]; // Archer
+    else if (ovAiMana >= 30) push = OV_AI_UNITS[0]; // Soldier
+    if (!push) return;
+    ovAiMana -= push.cost;
+    ovSpawn(push, 'a', pushLane);
+    if (push === OV_AI_UNITS[2] && ovAiMana >= 45) {
+      ovAiMana -= 45;
+      ovSpawn(OV_AI_UNITS[1], 'a', pushLane); // Archer backs the Knight
+    }
   }
   function ovDamage(target, dmg, attacker) {
     if (!target) return;
@@ -2586,10 +2716,10 @@ function chMoveStr(m) {
     if (ovDeployCd > 0) ovDeployCd -= dt;
     ovMana = Math.min(999, ovMana + 8 * dt);
     ovAiMana = Math.min(999, ovAiMana + OV_AI_INCOME * dt);
-    // AI think timer — faster than the old 2.2-3.2s so the Saint reacts
-    // quickly to pushes and to mana milestones.
+    // AI think timer — fast (0.7-1.1s) so the Saint reacts quickly to
+    // pushes, to mana milestones, and to pressure in multiple lanes.
     ovAiT -= dt;
-    if (ovAiT <= 0) { ovAiT = 1.2 + Math.random() * 0.6; ovAiSpawn(); }
+    if (ovAiT <= 0) { ovAiT = 0.7 + Math.random() * 0.4; ovAiSpawn(); }
     // Overlord lightning: every 12s zap the AI unit nearest the Dark Castle
     ovBoltT -= dt;
     if (ovBoltT <= 0) {
