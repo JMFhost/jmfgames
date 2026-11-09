@@ -245,7 +245,8 @@
     overlord: { bpm: 100, wave: 'sawtooth', notes: [[57,1],[60,1],[62,1],[64,1],[62,1],[60,1],[57,1],[55,1],[57,1],[60,1],[62,1],[64,1],[67,1],[64,1],[62,1],[60,1]] },
     solitaire: { bpm: 96, wave: 'sine', notes: [[72,2],[76,2],[79,2],[76,2],[81,2],[79,2],[76,2],[72,2],[74,2],[77,2],[81,2],[77,2],[74,2],[72,2],[67,2],[0,2]] },
     beat:    { bpm: 132, wave: 'square', notes: [[57,1],[0,1],[57,1],[60,1],[57,1],[0,1],[62,1],[60,1],[57,1],[0,1],[57,1],[64,1],[62,1],[60,1],[57,1],[55,1]] },
-    pool:    { bpm: 100, wave: 'triangle', notes: [[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[67,1],[69,1],[67,1],[64,1],[0,1]] }
+    pool:    { bpm: 100, wave: 'triangle', notes: [[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[67,1],[69,1],[67,1],[64,1],[0,1]] },
+    run:     { bpm: 152, wave: 'square', notes: [[64,1],[67,1],[69,1],[67,1],[64,1],[0,1],[62,1],[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[62,1],[0,1]] }
   };
   var musicTimer = null, musicStep = 0, musicNext = 0, musicTune = null, musicActive = false;
   function midiFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
@@ -357,6 +358,7 @@
     { name: "OVERLORD'S BASTION", playable: true },
     { name: 'SKY SOAR', playable: true },
     { name: 'SOLITAIRE', playable: true },
+    { name: 'SUBWAY RUNNER', playable: true },
     { name: "TEXAS HOLD'EM", playable: true }
   ];
 
@@ -365,7 +367,7 @@
 
   /* ---------- State ---------- */
   var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
-  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' — which game is on the play/over screens
+  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'run' — which game is on the play/over screens
   var menuIndex = 0;
   var comingName = '';
   var best = 0;
@@ -4680,6 +4682,419 @@ function chMoveStr(m) {
     ctx.textAlign = 'left';
   }
 
+  /* ================================================================
+     SUBWAY RUNNER (console) — original endless runner on the 160x144
+     screen. Dash down 3 subway tracks, dodge trains, jump barriers,
+     slide under overhead bars, grab coins. Bigger game: 12 challenge
+     stages (pick one, beat its goal to unlock the next), progress
+     auto-saves to localStorage 'jmf-games-subway-runner-save', and
+     DELETE SAVE on the stage-select screen wipes it.
+     Controls: Left/Right switch lane, Up/A jump, Down/B slide,
+     Start pauses, Menu returns to the main menu.
+     Fairness: a new row spawns only when the previous row is past
+     y=78 (>=64px gap); patterns never block all 3 lanes with trains;
+     a lane that needed a jump in one row never needs a slide in the
+     next row (and vice versa); jump/slide cancel each other so a
+     quick action change is always possible.
+     ================================================================ */
+  var RU_KEY = 'jmf-games-subway-runner-save';
+  var RU_LANES = [40, 80, 120];
+  var RU_PY = 118;
+  var RU_STAGES = [
+    { type: 'dist', goal: 500, label: 'RUN 500M' },
+    { type: 'coins', goal: 30, label: 'GET 30 COINS' },
+    { type: 'dodge', goal: 25, label: 'DODGE 25' },
+    { type: 'dist', goal: 1000, label: 'RUN 1000M' },
+    { type: 'coins', goal: 50, label: 'GET 50 COINS' },
+    { type: 'dodge', goal: 50, label: 'DODGE 50' },
+    { type: 'combo', goal: 1500, goal2: 25, label: '1500M+25 COINS' },
+    { type: 'score', goal: 2500, label: 'SCORE 2500' },
+    { type: 'dist', goal: 2000, label: 'RUN 2000M' },
+    { type: 'coins', goal: 80, label: 'GET 80 COINS' },
+    { type: 'dodge', goal: 100, label: 'DODGE 100' },
+    { type: 'score', goal: 5000, label: 'SCORE 5000' }
+  ];
+  var RU_PATTERNS = [
+    ['T',' ',' '],[' ','T',' '],[' ',' ','T'],
+    ['B',' ',' '],[' ','B',' '],[' ',' ','B'],
+    ['H',' ',' '],[' ','H',' '],[' ',' ','H'],
+    ['T','B',' '],['T',' ','B'],['B','T',' '],[' ','T','B'],['B',' ','T'],[' ','B','T'],
+    ['T','H',' '],['T',' ','H'],['H','T',' '],[' ','T','H'],['H',' ','T'],[' ','H','T'],
+    ['B','H',' '],['B',' ','H'],['H','B',' '],[' ','B','H'],['H',' ','B'],[' ','H','B'],
+    ['B','B',' '],[' ','B','B'],['B',' ','B'],
+    ['H','H',' '],[' ','H','H'],['H',' ','H'],
+    [' ',' ',' ']
+  ];
+  var ruSave = { unlocked: 1, best: {}, totalCoins: 0, bestDist: 0 };
+  function ruLoadSave() {
+    try {
+      var s = localStorage.getItem(RU_KEY);
+      if (s) {
+        var p = JSON.parse(s);
+        if (p && typeof p.unlocked === 'number') {
+          ruSave.unlocked = Math.max(1, Math.min(12, p.unlocked));
+          ruSave.best = p.best || {};
+          ruSave.totalCoins = p.totalCoins || 0;
+          ruSave.bestDist = p.bestDist || 0;
+        }
+      }
+    } catch (e) { ruSave = { unlocked: 1, best: {}, totalCoins: 0, bestDist: 0 }; }
+  }
+  function ruPersist() { try { localStorage.setItem(RU_KEY, JSON.stringify(ruSave)); } catch (e) {} }
+  ruLoadSave();
+  var ruPhase, ruSel, ruConfirm, ruStage, ruLaneIdx, ruJumpT, ruJumpY, ruSlideT,
+      ruSpeed, ruDist, ruCoins, ruScore, ruDodge, ruObs, ruCoinList,
+      ruPaused, ruOver, ruFrame, ruSleeper, ruLastRow, ruGoalMet, ruLastRowY;
+  ruObs = []; ruCoinList = []; ruPhase = 'stages'; ruSel = 0; ruConfirm = false; ruLastRowY = 14;
+  function startRunner() {
+    ruLoadSave(); // load = opening the game restores saved progress
+    ruPhase = 'stages'; ruSel = 0; ruConfirm = false;
+    ruPaused = false; ruOver = false;
+    screen = 'play';
+    JMFGAMES.musicPlay('run');
+    JMFGAMES.beep(660, 0.08);
+  }
+  function ruStartRun(idx) {
+    ruStage = idx; ruLaneIdx = 1; ruJumpT = 0; ruJumpY = 0; ruSlideT = 0;
+    ruSpeed = 1.7; ruDist = 0; ruCoins = 0; ruScore = 0; ruDodge = 0;
+    ruObs = []; ruCoinList = []; ruPaused = false; ruOver = false;
+    ruFrame = 0; ruSleeper = 0; ruLastRow = [' ', ' ', ' ']; ruGoalMet = false;
+    ruPhase = 'run';
+    ruSpawnRow(true);
+    JMFGAMES.beep(880, 0.1);
+  }
+  function ruGoalText(st) {
+    var s = RU_STAGES[st];
+    if (s.type === 'dist') return Math.floor(ruDist) + '/' + s.goal + 'M';
+    if (s.type === 'coins') return ruCoins + '/' + s.goal + ' COINS';
+    if (s.type === 'dodge') return ruDodge + '/' + s.goal + ' DODGED';
+    if (s.type === 'score') return ruScore + '/' + s.goal + ' PTS';
+    return Math.floor(ruDist) + '/' + s.goal + 'M ' + ruCoins + '/' + s.goal2 + 'C';
+  }
+  function ruGoalDone() {
+    var s = RU_STAGES[ruStage];
+    if (s.type === 'dist') return ruDist >= s.goal;
+    if (s.type === 'coins') return ruCoins >= s.goal;
+    if (s.type === 'dodge') return ruDodge >= s.goal;
+    if (s.type === 'score') return ruScore >= s.goal;
+    return ruDist >= s.goal && ruCoins >= s.goal2;
+  }
+  function ruSpawnRow(first) {
+    var maxObs = ruDist < 300 ? 1 : (ruDist < 1000 ? 2 : 3);
+    var pool = [];
+    for (var i = 0; i < RU_PATTERNS.length; i++) {
+      var pat = RU_PATTERNS[i], n = 0, ok = true;
+      for (var l = 0; l < 3; l++) {
+        if (pat[l] !== ' ') n++;
+        // never demand a slide right after a jump (or vice versa) in the same lane
+        if ((ruLastRow[l] === 'B' && pat[l] === 'H') || (ruLastRow[l] === 'H' && pat[l] === 'B')) ok = false;
+      }
+      if (ok && n <= maxObs) pool.push(pat);
+    }
+    if (!pool.length) pool = [[' ', ' ', ' ']];
+    var pick = pool[Math.floor(Math.random() * pool.length)];
+    ruLastRow = pick.slice();
+    for (var k = 0; k < 3; k++) {
+      if (pick[k] === ' ') continue;
+      ruObs.push({ lane: k, y: 14, type: pick[k] });
+    }
+    // coins: 45% of rows — a line in a clear lane, or an arc over a barrier
+    if (Math.random() < 0.45) {
+      var clearLanes = [];
+      for (var c = 0; c < 3; c++) if (pick[c] === ' ') clearLanes.push(c);
+      var barrierLanes = [];
+      for (var b = 0; b < 3; b++) if (pick[b] === 'B') barrierLanes.push(b);
+      if (barrierLanes.length && Math.random() < 0.5) {
+        var bl = barrierLanes[Math.floor(Math.random() * barrierLanes.length)];
+        for (var a = 0; a < 3; a++) ruCoinList.push({ lane: bl, y: 14 - 12 - a * 10, h: 12 });
+      } else if (clearLanes.length) {
+        var cl = clearLanes[Math.floor(Math.random() * clearLanes.length)];
+        for (var d = 0; d < 3; d++) ruCoinList.push({ lane: cl, y: 14 - 16 - d * 10, h: 0 });
+      }
+    }
+    if (first) { // seed two rows so the track is never empty at the start
+      for (var e = 0; e < ruObs.length; e++) ruObs[e].y += 50;
+    }
+    ruLastRowY = first ? 64 : 14; // y of the newest row; it travels down at ruSpeed
+  }
+  function ruJump() {
+    if (ruPhase !== 'run' || ruPaused || ruOver) return;
+    ruSlideT = 0; // slide cancels into a jump
+    if (ruJumpT <= 0) { ruJumpT = 30; JMFGAMES.beep(600, 0.05); }
+  }
+  function ruSlide() {
+    if (ruPhase !== 'run' || ruPaused || ruOver) return;
+    ruJumpT = 0; ruJumpY = 0; // jump cancels into a slide (fast fall)
+    if (ruSlideT <= 0) { ruSlideT = 26; JMFGAMES.beep(440, 0.05); }
+  }
+  function ruLane(dir) {
+    if (ruPhase !== 'run' || ruPaused || ruOver) return;
+    var nl = Math.max(0, Math.min(2, ruLaneIdx + dir));
+    if (nl !== ruLaneIdx) { ruLaneIdx = nl; JMFGAMES.beep(520, 0.04); }
+  }
+  function ruUp() {
+    if (ruPhase === 'stages') {
+      if (ruConfirm) return;
+      ruSel = (ruSel + RU_STAGES.length) % (RU_STAGES.length + 1); // 12 stages + DELETE SAVE
+      JMFGAMES.beep(600, 0.04);
+    } else if (ruPhase === 'run') ruJump();
+  }
+  function ruDown() {
+    if (ruPhase === 'stages') {
+      if (ruConfirm) return;
+      ruSel = (ruSel + 1) % (RU_STAGES.length + 1);
+      JMFGAMES.beep(600, 0.04);
+    } else if (ruPhase === 'run') ruSlide();
+  }
+  function ruAction() {
+    if (ruPhase === 'stages') {
+      if (ruConfirm) { // A = YES, wipe the save
+        ruSave = { unlocked: 1, best: {}, totalCoins: 0, bestDist: 0 };
+        ruPersist();
+        ruConfirm = false; ruSel = 0;
+        JMFGAMES.beep(220, 0.2);
+        return;
+      }
+      if (ruSel === RU_STAGES.length) { ruConfirm = true; JMFGAMES.beep(500, 0.08); return; }
+      if (ruSel < ruSave.unlocked) { ruStartRun(ruSel); }
+      else JMFGAMES.beep(180, 0.12); // locked stage
+    } else if (ruPhase === 'clear') {
+      ruPhase = 'stages'; ruSel = Math.min(ruStage + 1, RU_STAGES.length - 1);
+      JMFGAMES.beep(660, 0.08);
+    } else if (ruPhase === 'over') {
+      ruStartRun(ruStage); // A retries the stage
+    }
+  }
+  function ruBack() {
+    if (ruPhase === 'stages' && ruConfirm) { ruConfirm = false; JMFGAMES.beep(440, 0.06); return; }
+    if (ruPhase === 'run') ruSlide();
+  }
+  function ruCrash() {
+    ruOver = true; ruPhase = 'over';
+    if (ruScore > (ruSave.best[ruStage] || 0)) ruSave.best[ruStage] = ruScore;
+    if (Math.floor(ruDist) > ruSave.bestDist) ruSave.bestDist = Math.floor(ruDist);
+    ruSave.totalCoins += ruCoins;
+    ruPersist();
+    JMFGAMES.beep(220, 0.25);
+  }
+  function ruClear() {
+    ruGoalMet = true; ruPhase = 'clear';
+    if (ruScore > (ruSave.best[ruStage] || 0)) ruSave.best[ruStage] = ruScore;
+    if (Math.floor(ruDist) > ruSave.bestDist) ruSave.bestDist = Math.floor(ruDist);
+    ruSave.totalCoins += ruCoins;
+    if (ruStage + 1 < RU_STAGES.length && ruSave.unlocked < ruStage + 2) ruSave.unlocked = ruStage + 2;
+    ruPersist();
+    JMFGAMES.beep(990, 0.2);
+  }
+  function ruUpdate() {
+    if (ruPhase !== 'run' || ruPaused || ruOver) return;
+    ruFrame++;
+    ruSpeed = Math.min(3.6, 1.7 + ruDist * 0.0009);
+    ruDist += ruSpeed * 0.12;
+    ruScore = Math.floor(ruDist) + ruCoins * 25;
+    ruSleeper = (ruSleeper + ruSpeed) % 8;
+    if (ruJumpT > 0) {
+      ruJumpT--;
+      var p = (30 - ruJumpT) / 30;
+      ruJumpY = 20 * 4 * p * (1 - p);
+      if (ruJumpT === 0) ruJumpY = 0;
+    }
+    if (ruSlideT > 0) ruSlideT--;
+    // Spawn cadence is tracked by the newest row's y (ruLastRowY), NOT by
+    // the last obstacle/coin in the arrays: a stale coin from an old row
+    // (when newer rows spawned no coins) fired spawns early and stacked
+    // rows ~5px apart, which could wall off all 3 lanes at once.
+    ruLastRowY += ruSpeed;
+    if (ruLastRowY > 78) ruSpawnRow(false);
+    for (var i = ruObs.length - 1; i >= 0; i--) {
+      var o = ruObs[i];
+      o.y += ruSpeed;
+      if (o.y > 132) { ruObs.splice(i, 1); ruDodge++; continue; }
+      if (o.lane === ruLaneIdx) {
+        if (o.type === 'T') { if (Math.abs(o.y - RU_PY) < 16) { ruCrash(); return; } }
+        else if (o.type === 'B') { if (Math.abs(o.y - RU_PY) < 12 && ruJumpY < 8) { ruCrash(); return; } }
+        else if (o.type === 'H') { if (Math.abs(o.y - RU_PY) < 12 && ruSlideT <= 0) { ruCrash(); return; } }
+      }
+    }
+    for (var j = ruCoinList.length - 1; j >= 0; j--) {
+      var cn = ruCoinList[j];
+      cn.y += ruSpeed;
+      if (cn.y > 134) { ruCoinList.splice(j, 1); continue; }
+      if (cn.lane === ruLaneIdx && Math.abs(cn.y - RU_PY) < 10 && Math.abs(ruJumpY - cn.h) < 10) {
+        ruCoinList.splice(j, 1);
+        ruCoins++;
+        JMFGAMES.beep(990, 0.06);
+      }
+    }
+    if (ruFrame % 100 === 0) ruPersist(); // auto-save during long runs too
+    if (ruGoalDone()) { ruClear(); return; }
+  }
+  function drawRunner() {
+    ctx.fillStyle = '#23232e'; ctx.fillRect(0, 0, W, H);
+    if (ruPhase === 'stages') { drawRuStages(); return; }
+    // tunnel walls + lights
+    ctx.fillStyle = '#16161f';
+    ctx.fillRect(0, 14, 14, 126); ctx.fillRect(146, 14, 14, 126);
+    ctx.fillStyle = '#3a3a4a';
+    for (var ly = 14 + (ruPhase === 'run' ? (8 - (ruSleeper % 8)) : 0); ly < 140; ly += 24) {
+      ctx.fillRect(2, ly, 4, 8); ctx.fillRect(154, ly, 4, 8);
+    }
+    // track bed
+    ctx.fillStyle = '#2e2a24'; ctx.fillRect(14, 14, 132, 126);
+    // sleepers (scroll with speed)
+    ctx.fillStyle = '#4a3a28';
+    for (var sy = 14 + (ruSleeper % 8); sy < 140; sy += 8) ctx.fillRect(16, sy, 128, 2);
+    // rails: 3 lanes, 2 rails each
+    ctx.fillStyle = '#8a8a9a';
+    var rails = [26, 54, 66, 94, 106, 134];
+    for (var r = 0; r < rails.length; r++) ctx.fillRect(rails[r], 14, 2, 126);
+    drawRuCoins();
+    drawRuObs();
+    drawRuPlayer();
+    // header
+    ctx.fillStyle = '#e8e8f0'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('S' + (ruStage + 1) + ' ' + ruGoalText(ruStage), 2, 10);
+    ctx.textAlign = 'right';
+    ctx.fillText('SC ' + ruScore + ' C' + ruCoins, 158, 10);
+    ctx.textAlign = 'left';
+    if (ruPhase === 'clear') {
+      ctx.fillStyle = 'rgba(15,56,15,0.85)'; ctx.fillRect(20, 44, 120, 62);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('STAGE CLEAR!', W / 2, 60);
+      ctx.font = '8px monospace';
+      ctx.fillText('SCORE ' + ruScore + '  COINS ' + ruCoins, W / 2, 76);
+      ctx.fillText('DIST ' + Math.floor(ruDist) + 'M', W / 2, 88);
+      ctx.fillText('NEXT STAGE UNLOCKED', W / 2, 98);
+      ctx.fillText('A: CONTINUE', W / 2, 108);
+      ctx.textAlign = 'left';
+    } else if (ruPhase === 'over') {
+      ctx.fillStyle = 'rgba(15,56,15,0.85)'; ctx.fillRect(20, 40, 120, 70);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('RUN OVER', W / 2, 56);
+      ctx.font = '8px monospace';
+      ctx.fillText('STAGE ' + (ruStage + 1) + '  ' + RU_STAGES[ruStage].label, W / 2, 70);
+      ctx.fillText('SCORE ' + ruScore + '  BEST ' + (ruSave.best[ruStage] || 0), W / 2, 82);
+      ctx.fillText('COINS ' + ruCoins + '  DIST ' + Math.floor(ruDist) + 'M', W / 2, 94);
+      ctx.fillText('A: RETRY  MENU: EXIT', W / 2, 106);
+      ctx.textAlign = 'left';
+    } else if (ruPaused) {
+      ctx.fillStyle = 'rgba(15,56,15,0.7)'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('PAUSED', W / 2, 70);
+      ctx.font = '8px monospace';
+      ctx.fillText('START: RESUME', W / 2, 86);
+      ctx.textAlign = 'left';
+    }
+  }
+  function drawRuStages() {
+    ctx.fillStyle = '#9bac0f'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('SUBWAY RUNNER', W / 2, 14);
+    ctx.font = '8px monospace';
+    ctx.fillText('SELECT STAGE', W / 2, 26);
+    var total = RU_STAGES.length + 1; // stages + DELETE SAVE
+    var vis = 6, top = Math.max(0, Math.min(ruSel - 2, total - vis));
+    if (ruSel < top) top = ruSel;
+    for (var i = 0; i < vis; i++) {
+      var idx = top + i;
+      if (idx >= total) break;
+      var y = 38 + i * 11;
+      var isDel = idx === RU_STAGES.length;
+      var locked = !isDel && idx >= ruSave.unlocked;
+      var label = isDel ? 'DELETE SAVE' : ('S' + (idx + 1) + ' ' + RU_STAGES[idx].label);
+      if (idx === ruSel) {
+        ctx.fillStyle = '#0f380f'; ctx.fillRect(8, y - 8, 144, 10);
+        ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'left';
+        ctx.fillText('>', 14, y);
+        ctx.fillText(label, 26, y);
+        ctx.textAlign = 'right';
+        if (!isDel) ctx.fillText(locked ? 'LOCKED' : ('BEST ' + (ruSave.best[idx] || 0)), 152, y);
+        ctx.textAlign = 'center';
+      } else {
+        ctx.fillStyle = '#0f380f'; ctx.textAlign = 'left';
+        ctx.fillText(label, 26, y);
+        ctx.textAlign = 'right';
+        if (!isDel) ctx.fillText(locked ? 'LOCKED' : ('BEST ' + (ruSave.best[idx] || 0)), 152, y);
+        ctx.textAlign = 'center';
+      }
+    }
+    ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace';
+    ctx.fillText('COINS ' + ruSave.totalCoins + '   BEST ' + ruSave.bestDist + 'M', W / 2, 116);
+    ctx.fillText('UP/DN PICK - A PLAY', W / 2, 128);
+    ctx.fillText('MENU: BACK', W / 2, 140);
+    if (ruConfirm) {
+      ctx.fillStyle = 'rgba(15,56,15,0.9)'; ctx.fillRect(18, 46, 124, 56);
+      ctx.fillStyle = '#9bac0f'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('DELETE ALL', W / 2, 62);
+      ctx.fillText('PROGRESS?', W / 2, 74);
+      ctx.font = '8px monospace';
+      ctx.fillText('A: YES  B: NO', W / 2, 92);
+    }
+    ctx.textAlign = 'left';
+  }
+  function drawRuCoins() {
+    for (var i = 0; i < ruCoinList.length; i++) {
+      var c = ruCoinList[i];
+      var x = RU_LANES[c.lane], y = c.y - c.h;
+      ctx.fillStyle = '#FFD93D';
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#B8860B';
+      ctx.beginPath(); ctx.arc(x, y, 1.2, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  function drawRuObs() {
+    for (var i = 0; i < ruObs.length; i++) {
+      var o = ruObs[i], x = RU_LANES[o.lane];
+      if (o.type === 'T') {
+        ctx.fillStyle = '#7a1f1f'; ctx.fillRect(x - 15, o.y - 17, 30, 34);
+        ctx.fillStyle = '#a83232'; ctx.fillRect(x - 15, o.y - 17, 30, 4);
+        ctx.fillStyle = '#bfe8ff'; ctx.fillRect(x - 10, o.y - 12, 8, 6); ctx.fillRect(x + 2, o.y - 12, 8, 6);
+        ctx.fillStyle = '#ffd93d'; ctx.fillRect(x - 12, o.y + 10, 4, 3); ctx.fillRect(x + 8, o.y + 10, 4, 3);
+        ctx.fillStyle = '#1c1c1c'; ctx.fillRect(x - 15, o.y + 15, 30, 2);
+      } else if (o.type === 'B') {
+        ctx.fillStyle = '#ff8c42'; ctx.fillRect(x - 15, o.y - 4, 30, 7);
+        ctx.fillStyle = '#f5f5f5'; ctx.fillRect(x - 15, o.y - 4, 6, 7); ctx.fillRect(x - 3, o.y - 4, 6, 7); ctx.fillRect(x + 9, o.y - 4, 6, 7);
+        ctx.fillStyle = '#1c1c1c'; ctx.fillRect(x - 13, o.y + 3, 2, 4); ctx.fillRect(x + 11, o.y + 3, 2, 4);
+      } else if (o.type === 'H') {
+        ctx.fillStyle = '#3a3a4a'; ctx.fillRect(x - 15, o.y - 10, 30, 4);
+        ctx.fillStyle = '#ffd93d'; ctx.fillRect(x - 8, o.y - 6, 16, 7);
+        ctx.fillStyle = '#1c1c1c'; ctx.font = 'bold 6px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('!', x, o.y);
+        ctx.textAlign = 'left';
+      }
+    }
+  }
+  function drawRuPlayer() {
+    var x = RU_LANES[ruLaneIdx];
+    var y = RU_PY - ruJumpY;
+    var leg = (ruFrame % 16 < 8) ? 1 : -1;
+    if (ruSlideT > 0) {
+      // sliding: low profile, cap forward
+      ctx.fillStyle = '#2b6cb0'; ctx.fillRect(x - 7, y - 6, 14, 5);
+      ctx.fillStyle = '#e8a87c'; ctx.fillRect(x + 5, y - 6, 4, 4);
+      ctx.fillStyle = '#d23c3c'; ctx.fillRect(x + 4, y - 8, 6, 3);
+      ctx.fillStyle = '#1c1c1c'; ctx.fillRect(x - 8, y - 2, 5, 2); ctx.fillRect(x + 3, y - 2, 5, 2);
+      return;
+    }
+    // legs
+    ctx.fillStyle = '#2d3748';
+    ctx.fillRect(x - 4, y + 2, 3, 6 + (leg > 0 ? 2 : 0));
+    ctx.fillRect(x + 1, y + 2, 3, 6 + (leg < 0 ? 2 : 0));
+    // body
+    ctx.fillStyle = '#2b6cb0'; ctx.fillRect(x - 5, y - 6, 10, 8);
+    // arms
+    ctx.fillStyle = '#e8a87c';
+    ctx.fillRect(x - 7, y - 5, 2, 5 + leg);
+    ctx.fillRect(x + 5, y - 5, 2, 5 - leg);
+    // head + red cap
+    ctx.fillStyle = '#e8a87c'; ctx.fillRect(x - 3, y - 11, 6, 5);
+    ctx.fillStyle = '#d23c3c'; ctx.fillRect(x - 4, y - 13, 8, 3);
+    ctx.fillRect(x + 2, y - 11, 4, 2);
+    // backpack
+    ctx.fillStyle = '#e8b93c'; ctx.fillRect(x - 8, y - 5, 3, 6);
+  }
+
   /* ---------- Input (one handler per button, dispatched by screen) ---------- */
   JMFGAMES.on('press', 'up', function () {
     if (screen === 'menu') { menuIndex = (menuIndex + GAMES.length - 1) % GAMES.length; JMFGAMES.beep(600, 0.04); }
@@ -4692,6 +5107,7 @@ function chMoveStr(m) {
       else if (currentGame === 'solitaire') solMove('up');
       else if (currentGame === 'beat') { if (buPhase === 'select') buSelMove(-1); else if (buPhase === 'upgrade') buUpMove(-1); }
       else if (currentGame === 'pool') { if (poPhase === 'level') poLevelMove(-1); }
+      else if (currentGame === 'run') ruUp();
       else flap();
     }
   });
@@ -4706,6 +5122,7 @@ function chMoveStr(m) {
       else if (currentGame === 'solitaire') solMove('down');
       else if (currentGame === 'beat') { if (buPhase === 'select') buSelMove(1); else if (buPhase === 'upgrade') buUpMove(1); }
       else if (currentGame === 'pool') { if (poPhase === 'level') poLevelMove(1); }
+      else if (currentGame === 'run') ruDown();
     }
   });
   JMFGAMES.on('press', 'left', function () {
@@ -4715,6 +5132,7 @@ function chMoveStr(m) {
     else if (screen === 'play' && currentGame === 'chess') chMove(0, -1);
     else if (screen === 'play' && currentGame === 'overlord') { ovCycleUnit(-1); }
     else if (screen === 'play' && currentGame === 'solitaire') solMove('left');
+    else if (screen === 'play' && currentGame === 'run') ruLane(-1);
   });
   JMFGAMES.on('press', 'right', function () {
     if (screen === 'play' && currentGame === 'block') bqMove(0, 1);
@@ -4723,6 +5141,7 @@ function chMoveStr(m) {
     else if (screen === 'play' && currentGame === 'chess') chMove(0, 1);
     else if (screen === 'play' && currentGame === 'overlord') { ovCycleUnit(1); }
     else if (screen === 'play' && currentGame === 'solitaire') solMove('right');
+    else if (screen === 'play' && currentGame === 'run') ruLane(1);
   });
   JMFGAMES.on('press', 'a', function () {
     if (screen === 'menu') {
@@ -4736,11 +5155,12 @@ function chMoveStr(m) {
         else if (g.name === 'EMBERFALL BRAWL') { currentGame = 'beat'; startBeat(); }
         else if (g.name === "OVERLORD'S BASTION") { currentGame = 'overlord'; startOverlord(); }
         else if (g.name === 'SOLITAIRE') { currentGame = 'solitaire'; startSolitaire(); }
+        else if (g.name === 'SUBWAY RUNNER') { currentGame = 'run'; startRunner(); }
         else { currentGame = 'sky'; startGame(); }
       }
       else { comingName = g.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
-    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else flap(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else flap(); }
     else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else if (currentGame === 'pool') poRematch(); else startGame(); }
   });
   JMFGAMES.on('press', 'b', function () {
@@ -4756,6 +5176,7 @@ function chMoveStr(m) {
     else if (currentGame === 'solitaire') solBack();
     else if (currentGame === 'beat') buDodge();
     else if (currentGame === 'pool') poBack();
+    else if (currentGame === 'run') ruBack();
   });
   JMFGAMES.on('press', 'start', function () {
     if (screen !== 'play') return;
@@ -4767,6 +5188,7 @@ function chMoveStr(m) {
     else if (currentGame === 'solitaire') { if (!solOver) { solPaused = !solPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'beat') { if (!buOver) { buPaused = !buPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'pool') { if (!poOver) { poPaused = !poPaused; JMFGAMES.beep(330, 0.06); } }
+    else if (currentGame === 'run') { if (ruPhase === 'run') { ruPaused = !ruPaused; JMFGAMES.beep(330, 0.06); } }
     else if (!dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
   });
   JMFGAMES.on('press', 'menu', function () {
@@ -4784,6 +5206,7 @@ function chMoveStr(m) {
     if (currentGame === 'overlord') { ovUpdate(); return; }
     if (currentGame === 'beat') { buUpdate(); return; }
     if (currentGame === 'pool') { poUpdate(); return; }
+    if (currentGame === 'run') { ruUpdate(); return; }
     if (currentGame !== 'sky') return; // Hold'em has no per-frame update; without this, Sky Soar physics runs during Hold'em and the falling bird hits the ground -> gameOver() -> 'over' screen (BUSTED panel) on Hold'em launch after Sky was played
     if (paused || dead || !started) return;
     bird.vy = Math.min(bird.vy + GRAV, MAXFALL);
@@ -4889,7 +5312,7 @@ function chMoveStr(m) {
     ctx.fillText('SELECT A GAME', W / 2, 32);
     ctx.textAlign = 'left';
     for (var i = 0; i < GAMES.length; i++) {
-      var y = 44 + i * 9; // 9 games: 44..116; last highlight ends at 118, footer text starts ~126 — no overlap
+      var y = 44 + i * 8; // 10 games: 44..116; last highlight ends at 118, footer text starts ~126 — no overlap
       if (i === menuIndex) {
         ctx.fillStyle = '#0f380f';
         ctx.fillRect(8, y - 8, 144, 10);
@@ -4971,7 +5394,7 @@ function chMoveStr(m) {
     if (screen !== 'play') JMFGAMES.musicStop();
     if (screen === 'menu') drawMenu();
     else if (screen === 'coming') drawComing();
-    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else drawGame(); }
+    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else drawGame(); }
     else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else drawOver(); }
   }
 
