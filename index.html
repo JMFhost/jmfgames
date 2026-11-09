@@ -12,7 +12,6 @@
   gtag('config', 'G-6TBK3H67Y5');
 </script>
 
-<script
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2453219839747877" crossorigin="anonymous"></script>
 
 <meta charset="utf-8">
@@ -75,9 +74,6 @@
 </style>
 </head>
 <body>
-<p class="page-note">JMF Games — the pocket console. Pick a game on the screen and play with the buttons.</p>
-<p style="text-align:center;margin:0 auto 16px;max-width:460px"><a href="https://jmfgames.com/" style="display:inline-block;background:#1e293b;color:#e8e8e8;border:1px solid #334155;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:700;text-decoration:none">⌂ Back to JMFgames home</a></p>
-
 <div class="boy" id="jmfgames">
   <div class="boy-top"><span>JMF GAMES</span><span class="led"><i id="powerLed"></i>POWER</span></div>
 
@@ -117,6 +113,7 @@
   <p class="hint">D-pad moves · A flap / select · B back · Start pause · Select menu</p>
 </div>
 
+<p class="page-note">JMF Games — the pocket console. Pick a game on the screen and play with the buttons.</p>
 
 <p style="text-align:center;margin:18px auto 0;max-width:460px;font-size:13px">
   <a href="about.html" style="color:#9aa3b2">About</a> &nbsp;·&nbsp;
@@ -242,7 +239,7 @@
   /* ---------- Game list (menu) ---------- */
   var GAMES = [
     { name: 'SKY SOAR', playable: true },
-    { name: 'BLOCKQUEST', playable: false },
+    { name: 'BLOCKQUEST', playable: true },
     { name: 'BLACKJACK ROYALE', playable: false },
     { name: "TEXAS HOLD'EM", playable: false },
     { name: 'CHESS CLUB', playable: false }
@@ -253,6 +250,7 @@
 
   /* ---------- State ---------- */
   var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
+  var currentGame = 'sky'; // 'sky' | 'block' — which game is on the play/over screens
   var menuIndex = 0;
   var comingName = '';
   var best = 0;
@@ -307,28 +305,321 @@
     JMFGAMES.beep(220, 0.25);
   }
 
+  /* ================================================================
+     BLOCKQUEST (console) — 9x9 block puzzle on the 160x144 screen.
+     Controls: D-pad moves cursor / picks tray slot, A selects a tray
+     piece and places it, B deselects (or back to menu), Start pauses,
+     Select returns to the menu. Same rules as the standalone game:
+     fill a row, column or 3x3 box to clear it; tray refills when all
+     3 pieces are placed; game over when no tray piece has a move.
+     Best score: localStorage 'jmf-games-blockquest-best'.
+     ================================================================ */
+  var BQ_SHAPES = [
+    { name: 'Dot', cells: [[0,0]], color: '#38BDF8', w: 1, h: 1 },
+    { name: 'Duo', cells: [[0,0],[0,1]], color: '#FB923C', w: 2, h: 1 },
+    { name: 'Trio', cells: [[0,0],[0,1],[0,2]], color: '#F43F5E', w: 3, h: 1 },
+    { name: 'Four', cells: [[0,0],[0,1],[0,2],[0,3]], color: '#22C55E', w: 4, h: 1 },
+    { name: 'Five', cells: [[0,0],[0,1],[0,2],[0,3],[0,4]], color: '#A855F7', w: 5, h: 1 },
+    { name: 'Tall 2', cells: [[0,0],[1,0]], color: '#14B8A6', w: 1, h: 2 },
+    { name: 'Tall 3', cells: [[0,0],[1,0],[2,0]], color: '#EAB308', w: 1, h: 3 },
+    { name: 'Tall 4', cells: [[0,0],[1,0],[2,0],[3,0]], color: '#EC4899', w: 1, h: 4 },
+    { name: 'Square', cells: [[0,0],[0,1],[1,0],[1,1]], color: '#3B82F6', w: 2, h: 2 },
+    { name: 'Big Square', cells: [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2]], color: '#F59E0B', w: 3, h: 3 },
+    { name: 'L Corner', cells: [[0,0],[1,0],[1,1]], color: '#8B5CF6', w: 2, h: 2 },
+    { name: 'L Corner 2', cells: [[0,0],[0,1],[1,1]], color: '#06B6D4', w: 2, h: 2 },
+    { name: 'L Corner 3', cells: [[0,0],[0,1],[1,0]], color: '#EF4444', w: 2, h: 2 },
+    { name: 'L Corner 4', cells: [[0,1],[1,0],[1,1]], color: '#84CC16', w: 2, h: 2 },
+    { name: 'Big L', cells: [[0,0],[1,0],[2,0],[2,1],[2,2]], color: '#F97316', w: 3, h: 3 },
+    { name: 'Big L 2', cells: [[0,2],[1,2],[2,0],[2,1],[2,2]], color: '#10B981', w: 3, h: 3 },
+    { name: 'T Shape', cells: [[0,0],[0,1],[0,2],[1,1]], color: '#D946EF', w: 3, h: 2 },
+    { name: 'T Down', cells: [[0,1],[1,0],[1,1],[1,2]], color: '#0EA5E9', w: 3, h: 2 },
+    { name: 'S Shape', cells: [[0,1],[0,2],[1,0],[1,1]], color: '#F43F5E', w: 3, h: 2 },
+    { name: 'Z Shape', cells: [[0,0],[0,1],[1,1],[1,2]], color: '#22C55E', w: 3, h: 2 },
+    { name: 'Rectangle', cells: [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]], color: '#6366F1', w: 3, h: 2 },
+    { name: 'Tall Rectangle', cells: [[0,0],[0,1],[1,0],[1,1],[2,0],[2,1]], color: '#E11D48', w: 2, h: 3 }
+  ];
+  var BQ_BX = 5, BQ_BY = 14, BQ_P = 11, BQ_C = 10;
+  var BQ_TX = 109, BQ_TW = 47, BQ_TH = 30, BQ_TY = [14, 48, 82];
+  var bqBoard, bqTray, bqScore, bqBest, bqMoves, bqSel, bqTrayIdx, bqCur, bqPaused, bqOver, bqToast, bqToastFrames, bqBlink;
+  try { bqBest = parseInt(localStorage.getItem('jmf-games-blockquest-best') || '0', 10) || 0; } catch (e) { bqBest = 0; }
+  function bqSaveBest() { try { localStorage.setItem('jmf-games-blockquest-best', String(bqBest)); } catch (e) {} }
+  function bqEmptyBoard() {
+    var b = [];
+    for (var r = 0; r < 9; r++) b.push([null, null, null, null, null, null, null, null, null]);
+    return b;
+  }
+  function bqRandomPiece() {
+    var s = BQ_SHAPES[Math.floor(Math.random() * BQ_SHAPES.length)];
+    return { name: s.name, cells: s.cells, color: s.color, w: s.w, h: s.h };
+  }
+  function bqNewTray() { return [bqRandomPiece(), bqRandomPiece(), bqRandomPiece()]; }
+  function startBlockQuest() {
+    bqBoard = bqEmptyBoard();
+    bqTray = bqNewTray();
+    bqScore = 0; bqMoves = 0;
+    bqSel = -1; bqTrayIdx = 0;
+    bqCur = { r: 4, c: 4 };
+    bqPaused = false; bqOver = false;
+    bqToast = ''; bqToastFrames = 0; bqBlink = 0;
+    screen = 'play';
+    JMFGAMES.beep(660, 0.08);
+  }
+  function bqFits(piece, r, c) {
+    if (r < 0 || c < 0 || r + piece.h > 9 || c + piece.w > 9) return false;
+    for (var i = 0; i < piece.cells.length; i++) {
+      if (bqBoard[r + piece.cells[i][0]][c + piece.cells[i][1]]) return false;
+    }
+    return true;
+  }
+  function bqHasMove(piece) {
+    for (var r = 0; r <= 9 - piece.h; r++)
+      for (var c = 0; c <= 9 - piece.w; c++)
+        if (bqFits(piece, r, c)) return true;
+    return false;
+  }
+  function bqAnyMove() {
+    for (var i = 0; i < 3; i++) {
+      if (bqTray[i] && bqHasMove(bqTray[i])) return true;
+    }
+    return false;
+  }
+  function bqClampCursor() {
+    if (bqSel < 0) return;
+    var p = bqTray[bqSel];
+    if (!p) return;
+    bqCur.r = Math.max(0, Math.min(9 - p.h, bqCur.r));
+    bqCur.c = Math.max(0, Math.min(9 - p.w, bqCur.c));
+  }
+  function bqMove(dr, dc) {
+    if (screen !== 'play' || bqPaused || bqOver) return;
+    if (bqSel < 0) {
+      var d = (dr !== 0) ? dr : dc;
+      for (var t = 0; t < 3; t++) {
+        bqTrayIdx = (bqTrayIdx + d + 3) % 3;
+        if (bqTray[bqTrayIdx]) break;
+      }
+      JMFGAMES.beep(600, 0.03);
+    } else {
+      var p = bqTray[bqSel];
+      bqCur.r = Math.max(0, Math.min(9 - p.h, bqCur.r + dr));
+      bqCur.c = Math.max(0, Math.min(9 - p.w, bqCur.c + dc));
+      JMFGAMES.beep(700, 0.02);
+    }
+  }
+  function bqAction() {
+    if (screen !== 'play' || bqPaused || bqOver) return;
+    if (bqSel < 0) {
+      var p = bqTray[bqTrayIdx];
+      if (!p) { JMFGAMES.beep(180, 0.12); return; }
+      bqSel = bqTrayIdx;
+      bqClampCursor();
+      JMFGAMES.beep(520, 0.06);
+    } else {
+      var piece = bqTray[bqSel];
+      if (!piece) { bqSel = -1; return; }
+      if (!bqFits(piece, bqCur.r, bqCur.c)) { JMFGAMES.beep(180, 0.12); return; }
+      bqPlace(piece, bqCur.r, bqCur.c);
+    }
+  }
+  function bqBack() {
+    if (screen !== 'play') return;
+    if (bqSel >= 0) { bqSel = -1; JMFGAMES.beep(440, 0.06); }
+    else toMenu();
+  }
+  function bqPlace(piece, r, c) {
+    var i, L, k;
+    for (i = 0; i < piece.cells.length; i++) {
+      bqBoard[r + piece.cells[i][0]][c + piece.cells[i][1]] = piece.color;
+    }
+    bqTray[bqSel] = null;
+    bqMoves++;
+    var rows = [], cols = [], boxes = [];
+    for (L = 0; L < 9; L++) {
+      var rf = true;
+      for (k = 0; k < 9; k++) if (!bqBoard[L][k]) { rf = false; break; }
+      if (rf) rows.push(L);
+      var cf = true;
+      for (k = 0; k < 9; k++) if (!bqBoard[k][L]) { cf = false; break; }
+      if (cf) cols.push(L);
+      var br = Math.floor(L / 3) * 3, bc = (L % 3) * 3, bf = true;
+      for (var a = 0; a < 3; a++) for (var b = 0; b < 3; b++) {
+        if (!bqBoard[br + a][bc + b]) { bf = false; break; }
+      }
+      if (bf) boxes.push(L);
+    }
+    var lines = rows.length + cols.length + boxes.length;
+    var cleared = {}, nCleared = 0;
+    function mark(rr, cc) { var key = rr + '-' + cc; if (!cleared[key]) { cleared[key] = true; nCleared++; } }
+    rows.forEach(function (Ln) { for (var q = 0; q < 9; q++) mark(Ln, q); });
+    cols.forEach(function (Ln) { for (var q = 0; q < 9; q++) mark(q, Ln); });
+    boxes.forEach(function (Ln) {
+      var br = Math.floor(Ln / 3) * 3, bc = (Ln % 3) * 3;
+      for (var a = 0; a < 3; a++) for (var b = 0; b < 3; b++) mark(br + a, bc + b);
+    });
+    var gained = piece.cells.length;
+    if (lines > 0) gained += (nCleared * 10 + lines * 10) * (lines > 1 ? lines : 1);
+    bqScore += gained;
+    if (bqScore > bqBest) { bqBest = bqScore; bqSaveBest(); }
+    for (var key in cleared) {
+      var parts = key.split('-');
+      bqBoard[+parts[0]][+parts[1]] = null;
+    }
+    if (lines > 0) { bqToast = lines > 1 ? ('COMBO x' + lines + '  +' + gained) : ('+' + gained); JMFGAMES.beep(880, 0.1); }
+    else { bqToast = '+' + gained; JMFGAMES.beep(660, 0.06); }
+    bqToastFrames = 70;
+    bqSel = -1;
+    var anyLeft = bqTray[0] || bqTray[1] || bqTray[2];
+    if (!anyLeft) bqTray = bqNewTray();
+    bqTrayIdx = 0;
+    for (var t = 0; t < 3; t++) if (bqTray[t]) { bqTrayIdx = t; break; }
+    if (!bqAnyMove()) {
+      bqOver = true;
+      screen = 'over';
+      JMFGAMES.beep(220, 0.25);
+    }
+  }
+  function bqUpdate() {
+    if (bqPaused || bqOver) return;
+    bqBlink = (bqBlink + 1) % 60;
+    if (bqToastFrames > 0) bqToastFrames--;
+  }
+  function drawBlockQuest() {
+    ctx.fillStyle = '#9bac0f'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#0f380f'; ctx.textAlign = 'left'; ctx.font = 'bold 8px monospace';
+    ctx.fillText('SCORE ' + bqScore, 4, 10);
+    ctx.textAlign = 'right';
+    ctx.fillText('BEST ' + bqBest, W - 4, 10);
+    ctx.textAlign = 'left';
+    for (var r = 0; r < 9; r++) {
+      for (var c = 0; c < 9; c++) {
+        var x = BQ_BX + c * BQ_P, y = BQ_BY + r * BQ_P;
+        ctx.fillStyle = bqBoard[r][c] || '#8bac0f';
+        ctx.fillRect(x, y, BQ_C, BQ_C);
+      }
+    }
+    ctx.fillStyle = 'rgba(15,56,15,0.55)';
+    ctx.fillRect(BQ_BX + 32, BQ_BY, 1, 99);
+    ctx.fillRect(BQ_BX + 65, BQ_BY, 1, 99);
+    ctx.fillRect(BQ_BX, BQ_BY + 32, 99, 1);
+    ctx.fillRect(BQ_BX, BQ_BY + 65, 99, 1);
+    if (bqSel >= 0 && bqTray[bqSel] && !bqPaused) {
+      var p = bqTray[bqSel];
+      var ok = bqFits(p, bqCur.r, bqCur.c);
+      for (var i = 0; i < p.cells.length; i++) {
+        var pr = bqCur.r + p.cells[i][0], pc = bqCur.c + p.cells[i][1];
+        ctx.fillStyle = ok ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)';
+        ctx.fillRect(BQ_BX + pc * BQ_P, BQ_BY + pr * BQ_P, BQ_C, BQ_C);
+      }
+      if (bqBlink < 40) {
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(BQ_BX + bqCur.c * BQ_P - 0.5, BQ_BY + bqCur.r * BQ_P - 0.5, p.w * BQ_P, p.h * BQ_P);
+      }
+    }
+    for (var s = 0; s < 3; s++) {
+      var sx = BQ_TX, sy = BQ_TY[s];
+      var piece = bqTray[s];
+      if (s === bqSel) { ctx.fillStyle = '#0f380f'; ctx.fillRect(sx, sy, BQ_TW, BQ_TH); }
+      else { ctx.fillStyle = '#8bac0f'; ctx.fillRect(sx, sy, BQ_TW, BQ_TH); }
+      ctx.fillStyle = '#0f380f';
+      var bw = (s === bqTrayIdx && bqSel < 0) ? 2 : 1;
+      ctx.fillRect(sx, sy, BQ_TW, bw);
+      ctx.fillRect(sx, sy + BQ_TH - bw, BQ_TW, bw);
+      ctx.fillRect(sx, sy, bw, BQ_TH);
+      ctx.fillRect(sx + BQ_TW - bw, sy, bw, BQ_TH);
+      if (piece) {
+        var mw = piece.w * 4 - 1, mh = piece.h * 4 - 1;
+        var mx = sx + Math.floor((BQ_TW - mw) / 2), my = sy + Math.floor((BQ_TH - mh) / 2);
+        ctx.fillStyle = piece.color;
+        for (var k = 0; k < piece.cells.length; k++) {
+          ctx.fillRect(mx + piece.cells[k][1] * 4, my + piece.cells[k][0] * 4, 3, 3);
+        }
+      } else {
+        ctx.strokeStyle = '#0f380f'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(sx + 18, sy + 15); ctx.lineTo(sx + 22, sy + 19); ctx.lineTo(sx + 30, sy + 10);
+        ctx.stroke();
+      }
+    }
+    ctx.fillStyle = '#0f380f'; ctx.textAlign = 'left'; ctx.font = '8px monospace';
+    ctx.fillText('MOVES ' + bqMoves, BQ_TX, 124);
+    if (bqToastFrames > 0) {
+      ctx.font = 'bold 8px monospace';
+      var tw = ctx.measureText(bqToast).width + 12;
+      ctx.fillStyle = 'rgba(15,56,15,0.85)';
+      ctx.fillRect(W / 2 - tw / 2, 56, tw, 16);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center';
+      ctx.fillText(bqToast, W / 2, 67);
+      ctx.textAlign = 'left';
+    }
+    ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
+    if (bqSel < 0) ctx.fillText('UP/DOWN PICK - A SELECT', W / 2, 138);
+    else ctx.fillText('A PLACE - B BACK', W / 2, 138);
+    ctx.textAlign = 'left';
+    if (bqPaused) {
+      ctx.fillStyle = 'rgba(15,56,15,0.7)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('PAUSED', W / 2, 70);
+      ctx.font = '8px monospace';
+      ctx.fillText('START: RESUME', W / 2, 86);
+      ctx.textAlign = 'left';
+    }
+  }
+  function drawBlockQuestOver() {
+    drawBlockQuest();
+    ctx.fillStyle = 'rgba(15,56,15,0.55)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#9bac0f';
+    ctx.fillRect(18, 42, 124, 78);
+    ctx.fillStyle = '#0f380f';
+    ctx.fillRect(18, 42, 124, 2);
+    ctx.fillRect(18, 118, 124, 2);
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('GAME OVER', W / 2, 58);
+    ctx.font = '8px monospace';
+    ctx.fillText('SCORE ' + bqScore, W / 2, 74);
+    ctx.fillText('BEST ' + bqBest, W / 2, 86);
+    ctx.fillText('A: RETRY  B: MENU', W / 2, 104);
+    ctx.textAlign = 'left';
+  }
+
   /* ---------- Input (one handler per button, dispatched by screen) ---------- */
   JMFGAMES.on('press', 'up', function () {
     if (screen === 'menu') { menuIndex = (menuIndex + GAMES.length - 1) % GAMES.length; JMFGAMES.beep(600, 0.04); }
-    else if (screen === 'play') { flap(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqMove(-1, 0); else flap(); }
   });
   JMFGAMES.on('press', 'down', function () {
     if (screen === 'menu') { menuIndex = (menuIndex + 1) % GAMES.length; JMFGAMES.beep(600, 0.04); }
+    else if (screen === 'play' && currentGame === 'block') { bqMove(1, 0); }
+  });
+  JMFGAMES.on('press', 'left', function () {
+    if (screen === 'play' && currentGame === 'block') bqMove(0, -1);
+  });
+  JMFGAMES.on('press', 'right', function () {
+    if (screen === 'play' && currentGame === 'block') bqMove(0, 1);
   });
   JMFGAMES.on('press', 'a', function () {
     if (screen === 'menu') {
       var g = GAMES[menuIndex];
-      if (g.playable) { startGame(); }
+      if (g.playable) {
+        if (g.name === 'BLOCKQUEST') { currentGame = 'block'; startBlockQuest(); }
+        else { currentGame = 'sky'; startGame(); }
+      }
       else { comingName = g.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
-    else if (screen === 'play') { flap(); }
-    else if (screen === 'over') { startGame(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else flap(); }
+    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else startGame(); }
   });
   JMFGAMES.on('press', 'b', function () {
-    if (screen === 'play' || screen === 'over' || screen === 'coming') { toMenu(); }
+    if (screen === 'play' && currentGame === 'block') { bqBack(); }
+    else if (screen === 'play' || screen === 'over' || screen === 'coming') { toMenu(); }
   });
   JMFGAMES.on('press', 'start', function () {
-    if (screen === 'play' && !dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
+    if (screen !== 'play') return;
+    if (currentGame === 'block') { if (!bqOver) { bqPaused = !bqPaused; JMFGAMES.beep(330, 0.06); } }
+    else if (!dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
   });
   JMFGAMES.on('press', 'select', function () {
     if (screen === 'play' || screen === 'over' || screen === 'coming') { toMenu(); }
@@ -336,7 +627,9 @@
 
   /* ---------- Update (one fixed 1/60s step) ---------- */
   function update() {
-    if (screen !== 'play' || paused || dead || !started) return;
+    if (screen !== 'play') return;
+    if (currentGame === 'block') { bqUpdate(); return; }
+    if (paused || dead || !started) return;
     bird.vy = Math.min(bird.vy + GRAV, MAXFALL);
     bird.y += bird.vy;
     if (bird.y < BIRD_R) { bird.y = BIRD_R; bird.vy = 0; }
@@ -520,8 +813,8 @@
   function draw() {
     if (screen === 'menu') drawMenu();
     else if (screen === 'coming') drawComing();
-    else if (screen === 'play') drawGame();
-    else if (screen === 'over') drawOver();
+    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else drawGame(); }
+    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else drawOver(); }
   }
 
   /* ---------- Main loop: fixed 60Hz logic steps, any display rate ---------- */
