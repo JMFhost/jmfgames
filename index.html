@@ -3256,7 +3256,18 @@ function chMoveStr(m) {
   function solPutBack() {
     if (!solHeld) return;
     var from = solHeld.from;
-    if (from.type === 'tab') { for (var i = 0; i < solHeld.cards.length; i++) solTab[from.idx].push(solHeld.cards[i]); }
+    if (from.type === 'tab') {
+      // Restore the cursor to the start of the put-back stack. The pickup
+      // shrank the column, and any D-pad move while holding clamped solFan
+      // to the shorter column; without this the cursor stays on a covered
+      // card after the put-back, so the restored card(s) cannot be picked
+      // up again (A tries to grab an invalid stack starting at the covered
+      // card and is rejected). start is the index the first restored card
+      // lands on — the exact inverse of the pickup.
+      var start = solTab[from.idx].length;
+      for (var i = 0; i < solHeld.cards.length; i++) solTab[from.idx].push(solHeld.cards[i]);
+      if (solRow === 1 && solCol === from.idx) solFan = start;
+    }
     else if (from.type === 'waste') { for (var j = 0; j < solHeld.cards.length; j++) solWaste.push(solHeld.cards[j]); }
     else if (from.type === 'found') { for (var k = 0; k < solHeld.cards.length; k++) solFound[from.idx].push(solHeld.cards[k]); }
     solHeld = null;
