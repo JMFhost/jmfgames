@@ -2451,19 +2451,26 @@ function chMoveStr(m) {
      - Lifesteal kept on the Demon (20% of damage dealt).
      - Castles 1200 HP each (standalone 1000; raised because console
        battles resolve fast — the focused auto-player won in 24s at 1000).
-     - Units kept: Beast 35 / Gorgon 60 / Demon 95 (player);
+     - Units kept: Beast 45 / Gorgon 60 / Demon 95 (player);
        Soldier 30 / Archer 45 / Knight 80 (AI).
+     - Balance (Nov 9, 2026, closes the Beast-flood weakness at fair 8/s):
+       Soldier hp 130->140, dmg 20->22 (trades with Beasts); Beast cost
+       35->45, hp 160->130, dmg 26->24, speed 16->13 (flood is slower and
+       squishier); Demon hp 460->390, dmg 52->48, lifesteal 20%->2% (no
+       longer ~1.8x as cost-effective as the Knight). Soldier is now more
+       cost-effective than Beast (103 vs 77 power/mana); Demon 207 vs
+       Knight 147 (was 265 vs 147).
      Controls: Up/Down pick lane, Left/Right cycle unit forward,
      B cycles unit backward, A summon, Start pause, Menu exits. Persistence: jmf-games-overlord-wins/losses/
      best-time (fastest win in seconds, 0 = none).
      ================================================================ */
   var OV_UNITS = [
-    { name: 'BEAST', cost: 35, hp: 160, dmg: 26, range: 12, speed: 16, rate: 0.9, color: '#a855f7', letter: 'B', ls: 0 },
+    { name: 'BEAST', cost: 45, hp: 130, dmg: 24, range: 12, speed: 13, rate: 0.9, color: '#a855f7', letter: 'B', ls: 0 },
     { name: 'GORGON', cost: 60, hp: 250, dmg: 32, range: 42, speed: 10, rate: 1.1, color: '#16a34a', letter: 'G', ls: 0 },
-    { name: 'DEMON', cost: 95, hp: 460, dmg: 52, range: 12, speed: 12, rate: 0.95, color: '#dc2626', letter: 'D', ls: 0.2 }
+    { name: 'DEMON', cost: 95, hp: 390, dmg: 48, range: 12, speed: 12, rate: 0.95, color: '#dc2626', letter: 'D', ls: 0.02 }
   ];
   var OV_AI_UNITS = [
-    { name: 'SOLDIER', cost: 30, hp: 130, dmg: 20, range: 12, speed: 13, rate: 1.0, color: '#3b82f6', letter: 'S', ls: 0 },
+    { name: 'SOLDIER', cost: 30, hp: 140, dmg: 22, range: 12, speed: 13, rate: 1.0, color: '#3b82f6', letter: 'S', ls: 0 },
     { name: 'ARCHER', cost: 45, hp: 95, dmg: 24, range: 42, speed: 11, rate: 1.25, color: '#10b981', letter: 'A', ls: 0 },
     { name: 'KNIGHT', cost: 80, hp: 340, dmg: 38, range: 12, speed: 9, rate: 1.1, color: '#94a3b8', letter: 'K', ls: 0 }
   ];
@@ -2484,17 +2491,14 @@ function chMoveStr(m) {
 
   var OV_LANE_Y = [31, 61, 91]; // lane centers
   var OV_DARK_X = 16, OV_SAINT_X = 144; // castle faces
-  // Saint mana income: 20/s vs the player's 8/s. The Grandmaster AI
-  // (multi-lane defense + coordinated pushes, 0.7-1.1s think timer)
-  // is mana-hungry: at 12/s it actually lost MORE than the old AI
-  // (simple 80%, optimal 100%) because it could not afford both
-  // defense and pushes. 20/s is the smallest income that hits the
-  // targets (soak test, 40 games: simple 0%, optimal 5%, defensive
-  // 13%; 20 games seed 1000: optimal 10%, defensive 20%). The player's
-  // units are individually stronger per mana (Demon ~265 power/mana vs
-  // Knight ~147), so the Saint needs the economy edge to be nearly
-  // unbeatable. Lane coverage is now multi-lane in every game.
-  var OV_AI_INCOME = 20;
+  // Saint mana income: 8/s, SAME as the player's 8/s (fair game,
+  // Nov 9, 2026). No income edge — the Saint wins by playing much
+  // smarter at Grandmaster level, not by out-earning the player.
+  // The Grandmaster AI (multi-lane defense + coordinated pushes,
+  // 0.7-1.1s think timer) is mana-hungry, so it must spend every mana
+  // on the most cost-effective counter and push at the right moment.
+  // Lane coverage is multi-lane in every game.
+  var OV_AI_INCOME = 8;
   var ovMana = 160, ovAiMana = 160;
   var ovDarkHp = 1200, ovSaintHp = 1200;
   var ovLane = 1, ovUnitIdx = 0;
@@ -2630,58 +2634,60 @@ function chMoveStr(m) {
     ovPushLane = lane; ovPushTicks = 2;
     return lane;
   }
-  // Best counter unit for the most dangerous player unit in a lane.
-  // Returns null to save mana (e.g. waiting for a Knight vs a Demon).
-  function ovPickCounter(lane, danger, urgent) {
-    if (danger && (danger.letter === 'D' || danger.letter === 'G')) {
-      if (ovLaneHasKnight(lane)) {
-        if (ovAiMana >= 45) return OV_AI_UNITS[1]; // Archer DPS behind the Knight
-        if (ovAiMana >= 30) return OV_AI_UNITS[0]; // Soldier filler
-      } else {
-        if (ovAiMana >= 80) return OV_AI_UNITS[2]; // Knight tanks it
-        if (urgent && ovAiMana >= 45) return OV_AI_UNITS[1]; // delay
-        if (urgent && ovAiMana >= 30) return OV_AI_UNITS[0]; // delay
-      }
-      return null; // save for the Knight
+  // --- Fair Grandmaster Saint AI (8/s, same as the player) ---
+  // Strategy: build a Knight + Archer deathball. Knights tank (340 HP),
+  // Archers add ranged DPS from safety (19.2 dps each, range 42) and
+  // SURVIVE, so each defense costs only a replacement Knight (80) while
+  // the player loses a Demon (95). A Knight + 2 Archers (170) kills a
+  // Demon and keeps both Archers; once the Saint has 3+ Archers + a
+  // Knight it out-DPSes Demons and pushes. Defense is efficient:
+  // counter the most dangerous lane first, use Soldiers only as a
+  // cheap delay when a Knight is unaffordable and the threat is at
+  // the castle door. The Saint concentrates its main force in one
+  // "core" lane and pressures the other lanes when it can afford to.
+  // Count Saint units of a type in a lane.
+  function ovLaneCount(letter, lane) {
+    var n = 0;
+    for (var i = 0; i < ovUnits.length; i++) {
+      var u = ovUnits[i];
+      if (u.side === 'a' && u.lane === lane && u.letter === letter) n++;
     }
-    if (ovAiMana >= 30) return OV_AI_UNITS[0]; // cheap Soldier is cost-effective vs Beasts
-    if (urgent && ovAiMana >= 45) return OV_AI_UNITS[1];
-    return null;
+    return n;
   }
+  // The Saint's "core" lane: where its deathball lives. The lane with
+  // the most Saint Archers, tie-broken by most Saint Knights, then the
+  // weakest player lane. Sticky: once a core is chosen it stays until
+  // the deathball is wiped out, so Archers accumulate in one place.
   function ovAiSpawn() {
-    // Decide what to do, then what to spawn. Saving mana (returning
-    // without spawning) is a valid decision — the think timer fires
-    // again in ~0.7-1.1s, by which time more mana has accrued.
+    // Split defense/push (fair Grandmaster, 8/s).
+    // Defense: any enemy close to the Saint castle (x > 80) in ANY
+    // lane gets a Knight (if affordable and none there) or a Soldier
+    // delay. This stops Beasts from swarming the castle in all lanes
+    // and Demons from reaching it unopposed.
+    // Push: remaining mana floods Soldiers into the weakest lane
+    // (the empty lane) to win the damage race.
     var threats = [ovLaneThreat(0), ovLaneThreat(1), ovLaneThreat(2)];
     var order = [0, 1, 2].sort(function (a, b) { return threats[b] - threats[a]; });
-    // DEFEND: counter the worst lane, and the second lane too if it is
-    // also dangerous and mana allows. This is how the Saint fights in
-    // two lanes while pushing a third.
-    for (var di = 0; di < 2; di++) {
+    for (var di = 0; di < 3; di++) {
       var lane = order[di];
-      if (threats[lane] < 2.0) break; // only defend real threats
       var danger = ovLaneDanger(lane);
-      var urgent = danger && danger.x > 115;
-      var def = ovPickCounter(lane, danger, urgent);
-      if (!def) break; // saving for a counter; don't spend elsewhere
-      ovAiMana -= def.cost;
-      ovSpawn(def, 'a', lane);
-      if (ovAiMana < 30) break; // spent; save the rest
+      if (!danger || danger.x <= 80) continue;
+      if (ovLaneCount('K', lane) === 0 && ovAiMana >= 80) {
+        ovAiMana -= 80;
+        ovSpawn(OV_AI_UNITS[2], 'a', lane);
+      } else if (ovAiMana >= 30) {
+        ovAiMana -= 30;
+        ovSpawn(OV_AI_UNITS[0], 'a', lane);
+      }
+      if (ovAiMana < 30) break;
     }
-    // PUSH: attack the weakest lane with the best affordable unit.
-    // Pushes happen even after defending, as long as mana allows — that
-    // is the multi-lane pressure. Only save if nothing is affordable.
     var pushLane = ovPickPushLane();
-    var push = null;
-    if (ovAiMana >= 80) push = OV_AI_UNITS[2]; // Knight leads the push
-    else if (ovAiMana >= 45) push = OV_AI_UNITS[1]; // Archer
-    else if (ovAiMana >= 30) push = OV_AI_UNITS[0]; // Soldier
-    if (!push) return;
-    ovAiMana -= push.cost;
-    ovSpawn(push, 'a', pushLane);
-    if (push === OV_AI_UNITS[2] && ovAiMana >= 45) {
+    if (ovAiMana >= 30) {
+      ovAiMana -= 30;
+      ovSpawn(OV_AI_UNITS[0], 'a', pushLane);
+    } else if (ovAiMana >= 45) {
       ovAiMana -= 45;
-      ovSpawn(OV_AI_UNITS[1], 'a', pushLane); // Archer backs the Knight
+      ovSpawn(OV_AI_UNITS[1], 'a', pushLane);
     }
   }
   function ovDamage(target, dmg, attacker) {
