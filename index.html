@@ -105,16 +105,16 @@
     </div>
   </div>
 
-  <div class="toggles">
-    <button type="button" id="soundToggle" aria-label="Toggle sound effects">SOUND: ON</button>
-    <button type="button" id="musicToggle" aria-label="Toggle background music">MUSIC: ON</button>
-  </div>
-
   <div class="startsel">
     <button type="button" data-jmfbtn="menu" aria-label="Menu"></button>
     <button type="button" data-jmfbtn="start" aria-label="Start"></button>
   </div>
   <div class="startsel lbl"><span>MENU</span><span>START</span></div>
+
+  <div class="toggles">
+    <button type="button" id="soundToggle" aria-label="Toggle sound effects">SOUND: ON</button>
+    <button type="button" id="musicToggle" aria-label="Toggle background music">MUSIC: ON</button>
+  </div>
 
   <div class="grille"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
   <p class="hint">D-pad moves · A play / select · B action · Start pause · Menu: main menu</p>
@@ -2443,38 +2443,41 @@ function chMoveStr(m) {
      OVERLORD'S BASTION — console redesign of the standalone
      2D lane siege (Overlord vs. The Saint).
      Simplifications (standalone -> console):
-     - 5 lanes -> 3 lanes; 10 units (6 troops + 4 towers) -> 3 troops,
+     - 5 lanes -> 3 lanes; 10 units (6 troops + 4 towers) -> 4 troops,
        no towers (no grid placement UI on 160x144).
      - No upgrades, no saves, no themes, no castle upgrade.
      - Overlord hero ability -> AUTOMATIC: Abyssal Void Lightning
        strikes the AI unit closest to the Dark Castle every 12s (60 dmg).
      - Saint hero ability dropped (no sunbeams); AI compensates with a
        steady spawn timer.
-     - Lifesteal kept on the Demon (20% of damage dealt).
-     - Castles 1200 HP each (standalone 1000; raised because console
-       battles resolve fast — the focused auto-player won in 24s at 1000).
-     - Units kept: Beast 45 / Gorgon 60 / Demon 95 (player);
-       Soldier 30 / Archer 45 / Knight 80 (AI).
-     - Balance (Nov 9, 2026, closes the Beast-flood weakness at fair 8/s):
-       Soldier hp 130->140, dmg 20->22 (trades with Beasts); Beast cost
-       35->45, hp 160->130, dmg 26->24, speed 16->13 (flood is slower and
-       squishier); Demon hp 460->390, dmg 52->48, lifesteal 20%->2% (no
-       longer ~1.8x as cost-effective as the Knight). Soldier is now more
-       cost-effective than Beast (103 vs 77 power/mana); Demon 207 vs
-       Knight 147 (was 265 vs 147).
+     - Symmetric 4-tier rosters (Nov 9, 2026 redesign, Jesse's
+       instruction): Beast <-> Knight, Gorgon <-> Mage, Demon <->
+       Champion, Devil <-> Hero. Each pair has the SAME cost and the
+       SAME stats — equally powerful. Both sides 8/s mana. The game
+       is won by strategy, not by stats or income.
+     - Fierce defense, long games (Nov 9, 2026 redesign): castles
+       2000 HP (was 1200) and units deal only 40% damage to castles,
+       so a single push cannot end the game — both castles defend
+       all lanes and battles last 2-4 minutes.
      Controls: Up/Down pick lane, Left/Right cycle unit forward,
      B cycles unit backward, A summon, Start pause, Menu exits. Persistence: jmf-games-overlord-wins/losses/
      best-time (fastest win in seconds, 0 = none).
      ================================================================ */
+  // Symmetric 4-tier rosters. Each pair (same index) has the SAME cost
+  // and the SAME stats — equally powerful. Tier 1 cheap/fast, tier 2
+  // mid/ranged, tier 3 strong/melee, tier 4 elite/strongest.
+  // Power/mana: tier 1 = 77, tier 2 = 121, tier 3 = 207, tier 4 = 236.
   var OV_UNITS = [
     { name: 'BEAST', cost: 45, hp: 130, dmg: 24, range: 12, speed: 13, rate: 0.9, color: '#a855f7', letter: 'B', ls: 0 },
     { name: 'GORGON', cost: 60, hp: 250, dmg: 32, range: 42, speed: 10, rate: 1.1, color: '#16a34a', letter: 'G', ls: 0 },
-    { name: 'DEMON', cost: 95, hp: 390, dmg: 48, range: 12, speed: 12, rate: 0.95, color: '#dc2626', letter: 'D', ls: 0.02 }
+    { name: 'DEMON', cost: 95, hp: 390, dmg: 48, range: 12, speed: 12, rate: 0.95, color: '#dc2626', letter: 'D', ls: 0.02 },
+    { name: 'DEVIL', cost: 140, hp: 550, dmg: 60, range: 12, speed: 11, rate: 1.0, color: '#ea580c', letter: 'V', ls: 0.05 }
   ];
   var OV_AI_UNITS = [
-    { name: 'SOLDIER', cost: 30, hp: 140, dmg: 22, range: 12, speed: 13, rate: 1.0, color: '#3b82f6', letter: 'S', ls: 0 },
-    { name: 'ARCHER', cost: 45, hp: 95, dmg: 24, range: 42, speed: 11, rate: 1.25, color: '#10b981', letter: 'A', ls: 0 },
-    { name: 'KNIGHT', cost: 80, hp: 340, dmg: 38, range: 12, speed: 9, rate: 1.1, color: '#94a3b8', letter: 'K', ls: 0 }
+    { name: 'KNIGHT', cost: 45, hp: 130, dmg: 24, range: 12, speed: 13, rate: 0.9, color: '#94a3b8', letter: 'K', ls: 0 },
+    { name: 'MAGE', cost: 60, hp: 250, dmg: 32, range: 42, speed: 10, rate: 1.1, color: '#8b5cf6', letter: 'M', ls: 0 },
+    { name: 'CHAMPION', cost: 95, hp: 390, dmg: 48, range: 12, speed: 12, rate: 0.95, color: '#d97706', letter: 'C', ls: 0.02 },
+    { name: 'HERO', cost: 140, hp: 550, dmg: 60, range: 12, speed: 11, rate: 1.0, color: '#fbbf24', letter: 'H', ls: 0.05 }
   ];
   var OV_WINS_KEY = 'jmf-games-overlord-wins';
   var OV_LOSSES_KEY = 'jmf-games-overlord-losses';
@@ -2493,28 +2496,31 @@ function chMoveStr(m) {
 
   var OV_LANE_Y = [31, 61, 91]; // lane centers
   var OV_DARK_X = 16, OV_SAINT_X = 144; // castle faces
-  // Saint mana income: 8/s, SAME as the player's 8/s (fair game,
-  // Nov 9, 2026). No income edge — the Saint wins by playing much
-  // smarter at Grandmaster level, not by out-earning the player.
-  // The Grandmaster AI (multi-lane defense + coordinated pushes,
-  // 0.7-1.1s think timer) is mana-hungry, so it must spend every mana
-  // on the most cost-effective counter and push at the right moment.
-  // Lane coverage is multi-lane in every game.
+  // Castle HP and castle damage (Nov 9, 2026 redesign): castles are
+  // 2000 HP (was 1200) and units deal only 40% damage to castles, so
+  // a single push cannot end the game — both castles defend all lanes
+  // fiercely and battles last 2-4 minutes instead of ~21-25s.
+  var OV_CASTLE_HP = 2000, OV_CASTLE_DMG = 0.4;
+  // Saint mana income: 8/s, SAME as the player's 8/s (fair game).
+  // No income edge — the Saint wins by playing much smarter at
+  // Grandmaster level, not by out-earning the player.
   var OV_AI_INCOME = 8;
   var ovMana = 160, ovAiMana = 160;
-  var ovDarkHp = 1200, ovSaintHp = 1200;
+  var ovDarkHp = OV_CASTLE_HP, ovSaintHp = OV_CASTLE_HP;
   var ovLane = 1, ovUnitIdx = 0;
   var ovUnits = [], ovProjs = [], ovFx = []; // ovFx: hit sparks {x, y, frames, max}
   var ovTime = 0, ovAiT = 2.0, ovBoltT = 12, ovBoltFx = null;
+  var ovSaintBoltT = 6, ovSaintBoltFx = null;
   var ovDeployCd = 0, ovPaused = false, ovOver = false, ovWon = false;
   var ovBlink = 0;
 
   function startOverlord() {
     ovMana = 160; ovAiMana = 160;
-    ovDarkHp = 1200; ovSaintHp = 1200;
+    ovDarkHp = OV_CASTLE_HP; ovSaintHp = OV_CASTLE_HP;
     ovLane = 1; ovUnitIdx = 0;
     ovUnits = []; ovProjs = []; ovFx = [];
     ovTime = 0; ovAiT = 1.0; ovBoltT = 12; ovBoltFx = null;
+    ovSaintBoltT = 6; ovSaintBoltFx = null;
     ovDeployCd = 0; ovPaused = false; ovOver = false; ovWon = false;
     screen = 'play';
     JMFGAMES.musicPlay('overlord');
@@ -2592,18 +2598,16 @@ function chMoveStr(m) {
     }
     return best;
   }
-  // Does the AI already have a Knight in this lane (a tank holding it)?
-  function ovLaneHasKnight(lane) {
-    for (var i = 0; i < ovUnits.length; i++) {
-      var u = ovUnits[i];
-      if (u.side === 'a' && u.lane === lane && u.letter === 'K') return true;
-    }
-    return false;
-  }
-  // --- Grandmaster Saint AI ---
+  // --- Grandmaster Saint AI (symmetric 4-tier, defense-first) ---
+  // The Saint defends all lanes fiercely and pushes when the player is
+  // weak. Counters are the MIRRORED unit of the same tier (Beast->Knight,
+  // Gorgon->Mage, Demon->Champion, Devil->Hero) — same cost, same power,
+  // so a counter is a fair fight. The Saint wins by picking the right
+  // counter at the right time, saving mana for the counter it needs, and
+  // coordinating pushes — not by out-earning the player.
   // Push coordination: the lane the AI is currently pushing, and how
-  // many more think ticks to keep reinforcing it (a Knight + Archer
-  // arrive together instead of scattered across lanes).
+  // many more think ticks to keep reinforcing it (a force arrives
+  // together instead of scattered across lanes).
   var ovPushLane = -1, ovPushTicks = 0;
   // Player presence in a lane: units*1000 + HP (for weakest-lane picks).
   function ovLanePlayerScore(lane) {
@@ -2636,65 +2640,95 @@ function chMoveStr(m) {
     ovPushLane = lane; ovPushTicks = 2;
     return lane;
   }
-  // --- Fair Grandmaster Saint AI (8/s, same as the player) ---
-  // Strategy: build a Knight + Archer deathball. Knights tank (340 HP),
-  // Archers add ranged DPS from safety (19.2 dps each, range 42) and
-  // SURVIVE, so each defense costs only a replacement Knight (80) while
-  // the player loses a Demon (95). A Knight + 2 Archers (170) kills a
-  // Demon and keeps both Archers; once the Saint has 3+ Archers + a
-  // Knight it out-DPSes Demons and pushes. Defense is efficient:
-  // counter the most dangerous lane first, use Soldiers only as a
-  // cheap delay when a Knight is unaffordable and the threat is at
-  // the castle door. The Saint concentrates its main force in one
-  // "core" lane and pressures the other lanes when it can afford to.
-  // Count Saint units of a type in a lane.
-  function ovLaneCount(letter, lane) {
-    var n = 0;
+  // Tier of a unit by its letter (index in the roster): 0 = Beast/Knight,
+  // 1 = Gorgon/Mage, 2 = Demon/Champion, 3 = Devil/Hero.
+  function ovUnitTier(letter) {
+    if (letter === 'B' || letter === 'K') return 0;
+    if (letter === 'G' || letter === 'M') return 1;
+    if (letter === 'D' || letter === 'C') return 2;
+    if (letter === 'V' || letter === 'H') return 3;
+    return 0;
+  }
+  // Does the AI already have a unit of at least this tier in the lane?
+  function ovLaneHasTier(lane, tier) {
     for (var i = 0; i < ovUnits.length; i++) {
       var u = ovUnits[i];
-      if (u.side === 'a' && u.lane === lane && u.letter === letter) n++;
+      if (u.side === 'a' && u.lane === lane && ovUnitTier(u.letter) >= tier) return true;
     }
-    return n;
+    return false;
   }
-  // The Saint's "core" lane: where its deathball lives. The lane with
-  // the most Saint Archers, tie-broken by most Saint Knights, then the
-  // weakest player lane. Sticky: once a core is chosen it stays until
-  // the deathball is wiped out, so Archers accumulate in one place.
+  // Player field strength in one lane (hp*dps/1000) — for push sizing.
+  function ovLanePlayerStrength(lane) {
+    var s = 0;
+    for (var i = 0; i < ovUnits.length; i++) {
+      var u = ovUnits[i];
+      if (u.side === 'p' && u.lane === lane) s += u.hp * (u.dmg / u.rate) / 1000;
+    }
+    return s;
+  }
   function ovAiSpawn() {
-    // Split defense/push (fair Grandmaster, 8/s).
-    // Defense: any enemy close to the Saint castle (x > 80) in ANY
-    // lane gets a Knight (if affordable and none there) or a Soldier
-    // delay. This stops Beasts from swarming the castle in all lanes
-    // and Demons from reaching it unopposed.
-    // Push: remaining mana floods Soldiers into the weakest lane
-    // (the empty lane) to win the damage race.
+    // Grandmaster Saint (v15): hybrid counter + save mana + strong push.
+    // 1. DEFENSE (all lanes, most threatened first): pick the counter
+    //    by threat tier — a Mage (ranged) beats a Beast 1v1; a Knight
+    //    closes on a Gorgon; a Demon/Devil needs the mirrored Champion/
+    //    Hero, which trades evenly. If the counter is unaffordable,
+    //    SAVE mana for it — a Knight delay wastes 45 mana that the
+    //    Hero needs, and the castle (2000 HP, 0.4x damage) can absorb
+    //    a few hits while the Saint saves. Only spawn a Knight delay
+    //    if the threat is at the castle door (x > 110).
+    // 2. PUSH: only when no immediate threat and the Saint can afford
+    //    a Hero; push hard with the strongest affordable unit.
     var threats = [ovLaneThreat(0), ovLaneThreat(1), ovLaneThreat(2)];
     var order = [0, 1, 2].sort(function (a, b) { return threats[b] - threats[a]; });
     for (var di = 0; di < 3; di++) {
       var lane = order[di];
       var danger = ovLaneDanger(lane);
-      if (!danger || danger.x <= 80) continue;
-      if (ovLaneCount('K', lane) === 0 && ovAiMana >= 80) {
-        ovAiMana -= 80;
-        ovSpawn(OV_AI_UNITS[2], 'a', lane);
-      } else if (ovAiMana >= 30) {
-        ovAiMana -= 30;
+      if (!danger || danger.x <= 22) continue;
+      var tier = ovUnitTier(danger.letter);
+      var counterTier = tier;
+      if (tier <= 1) counterTier = 1; // Mage beats a Beast and mirrors a Gorgon; a Knight loses to a Gorgon 1v1
+      if (ovLaneHasTier(lane, counterTier)) continue; // already defended
+      var counter = OV_AI_UNITS[counterTier];
+      if (ovAiMana >= counter.cost) {
+        ovAiMana -= counter.cost;
+        ovSpawn(counter, 'a', lane);
+      } else if (danger.x > 110 && ovAiMana >= OV_AI_UNITS[0].cost) {
+        // Threat at the castle door: Knight delay to buy time.
+        ovAiMana -= OV_AI_UNITS[0].cost;
         ovSpawn(OV_AI_UNITS[0], 'a', lane);
       }
-      if (ovAiMana < 30) break;
+      // Otherwise: save mana for the counter. Do not waste it.
+      if (ovAiMana < OV_AI_UNITS[0].cost) break;
     }
-    var pushLane = ovPickPushLane();
-    if (ovAiMana >= 30) {
-      ovAiMana -= 30;
-      ovSpawn(OV_AI_UNITS[0], 'a', pushLane);
-    } else if (ovAiMana >= 45) {
-      ovAiMana -= 45;
-      ovSpawn(OV_AI_UNITS[1], 'a', pushLane);
+    // 2. PUSH: only when there is no immediate threat (no player unit
+    //    at x > 80) and the Saint can afford a Champion. When the
+    //    player is pushing, save mana for defense — a weak push cannot
+    //    break a Devil-led defense and wastes the mana needed for the
+    //    next Hero counter. When the player is weak, push hard with
+    //    the strongest affordable unit (up to Champion).
+    var anyThreat = false;
+    for (var ti = 0; ti < 3; ti++) {
+      var td = ovLaneDanger(ti);
+      if (td && td.x > 80) { anyThreat = true; break; }
+    }
+    if (!anyThreat && ovAiMana >= OV_AI_UNITS[3].cost) {
+      var pushLane = ovPickPushLane();
+      for (var t = 3; t >= 0; t--) {
+        var def = OV_AI_UNITS[t];
+        if (ovAiMana >= def.cost) {
+          ovAiMana -= def.cost;
+          ovSpawn(def, 'a', pushLane);
+          break;
+        }
+      }
     }
   }
   function ovDamage(target, dmg, attacker) {
     if (!target) return;
     if (target.castle) {
+      // Units deal only OV_CASTLE_DMG of their damage to castles, so a
+      // single push cannot end the game — castles defend fiercely.
+      dmg = dmg * OV_CASTLE_DMG;
       // target.side is the castle's owner: 'a' = Saint, 'p' = Dark
       if (target.side === 'a') ovSaintHp -= dmg; else ovDarkHp -= dmg;
       ovFx.push({ x: target.side === 'a' ? OV_SAINT_X : OV_DARK_X, y: OV_LANE_Y[target.lane], frames: 6, max: 6 });
@@ -2733,7 +2767,7 @@ function chMoveStr(m) {
     // AI think timer — fast (0.7-1.1s) so the Saint reacts quickly to
     // pushes, to mana milestones, and to pressure in multiple lanes.
     ovAiT -= dt;
-    if (ovAiT <= 0) { ovAiT = 0.7 + Math.random() * 0.4; ovAiSpawn(); }
+    if (ovAiT <= 0) { ovAiT = 0.35 + Math.random() * 0.2; ovAiSpawn(); }
     // Overlord lightning: every 12s zap the AI unit nearest the Dark Castle
     ovBoltT -= dt;
     if (ovBoltT <= 0) {
@@ -2749,7 +2783,25 @@ function chMoveStr(m) {
         ovBoltT = 12;
       } else { ovBoltT = 3; }
     }
+    // Saint lightning (symmetric): every 12s zap the player unit nearest
+    // the Saint Castle, 60 dmg. The player's bolt alone would cripple
+    // the Saint's offense over a long game; both sides get the same tool.
+    ovSaintBoltT -= dt;
+    if (ovSaintBoltT <= 0) {
+      var stgt = null;
+      for (var si = 0; si < ovUnits.length; si++) {
+        var su = ovUnits[si];
+        if (su.side === 'p' && (!stgt || su.x > stgt.x)) stgt = su;
+      }
+      if (stgt) {
+        ovSaintBoltFx = { x: stgt.x, y: stgt.y, lane: stgt.lane, frames: 8 };
+        ovDamage(stgt, 60, null);
+        JMFGAMES.beep(660, 0.15);
+        ovSaintBoltT = 6;
+      } else { ovSaintBoltT = 3; }
+    }
     if (ovBoltFx) { ovBoltFx.frames--; if (ovBoltFx.frames <= 0) ovBoltFx = null; }
+    if (ovSaintBoltFx) { ovSaintBoltFx.frames--; if (ovSaintBoltFx.frames <= 0) ovSaintBoltFx = null; }
     for (var fi = ovFx.length - 1; fi >= 0; fi--) { ovFx[fi].frames--; if (ovFx[fi].frames <= 0) ovFx.splice(fi, 1); }
     // Projectiles
     for (var pi = ovProjs.length - 1; pi >= 0; pi--) {
@@ -2847,30 +2899,63 @@ function chMoveStr(m) {
       ctx.beginPath(); ctx.arc(1.5, -1, 1, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = color;
       ctx.fillRect(-3, 3, 6, 3);
-    } else if (letter === 'S') {
-      // Soldier: dark helmet + head + body + spear toward the enemy.
+    } else if (letter === 'M') {
+      // Mage: robed figure — pointed hood + robe + staff with orb.
       ctx.fillStyle = color;
-      ctx.beginPath(); ctx.arc(0, -1, 3, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = D;
-      ctx.beginPath(); ctx.arc(0, -2, 3.5, Math.PI, 0); ctx.fill();
-      ctx.fillRect(-3.5, -2, 7, 1);
-      ctx.fillStyle = color;
-      ctx.fillRect(-3, 2, 6, 4);
+      ctx.beginPath(); ctx.moveTo(-3, 6); ctx.lineTo(3, 6); ctx.lineTo(2, -2); ctx.lineTo(-2, -2); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, -3, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-3, -4); ctx.lineTo(0, -9); ctx.lineTo(3, -4); ctx.closePath(); ctx.fill();
       ctx.strokeStyle = D; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(5, -6); ctx.lineTo(5, 6); ctx.stroke();
-      ctx.fillStyle = D;
-      ctx.beginPath(); ctx.moveTo(5, -8); ctx.lineTo(3.5, -5); ctx.lineTo(6.5, -5); ctx.closePath(); ctx.fill();
-    } else if (letter === 'A') {
-      // Archer: head + body + bow (arc toward the enemy) + arrow.
+      ctx.beginPath(); ctx.moveTo(4, -8); ctx.lineTo(4, 6); ctx.stroke();
+      ctx.fillStyle = '#fde047';
+      ctx.beginPath(); ctx.arc(4, -9, 1.5, 0, Math.PI * 2); ctx.fill();
+    } else if (letter === 'C') {
+      // Champion: armored figure — helmet + armor + sword + shield.
       ctx.fillStyle = color;
-      ctx.beginPath(); ctx.arc(0, -2, 3, 0, Math.PI * 2); ctx.fill();
-      ctx.fillRect(-2.5, 1, 5, 5);
+      ctx.fillRect(-3.5, -6, 7, 5);
+      ctx.fillStyle = D;
+      ctx.fillRect(-3.5, -4, 7, 1);
+      ctx.fillStyle = color;
+      ctx.fillRect(-3.5, -1, 7, 7);
+      ctx.fillStyle = D;
+      ctx.fillRect(-3.5, 2, 7, 1);
       ctx.strokeStyle = D; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(2, 0, 5, -1.2, 1.2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(4, -6); ctx.lineTo(7, 3); ctx.stroke();
       ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(3.7, -4.7); ctx.lineTo(3.7, 4.7); ctx.stroke();
-      ctx.strokeStyle = color; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(7, 0); ctx.stroke();
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillRect(-7, -1, 3, 6);
+      ctx.strokeStyle = D;
+      ctx.strokeRect(-7.5, -1.5, 4, 7);
+    } else if (letter === 'H') {
+      // Hero: elite figure — crown + cape + greatsword, gold armor.
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath(); ctx.moveTo(-4, -1); ctx.lineTo(-8, 6); ctx.lineTo(-2, 6); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = color;
+      ctx.fillRect(-3.5, -6, 7, 5);
+      ctx.fillStyle = D;
+      ctx.beginPath(); ctx.moveTo(-3, -6); ctx.lineTo(-2, -9); ctx.lineTo(-1, -6); ctx.lineTo(0, -9); ctx.lineTo(1, -6); ctx.lineTo(2, -9); ctx.lineTo(3, -6); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = color;
+      ctx.fillRect(-3.5, -1, 7, 7);
+      ctx.strokeStyle = D; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(4, -8); ctx.lineTo(8, 4); ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#fde047';
+      ctx.beginPath(); ctx.moveTo(3, -7); ctx.lineTo(5, -9); ctx.moveTo(5, -7); ctx.lineTo(3, -9); ctx.stroke();
+    } else if (letter === 'V') {
+      // Devil: big horns + bat wings + tail + glowing eyes.
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.moveTo(-4, -4); ctx.lineTo(-6, -1); ctx.lineTo(-2, 0); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(4, -4); ctx.lineTo(6, -1); ctx.lineTo(2, 0); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-3, -4); ctx.lineTo(-8, -9); ctx.lineTo(-1, -6); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(3, -4); ctx.lineTo(8, -9); ctx.lineTo(1, -6); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, 0, 4.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fde047';
+      ctx.beginPath(); ctx.arc(-1.5, -1, 1, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(1.5, -1, 1, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(-3, 3); ctx.lineTo(-7, 7); ctx.lineTo(-4, 7); ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.fillRect(-3, 3, 6, 3);
     } else if (letter === 'K') {
       // Knight: helmet + plume + body + shield toward the enemy.
       ctx.fillStyle = color;
@@ -2950,7 +3035,7 @@ function chMoveStr(m) {
       ctx.stroke();
       ctx.lineWidth = 1;
     }
-    // Lightning bolt
+    // Lightning bolt (Overlord)
     if (ovBoltFx) {
       ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2;
       ctx.beginPath();
@@ -2964,32 +3049,47 @@ function chMoveStr(m) {
       ctx.fillStyle = 'rgba(253,224,71,0.5)';
       ctx.beginPath(); ctx.arc(bx, by, 7, 0, Math.PI * 2); ctx.fill();
     }
-    // Bottom bar: unit slots
+    // Lightning bolt (Saint, symmetric — violet)
+    if (ovSaintBoltFx) {
+      ctx.strokeStyle = '#c084fc'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      var sx2 = ovSaintBoltFx.x, sy2 = ovSaintBoltFx.y;
+      ctx.moveTo(sx2, 14);
+      ctx.lineTo(sx2 - 3, 14 + (sy2 - 14) * 0.33);
+      ctx.lineTo(sx2 + 3, 14 + (sy2 - 14) * 0.66);
+      ctx.lineTo(sx2, sy2);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.fillStyle = 'rgba(192,132,252,0.5)';
+      ctx.beginPath(); ctx.arc(sx2, sy2, 7, 0, Math.PI * 2); ctx.fill();
+    }
+    // Bottom bar: unit slots (4 units, two lines: name + cost, 6px font).
     for (var si = 0; si < OV_UNITS.length; si++) {
       var def = OV_UNITS[si];
-      var sx = 4 + si * 52;
+      var sx = 2 + si * 39;
       var afford = ovMana >= def.cost && ovDeployCd <= 0;
       if (si === ovUnitIdx) {
         ctx.fillStyle = '#0f380f';
-        ctx.fillRect(sx, 110, 48, 12);
+        ctx.fillRect(sx, 108, 37, 16);
         ctx.fillStyle = '#9bac0f';
       } else {
         ctx.fillStyle = '#0f380f';
-        ctx.fillRect(sx, 110, 48, 1); ctx.fillRect(sx, 121, 48, 1);
-        ctx.fillRect(sx, 110, 1, 12); ctx.fillRect(sx + 47, 110, 1, 12);
+        ctx.fillRect(sx, 108, 37, 1); ctx.fillRect(sx, 123, 37, 1);
+        ctx.fillRect(sx, 108, 1, 16); ctx.fillRect(sx + 36, 108, 1, 16);
         ctx.fillStyle = afford ? '#0f380f' : '#6b7a1f';
       }
-      ctx.textAlign = 'center'; ctx.font = '8px monospace';
-      ctx.fillText(def.name + ' ' + def.cost, sx + 24, 119);
+      ctx.textAlign = 'center'; ctx.font = '6px monospace';
+      ctx.fillText(def.name, sx + 18, 116);
+      ctx.fillText(String(def.cost), sx + 18, 123);
       ctx.textAlign = 'left';
     }
     // Mana + lane + hint
     ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
-    ctx.fillText('MANA ' + Math.floor(ovMana) + ' +8/S', 4, 130);
+    ctx.fillText('MANA ' + Math.floor(ovMana) + ' +8/S', 4, 132);
     ctx.textAlign = 'right';
-    ctx.fillText('LANE ' + (ovLane + 1), W - 4, 130);
+    ctx.fillText('LANE ' + (ovLane + 1), W - 4, 132);
     ctx.textAlign = 'center';
-    ctx.fillText('A SUMMON  B: PREV UNIT', W / 2, 141);
+    ctx.fillText('A SUMMON  B: PREV UNIT', W / 2, 142);
     ctx.textAlign = 'left';
     if (ovPaused) {
       ctx.fillStyle = 'rgba(15,56,15,0.7)';
