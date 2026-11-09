@@ -244,7 +244,8 @@
     chess:    { bpm: 96, wave: 'sine', notes: [[60,2],[67,2],[69,2],[67,2],[65,2],[64,2],[62,2],[60,2]] },
     overlord: { bpm: 100, wave: 'sawtooth', notes: [[57,1],[60,1],[62,1],[64,1],[62,1],[60,1],[57,1],[55,1],[57,1],[60,1],[62,1],[64,1],[67,1],[64,1],[62,1],[60,1]] },
     solitaire: { bpm: 96, wave: 'sine', notes: [[72,2],[76,2],[79,2],[76,2],[81,2],[79,2],[76,2],[72,2],[74,2],[77,2],[81,2],[77,2],[74,2],[72,2],[67,2],[0,2]] },
-    beat:    { bpm: 132, wave: 'square', notes: [[57,1],[0,1],[57,1],[60,1],[57,1],[0,1],[62,1],[60,1],[57,1],[0,1],[57,1],[64,1],[62,1],[60,1],[57,1],[55,1]] }
+    beat:    { bpm: 132, wave: 'square', notes: [[57,1],[0,1],[57,1],[60,1],[57,1],[0,1],[62,1],[60,1],[57,1],[0,1],[57,1],[64,1],[62,1],[60,1],[57,1],[55,1]] },
+    pool:    { bpm: 100, wave: 'triangle', notes: [[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[67,1],[69,1],[67,1],[64,1],[0,1]] }
   };
   var musicTimer = null, musicStep = 0, musicNext = 0, musicTune = null, musicActive = false;
   function midiFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
@@ -348,6 +349,7 @@
 
   /* ---------- Game list (menu) ---------- */
   var GAMES = [
+    { name: '8 BALL POOL', playable: true },
     { name: 'BLACKJACK ROYALE', playable: true },
     { name: 'BLOCKQUEST', playable: true },
     { name: 'CHESS CLUB', playable: true },
@@ -363,7 +365,7 @@
 
   /* ---------- State ---------- */
   var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
-  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' — which game is on the play/over screens
+  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' — which game is on the play/over screens
   var menuIndex = 0;
   var comingName = '';
   var best = 0;
@@ -3975,6 +3977,709 @@ function chMoveStr(m) {
     ctx.textAlign = 'left';
   }
 
+  /* ================================================================
+     8 BALL POOL (console) — original console 8-ball pool on the
+     160x144 screen. Real table (green felt, wooden rails, 6 pockets),
+     real balls (solids 1-7, stripes 9-15, 8-ball, cue ball), real
+     physics (elastic ball collisions, cushion bounces, friction,
+     pockets) at 60 Hz. Standard 8-ball rules, simplified: break,
+     open table until the first ball is pocketed, first ball pocketed
+     decides groups, scratch respots the cue ball at the head spot,
+     8-ball early = loss, 8-ball on the break = re-rack.
+     Controls: hold D-pad Left/Right to rotate the aim (B toggles
+     fine aim), hold Up/Down for power, A shoots, Start pauses,
+     Menu returns to the main menu. Five AI levels, picked before
+     the match: CASUAL, GOOD, PROFESSIONAL, MASTER, GRANDMASTER.
+     Wins/losses saved in localStorage 'jmf-games-pool-wins' /
+     'jmf-games-pool-losses'.
+     ================================================================ */
+  var PO_WIN_KEY = 'jmf-games-pool-wins';
+  var PO_LOSS_KEY = 'jmf-games-pool-losses';
+  var PO_TABLE = { x0: 10, y0: 14, x1: 150, y1: 122 };
+  var PO_R = 3, PO_PR = 6.5;
+  var PO_HEAD_X = 45, PO_FOOT_X = 111, PO_MID_Y = 68;
+  var PO_COLORS = ['#FFFFFF', '#FFD21F', '#1E40FF', '#FF2E2E', '#7C3AED', '#FF7A00', '#0B7A3E', '#7A2E0E', '#111111', '#FFD21F', '#1E40FF', '#FF2E2E', '#7C3AED', '#FF7A00', '#0B7A3E', '#7A2E0E'];
+  var PO_LEVELS = [
+    { name: 'CASUAL',       aimErr: 8,   powErr: 25, pick: 'random', pos: 0,    wild: 0.15 },
+    { name: 'GOOD',         aimErr: 5,   powErr: 15, pick: 'best3',  pos: 0,    wild: 0 },
+    { name: 'PROFESSIONAL', aimErr: 3,   powErr: 10, pick: 'best',   pos: 0.05, wild: 0 },
+    { name: 'MASTER',       aimErr: 1.5, powErr: 6,  pick: 'best',   pos: 0.15, wild: 0 },
+    { name: 'GRANDMASTER',  aimErr: 0.7, powErr: 3,  pick: 'best',   pos: 0.25, wild: 0 }
+  ];
+  var PO_LEVEL_NAMES = ['CASUAL', 'GOOD', 'PROFESSIONAL', 'MASTER', 'GRANDMASTER'];
+  var poLevel = 0, poPhase = 'level'; // 'level' | 'aim' | 'roll' | 'aiAim'
+  var poBalls = [];
+  var poTurn = 'you'; // 'you' | 'ai'
+  var poGroupYou = null, poGroupAI = null; // 'solid' | 'stripe' | null
+  var poAim = 0, poPower = 50, poFine = false;
+  var poPaused = false, poOver = false, poWon = false, poOverMsg = '';
+  var poBreak = false;
+  var poShotPocketed = [], poFirstHit = null, poShotScratch = false;
+  var poAiTimer = 0, poAiAim = 0, poAiPower = 50;
+  var poMsg = '', poMsgT = 0;
+  var poWins = 0, poLosses = 0, poShots = 0;
+  try { poWins = parseInt(localStorage.getItem(PO_WIN_KEY) || '0', 10) || 0; } catch (e) { poWins = 0; }
+  try { poLosses = parseInt(localStorage.getItem(PO_LOSS_KEY) || '0', 10) || 0; } catch (e) { poLosses = 0; }
+  function poSaveRecord() {
+    try { localStorage.setItem(PO_WIN_KEY, String(poWins)); } catch (e) {}
+    try { localStorage.setItem(PO_LOSS_KEY, String(poLosses)); } catch (e) {}
+  }
+  function poIsSolid(n) { return n >= 1 && n <= 7; }
+  function poIsStripe(n) { return n >= 9 && n <= 15; }
+  function poGroupOf(n) { return poIsSolid(n) ? 'solid' : (poIsStripe(n) ? 'stripe' : null); }
+  function poBall(n) { for (var i = 0; i < poBalls.length; i++) if (poBalls[i].n === n) return poBalls[i]; return null; }
+  function poBallsLeft(group) {
+    var c = 0;
+    for (var i = 0; i < poBalls.length; i++) { var b = poBalls[i]; if (!b.pocketed && poGroupOf(b.n) === group) c++; }
+    return c;
+  }
+  function poOnEight(who) {
+    var g = who === 'you' ? poGroupYou : poGroupAI;
+    if (!g) return false;
+    return poBallsLeft(g) === 0;
+  }
+  function poGroupName(g) { return g === 'solid' ? 'SOLIDS' : (g === 'stripe' ? 'STRIPES' : 'OPEN'); }
+  function poPockets() {
+    var t = PO_TABLE, mx = (t.x0 + t.x1) / 2;
+    return [{ x: t.x0, y: t.y0 }, { x: mx, y: t.y0 }, { x: t.x1, y: t.y0 },
+            { x: t.x0, y: t.y1 }, { x: mx, y: t.y1 }, { x: t.x1, y: t.y1 }];
+  }
+  // The point a ball is actually aimed at: the pocket centre pulled back
+  // into the felt by one ball radius — the mouth of the pocket. Aiming at
+  // the raw pocket centre would send the ball's path through the rail
+  // (the centre sits outside the felt), so the ball would bounce off the
+  // cushion instead of dropping in. The mouth point (e.g. (13,17) for the
+  // top-left corner) is on the felt, and a ball passing through it is
+  // within the 5.5px capture radius of the pocket centre, so it falls in.
+  function poPocketAim(p) {
+    var t = PO_TABLE;
+    var ax = p.x, ay = p.y;
+    if (ax < t.x0 + PO_R) ax = t.x0 + PO_R;
+    if (ax > t.x1 - PO_R) ax = t.x1 - PO_R;
+    if (ay < t.y0 + PO_R) ay = t.y0 + PO_R;
+    if (ay > t.y1 - PO_R) ay = t.y1 - PO_R;
+    return { x: ax, y: ay };
+  }
+  function startPool() {
+    poLevel = 0; poPhase = 'level';
+    poBalls = [];
+    poTurn = 'you';
+    poGroupYou = null; poGroupAI = null;
+    poAim = 0; poPower = 50; poFine = false;
+    poPaused = false; poOver = false; poWon = false; poOverMsg = '';
+    poBreak = false;
+    poShotPocketed = []; poFirstHit = null; poShotScratch = false;
+    poAiTimer = 0; poMsg = ''; poMsgT = 0; poShots = 0;
+    screen = 'play';
+    JMFGAMES.musicPlay('pool');
+    JMFGAMES.beep(660, 0.08);
+  }
+  function poRematch() {
+    var lvl = poLevel;
+    startPool();
+    poLevel = lvl;
+    poBeginMatch();
+  }
+  function poRack() {
+    // Triangle, apex (1-ball) at the foot spot, 8-ball in the centre
+    // (row 2 middle), back corners one solid and one stripe.
+    var nums = [2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15];
+    for (var s = nums.length - 1; s > 0; s--) { var r = Math.floor(Math.random() * (s + 1)); var t = nums[s]; nums[s] = nums[r]; nums[r] = t; }
+    // Force the two back corners to be one solid and one stripe.
+    var solids = [], stripes = [];
+    for (var i = 0; i < nums.length; i++) { if (poIsSolid(nums[i])) solids.push(nums[i]); else stripes.push(nums[i]); }
+    var backSolid = solids.pop(), backStripe = stripes.pop();
+    var rest = solids.concat(stripes);
+    for (var s2 = rest.length - 1; s2 > 0; s2--) { var r2 = Math.floor(Math.random() * (s2 + 1)); var t2 = rest[s2]; rest[s2] = rest[r2]; rest[r2] = t2; }
+    var rowDx = 5.4, colDy = 6.3;
+    var placed = [];
+    var ri = 0;
+    // Row 0: 1-ball (apex). Row 2 middle: 8-ball. Row 4 corners: backSolid/backStripe.
+    var layout = [[1], [0, 0], [0, 8, 0], [0, 0, 0, 0], [0, 0, 0, 0, 0]];
+    layout[4][0] = backSolid; layout[4][4] = backStripe;
+    for (var row = 0; row < 5; row++) {
+      for (var j = 0; j <= row; j++) {
+        var n;
+        if (layout[row][j] !== 0) n = layout[row][j];
+        else { n = rest[ri++]; }
+        placed.push({
+          n: n,
+          x: PO_FOOT_X + row * rowDx,
+          y: PO_MID_Y + (j - row / 2) * colDy,
+          vx: 0, vy: 0, pocketed: false
+        });
+      }
+    }
+    placed.push({ n: 0, x: PO_HEAD_X, y: PO_MID_Y, vx: 0, vy: 0, pocketed: false });
+    poBalls = placed;
+  }
+  function poBeginMatch() {
+    poRack();
+    poTurn = 'you';
+    poGroupYou = null; poGroupAI = null;
+    poAim = 0; poPower = 50; poFine = false;
+    poBreak = true;
+    poPhase = 'aim';
+    poMsg = 'BREAK!'; poMsgT = 50;
+    JMFGAMES.beep(880, 0.1);
+  }
+  function poRespottedCue() {
+    var cue = poBall(0);
+    if (!cue) return;
+    var spots = [];
+    spots.push({ x: PO_HEAD_X, y: PO_MID_Y });
+    for (var d = 7; d <= 35; d += 7) {
+      spots.push({ x: PO_HEAD_X, y: PO_MID_Y - d });
+      spots.push({ x: PO_HEAD_X, y: PO_MID_Y + d });
+      spots.push({ x: PO_HEAD_X - d, y: PO_MID_Y });
+      spots.push({ x: PO_HEAD_X + d, y: PO_MID_Y });
+    }
+    for (var i = 0; i < spots.length; i++) {
+      var ok = true;
+      for (var j = 0; j < poBalls.length; j++) {
+        var b = poBalls[j];
+        if (b.pocketed || b.n === 0) continue;
+        var dx = b.x - spots[i].x, dy = b.y - spots[i].y;
+        if (dx * dx + dy * dy < (2 * PO_R + 0.5) * (2 * PO_R + 0.5)) { ok = false; break; }
+      }
+      if (ok) { cue.x = spots[i].x; cue.y = spots[i].y; cue.vx = 0; cue.vy = 0; cue.pocketed = false; return; }
+    }
+    cue.x = PO_HEAD_X; cue.y = PO_MID_Y; cue.vx = 0; cue.vy = 0; cue.pocketed = false;
+  }
+  function poShoot(angle, powerPct) {
+    var cue = poBall(0);
+    if (!cue || cue.pocketed) return;
+    var speed = powerPct / 100 * 260;
+    cue.vx = Math.cos(angle) * speed;
+    cue.vy = Math.sin(angle) * speed;
+    poShotPocketed = []; poFirstHit = null; poShotScratch = false;
+    poShots++;
+    poPhase = 'roll';
+    JMFGAMES.beep(700, 0.06);
+  }
+  function poPlayerShoot() {
+    if (poPhase !== 'aim' || poTurn !== 'you' || poPaused || poOver) return;
+    poShoot(poAim, poPower);
+  }
+  function poSegBlocked(x1, y1, x2, y2, ignoreA, ignoreB) {
+    // True if any ball (other than ignoreA/ignoreB) lies within R+1 of the segment.
+    for (var i = 0; i < poBalls.length; i++) {
+      var b = poBalls[i];
+      if (b.pocketed || b.n === ignoreA || b.n === ignoreB) continue;
+      var dx = x2 - x1, dy = y2 - y1;
+      var len2 = dx * dx + dy * dy;
+      var t = len2 === 0 ? 0 : ((b.x - x1) * dx + (b.y - y1) * dy) / len2;
+      if (t < 0) t = 0; if (t > 1) t = 1;
+      var px = x1 + t * dx, py = y1 + t * dy;
+      var ex = b.x - px, ey = b.y - py;
+      if (ex * ex + ey * ey < (PO_R + 1) * (PO_R + 1)) return true;
+    }
+    return false;
+  }
+  function poAiChoose() {
+    var lvl = PO_LEVELS[poLevel];
+    var cue = poBall(0);
+    if (!cue) return null;
+    var myGroup = poGroupAI;
+    var targets = [];
+    for (var i = 0; i < poBalls.length; i++) {
+      var b = poBalls[i];
+      if (b.pocketed || b.n === 0) continue;
+      if (poOnEight('ai')) { if (b.n === 8) targets.push(b); }
+      else if (myGroup) { if (poGroupOf(b.n) === myGroup) targets.push(b); }
+      else if (b.n !== 8) targets.push(b);
+    }
+    if (!targets.length) return null;
+    var pockets = poPockets();
+    var cands = [];
+    for (var ti = 0; ti < targets.length; ti++) {
+      var o = targets[ti];
+      for (var pi = 0; pi < pockets.length; pi++) {
+        var p = poPocketAim(pockets[pi]); // aim at the pocket mouth, not the raw centre
+        var ox = p.x - o.x, oy = p.y - o.y;
+        var od = Math.sqrt(ox * ox + oy * oy);
+        if (od < 1) continue;
+        var ux = ox / od, uy = oy / od;
+        var gx = o.x - ux * 2 * PO_R, gy = o.y - uy * 2 * PO_R;
+        var cx = gx - cue.x, cy = gy - cue.y;
+        var d1 = Math.sqrt(cx * cx + cy * cy);
+        if (d1 < 1) continue;
+        // Cut angle: angle between cue->ghost and object->pocket.
+        var cosCut = (cx * ux + cy * uy) / d1;
+        if (cosCut > 1) cosCut = 1; if (cosCut < -1) cosCut = -1;
+        var cut = Math.acos(cosCut) * 180 / Math.PI;
+        if (cut > 80) continue; // near-impossible cut
+        var blocked = poSegBlocked(o.x, o.y, p.x, p.y, o.n, 0) || poSegBlocked(cue.x, cue.y, gx, gy, 0, o.n);
+        var cost = cut * 1.5 + d1 * 0.15 + od * 0.15 + (blocked ? 40 : 0);
+        if (lvl.pos > 0) {
+          // Position play: prefer a shot whose ghost-ball spot is near the
+          // next easiest ball, so the cue ball ends up well placed.
+          var bestNext = 999;
+          for (var ni = 0; ni < targets.length; ni++) {
+            if (targets[ni].n === o.n) continue;
+            var nx = targets[ni].x - gx, ny = targets[ni].y - gy;
+            var nd = Math.sqrt(nx * nx + ny * ny);
+            if (nd < bestNext) bestNext = nd;
+          }
+          if (bestNext < 999) cost += lvl.pos * bestNext * 0.5;
+        }
+        cands.push({ ball: o, pocket: p, gx: gx, gy: gy, cost: cost, d1: d1, d2: od, cut: cut });
+      }
+    }
+    if (!cands.length) {
+      // No makeable shot: aim at the nearest target ball straight on.
+      var nb = targets[0], nd0 = 999;
+      for (var qi = 0; qi < targets.length; qi++) {
+        var dxq = targets[qi].x - cue.x, dyq = targets[qi].y - cue.y;
+        var dq = Math.sqrt(dxq * dxq + dyq * dyq);
+        if (dq < nd0) { nd0 = dq; nb = targets[qi]; }
+      }
+      var ang0 = Math.atan2(nb.y - cue.y, nb.x - cue.x);
+      ang0 += (Math.random() * 2 - 1) * lvl.aimErr * Math.PI / 180;
+      return { angle: ang0, power: 55 };
+    }
+    cands.sort(function (a, b) { return a.cost - b.cost; });
+    var pick;
+    if (lvl.pick === 'random') pick = cands[Math.floor(Math.random() * cands.length)];
+    else if (lvl.pick === 'best3') pick = cands[Math.floor(Math.random() * Math.min(3, cands.length))];
+    else pick = cands[0];
+    var ang = Math.atan2(pick.gy - cue.y, pick.gx - cue.x);
+    ang += (Math.random() * 2 - 1) * lvl.aimErr * Math.PI / 180;
+    if (lvl.wild && Math.random() < lvl.wild) ang += (Math.random() * 2 - 1) * 20 * Math.PI / 180;
+    var pow = 40 + (pick.d1 + pick.d2) * 0.4;
+    if (pow < 40) pow = 40; if (pow > 100) pow = 100;
+    pow += (Math.random() * 2 - 1) * lvl.powErr;
+    if (pow < 10) pow = 10; if (pow > 100) pow = 100;
+    return { angle: ang, power: pow };
+  }
+  function poAiStartTurn() {
+    var ch = poAiChoose();
+    if (!ch) { poEndGame(true, 'AI HAS NO SHOT'); return; }
+    poAiAim = ch.angle; poAiPower = ch.power;
+    poAiTimer = 1.2;
+    poPhase = 'aiAim';
+  }
+  function poPhysStep(dt) {
+    var i, j;
+    for (i = 0; i < poBalls.length; i++) {
+      var b = poBalls[i];
+      if (b.pocketed) continue;
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      var sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+      if (sp > 0) {
+        var ns = sp * 0.985;
+        if (ns < 0.8) { b.vx = 0; b.vy = 0; }
+        else { b.vx *= ns / sp; b.vy *= ns / sp; }
+      }
+    }
+    // Pockets (checked before cushions so a ball in a pocket mouth falls in).
+    var pockets = poPockets();
+    for (i = 0; i < poBalls.length; i++) {
+      var pb = poBalls[i];
+      if (pb.pocketed) continue;
+      for (j = 0; j < pockets.length; j++) {
+        var dxp = pb.x - pockets[j].x, dyp = pb.y - pockets[j].y;
+        if (dxp * dxp + dyp * dyp < PO_PR * PO_PR) {
+          pb.pocketed = true; pb.vx = 0; pb.vy = 0;
+          if (pb.n === 0) poShotScratch = true;
+          else poShotPocketed.push(pb.n);
+          JMFGAMES.beep(990, 0.07);
+          break;
+        }
+      }
+    }
+    // Cushions. A real table's cushion STOPS at each pocket (the pocket
+    // mouth is a gap), so a ball rolling into a pocket is not bounced off
+    // the rail first. Skip the cushion for a ball inside a pocket mouth
+    // (within pocket radius + ball radius of a pocket centre); the pocket
+    // check above then captures it as it rolls in. A ball that somehow
+    // drifts more than 2px outside the felt is clamped back (safety net).
+    var t = PO_TABLE;
+    for (i = 0; i < poBalls.length; i++) {
+      var cb = poBalls[i];
+      if (cb.pocketed) continue;
+      var nearPocket = false;
+      for (j = 0; j < pockets.length; j++) {
+        var qx = cb.x - pockets[j].x, qy = cb.y - pockets[j].y;
+        if (qx * qx + qy * qy < (PO_PR + PO_R) * (PO_PR + PO_R)) { nearPocket = true; break; }
+      }
+      if (!nearPocket) {
+        if (cb.x < t.x0 + PO_R) { cb.x = t.x0 + PO_R; if (cb.vx < 0) cb.vx = -cb.vx * 0.72; }
+        if (cb.x > t.x1 - PO_R) { cb.x = t.x1 - PO_R; if (cb.vx > 0) cb.vx = -cb.vx * 0.72; }
+        if (cb.y < t.y0 + PO_R) { cb.y = t.y0 + PO_R; if (cb.vy < 0) cb.vy = -cb.vy * 0.72; }
+        if (cb.y > t.y1 - PO_R) { cb.y = t.y1 - PO_R; if (cb.vy > 0) cb.vy = -cb.vy * 0.72; }
+      }
+      if (cb.x < t.x0 - 2) cb.x = t.x0 - 2;
+      if (cb.x > t.x1 + 2) cb.x = t.x1 + 2;
+      if (cb.y < t.y0 - 2) cb.y = t.y0 - 2;
+      if (cb.y > t.y1 + 2) cb.y = t.y1 + 2;
+    }
+    // Ball-ball elastic collisions (equal mass: swap normal components).
+    for (i = 0; i < poBalls.length; i++) {
+      var a = poBalls[i];
+      if (a.pocketed) continue;
+      for (j = i + 1; j < poBalls.length; j++) {
+        var c = poBalls[j];
+        if (c.pocketed) continue;
+        var dx = c.x - a.x, dy = c.y - a.y;
+        var dist2 = dx * dx + dy * dy;
+        if (dist2 >= (2 * PO_R) * (2 * PO_R) || dist2 === 0) continue;
+        var dist = Math.sqrt(dist2);
+        var nx = dx / dist, ny = dy / dist;
+        var overlap = 2 * PO_R - dist;
+        a.x -= nx * overlap / 2; a.y -= ny * overlap / 2;
+        c.x += nx * overlap / 2; c.y += ny * overlap / 2;
+        var van = a.vx * nx + a.vy * ny;
+        var vbn = c.vx * nx + c.vy * ny;
+        if (vbn - van < 0) {
+          var dv = vbn - van;
+          a.vx += dv * nx; a.vy += dv * ny;
+          c.vx -= dv * nx; c.vy -= dv * ny;
+        }
+        if (poFirstHit === null) {
+          if (a.n === 0) poFirstHit = c.n;
+          else if (c.n === 0) poFirstHit = a.n;
+        }
+      }
+    }
+  }
+  function poAllStopped() {
+    for (var i = 0; i < poBalls.length; i++) {
+      var b = poBalls[i];
+      if (!b.pocketed && (b.vx !== 0 || b.vy !== 0)) return false;
+    }
+    return true;
+  }
+  function poResolveShot() {
+    var shooter = poTurn;
+    var myGroup = shooter === 'you' ? poGroupYou : poGroupAI;
+    var eightIn = false, firstPocketed = null;
+    for (var i = 0; i < poShotPocketed.length; i++) {
+      if (poShotPocketed[i] === 8) eightIn = true;
+      if (firstPocketed === null && poShotPocketed[i] !== 8) firstPocketed = poShotPocketed[i];
+    }
+    var cue = poBall(0);
+    if (poShotScratch && cue) poRespottedCue();
+    if (poBreak) {
+      poBreak = false;
+      if (eightIn) {
+        poMsg = '8 ON BREAK - RE-RACK'; poMsgT = 70;
+        poRack();
+        poTurn = 'you'; poPhase = 'aim'; poAim = 0; poPower = 50; poBreak = true;
+        return;
+      }
+      if (firstPocketed !== null) {
+        var g = poGroupOf(firstPocketed);
+        if (shooter === 'you') { poGroupYou = g; poGroupAI = g === 'solid' ? 'stripe' : 'solid'; }
+        else { poGroupAI = g; poGroupYou = g === 'solid' ? 'stripe' : 'solid'; }
+        poMsg = (shooter === 'you' ? 'YOU ARE ' : 'AI IS ') + poGroupName(g); poMsgT = 70;
+      }
+      if (poShotScratch) { poTurn = 'ai'; poPhase = 'aim'; }
+      else if (firstPocketed !== null) { poTurn = shooter; poPhase = 'aim'; }
+      else { poTurn = 'ai'; poPhase = 'aim'; }
+      poAim = 0; poPower = 50;
+      if (poTurn === 'ai') poAiStartTurn();
+      return;
+    }
+    if (eightIn) {
+      // Win only if the shooter's whole group is already pocketed.
+      var cleared = myGroup && poBallsLeft(myGroup) === 0;
+      if (cleared) poEndGame(shooter === 'you', shooter === 'you' ? 'YOU SANK THE 8!' : 'AI SANK THE 8');
+      else poEndGame(shooter !== 'you', shooter === 'you' ? '8-BALL TOO EARLY!' : 'AI SANK THE 8 EARLY!');
+      return;
+    }
+    var foul = false;
+    if (poShotScratch) foul = true;
+    else if (poFirstHit === null) foul = true; // hit nothing
+    else if (myGroup) {
+      if (poFirstHit === 8 && !poOnEight(shooter)) foul = true;
+      else if (poFirstHit !== 8 && poGroupOf(poFirstHit) !== myGroup) foul = true;
+    } else if (poFirstHit === 8) foul = true; // open table: must hit a solid/stripe first
+    var pocketedOwn = false;
+    for (var k = 0; k < poShotPocketed.length; k++) {
+      var pn = poShotPocketed[k];
+      if (pn === 8) continue;
+      if (!myGroup) {
+        // Open table: the first ball pocketed assigns groups.
+        if (firstPocketed !== null && pn === firstPocketed) {
+          var g2 = poGroupOf(pn);
+          if (shooter === 'you') { poGroupYou = g2; poGroupAI = g2 === 'solid' ? 'stripe' : 'solid'; }
+          else { poGroupAI = g2; poGroupYou = g2 === 'solid' ? 'stripe' : 'solid'; }
+          myGroup = g2;
+          poMsg = (shooter === 'you' ? 'YOU ARE ' : 'AI IS ') + poGroupName(g2); poMsgT = 70;
+        }
+      }
+      if (myGroup && poGroupOf(pn) === myGroup) pocketedOwn = true;
+    }
+    if (foul) {
+      poMsg = poShotScratch ? 'SCRATCH! TURN PASSES' : 'FOUL! TURN PASSES'; poMsgT = 60;
+      poTurn = shooter === 'you' ? 'ai' : 'you';
+    } else if (pocketedOwn) {
+      poMsg = 'NICE! SHOOT AGAIN'; poMsgT = 50;
+      poTurn = shooter;
+    } else {
+      poTurn = shooter === 'you' ? 'ai' : 'you';
+    }
+    poAim = 0; poPower = 50;
+    if (poTurn === 'ai') poAiStartTurn();
+    else poPhase = 'aim';
+    // Aim the cue at the nearest target ball to help the player.
+    if (poPhase === 'aim' && poTurn === 'you') poResetAim();
+  }
+  function poEndGame(youWon, msg) {
+    poOver = true; poWon = youWon; poOverMsg = msg;
+    screen = 'over';
+    if (youWon) { poWins++; JMFGAMES.beep(990, 0.2); }
+    else { poLosses++; JMFGAMES.beep(220, 0.25); }
+    poSaveRecord();
+  }
+  function poResetAim() {
+    var cue = poBall(0);
+    if (!cue || cue.pocketed) return;
+    var myGroup = poGroupYou;
+    var best = null, bd = 999;
+    for (var i = 0; i < poBalls.length; i++) {
+      var b = poBalls[i];
+      if (b.pocketed || b.n === 0) continue;
+      if (poOnEight('you')) { if (b.n !== 8) continue; }
+      else if (myGroup) { if (poGroupOf(b.n) !== myGroup) continue; }
+      else if (b.n === 8) continue;
+      var dx = b.x - cue.x, dy = b.y - cue.y;
+      var d = Math.sqrt(dx * dx + dy * dy);
+      if (d < bd) { bd = d; best = b; }
+    }
+    if (best) poAim = Math.atan2(best.y - cue.y, best.x - cue.x);
+  }
+  function poAimGuide() {
+    var cue = poBall(0);
+    if (!cue) return null;
+    var dx = Math.cos(poAim), dy = Math.sin(poAim);
+    var bestT = 999, hitBall = null, hitX = cue.x + dx * 60, hitY = cue.y + dy * 60;
+    for (var i = 0; i < poBalls.length; i++) {
+      var b = poBalls[i];
+      if (b.pocketed || b.n === 0) continue;
+      // Ray vs circle of radius 2R around the ball (cue centre stops 2R away).
+      var ox = b.x - cue.x, oy = b.y - cue.y;
+      var tca = ox * dx + oy * dy;
+      if (tca < 0) continue;
+      var d2 = ox * ox + oy * oy - tca * tca;
+      var rr = 2 * PO_R;
+      if (d2 > rr * rr) continue;
+      var t = tca - Math.sqrt(rr * rr - d2);
+      if (t > 0 && t < bestT) { bestT = t; hitBall = b; hitX = cue.x + dx * t; hitY = cue.y + dy * t; }
+    }
+    // Ray vs cushions.
+    var t2 = 999;
+    if (dx > 0.001) t2 = Math.min(t2, (PO_TABLE.x1 - PO_R - cue.x) / dx);
+    if (dx < -0.001) t2 = Math.min(t2, (PO_TABLE.x0 + PO_R - cue.x) / dx);
+    if (dy > 0.001) t2 = Math.min(t2, (PO_TABLE.y1 - PO_R - cue.y) / dy);
+    if (dy < -0.001) t2 = Math.min(t2, (PO_TABLE.y0 + PO_R - cue.y) / dy);
+    if (t2 > 0 && t2 < bestT) { bestT = t2; hitBall = null; hitX = cue.x + dx * t2; hitY = cue.y + dy * t2; }
+    var res = { hx: hitX, hy: hitY, ball: hitBall };
+    if (hitBall) {
+      // Object ball travels along the line from the ghost spot through its centre.
+      var ox2 = hitBall.x - hitX, oy2 = hitBall.y - hitY;
+      var od = Math.sqrt(ox2 * ox2 + oy2 * oy2) || 1;
+      res.odx = ox2 / od; res.ody = oy2 / od;
+    }
+    return res;
+  }
+  function poUpdate() {
+    if (screen !== 'play' || poPaused) return;
+    if (poMsgT > 0) poMsgT--;
+    if (poPhase === 'aim' && poTurn === 'you') {
+      var aStep = poFine ? 0.5 : 1.5, pStep = poFine ? 0.5 : 2;
+      if (JMFGAMES.isDown('left')) poAim -= aStep * Math.PI / 180;
+      if (JMFGAMES.isDown('right')) poAim += aStep * Math.PI / 180;
+      if (JMFGAMES.isDown('up')) { poPower += pStep; if (poPower > 100) poPower = 100; }
+      if (JMFGAMES.isDown('down')) { poPower -= pStep; if (poPower < 5) poPower = 5; }
+    } else if (poPhase === 'roll') {
+      poPhysStep(1 / 120);
+      poPhysStep(1 / 120);
+      if (poAllStopped()) poResolveShot();
+    } else if (poPhase === 'aiAim') {
+      poAiTimer -= 1 / 60;
+      if (poAiTimer <= 0) {
+        poShoot(poAiAim, poAiPower);
+      }
+    }
+  }
+  function poLevelMove(d) {
+    if (poPhase !== 'level') return;
+    poLevel = (poLevel + d + PO_LEVELS.length) % PO_LEVELS.length;
+    JMFGAMES.beep(600, 0.04);
+  }
+  function poAction() {
+    if (screen !== 'play' || poPaused || poOver) return;
+    if (poPhase === 'level') { poBeginMatch(); return; }
+    if (poPhase === 'aim') poPlayerShoot();
+  }
+  function poBack() {
+    if (screen !== 'play' || poPaused || poOver) return;
+    if (poPhase === 'aim' && poTurn === 'you') {
+      poFine = !poFine;
+      JMFGAMES.beep(poFine ? 880 : 440, 0.06);
+    }
+  }
+  function poDrawBall(b) {
+    var x = b.x, y = b.y, n = b.n;
+    ctx.textAlign = 'center';
+    if (n === 0) {
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath(); ctx.arc(x, y, PO_R, 0, 7); ctx.fill();
+      ctx.fillStyle = '#999999';
+      ctx.beginPath(); ctx.arc(x, y, 1, 0, 7); ctx.fill();
+    } else if (n === 8) {
+      ctx.fillStyle = '#111111';
+      ctx.beginPath(); ctx.arc(x, y, PO_R, 0, 7); ctx.fill();
+      ctx.fillStyle = '#FFFFFF'; ctx.font = '5px monospace';
+      ctx.fillText('8', x, y + 2);
+    } else if (n < 8) {
+      ctx.fillStyle = PO_COLORS[n];
+      ctx.beginPath(); ctx.arc(x, y, PO_R, 0, 7); ctx.fill();
+      ctx.fillStyle = (n === 1) ? '#000000' : '#FFFFFF'; ctx.font = '5px monospace';
+      ctx.fillText(String(n), x, y + 2);
+    } else {
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath(); ctx.arc(x, y, PO_R, 0, 7); ctx.fill();
+      ctx.save();
+      ctx.beginPath(); ctx.arc(x, y, PO_R, 0, 7); ctx.clip();
+      ctx.fillStyle = PO_COLORS[n];
+      ctx.fillRect(x - PO_R, y - 1.2, PO_R * 2, 2.4);
+      ctx.restore();
+      ctx.fillStyle = '#000000'; ctx.font = '5px monospace';
+      ctx.fillText(String(n), x, y + 2);
+    }
+    ctx.textAlign = 'left';
+  }
+  function drawPool() {
+    var t = PO_TABLE;
+    ctx.fillStyle = '#0f380f'; ctx.fillRect(0, 0, W, H);
+    // Header: turn + groups + balls left.
+    ctx.fillStyle = '#9bac0f'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+    var youLeft = poGroupYou ? poBallsLeft(poGroupYou) : 0;
+    var aiLeft = poGroupAI ? poBallsLeft(poGroupAI) : 0;
+    var head = '';
+    if (poPhase === 'level') head = 'PICK AI LEVEL';
+    else if (poTurn === 'you') head = 'YOUR TURN ' + poGroupName(poGroupYou) + (poGroupYou ? ' ' + youLeft : '');
+    else head = 'AI TURN ' + poGroupName(poGroupAI) + (poGroupAI ? ' ' + aiLeft : '');
+    ctx.fillText(head, 4, 10);
+    ctx.textAlign = 'right';
+    ctx.fillText('W' + poWins + ' L' + poLosses, W - 4, 10);
+    ctx.textAlign = 'left';
+    // Wood rails + felt.
+    ctx.fillStyle = '#7A4A21';
+    ctx.fillRect(t.x0 - 4, t.y0 - 4, (t.x1 - t.x0) + 8, (t.y1 - t.y0) + 8);
+    ctx.fillStyle = '#0F7A3E';
+    ctx.fillRect(t.x0, t.y0, t.x1 - t.x0, t.y1 - t.y0);
+    // Head + foot spots.
+    ctx.fillStyle = '#E8E8E8';
+    ctx.beginPath(); ctx.arc(PO_HEAD_X, PO_MID_Y, 1, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(PO_FOOT_X, PO_MID_Y, 1, 0, 7); ctx.fill();
+    // Pockets.
+    var pockets = poPockets();
+    for (var pi = 0; pi < pockets.length; pi++) {
+      ctx.fillStyle = '#000000';
+      ctx.beginPath(); ctx.arc(pockets[pi].x, pockets[pi].y, PO_PR, 0, 7); ctx.fill();
+    }
+    if (poPhase === 'level') {
+      ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('8 BALL POOL', W / 2, 44);
+      ctx.font = '8px monospace';
+      for (var li = 0; li < PO_LEVELS.length; li++) {
+        var y = 60 + li * 11;
+        if (li === poLevel) {
+          ctx.fillStyle = '#0f380f'; ctx.fillRect(28, y - 8, 104, 10);
+          ctx.fillStyle = '#9bac0f';
+          ctx.fillText('> ' + (li + 1) + ' ' + PO_LEVEL_NAMES[li], W / 2, y);
+        } else {
+          ctx.fillStyle = '#9bac0f';
+          ctx.fillText((li + 1) + ' ' + PO_LEVEL_NAMES[li], W / 2, y);
+        }
+      }
+      ctx.fillStyle = '#9bac0f';
+      ctx.fillText('UP/DOWN PICK  A PLAY', W / 2, 126);
+      ctx.textAlign = 'left';
+      return;
+    }
+    // Balls.
+    for (var bi = 0; bi < poBalls.length; bi++) {
+      var b = poBalls[bi];
+      if (!b.pocketed) poDrawBall(b);
+    }
+    // Aim line (player aiming, or AI aiming).
+    var aimAng = null;
+    if (poPhase === 'aim' && poTurn === 'you') aimAng = poAim;
+    else if (poPhase === 'aiAim') aimAng = poAiAim;
+    if (aimAng !== null) {
+      var cue = poBall(0);
+      if (cue && !cue.pocketed) {
+        var g = poAimGuide();
+        // Recompute the guide with the AI angle when it is the AI aiming.
+        if (poPhase === 'aiAim') {
+          var saved = poAim; poAim = poAiAim; g = poAimGuide(); poAim = saved;
+        }
+        if (g) {
+          ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(cue.x, cue.y); ctx.lineTo(g.hx, g.hy); ctx.stroke();
+          if (g.ball) {
+            ctx.strokeStyle = '#FFD21F';
+            ctx.beginPath(); ctx.arc(g.hx, g.hy, PO_R, 0, 7); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(g.ball.x, g.ball.y);
+            ctx.lineTo(g.ball.x + g.odx * 12, g.ball.y + g.ody * 12); ctx.stroke();
+          }
+        }
+      }
+    }
+    // Power bar.
+    ctx.fillStyle = '#0f380f';
+    ctx.fillRect(10, 126, 140, 6);
+    ctx.fillStyle = poPower > 70 ? '#FF2E2E' : (poPower > 40 ? '#FFD21F' : '#9bac0f');
+    ctx.fillRect(11, 127, Math.round(138 * poPower / 100), 4);
+    // Bottom hint.
+    ctx.fillStyle = '#9bac0f'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+    var hint = '';
+    if (poPhase === 'aim' && poTurn === 'you') hint = 'L/R AIM U/D PWR ' + Math.round(poPower) + '% A SHOOT B FINE' + (poFine ? ' ON' : '');
+    else if (poPhase === 'aiAim') hint = 'AI IS AIMING...';
+    else if (poPhase === 'roll') hint = 'BALLS ROLLING...';
+    else hint = 'A PLAY  MENU EXIT';
+    ctx.fillText(hint, W / 2, 141);
+    ctx.textAlign = 'left';
+    if (poMsgT > 0 && poMsg) {
+      ctx.fillStyle = 'rgba(15,56,15,0.85)';
+      ctx.fillRect(20, 56, 120, 16);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
+      ctx.fillText(poMsg, W / 2, 67);
+      ctx.textAlign = 'left';
+    }
+    if (poPaused) {
+      ctx.fillStyle = 'rgba(15,56,15,0.7)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('PAUSED', W / 2, 70);
+      ctx.font = '8px monospace';
+      ctx.fillText('START: RESUME', W / 2, 86);
+      ctx.textAlign = 'left';
+    }
+  }
+  function drawPoolOver() {
+    ctx.fillStyle = '#0f380f'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#9bac0f';
+    ctx.fillRect(18, 42, 124, 78);
+    ctx.fillStyle = '#0f380f';
+    ctx.fillRect(18, 42, 124, 2);
+    ctx.fillRect(18, 118, 124, 2);
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(poWon ? 'YOU WIN!' : 'AI WINS', W / 2, 58);
+    ctx.font = '8px monospace';
+    ctx.fillText(poOverMsg, W / 2, 74);
+    ctx.fillText('SHOTS ' + poShots, W / 2, 86);
+    ctx.fillText('WINS ' + poWins + '  LOSSES ' + poLosses, W / 2, 98);
+    ctx.fillText('A: REMATCH  MENU: EXIT', W / 2, 112);
+    ctx.textAlign = 'left';
+  }
+
   /* ---------- Input (one handler per button, dispatched by screen) ---------- */
   JMFGAMES.on('press', 'up', function () {
     if (screen === 'menu') { menuIndex = (menuIndex + GAMES.length - 1) % GAMES.length; JMFGAMES.beep(600, 0.04); }
@@ -3986,6 +4691,7 @@ function chMoveStr(m) {
       else if (currentGame === 'overlord') { ovPickLane(-1); }
       else if (currentGame === 'solitaire') solMove('up');
       else if (currentGame === 'beat') { if (buPhase === 'select') buSelMove(-1); else if (buPhase === 'upgrade') buUpMove(-1); }
+      else if (currentGame === 'pool') { if (poPhase === 'level') poLevelMove(-1); }
       else flap();
     }
   });
@@ -3999,6 +4705,7 @@ function chMoveStr(m) {
       else if (currentGame === 'overlord') { ovPickLane(1); }
       else if (currentGame === 'solitaire') solMove('down');
       else if (currentGame === 'beat') { if (buPhase === 'select') buSelMove(1); else if (buPhase === 'upgrade') buUpMove(1); }
+      else if (currentGame === 'pool') { if (poPhase === 'level') poLevelMove(1); }
     }
   });
   JMFGAMES.on('press', 'left', function () {
@@ -4021,7 +4728,8 @@ function chMoveStr(m) {
     if (screen === 'menu') {
       var g = GAMES[menuIndex];
       if (g.playable) {
-        if (g.name === 'BLOCKQUEST') { currentGame = 'block'; startBlockQuest(); }
+        if (g.name === '8 BALL POOL') { currentGame = 'pool'; startPool(); }
+        else if (g.name === 'BLOCKQUEST') { currentGame = 'block'; startBlockQuest(); }
         else if (g.name === 'BLACKJACK ROYALE') { currentGame = 'bj'; startBlackjack(); }
         else if (g.name === "TEXAS HOLD'EM") { currentGame = 'holdem'; startHoldem(); }
         else if (g.name === 'CHESS CLUB') { currentGame = 'chess'; startChess(); }
@@ -4032,8 +4740,8 @@ function chMoveStr(m) {
       }
       else { comingName = g.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
-    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else flap(); }
-    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else startGame(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else flap(); }
+    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else if (currentGame === 'pool') poRematch(); else startGame(); }
   });
   JMFGAMES.on('press', 'b', function () {
     // B is a real in-game action in every game; it NEVER returns to the
@@ -4047,6 +4755,7 @@ function chMoveStr(m) {
     else if (currentGame === 'overlord') ovCycleUnit(-1); // previous unit
     else if (currentGame === 'solitaire') solBack();
     else if (currentGame === 'beat') buDodge();
+    else if (currentGame === 'pool') poBack();
   });
   JMFGAMES.on('press', 'start', function () {
     if (screen !== 'play') return;
@@ -4057,6 +4766,7 @@ function chMoveStr(m) {
     else if (currentGame === 'overlord') { if (!ovOver) { ovPaused = !ovPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'solitaire') { if (!solOver) { solPaused = !solPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'beat') { if (!buOver) { buPaused = !buPaused; JMFGAMES.beep(330, 0.06); } }
+    else if (currentGame === 'pool') { if (!poOver) { poPaused = !poPaused; JMFGAMES.beep(330, 0.06); } }
     else if (!dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
   });
   JMFGAMES.on('press', 'menu', function () {
@@ -4073,6 +4783,7 @@ function chMoveStr(m) {
     if (currentGame === 'chess') { chUpdate(); return; }
     if (currentGame === 'overlord') { ovUpdate(); return; }
     if (currentGame === 'beat') { buUpdate(); return; }
+    if (currentGame === 'pool') { poUpdate(); return; }
     if (currentGame !== 'sky') return; // Hold'em has no per-frame update; without this, Sky Soar physics runs during Hold'em and the falling bird hits the ground -> gameOver() -> 'over' screen (BUSTED panel) on Hold'em launch after Sky was played
     if (paused || dead || !started) return;
     bird.vy = Math.min(bird.vy + GRAV, MAXFALL);
@@ -4178,10 +4889,10 @@ function chMoveStr(m) {
     ctx.fillText('SELECT A GAME', W / 2, 32);
     ctx.textAlign = 'left';
     for (var i = 0; i < GAMES.length; i++) {
-      var y = 44 + i * 10; // 8 games: 44..114; last highlight ends at 116, footer text starts ~126 — no overlap
+      var y = 44 + i * 9; // 9 games: 44..116; last highlight ends at 118, footer text starts ~126 — no overlap
       if (i === menuIndex) {
         ctx.fillStyle = '#0f380f';
-        ctx.fillRect(8, y - 9, 144, 11);
+        ctx.fillRect(8, y - 8, 144, 10);
         ctx.fillStyle = '#9bac0f';
         ctx.fillText('>', 14, y);
         ctx.fillText(GAMES[i].name, 26, y);
@@ -4260,8 +4971,8 @@ function chMoveStr(m) {
     if (screen !== 'play') JMFGAMES.musicStop();
     if (screen === 'menu') drawMenu();
     else if (screen === 'coming') drawComing();
-    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else drawGame(); }
-    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else drawOver(); }
+    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else drawGame(); }
+    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else drawOver(); }
   }
 
   /* ---------- Main loop: fixed 60Hz logic steps, any display rate ---------- */
