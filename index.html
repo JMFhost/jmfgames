@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<!-- Copyright (c) 2026 JMFgames. All rights reserved. JMF Games console and all its code, graphics and content are the property of JMFgames and may not be copied, reproduced, distributed or reused without written permission. -->
+<html lang="en">
 <head>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-6TBK3H67Y5"></script>
@@ -11,81 +12,543 @@
   gtag('config', 'G-6TBK3H67Y5');
 </script>
 
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>JMFgames — Free Web Games, Play Instantly</title>
-<meta name="description" content="JMFgames is a free web games hub. Play free browser games instantly — no signup, no download. New games added regularly.">
-<script>(function(){try{var t=localStorage.getItem('jmfgames-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
+<script
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2453219839747877" crossorigin="anonymous"></script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>JMF Games — JMFgames</title>
 <style>
-:root{--bg:#0f1420;--surface:#181f2e;--border:#2a3347;--text:#e8e8e8;--muted:#9aa3b2;--soft:#c2c9d6;--link:#7db4ff;--link-hover:#a8c8ff}
-html[data-theme="light"]{--bg:#f2f5f8;--surface:#ffffff;--border:#d3dae2;--text:#1a2233;--muted:#4d5a6b;--soft:#33405a;--link:#0b57d0;--link-hover:#0848ad}
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:960px;margin:0 auto;padding:0 20px 120px;line-height:1.6;color:var(--text);background:var(--bg)}
-a{color:var(--link)}
-a:hover{color:var(--link-hover)}
-header{padding:36px 0 8px;text-align:center}
-header h1{font-size:42px;margin:0;letter-spacing:-1px}
-header p{color:var(--muted);margin:8px 0 0;font-size:18px}
-nav{text-align:center;margin:20px 0 32px}
-nav a{margin:0 10px}
-.theme-toggle{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:14px;cursor:pointer;margin-left:10px}
-.theme-toggle:hover{border-color:var(--link)}
-.featured{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;margin:0 0 28px}
-.featured h2{margin:0 0 8px;font-size:26px}
-.featured p{color:var(--soft)}
-.play{display:inline-block;background:#00c805;color:#000;font-weight:700;text-decoration:none;padding:12px 26px;border-radius:10px;margin-top:12px}
-.play:hover{background:#00e006}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
-.card h3{margin:0 0 6px}
-.card p{color:var(--muted);margin:0}
-.badge{display:inline-block;background:var(--border);color:var(--soft);font-size:12px;padding:3px 9px;border-radius:20px;margin-bottom:10px}
-section h2{margin:36px 0 14px}
-footer{text-align:center;padding:28px 12px 12px;font-size:13px;color:var(--muted)}
-#jmfgames-ad-banner{position:fixed;bottom:0;left:0;right:0;z-index:9998;text-align:center;display:none}
-#jmfgames-ad-banner.jmfgames-ads-live{display:block;background:rgba(8,10,14,.97);border-top:1px solid #23282e;padding:6px 4px 8px}
-#jmfgames-ad-banner .adsbygoogle{width:100%}
+  /* ============================================================
+     JMF GAMES — POCKET CONSOLE
+     The JMFgames.com homepage console. The shell and buttons
+     stay exactly as they are; each game is drawn on the screen
+     and controlled only by the buttons.
+     ============================================================ */
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:#0f1420;color:#e8e8e8;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+  body{padding:20px 12px 48px;line-height:1.5}
+  .page-note{max-width:460px;margin:0 auto 16px;text-align:center;color:#9aa3b2;font-size:13px}
+
+  /* ---------- Console body ---------- */
+  .boy{width:min(430px,94vw);margin:0 auto;background:linear-gradient(160deg,#ddd6c4,#cfc8b4 60%,#c4bda7);border-radius:18px 18px 64px 18px;padding:22px 22px 30px;box-shadow:0 18px 40px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.6);color:#2b2b2b;user-select:none;-webkit-user-select:none}
+  .boy-top{display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:1px;color:#6d675a;font-weight:700;padding:0 6px 10px}
+  .led{display:flex;align-items:center;gap:6px}
+  .led i{width:9px;height:9px;border-radius:50%;background:#e5484d;box-shadow:0 0 8px #e5484d;display:inline-block}
+  .led i.off{background:#7a2025;box-shadow:none}
+
+  /* ---------- Screen ---------- */
+  .bezel{background:#2e3138;border-radius:12px 12px 28px 12px;padding:16px 20px 14px;box-shadow:inset 0 2px 8px rgba(0,0,0,.6)}
+  .bezel-strip{display:flex;justify-content:space-between;font-size:9px;letter-spacing:1px;color:#8a93a5;font-weight:700;padding:0 2px 8px}
+  .bezel-strip .pwr{color:#e5484d}
+  .screen{background:#9bac0f;border:3px solid #1c1e24;border-radius:6px;overflow:hidden;aspect-ratio:10/9;position:relative}
+  .screen canvas{width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+  .screen .scan{position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.05) 0 1px,transparent 1px 3px);pointer-events:none}
+
+  .brand{text-align:center;font-weight:800;font-size:20px;letter-spacing:2px;color:#3a3f4d;margin:12px 0 2px}
+  .brand span{color:#7a2e6d}
+  .brand small{display:block;font-size:10px;letter-spacing:3px;color:#6d675a;font-weight:700}
+
+  /* ---------- Controls ---------- */
+  .controls{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-top:18px}
+  .dpad{width:118px;height:118px;position:relative;margin:0 auto}
+  .dpad button{position:absolute;background:#2b2e36;color:#cfd3dc;border:none;font-size:16px;cursor:pointer;box-shadow:0 4px 0 #17191f,0 6px 8px rgba(0,0,0,.35);touch-action:none}
+  .dpad button:active,.dpad button.pressed{transform:translateY(3px);box-shadow:0 1px 0 #17191f;background:#3a3e48}
+  .dpad .up{left:40px;top:0;width:38px;height:44px;border-radius:6px 6px 0 0}
+  .dpad .down{left:40px;bottom:0;width:38px;height:44px;border-radius:0 0 6px 6px}
+  .dpad .left{left:0;top:40px;width:44px;height:38px;border-radius:6px 0 0 6px}
+  .dpad .right{right:0;top:40px;width:44px;height:38px;border-radius:0 6px 6px 0}
+  .dpad .mid{left:40px;top:40px;width:38px;height:38px;background:#2b2e36;box-shadow:none;border-radius:0}
+  .ab{position:relative;width:132px;height:86px}
+  .ab button{position:absolute;width:52px;height:52px;border-radius:50%;border:none;font-weight:800;font-size:18px;cursor:pointer;color:#fff;background:linear-gradient(180deg,#a3334d,#7e2438);box-shadow:0 4px 0 #571423,0 6px 10px rgba(0,0,0,.35);touch-action:none}
+  .ab button:active,.ab button.pressed{transform:translateY(3px);box-shadow:0 1px 0 #571423}
+  .ab .b{left:0;bottom:0}
+  .ab .a{right:0;top:0}
+  .startsel{display:flex;gap:14px;justify-content:center;margin-top:20px}
+  .startsel button{background:#8a8578;border:none;border-radius:12px;width:52px;height:13px;cursor:pointer;box-shadow:0 3px 0 #5f5a4e;transform:rotate(-18deg);touch-action:none}
+  .startsel button:active,.startsel button.pressed{transform:rotate(-18deg) translateY(2px);box-shadow:0 1px 0 #5f5a4e}
+  .startsel .lbl{display:flex;gap:14px;justify-content:center;font-size:10px;font-weight:800;letter-spacing:1px;color:#6d675a;margin-top:8px}
+  .startsel .lbl span{width:52px;text-align:center}
+  .grille{margin:22px 8px 0 auto;width:110px;display:grid;grid-template-columns:repeat(6,1fr);gap:5px;transform:rotate(-18deg)}
+  .grille i{height:5px;border-radius:3px;background:#8a8578;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
+  .hint{text-align:center;font-size:12px;color:#6d675a;margin-top:14px}
 </style>
 </head>
 <body>
-<header>
-<h1>JMFgames</h1>
-<p>Free web games. Play instantly — no signup, no download.</p>
-</header>
-<nav>
-<a href="/">Home</a> · <a href="/about.html">About Us</a> · <a href="/contact.html">Contact Us</a> · <a href="/privacy.html">Privacy Policy</a><button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle light and dark theme">☀️ Light</button>
-</nav>
+<p class="page-note">JMF Games — the pocket console. Pick a game on the screen and play with the buttons.</p>
+<p style="text-align:center;margin:0 auto 16px;max-width:460px"><a href="https://jmfgames.com/" style="display:inline-block;background:#1e293b;color:#e8e8e8;border:1px solid #334155;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:700;text-decoration:none">⌂ Back to JMFgames home</a></p>
 
-<div class="featured">
-<span class="badge">Featured game</span>
-<h2>InveSim — Investment Simulator</h2>
-<p>Start with $10,000 of virtual money and build your fortune. Trade 15,025 global stocks, 150 ETFs, options, real estate, small businesses and more — against 5,200 AI robot traders — plus a 2D casino. All virtual money, no real money at stake.</p>
-<a class="play" href="https://invesim.com">Play InveSim — Free</a>
+<div class="boy" id="jmfgames">
+  <div class="boy-top"><span>JMF GAMES</span><span class="led"><i id="powerLed"></i>POWER</span></div>
+
+  <div class="bezel">
+    <div class="bezel-strip"><span class="pwr">● BATTERY</span><span>DOT MATRIX WITH STEREO SOUND</span></div>
+    <div class="screen">
+      <!-- GAME SCREEN: 160 x 144 (classic pocket-console size). Your game draws on this canvas. -->
+      <canvas id="gameCanvas" width="160" height="144"></canvas>
+      <div class="scan"></div>
+    </div>
+  </div>
+
+  <div class="brand">JMF <span>GAMES</span><small>POCKET CONSOLE · JMFgames</small></div>
+
+  <div class="controls">
+    <div class="dpad" role="group" aria-label="D-pad">
+      <button type="button" class="up"    data-jmfbtn="up"    aria-label="Up">▲</button>
+      <button type="button" class="left"  data-jmfbtn="left"  aria-label="Left">◀</button>
+      <div class="mid"></div>
+      <button type="button" class="right" data-jmfbtn="right" aria-label="Right">▶</button>
+      <button type="button" class="down"  data-jmfbtn="down"  aria-label="Down">▼</button>
+    </div>
+    <div></div>
+    <div class="ab">
+      <button type="button" class="b" data-jmfbtn="b" aria-label="B button">B</button>
+      <button type="button" class="a" data-jmfbtn="a" aria-label="A button">A</button>
+    </div>
+  </div>
+
+  <div class="startsel">
+    <button type="button" data-jmfbtn="select" aria-label="Select"></button>
+    <button type="button" data-jmfbtn="start" aria-label="Start"></button>
+  </div>
+  <div class="startsel lbl"><span>SELECT</span><span>START</span></div>
+
+  <div class="grille"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <p class="hint">D-pad moves · A flap / select · B back · Start pause · Select menu</p>
 </div>
 
-<section>
-<h2>Play now</h2>
-<p>Every game here is free to play in your browser, with no account needed. New games are added regularly.</p>
-<div class="grid">
-<div class="card"><span class="badge">Play now</span><h3><a href="/games/chess-club/">Chess Club</a></h3><p>30-level AI opponent from 500 to 3500 ELO, persistent board and saves — play White or Black, with 15-minute clocks.</p><p><a href="/games/chess-club/">Play free →</a></p></div>
-<div class="card"><span class="badge">Coming soon</span><h3>Arcade Games</h3><p>Fast, fun arcade games to pick up and play in a few minutes.</p></div>
-<div class="card"><span class="badge">Play now</span><h3><a href="/games/blockquest/">BlockQuest</a></h3><p>Drag blocks onto a 9×9 board — fill a row, column, or 3×3 box to clear it and score. Autosaves every move.</p><p><a href="/games/blockquest/">Play free →</a></p></div>
-<div class="card"><span class="badge">Play now</span><h3><a href="/games/blackjack-royale/">Blackjack Royale</a></h3><p>3D blackjack with virtual money — place your bet, beat the dealer, first to $10,000 wins.</p><p><a href="/games/blackjack-royale/">Play free →</a></p></div> <div class="card"><span class="badge">Play now</span><h3><a href="/games/texas-holdem-poker/">Texas Hold'em Royale</a></h3><p>No-limit Texas Hold'em against 5 AI opponents — blinds rise every 12 hands, first to $100,000 wins the table.</p><p><a href="/games/texas-holdem-poker/">Play free →</a></p></div> <div class="card"><span class="badge">Play now</span><h3><a href="/games/sky-soar/">Sky Soar</a></h3><p>Flappy-style endless flight through 100 worlds — tap to flap, dodge the pipes, every 100 points unlocks a new scenery.</p><p><a href="/games/sky-soar/">Play free →</a></p></div>
-</div>
-</section>
 
-<section>
-<h2>How JMFgames works</h2>
-<p><strong>Free:</strong> every game on JMFgames is free to play. <strong>No signup:</strong> just open a game and play. <strong>No download:</strong> all games run in your web browser on desktop and mobile.</p>
-<p>JMFgames is built and run by JMFhost. Questions or a game idea? <a href="/contact.html">Contact us</a>.</p>
-</section>
+<p style="text-align:center;margin:18px auto 0;max-width:460px;font-size:13px">
+  <a href="about.html" style="color:#9aa3b2">About</a> &nbsp;·&nbsp;
+  <a href="contact.html" style="color:#9aa3b2">Contact</a> &nbsp;·&nbsp;
+  <a href="privacy.html" style="color:#9aa3b2">Privacy</a>
+</p>
+<p style="text-align:center;margin:8px auto 0;max-width:460px;font-size:12px;color:#6b7280">© 2026 JMFgames. All rights reserved.</p>
 
-<footer>
-<a href="/about.html">About Us</a> &nbsp;·&nbsp; <a href="/contact.html">Contact Us</a> &nbsp;·&nbsp; <a href="/privacy.html">Privacy Policy</a><br>
-© 2026 JMFgames. All rights reserved.<br>
-All games, code, graphics and content on this site are the property of JMFhost and may not be copied, reproduced, distributed or reused without written permission.
-</footer>
+<script>
+/* ================================================================
+   JMF GAMES INPUT API  —  DO NOT REMOVE. Games use this, nothing else.
+   ----------------------------------------------------------------
+   Buttons: 'up' 'down' 'left' 'right' 'a' 'b' 'start' 'select'
 
+   1) Events (for one-time actions like jump / shoot / pause):
+        window.addEventListener('jmfgames-press',   e => { /* e.detail.button *\/ });
+        window.addEventListener('jmfgames-release', e => { /* e.detail.button *\/ });
+
+   2) Polling (for held movement — call every frame):
+        JMFGAMES.isDown('left')   // true while the button is held
+
+   3) Helper:
+        JMFGAMES.beep(660, 0.08)  // tiny square-wave beep, freq + seconds
+
+   Keyboard mapping (for desktop testing, same events as the buttons):
+        D-pad = Arrow keys or WASD · A = X or K · B = Z or J
+        Start = Enter · Select = Shift
+   ================================================================ */
+(function () {
+  'use strict';
+  var held = {};
+  var listeners = {};
+
+  function fire(type, button) {
+    window.dispatchEvent(new CustomEvent(type, { detail: { button: button } }));
+    (listeners[type + ':' + button] || []).forEach(function (fn) { try { fn(button); } catch (e) {} });
+  }
+  function press(button) {
+    if (held[button]) return;
+    held[button] = true;
+    var el = document.querySelector('[data-jmfbtn="' + button + '"]');
+    if (el) el.classList.add('pressed');
+    fire('jmfgames-press', button);
+  }
+  function release(button) {
+    if (!held[button]) return;
+    held[button] = false;
+    var el = document.querySelector('[data-jmfbtn="' + button + '"]');
+    if (el) el.classList.remove('pressed');
+    fire('jmfgames-release', button);
+  }
+
+  // On-screen buttons: press on touch/click down, release on up/leave.
+  document.querySelectorAll('[data-jmfbtn]').forEach(function (btn) {
+    var b = btn.getAttribute('data-jmfbtn');
+    btn.addEventListener('pointerdown', function (e) { e.preventDefault(); btn.setPointerCapture(e.pointerId); press(b); });
+    btn.addEventListener('pointerup', function () { release(b); });
+    btn.addEventListener('pointercancel', function () { release(b); });
+    btn.addEventListener('lostpointercapture', function () { release(b); });
+    btn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  });
+
+  // Keyboard = same buttons (desktop testing).
+  var KEYMAP = {
+    ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down',
+    ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
+    KeyX: 'a', KeyK: 'a', KeyZ: 'b', KeyJ: 'b',
+    Enter: 'start', ShiftLeft: 'select', ShiftRight: 'select'
+  };
+  window.addEventListener('keydown', function (e) {
+    var b = KEYMAP[e.code];
+    if (!b) return;
+    e.preventDefault();
+    if (!e.repeat) press(b);
+  });
+  window.addEventListener('keyup', function (e) {
+    var b = KEYMAP[e.code];
+    if (b) release(b);
+  });
+  window.addEventListener('blur', function () { Object.keys(held).forEach(release); });
+
+  // Tiny beep helper (Web Audio, created on first use so browsers allow it).
+  var actx = null;
+  function beep(freq, dur) {
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      var o = actx.createOscillator(), g = actx.createGain();
+      o.type = 'square'; o.frequency.value = freq || 660;
+      g.gain.setValueAtTime(0.05, actx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + (dur || 0.08));
+      o.connect(g); g.connect(actx.destination);
+      o.start(); o.stop(actx.currentTime + (dur || 0.08));
+    } catch (e) {}
+  }
+
+  window.JMFGAMES = {
+    isDown: function (button) { return !!held[button]; },
+    on: function (type, button, fn) {
+      // Accepts 'press'/'release' or the full 'jmfgames-press'/'jmfgames-release'.
+      var t = String(type).replace(/^jmfgames-/, '');
+      var k = 'jmfgames-' + t + ':' + button;
+      (listeners[k] = listeners[k] || []).push(fn);
+    },
+    beep: beep
+  };
+})();
+
+/* ================================================================
+   JMF GAMES — CONSOLE MENU + SKY SOAR
+   Replaces the demo game. Draws on the 160x144 canvas.
+   Controlled ONLY by the console buttons via the JMFGAMES input API
+   (D-pad, A, B, Start, Select) — no touch/mouse on the screen.
+   Screens: 'menu' (game select) | 'coming' (coming soon)
+            'play' (Sky Soar) | 'over' (game over panel)
+   ================================================================ */
+(function () {
+  'use strict';
+  var cv = document.getElementById('gameCanvas');
+  var ctx = cv.getContext('2d');
+  var W = 160, H = 144;
+
+  /* ---------- Game list (menu) ---------- */
+  var GAMES = [
+    { name: 'SKY SOAR', playable: true },
+    { name: 'BLOCKQUEST', playable: false },
+    { name: 'BLACKJACK ROYALE', playable: false },
+    { name: "TEXAS HOLD'EM", playable: false },
+    { name: 'CHESS CLUB', playable: false }
+  ];
+
+  /* ---------- 100 sceneries (from the standalone Sky Soar) ---------- */
+  var SCENERY = [{"name":"Golden Hour Meadow","top":"#FFE9A8","bot":"#FF8FA3","h1":"#E8A85C","h2":"#6FA85A"},{"name":"Peach Sunrise Over Hills","top":"#FFD9A0","bot":"#FF6B9D","h1":"#D98A5F","h2":"#7A8E5A"},{"name":"Misty Lavender Morning","top":"#E8D9FF","bot":"#F2C6E0","h1":"#A793D6","h2":"#7D7AA8"},{"name":"Rose Gold Horizon","top":"#FFD6A5","bot":"#C77DFF","h1":"#D17AA0","h2":"#8E5F7A"},{"name":"Amber Valley Dawn","top":"#FFE3A3","bot":"#E07A3F","h1":"#C9823A","h2":"#6F8A45"},{"name":"Soft Pink Sakura Morning","top":"#FFDCE8","bot":"#FF8FAB","h1":"#E89AB5","h2":"#E79BB0"},{"name":"Emerald Hills Day","top":"#A8E6A1","bot":"#2E8B57","h1":"#4EA35A","h2":"#2B7A3D"},{"name":"Azure Sky & White Clouds","top":"#7EC8FF","bot":"#FFFFFF","h1":"#7FB069","h2":"#4A7C59"},{"name":"Turquoise Lagoon Day","top":"#4DE3FF","bot":"#FFF6B7","h1":"#28B8A8","h2":"#F2C14E"},{"name":"Sunny Sunflower Fields","top":"#FFE66D","bot":"#FF9F1C","h1":"#E9A331","h2":"#5B8C3E"},{"name":"Crystal Lake Noon","top":"#AEEBFF","bot":"#9ADFFF","h1":"#7AB8D6","h2":"#3E7CB1"},{"name":"Tropical Palm Paradise","top":"#7FFFD4","bot":"#FFE66D","h1":"#1F9D7A","h2":"#F2A93B"},{"name":"Mediterranean Coast Day","top":"#8ED0FF","bot":"#7FB069","h1":"#D9B98A","h2":"#2E86AB"},{"name":"Alpine Meadow Summer","top":"#B8F1FF","bot":"#FFD166","h1":"#6BAF8A","h2":"#3F7A5A"},{"name":"Bamboo Forest Light","top":"#D6F5B0","bot":"#56AB2F","h1":"#5B9E4D","h2":"#2E6B2E"},{"name":"Rainbow After Rain","top":"#A8C0FF","bot":"#FFE29A","h1":"#7AA0C4","h2":"#5A8A5A"},{"name":"Lavender Fields Provence","top":"#D8B4FE","bot":"#F0ABFC","h1":"#8B5CF6","h2":"#5B3A8E"},{"name":"Desert Cactus Noon","top":"#FFD89B","bot":"#E76F51","h1":"#C77D4A","h2":"#A66A2E"},{"name":"Canyon Red Rocks","top":"#FF9A76","bot":"#9B2226","h1":"#A83A2E","h2":"#7A211E"},{"name":"Arctic Ice Day","top":"#D6F0FF","bot":"#FFFFFF","h1":"#A8D8EA","h2":"#EAF6FF"},{"name":"Tangerine Sunset Beach","top":"#FFB75E","bot":"#FF3D68","h1":"#F2844A","h2":"#E86A5A"},{"name":"Crimson Sunset Canyon","top":"#FF512F","bot":"#7A0C4A","h1":"#7A1C3A","h2":"#4A0F2A"},{"name":"Violet Dusk Harbor","top":"#7B5EA7","bot":"#FF8FAB","h1":"#4A3B6B","h2":"#2E2A4A"},{"name":"Golden Gate Sunset","top":"#FF9966","bot":"#FFD166","h1":"#B84A2E","h2":"#6B2E2E"},{"name":"Pink Lake Sunset","top":"#FFC0CB","bot":"#FF6A88","h1":"#E07A8A","h2":"#B85A6A"},{"name":"Fiery Volcano Sunset","top":"#FF4E50","bot":"#2B0A0A","h1":"#3A0A0A","h2":"#1A0505"},{"name":"Sunset Over Vineyards","top":"#FFAF7B","bot":"#6A4C93","h1":"#7A4A6B","h2":"#4A2E4A"},{"name":"Amber Desert Dusk","top":"#E8A87C","bot":"#5C3D2E","h1":"#9A6A3A","h2":"#6B4A2E"},{"name":"Sunset City Skyline","top":"#FF9A56","bot":"#4A235A","h1":"#3A1A3A","h2":"#241228"},{"name":"Rose Sunset Over Ocean","top":"#FF8C94","bot":"#C44569","h1":"#A83A5A","h2":"#6B2340"},{"name":"Starry Milky Way","top":"#0B1026","bot":"#3B2F63","h1":"#1B2440","h2":"#0F162E"},{"name":"Moonlit Ocean Night","top":"#0A1A3A","bot":"#2E86AB","h1":"#123A6B","h2":"#0A2547"},{"name":"Midnight City Lights","top":"#0F0C29","bot":"#FF6B35","h1":"#1A123A","h2":"#0F0A26"},{"name":"Northern Lights Aurora","top":"#0B2E4F","bot":"#A8E063","h1":"#123A3A","h2":"#0A2A2A"},{"name":"Purple Galaxy Night","top":"#1A0033","bot":"#FF00CC","h1":"#2A0A4A","h2":"#1A0033"},{"name":"Firefly Forest Night","top":"#0A1F14","bot":"#FFE66D","h1":"#0F2E1E","h2":"#081F14"},{"name":"Snowy Night Village","top":"#1B2A4A","bot":"#F8F9FA","h1":"#DDE8F0","h2":"#8FA8B8"},{"name":"Neon Tokyo Night","top":"#0D0221","bot":"#FF2E88","h1":"#1A0A3A","h2":"#0D0221"},{"name":"Full Moon Over Desert","top":"#1A1A40","bot":"#F2D492","h1":"#3A2E5A","h2":"#241E3A"},{"name":"Twilight Lavender Night","top":"#2B1055","bot":"#E0B0FF","h1":"#4A2E6B","h2":"#2E1A4A"},{"name":"Cherry Blossom Spring","top":"#FFD6E8","bot":"#A8E6CF","h1":"#F2A8C0","h2":"#D67AA0"},{"name":"Spring Tulip Fields","top":"#FF9A9E","bot":"#FFD194","h1":"#E07A8A","h2":"#B85A6A"},{"name":"Fresh Rain Spring Forest","top":"#B8D8BA","bot":"#7FB069","h1":"#5A8A5A","h2":"#3E6B3E"},{"name":"Summer Waterfall Valley","top":"#7ED6DF","bot":"#F6E27A","h1":"#4A9A8A","h2":"#2E6B5A"},{"name":"Sunflower Summer Sunset","top":"#FFC94D","bot":"#FF5E62","h1":"#B87A1E","h2":"#7A5210"},{"name":"Autumn Maple Forest","top":"#FF9A3D","bot":"#8B2E1B","h1":"#8B2E1B","h2":"#5A1A0F"},{"name":"Golden Autumn Park","top":"#FFE8A3","bot":"#FB8500","h1":"#C98A1E","h2":"#8A5A10"},{"name":"Harvest Pumpkin Fields","top":"#FFB35C","bot":"#6B4226","h1":"#A86A2E","h2":"#6B4226"},{"name":"Winter Wonderland Pines","top":"#EAF6FF","bot":"#8EC9EE","h1":"#DDEFFF","h2":"#8EC9EE"},{"name":"Snowy Mountain Christmas","top":"#BDE0FE","bot":"#FFFFFF","h1":"#A8C8E8","h2":"#E8F4FF"},{"name":"Bali Rice Terraces","top":"#A8E063","bot":"#FFE66D","h1":"#4A8A2E","h2":"#2E6B1E"},{"name":"Santorini White & Blue","top":"#A8D8EA","bot":"#3A86FF","h1":"#FFFFFF","h2":"#3A86FF"},{"name":"Kyoto Temple Autumn","top":"#FFD6A5","bot":"#B56576","h1":"#A83A3A","h2":"#6B2E2E"},{"name":"Swiss Alps Winter","top":"#DFF3FF","bot":"#FFFFFF","h1":"#EAF6FF","h2":"#8EC9EE"},{"name":"Iceland Waterfall & Rainbow","top":"#A8E6CF","bot":"#FFD166","h1":"#6BAF8A","h2":"#3F7A5A"},{"name":"Egyptian Desert Oasis","top":"#FFE8A3","bot":"#EE964B","h1":"#D9A83A","h2":"#A87A2E"},{"name":"Amazon Rainforest Mist","top":"#A8D5BA","bot":"#2D6A4F","h1":"#2D6A4F","h2":"#1B4332"},{"name":"Great Wall Sunset","top":"#FF9E5E","bot":"#6A040F","h1":"#7A3A1E","h2":"#4A2110"},{"name":"Venice Canal Dusk","top":"#6A4C93","bot":"#FFAFCC","h1":"#3A2A5A","h2":"#241A3A"},{"name":"Paris Eiffel Dusk","top":"#FFAFCC","bot":"#FFC8DD","h1":"#7A5A8A","h2":"#4A3A5A"},{"name":"Floating Islands Sky","top":"#A8C0FF","bot":"#FFD6FF","h1":"#8A7AC0","h2":"#5A4A8A"},{"name":"Crystal Cave Glow","top":"#0F2027","bot":"#2C5364","h1":"#1A3A4A","h2":"#0F2027"},{"name":"Enchanted Mushroom Forest","top":"#0B3D2E","bot":"#FFD166","h1":"#123B2A","h2":"#0A2A1E"},{"name":"Dragon Valley Mist","top":"#5B5F97","bot":"#B8C0D8","h1":"#4A4E7A","h2":"#2E315A"},{"name":"Candy Cloud Kingdom","top":"#FFAFCC","bot":"#BDE0FE","h1":"#FF8FAB","h2":"#FB6F92"},{"name":"Underwater Coral World","top":"#0077B6","bot":"#90E0EF","h1":"#0077B6","h2":"#023E8A"},{"name":"Lava Volcano World","top":"#1A0A00","bot":"#FF4500","h1":"#2A0A00","h2":"#1A0500"},{"name":"Sky Castle Clouds","top":"#B8E0FF","bot":"#FFE29A","h1":"#8EC9EE","h2":"#5A8AB8"},{"name":"Magic Aurora Forest","top":"#0A2A43","bot":"#C084FC","h1":"#0A3A2A","h2":"#061F16"},{"name":"Dreamy Pastel Clouds","top":"#FFD6FF","bot":"#C8B6FF","h1":"#C8B6FF","h2":"#A78BFA"},{"name":"Stormy Ocean Waves","top":"#2C3E50","bot":"#7FB3D5","h1":"#2C3E50","h2":"#1A2A3A"},{"name":"Thunderstorm Over City","top":"#232526","bot":"#F2C94C","h1":"#232526","h2":"#111111"},{"name":"Rainy Neon Street","top":"#1A1A2E","bot":"#E94560","h1":"#1A1A2E","h2":"#0F0F1A"},{"name":"Foggy Pine Forest","top":"#8E9EAB","bot":"#7A8B6F","h1":"#7A8B6F","h2":"#4A5A4A"},{"name":"Snowstorm Mountain Pass","top":"#D3D3D3","bot":"#FFFFFF","h1":"#E8E8E8","h2":"#9AA8B8"},{"name":"Cloudy Highlands","top":"#A8B8C8","bot":"#8FA8B8","h1":"#7A8A9A","h2":"#5A6A7A"},{"name":"Monsoon Green Valley","top":"#2F5233","bot":"#A8D5BA","h1":"#2F5233","h2":"#1B3A22"},{"name":"Rainbow Storm Clearing","top":"#4A4E69","bot":"#FFE29A","h1":"#6B5A6B","h2":"#4A3E4A"},{"name":"Windy Desert Dunes","top":"#E6C87A","bot":"#F4E4BC","h1":"#C9A86A","h2":"#A88A4A"},{"name":"Icy Blizzard Peaks","top":"#E0F7FA","bot":"#FFFFFF","h1":"#D0F0FF","h2":"#8EC9EE"},{"name":"Coral Pink Beach","top":"#FFB7B2","bot":"#FF9AA2","h1":"#FF8FA3","h2":"#E86A8A"},{"name":"Emerald Rice Paddies","top":"#B5E48C","bot":"#D9ED92","h1":"#2A9D8F","h2":"#1B6B5A"},{"name":"Bluebell Forest Spring","top":"#B8E0D2","bot":"#A8C3E8","h1":"#7AA8D6","h2":"#5A7AA8"},{"name":"Sunflower Desert Sunset","top":"#FF9E00","bot":"#7B2CBF","h1":"#7A3A1E","h2":"#4A2110"},{"name":"Glacier Bay Icebergs","top":"#A8D8EA","bot":"#FFFFFF","h1":"#D0F4FF","h2":"#8EC9EE"},{"name":"Savannah Sunset Safari","top":"#FFB703","bot":"#023047","h1":"#B87A1E","h2":"#6B4A10"},{"name":"Countryside Cottage Dawn","top":"#FFE5B4","bot":"#A8E6CF","h1":"#C9A87A","h2":"#7A8A5A"},{"name":"Lighthouse Storm Coast","top":"#2C3E50","bot":"#AEB6BF","h1":"#2C3E50","h2":"#1A2A3A"},{"name":"Ancient Ruins Jungle","top":"#2E7D32","bot":"#A5D6A7","h1":"#2E7D32","h2":"#1B5E20"},{"name":"Hot Air Balloons Valley","top":"#FFD166","bot":"#8ECAE6","h1":"#7AB8A8","h2":"#4A8A7A"},{"name":"Bioluminescent Beach Night","top":"#001233","bot":"#00F5D4","h1":"#001845","h2":"#000A24"},{"name":"Lavender Sunset Fields","top":"#C084FC","bot":"#FBBF24","h1":"#8B5CF6","h2":"#5B3A8E"},{"name":"Mountain Lake Reflection","top":"#89CFF0","bot":"#FFAFCC","h1":"#5A8AB8","h2":"#3A6A98"},{"name":"Sakura Night Festival","top":"#1E1B4B","bot":"#F472B6","h1":"#2E1A4A","h2":"#1E1B4B"},{"name":"Golden Bamboo Sunset","top":"#FFD700","bot":"#2E7D32","h1":"#B8860B","h2":"#6B5A10"},{"name":"Aurora Over Frozen Lake","top":"#0B1D3A","bot":"#4ADE80","h1":"#DDEFFF","h2":"#8EC9EE"},{"name":"Desert Starry Oasis","top":"#0A0A2A","bot":"#FFD700","h1":"#2A2340","h2":"#1A1430"},{"name":"Tropical Sunset Waterfall","top":"#FF6B35","bot":"#2EC4B6","h1":"#2E8A6B","h2":"#1B5A45"},{"name":"Cloud Sea Sunrise","top":"#FFE8D6","bot":"#FFFFFF","h1":"#F2C6A0","h2":"#D9A87A"},{"name":"Eternal Horizon Grand Finale","top":"#FF6EC4","bot":"#4ADede","h1":"#7873F5","h2":"#4A2E8A"}];
+
+  /* ---------- State ---------- */
+  var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
+  var menuIndex = 0;
+  var comingName = '';
+  var best = 0;
+  try { best = parseInt(localStorage.getItem('jmf-games-sky-soar-best') || '0', 10) || 0; } catch (e) { best = 0; }
+  function saveBest() { try { localStorage.setItem('jmf-games-sky-soar-best', String(best)); } catch (e) {} }
+
+  /* ---------- Sky Soar tuning (160x144 screen) ---------- */
+  var GRAV = 0.18, FLAP = -3.8, MAXFALL = 4.5;
+  var BIRD_X = 36, BIRD_R = 5;
+  var PIPE_W = 18, PIPE_GAP = 58, PIPE_SPEED = 1.2, PIPE_SPACING = 75;
+  var GROUND_Y = 136;
+
+  var bird, pipes, score, sceneryIdx, toastFrames, toastName, paused, dead, started;
+
+  function sceneryFor(s) { return SCENERY[Math.floor(s / 100) % 100]; }
+
+  function resetGame() {
+    bird = { y: 70, vy: 0 };
+    pipes = [];
+    score = 0;
+    sceneryIdx = 0;
+    toastFrames = 0;
+    toastName = '';
+    paused = false;
+    dead = false;
+    started = false;
+    spawnPipe(W + 10);
+  }
+  function spawnPipe(x) {
+    var gapY = 35 + Math.random() * 60; // gap centre 35..95, gap 58 -> fully on screen
+    pipes.push({ x: x, gapY: gapY, scored: false });
+  }
+  function flap() {
+    if (screen !== 'play' || paused || dead) return;
+    if (!started) started = true;
+    bird.vy = FLAP;
+    JMFGAMES.beep(520, 0.06);
+  }
+  function startGame() {
+    resetGame();
+    screen = 'play';
+    JMFGAMES.beep(660, 0.08);
+  }
+  function toMenu() {
+    screen = 'menu';
+    JMFGAMES.beep(440, 0.06);
+  }
+  function gameOver() {
+    dead = true;
+    screen = 'over';
+    if (score > best) { best = score; saveBest(); }
+    JMFGAMES.beep(220, 0.25);
+  }
+
+  /* ---------- Input (one handler per button, dispatched by screen) ---------- */
+  JMFGAMES.on('press', 'up', function () {
+    if (screen === 'menu') { menuIndex = (menuIndex + GAMES.length - 1) % GAMES.length; JMFGAMES.beep(600, 0.04); }
+    else if (screen === 'play') { flap(); }
+  });
+  JMFGAMES.on('press', 'down', function () {
+    if (screen === 'menu') { menuIndex = (menuIndex + 1) % GAMES.length; JMFGAMES.beep(600, 0.04); }
+  });
+  JMFGAMES.on('press', 'a', function () {
+    if (screen === 'menu') {
+      var g = GAMES[menuIndex];
+      if (g.playable) { startGame(); }
+      else { comingName = g.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
+    } else if (screen === 'coming') { toMenu(); }
+    else if (screen === 'play') { flap(); }
+    else if (screen === 'over') { startGame(); }
+  });
+  JMFGAMES.on('press', 'b', function () {
+    if (screen === 'play' || screen === 'over' || screen === 'coming') { toMenu(); }
+  });
+  JMFGAMES.on('press', 'start', function () {
+    if (screen === 'play' && !dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
+  });
+  JMFGAMES.on('press', 'select', function () {
+    if (screen === 'play' || screen === 'over' || screen === 'coming') { toMenu(); }
+  });
+
+  /* ---------- Update (one fixed 1/60s step) ---------- */
+  function update() {
+    if (screen !== 'play' || paused || dead || !started) return;
+    bird.vy = Math.min(bird.vy + GRAV, MAXFALL);
+    bird.y += bird.vy;
+    if (bird.y < BIRD_R) { bird.y = BIRD_R; bird.vy = 0; }
+    var last = pipes[pipes.length - 1];
+    if (!last || last.x < W - PIPE_SPACING) spawnPipe(W + 10);
+    for (var i = 0; i < pipes.length; i++) {
+      var p = pipes[i];
+      p.x -= PIPE_SPEED;
+      if (!p.scored && p.x + PIPE_W < BIRD_X - BIRD_R) {
+        p.scored = true;
+        score++;
+        JMFGAMES.beep(880, 0.07);
+        var ni = Math.floor(score / 100) % 100;
+        if (ni !== sceneryIdx) {
+          sceneryIdx = ni;
+          toastName = SCENERY[sceneryIdx].name;
+          toastFrames = 130;
+          JMFGAMES.beep(990, 0.12);
+        }
+      }
+    }
+    while (pipes.length && pipes[0].x < -PIPE_W - 5) pipes.shift();
+    if (toastFrames > 0) toastFrames--;
+    if (bird.y + BIRD_R >= GROUND_Y) { bird.y = GROUND_Y - BIRD_R; gameOver(); return; }
+    for (var j = 0; j < pipes.length; j++) {
+      var q = pipes[j];
+      var gapTop = q.gapY - PIPE_GAP / 2, gapBot = q.gapY + PIPE_GAP / 2;
+      if (BIRD_X + BIRD_R > q.x && BIRD_X - BIRD_R < q.x + PIPE_W) {
+        if (bird.y - BIRD_R < gapTop || bird.y + BIRD_R > gapBot) { gameOver(); return; }
+      }
+    }
+  }
+
+  /* ---------- Draw ---------- */
+  function drawSky(sc) {
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, sc.top);
+    g.addColorStop(1, sc.bot);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#FFF7AD';
+    ctx.beginPath(); ctx.arc(128, 20, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = sc.h1;
+    ctx.beginPath();
+    ctx.moveTo(0, 118);
+    ctx.quadraticCurveTo(40, 100, 80, 114);
+    ctx.quadraticCurveTo(120, 126, 160, 110);
+    ctx.lineTo(160, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = sc.h2;
+    ctx.beginPath();
+    ctx.moveTo(0, 128);
+    ctx.quadraticCurveTo(50, 112, 100, 124);
+    ctx.quadraticCurveTo(135, 132, 160, 122);
+    ctx.lineTo(160, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#5A7A3A';
+    ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+    ctx.fillStyle = '#3E5A28';
+    ctx.fillRect(0, GROUND_Y, W, 2);
+  }
+  function drawPipes() {
+    for (var i = 0; i < pipes.length; i++) {
+      var p = pipes[i];
+      var gapTop = p.gapY - PIPE_GAP / 2, gapBot = p.gapY + PIPE_GAP / 2;
+      ctx.fillStyle = '#2E9E4F';
+      ctx.fillRect(p.x, 0, PIPE_W, gapTop);
+      ctx.fillRect(p.x, gapBot, PIPE_W, GROUND_Y - gapBot);
+      ctx.fillStyle = '#1E7A38';
+      ctx.fillRect(p.x, 0, 2, gapTop);
+      ctx.fillRect(p.x, gapBot, 2, GROUND_Y - gapBot);
+      ctx.fillRect(p.x + PIPE_W - 2, 0, 2, gapTop);
+      ctx.fillRect(p.x + PIPE_W - 2, gapBot, 2, GROUND_Y - gapBot);
+      ctx.fillStyle = '#2E9E4F';
+      ctx.fillRect(p.x - 2, gapTop - 6, PIPE_W + 4, 6);
+      ctx.fillRect(p.x - 2, gapBot, PIPE_W + 4, 6);
+      ctx.fillStyle = '#1E7A38';
+      ctx.fillRect(p.x - 2, gapTop - 6, PIPE_W + 4, 2);
+      ctx.fillRect(p.x - 2, gapBot, PIPE_W + 4, 2);
+    }
+  }
+  function drawBird() {
+    var x = BIRD_X, y = bird.y;
+    ctx.fillStyle = '#FFD93D';
+    ctx.beginPath(); ctx.arc(x, y, BIRD_R, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#FF8C42';
+    ctx.beginPath();
+    ctx.moveTo(x + BIRD_R - 1, y - 1);
+    ctx.lineTo(x + BIRD_R + 4, y + 1);
+    ctx.lineTo(x + BIRD_R - 1, y + 3);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#1C1C1C';
+    ctx.beginPath(); ctx.arc(x + 1, y - 2, 1.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#E8B93C';
+    ctx.beginPath(); ctx.arc(x - 1, y + 2, 2.5, 0, Math.PI); ctx.fill();
+  }
+  function drawMenu() {
+    ctx.fillStyle = '#9bac0f'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#0f380f';
+    ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('JMF GAMES', W / 2, 18);
+    ctx.font = '8px monospace';
+    ctx.fillText('SELECT A GAME', W / 2, 32);
+    ctx.textAlign = 'left';
+    for (var i = 0; i < GAMES.length; i++) {
+      var y = 50 + i * 16;
+      if (i === menuIndex) {
+        ctx.fillStyle = '#0f380f';
+        ctx.fillRect(8, y - 10, 144, 13);
+        ctx.fillStyle = '#9bac0f';
+        ctx.fillText('>', 14, y);
+        ctx.fillText(GAMES[i].name, 26, y);
+      } else {
+        ctx.fillStyle = '#0f380f';
+        ctx.fillText(GAMES[i].name, 26, y);
+      }
+    }
+    ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
+    ctx.fillText('SKY SOAR BEST: ' + best, W / 2, 126);
+    ctx.fillText('UP/DOWN MOVE - A PLAY', W / 2, 138);
+    ctx.textAlign = 'left';
+  }
+  function drawComing() {
+    ctx.fillStyle = '#9bac0f'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(comingName, W / 2, 55);
+    ctx.font = '8px monospace';
+    ctx.fillText('COMING SOON', W / 2, 75);
+    ctx.fillText('B: BACK TO MENU', W / 2, 95);
+    ctx.textAlign = 'left';
+  }
+  function drawGame() {
+    var sc = sceneryFor(score);
+    drawSky(sc);
+    drawPipes();
+    drawBird();
+    ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center'; ctx.font = 'bold 12px monospace';
+    ctx.fillText(String(score), W / 2, 16);
+    ctx.font = '8px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('BEST ' + best, 4, 10);
+    if (!started) {
+      ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
+      ctx.fillText('PRESS A TO FLAP', W / 2, 104);
+      ctx.textAlign = 'left';
+    }
+    if (toastFrames > 0) {
+      ctx.fillStyle = 'rgba(15,56,15,0.85)';
+      ctx.fillRect(10, 52, 140, 26);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
+      ctx.fillText('NEW SCENERY', W / 2, 62);
+      ctx.fillText(toastName, W / 2, 73);
+      ctx.textAlign = 'left';
+    }
+    if (paused) {
+      ctx.fillStyle = 'rgba(15,56,15,0.7)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('PAUSED', W / 2, 70);
+      ctx.font = '8px monospace';
+      ctx.fillText('START: RESUME', W / 2, 86);
+      ctx.textAlign = 'left';
+    }
+  }
+  function drawOver() {
+    var sc = sceneryFor(score);
+    drawSky(sc);
+    drawPipes();
+    ctx.fillStyle = '#9bac0f';
+    ctx.fillRect(18, 42, 124, 78);
+    ctx.fillStyle = '#0f380f';
+    ctx.fillRect(18, 42, 124, 2);
+    ctx.fillRect(18, 118, 124, 2);
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('GAME OVER', W / 2, 58);
+    ctx.font = '8px monospace';
+    ctx.fillText('SCORE ' + score, W / 2, 74);
+    ctx.fillText('BEST ' + best, W / 2, 86);
+    ctx.fillText('A: RETRY  B: MENU', W / 2, 104);
+    ctx.textAlign = 'left';
+  }
+  function draw() {
+    if (screen === 'menu') drawMenu();
+    else if (screen === 'coming') drawComing();
+    else if (screen === 'play') drawGame();
+    else if (screen === 'over') drawOver();
+  }
+
+  /* ---------- Main loop: fixed 60Hz logic steps, any display rate ---------- */
+  var lastT = 0, acc = 0;
+  function loop(t) {
+    if (!lastT) lastT = t;
+    var dt = t - lastT;
+    lastT = t;
+    if (dt > 100) dt = 100;
+    acc += dt;
+    var steps = 0;
+    while (acc >= 16.666 && steps < 5) { update(); acc -= 16.666; steps++; }
+    if (steps === 5) acc = 0;
+    draw();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+
+</script>
+<style>
+  #jmfgames-ad-banner { position: fixed; bottom: 0; left: 0; right: 0; z-index: 9998;
+    text-align: center; display: none; }
+  #jmfgames-ad-banner.jmfgames-ads-live { display: block;
+    background: rgba(8,10,14,0.97); border-top: 1px solid #23282e; padding: 6px 4px 8px; }
+  #jmfgames-ad-banner .adsbygoogle { width: 100%; }
+</style>
 <div id="jmfgames-ad-banner">
 <!-- JMFgames Bottom Banner -->
 <ins class="adsbygoogle"
@@ -104,16 +567,9 @@ All games, code, graphics and content on this site are the property of JMFhost a
   if (!banner) return;
   var ins = banner.querySelector('ins.adsbygoogle');
   function isFilled() { return !!(ins && ins.querySelector('iframe')); }
-  function adjustLayout() {
-    var h = banner.offsetHeight || 90;
-    document.body.style.paddingBottom = h + 'px';
-  }
   function showBanner() {
-    if (banner.classList.contains('jmfgames-ads-live')) { adjustLayout(); return; }
+    if (banner.classList.contains('jmfgames-ads-live')) return;
     banner.classList.add('jmfgames-ads-live');
-    requestAnimationFrame(adjustLayout);
-    setTimeout(adjustLayout, 1000);
-    setTimeout(adjustLayout, 3000);
   }
   if (isFilled()) { showBanner(); return; }
   try {
@@ -123,17 +579,6 @@ All games, code, graphics and content on this site are the property of JMFhost a
   } catch (e) {
     setTimeout(function() { if (isFilled()) showBanner(); }, 5000);
   }
-})();
-</script>
-
-<script>
-(function(){
-  var root=document.documentElement;
-  var btn=document.getElementById('themeToggle');
-  function label(t){ return t==='light' ? '🌙 Dark' : '☀️ Light'; }
-  function apply(t){ root.setAttribute('data-theme',t); if(btn) btn.textContent=label(t); try{localStorage.setItem('jmfgames-theme',t);}catch(e){} }
-  if(btn) btn.textContent=label(root.getAttribute('data-theme')||'dark');
-  if(btn) btn.addEventListener('click',function(){ apply(root.getAttribute('data-theme')==='light'?'dark':'light'); });
 })();
 </script>
 </body>
