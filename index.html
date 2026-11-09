@@ -243,7 +243,8 @@
     holdem:   { bpm: 120, wave: 'triangle', notes: [[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[0,1]] },
     chess:    { bpm: 96, wave: 'sine', notes: [[60,2],[67,2],[69,2],[67,2],[65,2],[64,2],[62,2],[60,2]] },
     overlord: { bpm: 100, wave: 'sawtooth', notes: [[57,1],[60,1],[62,1],[64,1],[62,1],[60,1],[57,1],[55,1],[57,1],[60,1],[62,1],[64,1],[67,1],[64,1],[62,1],[60,1]] },
-    solitaire: { bpm: 96, wave: 'sine', notes: [[72,2],[76,2],[79,2],[76,2],[81,2],[79,2],[76,2],[72,2],[74,2],[77,2],[81,2],[77,2],[74,2],[72,2],[67,2],[0,2]] }
+    solitaire: { bpm: 96, wave: 'sine', notes: [[72,2],[76,2],[79,2],[76,2],[81,2],[79,2],[76,2],[72,2],[74,2],[77,2],[81,2],[77,2],[74,2],[72,2],[67,2],[0,2]] },
+    beat:    { bpm: 132, wave: 'square', notes: [[57,1],[0,1],[57,1],[60,1],[57,1],[0,1],[62,1],[60,1],[57,1],[0,1],[57,1],[64,1],[62,1],[60,1],[57,1],[55,1]] }
   };
   var musicTimer = null, musicStep = 0, musicNext = 0, musicTune = null, musicActive = false;
   function midiFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
@@ -350,6 +351,7 @@
     { name: 'BLACKJACK ROYALE', playable: true },
     { name: 'BLOCKQUEST', playable: true },
     { name: 'CHESS CLUB', playable: true },
+    { name: 'EMBERFALL BRAWL', playable: true },
     { name: "OVERLORD'S BASTION", playable: true },
     { name: 'SKY SOAR', playable: true },
     { name: 'SOLITAIRE', playable: true },
@@ -361,7 +363,7 @@
 
   /* ---------- State ---------- */
   var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
-  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' — which game is on the play/over screens
+  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' — which game is on the play/over screens
   var menuIndex = 0;
   var comingName = '';
   var best = 0;
@@ -3518,6 +3520,445 @@ function chMoveStr(m) {
     ctx.textAlign = 'left';
   }
 
+  /* ================================================================
+     EMBERFALL BRAWL (console) — original roguelite beat 'em up on
+     the 160x144 screen. The Ash Legion burns Cindral; pick one of
+     three rebels and fight wave after wave down the burning street.
+     Controls: D-pad moves the hero (held movement), A attacks, B
+     dodge-rolls (brief invulnerability), Start pauses, Menu returns
+     to the main menu. After each cleared wave, pick one upgrade:
+     POWER +4 damage, VIGOR +25 max HP and heal 25, SWIFT +12 speed.
+     Death ends the run (permadeath); best waves cleared is saved in
+     localStorage 'jmf-games-beatemup-best'.
+     Heroes: BRAM (slow, heavy, 120 HP), KIRA (fast blade, 90 HP),
+     ASH (swiftest, 70 HP). Enemies: GRUNT, IMP, CULTIST (ranged).
+     ================================================================ */
+  var BU_BEST_KEY = 'jmf-games-beatemup-best';
+  var BU_ARENA = { x0: 8, x1: 152, y0: 36, y1: 130 };
+  var BU_HEROES = [
+    { name: 'BRAM', tag: 'HEAVY FISTS', hp: 120, dmg: 14, spd: 55, rate: 0.50, color: '#E8590C', kind: 'bram' },
+    { name: 'KIRA', tag: 'FAST BLADE', hp: 90, dmg: 9, spd: 75, rate: 0.32, color: '#3B82F6', kind: 'kira' },
+    { name: 'ASH', tag: 'SWIFT DAGGERS', hp: 70, dmg: 6, spd: 95, rate: 0.22, color: '#22C55E', kind: 'ash' }
+  ];
+  var BU_ENEMIES = {
+    grunt: { name: 'GRUNT', hp: 24, dmg: 6, spd: 22, color: '#9CA3AF', kind: 'grunt', ranged: false },
+    imp: { name: 'IMP', hp: 12, dmg: 4, spd: 42, color: '#A855F7', kind: 'imp', ranged: false },
+    cultist: { name: 'CULTIST', hp: 18, dmg: 5, spd: 18, color: '#DC2626', kind: 'cultist', ranged: true }
+  };
+  var BU_UPGRADES = [
+    { name: 'POWER', desc: '+4 DAMAGE' },
+    { name: 'VIGOR', desc: '+25 HP, HEAL 25' },
+    { name: 'SWIFT', desc: '+12 SPEED' }
+  ];
+  var buHero = null, buHeroIdx = 0;
+  var buPhase = 'select'; // 'select' | 'fight' | 'upgrade'
+  var buWave = 0, buCleared = 0, buKills = 0, buBest = 0;
+  var buMaxHp = 0, buHp = 0, buDmg = 0, buSpd = 0, buRate = 0, buBonusDmg = 0, buBonusSpd = 0;
+  var buX = 80, buY = 90, buFace = 1;
+  var buAtkCd = 0, buSwingT = 0, buRollCd = 0, buRolling = false, buRollT = 0, buRollDir = 1, buInvulnT = 0, buHitT = 0;
+  var buEnemies = [], buProjs = [], buSpawnQ = [], buSpawnT = 0, buBannerT = 0;
+  var buPaused = false, buOver = false, buUpSel = 0;
+  var buEmbers = [];
+  try { buBest = parseInt(localStorage.getItem(BU_BEST_KEY) || '0', 10) || 0; } catch (e) { buBest = 0; }
+  function buSaveBest() { try { localStorage.setItem(BU_BEST_KEY, String(buBest)); } catch (e) {} }
+  function startBeat() {
+    buHero = null; buHeroIdx = 0;
+    buPhase = 'select';
+    buWave = 0; buCleared = 0; buKills = 0;
+    buEnemies = []; buProjs = []; buSpawnQ = [];
+    buPaused = false; buOver = false;
+    buEmbers = [];
+    for (var i = 0; i < 10; i++) buEmbers.push({ x: Math.random() * W, y: Math.random() * H, s: 0.2 + Math.random() * 0.4 });
+    screen = 'play';
+    JMFGAMES.musicPlay('beat');
+    JMFGAMES.beep(660, 0.08);
+  }
+  function buPickHero() {
+    buHero = BU_HEROES[buHeroIdx];
+    buMaxHp = buHero.hp; buHp = buMaxHp;
+    buDmg = buHero.dmg; buSpd = buHero.spd; buRate = buHero.rate;
+    buBonusDmg = 0; buBonusSpd = 0;
+    buX = 40; buY = 90; buFace = 1;
+    buAtkCd = 0; buSwingT = 0; buRollCd = 0; buRolling = false; buInvulnT = 0; buHitT = 0;
+    buWave = 0; buCleared = 0; buKills = 0;
+    buStartWave(1);
+    JMFGAMES.beep(880, 0.1);
+  }
+  function buStartWave(n) {
+    buWave = n;
+    buPhase = 'fight';
+    var total = Math.min(12, 3 + n);
+    var q = [];
+    var imps = n >= 2 ? Math.floor(total / 3) : 0;
+    var cults = n >= 3 ? Math.floor(total / 4) : 0;
+    var grunts = total - imps - cults;
+    for (var i = 0; i < grunts; i++) q.push('grunt');
+    for (var j = 0; j < imps; j++) q.push('imp');
+    for (var k = 0; k < cults; k++) q.push('cultist');
+    for (var s = q.length - 1; s > 0; s--) { var r = Math.floor(Math.random() * (s + 1)); var t = q[s]; q[s] = q[r]; q[r] = t; }
+    buSpawnQ = q;
+    buSpawnT = 0.5;
+    buBannerT = 70;
+  }
+  function buSpawnEnemy(type) {
+    var base = BU_ENEMIES[type];
+    var scale = Math.min(1.8, 1 + 0.08 * (buWave - 1));
+    var left = Math.random() < 0.5;
+    var hp = Math.round(base.hp * scale);
+    buEnemies.push({
+      type: type, x: left ? 4 : 156, y: 40 + Math.random() * 88,
+      hp: hp, maxHp: hp, dmg: base.dmg, spd: base.spd,
+      color: base.color, kind: base.kind, ranged: base.ranged,
+      cd: 0.5 + Math.random() * 0.5, throwT: 1 + Math.random(), hitT: 0, face: left ? 1 : -1
+    });
+  }
+  function buHurtHero(dmg) {
+    if (buRolling || buInvulnT > 0 || buOver) return;
+    buHp -= dmg;
+    buHitT = 8; buInvulnT = 0.5;
+    JMFGAMES.beep(220, 0.1);
+  }
+  function buAttack() {
+    if (buPhase !== 'fight' || buPaused || buOver || buRolling) return;
+    if (buAtkCd > 0) return;
+    buAtkCd = buRate;
+    buSwingT = 6;
+    JMFGAMES.beep(520, 0.05);
+    var dmg = buDmg + buBonusDmg;
+    for (var i = 0; i < buEnemies.length; i++) {
+      var e = buEnemies[i];
+      if (e.hp <= 0) continue;
+      var dx = e.x - buX, dy = e.y - buY;
+      // Point-blank: an enemy right on top of the hero is hittable either
+      // way — without this, a foe at dx ~ 0 can sit on the hero unhittable
+      // while it keeps landing hits.
+      var inFront = (dx * buFace >= 0) || (Math.abs(dx) <= 2);
+      if (Math.abs(dy) <= 12 && inFront && Math.abs(dx) <= 17) {
+        e.hp -= dmg;
+        e.hitT = 6;
+        e.x += buFace * 4;
+        if (e.hp <= 0) { buKills++; JMFGAMES.beep(880, 0.07); }
+      }
+    }
+  }
+  function buDodge() {
+    if (buPhase !== 'fight' || buPaused || buOver || buRolling) return;
+    if (buRollCd > 0) return;
+    buRolling = true; buRollT = 0.25; buRollCd = 1.0;
+    buRollDir = buFace;
+    if (JMFGAMES.isDown('left')) buRollDir = -1;
+    else if (JMFGAMES.isDown('right')) buRollDir = 1;
+    JMFGAMES.beep(440, 0.06);
+  }
+  function buAction() {
+    if (buPhase === 'select') buPickHero();
+    else if (buPhase === 'upgrade') buApplyUpgrade();
+    else buAttack();
+  }
+  function buSelMove(d) {
+    if (buPhase !== 'select') return;
+    buHeroIdx = (buHeroIdx + d + BU_HEROES.length) % BU_HEROES.length;
+    JMFGAMES.beep(600, 0.04);
+  }
+  function buUpMove(d) {
+    if (buPhase !== 'upgrade') return;
+    buUpSel = (buUpSel + d + BU_UPGRADES.length) % BU_UPGRADES.length;
+    JMFGAMES.beep(600, 0.04);
+  }
+  function buApplyUpgrade() {
+    if (buUpSel === 0) buBonusDmg += 4;
+    else if (buUpSel === 1) { buMaxHp += 25; buHp = Math.min(buMaxHp, buHp + 25); }
+    else buBonusSpd += 12;
+    JMFGAMES.beep(990, 0.1);
+    buStartWave(buWave + 1);
+  }
+  function buEnd() {
+    buOver = true;
+    screen = 'over';
+    if (buCleared > buBest) { buBest = buCleared; buSaveBest(); }
+    JMFGAMES.beep(220, 0.25);
+  }
+  function buUpdate() {
+    if (screen !== 'play' || buPaused || buOver) return;
+    var dt = 1 / 60;
+    for (var ei = 0; ei < buEmbers.length; ei++) {
+      var em = buEmbers[ei];
+      em.y -= em.s; em.x += 0.1;
+      if (em.y < 0) { em.y = H; em.x = Math.random() * W; }
+    }
+    if (buPhase !== 'fight') return;
+    if (buBannerT > 0) buBannerT--;
+    if (buAtkCd > 0) buAtkCd -= dt;
+    if (buSwingT > 0) buSwingT--;
+    if (buRollCd > 0) buRollCd -= dt;
+    if (buInvulnT > 0) buInvulnT -= dt;
+    if (buHitT > 0) buHitT--;
+    var mx = (JMFGAMES.isDown('right') ? 1 : 0) - (JMFGAMES.isDown('left') ? 1 : 0);
+    var my = (JMFGAMES.isDown('down') ? 1 : 0) - (JMFGAMES.isDown('up') ? 1 : 0);
+    var spd = buSpd + buBonusSpd;
+    if (buRolling) {
+      buX += buRollDir * spd * 3 * dt;
+      buRollT -= dt;
+      if (buRollT <= 0) buRolling = false;
+    } else {
+      if (mx !== 0 && my !== 0) { mx *= 0.7071; my *= 0.7071; }
+      buX += mx * spd * dt;
+      buY += my * spd * dt;
+      if (mx !== 0) buFace = mx > 0 ? 1 : -1;
+    }
+    if (buX < BU_ARENA.x0) buX = BU_ARENA.x0;
+    if (buX > BU_ARENA.x1) buX = BU_ARENA.x1;
+    if (buY < BU_ARENA.y0) buY = BU_ARENA.y0;
+    if (buY > BU_ARENA.y1) buY = BU_ARENA.y1;
+    if (buSpawnQ.length > 0 && buEnemies.length < 6) {
+      buSpawnT -= dt;
+      if (buSpawnT <= 0) { buSpawnEnemy(buSpawnQ.shift()); buSpawnT = 1.1; }
+    }
+    for (var i = 0; i < buEnemies.length; i++) {
+      var e = buEnemies[i];
+      if (e.hp <= 0) continue;
+      if (e.hitT > 0) e.hitT--;
+      if (e.cd > 0) e.cd -= dt;
+      var dx = buX - e.x, dy = buY - e.y;
+      var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      e.face = dx >= 0 ? 1 : -1;
+      if (e.ranged) {
+        if (Math.abs(dx) > 48) {
+          e.x += (dx / dist) * e.spd * dt;
+          e.y += (dy / dist) * e.spd * 0.6 * dt;
+        } else {
+          e.throwT -= dt;
+          if (e.throwT <= 0) {
+            e.throwT = 1.6;
+            buProjs.push({ x: e.x, y: e.y - 2, vx: dx / dist * 70, vy: dy / dist * 70, dmg: e.dmg, life: 3 });
+            JMFGAMES.beep(700, 0.05);
+          }
+        }
+      } else if (Math.abs(dx) <= 9 && Math.abs(dy) <= 8) {
+        if (e.cd <= 0) { e.cd = 0.9; buHurtHero(e.dmg); }
+      } else {
+        e.x += (dx / dist) * e.spd * dt;
+        e.y += (dy / dist) * e.spd * 0.7 * dt;
+      }
+      if (e.x < 2) e.x = 2;
+      if (e.x > 158) e.x = 158;
+      if (e.y < 30) e.y = 30;
+      if (e.y > 136) e.y = 136;
+      for (var j = i + 1; j < buEnemies.length; j++) {
+        var o = buEnemies[j];
+        if (o.hp <= 0) continue;
+        var sx = o.x - e.x, sy = o.y - e.y;
+        var sd = Math.sqrt(sx * sx + sy * sy);
+        if (sd > 0 && sd < 9) {
+          var push = (9 - sd) / 2;
+          e.x -= sx / sd * push; e.y -= sy / sd * push;
+          o.x += sx / sd * push; o.y += sy / sd * push;
+        }
+      }
+    }
+    for (var pi = buProjs.length - 1; pi >= 0; pi--) {
+      var p = buProjs[pi];
+      p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+      var pdx = buX - p.x, pdy = buY - p.y;
+      if (Math.abs(pdx) < 6 && Math.abs(pdy) < 7) {
+        buHurtHero(p.dmg);
+        buProjs.splice(pi, 1);
+        continue;
+      }
+      if (p.life <= 0 || p.x < 0 || p.x > W || p.y < 0 || p.y > H) buProjs.splice(pi, 1);
+    }
+    buEnemies = buEnemies.filter(function (e) { return e.hp > 0; });
+    if (buSpawnQ.length === 0 && buEnemies.length === 0) {
+      buCleared = buWave;
+      buPhase = 'upgrade'; buUpSel = 0;
+      JMFGAMES.beep(990, 0.12);
+      return;
+    }
+    if (buHp <= 0) { buHp = 0; buEnd(); }
+  }
+  function buDrawFigure(x, y, color, dir, kind, flash) {
+    ctx.save();
+    ctx.translate(x, y);
+    if (dir < 0) ctx.scale(-1, 1);
+    var C = flash ? '#ffffff' : color;
+    var D = '#0f380f';
+    if (kind === 'bram') {
+      ctx.fillStyle = C;
+      ctx.beginPath(); ctx.arc(0, -5, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillRect(-4, -2, 8, 7);
+      ctx.fillRect(3, -1, 3, 3);
+      ctx.fillRect(-6, -1, 3, 3);
+      ctx.fillStyle = D;
+      ctx.fillRect(1, -6, 2, 1);
+    } else if (kind === 'kira') {
+      ctx.fillStyle = C;
+      ctx.beginPath(); ctx.arc(0, -5, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillRect(-3, -2, 6, 7);
+      ctx.fillStyle = '#E5E7EB';
+      ctx.fillRect(3, -8, 2, 10);
+      ctx.fillRect(3, -8, 5, 2);
+      ctx.fillStyle = D;
+      ctx.fillRect(1, -6, 2, 1);
+    } else if (kind === 'ash') {
+      ctx.fillStyle = C;
+      ctx.beginPath(); ctx.arc(0, -4, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillRect(-3, -1, 6, 5);
+      ctx.fillStyle = '#E5E7EB';
+      ctx.fillRect(3, -2, 3, 1);
+      ctx.fillRect(-6, -2, 3, 1);
+      ctx.fillStyle = '#F59E0B';
+      ctx.fillRect(-3, -5, 6, 1);
+    } else if (kind === 'grunt') {
+      ctx.fillStyle = C;
+      ctx.beginPath(); ctx.arc(0, -5, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillRect(-4, -2, 8, 7);
+      ctx.fillStyle = '#6B7280';
+      ctx.fillRect(4, -9, 1, 12);
+      ctx.fillStyle = D;
+      ctx.fillRect(1, -6, 2, 1);
+    } else if (kind === 'imp') {
+      ctx.fillStyle = C;
+      ctx.beginPath(); ctx.moveTo(-3, -6); ctx.lineTo(-4, -9); ctx.lineTo(-1, -7); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(3, -6); ctx.lineTo(4, -9); ctx.lineTo(1, -7); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, -4, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillRect(-3, -1, 6, 5);
+      ctx.fillStyle = D;
+      ctx.fillRect(1, -5, 1, 1);
+    } else if (kind === 'cultist') {
+      ctx.fillStyle = C;
+      ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(-4, 5); ctx.lineTo(4, 5); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = D;
+      ctx.beginPath(); ctx.arc(0, -5, 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#F59E0B';
+      ctx.beginPath(); ctx.arc(5, -8, 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = C;
+      ctx.fillRect(4, -8, 1, 10);
+    }
+    ctx.restore();
+  }
+  function buDrawSelect() {
+    ctx.fillStyle = '#F8FAFC'; ctx.textAlign = 'center';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('CHOOSE YOUR FIGHTER', W / 2, 20);
+    ctx.font = '8px monospace';
+    ctx.fillText('THE ASH LEGION BURNS CINDRAL', W / 2, 32);
+    for (var i = 0; i < BU_HEROES.length; i++) {
+      var h = BU_HEROES[i];
+      var y = 52 + i * 26;
+      if (i === buHeroIdx) {
+        ctx.fillStyle = '#F8FAFC';
+        ctx.fillRect(8, y - 11, 144, 22);
+        ctx.fillStyle = '#26263A';
+        ctx.fillText('>', 14, y);
+      } else {
+        ctx.fillStyle = '#F8FAFC';
+      }
+      buDrawFigure(22, y + 2, h.color, 1, h.kind, false);
+      ctx.textAlign = 'left';
+      ctx.fillText(h.name + ' - ' + h.tag, 34, y - 1);
+      ctx.fillText('HP ' + h.hp + '  DMG ' + h.dmg + '  SPD ' + h.spd, 34, y + 9);
+      ctx.textAlign = 'center';
+    }
+    ctx.fillStyle = '#F8FAFC'; ctx.font = '8px monospace';
+    ctx.fillText('BEST: ' + buBest + ' WAVES', W / 2, 126);
+    ctx.fillText('UP/DOWN PICK - A FIGHT', W / 2, 137);
+    ctx.textAlign = 'left';
+  }
+  function buDrawUpgrade() {
+    ctx.fillStyle = '#26263A';
+    ctx.fillRect(18, 30, 124, 84);
+    ctx.fillStyle = '#F8FAFC';
+    ctx.fillRect(18, 30, 124, 2);
+    ctx.fillRect(18, 112, 124, 2);
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('WAVE CLEAR!', W / 2, 46);
+    ctx.font = '8px monospace';
+    ctx.fillText('CHOOSE AN UPGRADE', W / 2, 58);
+    for (var i = 0; i < BU_UPGRADES.length; i++) {
+      var y = 74 + i * 12;
+      var line = (i === buUpSel ? '> ' : '  ') + BU_UPGRADES[i].name + ' ' + BU_UPGRADES[i].desc;
+      ctx.fillStyle = (i === buUpSel) ? '#F59E0B' : '#F8FAFC';
+      ctx.fillText(line, W / 2, y);
+    }
+    ctx.fillStyle = '#F8FAFC';
+    ctx.fillText('A: TAKE IT', W / 2, 108);
+    ctx.textAlign = 'left';
+  }
+  function drawBeat() {
+    ctx.fillStyle = '#26263A'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#3A2F2A'; ctx.fillRect(0, 134, W, 10);
+    ctx.fillStyle = '#1E1E30';
+    ctx.fillRect(0, 20, W, 2);
+    ctx.fillStyle = '#F59E0B';
+    for (var i = 0; i < buEmbers.length; i++) ctx.fillRect(buEmbers[i].x, buEmbers[i].y, 1, 1);
+    if (buPhase === 'select') { buDrawSelect(); return; }
+    ctx.fillStyle = '#F8FAFC'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('WAVE ' + buWave, 4, 10);
+    ctx.textAlign = 'right';
+    ctx.fillText('KILLS ' + buKills, 156, 10);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#7F1D1D'; ctx.fillRect(4, 13, 152, 5);
+    ctx.fillStyle = buHp > buMaxHp * 0.3 ? '#22C55E' : '#EF4444';
+    ctx.fillRect(4, 13, Math.max(0, 152 * buHp / buMaxHp), 5);
+    if (buPhase === 'upgrade') { buDrawUpgrade(); return; }
+    for (var ei = 0; ei < buEnemies.length; ei++) {
+      var e = buEnemies[ei];
+      buDrawFigure(e.x, e.y, e.color, e.face, e.kind, e.hitT > 0);
+      ctx.fillStyle = '#111827'; ctx.fillRect(e.x - 5, e.y - 12, 10, 2);
+      ctx.fillStyle = '#EF4444'; ctx.fillRect(e.x - 5, e.y - 12, Math.max(0, 10 * e.hp / e.maxHp), 2);
+    }
+    ctx.fillStyle = '#FB923C';
+    for (var pi = 0; pi < buProjs.length; pi++) {
+      ctx.beginPath(); ctx.arc(buProjs[pi].x, buProjs[pi].y, 2, 0, Math.PI * 2); ctx.fill();
+    }
+    if (buRolling) {
+      ctx.fillStyle = buHero.color;
+      ctx.beginPath(); ctx.arc(buX, buY + 2, 4, 0, Math.PI * 2); ctx.fill();
+    } else {
+      buDrawFigure(buX, buY, buHero.color, buFace, buHero.kind, buHitT > 0);
+    }
+    if (buSwingT > 0) {
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(buX + buFace * 10, buY - 2, 6, -1.2, 1.2);
+      ctx.stroke();
+    }
+    if (buBannerT > 0) {
+      ctx.fillStyle = '#F8FAFC'; ctx.textAlign = 'center'; ctx.font = 'bold 12px monospace';
+      ctx.fillText('WAVE ' + buWave, W / 2, 70);
+      ctx.font = '8px monospace';
+      ctx.fillText(buWave === 1 ? 'DEFEAT THEM ALL!' : 'THEY KEEP COMING!', W / 2, 84);
+      ctx.textAlign = 'left';
+    }
+    if (buPaused) {
+      ctx.fillStyle = 'rgba(15,56,15,0.7)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('PAUSED', W / 2, 70);
+      ctx.font = '8px monospace';
+      ctx.fillText('START: RESUME', W / 2, 86);
+      ctx.textAlign = 'left';
+    }
+  }
+  function drawBeatOver() {
+    ctx.fillStyle = '#26263A'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#F8FAFC';
+    ctx.fillRect(18, 42, 124, 78);
+    ctx.fillStyle = '#26263A';
+    ctx.fillRect(18, 42, 124, 2);
+    ctx.fillRect(18, 118, 124, 2);
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('RUN OVER', W / 2, 58);
+    ctx.font = '8px monospace';
+    ctx.fillText('WAVES ' + buCleared, W / 2, 74);
+    ctx.fillText('KILLS ' + buKills, W / 2, 86);
+    ctx.fillText('BEST ' + buBest + ' WAVES', W / 2, 98);
+    ctx.fillText('A: NEW RUN  MENU: EXIT', W / 2, 112);
+    ctx.textAlign = 'left';
+  }
+
   /* ---------- Input (one handler per button, dispatched by screen) ---------- */
   JMFGAMES.on('press', 'up', function () {
     if (screen === 'menu') { menuIndex = (menuIndex + GAMES.length - 1) % GAMES.length; JMFGAMES.beep(600, 0.04); }
@@ -3528,6 +3969,7 @@ function chMoveStr(m) {
       else if (currentGame === 'chess') { chMove(-1, 0); }
       else if (currentGame === 'overlord') { ovPickLane(-1); }
       else if (currentGame === 'solitaire') solMove('up');
+      else if (currentGame === 'beat') { if (buPhase === 'select') buSelMove(-1); else if (buPhase === 'upgrade') buUpMove(-1); }
       else flap();
     }
   });
@@ -3540,6 +3982,7 @@ function chMoveStr(m) {
       else if (currentGame === 'chess') { chMove(1, 0); }
       else if (currentGame === 'overlord') { ovPickLane(1); }
       else if (currentGame === 'solitaire') solMove('down');
+      else if (currentGame === 'beat') { if (buPhase === 'select') buSelMove(1); else if (buPhase === 'upgrade') buUpMove(1); }
     }
   });
   JMFGAMES.on('press', 'left', function () {
@@ -3566,14 +4009,15 @@ function chMoveStr(m) {
         else if (g.name === 'BLACKJACK ROYALE') { currentGame = 'bj'; startBlackjack(); }
         else if (g.name === "TEXAS HOLD'EM") { currentGame = 'holdem'; startHoldem(); }
         else if (g.name === 'CHESS CLUB') { currentGame = 'chess'; startChess(); }
+        else if (g.name === 'EMBERFALL BRAWL') { currentGame = 'beat'; startBeat(); }
         else if (g.name === "OVERLORD'S BASTION") { currentGame = 'overlord'; startOverlord(); }
         else if (g.name === 'SOLITAIRE') { currentGame = 'solitaire'; startSolitaire(); }
         else { currentGame = 'sky'; startGame(); }
       }
       else { comingName = g.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
-    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else flap(); }
-    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'solitaire') startSolitaire(); else startGame(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else flap(); }
+    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else startGame(); }
   });
   JMFGAMES.on('press', 'b', function () {
     // B is a real in-game action in every game; it NEVER returns to the
@@ -3586,6 +4030,7 @@ function chMoveStr(m) {
     else if (currentGame === 'chess') chBack();
     else if (currentGame === 'overlord') ovCycleUnit(-1); // previous unit
     else if (currentGame === 'solitaire') solBack();
+    else if (currentGame === 'beat') buDodge();
   });
   JMFGAMES.on('press', 'start', function () {
     if (screen !== 'play') return;
@@ -3595,6 +4040,7 @@ function chMoveStr(m) {
     else if (currentGame === 'chess') { if (!chOver) { chPaused = !chPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'overlord') { if (!ovOver) { ovPaused = !ovPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'solitaire') { if (!solOver) { solPaused = !solPaused; JMFGAMES.beep(330, 0.06); } }
+    else if (currentGame === 'beat') { if (!buOver) { buPaused = !buPaused; JMFGAMES.beep(330, 0.06); } }
     else if (!dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
   });
   JMFGAMES.on('press', 'menu', function () {
@@ -3610,6 +4056,7 @@ function chMoveStr(m) {
     if (currentGame === 'bj') { bjUpdate(); return; }
     if (currentGame === 'chess') { chUpdate(); return; }
     if (currentGame === 'overlord') { ovUpdate(); return; }
+    if (currentGame === 'beat') { buUpdate(); return; }
     if (currentGame !== 'sky') return; // Hold'em has no per-frame update; without this, Sky Soar physics runs during Hold'em and the falling bird hits the ground -> gameOver() -> 'over' screen (BUSTED panel) on Hold'em launch after Sky was played
     if (paused || dead || !started) return;
     bird.vy = Math.min(bird.vy + GRAV, MAXFALL);
@@ -3715,7 +4162,7 @@ function chMoveStr(m) {
     ctx.fillText('SELECT A GAME', W / 2, 32);
     ctx.textAlign = 'left';
     for (var i = 0; i < GAMES.length; i++) {
-      var y = 46 + i * 11; // 7 games: 46..112; last highlight ends at 114, footer text starts ~126 — no overlap
+      var y = 44 + i * 10; // 8 games: 44..114; last highlight ends at 116, footer text starts ~126 — no overlap
       if (i === menuIndex) {
         ctx.fillStyle = '#0f380f';
         ctx.fillRect(8, y - 9, 144, 11);
@@ -3797,8 +4244,8 @@ function chMoveStr(m) {
     if (screen !== 'play') JMFGAMES.musicStop();
     if (screen === 'menu') drawMenu();
     else if (screen === 'coming') drawComing();
-    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else drawGame(); }
-    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else drawOver(); }
+    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else drawGame(); }
+    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else drawOver(); }
   }
 
   /* ---------- Main loop: fixed 60Hz logic steps, any display rate ---------- */
