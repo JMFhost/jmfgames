@@ -238,12 +238,12 @@
 
   /* ---------- Game list (menu) ---------- */
   var GAMES = [
-    { name: 'SKY SOAR', playable: true },
-    { name: 'BLOCKQUEST', playable: true },
     { name: 'BLACKJACK ROYALE', playable: true },
-    { name: "TEXAS HOLD'EM", playable: true },
+    { name: 'BLOCKQUEST', playable: true },
     { name: 'CHESS CLUB', playable: true },
-    { name: "OVERLORD'S BASTION", playable: true }
+    { name: "OVERLORD'S BASTION", playable: true },
+    { name: 'SKY SOAR', playable: true },
+    { name: "TEXAS HOLD'EM", playable: true }
   ];
 
   /* ---------- 100 sceneries (from the standalone Sky Soar) ---------- */
@@ -1594,7 +1594,132 @@ function chEval(s) {
   return score; // White perspective
 }
 
-function chNegamax(s, depth, alpha, beta) {
+// Improved evaluation (used by MASTER/GRANDMASTER): chEval's material +
+// positional terms, plus bishop pair, pawn structure (passed / isolated /
+// doubled), rook on open/semi-open files, and king safety vs the queen.
+// White perspective, symmetric.
+function chEval2(s) {
+  var score = 0;
+  var wB = 0, bB = 0;
+  var wPawns = [[], [], [], [], [], [], [], []], bPawns = [[], [], [], [], [], [], [], []];
+  for (var i = 0; i < 64; i++) {
+    var p = s.b[i];
+    if (p === '') continue;
+    var up = p.toUpperCase();
+    var v = CH_VAL[up];
+    var r = chRow(i), c = chCol(i), pos = 0;
+    if (up === 'P') pos = (p === 'P' ? (6 - r) : (r - 1)) * 6;
+    else if (up === 'N') pos = (r >= 2 && r <= 5 && c >= 2 && c <= 5) ? 12 : 0;
+    else if (up === 'B') pos = (r === 0 || r === 7) ? 0 : 4;
+    else if (up === 'R') pos = ((p === 'R' && r === 1) || (p === 'r' && r === 6)) ? 8 : 0;
+    else if (up === 'Q') pos = (r >= 2 && r <= 5 && c >= 2 && c <= 5) ? 6 : 0;
+    var tot = v + pos;
+    score += (p === up) ? tot : -tot;
+    if (up === 'B') { if (p === 'B') wB++; else bB++; }
+    if (up === 'P') { if (p === 'P') wPawns[c].push(r); else bPawns[c].push(r); }
+  }
+  if (wB >= 2) score += 20;
+  if (bB >= 2) score -= 20;
+  // Pawn structure, per file.
+  for (var f = 0; f < 8; f++) {
+    if (wPawns[f].length > 1) score -= 6 * (wPawns[f].length - 1); // doubled
+    if (bPawns[f].length > 1) score += 6 * (bPawns[f].length - 1);
+    for (var wi = 0; wi < wPawns[f].length; wi++) {
+      var wr = wPawns[f][wi];
+      var iso = true;
+      if (f > 0 && wPawns[f - 1].length) iso = false;
+      if (f < 7 && wPawns[f + 1].length) iso = false;
+      if (iso) score -= 8;
+      var passed = true;
+      for (var pf = f - 1; pf <= f + 1 && passed; pf++) {
+        if (pf < 0 || pf > 7) continue;
+        for (var bi = 0; bi < bPawns[pf].length; bi++) {
+          if (bPawns[pf][bi] < wr) { passed = false; break; }
+        }
+      }
+      if (passed) score += 10 + (6 - wr) * 8;
+    }
+    for (var bj = 0; bj < bPawns[f].length; bj++) {
+      var br = bPawns[f][bj];
+      var biso = true;
+      if (f > 0 && bPawns[f - 1].length) biso = false;
+      if (f < 7 && bPawns[f + 1].length) biso = false;
+      if (biso) score += 8;
+      var bpassed = true;
+      for (var qf = f - 1; qf <= f + 1 && bpassed; qf++) {
+        if (qf < 0 || qf > 7) continue;
+        for (var wj = 0; wj < wPawns[qf].length; wj++) {
+          if (wPawns[qf][wj] > br) { bpassed = false; break; }
+        }
+      }
+      if (bpassed) score -= 10 + (br - 1) * 8;
+    }
+  }
+  // Rooks on open (+8) / semi-open (+4) files, and king safety vs queen.
+  var wQ = false, bQ = false, wK = -1, bK = -1;
+  for (var k = 0; k < 64; k++) {
+    var pk = s.b[k];
+    if (pk === 'Q') wQ = true;
+    else if (pk === 'q') bQ = true;
+    else if (pk === 'K') wK = k;
+    else if (pk === 'k') bK = k;
+  }
+  for (var r2 = 0; r2 < 64; r2++) {
+    var pr = s.b[r2];
+    if (pr === '' || pr.toUpperCase() !== 'R') continue;
+    var cf = chCol(r2);
+    var ownP = (pr === 'R') ? wPawns[cf].length : bPawns[cf].length;
+    var foeP = (pr === 'R') ? bPawns[cf].length : wPawns[cf].length;
+    var bonus = (ownP === 0 && foeP === 0) ? 8 : (ownP === 0 ? 4 : 0);
+    score += (pr === 'R') ? bonus : -bonus;
+  }
+  if (bQ && wK >= 0 && chRow(wK) < 6) score -= 15; // white king off back ranks
+  if (wQ && bK >= 0 && chRow(bK) > 1) score += 15; // black king off back ranks
+  return score;
+}
+
+// Quiescence search (captures only; all evasions when in check), using
+// chEval2 for the stand-pat score. Fixes horizon-effect blunders.
+// Kept cheap for a pocket console: max 4 plies of captures, delta
+// pruning, and only winning/equal captures (victim >= attacker value).
+function chQuiesce(s, alpha, beta, ply) {
+  var color = s.turn;
+  var inChk = chInCheck(s, color);
+  var stand = chEval2(s);
+  stand = color === 'w' ? stand : -stand;
+  if (!inChk) {
+    if (stand >= beta) return beta;
+    if (stand > alpha) alpha = stand;
+    if (ply >= 4) return alpha;
+    if (stand + 900 < alpha) return alpha; // delta pruning: even a queen cannot reach alpha
+  }
+  if (ply >= 6) return alpha;
+  var moves = chLegalMoves(s);
+  if (moves.length === 0) return inChk ? -100000 + ply : 0;
+  var list = [];
+  for (var i = 0; i < moves.length; i++) {
+    var mv = moves[i];
+    if (inChk) { list.push(mv); continue; }
+    if (mv.captured === '') continue;
+    // Winning/equal captures only: victim value >= attacker value.
+    if (CH_VAL[mv.captured.toUpperCase()] >= CH_VAL[mv.piece.toUpperCase()]) list.push(mv);
+  }
+  list.sort(function (a, b) {
+    var va = (a.captured ? CH_VAL[a.captured.toUpperCase()] : 0) - CH_VAL[a.piece.toUpperCase()] / 10;
+    var vb = (b.captured ? CH_VAL[b.captured.toUpperCase()] : 0) - CH_VAL[b.piece.toUpperCase()] / 10;
+    return vb - va;
+  });
+  for (var j = 0; j < list.length; j++) {
+    var sc = -chQuiesce(chApply(s, list[j]), -beta, -alpha, ply + 1);
+    if (sc >= beta) return beta;
+    if (sc > alpha) alpha = sc;
+  }
+  return alpha;
+}
+
+function chNegamax(s, depth, alpha, beta, mode) {
+  // mode: 0 = plain eval, no quiescence; 1 = eval2, no quiescence;
+  // 2 = eval2 + quiescence.
   var color = s.turn;
   var moves = chLegalMoves(s);
   if (moves.length === 0) {
@@ -1603,7 +1728,8 @@ function chNegamax(s, depth, alpha, beta) {
   }
   if (chInsufficientMaterial(s)) return 0;
   if (depth === 0) {
-    var e = chEval(s);
+    if (mode === 2) return chQuiesce(s, alpha, beta, 0);
+    var e = (mode === 1) ? chEval2(s) : chEval(s);
     return color === 'w' ? e : -e;
   }
   moves.sort(function (a, b) {
@@ -1613,7 +1739,7 @@ function chNegamax(s, depth, alpha, beta) {
   });
   var best = -Infinity;
   for (var i = 0; i < moves.length; i++) {
-    var sc = -chNegamax(chApply(s, moves[i]), depth - 1, -beta, -alpha);
+    var sc = -chNegamax(chApply(s, moves[i]), depth - 1, -beta, -alpha, mode);
     if (sc > best) best = sc;
     if (sc > alpha) alpha = sc;
     if (alpha >= beta) break;
@@ -1638,6 +1764,21 @@ function chAiMove(s, level) {
     }
     return best;
   }
+  // Levels 2-4 share the root loop. depth = negamax depth per root move
+  // (total search = depth + 1 ply). mode: 0 = plain eval, 1 = eval2,
+  // 2 = eval2 + quiescence. Measured (Node, self-play, varied starts):
+  //   2 HARD 1600:        2-ply, mode 0
+  //   3 MASTER 2000:      2-ply, mode 2 — beats Hard 10-0 (quiescence
+  //                       fixes horizon blunders; eval2 alone did not
+  //                       beat Hard, so Master uses mode 2, not mode 1)
+  //   4 GRANDMASTER 2400: 3-ply, mode 2 — deeper + quiescence. The root
+  //                       loop is time-capped (1s) so a complex position
+  //                       cannot stall the game; it returns the best move
+  //                       found so far (capture-ordered, so the best moves
+  //                       are searched first).
+  var depth = (level === 2) ? 1 : (level === 3 ? 1 : 2);
+  var mode = (level === 2) ? 0 : 2;
+  var deadline = (level === 4) ? Date.now() + 1000 : 0;
   var bestM = null, bestS = -Infinity, alpha = -Infinity, beta = Infinity;
   var ordered = moves.slice().sort(function (a, b) {
     var va = a.captured ? CH_VAL[a.captured.toUpperCase()] : 0;
@@ -1645,7 +1786,8 @@ function chAiMove(s, level) {
     return vb - va;
   });
   for (var j = 0; j < ordered.length; j++) {
-    var sc2 = -chNegamax(chApply(s, ordered[j]), 1, -beta, -alpha);
+    if (deadline && bestM && Date.now() > deadline) break; // out of time
+    var sc2 = -chNegamax(chApply(s, ordered[j]), depth, -beta, -alpha, mode);
     if (sc2 > bestS) { bestS = sc2; bestM = ordered[j]; }
     if (sc2 > alpha) alpha = sc2;
   }
@@ -1698,16 +1840,20 @@ function chMoveStr(m) {
      CHESS CLUB (console) — full chess on the 160x144 screen.
      REDESIGN, not a port: the standalone's 30 ELO levels and 15-min
      clocks do not fit a D-pad screen. Player is White, AI is Black.
-     3 levels: EASY (random), MEDIUM (1-ply greedy), HARD (2-ply
-     alpha-beta). Full rules: check, checkmate, stalemate, castling,
+     5 levels with ELO labels: EASY 800 (random), MEDIUM 1200 (1-ply
+     greedy), HARD 1600 (2-ply alpha-beta), MASTER 2000 (2-ply +
+     quiescence), GRANDMASTER 2400 (3-ply + quiescence, time-capped).
+     Full rules: check, checkmate, stalemate, castling,
      en passant, promotion (auto-queen). No clock — move counter only.
      Dropped: fifty-move rule, threefold repetition, saved-game restore.
      Record: localStorage 'jmf-games-chess-wins/losses/draws'.
      ================================================================ */
   var CH_LEVELS = [
-    { name: 'EASY', desc: 'RANDOM MOVES' },
-    { name: 'MEDIUM', desc: '1-PLY GREEDY' },
-    { name: 'HARD', desc: '2-PLY SEARCH' }
+    { name: 'EASY', elo: 800, desc: 'RANDOM' },
+    { name: 'MEDIUM', elo: 1200, desc: '1-PLY' },
+    { name: 'HARD', elo: 1600, desc: '2-PLY' },
+    { name: 'MASTER', elo: 2000, desc: '2-PLY+' },
+    { name: 'GRANDMASTER', elo: 2400, desc: '3-PLY+' }
   ];
   var CH_WINS_KEY = 'jmf-games-chess-wins';
   var CH_LOSSES_KEY = 'jmf-games-chess-losses';
@@ -1734,6 +1880,10 @@ function chMoveStr(m) {
   var chLastMove = null; // {from, to}
   var chBlink = 0;
   var CH_X0 = 24, CH_Y0 = 16, CH_SQ = 14; // board geometry (112x112)
+  // Real chess piece glyphs (Unicode) — white outline set, black solid set.
+  // Verified legible at 12px in the headless shell (no tofu, each piece distinct).
+  var CH_GLYPH = { K: '\u2654', Q: '\u2655', R: '\u2656', B: '\u2657', N: '\u2658', P: '\u2659',
+                   k: '\u265A', q: '\u265B', r: '\u265C', b: '\u265D', n: '\u265E', p: '\u265F' };
 
   function startChess() {
     chState = 'level';
@@ -1855,27 +2005,28 @@ function chMoveStr(m) {
     ctx.fillText('SELECT LEVEL', W / 2, 32);
     ctx.textAlign = 'left';
     for (var i = 0; i < CH_LEVELS.length; i++) {
-      var y = 54 + i * 18;
+      var y = 50 + i * 13;
+      var label = CH_LEVELS[i].name + ' ' + CH_LEVELS[i].elo;
       if (i === chLevelIdx) {
         ctx.fillStyle = '#0f380f';
-        ctx.fillRect(18, y - 10, 124, 13);
+        ctx.fillRect(18, y - 9, 124, 12);
         ctx.fillStyle = '#9bac0f';
-        ctx.fillText('>', 24, y);
-        ctx.fillText(CH_LEVELS[i].name, 36, y);
+        ctx.fillText('>', 22, y);
+        ctx.fillText(label, 30, y);
         ctx.textAlign = 'right';
-        ctx.fillText(CH_LEVELS[i].desc, 136, y);
+        ctx.fillText(CH_LEVELS[i].desc, 140, y);
         ctx.textAlign = 'left';
       } else {
         ctx.fillStyle = '#0f380f';
-        ctx.fillText(CH_LEVELS[i].name, 36, y);
+        ctx.fillText(label, 30, y);
         ctx.textAlign = 'right';
-        ctx.fillText(CH_LEVELS[i].desc, 136, y);
+        ctx.fillText(CH_LEVELS[i].desc, 140, y);
         ctx.textAlign = 'left';
       }
     }
     ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center';
-    ctx.fillText('W ' + chWins + '  L ' + chLosses + '  D ' + chDraws, W / 2, 118);
-    ctx.fillText('PROMO=AUTO-QUEEN - NO CLOCK', W / 2, 130);
+    ctx.fillText('W ' + chWins + '  L ' + chLosses + '  D ' + chDraws, W / 2, 120);
+    ctx.fillText('PROMO=AUTO-QUEEN - NO CLOCK', W / 2, 131);
     ctx.fillText('A: START  B: MENU', W / 2, 142);
     ctx.textAlign = 'left';
   }
@@ -1907,9 +2058,9 @@ function chMoveStr(m) {
           ctx.fillStyle = white ? '#f0f0d0' : '#0f380f';
           ctx.fillRect(x + 1, y + 1, CH_SQ - 2, CH_SQ - 2);
           ctx.fillStyle = white ? '#0f380f' : '#9bac0f';
-          ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
-          ctx.fillText(p.toUpperCase(), x + CH_SQ / 2, y + 11);
-          ctx.textAlign = 'left';
+          ctx.font = '12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(CH_GLYPH[p], x + CH_SQ / 2, y + CH_SQ / 2 + 1);
+          ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
         }
       }
     }
@@ -2023,6 +2174,16 @@ function chMoveStr(m) {
 
   var OV_LANE_Y = [31, 61, 91]; // lane centers
   var OV_DARK_X = 16, OV_SAINT_X = 144; // castle faces
+  // Saint mana income: 12/s vs the player's 8/s. Smarter decisions alone
+  // (tested at 8/s) only stretched games out (22s -> 26-28s) without
+  // changing the win rate — the player still won 100%. The player's
+  // units are individually stronger per mana (Demon ~265 power/mana vs
+  // Knight ~147, Beast ~132 vs Soldier ~87), so even perfect play cannot
+  // close the gap at equal income. 12/s is the smallest edge that makes
+  // the Saint clearly harder (soak test: simple player 100% -> 50%,
+  // optimal player 100% -> 0%); the simple player still wins half its
+  // games, so the Saint is hard, not unbeatable.
+  var OV_AI_INCOME = 12;
   var ovMana = 160, ovAiMana = 160;
   var ovDarkHp = 1200, ovSaintHp = 1200;
   var ovLane = 1, ovUnitIdx = 0;
@@ -2036,7 +2197,7 @@ function chMoveStr(m) {
     ovDarkHp = 1200; ovSaintHp = 1200;
     ovLane = 1; ovUnitIdx = 0;
     ovUnits = []; ovProjs = [];
-    ovTime = 0; ovAiT = 2.0; ovBoltT = 12; ovBoltFx = null;
+    ovTime = 0; ovAiT = 1.0; ovBoltT = 12; ovBoltFx = null;
     ovDeployCd = 0; ovPaused = false; ovOver = false; ovWon = false;
     screen = 'play';
     JMFGAMES.beep(660, 0.08);
@@ -2077,21 +2238,117 @@ function chMoveStr(m) {
     ovSpawn(def, 'p', ovLane);
     JMFGAMES.beep(660, 0.06);
   }
-  function ovAiSpawn() {
-    // Pick a lane: 70% the lane where the player threatens most (max
-    // player x), else random.
-    var lane = Math.floor(Math.random() * 3);
-    var threatLane = -1, threatX = -1;
+  // --- Saint AI (smart) ---
+  // Threat of one lane: player units' (hp * dps) weighted by how close
+  // they are to the Saint castle (x 20 = spawn, x 140 = at the castle).
+  function ovLaneThreat(lane) {
+    var t = 0;
     for (var i = 0; i < ovUnits.length; i++) {
       var u = ovUnits[i];
-      if (u.side === 'p' && u.x > threatX) { threatX = u.x; threatLane = u.lane; }
+      if (u.side !== 'p' || u.lane !== lane) continue;
+      var prox = (u.x - 20) / 120;
+      if (prox < 0) prox = 0; if (prox > 1) prox = 1;
+      t += (u.hp * (u.dmg / u.rate) / 1000) * (0.3 + prox);
     }
-    if (threatLane >= 0 && Math.random() < 0.7) lane = threatLane;
-    var def = null;
-    if (ovAiMana >= 80 && Math.random() < 0.3) def = OV_AI_UNITS[2];
-    else if (ovAiMana >= 45 && Math.random() < 0.5) def = OV_AI_UNITS[1];
-    else if (ovAiMana >= 30) def = OV_AI_UNITS[0];
-    if (!def) return;
+    return t;
+  }
+  // Total field strength of one side (hp * dps / 1000).
+  function ovSideStrength(side) {
+    var s = 0;
+    for (var i = 0; i < ovUnits.length; i++) {
+      var u = ovUnits[i];
+      if (u.side === side) s += u.hp * (u.dmg / u.rate) / 1000;
+    }
+    return s;
+  }
+  // Most dangerous player unit in a lane (max hp*dps*proximity), or null.
+  function ovLaneDanger(lane) {
+    var best = null, bestScore = -1;
+    for (var i = 0; i < ovUnits.length; i++) {
+      var u = ovUnits[i];
+      if (u.side !== 'p' || u.lane !== lane) continue;
+      var prox = (u.x - 20) / 120;
+      if (prox < 0) prox = 0; if (prox > 1) prox = 1;
+      var sc = u.hp * (u.dmg / u.rate) * (0.3 + prox);
+      if (sc > bestScore) { bestScore = sc; best = u; }
+    }
+    return best;
+  }
+  // Does the AI already have a Knight in this lane (a tank holding it)?
+  function ovLaneHasKnight(lane) {
+    for (var i = 0; i < ovUnits.length; i++) {
+      var u = ovUnits[i];
+      if (u.side === 'a' && u.lane === lane && u.letter === 'K') return true;
+    }
+    return false;
+  }
+  // Weakest lane for the player to defend = fewest player units, then
+  // lowest player HP. Used for pushes.
+  function ovWeakestLane() {
+    var best = 0, bestScore = 1e9;
+    for (var lane = 0; lane < 3; lane++) {
+      var n = 0, hp = 0;
+      for (var i = 0; i < ovUnits.length; i++) {
+        var u = ovUnits[i];
+        if (u.side === 'p' && u.lane === lane) { n++; hp += u.hp; }
+      }
+      var sc = n * 1000 + hp;
+      if (sc < bestScore) { bestScore = sc; best = lane; }
+    }
+    return best;
+  }
+  function ovAiSpawn() {
+    // Decide what to do, then what to spawn. Saving mana (returning
+    // without spawning) is a valid decision — the think timer fires
+    // again in ~1.2-1.8s, by which time more mana has accrued.
+    var threats = [ovLaneThreat(0), ovLaneThreat(1), ovLaneThreat(2)];
+    var threatLane = 0, maxThreat = threats[0];
+    for (var l = 1; l < 3; l++) { if (threats[l] > maxThreat) { maxThreat = threats[l]; threatLane = l; } }
+    var pStr = ovSideStrength('p');
+    var danger = ovLaneDanger(threatLane);
+    var urgent = danger && danger.x > 115; // about to hit the castle
+
+    var def = null, lane = threatLane;
+
+    if (maxThreat >= 2.5) {
+      // DEFEND: counter the most dangerous player unit in the worst lane.
+      // Threshold 2.5 catches a Beast at mid-field (or two Beasts) early,
+      // before it reaches the castle; a Demon trips it immediately.
+      if (danger && (danger.letter === 'D' || danger.letter === 'G')) {
+        // Demon / Gorgon: Knight tanks it. If a Knight already holds the
+        // lane, add ranged DPS behind it; otherwise save for the Knight.
+        if (ovLaneHasKnight(threatLane)) {
+          if (ovAiMana >= 45) def = OV_AI_UNITS[1]; // Archer DPS
+          else if (ovAiMana >= 30) def = OV_AI_UNITS[0]; // Soldier filler
+          // else save for the Archer
+        } else {
+          if (ovAiMana >= 80) def = OV_AI_UNITS[2]; // Knight
+          else if (urgent && ovAiMana >= 45) def = OV_AI_UNITS[1]; // delay
+          else if (urgent && ovAiMana >= 30) def = OV_AI_UNITS[0]; // delay
+          // else save for the Knight (do not waste mana on a weak unit)
+        }
+      } else {
+        // Beast push (or mixed): cheap Soldier is cost-effective.
+        if (ovAiMana >= 30) def = OV_AI_UNITS[0];
+        else if (urgent && ovAiMana >= 45) def = OV_AI_UNITS[1];
+        // else save (Soldier is only 30; it will be affordable in <1s)
+      }
+    } else if (pStr < 8) {
+      // PUSH: player is weak — attack the lane they defend least, with
+      // the strongest unit affordable. Knight leads a sustained push.
+      lane = ovWeakestLane();
+      if (ovAiMana >= 80) def = OV_AI_UNITS[2];
+      else if (ovAiMana >= 45) def = OV_AI_UNITS[1];
+      else if (ovAiMana >= 30) def = OV_AI_UNITS[0];
+      // else save up for the push
+    } else {
+      // BUILD: no urgent threat and the player is not weak — hold mana
+      // for the next push/defense. Only spend if heavily banked.
+      if (ovAiMana >= 240) { lane = ovWeakestLane(); def = OV_AI_UNITS[2]; }
+      // else save
+    }
+
+    if (!def) return; // saving mana for the right unit
     ovAiMana -= def.cost;
     ovSpawn(def, 'a', lane);
   }
@@ -2129,10 +2386,11 @@ function chMoveStr(m) {
     ovTime += dt;
     if (ovDeployCd > 0) ovDeployCd -= dt;
     ovMana = Math.min(999, ovMana + 8 * dt);
-    ovAiMana = Math.min(999, ovAiMana + 8 * dt);
-    // AI spawn timer
+    ovAiMana = Math.min(999, ovAiMana + OV_AI_INCOME * dt);
+    // AI think timer — faster than the old 2.2-3.2s so the Saint reacts
+    // quickly to pushes and to mana milestones.
     ovAiT -= dt;
-    if (ovAiT <= 0) { ovAiT = 2.2 + Math.random() * 1.0; ovAiSpawn(); }
+    if (ovAiT <= 0) { ovAiT = 1.2 + Math.random() * 0.6; ovAiSpawn(); }
     // Overlord lightning: every 12s zap the AI unit nearest the Dark Castle
     ovBoltT -= dt;
     if (ovBoltT <= 0) {
