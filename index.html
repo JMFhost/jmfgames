@@ -240,8 +240,8 @@
   var GAMES = [
     { name: 'SKY SOAR', playable: true },
     { name: 'BLOCKQUEST', playable: true },
-    { name: 'BLACKJACK ROYALE', playable: false },
-    { name: "TEXAS HOLD'EM", playable: false },
+    { name: 'BLACKJACK ROYALE', playable: true },
+    { name: "TEXAS HOLD'EM", playable: true },
     { name: 'CHESS CLUB', playable: false }
   ];
 
@@ -250,7 +250,7 @@
 
   /* ---------- State ---------- */
   var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
-  var currentGame = 'sky'; // 'sky' | 'block' — which game is on the play/over screens
+  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' — which game is on the play/over screens
   var menuIndex = 0;
   var comingName = '';
   var best = 0;
@@ -585,43 +585,804 @@
     ctx.textAlign = 'left';
   }
 
+  /* ================================================================
+     BLACKJACK (console) — single-player vs dealer on the 160x144
+     screen. Controls: D-pad adjusts the bet (Up/Down +/-$10,
+     Left/Right +/-$50) and picks an action (Left/Right or Up/Down),
+     A confirms (deal / hit / stand / double / next hand), B back to
+     menu (from the betting screen or after a hand — never mid-hand),
+     Start pauses, Select returns to the menu. Rules: dealer stands
+     on all 17, blackjack pays 3:2, 6-deck shoe, start $1,000, first
+     to $10,000 wins. Balance: 'jmf-games-blackjack-balance',
+     best: 'jmf-games-blackjack-best'.
+     ================================================================ */
+  var BJ_BAL_KEY = 'jmf-games-blackjack-balance';
+  var BJ_BEST_KEY = 'jmf-games-blackjack-best';
+  var bjBalance = 1000, bjBest = 1000, bjBet = 20;
+  try { bjBalance = parseInt(localStorage.getItem(BJ_BAL_KEY) || '1000', 10) || 1000; } catch (e) { bjBalance = 1000; }
+  try { bjBest = parseInt(localStorage.getItem(BJ_BEST_KEY) || '1000', 10) || 1000; } catch (e) { bjBest = 1000; }
+  if (bjBalance < 10) bjBalance = 1000;
+  if (bjBest < bjBalance) bjBest = bjBalance;
+  function bjSaveBalance() { try { localStorage.setItem(BJ_BAL_KEY, String(bjBalance)); } catch (e) {} }
+  function bjSaveBest() { try { localStorage.setItem(BJ_BEST_KEY, String(bjBest)); } catch (e) {} }
+  function bjNoteBest() { if (bjBalance > bjBest) { bjBest = bjBalance; bjSaveBest(); } }
+
+  var bjShoe = [], bjPlayer = [], bjDealer = [], bjHoleDown = true;
+  var bjState = 'bet'; // 'bet' | 'action' | 'result'
+  var bjActionIdx = 0, bjMsg = '', bjPaused = false, bjWon = false, bjBlink = 0;
+
+  function bjNewShoe() {
+    bjShoe = [];
+    for (var d = 0; d < 6; d++) {
+      for (var su = 0; su < 4; su++) {
+        for (var r = 1; r <= 13; r++) bjShoe.push({ r: r, s: su });
+      }
+    }
+    for (var i = bjShoe.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = bjShoe[i]; bjShoe[i] = bjShoe[j]; bjShoe[j] = t;
+    }
+  }
+  function bjDrawCard() {
+    if (bjShoe.length < 52) bjNewShoe();
+    return bjShoe.pop();
+  }
+  function bjCardValue(r) { return r === 1 ? 11 : (r >= 11 ? 10 : r); }
+  function bjTotal(hand) {
+    var total = 0, aces = 0;
+    for (var i = 0; i < hand.length; i++) {
+      total += bjCardValue(hand[i].r);
+      if (hand[i].r === 1) aces++;
+    }
+    while (total > 21 && aces > 0) { total -= 10; aces--; }
+    return total;
+  }
+  function bjIsBlackjack(hand) { return hand.length === 2 && bjTotal(hand) === 21; }
+  function bjIsBust(hand) { return bjTotal(hand) > 21; }
+  function bjAvailActions() {
+    var a = ['HIT', 'STAND'];
+    if (bjPlayer.length === 2 && bjBalance >= bjBet) a.push('DBL');
+    return a;
+  }
+  function startBlackjack() {
+    bjState = 'bet';
+    bjBet = Math.max(10, Math.min(bjBet, Math.floor(bjBalance / 10) * 10));
+    bjPlayer = []; bjDealer = []; bjHoleDown = true;
+    bjMsg = ''; bjPaused = false; bjWon = false; bjActionIdx = 0;
+    screen = 'play';
+    JMFGAMES.beep(660, 0.08);
+  }
+  function bjResetSession() {
+    bjBalance = 1000; bjSaveBalance();
+    startBlackjack();
+  }
+  function bjDeal() {
+    bjBalance -= bjBet;
+    bjSaveBalance();
+    if (bjShoe.length < 52) bjNewShoe();
+    bjPlayer = [bjDrawCard(), bjDrawCard()];
+    bjDealer = [bjDrawCard(), bjDrawCard()];
+    bjHoleDown = true;
+    bjActionIdx = 0;
+    if (bjIsBlackjack(bjPlayer)) {
+      bjHoleDown = false;
+      if (bjIsBlackjack(bjDealer)) {
+        bjBalance += bjBet; bjSaveBalance();
+        bjMsg = 'PUSH';
+      } else {
+        var win = Math.floor(bjBet * 1.5);
+        bjBalance += bjBet + win; bjSaveBalance();
+        bjMsg = 'BLACKJACK +$' + win;
+      }
+      bjNoteBest();
+      bjEndHand();
+    } else if (bjIsBlackjack(bjDealer)) {
+      bjHoleDown = false;
+      bjMsg = 'DEALER BJ -$' + bjBet;
+      bjNoteBest();
+      bjEndHand();
+    } else {
+      bjState = 'action';
+      JMFGAMES.beep(700, 0.06);
+    }
+  }
+  function bjEndHand() {
+    bjState = 'result';
+    if (bjBalance >= 10000) { bjWon = true; screen = 'over'; JMFGAMES.beep(990, 0.2); }
+    else if (bjBalance < 10) { bjWon = false; screen = 'over'; JMFGAMES.beep(220, 0.25); }
+  }
+  function bjHit() {
+    bjPlayer.push(bjDrawCard());
+    JMFGAMES.beep(600, 0.05);
+    if (bjIsBust(bjPlayer)) {
+      bjMsg = 'BUST -$' + bjBet;
+      bjNoteBest();
+      bjEndHand();
+    } else if (bjTotal(bjPlayer) === 21) {
+      bjStand();
+    } else {
+      bjActionIdx = 0;
+    }
+  }
+  function bjStand() {
+    bjHoleDown = false;
+    while (bjTotal(bjDealer) < 17) bjDealer.push(bjDrawCard());
+    bjResolve();
+  }
+  function bjDouble() {
+    bjBalance -= bjBet;
+    bjBet *= 2;
+    bjSaveBalance();
+    bjPlayer.push(bjDrawCard());
+    JMFGAMES.beep(600, 0.05);
+    if (bjIsBust(bjPlayer)) {
+      bjMsg = 'BUST -$' + bjBet;
+      bjNoteBest();
+      bjEndHand();
+    } else {
+      bjStand();
+    }
+  }
+  function bjResolve() {
+    var pt = bjTotal(bjPlayer), dt = bjTotal(bjDealer);
+    if (bjIsBust(bjDealer)) {
+      bjBalance += bjBet * 2; bjSaveBalance();
+      bjMsg = 'DEALER BUSTS +$' + bjBet;
+    } else if (pt > dt) {
+      bjBalance += bjBet * 2; bjSaveBalance();
+      bjMsg = 'WIN +$' + bjBet;
+    } else if (dt > pt) {
+      bjMsg = 'LOSE -$' + bjBet;
+    } else {
+      bjBalance += bjBet; bjSaveBalance();
+      bjMsg = 'PUSH';
+    }
+    bjNoteBest();
+    bjEndHand();
+  }
+  function bjAdjustBet(d) {
+    if (screen !== 'play' || bjPaused || bjState !== 'bet') return;
+    var maxBet = Math.floor(bjBalance / 10) * 10;
+    bjBet = Math.max(10, Math.min(maxBet, bjBet + d));
+    JMFGAMES.beep(600, 0.03);
+  }
+  function bjCycleAction(d) {
+    if (screen !== 'play' || bjPaused || bjState !== 'action') return;
+    var acts = bjAvailActions();
+    bjActionIdx = (bjActionIdx + d + acts.length) % acts.length;
+    JMFGAMES.beep(600, 0.03);
+  }
+  function bjAction() {
+    if (screen !== 'play' || bjPaused) return;
+    if (bjState === 'bet') { bjDeal(); return; }
+    if (bjState === 'result') { startBlackjack(); return; }
+    if (bjState !== 'action') return;
+    var acts = bjAvailActions();
+    var a = acts[bjActionIdx];
+    if (a === 'HIT') bjHit();
+    else if (a === 'STAND') bjStand();
+    else if (a === 'DBL') bjDouble();
+  }
+  function bjBack() {
+    if (screen !== 'play') return;
+    if (bjState === 'bet' || bjState === 'result') toMenu();
+    // mid-hand ('action'): do nothing — never quit mid-hand by accident
+  }
+  function bjUpdate() { bjBlink = (bjBlink + 1) % 60; }
+  function bjRankStr(r) { return r === 1 ? 'A' : (r === 11 ? 'J' : (r === 12 ? 'Q' : (r === 13 ? 'K' : String(r)))); }
+  function bjSuitStr(su) { return ['S', 'H', 'D', 'C'][su]; }
+  function bjDrawCardAt(x, y, card, faceDown) {
+    ctx.fillStyle = faceDown ? '#0f380f' : '#f0f0e0';
+    ctx.fillRect(x, y, 16, 22);
+    ctx.strokeStyle = '#0f380f'; ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, y + 0.5, 15, 21);
+    ctx.textAlign = 'center';
+    if (faceDown) {
+      ctx.fillStyle = '#9bac0f'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('?', x + 8, y + 15);
+    } else {
+      var red = (card.s === 1 || card.s === 2);
+      ctx.fillStyle = red ? '#a03030' : '#0f380f';
+      ctx.font = 'bold 8px monospace';
+      ctx.fillText(bjRankStr(card.r), x + 8, y + 9);
+      ctx.font = '8px monospace';
+      ctx.fillText(bjSuitStr(card.s), x + 8, y + 19);
+    }
+    ctx.textAlign = 'left';
+  }
+  function bjDrawHand(hand, x, y, holeDown) {
+    for (var i = 0; i < hand.length; i++) {
+      bjDrawCardAt(x + i * 13, y, hand[i], holeDown && i === 1);
+    }
+  }
+  function drawBlackjack() {
+    ctx.fillStyle = '#9bac0f'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#0f380f'; ctx.textAlign = 'left'; ctx.font = '8px monospace';
+    ctx.fillText('BAL $' + bjBalance, 4, 10);
+    ctx.textAlign = 'right';
+    ctx.fillText('BEST $' + bjBest, W - 4, 10);
+    ctx.textAlign = 'left';
+    if (bjState === 'bet') {
+      ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('BLACKJACK', W / 2, 28);
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText('BET $' + bjBet, W / 2, 58);
+      ctx.font = '8px monospace';
+      ctx.fillText('UP/DN +/-10  L/R +/-50', W / 2, 78);
+      ctx.fillText('A: DEAL', W / 2, 98);
+      ctx.fillText('B: MENU', W / 2, 112);
+      ctx.textAlign = 'left';
+      return;
+    }
+    var dTotal = bjHoleDown ? bjCardValue(bjDealer[0].r) : bjTotal(bjDealer);
+    ctx.fillText('DEALER ' + dTotal, 4, 22);
+    bjDrawHand(bjDealer, 8, 26, bjHoleDown);
+    var pTotal = bjTotal(bjPlayer);
+    ctx.fillText('YOU ' + pTotal, 4, 60);
+    bjDrawHand(bjPlayer, 8, 64, false);
+    ctx.fillText('BET $' + bjBet, 4, 100);
+    if (bjState === 'action') {
+      var acts = bjAvailActions();
+      var xs = acts.length === 3 ? [28, 80, 132] : [48, 112];
+      ctx.font = '8px monospace';
+      for (var i = 0; i < acts.length; i++) {
+        var label = acts[i];
+        var w = ctx.measureText(label).width + 8;
+        var cx = xs[i];
+        if (i === bjActionIdx) {
+          ctx.fillStyle = '#0f380f';
+          ctx.fillRect(cx - w / 2, 112, w, 13);
+          ctx.fillStyle = '#9bac0f';
+        } else {
+          ctx.fillStyle = '#0f380f';
+        }
+        ctx.textAlign = 'center';
+        ctx.fillText(label, cx, 122);
+      }
+      ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center';
+      ctx.fillText('L/R PICK - A OK', W / 2, 140);
+      ctx.textAlign = 'left';
+    } else if (bjState === 'result') {
+      ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText(bjMsg, W / 2, 122);
+      ctx.font = '8px monospace';
+      ctx.fillText('A: NEXT  B: MENU', W / 2, 138);
+      ctx.textAlign = 'left';
+    }
+    if (bjPaused) {
+      ctx.fillStyle = 'rgba(15,56,15,0.7)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('PAUSED', W / 2, 70);
+      ctx.font = '8px monospace';
+      ctx.fillText('START: RESUME', W / 2, 86);
+      ctx.textAlign = 'left';
+    }
+  }
+  function drawBlackjackOver() {
+    drawBlackjack();
+    ctx.fillStyle = 'rgba(15,56,15,0.55)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#9bac0f';
+    ctx.fillRect(18, 42, 124, 78);
+    ctx.fillStyle = '#0f380f';
+    ctx.fillRect(18, 42, 124, 2);
+    ctx.fillRect(18, 118, 124, 2);
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(bjWon ? 'YOU WIN!' : 'BUSTED', W / 2, 58);
+    ctx.font = '8px monospace';
+    ctx.fillText('BAL $' + bjBalance, W / 2, 74);
+    ctx.fillText('BEST $' + bjBest, W / 2, 86);
+    ctx.fillText('A: PLAY AGAIN  B: MENU', W / 2, 104);
+    ctx.textAlign = 'left';
+  }
+
+  /* ================================================================
+     TEXAS HOLD'EM (console) — heads-up no-limit Hold'em vs one AI
+     on the 160x144 screen. Controls: Left/Right picks an action,
+     A confirms, Up/Down adjusts the bet/raise amount (+/-$10),
+     B back to menu (from the lobby or after a hand — never mid-hand),
+     Start pauses, Select returns to the menu. Rules: blinds 10/20,
+     player is always the button (acts first preflop, second after
+     the flop), first to $10,000 wins, under $10 is busted. The AI
+     rebuys to $1,000 when it drops under $20. Balance:
+     'jmf-games-holdem-balance', AI balance:
+     'jmf-games-holdem-ai-balance', best: 'jmf-games-holdem-best'.
+     ================================================================ */
+  var HE_BAL_KEY = 'jmf-games-holdem-balance';
+  var HE_AI_KEY = 'jmf-games-holdem-ai-balance';
+  var HE_BEST_KEY = 'jmf-games-holdem-best';
+  var heBalance = 1000, heAiBalance = 1000, heBest = 1000;
+  try { heBalance = parseInt(localStorage.getItem(HE_BAL_KEY) || '1000', 10) || 1000; } catch (e) { heBalance = 1000; }
+  try { heAiBalance = parseInt(localStorage.getItem(HE_AI_KEY) || '1000', 10) || 1000; } catch (e) { heAiBalance = 1000; }
+  try { heBest = parseInt(localStorage.getItem(HE_BEST_KEY) || '1000', 10) || 1000; } catch (e) { heBest = 1000; }
+  if (heBalance < 10) heBalance = 1000;
+  if (heBest < heBalance) heBest = heBalance;
+  function heSaveBalance() { try { localStorage.setItem(HE_BAL_KEY, String(heBalance)); } catch (e) {} }
+  function heSaveAi() { try { localStorage.setItem(HE_AI_KEY, String(heAiBalance)); } catch (e) {} }
+  function heSaveBest() { try { localStorage.setItem(HE_BEST_KEY, String(heBest)); } catch (e) {} }
+  function heNoteBest() { if (heBalance > heBest) { heBest = heBalance; heSaveBest(); } }
+
+  var heDeck = [], hePlayer = [], heAi = [], heCommunity = [];
+  var heState = 'lobby'; // 'lobby' | 'act' | 'result'
+  var heStreet = 'preflop'; // 'preflop' | 'flop' | 'turn' | 'river' | 'showdown'
+  var heTurn = 'player'; // whose action is pending: 'player' | 'ai'
+  var hePot = 0, hePlayerBet = 0, heAiBet = 0, hePlayerInvested = 0;
+  var hePlayerActed = false, heAiActed = false, heLastRaise = 20;
+  var heRaiseAmt = 40, heActionIdx = 0;
+  var heMsg = '', hePlayerHandName = '', heAiHandName = '';
+  var heShowCards = false, heHandOver = false, hePaused = false, heWon = false;
+  var heLobbyNote = '';
+
+  function heNewDeck() {
+    var d = [];
+    for (var su = 0; su < 4; su++) for (var r = 1; r <= 13; r++) d.push({ r: r, s: su });
+    for (var i = d.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = d[i]; d[i] = d[j]; d[j] = t;
+    }
+    return d;
+  }
+  function heDrawCard() { return heDeck.pop(); }
+
+  /* 7-card evaluator. Returns [category, t1..t5] for comparison:
+     8 straight flush, 7 quads, 6 full house, 5 flush, 4 straight,
+     3 trips, 2 two pair, 1 pair, 0 high card. Ranks 2..14 (ace high). */
+  function heEval7(cards) {
+    var ranks = [], suits = [], i;
+    for (i = 0; i < cards.length; i++) { ranks.push(cards[i].r === 1 ? 14 : cards[i].r); suits.push(cards[i].s); }
+    var suitCount = [0, 0, 0, 0];
+    for (i = 0; i < suits.length; i++) suitCount[suits[i]]++;
+    var flushSuit = -1;
+    for (var s = 0; s < 4; s++) if (suitCount[s] >= 5) flushSuit = s;
+    var flushRanks = [];
+    if (flushSuit >= 0) {
+      for (i = 0; i < cards.length; i++) if (cards[i].s === flushSuit) flushRanks.push(cards[i].r === 1 ? 14 : cards[i].r);
+      flushRanks.sort(function (a, b) { return b - a; });
+    }
+    function straightHigh(rs) {
+      var set = {};
+      for (var k = 0; k < rs.length; k++) { set[rs[k]] = 1; if (rs[k] === 14) set[1] = 1; }
+      for (var h = 14; h >= 5; h--) {
+        var ok = true;
+        for (var q = 0; q < 5; q++) if (!set[h - q]) { ok = false; break; }
+        if (ok) return h;
+      }
+      return 0;
+    }
+    var sh = straightHigh(ranks);
+    if (flushSuit >= 0) {
+      var sfh = straightHigh(flushRanks);
+      if (sfh) return [8, sfh, 0, 0, 0, 0];
+    }
+    var cnt = {};
+    for (i = 0; i < ranks.length; i++) cnt[ranks[i]] = (cnt[ranks[i]] || 0) + 1;
+    var groups = [];
+    for (var rk in cnt) groups.push([+rk, cnt[rk]]);
+    groups.sort(function (a, b) { return (b[1] - a[1]) || (b[0] - a[0]); });
+    var sortedRanks = ranks.slice().sort(function (a, b) { return b - a; });
+    function kickers(exclude, n) {
+      var out = [];
+      for (var m = 0; m < sortedRanks.length && out.length < n; m++) {
+        if (exclude.indexOf(sortedRanks[m]) < 0) out.push(sortedRanks[m]);
+      }
+      return out;
+    }
+    if (groups[0][1] === 4) {
+      var k1 = kickers([groups[0][0]], 1);
+      return [7, groups[0][0], k1[0], 0, 0, 0];
+    }
+    if (groups[0][1] === 3 && groups[1] && groups[1][1] >= 2) {
+      return [6, groups[0][0], groups[1][0], 0, 0, 0];
+    }
+    if (flushSuit >= 0) {
+      return [5, flushRanks[0], flushRanks[1], flushRanks[2], flushRanks[3], flushRanks[4]];
+    }
+    if (sh) return [4, sh, 0, 0, 0, 0];
+    if (groups[0][1] === 3) {
+      var k2 = kickers([groups[0][0]], 2);
+      return [3, groups[0][0], k2[0], k2[1], 0, 0];
+    }
+    if (groups[0][1] === 2 && groups[1] && groups[1][1] === 2) {
+      var k3 = kickers([groups[0][0], groups[1][0]], 1);
+      return [2, groups[0][0], groups[1][0], k3[0], 0, 0];
+    }
+    if (groups[0][1] === 2) {
+      var k4 = kickers([groups[0][0]], 3);
+      return [1, groups[0][0], k4[0], k4[1], k4[2], 0];
+    }
+    return [0, sortedRanks[0], sortedRanks[1], sortedRanks[2], sortedRanks[3], sortedRanks[4]];
+  }
+  function heCompare(a, b) {
+    for (var i = 0; i < 6; i++) if (a[i] !== b[i]) return a[i] > b[i] ? 1 : -1;
+    return 0;
+  }
+  function heHandName(cat) {
+    return ['HIGH CARD', 'PAIR', 'TWO PAIR', 'TRIPS', 'STRAIGHT', 'FLUSH', 'FULL HOUSE', 'QUADS', 'STR FLUSH'][cat];
+  }
+
+  /* ---------- AI: simple strength heuristic + a little randomness ---------- */
+  function heAiStrength() {
+    if (heStreet === 'preflop') {
+      var a = heAi[0].r === 1 ? 14 : heAi[0].r, b = heAi[1].r === 1 ? 14 : heAi[1].r;
+      var hi = Math.max(a, b), lo = Math.min(a, b);
+      if (a === b) return 0.62 + (hi / 14) * 0.28;
+      var s = (hi / 14) * 0.5 + (lo / 14) * 0.18;
+      if (heAi[0].s === heAi[1].s) s += 0.06;
+      if (hi === 14 && lo >= 10) s += 0.12;
+      return Math.min(0.85, s);
+    }
+    var ev = heEval7(heAi.concat(heCommunity));
+    var base = [0.22, 0.48, 0.58, 0.68, 0.78, 0.82, 0.92, 0.97, 0.99][ev[0]];
+    if (ev[0] === 0) base += (ev[1] / 14) * 0.12;
+    return Math.min(0.99, base + (Math.random() * 0.06 - 0.03));
+  }
+  function heAiBetSize() {
+    var amt = Math.max(20, Math.round(hePot * 0.5 / 10) * 10);
+    return Math.min(amt, heAiBalance);
+  }
+  function heAiRaiseTo() {
+    var target = hePlayerBet + Math.max(20, heLastRaise, Math.round(hePot * 0.5 / 10) * 10);
+    return Math.min(target, heAiBet + heAiBalance);
+  }
+  function heAiCallAmt(amt) {
+    heAiBalance -= amt; heAiBet += amt; hePot += amt;
+    JMFGAMES.beep(600, 0.05);
+  }
+  function heAiPlaceBet(amt) {
+    amt = Math.min(amt, heAiBalance);
+    if (amt <= 0) return;
+    heLastRaise = Math.max(20, heAiBet + amt - hePlayerBet);
+    heAiBalance -= amt; heAiBet += amt; hePot += amt;
+    JMFGAMES.beep(700, 0.06);
+  }
+  function heAiAct() {
+    if (heHandOver) return;
+    heAiActed = true;
+    var toCall = hePlayerBet - heAiBet;
+    if (toCall < 0) toCall = 0;
+    var strength = heAiStrength();
+    var r = Math.random();
+    var playerBroke = heBalance <= 0;
+    var aiBroke = heAiBalance <= 0;
+    if (toCall === 0) {
+      if (!aiBroke && !playerBroke && strength > 0.72 && r < 0.6) heAiPlaceBet(heAiBetSize());
+      else if (!aiBroke && !playerBroke && strength > 0.55 && r < 0.25) heAiPlaceBet(heAiBetSize());
+      else JMFGAMES.beep(500, 0.04); // check
+    } else {
+      var callAmt = Math.min(toCall, heAiBalance);
+      if (!aiBroke && !playerBroke && strength > 0.82 && r < 0.45) {
+        var to = heAiRaiseTo();
+        if (to > hePlayerBet) heAiPlaceBet(to - heAiBet);
+        else heAiCallAmt(callAmt);
+      }
+      else if (strength > 0.42 || r < 0.3 || aiBroke) heAiCallAmt(callAmt);
+      else { heEndHand('player', 'AI FOLDS +$' + (hePot - hePlayerInvested)); return; }
+    }
+    heNextTurn();
+  }
+
+  /* ---------- Hand flow ---------- */
+  function startHoldem() {
+    heState = 'lobby';
+    hePaused = false; heWon = false;
+    heLobbyNote = '';
+    screen = 'play';
+    JMFGAMES.beep(660, 0.08);
+  }
+  function heResetSession() {
+    heBalance = 1000; heAiBalance = 1000;
+    heSaveBalance(); heSaveAi();
+    startHoldem();
+  }
+  function heDealHand() {
+    if (heAiBalance < 20) { heAiBalance = 1000; heSaveAi(); heLobbyNote = 'AI REBUYS $1000'; }
+    else heLobbyNote = '';
+    heDeck = heNewDeck();
+    hePlayer = [heDrawCard(), heDrawCard()];
+    heAi = [heDrawCard(), heDrawCard()];
+    heCommunity = [];
+    hePot = 0; hePlayerInvested = 0;
+    var sb = Math.min(10, heBalance); heBalance -= sb; hePlayerBet = sb; hePot += sb; hePlayerInvested += sb;
+    var bb = Math.min(20, heAiBalance); heAiBalance -= bb; heAiBet = bb; hePot += bb;
+    hePlayerActed = false; heAiActed = false; heLastRaise = 20;
+    heStreet = 'preflop'; heShowCards = false; heHandOver = false;
+    heMsg = ''; hePlayerHandName = ''; heAiHandName = '';
+    heState = 'act'; heTurn = 'player';
+    heRaiseAmt = heAiBet + 20;
+    heSaveBalance(); heSaveAi();
+    heResetActionIdx();
+    JMFGAMES.beep(700, 0.06);
+  }
+  function heAvailActions() {
+    var toCall = heAiBet - hePlayerBet;
+    var aiBroke = heAiBalance <= 0;
+    if (toCall <= 0) {
+      var a = ['CHECK'];
+      if (heBalance > 0 && !aiBroke) { a.push('BET'); a.push('ALL-IN'); }
+      return a;
+    }
+    var b = ['FOLD', 'CALL'];
+    if (heBalance > toCall && !aiBroke) { b.push('RAISE'); b.push('ALL-IN'); }
+    return b;
+  }
+  function heCurAction() {
+    var acts = heAvailActions();
+    if (heActionIdx >= acts.length) heActionIdx = acts.length - 1;
+    if (heActionIdx < 0) heActionIdx = 0;
+    return acts[heActionIdx];
+  }
+  function heRaiseBounds() {
+    var a = heCurAction();
+    var max = hePlayerBet + heBalance;
+    if (a === 'BET') return [Math.min(20, max), max];
+    if (a === 'RAISE') return [Math.min(heAiBet + Math.max(20, heLastRaise), max), max];
+    return [0, max];
+  }
+  function heEnsureRaiseAmt() {
+    var b = heRaiseBounds();
+    if (heRaiseAmt < b[0]) heRaiseAmt = b[0];
+    if (heRaiseAmt > b[1]) heRaiseAmt = b[1];
+  }
+  function heResetActionIdx() {
+    var acts = heAvailActions();
+    var ci = acts.indexOf('CALL');
+    heActionIdx = ci >= 0 ? ci : 0;
+    heEnsureRaiseAmt();
+  }
+  function heCycleAction(d) {
+    if (screen !== 'play' || hePaused || heState !== 'act') return;
+    var acts = heAvailActions();
+    heActionIdx = (heActionIdx + d + acts.length) % acts.length;
+    heEnsureRaiseAmt();
+    JMFGAMES.beep(600, 0.03);
+  }
+  function heAdjustRaise(d) {
+    if (screen !== 'play' || hePaused || heState !== 'act') return;
+    var cur = heCurAction();
+    if (cur !== 'BET' && cur !== 'RAISE') return;
+    var b = heRaiseBounds();
+    heRaiseAmt = Math.max(b[0], Math.min(b[1], heRaiseAmt + d));
+    JMFGAMES.beep(600, 0.03);
+  }
+  function heApplyPlayerAction(a) {
+    if (a === 'FOLD') { heEndHand('ai', 'YOU FOLD  -$' + hePlayerInvested); return; }
+    if (a === 'CHECK') { hePlayerActed = true; JMFGAMES.beep(500, 0.04); heNextTurn(); return; }
+    if (a === 'CALL') {
+      var amt = Math.min(heAiBet - hePlayerBet, heBalance);
+      if (amt > 0) { heBalance -= amt; hePlayerBet += amt; hePot += amt; hePlayerInvested += amt; }
+      hePlayerActed = true; JMFGAMES.beep(600, 0.05); heNextTurn(); return;
+    }
+    if (a === 'ALL-IN') heRaiseAmt = hePlayerBet + heBalance;
+    var cost = Math.min(heRaiseAmt - hePlayerBet, heBalance);
+    if (cost <= 0) { hePlayerActed = true; heNextTurn(); return; }
+    heLastRaise = Math.max(20, heRaiseAmt - heAiBet);
+    heBalance -= cost; hePlayerBet += cost; hePot += cost; hePlayerInvested += cost;
+    hePlayerActed = true; JMFGAMES.beep(700, 0.06); heNextTurn();
+  }
+  function heAction() {
+    if (screen !== 'play' || hePaused) return;
+    if (heState === 'lobby') { heDealHand(); return; }
+    if (heState === 'result') { heDealHand(); return; }
+    if (heState !== 'act') return;
+    heApplyPlayerAction(heCurAction());
+  }
+  function heBack() {
+    if (screen !== 'play') return;
+    if (heState === 'lobby' || heState === 'result') toMenu();
+    // mid-hand ('act'): do nothing — never quit mid-hand by accident
+  }
+  function heNextTurn() {
+    if (heHandOver) return;
+    var someoneAllIn = (heBalance <= 0 || heAiBalance <= 0);
+    if (someoneAllIn && hePlayerActed && heAiActed) { heDealOutAndShowdown(); return; }
+    if (hePlayerBet === heAiBet && hePlayerActed && heAiActed) { heAdvanceStreet(); return; }
+    if (heTurn === 'player') { heTurn = 'ai'; heAiAct(); }
+    else { heTurn = 'player'; heResetActionIdx(); }
+  }
+  function heAdvanceStreet() {
+    if (heStreet === 'preflop') { heCommunity.push(heDrawCard(), heDrawCard(), heDrawCard()); heStreet = 'flop'; }
+    else if (heStreet === 'flop') { heCommunity.push(heDrawCard()); heStreet = 'turn'; }
+    else if (heStreet === 'turn') { heCommunity.push(heDrawCard()); heStreet = 'river'; }
+    else { heShowdown(); return; }
+    hePlayerBet = 0; heAiBet = 0;
+    hePlayerActed = false; heAiActed = false; heLastRaise = 20;
+    heTurn = 'ai';
+    JMFGAMES.beep(700, 0.06);
+    heAiAct();
+  }
+  function heDealOutAndShowdown() {
+    while (heCommunity.length < 5) heCommunity.push(heDrawCard());
+    heShowdown();
+  }
+  function heShowdown() {
+    heShowCards = true;
+    heStreet = 'showdown';
+    var pe = heEval7(hePlayer.concat(heCommunity));
+    var ae = heEval7(heAi.concat(heCommunity));
+    hePlayerHandName = heHandName(pe[0]);
+    heAiHandName = heHandName(ae[0]);
+    if (hePlayerBet > heAiBet) { var r1 = hePlayerBet - heAiBet; heBalance += r1; hePot -= r1; }
+    else if (heAiBet > hePlayerBet) { var r2 = heAiBet - hePlayerBet; heAiBalance += r2; hePot -= r2; }
+    var c = heCompare(pe, ae);
+    if (c > 0) { var netW = hePot - hePlayerInvested; heBalance += hePot; hePot = 0; heMsg = 'WIN +$' + netW; heFinishHand('win'); }
+    else if (c < 0) { heAiBalance += hePot; hePot = 0; heMsg = 'LOSE -$' + hePlayerInvested; heFinishHand('lose'); }
+    else { var half = Math.floor(hePot / 2); heBalance += half; heAiBalance += hePot - half; hePot = 0; heMsg = 'SPLIT POT'; heFinishHand('split'); }
+  }
+  function heEndHand(winner, msg) {
+    heHandOver = true;
+    if (winner === 'player') heBalance += hePot;
+    else heAiBalance += hePot;
+    hePot = 0;
+    heMsg = msg;
+    heFinishHand(winner === 'player' ? 'win' : 'lose');
+  }
+  function heFinishHand(outcome) {
+    heHandOver = true;
+    heState = 'result';
+    heSaveBalance(); heSaveAi(); heNoteBest();
+    if (heBalance >= 10000) { heWon = true; screen = 'over'; JMFGAMES.beep(990, 0.2); }
+    else if (heBalance < 10) { heWon = false; screen = 'over'; JMFGAMES.beep(220, 0.25); }
+    else if (outcome === 'win') JMFGAMES.beep(880, 0.12);
+    else if (outcome === 'lose') JMFGAMES.beep(220, 0.15);
+    else JMFGAMES.beep(660, 0.1);
+  }
+
+  /* ---------- Draw ---------- */
+  function drawHoldem() {
+    ctx.fillStyle = '#9bac0f'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#0f380f'; ctx.textAlign = 'left'; ctx.font = '8px monospace';
+    ctx.fillText('YOU $' + heBalance, 4, 10);
+    ctx.textAlign = 'right';
+    ctx.fillText('AI $' + heAiBalance, W - 4, 10);
+    ctx.textAlign = 'left';
+    if (heState === 'lobby') {
+      ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText("TEXAS HOLD'EM", W / 2, 28);
+      ctx.font = '8px monospace';
+      ctx.fillText('YOU $' + heBalance + '   AI $' + heAiBalance, W / 2, 50);
+      ctx.fillText('BLINDS 10/20', W / 2, 64);
+      ctx.fillText('FIRST TO $10000 WINS', W / 2, 76);
+      ctx.fillText('BEST $' + heBest, W / 2, 88);
+      if (heLobbyNote) ctx.fillText(heLobbyNote, W / 2, 100);
+      ctx.fillText('A: DEAL', W / 2, 112);
+      ctx.fillText('B: MENU', W / 2, 124);
+      ctx.textAlign = 'left';
+      return;
+    }
+    var toCall = heAiBet - hePlayerBet;
+    if (toCall < 0) toCall = 0;
+    ctx.fillText('POT $' + hePot, 4, 22);
+    ctx.textAlign = 'right';
+    ctx.fillText(heStreet.toUpperCase(), W - 4, 22);
+    ctx.textAlign = 'left';
+    bjDrawHand(heAi, 8, 28, !heShowCards);
+    ctx.fillText('AI BET $' + heAiBet, 44, 40);
+    for (var i = 0; i < 5; i++) {
+      var cx = 46 + i * 13;
+      if (i < heCommunity.length) bjDrawCardAt(cx, 58, heCommunity[i], false);
+      else { ctx.strokeStyle = '#0f380f'; ctx.lineWidth = 1; ctx.strokeRect(cx + 0.5, 58.5, 15, 21); }
+    }
+    bjDrawHand(hePlayer, 8, 88, false);
+    ctx.fillText('YOU BET $' + hePlayerBet, 44, 100);
+    if (heState === 'act') {
+      var acts = heAvailActions();
+      var xs = acts.length === 3 ? [28, 80, 132] : (acts.length === 4 ? [20, 60, 100, 140] : [80]);
+      ctx.font = '8px monospace';
+      for (var k = 0; k < acts.length; k++) {
+        var label = acts[k];
+        var w = ctx.measureText(label).width + 8;
+        var ccx = xs[k];
+        if (k === heActionIdx) {
+          ctx.fillStyle = '#0f380f';
+          ctx.fillRect(ccx - w / 2, 112, w, 13);
+          ctx.fillStyle = '#9bac0f';
+        } else ctx.fillStyle = '#0f380f';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, ccx, 122);
+      }
+      ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center';
+      var cur = heCurAction();
+      if (cur === 'BET' || cur === 'RAISE') ctx.fillText(cur + ' $' + heRaiseAmt + '  UP/DN +/-10', W / 2, 140);
+      else if (toCall > 0) ctx.fillText('CALL $' + Math.min(toCall, heBalance) + '  L/R PICK - A OK', W / 2, 140);
+      else ctx.fillText('L/R PICK - A OK', W / 2, 140);
+      ctx.textAlign = 'left';
+    } else if (heState === 'result') {
+      ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText(heMsg, W / 2, 122);
+      ctx.font = '8px monospace';
+      if (hePlayerHandName) ctx.fillText(hePlayerHandName + ' vs ' + heAiHandName, W / 2, 134);
+      ctx.fillText('A: NEXT  B: MENU', W / 2, 142);
+      ctx.textAlign = 'left';
+    }
+    if (hePaused) {
+      ctx.fillStyle = 'rgba(15,56,15,0.7)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('PAUSED', W / 2, 70);
+      ctx.font = '8px monospace';
+      ctx.fillText('START: RESUME', W / 2, 86);
+      ctx.textAlign = 'left';
+    }
+  }
+  function drawHoldemOver() {
+    drawHoldem();
+    ctx.fillStyle = 'rgba(15,56,15,0.55)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#9bac0f';
+    ctx.fillRect(18, 42, 124, 78);
+    ctx.fillStyle = '#0f380f';
+    ctx.fillRect(18, 42, 124, 2);
+    ctx.fillRect(18, 118, 124, 2);
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(heWon ? 'YOU WIN!' : 'BUSTED', W / 2, 58);
+    ctx.font = '8px monospace';
+    ctx.fillText('BAL $' + heBalance, W / 2, 74);
+    ctx.fillText('BEST $' + heBest, W / 2, 86);
+    ctx.fillText('A: PLAY AGAIN  B: MENU', W / 2, 104);
+    ctx.textAlign = 'left';
+  }
+
   /* ---------- Input (one handler per button, dispatched by screen) ---------- */
   JMFGAMES.on('press', 'up', function () {
     if (screen === 'menu') { menuIndex = (menuIndex + GAMES.length - 1) % GAMES.length; JMFGAMES.beep(600, 0.04); }
-    else if (screen === 'play') { if (currentGame === 'block') bqMove(-1, 0); else flap(); }
+    else if (screen === 'play') {
+      if (currentGame === 'block') bqMove(-1, 0);
+      else if (currentGame === 'bj') { bjAdjustBet(10); bjCycleAction(-1); }
+      else if (currentGame === 'holdem') { heAdjustRaise(10); }
+      else flap();
+    }
   });
   JMFGAMES.on('press', 'down', function () {
     if (screen === 'menu') { menuIndex = (menuIndex + 1) % GAMES.length; JMFGAMES.beep(600, 0.04); }
-    else if (screen === 'play' && currentGame === 'block') { bqMove(1, 0); }
+    else if (screen === 'play') {
+      if (currentGame === 'block') bqMove(1, 0);
+      else if (currentGame === 'bj') { bjAdjustBet(-10); bjCycleAction(1); }
+      else if (currentGame === 'holdem') { heAdjustRaise(-10); }
+    }
   });
   JMFGAMES.on('press', 'left', function () {
     if (screen === 'play' && currentGame === 'block') bqMove(0, -1);
+    else if (screen === 'play' && currentGame === 'bj') { bjAdjustBet(-50); bjCycleAction(-1); }
+    else if (screen === 'play' && currentGame === 'holdem') { heCycleAction(-1); }
   });
   JMFGAMES.on('press', 'right', function () {
     if (screen === 'play' && currentGame === 'block') bqMove(0, 1);
+    else if (screen === 'play' && currentGame === 'bj') { bjAdjustBet(50); bjCycleAction(1); }
+    else if (screen === 'play' && currentGame === 'holdem') { heCycleAction(1); }
   });
   JMFGAMES.on('press', 'a', function () {
     if (screen === 'menu') {
       var g = GAMES[menuIndex];
       if (g.playable) {
         if (g.name === 'BLOCKQUEST') { currentGame = 'block'; startBlockQuest(); }
+        else if (g.name === 'BLACKJACK ROYALE') { currentGame = 'bj'; startBlackjack(); }
+        else if (g.name === "TEXAS HOLD'EM") { currentGame = 'holdem'; startHoldem(); }
         else { currentGame = 'sky'; startGame(); }
       }
       else { comingName = g.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
-    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else flap(); }
-    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else startGame(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else flap(); }
+    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else startGame(); }
   });
   JMFGAMES.on('press', 'b', function () {
     if (screen === 'play' && currentGame === 'block') { bqBack(); }
+    else if (screen === 'play' && currentGame === 'bj') { bjBack(); }
+    else if (screen === 'play' && currentGame === 'holdem') { heBack(); }
     else if (screen === 'play' || screen === 'over' || screen === 'coming') { toMenu(); }
   });
   JMFGAMES.on('press', 'start', function () {
     if (screen !== 'play') return;
     if (currentGame === 'block') { if (!bqOver) { bqPaused = !bqPaused; JMFGAMES.beep(330, 0.06); } }
+    else if (currentGame === 'bj') { bjPaused = !bjPaused; JMFGAMES.beep(330, 0.06); }
+    else if (currentGame === 'holdem') { hePaused = !hePaused; JMFGAMES.beep(330, 0.06); }
     else if (!dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
   });
   JMFGAMES.on('press', 'select', function () {
+    if (screen === 'play' && currentGame === 'bj' && bjState === 'action') return; // never quit mid-hand
+    if (screen === 'play' && currentGame === 'holdem' && heState === 'act') return; // never quit mid-hand
     if (screen === 'play' || screen === 'over' || screen === 'coming') { toMenu(); }
   });
 
@@ -629,6 +1390,7 @@
   function update() {
     if (screen !== 'play') return;
     if (currentGame === 'block') { bqUpdate(); return; }
+    if (currentGame === 'bj') { bjUpdate(); return; }
     if (paused || dead || !started) return;
     bird.vy = Math.min(bird.vy + GRAV, MAXFALL);
     bird.y += bird.vy;
@@ -813,8 +1575,8 @@
   function draw() {
     if (screen === 'menu') drawMenu();
     else if (screen === 'coming') drawComing();
-    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else drawGame(); }
-    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else drawOver(); }
+    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else drawGame(); }
+    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else drawOver(); }
   }
 
   /* ---------- Main loop: fixed 60Hz logic steps, any display rate ---------- */
