@@ -371,6 +371,14 @@
   var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
   var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'run' | 'siege' — which game is on the play/over screens
   var menuIndex = 0;
+  /* Scrollable menu: 9 visible rows at the readable 8px pitch (7px
+     overlapped). menuTop = first visible game; the window follows the
+     selection and wraps jump to the ends. Works for any game count. */
+  var MENU_PITCH = 8, MENU_ROWS = 9, MENU_TOP_Y = 44, menuTop = 0;
+  function menuClamp() {
+    if (menuIndex < menuTop) menuTop = menuIndex;
+    else if (menuIndex >= menuTop + MENU_ROWS) menuTop = menuIndex - MENU_ROWS + 1;
+  }
   var comingName = '';
   var best = 0;
   try { best = parseInt(localStorage.getItem('jmf-games-sky-soar-best') || '0', 10) || 0; } catch (e) { best = 0; }
@@ -455,6 +463,7 @@
   }
   function toMenu() {
     screen = 'menu';
+    menuClamp(); // keep the selection visible in the scroll window
     JMFGAMES.beep(440, 0.06);
   }
   function gameOver() {
@@ -5876,7 +5885,7 @@ function chMoveStr(m) {
   /* ---------- Input (one handler per button, dispatched by screen) ---------- */
   JMFGAMES.on('press', 'up', function () {
     if (dsGame) return;
-    if (screen === 'menu') { menuIndex = (menuIndex + GAMES.length - 1) % GAMES.length; JMFGAMES.beep(600, 0.04); }
+    if (screen === 'menu') { menuIndex = (menuIndex + GAMES.length - 1) % GAMES.length; menuClamp(); JMFGAMES.beep(600, 0.04); }
     else if (screen === 'play') {
       if (currentGame === 'block') bqMove(-1, 0);
       else if (currentGame === 'bj') { bjAdjustBet(10); bjCycleAction(-1); }
@@ -5893,7 +5902,7 @@ function chMoveStr(m) {
   });
   JMFGAMES.on('press', 'down', function () {
     if (dsGame) return;
-    if (screen === 'menu') { menuIndex = (menuIndex + 1) % GAMES.length; JMFGAMES.beep(600, 0.04); }
+    if (screen === 'menu') { menuIndex = (menuIndex + 1) % GAMES.length; menuClamp(); JMFGAMES.beep(600, 0.04); }
     else if (screen === 'play') {
       if (currentGame === 'block') bqMove(1, 0);
       else if (currentGame === 'bj') { bjAdjustBet(-10); bjCycleAction(1); }
@@ -6111,8 +6120,9 @@ function chMoveStr(m) {
     ctx.font = '8px monospace';
     ctx.fillText('SELECT A GAME', W / 2, 32);
     ctx.textAlign = 'left';
-    for (var i = 0; i < GAMES.length; i++) {
-      var y = 42 + i * 7; // 11 games: 42..112; last highlight ends at 114, footer text starts ~126 — no overlap
+    var menuEnd = Math.min(menuTop + MENU_ROWS, GAMES.length);
+    for (var i = menuTop; i < menuEnd; i++) {
+      var y = MENU_TOP_Y + (i - menuTop) * MENU_PITCH; // 9 rows: 44..108; last highlight ends at 110, footer text starts ~126 — no overlap
       if (i === menuIndex) {
         ctx.fillStyle = '#0f380f';
         ctx.fillRect(8, y - 8, 144, 10);
@@ -6124,6 +6134,10 @@ function chMoveStr(m) {
         ctx.fillText(GAMES[i].name, 26, y);
       }
     }
+    // Scroll indicators (top-right / bottom-right): more games above / below
+    ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace'; ctx.textAlign = 'right';
+    if (menuTop > 0) ctx.fillText('▲', 156, 34);
+    if (menuEnd < GAMES.length) ctx.fillText('▼', 156, 118);
     ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
     ctx.fillText('SKY SOAR BEST: ' + best, W / 2, 126);
     ctx.fillText('UP/DOWN MOVE - A PLAY', W / 2, 138);
