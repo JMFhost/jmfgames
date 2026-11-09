@@ -374,6 +374,39 @@
   try { best = parseInt(localStorage.getItem('jmf-games-sky-soar-best') || '0', 10) || 0; } catch (e) { best = 0; }
   function saveBest() { try { localStorage.setItem('jmf-games-sky-soar-best', String(best)); } catch (e) {} }
 
+  /* ---------- Delete-save (shared): one confirmation overlay for all
+     games. dsGame = which game's save is being deleted ('sky' | 'block' |
+     'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool'),
+     or null. A confirms, B cancels. Confirming clears ONLY that game's
+     localStorage keys and resets it to fresh defaults; pause-overlay games
+     restart fresh immediately, select-screen games stay on their select
+     screen. ---------- */
+  var dsGame = null;
+  function dsAsk(game) { dsGame = game; JMFGAMES.beep(500, 0.08); }
+  function dsClearKeys(keys) { for (var i = 0; i < keys.length; i++) { try { localStorage.removeItem(keys[i]); } catch (e) {} } }
+  function dsDoDelete(game) {
+    dsGame = null;
+    if (game === 'sky') { dsClearKeys(['jmf-games-sky-soar-best']); best = 0; resetGame(); paused = false; }
+    else if (game === 'block') { dsClearKeys(['jmf-games-blockquest-best']); bqBest = 0; startBlockQuest(); }
+    else if (game === 'bj') { dsClearKeys([BJ_BAL_KEY, BJ_BEST_KEY]); bjBalance = 1000; bjBest = 1000; startBlackjack(); }
+    else if (game === 'holdem') { dsClearKeys([HE_BAL_KEY, HE_AI_KEY, HE_BEST_KEY]); heBalance = 1000; heAiBalance = 1000; heBest = 1000; startHoldem(); }
+    else if (game === 'chess') { dsClearKeys([CH_WINS_KEY, CH_LOSSES_KEY, CH_DRAWS_KEY]); chWins = 0; chLosses = 0; chDraws = 0; chState = 'level'; chLevelIdx = 0; chColorIdx = 0; }
+    else if (game === 'overlord') { dsClearKeys([OV_WINS_KEY, OV_LOSSES_KEY, OV_BEST_KEY]); ovWins = 0; ovLosses = 0; ovBestTime = 0; startOverlord(); }
+    else if (game === 'solitaire') { dsClearKeys([SOL_WIN_KEY, SOL_BEST_MOVES_KEY, SOL_BEST_TIME_KEY]); solWins = 0; solBestMoves = 0; solBestTime = 0; startSolitaire(); }
+    else if (game === 'beat') { dsClearKeys([BU_BEST_KEY]); buBest = 0; }
+    else if (game === 'pool') { dsClearKeys([PO_WIN_KEY, PO_LOSS_KEY]); poWins = 0; poLosses = 0; }
+    JMFGAMES.beep(880, 0.1);
+  }
+  function drawDsConfirm() {
+    ctx.fillStyle = 'rgba(15,56,15,0.9)'; ctx.fillRect(18, 46, 124, 56);
+    ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+    ctx.fillText('DELETE SAVE?', W / 2, 62);
+    ctx.font = '8px monospace';
+    ctx.fillText('RESETS THIS GAME', W / 2, 76);
+    ctx.fillText('A: YES  B: NO', W / 2, 92);
+    ctx.textAlign = 'left';
+  }
+
   /* ---------- Sky Soar tuning (160x144 screen) ---------- */
   var GRAV = 0.18, FLAP = -3.8, MAXFALL = 4.5;
   var BIRD_X = 36, BIRD_R = 5;
@@ -2186,7 +2219,7 @@ function chMoveStr(m) {
     }
     if (chState === 'color') {
       if (dr !== 0) {
-        chColorIdx = (chColorIdx + dr + CH_COLORS.length) % CH_COLORS.length;
+        chColorIdx = (chColorIdx + dr + CH_COLORS.length + 1) % (CH_COLORS.length + 1);
         JMFGAMES.beep(600, 0.04);
       }
       return;
@@ -2201,7 +2234,7 @@ function chMoveStr(m) {
   function chAction() {
     if (screen !== 'play' || chPaused || chOver) return;
     if (chState === 'level') { chLevel = chLevelIdx; chColorIdx = 0; chState = 'color'; JMFGAMES.beep(660, 0.08); return; }
-    if (chState === 'color') { chColorChoice = chColorIdx; chNewGame(chLevel); return; }
+    if (chState === 'color') { if (chColorIdx === CH_COLORS.length) { dsAsk('chess'); return; } chColorChoice = chColorIdx; chNewGame(chLevel); return; }
     if (chS.turn !== chPlayerColor) return; // AI turn (AI replies synchronously, so never seen)
     var p = chS.b[chCur];
     if (chSel < 0) {
@@ -2340,6 +2373,18 @@ function chMoveStr(m) {
         ctx.fillText(CH_COLORS[i].desc, 140, y);
         ctx.textAlign = 'left';
       }
+    }
+    // DELETE SAVE row (index CH_COLORS.length).
+    var dsRowY = 50 + CH_COLORS.length * 13;
+    if (chColorIdx === CH_COLORS.length) {
+      ctx.fillStyle = '#0f380f';
+      ctx.fillRect(18, dsRowY - 9, 124, 12);
+      ctx.fillStyle = '#9bac0f';
+      ctx.fillText('>', 22, dsRowY);
+      ctx.fillText('DELETE SAVE', 30, dsRowY);
+    } else {
+      ctx.fillStyle = '#0f380f';
+      ctx.fillText('DELETE SAVE', 30, dsRowY);
     }
     ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center';
     ctx.fillText(CH_LEVELS[chLevel].name + ' ' + CH_LEVELS[chLevel].elo, W / 2, 120);
@@ -3594,6 +3639,7 @@ function chMoveStr(m) {
     JMFGAMES.beep(660, 0.08);
   }
   function buPickHero() {
+    if (buHeroIdx === BU_HEROES.length) { dsAsk('beat'); return; }
     buHero = BU_HEROES[buHeroIdx];
     buMaxHp = buHero.hp; buHp = buMaxHp;
     buDmg = buHero.dmg; buSpd = buHero.spd; buRate = buHero.rate;
@@ -3677,7 +3723,7 @@ function chMoveStr(m) {
   }
   function buSelMove(d) {
     if (buPhase !== 'select') return;
-    buHeroIdx = (buHeroIdx + d + BU_HEROES.length) % BU_HEROES.length;
+    buHeroIdx = (buHeroIdx + d + BU_HEROES.length + 1) % (BU_HEROES.length + 1);
     JMFGAMES.beep(600, 0.04);
   }
   function buUpMove(d) {
@@ -3864,7 +3910,7 @@ function chMoveStr(m) {
     ctx.fillText('THE ASH LEGION BURNS CINDRAL', W / 2, 32);
     for (var i = 0; i < BU_HEROES.length; i++) {
       var h = BU_HEROES[i];
-      var y = 52 + i * 26;
+      var y = 48 + i * 25;
       if (i === buHeroIdx) {
         ctx.fillStyle = '#F8FAFC';
         ctx.fillRect(8, y - 11, 144, 22);
@@ -3879,9 +3925,20 @@ function chMoveStr(m) {
       ctx.fillText('HP ' + h.hp + '  DMG ' + h.dmg + '  SPD ' + h.spd, 34, y + 9);
       ctx.textAlign = 'center';
     }
+    // DELETE SAVE row (index BU_HEROES.length).
+    var dsRowY = 120;
+    if (buHeroIdx === BU_HEROES.length) {
+      ctx.fillStyle = '#F8FAFC';
+      ctx.fillRect(8, dsRowY - 9, 144, 12);
+      ctx.fillStyle = '#26263A';
+      ctx.fillText('> DELETE SAVE', W / 2, dsRowY);
+    } else {
+      ctx.fillStyle = '#F8FAFC';
+      ctx.fillText('DELETE SAVE', W / 2, dsRowY);
+    }
     ctx.fillStyle = '#F8FAFC'; ctx.font = '8px monospace';
-    ctx.fillText('BEST: ' + buBest + ' WAVES', W / 2, 126);
-    ctx.fillText('UP/DOWN PICK - A FIGHT', W / 2, 137);
+    ctx.fillText('BEST: ' + buBest + ' WAVES', W / 2, 132);
+    ctx.fillText('UP/DOWN PICK - A FIGHT', W / 2, 142);
     ctx.textAlign = 'left';
   }
   function buDrawUpgrade() {
@@ -4508,12 +4565,12 @@ function chMoveStr(m) {
   }
   function poLevelMove(d) {
     if (poPhase !== 'level') return;
-    poLevel = (poLevel + d + PO_LEVELS.length) % PO_LEVELS.length;
+    poLevel = (poLevel + d + PO_LEVELS.length + 1) % (PO_LEVELS.length + 1);
     JMFGAMES.beep(600, 0.04);
   }
   function poAction() {
     if (screen !== 'play' || poPaused || poOver) return;
-    if (poPhase === 'level') { poBeginMatch(); return; }
+    if (poPhase === 'level') { if (poLevel === PO_LEVELS.length) { dsAsk('pool'); return; } poBeginMatch(); return; }
     if (poPhase === 'aim') poPlayerShoot();
   }
   function poBack() {
@@ -4598,6 +4655,16 @@ function chMoveStr(m) {
           ctx.fillStyle = '#9bac0f';
           ctx.fillText((li + 1) + ' ' + PO_LEVEL_NAMES[li], W / 2, y);
         }
+      }
+      // DELETE SAVE row (index PO_LEVELS.length).
+      var dsRowY = 60 + PO_LEVELS.length * 11;
+      if (poLevel === PO_LEVELS.length) {
+        ctx.fillStyle = '#0f380f'; ctx.fillRect(28, dsRowY - 8, 104, 10);
+        ctx.fillStyle = '#9bac0f';
+        ctx.fillText('> DELETE SAVE', W / 2, dsRowY);
+      } else {
+        ctx.fillStyle = '#9bac0f';
+        ctx.fillText('DELETE SAVE', W / 2, dsRowY);
       }
       ctx.fillStyle = '#9bac0f';
       ctx.fillText('UP/DOWN PICK  A PLAY', W / 2, 126);
@@ -5097,6 +5164,7 @@ function chMoveStr(m) {
 
   /* ---------- Input (one handler per button, dispatched by screen) ---------- */
   JMFGAMES.on('press', 'up', function () {
+    if (dsGame) return;
     if (screen === 'menu') { menuIndex = (menuIndex + GAMES.length - 1) % GAMES.length; JMFGAMES.beep(600, 0.04); }
     else if (screen === 'play') {
       if (currentGame === 'block') bqMove(-1, 0);
@@ -5112,6 +5180,7 @@ function chMoveStr(m) {
     }
   });
   JMFGAMES.on('press', 'down', function () {
+    if (dsGame) return;
     if (screen === 'menu') { menuIndex = (menuIndex + 1) % GAMES.length; JMFGAMES.beep(600, 0.04); }
     else if (screen === 'play') {
       if (currentGame === 'block') bqMove(1, 0);
@@ -5126,6 +5195,7 @@ function chMoveStr(m) {
     }
   });
   JMFGAMES.on('press', 'left', function () {
+    if (dsGame) return;
     if (screen === 'play' && currentGame === 'block') bqMove(0, -1);
     else if (screen === 'play' && currentGame === 'bj') { bjAdjustBet(-50); bjCycleAction(-1); }
     else if (screen === 'play' && currentGame === 'holdem') { heCycleAction(-1); }
@@ -5135,6 +5205,7 @@ function chMoveStr(m) {
     else if (screen === 'play' && currentGame === 'run') ruLane(-1);
   });
   JMFGAMES.on('press', 'right', function () {
+    if (dsGame) return;
     if (screen === 'play' && currentGame === 'block') bqMove(0, 1);
     else if (screen === 'play' && currentGame === 'bj') { bjAdjustBet(50); bjCycleAction(1); }
     else if (screen === 'play' && currentGame === 'holdem') { heCycleAction(1); }
@@ -5144,6 +5215,7 @@ function chMoveStr(m) {
     else if (screen === 'play' && currentGame === 'run') ruLane(1);
   });
   JMFGAMES.on('press', 'a', function () {
+    if (dsGame) { dsDoDelete(dsGame); return; } // confirm delete-save
     if (screen === 'menu') {
       var g = GAMES[menuIndex];
       if (g.playable) {
@@ -5166,7 +5238,16 @@ function chMoveStr(m) {
   JMFGAMES.on('press', 'b', function () {
     // B is a real in-game action in every game; it NEVER returns to the
     // main menu (Menu is the only way back). On 'over'/'coming' B does nothing.
+    if (dsGame) { dsGame = null; JMFGAMES.beep(440, 0.06); return; } // cancel delete-save
     if (screen !== 'play') return;
+    // B while paused (games whose delete option lives on the pause overlay)
+    // asks to delete that game's save.
+    if (currentGame === 'sky' && paused) { dsAsk('sky'); return; }
+    if (currentGame === 'block' && bqPaused) { dsAsk('block'); return; }
+    if (currentGame === 'bj' && bjPaused) { dsAsk('bj'); return; }
+    if (currentGame === 'holdem' && hePaused) { dsAsk('holdem'); return; }
+    if (currentGame === 'overlord' && ovPaused) { dsAsk('overlord'); return; }
+    if (currentGame === 'solitaire' && solPaused) { dsAsk('solitaire'); return; }
     if (currentGame === 'sky') skyDive();
     else if (currentGame === 'block') bqBack();
     else if (currentGame === 'bj') bjBack();
@@ -5179,6 +5260,7 @@ function chMoveStr(m) {
     else if (currentGame === 'run') ruBack();
   });
   JMFGAMES.on('press', 'start', function () {
+    if (dsGame) return;
     if (screen !== 'play') return;
     if (currentGame === 'block') { if (!bqOver) { bqPaused = !bqPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'bj') { bjPaused = !bjPaused; JMFGAMES.beep(330, 0.06); }
@@ -5194,6 +5276,7 @@ function chMoveStr(m) {
   JMFGAMES.on('press', 'menu', function () {
     // Menu is the ONLY way back to the main menu: from a game (even
     // mid-hand), level/color select, game-over, or pause.
+    dsGame = null; // cancel any delete-save confirmation
     if (screen === 'play' || screen === 'over' || screen === 'coming') { toMenu(); }
   });
 
@@ -5396,6 +5479,23 @@ function chMoveStr(m) {
     else if (screen === 'coming') drawComing();
     else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else drawGame(); }
     else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else drawOver(); }
+    // Delete-save confirmation overlay (on top of any screen), or the
+    // pause-overlay hint for games whose delete option lives on pause.
+    if (dsGame) drawDsConfirm();
+    else if (screen === 'play') {
+      var dsHintY = 0;
+      if (currentGame === 'sky' && paused) dsHintY = 98;
+      else if (currentGame === 'block' && bqPaused) dsHintY = 98;
+      else if (currentGame === 'bj' && bjPaused) dsHintY = 98;
+      else if (currentGame === 'holdem' && hePaused) dsHintY = 98;
+      else if (currentGame === 'overlord' && ovPaused) dsHintY = 98;
+      else if (currentGame === 'solitaire' && solPaused) dsHintY = 110; // 'A: NEW GAME' sits at 98
+      if (dsHintY) {
+        ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
+        ctx.fillText('B: DELETE SAVE', W / 2, dsHintY);
+        ctx.textAlign = 'left';
+      }
+    }
   }
 
   /* ---------- Main loop: fixed 60Hz logic steps, any display rate ---------- */
