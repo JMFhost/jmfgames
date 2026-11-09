@@ -242,7 +242,8 @@
     bj:       { bpm: 112, wave: 'triangle', notes: [[57,1],[60,1],[64,1],[69,1],[67,1],[64,1],[60,1],[64,1],[65,1],[69,1],[72,1],[69,1],[67,1],[64,1],[60,1],[0,1]] },
     holdem:   { bpm: 120, wave: 'triangle', notes: [[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[0,1]] },
     chess:    { bpm: 96, wave: 'sine', notes: [[60,2],[67,2],[69,2],[67,2],[65,2],[64,2],[62,2],[60,2]] },
-    overlord: { bpm: 100, wave: 'sawtooth', notes: [[57,1],[60,1],[62,1],[64,1],[62,1],[60,1],[57,1],[55,1],[57,1],[60,1],[62,1],[64,1],[67,1],[64,1],[62,1],[60,1]] }
+    overlord: { bpm: 100, wave: 'sawtooth', notes: [[57,1],[60,1],[62,1],[64,1],[62,1],[60,1],[57,1],[55,1],[57,1],[60,1],[62,1],[64,1],[67,1],[64,1],[62,1],[60,1]] },
+    solitaire: { bpm: 96, wave: 'sine', notes: [[72,2],[76,2],[79,2],[76,2],[81,2],[79,2],[76,2],[72,2],[74,2],[77,2],[81,2],[77,2],[74,2],[72,2],[67,2],[0,2]] }
   };
   var musicTimer = null, musicStep = 0, musicNext = 0, musicTune = null, musicActive = false;
   function midiFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
@@ -351,6 +352,7 @@
     { name: 'CHESS CLUB', playable: true },
     { name: "OVERLORD'S BASTION", playable: true },
     { name: 'SKY SOAR', playable: true },
+    { name: 'SOLITAIRE', playable: true },
     { name: "TEXAS HOLD'EM", playable: true }
   ];
 
@@ -359,7 +361,7 @@
 
   /* ---------- State ---------- */
   var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
-  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' — which game is on the play/over screens
+  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' — which game is on the play/over screens
   var menuIndex = 0;
   var comingName = '';
   var best = 0;
@@ -3019,6 +3021,392 @@ function chMoveStr(m) {
     ctx.textAlign = 'left';
   }
 
+  /* ================================================================
+     SOLITAIRE (console) — Klondike draw-1 on the 160x144 screen.
+     Controls: D-pad moves the cursor between piles and along a
+     tableau fan, A picks up / drops a card or stack (or draws from
+     the stock), B cancels a picked-up card, Start pauses, Menu
+     returns to the main menu. Rules: tableau builds down in
+     alternating colors, foundations build up by suit A->K, only a
+     King (or a stack starting with a King) goes on an empty
+     tableau column, stock deals 1 card to the waste and recycles
+     when empty. Win when all 4 foundations are complete.
+     Wins / best moves / best time: localStorage
+     'jmf-games-solitaire-wins' / '-best-moves' / '-best-time'.
+     Real cards via the shared bjDrawCardAt (16x22); covered
+     tableau cards are drawn as compact rank+suit strips.
+     ================================================================ */
+  var SOL_WIN_KEY = 'jmf-games-solitaire-wins';
+  var SOL_BEST_MOVES_KEY = 'jmf-games-solitaire-best-moves';
+  var SOL_BEST_TIME_KEY = 'jmf-games-solitaire-best-time';
+  var SOL_TOP_Y = 12, SOL_TAB_Y = 37, SOL_CW = 16, SOL_CH = 22, SOL_PITCH = 7, SOL_COLW = 22;
+  var solStock, solWaste, solFound, solTab;
+  var solMoves = 0, solWins = 0, solBestMoves = 0, solBestTime = 0, solTimeSec = 0;
+  var solStartTime = 0, solPaused = false, solOver = false, solHeld = null;
+  var solRow = 1, solCol = 0, solFan = 0;
+  try { solWins = parseInt(localStorage.getItem(SOL_WIN_KEY) || '0', 10) || 0; } catch (e) { solWins = 0; }
+  try { solBestMoves = parseInt(localStorage.getItem(SOL_BEST_MOVES_KEY) || '0', 10) || 0; } catch (e) { solBestMoves = 0; }
+  try { solBestTime = parseInt(localStorage.getItem(SOL_BEST_TIME_KEY) || '0', 10) || 0; } catch (e) { solBestTime = 0; }
+  function solSaveWins() { try { localStorage.setItem(SOL_WIN_KEY, String(solWins)); } catch (e) {} }
+  function solSaveBest() { try { localStorage.setItem(SOL_BEST_MOVES_KEY, String(solBestMoves)); } catch (e) {} try { localStorage.setItem(SOL_BEST_TIME_KEY, String(solBestTime)); } catch (e) {} }
+  function solIsRed(c) { return c.s === 1 || c.s === 2; }
+  function solFmtTime(sec) { var m = Math.floor(sec / 60), s = sec % 60; return m + ':' + (s < 10 ? '0' : '') + s; }
+  function solTabX(col) { return 3 + col * SOL_COLW; }
+  function solTopX(col) { return col === 0 ? 3 : (col === 1 ? 25 : 3 + col * SOL_COLW); }
+  function solFoundIdx(col) { return col - 3; } // top-row col 3..6 -> foundation 0..3 (spades, hearts, diamonds, clubs)
+  function solFirstFaceUp(col) {
+    var c = solTab[col];
+    for (var i = 0; i < c.length; i++) if (c[i].up) return i;
+    return c.length; // empty column: no face-up card
+  }
+  function solClampFan() {
+    if (solRow !== 1) return;
+    var c = solTab[solCol];
+    if (!c.length) { solFan = 0; return; }
+    var first = solFirstFaceUp(solCol);
+    if (solFan < first) solFan = first;
+    if (solFan > c.length - 1) solFan = c.length - 1;
+  }
+  function solNewDeck() {
+    var d = [];
+    for (var s = 0; s < 4; s++) for (var r = 1; r <= 13; r++) d.push({ r: r, s: s, up: false });
+    for (var i = d.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = d[i]; d[i] = d[j]; d[j] = t; }
+    return d;
+  }
+  function startSolitaire() {
+    var d = solNewDeck();
+    solTab = [[], [], [], [], [], [], []];
+    for (var c = 0; c < 7; c++) {
+      for (var k = 0; k <= c; k++) {
+        var card = d.pop();
+        card.up = (k === c);
+        solTab[c].push(card);
+      }
+    }
+    solStock = d; // the remaining 24 cards, all face-down
+    solWaste = [];
+    solFound = [[], [], [], []];
+    solMoves = 0; solTimeSec = 0; solStartTime = Date.now();
+    solPaused = false; solOver = false; solHeld = null;
+    solRow = 1; solCol = 0; solFan = solFirstFaceUp(0);
+    screen = 'play';
+    JMFGAMES.musicPlay('solitaire');
+    JMFGAMES.beep(660, 0.08);
+  }
+  function solFlipTop(col) {
+    var c = solTab[col];
+    if (c.length && !c[c.length - 1].up) c[c.length - 1].up = true;
+  }
+  function solCanDropOnTableau(cards, col) {
+    var c = solTab[col];
+    var first = cards[0];
+    if (!c.length) return first.r === 13; // empty column: only a King
+    var top = c[c.length - 1];
+    return top.r === first.r + 1 && solIsRed(top) !== solIsRed(first);
+  }
+  function solCanDropOnFoundation(card, f) {
+    if (card.s !== f) return false;
+    var pile = solFound[f];
+    if (!pile.length) return card.r === 1; // empty foundation: only an Ace
+    return card.r === pile[pile.length - 1].r + 1;
+  }
+  function solCheckWin() {
+    var n = 0;
+    for (var f = 0; f < 4; f++) n += solFound[f].length;
+    if (n === 52) solWin();
+  }
+  function solWin() {
+    solOver = true;
+    solTimeSec = Math.floor((Date.now() - solStartTime) / 1000);
+    solWins++; solSaveWins();
+    if (solBestMoves === 0 || solMoves < solBestMoves) solBestMoves = solMoves;
+    if (solBestTime === 0 || solTimeSec < solBestTime) solBestTime = solTimeSec;
+    solSaveBest();
+    screen = 'over';
+    JMFGAMES.beep(880, 0.12);
+  }
+  function solDraw() {
+    if (solStock.length) {
+      var card = solStock.pop();
+      card.up = true;
+      solWaste.push(card);
+      solMoves++;
+      JMFGAMES.beep(700, 0.04);
+    } else if (solWaste.length) {
+      // Recycle: the waste flips back into the stock (top waste card
+      // becomes the bottom of the new stock).
+      solStock = [];
+      for (var i = solWaste.length - 1; i >= 0; i--) { solWaste[i].up = false; solStock.push(solWaste[i]); }
+      solWaste = [];
+      solMoves++;
+      JMFGAMES.beep(500, 0.06);
+    } else {
+      JMFGAMES.beep(200, 0.08);
+    }
+  }
+  function solValidStack(cards) {
+    if (!cards.length) return false;
+    for (var i = 0; i < cards.length; i++) if (!cards[i].up) return false;
+    for (var j = 0; j < cards.length - 1; j++) {
+      if (cards[j].r !== cards[j + 1].r + 1) return false;
+      if (solIsRed(cards[j]) === solIsRed(cards[j + 1])) return false;
+    }
+    return true;
+  }
+  function solPutBack() {
+    if (!solHeld) return;
+    var from = solHeld.from;
+    if (from.type === 'tab') { for (var i = 0; i < solHeld.cards.length; i++) solTab[from.idx].push(solHeld.cards[i]); }
+    else if (from.type === 'waste') { for (var j = 0; j < solHeld.cards.length; j++) solWaste.push(solHeld.cards[j]); }
+    else if (from.type === 'found') { for (var k = 0; k < solHeld.cards.length; k++) solFound[from.idx].push(solHeld.cards[k]); }
+    solHeld = null;
+  }
+  function solAction() {
+    if (solPaused) { startSolitaire(); return; }
+    if (solHeld) {
+      // Dropping (or cancelling by pressing A on the source pile).
+      var from = solHeld.from;
+      if (solRow === 1 && from.type === 'tab' && from.idx === solCol) { solPutBack(); JMFGAMES.beep(440, 0.05); return; }
+      if (solRow === 0 && from.type === 'waste' && solCol === 1) { solPutBack(); JMFGAMES.beep(440, 0.05); return; }
+      if (solRow === 0 && from.type === 'found' && solCol >= 3 && solFoundIdx(solCol) === from.idx) { solPutBack(); JMFGAMES.beep(440, 0.05); return; }
+      if (solRow === 0 && solCol >= 3) {
+        // Drop on a foundation: single card only.
+        var f = solFoundIdx(solCol);
+        if (solHeld.cards.length === 1 && solCanDropOnFoundation(solHeld.cards[0], f)) {
+          solFound[f].push(solHeld.cards[0]);
+          solHeld = null; solMoves++;
+          solCheckWin();
+          JMFGAMES.beep(880, 0.06);
+        } else { JMFGAMES.beep(200, 0.08); }
+        return;
+      }
+      if (solRow === 1) {
+        if (solCanDropOnTableau(solHeld.cards, solCol)) {
+          for (var i = 0; i < solHeld.cards.length; i++) solTab[solCol].push(solHeld.cards[i]);
+          solHeld = null; solMoves++;
+          solCheckWin();
+          JMFGAMES.beep(880, 0.06);
+        } else { JMFGAMES.beep(200, 0.08); }
+        return;
+      }
+      JMFGAMES.beep(200, 0.08); // stock / waste: cannot drop here
+      return;
+    }
+    // Nothing held: pick up, or draw from the stock.
+    if (solRow === 0 && solCol === 0) { solDraw(); return; }
+    if (solRow === 0 && solCol === 1) {
+      if (solWaste.length) {
+        solHeld = { cards: [solWaste.pop()], from: { type: 'waste' } };
+        JMFGAMES.beep(660, 0.05);
+      } else { JMFGAMES.beep(200, 0.08); }
+      return;
+    }
+    if (solRow === 0 && solCol >= 3) {
+      var fi = solFoundIdx(solCol);
+      if (solFound[fi].length) {
+        solHeld = { cards: [solFound[fi].pop()], from: { type: 'found', idx: fi } };
+        JMFGAMES.beep(660, 0.05);
+      } else { JMFGAMES.beep(200, 0.08); }
+      return;
+    }
+    if (solRow === 1) {
+      var col = solTab[solCol];
+      if (!col.length) { JMFGAMES.beep(200, 0.08); return; }
+      var fan = solFan;
+      if (fan >= col.length) fan = col.length - 1;
+      if (fan < 0) fan = 0;
+      if (!col[fan].up) { JMFGAMES.beep(200, 0.08); return; }
+      var stack = col.slice(fan);
+      if (!solValidStack(stack)) { JMFGAMES.beep(200, 0.08); return; }
+      solTab[solCol] = col.slice(0, fan);
+      solFlipTop(solCol); // expose (and flip) the card underneath
+      solHeld = { cards: stack, from: { type: 'tab', idx: solCol } };
+      JMFGAMES.beep(660, 0.05);
+    }
+  }
+  function solBack() {
+    // B cancels a picked-up card (no-op if nothing is held).
+    if (solHeld) { solPutBack(); JMFGAMES.beep(440, 0.05); }
+  }
+  function solMove(dir) {
+    if (solPaused) return;
+    solClampFan();
+    if (dir === 'left') {
+      if (solRow === 0) {
+        // Top row piles: stock(0), waste(1), F0(3), F1(4), F2(5), F3(6) — skip col 2.
+        if (solCol === 3) solCol = 1;
+        else if (solCol > 0) solCol--;
+      } else {
+        if (solCol > 0) { solCol--; solFan = solFirstFaceUp(solCol); }
+      }
+      JMFGAMES.beep(600, 0.03);
+    } else if (dir === 'right') {
+      if (solRow === 0) {
+        if (solCol === 1) solCol = 3;
+        else if (solCol < 6) solCol++;
+      } else {
+        if (solCol < 6) { solCol++; solFan = solFirstFaceUp(solCol); }
+      }
+      JMFGAMES.beep(600, 0.03);
+    } else if (dir === 'up') {
+      if (solRow === 1) {
+        var colU = solTab[solCol];
+        if (solFan < colU.length - 1) { solFan++; }
+        else { solRow = 0; if (solCol === 2) solCol = 1; }
+        JMFGAMES.beep(600, 0.03);
+      }
+    } else if (dir === 'down') {
+      if (solRow === 0) {
+        solRow = 1; solFan = solFirstFaceUp(solCol);
+        JMFGAMES.beep(600, 0.03);
+      } else {
+        var first = solFirstFaceUp(solCol);
+        if (solFan > first) { solFan--; JMFGAMES.beep(600, 0.03); }
+      }
+    }
+  }
+  function solDrawSlot(x, y, glyph) {
+    bjRoundRectPath(x, y, SOL_CW, SOL_CH, 3);
+    ctx.strokeStyle = '#0f380f'; ctx.lineWidth = 1; ctx.stroke();
+    if (glyph) {
+      ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center'; ctx.font = '10px monospace';
+      ctx.fillText(glyph, x + 8, y + 15);
+      ctx.textAlign = 'left';
+    }
+  }
+  function solDrawStrip(x, y, card, faceDown) {
+    // A compact 16x7 strip for a covered tableau card: shows rank + suit.
+    if (faceDown) {
+      ctx.fillStyle = '#0f380f';
+      ctx.fillRect(x, y, SOL_CW, 7);
+      ctx.fillStyle = '#9bac0f';
+      ctx.fillRect(x + 2, y + 2, 12, 1);
+      ctx.fillRect(x + 2, y + 4, 12, 1);
+      return;
+    }
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x, y, SOL_CW, 7);
+    ctx.strokeStyle = '#0f380f'; ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, y + 0.5, 15, 6);
+    ctx.fillStyle = solIsRed(card) ? '#c03028' : '#0f380f';
+    ctx.font = 'bold 6px monospace'; ctx.textAlign = 'left';
+    ctx.fillText(bjRankStr(card.r) + bjSuitGlyph(card.s), x + 1, y + 6);
+    ctx.textAlign = 'left';
+  }
+  function solDrawHeld() {
+    // Draw the picked-up stack at the cursor's target pile, so the
+    // player sees what they are carrying and where it will land.
+    var x, y;
+    if (solRow === 0) {
+      x = solTopX(solCol); y = SOL_TOP_Y;
+    } else {
+      x = solTabX(solCol);
+      var col = solTab[solCol];
+      y = SOL_TAB_Y + col.length * SOL_PITCH;
+      var h = (solHeld.cards.length - 1) * SOL_PITCH + SOL_CH;
+      if (y + h > H) y = H - h;
+      if (y < SOL_TAB_Y) y = SOL_TAB_Y;
+    }
+    ctx.globalAlpha = 0.92;
+    for (var i = 0; i < solHeld.cards.length; i++) {
+      var cy = y + i * SOL_PITCH;
+      if (i === solHeld.cards.length - 1) bjDrawCardAt(x, cy, solHeld.cards[i], false);
+      else solDrawStrip(x, cy, solHeld.cards[i], false);
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+    ctx.strokeStyle = '#c03028'; ctx.lineWidth = 2;
+    ctx.strokeRect(x - 1, y - 1, SOL_CW + 2, SOL_CH + 2);
+    ctx.lineWidth = 1;
+  }
+  function solDrawCursor() {
+    // Red outline around the cursor's current card / pile.
+    var x, y, h;
+    if (solRow === 0) {
+      x = solTopX(solCol); y = SOL_TOP_Y; h = SOL_CH;
+    } else {
+      x = solTabX(solCol);
+      var col = solTab[solCol];
+      if (!col.length) { y = SOL_TAB_Y; h = SOL_CH; }
+      else {
+        var fan = solFan;
+        if (fan >= col.length) fan = col.length - 1;
+        if (fan < 0) fan = 0;
+        y = SOL_TAB_Y + fan * SOL_PITCH;
+        h = (fan === col.length - 1) ? SOL_CH : 7;
+      }
+    }
+    ctx.strokeStyle = '#c03028'; ctx.lineWidth = 2;
+    ctx.strokeRect(x - 1.5, y - 1.5, SOL_CW + 3, h + 3);
+    ctx.lineWidth = 1;
+  }
+  function drawSolitaire() {
+    ctx.fillStyle = '#9bac0f'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#0f380f'; ctx.textAlign = 'left'; ctx.font = '8px monospace';
+    ctx.fillText('MOVES ' + solMoves, 4, 9);
+    ctx.textAlign = 'right';
+    ctx.fillText('WINS ' + solWins, W - 4, 9);
+    ctx.textAlign = 'left';
+    // Top row: stock, waste, foundations (spades, hearts, diamonds, clubs).
+    if (solStock.length) bjDrawCardAt(3, SOL_TOP_Y, solStock[solStock.length - 1], true);
+    else solDrawSlot(3, SOL_TOP_Y, solWaste.length ? '\u21bb' : null);
+    ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+    if (solWaste.length) bjDrawCardAt(25, SOL_TOP_Y, solWaste[solWaste.length - 1], false);
+    else solDrawSlot(25, SOL_TOP_Y, null);
+    ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+    for (var f = 0; f < 4; f++) {
+      var fx = solTopX(f + 3);
+      if (solFound[f].length) bjDrawCardAt(fx, SOL_TOP_Y, solFound[f][solFound[f].length - 1], false);
+      else solDrawSlot(fx, SOL_TOP_Y, bjSuitGlyph(f));
+      ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+    }
+    // Tableau: 7 columns, 7px fan pitch, compact strips for covered
+    // cards, full 16x22 card for the top card of each column.
+    for (var c = 0; c < 7; c++) {
+      var col = solTab[c], cx = solTabX(c);
+      if (!col.length) {
+        solDrawSlot(cx, SOL_TAB_Y, 'K');
+        ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+        continue;
+      }
+      for (var i = 0; i < col.length; i++) {
+        var cy = SOL_TAB_Y + i * SOL_PITCH;
+        if (i === col.length - 1) bjDrawCardAt(cx, cy, col[i], !col[i].up);
+        else solDrawStrip(cx, cy, col[i], !col[i].up);
+      }
+      ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+    }
+    if (solHeld) solDrawHeld();
+    else solDrawCursor();
+    if (solPaused) {
+      ctx.fillStyle = 'rgba(15,56,15,0.7)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('PAUSED', W / 2, 70);
+      ctx.font = '8px monospace';
+      ctx.fillText('START: RESUME', W / 2, 86);
+      ctx.fillText('A: NEW GAME', W / 2, 98);
+      ctx.textAlign = 'left';
+    }
+  }
+  function drawSolitaireOver() {
+    ctx.fillStyle = '#9bac0f'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#9bac0f';
+    ctx.fillRect(18, 42, 124, 78);
+    ctx.fillStyle = '#0f380f';
+    ctx.fillRect(18, 42, 124, 2);
+    ctx.fillRect(18, 118, 124, 2);
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('YOU WIN!', W / 2, 58);
+    ctx.font = '8px monospace';
+    ctx.fillText('MOVES ' + solMoves, W / 2, 74);
+    ctx.fillText('TIME ' + solFmtTime(solTimeSec), W / 2, 86);
+    ctx.fillText('WINS ' + solWins + '  BEST ' + (solBestMoves > 0 ? solBestMoves + ' MOVES' : '-'), W / 2, 98);
+    ctx.fillText('A: NEW GAME  MENU: EXIT', W / 2, 112);
+    ctx.textAlign = 'left';
+  }
+
   /* ---------- Input (one handler per button, dispatched by screen) ---------- */
   JMFGAMES.on('press', 'up', function () {
     if (screen === 'menu') { menuIndex = (menuIndex + GAMES.length - 1) % GAMES.length; JMFGAMES.beep(600, 0.04); }
@@ -3028,6 +3416,7 @@ function chMoveStr(m) {
       else if (currentGame === 'holdem') { heAdjustRaise(10); }
       else if (currentGame === 'chess') { chMove(-1, 0); }
       else if (currentGame === 'overlord') { ovPickLane(-1); }
+      else if (currentGame === 'solitaire') solMove('up');
       else flap();
     }
   });
@@ -3039,6 +3428,7 @@ function chMoveStr(m) {
       else if (currentGame === 'holdem') { heAdjustRaise(-10); }
       else if (currentGame === 'chess') { chMove(1, 0); }
       else if (currentGame === 'overlord') { ovPickLane(1); }
+      else if (currentGame === 'solitaire') solMove('down');
     }
   });
   JMFGAMES.on('press', 'left', function () {
@@ -3047,6 +3437,7 @@ function chMoveStr(m) {
     else if (screen === 'play' && currentGame === 'holdem') { heCycleAction(-1); }
     else if (screen === 'play' && currentGame === 'chess') chMove(0, -1);
     else if (screen === 'play' && currentGame === 'overlord') { ovCycleUnit(-1); }
+    else if (screen === 'play' && currentGame === 'solitaire') solMove('left');
   });
   JMFGAMES.on('press', 'right', function () {
     if (screen === 'play' && currentGame === 'block') bqMove(0, 1);
@@ -3054,6 +3445,7 @@ function chMoveStr(m) {
     else if (screen === 'play' && currentGame === 'holdem') { heCycleAction(1); }
     else if (screen === 'play' && currentGame === 'chess') chMove(0, 1);
     else if (screen === 'play' && currentGame === 'overlord') { ovCycleUnit(1); }
+    else if (screen === 'play' && currentGame === 'solitaire') solMove('right');
   });
   JMFGAMES.on('press', 'a', function () {
     if (screen === 'menu') {
@@ -3064,12 +3456,13 @@ function chMoveStr(m) {
         else if (g.name === "TEXAS HOLD'EM") { currentGame = 'holdem'; startHoldem(); }
         else if (g.name === 'CHESS CLUB') { currentGame = 'chess'; startChess(); }
         else if (g.name === "OVERLORD'S BASTION") { currentGame = 'overlord'; startOverlord(); }
+        else if (g.name === 'SOLITAIRE') { currentGame = 'solitaire'; startSolitaire(); }
         else { currentGame = 'sky'; startGame(); }
       }
       else { comingName = g.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
-    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else flap(); }
-    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else startGame(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else flap(); }
+    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'solitaire') startSolitaire(); else startGame(); }
   });
   JMFGAMES.on('press', 'b', function () {
     // B is a real in-game action in every game; it NEVER returns to the
@@ -3081,6 +3474,7 @@ function chMoveStr(m) {
     else if (currentGame === 'holdem') heBack();
     else if (currentGame === 'chess') chBack();
     else if (currentGame === 'overlord') ovCycleUnit(-1); // previous unit
+    else if (currentGame === 'solitaire') solBack();
   });
   JMFGAMES.on('press', 'start', function () {
     if (screen !== 'play') return;
@@ -3089,6 +3483,7 @@ function chMoveStr(m) {
     else if (currentGame === 'holdem') { hePaused = !hePaused; JMFGAMES.beep(330, 0.06); }
     else if (currentGame === 'chess') { if (!chOver) { chPaused = !chPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'overlord') { if (!ovOver) { ovPaused = !ovPaused; JMFGAMES.beep(330, 0.06); } }
+    else if (currentGame === 'solitaire') { if (!solOver) { solPaused = !solPaused; JMFGAMES.beep(330, 0.06); } }
     else if (!dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
   });
   JMFGAMES.on('press', 'menu', function () {
@@ -3209,10 +3604,10 @@ function chMoveStr(m) {
     ctx.fillText('SELECT A GAME', W / 2, 32);
     ctx.textAlign = 'left';
     for (var i = 0; i < GAMES.length; i++) {
-      var y = 48 + i * 13; // 6 games: 48..113; last highlight ends at 116, footer text starts ~120 — no overlap
+      var y = 46 + i * 11; // 7 games: 46..112; last highlight ends at 114, footer text starts ~126 — no overlap
       if (i === menuIndex) {
         ctx.fillStyle = '#0f380f';
-        ctx.fillRect(8, y - 10, 144, 13);
+        ctx.fillRect(8, y - 9, 144, 11);
         ctx.fillStyle = '#9bac0f';
         ctx.fillText('>', 14, y);
         ctx.fillText(GAMES[i].name, 26, y);
@@ -3291,8 +3686,8 @@ function chMoveStr(m) {
     if (screen !== 'play') JMFGAMES.musicStop();
     if (screen === 'menu') drawMenu();
     else if (screen === 'coming') drawComing();
-    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else drawGame(); }
-    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else drawOver(); }
+    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else drawGame(); }
+    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else drawOver(); }
   }
 
   /* ---------- Main loop: fixed 60Hz logic steps, any display rate ---------- */
