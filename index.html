@@ -1037,6 +1037,12 @@
     var dLabel = bjHoleDown ? ('DLR ' + bjCardValue(bjDealer[0].r)) : ('DLR ' + bjHandLabel(bjDealer));
     ctx.fillText(dLabel, 4, 22);
     bjDrawHand(bjDealer, 8, 26, bjHoleDown);
+    // Card drawing leaves the graphics state in card mode: a face-down hole
+    // card leaves fillStyle light-green (#9bac0f) and face-up cards leave a
+    // 10px font + suit colour. Restore the label style here, otherwise the
+    // player total drawn next is invisible during the decision phase (hole
+    // down) — light green on light green.
+    ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
     if (bjSplitHands) {
       if (bjState === 'result') {
         var h1 = bjSplitHands[0], h2 = bjSplitHands[1];
