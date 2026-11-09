@@ -242,7 +242,7 @@
     { name: 'BLOCKQUEST', playable: true },
     { name: 'BLACKJACK ROYALE', playable: true },
     { name: "TEXAS HOLD'EM", playable: true },
-    { name: 'CHESS CLUB', playable: false }
+    { name: 'CHESS CLUB', playable: true }
   ];
 
   /* ---------- 100 sceneries (from the standalone Sky Soar) ---------- */
@@ -250,7 +250,7 @@
 
   /* ---------- State ---------- */
   var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
-  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' — which game is on the play/over screens
+  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' — which game is on the play/over screens
   var menuIndex = 0;
   var comingName = '';
   var best = 0;
@@ -770,24 +770,38 @@
   }
   function bjUpdate() { bjBlink = (bjBlink + 1) % 60; }
   function bjRankStr(r) { return r === 1 ? 'A' : (r === 11 ? 'J' : (r === 12 ? 'Q' : (r === 13 ? 'K' : String(r)))); }
-  function bjSuitStr(su) { return ['S', 'H', 'D', 'C'][su]; }
+  function bjSuitGlyph(su) { return ['\u2660', '\u2665', '\u2666', '\u2663'][su]; }
+  function bjRoundRectPath(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
   function bjDrawCardAt(x, y, card, faceDown) {
-    ctx.fillStyle = faceDown ? '#0f380f' : '#f0f0e0';
-    ctx.fillRect(x, y, 16, 22);
-    ctx.strokeStyle = '#0f380f'; ctx.lineWidth = 1;
-    ctx.strokeRect(x + 0.5, y + 0.5, 15, 21);
-    ctx.textAlign = 'center';
     if (faceDown) {
-      ctx.fillStyle = '#9bac0f'; ctx.font = 'bold 10px monospace';
-      ctx.fillText('?', x + 8, y + 15);
-    } else {
-      var red = (card.s === 1 || card.s === 2);
-      ctx.fillStyle = red ? '#a03030' : '#0f380f';
-      ctx.font = 'bold 8px monospace';
-      ctx.fillText(bjRankStr(card.r), x + 8, y + 9);
-      ctx.font = '8px monospace';
-      ctx.fillText(bjSuitStr(card.s), x + 8, y + 19);
+      bjRoundRectPath(x, y, 16, 22, 3);
+      ctx.fillStyle = '#0f380f'; ctx.fill();
+      ctx.strokeStyle = '#9bac0f'; ctx.lineWidth = 1;
+      bjRoundRectPath(x + 1.5, y + 1.5, 13, 19, 2); ctx.stroke();
+      ctx.fillStyle = '#9bac0f';
+      ctx.beginPath();
+      ctx.moveTo(x + 8, y + 7); ctx.lineTo(x + 11, y + 11); ctx.lineTo(x + 8, y + 15); ctx.lineTo(x + 5, y + 11); ctx.closePath(); ctx.fill();
+      return;
     }
+    bjRoundRectPath(x, y, 16, 22, 3);
+    ctx.fillStyle = '#ffffff'; ctx.fill();
+    ctx.strokeStyle = '#0f380f'; ctx.lineWidth = 1; ctx.stroke();
+    var red = (card.s === 1 || card.s === 2);
+    ctx.fillStyle = red ? '#c03028' : '#0f380f';
+    ctx.textAlign = 'left'; ctx.font = 'bold 7px monospace';
+    ctx.fillText(bjRankStr(card.r), x + 2, y + 7);
+    ctx.font = '6px monospace';
+    ctx.fillText(bjSuitGlyph(card.s), x + 2, y + 14);
+    ctx.textAlign = 'center'; ctx.font = '10px monospace';
+    ctx.fillText(bjSuitGlyph(card.s), x + 8, y + 19);
     ctx.textAlign = 'left';
   }
   function bjDrawHand(hand, x, y, holeDown) {
@@ -1325,6 +1339,642 @@
     ctx.textAlign = 'left';
   }
 
+var CH_VAL = { P: 100, N: 320, B: 330, R: 500, Q: 900, K: 0 };
+// Promotion pieces offered. The console game is auto-queen only (['Q']);
+// perft validation sets all four so counts match the standard suite.
+var CH_PROMO_PIECES = ['Q'];
+var CH_KNIGHT_D = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+var CH_KING_D = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+var CH_ROOK_D = [[-1,0],[1,0],[0,-1],[0,1]];
+var CH_BISHOP_D = [[-1,-1],[-1,1],[1,-1],[1,1]];
+
+function chStartState() {
+  return {
+    b: ['r','n','b','q','k','b','n','r',
+        'p','p','p','p','p','p','p','p',
+        '','','','','','','','',
+        '','','','','','','','',
+        '','','','','','','','',
+        '','','','','','','','',
+        'P','P','P','P','P','P','P','P',
+        'R','N','B','Q','K','B','N','R'],
+    turn: 'w',
+    castle: { K: true, Q: true, k: true, q: true },
+    ep: -1
+  };
+}
+function chClone(s) {
+  return { b: s.b.slice(), turn: s.turn,
+    castle: { K: s.castle.K, Q: s.castle.Q, k: s.castle.k, q: s.castle.q }, ep: s.ep };
+}
+function chColor(p) { return p === '' ? '' : (p >= 'A' && p <= 'Z' ? 'w' : 'b'); }
+function chRow(sq) { return sq >> 3; }
+function chCol(sq) { return sq & 7; }
+function chSq(r, c) { return r * 8 + c; }
+function chInBoard(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
+
+function chAttacked(s, sq, by) {
+  var r = chRow(sq), c = chCol(sq), b = s.b;
+  var i, rr, cc, p;
+  // pawns: a white pawn attacks from one row below (higher index)
+  if (by === 'w') {
+    rr = r + 1;
+    if (rr < 8) {
+      if (c > 0 && b[chSq(rr, c - 1)] === 'P') return true;
+      if (c < 7 && b[chSq(rr, c + 1)] === 'P') return true;
+    }
+  } else {
+    rr = r - 1;
+    if (rr >= 0) {
+      if (c > 0 && b[chSq(rr, c - 1)] === 'p') return true;
+      if (c < 7 && b[chSq(rr, c + 1)] === 'p') return true;
+    }
+  }
+  var np = by === 'w' ? 'N' : 'n';
+  for (i = 0; i < 8; i++) {
+    rr = r + CH_KNIGHT_D[i][0]; cc = c + CH_KNIGHT_D[i][1];
+    if (chInBoard(rr, cc) && b[chSq(rr, cc)] === np) return true;
+  }
+  var kp = by === 'w' ? 'K' : 'k';
+  for (i = 0; i < 8; i++) {
+    rr = r + CH_KING_D[i][0]; cc = c + CH_KING_D[i][1];
+    if (chInBoard(rr, cc) && b[chSq(rr, cc)] === kp) return true;
+  }
+  var rp = by === 'w' ? 'R' : 'r', qp = by === 'w' ? 'Q' : 'q';
+  for (i = 0; i < 4; i++) {
+    rr = r + CH_ROOK_D[i][0]; cc = c + CH_ROOK_D[i][1];
+    while (chInBoard(rr, cc)) {
+      p = b[chSq(rr, cc)];
+      if (p !== '') { if (p === rp || p === qp) return true; break; }
+      rr += CH_ROOK_D[i][0]; cc += CH_ROOK_D[i][1];
+    }
+  }
+  var bp = by === 'w' ? 'B' : 'b';
+  for (i = 0; i < 4; i++) {
+    rr = r + CH_BISHOP_D[i][0]; cc = c + CH_BISHOP_D[i][1];
+    while (chInBoard(rr, cc)) {
+      p = b[chSq(rr, cc)];
+      if (p !== '') { if (p === bp || p === qp) return true; break; }
+      rr += CH_BISHOP_D[i][0]; cc += CH_BISHOP_D[i][1];
+    }
+  }
+  return false;
+}
+function chKingSq(s, color) {
+  var k = color === 'w' ? 'K' : 'k';
+  for (var i = 0; i < 64; i++) if (s.b[i] === k) return i;
+  return -1;
+}
+function chInCheck(s, color) {
+  var k = chKingSq(s, color);
+  return k >= 0 && chAttacked(s, k, color === 'w' ? 'b' : 'w');
+}
+
+function chPseudoMoves(s) {
+  var moves = [];
+  var b = s.b, color = s.turn;
+  var white = color === 'w';
+  for (var sq = 0; sq < 64; sq++) {
+    var p = b[sq];
+    if (p === '' || chColor(p) !== color) continue;
+    var r = chRow(sq), c = chCol(sq);
+    var up = p.toUpperCase();
+    if (up === 'P') {
+      var dir = white ? -1 : 1;
+      var startRow = white ? 6 : 1;
+      var lastRow = white ? 0 : 7;
+      var r1 = r + dir;
+      if (chInBoard(r1, c) && b[chSq(r1, c)] === '') {
+        if (r1 === lastRow) {
+          for (var pi = 0; pi < CH_PROMO_PIECES.length; pi++)
+            moves.push({ from: sq, to: chSq(r1, c), piece: p, captured: '', promo: CH_PROMO_PIECES[pi], castle: '', ep: false });
+        } else {
+          moves.push({ from: sq, to: chSq(r1, c), piece: p, captured: '', promo: false, castle: '', ep: false });
+          var r2 = r + 2 * dir;
+          if (r === startRow && b[chSq(r2, c)] === '') moves.push({ from: sq, to: chSq(r2, c), piece: p, captured: '', promo: false, castle: '', ep: false });
+        }
+      }
+      for (var dc = -1; dc <= 1; dc += 2) {
+        var cc = c + dc;
+        if (!chInBoard(r1, cc)) continue;
+        var t = chSq(r1, cc);
+        var tp = b[t];
+        if (tp !== '' && chColor(tp) !== color) {
+          if (r1 === lastRow) {
+            for (var pj = 0; pj < CH_PROMO_PIECES.length; pj++)
+              moves.push({ from: sq, to: t, piece: p, captured: tp, promo: CH_PROMO_PIECES[pj], castle: '', ep: false });
+          } else {
+            moves.push({ from: sq, to: t, piece: p, captured: tp, promo: '', castle: '', ep: false });
+          }
+        } else if (t === s.ep) {
+          moves.push({ from: sq, to: t, piece: p, captured: white ? 'p' : 'P', promo: '', castle: '', ep: true });
+        }
+      }
+    } else if (up === 'N' || up === 'K') {
+      var D = up === 'N' ? CH_KNIGHT_D : CH_KING_D;
+      for (var i = 0; i < D.length; i++) {
+        var rr = r + D[i][0], cc2 = c + D[i][1];
+        if (!chInBoard(rr, cc2)) continue;
+        var t2 = chSq(rr, cc2);
+        var tp2 = b[t2];
+        if (tp2 === '' || chColor(tp2) !== color) moves.push({ from: sq, to: t2, piece: p, captured: tp2, promo: false, castle: '', ep: false });
+      }
+    } else {
+      var DIRS = up === 'R' ? CH_ROOK_D : (up === 'B' ? CH_BISHOP_D : CH_ROOK_D.concat(CH_BISHOP_D));
+      for (var d = 0; d < DIRS.length; d++) {
+        var rr2 = r + DIRS[d][0], cc3 = c + DIRS[d][1];
+        while (chInBoard(rr2, cc3)) {
+          var t3 = chSq(rr2, cc3);
+          var tp3 = b[t3];
+          if (tp3 === '') moves.push({ from: sq, to: t3, piece: p, captured: '', promo: false, castle: '', ep: false });
+          else {
+            if (chColor(tp3) !== color) moves.push({ from: sq, to: t3, piece: p, captured: tp3, promo: false, castle: '', ep: false });
+            break;
+          }
+          rr2 += DIRS[d][0]; cc3 += DIRS[d][1];
+        }
+      }
+    }
+  }
+  // castling (king must be on its home square; rights already tracked)
+  if (white) {
+    if (s.castle.K && b[60] === 'K' && b[63] === 'R' && b[61] === '' && b[62] === '' &&
+        !chAttacked(s, 60, 'b') && !chAttacked(s, 61, 'b') && !chAttacked(s, 62, 'b'))
+      moves.push({ from: 60, to: 62, piece: 'K', captured: '', promo: false, castle: 'K', ep: false });
+    if (s.castle.Q && b[60] === 'K' && b[56] === 'R' && b[59] === '' && b[58] === '' && b[57] === '' &&
+        !chAttacked(s, 60, 'b') && !chAttacked(s, 59, 'b') && !chAttacked(s, 58, 'b'))
+      moves.push({ from: 60, to: 58, piece: 'K', captured: '', promo: false, castle: 'Q', ep: false });
+  } else {
+    if (s.castle.k && b[4] === 'k' && b[7] === 'r' && b[5] === '' && b[6] === '' &&
+        !chAttacked(s, 4, 'w') && !chAttacked(s, 5, 'w') && !chAttacked(s, 6, 'w'))
+      moves.push({ from: 4, to: 6, piece: 'k', captured: '', promo: false, castle: 'k', ep: false });
+    if (s.castle.q && b[4] === 'k' && b[0] === 'r' && b[3] === '' && b[2] === '' && b[1] === '' &&
+        !chAttacked(s, 4, 'w') && !chAttacked(s, 3, 'w') && !chAttacked(s, 2, 'w'))
+      moves.push({ from: 4, to: 2, piece: 'k', captured: '', promo: false, castle: 'q', ep: false });
+  }
+  return moves;
+}
+
+function chApply(s, m) {
+  var ns = chClone(s);
+  var b = ns.b;
+  var white = chColor(m.piece) === 'w';
+  if (m.ep) b[chSq(chRow(m.from), chCol(m.to))] = '';
+  b[m.to] = m.promo ? (white ? m.promo : m.promo.toLowerCase()) : m.piece;
+  b[m.from] = '';
+  if (m.castle === 'K') { b[61] = 'R'; b[63] = ''; }
+  else if (m.castle === 'Q') { b[59] = 'R'; b[56] = ''; }
+  else if (m.castle === 'k') { b[5] = 'r'; b[7] = ''; }
+  else if (m.castle === 'q') { b[3] = 'r'; b[0] = ''; }
+  var C = ns.castle;
+  if (m.piece === 'K') { C.K = false; C.Q = false; }
+  if (m.piece === 'k') { C.k = false; C.q = false; }
+  if (m.from === 63 || m.to === 63) C.K = false;
+  if (m.from === 56 || m.to === 56) C.Q = false;
+  if (m.from === 7 || m.to === 7) C.k = false;
+  if (m.from === 0 || m.to === 0) C.q = false;
+  if ((m.piece === 'P' || m.piece === 'p') && Math.abs(chRow(m.to) - chRow(m.from)) === 2)
+    ns.ep = (m.from + m.to) / 2;
+  else ns.ep = -1;
+  ns.turn = white ? 'b' : 'w';
+  return ns;
+}
+
+function chLegalMoves(s) {
+  var pseudo = chPseudoMoves(s);
+  var out = [];
+  var color = s.turn;
+  for (var i = 0; i < pseudo.length; i++) {
+    var ns = chApply(s, pseudo[i]);
+    if (!chInCheck(ns, color)) out.push(pseudo[i]);
+  }
+  return out;
+}
+
+function chInsufficientMaterial(s) {
+  var minors = 0, bishops = [], others = false;
+  for (var i = 0; i < 64; i++) {
+    var p = s.b[i];
+    if (p === '' || p === 'K' || p === 'k') continue;
+    var up = p.toUpperCase();
+    if (up === 'B' || up === 'N') { minors++; if (up === 'B') bishops.push(i); }
+    else others = true;
+  }
+  if (others) return false;
+  if (minors <= 1) return true;
+  if (minors === 2 && bishops.length === 2) {
+    return ((chRow(bishops[0]) + chCol(bishops[0])) % 2) === ((chRow(bishops[1]) + chCol(bishops[1])) % 2);
+  }
+  return false;
+}
+function chStatus(s) {
+  var moves = chLegalMoves(s);
+  if (moves.length === 0) return chInCheck(s, s.turn) ? 'checkmate' : 'stalemate';
+  if (chInsufficientMaterial(s)) return 'draw-material';
+  return 'playing';
+}
+
+function chEval(s) {
+  var score = 0;
+  for (var i = 0; i < 64; i++) {
+    var p = s.b[i];
+    if (p === '') continue;
+    var up = p.toUpperCase();
+    var v = CH_VAL[up];
+    var r = chRow(i), c = chCol(i), pos = 0;
+    if (up === 'P') pos = (p === 'P' ? (6 - r) : (r - 1)) * 6;
+    else if (up === 'N') pos = (r >= 2 && r <= 5 && c >= 2 && c <= 5) ? 12 : 0;
+    else if (up === 'B') pos = (r === 0 || r === 7) ? 0 : 4;
+    else if (up === 'R') pos = ((p === 'R' && r === 1) || (p === 'r' && r === 6)) ? 8 : 0;
+    else if (up === 'Q') pos = (r >= 2 && r <= 5 && c >= 2 && c <= 5) ? 6 : 0;
+    var tot = v + pos;
+    score += (p === up) ? tot : -tot;
+  }
+  return score; // White perspective
+}
+
+function chNegamax(s, depth, alpha, beta) {
+  var color = s.turn;
+  var moves = chLegalMoves(s);
+  if (moves.length === 0) {
+    if (chInCheck(s, color)) return -100000 + (2 - depth); // mated: sooner is worse
+    return 0; // stalemate
+  }
+  if (chInsufficientMaterial(s)) return 0;
+  if (depth === 0) {
+    var e = chEval(s);
+    return color === 'w' ? e : -e;
+  }
+  moves.sort(function (a, b) {
+    var va = a.captured ? CH_VAL[a.captured.toUpperCase()] : 0;
+    var vb = b.captured ? CH_VAL[b.captured.toUpperCase()] : 0;
+    return vb - va;
+  });
+  var best = -Infinity;
+  for (var i = 0; i < moves.length; i++) {
+    var sc = -chNegamax(chApply(s, moves[i]), depth - 1, -beta, -alpha);
+    if (sc > best) best = sc;
+    if (sc > alpha) alpha = sc;
+    if (alpha >= beta) break;
+  }
+  return best;
+}
+
+function chAiMove(s, level) {
+  var moves = chLegalMoves(s);
+  if (moves.length === 0) return null;
+  if (level === 0) {
+    var caps = moves.filter(function (m) { return m.captured !== ''; });
+    if (caps.length && Math.random() < 0.5) return caps[Math.floor(Math.random() * caps.length)];
+    return moves[Math.floor(Math.random() * moves.length)];
+  }
+  if (level === 1) {
+    var best = null, bestSc = -Infinity;
+    for (var i = 0; i < moves.length; i++) {
+      var ns = chApply(s, moves[i]);
+      var sc = -chEval(ns) + Math.random() * 30; // Black perspective + jitter
+      if (sc > bestSc) { bestSc = sc; best = moves[i]; }
+    }
+    return best;
+  }
+  var bestM = null, bestS = -Infinity, alpha = -Infinity, beta = Infinity;
+  var ordered = moves.slice().sort(function (a, b) {
+    var va = a.captured ? CH_VAL[a.captured.toUpperCase()] : 0;
+    var vb = b.captured ? CH_VAL[b.captured.toUpperCase()] : 0;
+    return vb - va;
+  });
+  for (var j = 0; j < ordered.length; j++) {
+    var sc2 = -chNegamax(chApply(s, ordered[j]), 1, -beta, -alpha);
+    if (sc2 > bestS) { bestS = sc2; bestM = ordered[j]; }
+    if (sc2 > alpha) alpha = sc2;
+  }
+  return bestM;
+}
+
+function chPerft(s, depth) {
+  if (depth === 0) return 1;
+  var moves = chLegalMoves(s);
+  var n = 0;
+  for (var i = 0; i < moves.length; i++) n += chPerft(chApply(s, moves[i]), depth - 1);
+  return n;
+}
+
+function chFromFen(fen) {
+  var parts = fen.split(' ');
+  var rows = parts[0].split('/');
+  var b = [];
+  for (var r = 0; r < 8; r++) {
+    for (var i = 0; i < rows[r].length; i++) {
+      var ch = rows[r][i];
+      if (ch >= '1' && ch <= '8') { var n = parseInt(ch, 10); for (var k = 0; k < n; k++) b.push(''); }
+      else b.push(ch);
+    }
+  }
+  var s = { b: b, turn: parts[1] || 'w', castle: { K: false, Q: false, k: false, q: false }, ep: -1 };
+  var cast = parts[2] || '-';
+  if (cast !== '-') {
+    if (cast.indexOf('K') >= 0) s.castle.K = true;
+    if (cast.indexOf('Q') >= 0) s.castle.Q = true;
+    if (cast.indexOf('k') >= 0) s.castle.k = true;
+    if (cast.indexOf('q') >= 0) s.castle.q = true;
+  }
+  if (parts[3] && parts[3] !== '-') {
+    var f = parts[3].charCodeAt(0) - 97, rk = 8 - parseInt(parts[3][1], 10);
+    s.ep = rk * 8 + f;
+  }
+  return s;
+}
+
+function chAlg(sq) { return 'abcdefgh'[chCol(sq)] + (8 - chRow(sq)); }
+function chMoveStr(m) {
+  var s = chAlg(m.from) + chAlg(m.to);
+  if (m.promo) s += m.promo.toLowerCase();
+  return s;
+}
+
+
+  /* ================================================================
+     CHESS CLUB (console) — full chess on the 160x144 screen.
+     REDESIGN, not a port: the standalone's 30 ELO levels and 15-min
+     clocks do not fit a D-pad screen. Player is White, AI is Black.
+     3 levels: EASY (random), MEDIUM (1-ply greedy), HARD (2-ply
+     alpha-beta). Full rules: check, checkmate, stalemate, castling,
+     en passant, promotion (auto-queen). No clock — move counter only.
+     Dropped: fifty-move rule, threefold repetition, saved-game restore.
+     Record: localStorage 'jmf-games-chess-wins/losses/draws'.
+     ================================================================ */
+  var CH_LEVELS = [
+    { name: 'EASY', desc: 'RANDOM MOVES' },
+    { name: 'MEDIUM', desc: '1-PLY GREEDY' },
+    { name: 'HARD', desc: '2-PLY SEARCH' }
+  ];
+  var CH_WINS_KEY = 'jmf-games-chess-wins';
+  var CH_LOSSES_KEY = 'jmf-games-chess-losses';
+  var CH_DRAWS_KEY = 'jmf-games-chess-draws';
+  var chWins = 0, chLosses = 0, chDraws = 0;
+  try { chWins = parseInt(localStorage.getItem(CH_WINS_KEY) || '0', 10) || 0; } catch (e) { chWins = 0; }
+  try { chLosses = parseInt(localStorage.getItem(CH_LOSSES_KEY) || '0', 10) || 0; } catch (e) { chLosses = 0; }
+  try { chDraws = parseInt(localStorage.getItem(CH_DRAWS_KEY) || '0', 10) || 0; } catch (e) { chDraws = 0; }
+  function chSaveRecord() {
+    try {
+      localStorage.setItem(CH_WINS_KEY, String(chWins));
+      localStorage.setItem(CH_LOSSES_KEY, String(chLosses));
+      localStorage.setItem(CH_DRAWS_KEY, String(chDraws));
+    } catch (e) {}
+  }
+
+  var chState = 'level'; // 'level' | 'play' | 'over'
+  var chLevel = 0, chLevelIdx = 0;
+  var chS = null; // engine state {b, turn, castle, ep}
+  var chCur = 52; // cursor square (e2)
+  var chSel = -1, chSelMoves = [];
+  var chMoveNo = 1, chPaused = false, chOver = false;
+  var chResult = '', chResultSub = '';
+  var chLastMove = null; // {from, to}
+  var chBlink = 0;
+  var CH_X0 = 24, CH_Y0 = 16, CH_SQ = 14; // board geometry (112x112)
+
+  function startChess() {
+    chState = 'level';
+    chLevelIdx = chLevel;
+    chPaused = false; chOver = false;
+    screen = 'play';
+    JMFGAMES.beep(660, 0.08);
+  }
+  function chNewGame(level) {
+    chLevel = level;
+    chS = chStartState();
+    chCur = 52; // e2
+    chSel = -1; chSelMoves = [];
+    chMoveNo = 1;
+    chPaused = false; chOver = false;
+    chResult = ''; chResultSub = '';
+    chLastMove = null;
+    chState = 'play';
+    screen = 'play';
+    JMFGAMES.beep(660, 0.08);
+  }
+  function chPieceName(p) {
+    var u = p.toUpperCase();
+    return u === 'P' ? 'PAWN' : u === 'N' ? 'KNIGHT' : u === 'B' ? 'BISHOP' :
+           u === 'R' ? 'ROOK' : u === 'Q' ? 'QUEEN' : 'KING';
+  }
+  function chMove(dr, dc) {
+    if (screen !== 'play' || chPaused || chOver) return;
+    if (chState === 'level') {
+      if (dr !== 0) {
+        chLevelIdx = (chLevelIdx + dr + CH_LEVELS.length) % CH_LEVELS.length;
+        JMFGAMES.beep(600, 0.04);
+      }
+      return;
+    }
+    var r = Math.max(0, Math.min(7, chRow(chCur) + dr));
+    var c = Math.max(0, Math.min(7, chCol(chCur) + dc));
+    chCur = r * 8 + c;
+    JMFGAMES.beep(700, 0.02);
+  }
+  function chAction() {
+    if (screen !== 'play' || chPaused || chOver) return;
+    if (chState === 'level') { chNewGame(chLevelIdx); return; }
+    if (chS.turn !== 'w') return; // AI turn (AI replies synchronously, so never seen)
+    var p = chS.b[chCur];
+    if (chSel < 0) {
+      if (p !== '' && chColor(p) === 'w') {
+        chSel = chCur;
+        chSelMoves = chLegalMoves(chS).filter(function (m) { return m.from === chCur; });
+        JMFGAMES.beep(520, 0.06);
+      } else {
+        JMFGAMES.beep(180, 0.12);
+      }
+      return;
+    }
+    if (chCur === chSel) { chSel = -1; chSelMoves = []; JMFGAMES.beep(440, 0.06); return; }
+    var target = null;
+    for (var i = 0; i < chSelMoves.length; i++) {
+      if (chSelMoves[i].to === chCur) { target = chSelMoves[i]; break; }
+    }
+    if (target) { chDoPlayerMove(target); return; }
+    if (p !== '' && chColor(p) === 'w') {
+      chSel = chCur;
+      chSelMoves = chLegalMoves(chS).filter(function (m) { return m.from === chCur; });
+      JMFGAMES.beep(520, 0.06);
+      return;
+    }
+    JMFGAMES.beep(180, 0.12);
+  }
+  function chDoPlayerMove(m) {
+    var captured = m.captured !== '';
+    chS = chApply(chS, m);
+    chLastMove = { from: m.from, to: m.to };
+    chSel = -1; chSelMoves = [];
+    JMFGAMES.beep(captured ? 880 : 660, 0.07);
+    if (chCheckEnd()) return;
+    var ai = chAiMove(chS, chLevel); // AI replies immediately (Hard is ~5-60ms)
+    if (ai) {
+      var aiCap = ai.captured !== '';
+      chS = chApply(chS, ai);
+      chLastMove = { from: ai.from, to: ai.to };
+      chMoveNo++;
+      JMFGAMES.beep(aiCap ? 880 : 660, 0.07);
+    }
+    chCheckEnd();
+  }
+  function chCheckEnd() {
+    var st = chStatus(chS);
+    if (st === 'playing') return false;
+    chOver = true;
+    chState = 'over';
+    screen = 'over';
+    if (st === 'checkmate') {
+      if (chS.turn === 'b') { chResult = 'win'; chResultSub = 'CHECKMATE'; chWins++; }
+      else { chResult = 'lose'; chResultSub = 'CHECKMATE'; chLosses++; }
+    } else if (st === 'stalemate') {
+      chResult = 'draw'; chResultSub = 'STALEMATE'; chDraws++;
+    } else {
+      chResult = 'draw'; chResultSub = 'NOT ENOUGH MATERIAL'; chDraws++;
+    }
+    chSaveRecord();
+    JMFGAMES.beep(220, 0.25);
+    return true;
+  }
+  function chBack() {
+    if (screen !== 'play') return;
+    if (chState === 'level') { toMenu(); return; }
+    if (chSel >= 0) { chSel = -1; chSelMoves = []; JMFGAMES.beep(440, 0.06); }
+    else toMenu();
+  }
+  function chUpdate() { chBlink = (chBlink + 1) % 60; }
+
+  function drawChessLevel() {
+    ctx.fillStyle = '#9bac0f'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText('CHESS CLUB', W / 2, 18);
+    ctx.font = '8px monospace';
+    ctx.fillText('SELECT LEVEL', W / 2, 32);
+    ctx.textAlign = 'left';
+    for (var i = 0; i < CH_LEVELS.length; i++) {
+      var y = 54 + i * 18;
+      if (i === chLevelIdx) {
+        ctx.fillStyle = '#0f380f';
+        ctx.fillRect(18, y - 10, 124, 13);
+        ctx.fillStyle = '#9bac0f';
+        ctx.fillText('>', 24, y);
+        ctx.fillText(CH_LEVELS[i].name, 36, y);
+        ctx.textAlign = 'right';
+        ctx.fillText(CH_LEVELS[i].desc, 136, y);
+        ctx.textAlign = 'left';
+      } else {
+        ctx.fillStyle = '#0f380f';
+        ctx.fillText(CH_LEVELS[i].name, 36, y);
+        ctx.textAlign = 'right';
+        ctx.fillText(CH_LEVELS[i].desc, 136, y);
+        ctx.textAlign = 'left';
+      }
+    }
+    ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center';
+    ctx.fillText('W ' + chWins + '  L ' + chLosses + '  D ' + chDraws, W / 2, 118);
+    ctx.fillText('PROMO=AUTO-QUEEN - NO CLOCK', W / 2, 130);
+    ctx.fillText('A: START  B: MENU', W / 2, 142);
+    ctx.textAlign = 'left';
+  }
+  function drawChess() {
+    ctx.fillStyle = '#9bac0f'; ctx.fillRect(0, 0, W, H);
+    if (chState === 'level') { drawChessLevel(); return; }
+    // top line: level left, move number right, CHECK! centred when in check
+    ctx.fillStyle = '#0f380f'; ctx.textAlign = 'left'; ctx.font = 'bold 8px monospace';
+    ctx.fillText(CH_LEVELS[chLevel].name, 4, 10);
+    ctx.textAlign = 'right';
+    ctx.fillText('MOVE ' + chMoveNo, W - 4, 10);
+    ctx.textAlign = 'left';
+    if (chInCheck(chS, chS.turn)) {
+      ctx.fillStyle = '#0f380f';
+      ctx.fillRect((W - 42) / 2, 2, 42, 10);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 8px monospace';
+      ctx.fillText('CHECK!', W / 2, 10);
+      ctx.textAlign = 'left';
+    }
+    // board
+    for (var r = 0; r < 8; r++) {
+      for (var c = 0; c < 8; c++) {
+        var x = CH_X0 + c * CH_SQ, y = CH_Y0 + r * CH_SQ;
+        ctx.fillStyle = ((r + c) % 2 === 0) ? '#9bac0f' : '#7a9a3a';
+        ctx.fillRect(x, y, CH_SQ, CH_SQ);
+        var p = chS.b[r * 8 + c];
+        if (p !== '') {
+          var white = chColor(p) === 'w';
+          ctx.fillStyle = white ? '#f0f0d0' : '#0f380f';
+          ctx.fillRect(x + 1, y + 1, CH_SQ - 2, CH_SQ - 2);
+          ctx.fillStyle = white ? '#0f380f' : '#9bac0f';
+          ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+          ctx.fillText(p.toUpperCase(), x + CH_SQ / 2, y + 11);
+          ctx.textAlign = 'left';
+        }
+      }
+    }
+    // last-move highlight
+    if (chLastMove) {
+      ctx.strokeStyle = '#0f380f'; ctx.lineWidth = 1;
+      [chLastMove.from, chLastMove.to].forEach(function (sq) {
+        ctx.strokeRect(CH_X0 + chCol(sq) * CH_SQ + 0.5, CH_Y0 + chRow(sq) * CH_SQ + 0.5, CH_SQ - 1, CH_SQ - 1);
+      });
+    }
+    // selected square + legal-move targets
+    if (chSel >= 0) {
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
+      ctx.strokeRect(CH_X0 + chCol(chSel) * CH_SQ + 0.5, CH_Y0 + chRow(chSel) * CH_SQ + 0.5, CH_SQ - 1, CH_SQ - 1);
+      for (var i = 0; i < chSelMoves.length; i++) {
+        var t = chSelMoves[i].to;
+        var tx = CH_X0 + chCol(t) * CH_SQ, ty = CH_Y0 + chRow(t) * CH_SQ;
+        if (chSelMoves[i].captured !== '') {
+          ctx.strokeStyle = '#ffffff';
+          ctx.strokeRect(tx + 1.5, ty + 1.5, CH_SQ - 3, CH_SQ - 3);
+        } else {
+          ctx.fillStyle = '#0f380f';
+          ctx.fillRect(tx + CH_SQ / 2 - 1, ty + CH_SQ / 2 - 1, 3, 3);
+        }
+      }
+    }
+    // blinking cursor
+    if (!chPaused && chBlink < 40) {
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
+      ctx.strokeRect(CH_X0 + chCol(chCur) * CH_SQ + 0.5, CH_Y0 + chRow(chCur) * CH_SQ + 0.5, CH_SQ - 1, CH_SQ - 1);
+    }
+    // bottom hint
+    ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
+    if (chSel >= 0) ctx.fillText(chAlg(chSel) + ' ' + chPieceName(chS.b[chSel]) + '  A: MOVE  B: CANCEL', W / 2, 140);
+    else ctx.fillText('A: SELECT  B: MENU', W / 2, 140);
+    ctx.textAlign = 'left';
+    if (chPaused) {
+      ctx.fillStyle = 'rgba(15,56,15,0.7)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('PAUSED', W / 2, 70);
+      ctx.font = '8px monospace';
+      ctx.fillText('START: RESUME', W / 2, 86);
+      ctx.textAlign = 'left';
+    }
+  }
+  function drawChessOver() {
+    drawChess();
+    ctx.fillStyle = 'rgba(15,56,15,0.55)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#9bac0f';
+    ctx.fillRect(18, 42, 124, 78);
+    ctx.fillStyle = '#0f380f';
+    ctx.fillRect(18, 42, 124, 2);
+    ctx.fillRect(18, 118, 124, 2);
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(chResult === 'win' ? 'YOU WIN!' : (chResult === 'lose' ? 'AI WINS' : 'DRAW'), W / 2, 58);
+    ctx.font = '8px monospace';
+    ctx.fillText(chResultSub, W / 2, 74);
+    ctx.fillText('MOVES ' + chMoveNo, W / 2, 86);
+    ctx.fillText('W ' + chWins + '  L ' + chLosses + '  D ' + chDraws, W / 2, 98);
+    ctx.fillText('A: PLAY AGAIN  B: MENU', W / 2, 112);
+    ctx.textAlign = 'left';
+  }
+
   /* ---------- Input (one handler per button, dispatched by screen) ---------- */
   JMFGAMES.on('press', 'up', function () {
     if (screen === 'menu') { menuIndex = (menuIndex + GAMES.length - 1) % GAMES.length; JMFGAMES.beep(600, 0.04); }
@@ -1332,6 +1982,7 @@
       if (currentGame === 'block') bqMove(-1, 0);
       else if (currentGame === 'bj') { bjAdjustBet(10); bjCycleAction(-1); }
       else if (currentGame === 'holdem') { heAdjustRaise(10); }
+      else if (currentGame === 'chess') { chMove(-1, 0); }
       else flap();
     }
   });
@@ -1341,17 +1992,20 @@
       if (currentGame === 'block') bqMove(1, 0);
       else if (currentGame === 'bj') { bjAdjustBet(-10); bjCycleAction(1); }
       else if (currentGame === 'holdem') { heAdjustRaise(-10); }
+      else if (currentGame === 'chess') { chMove(1, 0); }
     }
   });
   JMFGAMES.on('press', 'left', function () {
     if (screen === 'play' && currentGame === 'block') bqMove(0, -1);
     else if (screen === 'play' && currentGame === 'bj') { bjAdjustBet(-50); bjCycleAction(-1); }
     else if (screen === 'play' && currentGame === 'holdem') { heCycleAction(-1); }
+    else if (screen === 'play' && currentGame === 'chess') chMove(0, -1);
   });
   JMFGAMES.on('press', 'right', function () {
     if (screen === 'play' && currentGame === 'block') bqMove(0, 1);
     else if (screen === 'play' && currentGame === 'bj') { bjAdjustBet(50); bjCycleAction(1); }
     else if (screen === 'play' && currentGame === 'holdem') { heCycleAction(1); }
+    else if (screen === 'play' && currentGame === 'chess') chMove(0, 1);
   });
   JMFGAMES.on('press', 'a', function () {
     if (screen === 'menu') {
@@ -1360,17 +2014,19 @@
         if (g.name === 'BLOCKQUEST') { currentGame = 'block'; startBlockQuest(); }
         else if (g.name === 'BLACKJACK ROYALE') { currentGame = 'bj'; startBlackjack(); }
         else if (g.name === "TEXAS HOLD'EM") { currentGame = 'holdem'; startHoldem(); }
+        else if (g.name === 'CHESS CLUB') { currentGame = 'chess'; startChess(); }
         else { currentGame = 'sky'; startGame(); }
       }
       else { comingName = g.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
-    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else flap(); }
-    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else startGame(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else flap(); }
+    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else startGame(); }
   });
   JMFGAMES.on('press', 'b', function () {
     if (screen === 'play' && currentGame === 'block') { bqBack(); }
     else if (screen === 'play' && currentGame === 'bj') { bjBack(); }
     else if (screen === 'play' && currentGame === 'holdem') { heBack(); }
+    else if (screen === 'play' && currentGame === 'chess') { chBack(); }
     else if (screen === 'play' || screen === 'over' || screen === 'coming') { toMenu(); }
   });
   JMFGAMES.on('press', 'start', function () {
@@ -1378,6 +2034,7 @@
     if (currentGame === 'block') { if (!bqOver) { bqPaused = !bqPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'bj') { bjPaused = !bjPaused; JMFGAMES.beep(330, 0.06); }
     else if (currentGame === 'holdem') { hePaused = !hePaused; JMFGAMES.beep(330, 0.06); }
+    else if (currentGame === 'chess') { if (!chOver) { chPaused = !chPaused; JMFGAMES.beep(330, 0.06); } }
     else if (!dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
   });
   JMFGAMES.on('press', 'select', function () {
@@ -1391,6 +2048,8 @@
     if (screen !== 'play') return;
     if (currentGame === 'block') { bqUpdate(); return; }
     if (currentGame === 'bj') { bjUpdate(); return; }
+    if (currentGame === 'chess') { chUpdate(); return; }
+    if (currentGame !== 'sky') return; // Hold'em has no per-frame update; without this, Sky Soar physics runs during Hold'em and the falling bird hits the ground -> gameOver() -> 'over' screen (BUSTED panel) on Hold'em launch after Sky was played
     if (paused || dead || !started) return;
     bird.vy = Math.min(bird.vy + GRAV, MAXFALL);
     bird.y += bird.vy;
@@ -1575,8 +2234,8 @@
   function draw() {
     if (screen === 'menu') drawMenu();
     else if (screen === 'coming') drawComing();
-    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else drawGame(); }
-    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else drawOver(); }
+    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else drawGame(); }
+    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else drawOver(); }
   }
 
   /* ---------- Main loop: fixed 60Hz logic steps, any display rate ---------- */
