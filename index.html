@@ -247,7 +247,8 @@
     beat:    { bpm: 132, wave: 'square', notes: [[57,1],[0,1],[57,1],[60,1],[57,1],[0,1],[62,1],[60,1],[57,1],[0,1],[57,1],[64,1],[62,1],[60,1],[57,1],[55,1]] },
     pool:    { bpm: 100, wave: 'triangle', notes: [[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[67,1],[69,1],[67,1],[64,1],[0,1]] },
     run:     { bpm: 152, wave: 'square', notes: [[64,1],[67,1],[69,1],[67,1],[64,1],[0,1],[62,1],[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[62,1],[0,1]] },
-    siege:   { bpm: 120, wave: 'square', notes: [[57,1],[60,1],[64,1],[60,1],[65,1],[64,1],[62,1],[60,1],[57,1],[60,1],[64,1],[67,1],[64,1],[62,1],[60,1],[0,1]] }
+    siege:   { bpm: 120, wave: 'square', notes: [[57,1],[60,1],[64,1],[60,1],[65,1],[64,1],[62,1],[60,1],[57,1],[60,1],[64,1],[67,1],[64,1],[62,1],[60,1],[0,1]] },
+    park:    { bpm: 120, wave: 'triangle', notes: [[72,1],[76,1],[79,1],[76,1],[84,1],[79,1],[76,1],[72,1],[74,1],[77,1],[81,1],[77,1],[79,1],[76,1],[74,1],[0,1]] }
   };
   var musicTimer = null, musicStep = 0, musicNext = 0, musicTune = null, musicActive = false;
   function midiFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
@@ -361,7 +362,8 @@
     { name: 'SLINGSHOT SIEGE', playable: true },
     { name: 'SOLITAIRE', playable: true },
     { name: 'SUBWAY RUNNER', playable: true },
-    { name: "TEXAS HOLD'EM", playable: true }
+    { name: "TEXAS HOLD'EM", playable: true },
+    { name: 'THRILL PARK', playable: true }
   ];
 
   /* ---------- 100 sceneries (from the standalone Sky Soar) ---------- */
@@ -369,7 +371,7 @@
 
   /* ---------- State ---------- */
   var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
-  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'run' | 'siege' — which game is on the play/over screens
+  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'run' | 'siege' | 'park' — which game is on the play/over screens
   var menuIndex = 0;
   /* Scrollable menu: 9 visible rows at the readable 8px pitch (7px
      overlapped). menuTop = first visible game; the window follows the
@@ -386,7 +388,7 @@
 
   /* ---------- Delete-save (shared): one confirmation overlay for all
      games. dsGame = which game's save is being deleted ('sky' | 'block' |
-     'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'siege'),
+     'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'siege' | 'park'),
      or null. A confirms, B cancels. Confirming clears ONLY that game's
      localStorage keys and resets it to fresh defaults; pause-overlay games
      restart fresh immediately, select-screen games stay on their select
@@ -406,6 +408,7 @@
     else if (game === 'beat') { dsClearKeys([BU_BEST_KEY]); buBest = 0; }
     else if (game === 'pool') { dsClearKeys([PO_WIN_KEY, PO_LOSS_KEY]); poWins = 0; poLosses = 0; }
     else if (game === 'siege') { dsClearKeys([SI_KEY]); siSave = { unlocked: 1, best: {}, totalTargets: 0 }; siPhase = 'stages'; siSel = 0; siPaused = false; }
+    else if (game === 'park') { dsClearKeys([TP_KEY]); tpResetFresh(); tpPaused = false; }
     JMFGAMES.beep(880, 0.1);
   }
   function drawDsConfirm() {
@@ -5882,6 +5885,1811 @@ function chMoveStr(m) {
     }
   }
 
+  /* ================================================================
+     THRILL PARK (console) — original theme park manager on the
+     160x144 screen. Build rides, stalls, paths, decor, restrooms,
+     first aid and trash cans on a 12x8
+     park grid; guests arrive at the gate, walk the paths, queue and
+     ride, spend money at stalls, and leave happy or grumpy. Earn
+     ticket and stall income, pay daily upkeep and staff wages, and
+     chase 10 campaign
+     goals to become a PARK LEGEND. Progress auto-saves to
+     localStorage 'jmf-games-thrill-park-save'; DELETE SAVE lives on
+     the pause overlay (shared confirm overlay).
+     Controls: D-pad moves the grid cursor, A places the armed build
+     item (or demolishes), B cycles the build item, Start pauses,
+     Menu returns to the main menu.
+     ================================================================ */
+  var TP_KEY = 'jmf-games-thrill-park-save';
+  var TP_COLS = 24, TP_ROWS = 16, TP_TILE = 12, TP_X0 = 0, TP_Y0 = 0;
+  // MASSIVE park: 24x16 tiles (288x192px) — four times the old 12x8 — so
+  // there is room to build the big park. World coords start at (0,0); the
+  // screen shows a 160x96 window of it (the park band, y 24..120) and a
+  // camera pans that window after the cursor (see tpUpdateCamera).
+  var TP_VIEW_Y0 = 24, TP_VIEW_H = 96;
+  // Entrance gate: two tiles on the bottom edge, centred.
+  var TP_GATE_C = 11, TP_GATE_R = 15;
+  // Spawn point: centre of the gate, in world pixels.
+  var TP_SPAWN_X = TP_GATE_C * TP_TILE + TP_TILE, TP_SPAWN_Y = TP_GATE_R * TP_TILE + 6;
+  var TP_DAY_LEN = 2700; // frames per game day (45s)
+  var TP_GUEST_CAP = 80; // a massive park stays busy: up to 80 guests
+  // Build items (B cycles this flat list, in order). kind: 'path' |
+  // 'ride' | 'stall' | 'decor' | 'facility' | 'can' | 'staff' | 'demolish'.
+  // Facilities: restroom / first aid (need a path, have upkeep).
+  // Cans: need an adjacent path, fill up, cleaners empty them.
+  // Staff: hired, not placed; wages are paid daily. Rides: cost, footprint,
+  // ticket price, capacity, excitement, upkeep/day, cycle/duration.
+  var TP_ITEMS = [
+    { kind: 'path', id: 'gravel', name: 'GRAVEL PATH', cost: 5, w: 1, h: 1, speed: 0.85, beauty: 0 },
+    { kind: 'path', id: 'path', name: 'PATH', cost: 10, w: 1, h: 1, speed: 1, beauty: 0 },
+    { kind: 'path', id: 'queue', name: 'QUEUE PATH', cost: 15, w: 1, h: 1, speed: 1, beauty: 0.1 },
+    { kind: 'path', id: 'brick', name: 'BRICK PATH', cost: 25, w: 1, h: 1, speed: 1, beauty: 0.1 },
+    { kind: 'path', id: 'boardwalk', name: 'BOARDWALK', cost: 30, w: 1, h: 1, speed: 1.1, beauty: 0.1 },
+    { kind: 'path', id: 'tiled', name: 'TILED PATH', cost: 50, w: 1, h: 1, speed: 1.2, beauty: 0.2 },
+    { kind: 'ride', id: 'cups', name: 'TEA CUPS', cost: 800, w: 1, h: 1, ticket: 2, cap: 4, excite: 2, upkeep: 15, cycle: 240, dur: 150 },
+    { kind: 'ride', id: 'tiny', name: 'TINY TRAIL', cost: 900, w: 1, h: 1, ticket: 2, cap: 4, excite: 2, upkeep: 15, cycle: 240, dur: 150 },
+    { kind: 'ride', id: 'carousel', name: 'CAROUSEL', cost: 1200, w: 1, h: 1, ticket: 3, cap: 6, excite: 3, upkeep: 20, cycle: 240, dur: 150 },
+    { kind: 'ride', id: 'dipper', name: 'LIL DIPPER', cost: 1400, w: 2, h: 1, ticket: 3, cap: 6, excite: 3, upkeep: 25, cycle: 270, dur: 180 },
+    { kind: 'ride', id: 'bumper', name: 'BUMPER CARS', cost: 1800, w: 2, h: 1, ticket: 4, cap: 6, excite: 4, upkeep: 30, cycle: 270, dur: 180 },
+    { kind: 'ride', id: 'whirl', name: 'WILD WHIRL', cost: 2000, w: 2, h: 1, ticket: 4, cap: 6, excite: 5, upkeep: 30, cycle: 270, dur: 180 },
+    { kind: 'ride', id: 'haunted', name: 'HAUNTED HOUSE', cost: 2200, w: 2, h: 1, ticket: 5, cap: 4, excite: 5, upkeep: 35, cycle: 300, dur: 200 },
+    { kind: 'ride', id: 'splash', name: 'SPLASH DROP', cost: 2400, w: 1, h: 2, ticket: 4, cap: 4, excite: 5, upkeep: 35, cycle: 270, dur: 180 },
+    { kind: 'ride', id: 'rogue', name: 'ROGUE SHIP', cost: 2600, w: 2, h: 1, ticket: 5, cap: 8, excite: 6, upkeep: 40, cycle: 300, dur: 200 },
+    { kind: 'ride', id: 'express', name: 'PARK EXPRESS', cost: 2800, w: 2, h: 1, ticket: 4, cap: 10, excite: 3, upkeep: 35, cycle: 360, dur: 240 },
+    { kind: 'ride', id: 'ferris', name: 'FERRIS WHEEL', cost: 3000, w: 2, h: 2, ticket: 5, cap: 8, excite: 5, upkeep: 45, cycle: 360, dur: 240 },
+    { kind: 'ride', id: 'tower', name: 'DROP TOWER', cost: 3000, w: 2, h: 2, ticket: 6, cap: 4, excite: 7, upkeep: 50, cycle: 300, dur: 180 },
+    { kind: 'ride', id: 'swing', name: 'SKY SWING', cost: 3200, w: 2, h: 1, ticket: 6, cap: 6, excite: 7, upkeep: 50, cycle: 300, dur: 180 },
+    { kind: 'ride', id: 'flume', name: 'LOG FLUME', cost: 3500, w: 2, h: 2, ticket: 6, cap: 6, excite: 6, upkeep: 55, cycle: 300, dur: 200 },
+    { kind: 'ride', id: 'rapid', name: 'RAPID RUSH', cost: 3800, w: 2, h: 2, ticket: 6, cap: 8, excite: 6, upkeep: 60, cycle: 330, dur: 220 },
+    { kind: 'ride', id: 'coaster', name: 'COASTER', cost: 4500, w: 2, h: 2, ticket: 8, cap: 8, excite: 9, upkeep: 70, cycle: 330, dur: 220 },
+    { kind: 'ride', id: 'timber', name: 'TIMBER RUN', cost: 5200, w: 2, h: 2, ticket: 9, cap: 8, excite: 8, upkeep: 80, cycle: 360, dur: 240 },
+    { kind: 'ride', id: 'launch', name: 'SKY LAUNCH', cost: 6500, w: 2, h: 2, ticket: 10, cap: 8, excite: 10, upkeep: 95, cycle: 330, dur: 220 },
+    { kind: 'stall', id: 'snack', name: 'SNACK BAR', cost: 400, w: 1, h: 1, price: 4, need: 'hunger' },
+    { kind: 'stall', id: 'drink', name: 'DRINK STAND', cost: 350, w: 1, h: 1, price: 3, need: 'thirst' },
+    { kind: 'stall', id: 'gift', name: 'GIFT SHOP', cost: 600, w: 1, h: 1, price: 6, need: 'happy' },
+    { kind: 'decor', id: 'bush', name: 'BUSH', cost: 25, w: 1, h: 1, beauty: 1 },
+    { kind: 'decor', id: 'flowers', name: 'FLOWERS', cost: 30, w: 1, h: 1, beauty: 1 },
+    { kind: 'decor', id: 'tree', name: 'TREE', cost: 50, w: 1, h: 1, beauty: 1 },
+    { kind: 'decor', id: 'oak', name: 'OAK TREE', cost: 60, w: 1, h: 1, beauty: 1 },
+    { kind: 'decor', id: 'lamp', name: 'LAMP POST', cost: 60, w: 1, h: 1, beauty: 1 },
+    { kind: 'decor', id: 'pine', name: 'PINE TREE', cost: 70, w: 1, h: 1, beauty: 1 },
+    { kind: 'decor', id: 'palm', name: 'PALM TREE', cost: 80, w: 1, h: 1, beauty: 1 },
+    { kind: 'decor', id: 'bench', name: 'BENCH', cost: 80, w: 1, h: 1, beauty: 1 },
+    { kind: 'decor', id: 'willow', name: 'WILLOW', cost: 100, w: 1, h: 1, beauty: 2 },
+    { kind: 'decor', id: 'cherry', name: 'CHERRY BLOSSOM', cost: 120, w: 1, h: 1, beauty: 2 },
+    { kind: 'decor', id: 'fountain', name: 'FOUNTAIN', cost: 500, w: 1, h: 1, beauty: 3 },
+    { kind: 'decor', id: 'pond', name: 'POND', cost: 600, w: 1, h: 1, beauty: 3 },
+    { kind: 'decor', id: 'statue', name: 'STATUE', cost: 800, w: 1, h: 1, beauty: 4 },
+    { kind: 'facility', id: 'restroom', name: 'RESTROOM', cost: 600, w: 1, h: 1, upkeep: 15 },
+    { kind: 'facility', id: 'firstaid', name: 'FIRST AID', cost: 800, w: 1, h: 1, upkeep: 20 },
+    { kind: 'can', id: 'trashcan', name: 'TRASH CAN', cost: 20, w: 1, h: 1 },
+    { kind: 'staff', id: 'cleaner', name: 'CLEANER', cost: 500, wage: 50, max: 3 },
+    { kind: 'staff', id: 'engineer', name: 'ENGINEER', cost: 800, wage: 80, max: 3 },
+    { kind: 'staff', id: 'entertainer', name: 'ENTERTAINER', cost: 600, wage: 60, max: 3 },
+    { kind: 'staff', id: 'security', name: 'SECURITY', cost: 700, wage: 70, max: 3 },
+    { kind: 'demolish', name: 'DEMOLISH', cost: 0, w: 1, h: 1 }
+  ];
+  // Build-menu categories (43 items is too many for a flat B-cycle).
+  // B taps cycle within the current category; hold B + D-pad jumps categories.
+  var TP_CATS = [
+    { label: 'ROADS', kinds: ['path'] },
+    { label: 'RIDES', kinds: ['ride'] },
+    { label: 'STALLS', kinds: ['stall'] },
+    { label: 'DECOR', kinds: ['decor'] },
+    { label: 'FACILITIES', kinds: ['facility', 'can'] },
+    { label: 'STAFF', kinds: ['staff'] },
+    { label: 'DEMOLISH', kinds: ['demolish'] }
+  ];
+  function tpCatOf(idx) {
+    var k = TP_ITEMS[idx].kind;
+    for (var i = 0; i < TP_CATS.length; i++)
+      if (TP_CATS[i].kinds.indexOf(k) >= 0) return i;
+    return 0;
+  }
+  function tpCatFirst(catIdx) {
+    for (var i = 0; i < TP_ITEMS.length; i++) if (tpCatOf(i) === catIdx) return i;
+    return 0;
+  }
+  function tpCatCount(catIdx) {
+    var n = 0;
+    for (var i = 0; i < TP_ITEMS.length; i++) if (tpCatOf(i) === catIdx) n++;
+    return n;
+  }
+  function tpCatPos(idx) {
+    var cat = tpCatOf(idx), n = 0;
+    for (var i = 0; i <= idx; i++) if (tpCatOf(i) === cat) n++;
+    return n;
+  }
+  function tpCycleItem() {
+    // Next item within the current category (wraps inside the category).
+    var cat = tpCatOf(tpItemIdx), start = tpItemIdx;
+    do { tpItemIdx = (tpItemIdx + 1) % TP_ITEMS.length; } while (tpCatOf(tpItemIdx) !== cat && tpItemIdx !== start);
+    tpMove(0, 0); // re-clamp the cursor for the new footprint
+  }
+  function tpJumpCat(dir) {
+    var cat = (tpCatOf(tpItemIdx) + dir + TP_CATS.length) % TP_CATS.length;
+    tpItemIdx = tpCatFirst(cat);
+    tpMove(0, 0); // re-clamp the cursor for the new footprint
+  }
+  var TP_GOALS = [
+    { text: 'BUILD 1 RIDE', bonus: 500 },
+    { text: 'BUILD A RESTROOM', bonus: 400 },
+    { text: '10 GUESTS', bonus: 750 },
+    { text: 'EARN $2,000', bonus: 1000 },
+    { text: 'HIRE STAFF', bonus: 500 },
+    { text: '25 GUESTS', bonus: 1500 },
+    { text: 'VALUE $15,000', bonus: 2000 },
+    { text: 'RATING 4.0', bonus: 2500 },
+    { text: '40 GUESTS', bonus: 3000 },
+    { text: 'VALUE $25,000', bonus: 5000 }
+  ];
+  var TP_STAFF_MAX = 8, TP_STAFF_TYPE_MAX = 3;
+  var TP_GUEST_COLORS = ['#e33', '#33e', '#ec0', '#e80', '#a4e', '#0aa', '#f68', '#8e4'];
+  var tpMoney, tpDay, tpDayTimer, tpGoal, tpTotalEarned, tpDayIncome, tpDayGuests,
+      tpGuestsServed, tpLegend, tpGrid, tpPlaced, tpGuests, tpConnected,
+      tpParkVal, tpBeauty, tpCursor, tpItemIdx, tpPaused, tpPhase, tpToast,
+      tpToastFrames, tpReport, tpSpawnTimer, tpFrame,
+      tpStaff, tpLitter, tpLitterTotal, tpClean, tpCamX, tpCamY, tpBHold;
+  function tpFindItem(kind, id) {
+    for (var i = 0; i < TP_ITEMS.length; i++) {
+      var it = TP_ITEMS[i];
+      if (it.kind === kind && (it.id || it.kind) === id) return it;
+    }
+    return null;
+  }
+  function tpClearGrid() {
+    tpGrid = []; tpPlaced = []; tpGuests = [];
+    for (var r = 0; r < TP_ROWS; r++) {
+      tpGrid[r] = [];
+      for (var c = 0; c < TP_COLS; c++) tpGrid[r][c] = null;
+    }
+    tpGrid[TP_GATE_R][TP_GATE_C] = 'gate'; tpGrid[TP_GATE_R][TP_GATE_C + 1] = 'gate';
+  }
+  function tpPlaceInstance(item, c, r) {
+    var inst = { kind: item.kind, id: item.id || item.kind, item: item,
+      c: c, r: r, w: item.w, h: item.h,
+      queue: [], riders: [], timer: 120, open: false, entrance: null,
+      broken: false, uses: 0, using: 0, fill: 0, active: false };
+    for (var j = 0; j < item.h; j++)
+      for (var i = 0; i < item.w; i++) tpGrid[r + j][c + i] = inst;
+    tpPlaced.push(inst);
+    return inst;
+  }
+  function tpResetFresh() {
+    tpMoney = 5000; tpDay = 1; tpDayTimer = 0; tpGoal = 0; tpTotalEarned = 0;
+    tpDayIncome = 0; tpDayGuests = 0; tpGuestsServed = 0; tpLegend = false;
+    tpClearGrid();
+    tpCursor = { c: 12, r: 13 }; tpItemIdx = 0; tpPaused = false; tpPhase = 'park';
+    tpToast = ''; tpToastFrames = 0; tpReport = null; tpSpawnTimer = 0; tpFrame = 0;
+    tpStaff = []; tpLitter = {}; tpLitterTotal = 0; tpClean = 100;
+    tpSnapCamera();
+    // Starter path pad above the gate (free) so the first ride can open.
+    // Always the standard PATH, whatever order the road types are in.
+    var stdPath = tpFindItem('path', 'path');
+    tpPlaceInstance(stdPath, TP_GATE_C, TP_GATE_R - 2);
+    tpPlaceInstance(stdPath, TP_GATE_C + 1, TP_GATE_R - 2);
+    tpPlaceInstance(stdPath, TP_GATE_C, TP_GATE_R - 1);
+    tpPlaceInstance(stdPath, TP_GATE_C + 1, TP_GATE_R - 1);
+    tpRecompute();
+  }
+  function tpSave() {
+    try {
+      var cells = [];
+      for (var i = 0; i < tpPlaced.length; i++) {
+        var p = tpPlaced[i];
+        cells.push([p.c, p.r, p.kind, p.id, p.broken ? 1 : 0, p.uses || 0, p.fill || 0]);
+      }
+      var lit = [];
+      for (var k in tpLitter) if (tpLitter[k] > 0) {
+        var parts = k.split(',');
+        lit.push([+parts[0], +parts[1], tpLitter[k]]);
+      }
+      var stf = [];
+      for (var s = 0; s < tpStaff.length; s++) stf.push(tpStaff[s].type);
+      localStorage.setItem(TP_KEY, JSON.stringify({
+        money: tpMoney, day: tpDay, goal: tpGoal, totalEarned: tpTotalEarned,
+        guestsServed: tpGuestsServed, grid: cells, litter: lit, staff: stf
+      }));
+    } catch (e) {}
+  }
+  function tpLoad() {
+    var d = null;
+    try { var s = localStorage.getItem(TP_KEY); if (s) d = JSON.parse(s); } catch (e) { d = null; }
+    if (!d || typeof d.money !== 'number' || !d.grid) { tpResetFresh(); return false; }
+    tpMoney = d.money; tpDay = d.day || 1; tpGoal = d.goal || 0;
+    tpTotalEarned = d.totalEarned || 0; tpGuestsServed = d.guestsServed || 0;
+    tpDayIncome = 0; tpDayGuests = 0; tpDayTimer = 0; tpLegend = tpGoal >= TP_GOALS.length;
+    tpClearGrid();
+    tpCursor = { c: 12, r: 13 }; tpItemIdx = 0; tpPaused = false; tpPhase = 'park';
+    tpToast = ''; tpToastFrames = 0; tpReport = null; tpSpawnTimer = 0;
+    tpSnapCamera();
+    for (var i = 0; i < d.grid.length; i++) {
+      var g = d.grid[i];
+      var it = tpFindItem(g[2], g[3]);
+      if (it) {
+        var inst = tpPlaceInstance(it, g[0], g[1]);
+        if (g[4]) inst.broken = true;
+        inst.uses = g[5] || 0;
+        if (g[6]) inst.fill = g[6];
+      }
+    }
+    tpStaff = [];
+    if (d.staff) for (var s2 = 0; s2 < d.staff.length; s2++) tpHireStaff(d.staff[s2], true);
+    tpLitter = {}; tpLitterTotal = 0;
+    if (d.litter) for (var l = 0; l < d.litter.length; l++) {
+      tpLitter[d.litter[l][0] + ',' + d.litter[l][1]] = d.litter[l][2];
+      tpLitterTotal += d.litter[l][2];
+    }
+    tpClean = tpComputeClean();
+    tpRecompute();
+    return true;
+  }
+  function startPark() {
+    tpLoad(); // fresh defaults when no save exists (or it is corrupt)
+    tpPaused = false; tpPhase = 'park';
+    screen = 'play';
+    JMFGAMES.musicPlay('park');
+    JMFGAMES.beep(660, 0.08);
+  }
+
+  /* ---------- Grid helpers / connectivity ---------- */
+  function tpColOf(x) { return Math.max(0, Math.min(TP_COLS - 1, Math.floor((x - TP_X0) / TP_TILE))); }
+  function tpTileSpeed(x, y) {
+    // Walk-speed multiplier of the road tile under (x, y); 1 off-path.
+    var cell = tpGrid[tpRowOf(y)] && tpGrid[tpRowOf(y)][tpColOf(x)];
+    if (cell && cell.kind === 'path' && cell.item && cell.item.speed) return cell.item.speed;
+    return 1;
+  }
+  function tpNearQueuePath(g) {
+    // True if the guest stands on (or next to) a queue-path tile.
+    var c = tpColOf(g.x), r = tpRowOf(g.y);
+    var cells = [[c, r], [c + 1, r], [c - 1, r], [c, r + 1], [c, r - 1]];
+    for (var i = 0; i < cells.length; i++) {
+      var cc = cells[i][0], rr = cells[i][1];
+      if (cc < 0 || cc >= TP_COLS || rr < 0 || rr >= TP_ROWS) continue;
+      var cell = tpGrid[rr][cc];
+      if (cell && cell.kind === 'path' && cell.id === 'queue') return true;
+    }
+    return false;
+  }
+  function tpRowOf(y) { return Math.max(0, Math.min(TP_ROWS - 1, Math.floor((y - TP_Y0) / TP_TILE))); }
+  function tpWalkable(c, r) {
+    if (c < 0 || c >= TP_COLS || r < 0 || r >= TP_ROWS) return false;
+    var cell = tpGrid[r][c];
+    return cell === 'gate' || (cell && cell.kind === 'path');
+  }
+  function tpAdjacentTiles(inst) {
+    var out = [], c = inst.c, r = inst.r, w = inst.w, h = inst.h, i, j;
+    for (i = 0; i < w; i++) out.push({ c: c + i, r: r + h }); // bottom first
+    for (j = 0; j < h; j++) out.push({ c: c + w, r: r + j }); // right
+    for (j = 0; j < h; j++) out.push({ c: c - 1, r: r + j }); // left
+    for (i = 0; i < w; i++) out.push({ c: c + i, r: r - 1 }); // top
+    return out;
+  }
+  function tpRecompute() {
+    var c, r, i, j;
+    tpConnected = [];
+    for (r = 0; r < TP_ROWS; r++) { tpConnected[r] = []; for (c = 0; c < TP_COLS; c++) tpConnected[r][c] = false; }
+    var q = [{ c: TP_GATE_C, r: TP_GATE_R }, { c: TP_GATE_C + 1, r: TP_GATE_R }], qi = 0;
+    tpConnected[TP_GATE_R][TP_GATE_C] = true; tpConnected[TP_GATE_R][TP_GATE_C + 1] = true;
+    var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    while (qi < q.length) {
+      var cur = q[qi++];
+      for (i = 0; i < 4; i++) {
+        var nc = cur.c + dirs[i][0], nr = cur.r + dirs[i][1];
+        if (nc < 0 || nc >= TP_COLS || nr < 0 || nr >= TP_ROWS) continue;
+        if (tpConnected[nr][nc]) continue;
+        var cell = tpGrid[nr][nc];
+        if (cell && cell.kind === 'path') { tpConnected[nr][nc] = true; q.push({ c: nc, r: nr }); }
+      }
+    }
+    tpParkVal = 0; tpBeauty = 0;
+    for (j = 0; j < tpPlaced.length; j++) {
+      var inst = tpPlaced[j];
+      tpParkVal += inst.item.cost;
+      if (inst.kind === 'decor') tpBeauty += inst.item.beauty;
+      if (inst.kind === 'path') tpBeauty += inst.item.beauty || 0;
+      if (inst.kind === 'can') {
+        // A trash can only works when it sits next to a connected path.
+        inst.active = false;
+        var adj2 = tpAdjacentTiles(inst);
+        for (var a = 0; a < adj2.length; a++) {
+          var t2 = adj2[a];
+          if (t2.c >= 0 && t2.c < TP_COLS && t2.r >= 0 && t2.r < TP_ROWS && tpConnected[t2.r][t2.c]) { inst.active = true; break; }
+        }
+      }
+      if (inst.kind === 'ride' || inst.kind === 'stall' || inst.kind === 'facility') {
+        inst.open = false; inst.entrance = null;
+        var adj = tpAdjacentTiles(inst);
+        for (i = 0; i < adj.length; i++) {
+          var t = adj[i];
+          if (t.c >= 0 && t.c < TP_COLS && t.r >= 0 && t.r < TP_ROWS && tpConnected[t.r][t.c]) {
+            inst.open = true; inst.entrance = { c: t.c, r: t.r };
+            break;
+          }
+        }
+      }
+    }
+  }
+  function tpRideCount() {
+    var n = 0;
+    for (var i = 0; i < tpPlaced.length; i++) if (tpPlaced[i].kind === 'ride') n++;
+    return n;
+  }
+  function tpOpenRideCount() {
+    var n = 0;
+    for (var i = 0; i < tpPlaced.length; i++)
+      if (tpPlaced[i].kind === 'ride' && tpPlaced[i].open) n++;
+    return n;
+  }
+  function tpRating() {
+    var sum = 0, n = tpGuests.length, i;
+    for (i = 0; i < n; i++) sum += tpGuests[i].happy;
+    var avg = n ? sum / n : 60;
+    var r = 0.5 + avg / 25 + tpOpenRideCount() * 0.12 + tpBeauty * 0.04 + tpClean * 0.006;
+    if (r < 0) r = 0; if (r > 5) r = 5;
+    return r;
+  }
+  function tpFootprintFree(item, c, r) {
+    for (var j = 0; j < item.h; j++) for (var i = 0; i < item.w; i++) {
+      var cc = c + i, rr = r + j;
+      if (cc < 0 || cc >= TP_COLS || rr < 0 || rr >= TP_ROWS) return false;
+      if (tpGrid[rr][cc]) return false; // occupied (gate counts as occupied)
+    }
+    return true;
+  }
+  function tpPlacementNote(it) {
+    if (it.kind === 'staff') {
+      if (tpStaffCount(it.id) >= (it.max || 3) || tpStaff.length >= TP_STAFF_MAX) return 'MAX';
+      return tpMoney < it.cost ? 'NO $' : '';
+    }
+    if (tpMoney < it.cost) return 'NO $';
+    if (!tpFootprintFree(it, tpCursor.c, tpCursor.r)) return 'BLOCKED';
+    if (it.kind === 'ride' || it.kind === 'stall' || it.kind === 'facility' || it.kind === 'can') {
+      var adj = tpAdjacentTiles({ c: tpCursor.c, r: tpCursor.r, w: it.w, h: it.h });
+      for (var i = 0; i < adj.length; i++) {
+        var t = adj[i];
+        if (t.c >= 0 && t.c < TP_COLS && t.r >= 0 && t.r < TP_ROWS && tpConnected[t.r][t.c]) return '';
+      }
+      return 'NO PATH!';
+    }
+    return '';
+  }
+  function tpDemolishAt(c, r) {
+    var cell = (tpGrid[r] && tpGrid[r][c]) || null;
+    if (!cell || cell === 'gate') {
+      tpToast = 'NOTHING TO REMOVE'; tpToastFrames = 50; JMFGAMES.beep(180, 0.1);
+      return;
+    }
+    // Eject riders / queued guests first (they re-pick a destination).
+    if (cell.kind === 'ride') {
+      while (cell.riders.length) {
+        var rd = cell.riders.shift();
+        rd.rideRef = null; rd.state = 'walk'; rd.x = TP_SPAWN_X; rd.y = TP_SPAWN_Y;
+        tpPickDest(rd);
+      }
+      while (cell.queue.length) {
+        var qg = cell.queue.shift();
+        qg.rideRef = null; qg.state = 'walk';
+        tpPickDest(qg);
+      }
+    }
+    var refund = Math.floor(cell.item.cost / 2);
+    tpMoney += refund;
+    for (var i = tpPlaced.length - 1; i >= 0; i--) if (tpPlaced[i] === cell) tpPlaced.splice(i, 1);
+    for (var j = 0; j < cell.h; j++)
+      for (var k = 0; k < cell.w; k++) tpGrid[cell.r + j][cell.c + k] = null;
+    for (var g = 0; g < tpGuests.length; g++) {
+      var gu = tpGuests[g];
+      if (gu.destRef === cell) { gu.destRef = null; tpPickDest(gu); }
+    }
+    for (var st2 = 0; st2 < tpStaff.length; st2++)
+      if (tpStaff[st2].target === cell) { tpStaff[st2].target = null; tpStaff[st2].state = 'idle'; tpStaff[st2].t = 0; }
+    tpRecompute();
+    tpSave();
+    JMFGAMES.beep(500, 0.08);
+  }
+
+  /* ---------- Pathfinding (BFS over path + gate tiles) ---------- */
+  function tpBFS(sc, sr, tc, tr) {
+    if (sc === tc && sr === tr) return [];
+    var prev = {}, seen = {}, q = [{ c: sc, r: sr }], qi = 0;
+    seen[sc + ',' + sr] = 1;
+    var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    while (qi < q.length) {
+      var cur = q[qi++];
+      for (var i = 0; i < 4; i++) {
+        var nc = cur.c + dirs[i][0], nr = cur.r + dirs[i][1];
+        var key = nc + ',' + nr;
+        if (seen[key]) continue;
+        if (!tpWalkable(nc, nr)) continue;
+        seen[key] = 1; prev[key] = cur;
+        if (nc === tc && nr === tr) {
+          var path = [{ c: nc, r: nr }];
+          var p = cur;
+          while (!(p.c === sc && p.r === sr)) { path.unshift({ c: p.c, r: p.r }); p = prev[p.c + ',' + p.r]; }
+          return path;
+        }
+        q.push({ c: nc, r: nr });
+      }
+    }
+    return null;
+  }
+
+  /* ---------- Guests ---------- */
+  function tpAttendCap() {
+    var cap = 4 + tpOpenRideCount() * 4 + Math.floor(tpRating()) * 2;
+    return cap > TP_GUEST_CAP ? TP_GUEST_CAP : cap;
+  }
+  function tpSpawnGuest() {
+    var g = {
+      x: TP_SPAWN_X, y: TP_SPAWN_Y, path: null, wp: 0, state: 'walk', destKind: null, destRef: null,
+      queuePos: 0, rideRef: null, rideT: 0, stallT: 0,
+      hunger: 20 + Math.floor(Math.random() * 30),
+      thirst: 20 + Math.floor(Math.random() * 30),
+      happy: 65 + Math.floor(Math.random() * 20), rides: 0,
+      bladder: 10 + Math.floor(Math.random() * 30),
+      sick: false, rowdy: Math.random() < 0.08, trash: 0, restroomT: 0, aidT: 0,
+      color: TP_GUEST_COLORS[Math.floor(Math.random() * TP_GUEST_COLORS.length)],
+      speed: 0.5 + Math.random() * 0.2, gone: false,
+      hungerF: 0, thirstF: 0, sadF: 0, bladderF: 0, retryT: 0
+    };
+    tpGuests.push(g);
+    tpPickDest(g);
+  }
+  function tpGoTo(g, kind, ref) {
+    if (!ref.entrance) return false;
+    var path = tpBFS(tpColOf(g.x), tpRowOf(g.y), ref.entrance.c, ref.entrance.r);
+    if (!path) return false;
+    g.path = path; g.wp = 0; g.state = 'walk'; g.destKind = kind; g.destRef = ref;
+    return true;
+  }
+  function tpSetExit(g) {
+    var sc = tpColOf(g.x), sr = tpRowOf(g.y);
+    var p = tpBFS(sc, sr, TP_GATE_C, TP_GATE_R) || tpBFS(sc, sr, TP_GATE_C + 1, TP_GATE_R);
+    if (!p) { g.gone = true; return; }
+    g.path = p; g.wp = 0; g.state = 'exit'; g.destKind = 'exit'; g.destRef = null;
+  }
+  function tpGoWander(g) {
+    var tiles = [];
+    for (var r = 0; r < TP_ROWS; r++)
+      for (var c = 0; c < TP_COLS; c++) if (tpConnected[r][c]) tiles.push({ c: c, r: r });
+    if (!tiles.length) { tpSetExit(g); return; }
+    var t = tiles[Math.floor(Math.random() * tiles.length)];
+    var p = tpBFS(tpColOf(g.x), tpRowOf(g.y), t.c, t.r);
+    if (!p) { tpSetExit(g); return; }
+    g.path = p; g.wp = 0; g.state = 'walk'; g.destKind = 'wander'; g.destRef = null;
+  }
+  function tpPickDest(g) {
+    g.destRef = null; g.destKind = null; g.path = null;
+    var rides = [], stalls = [], i;
+    for (i = 0; i < tpPlaced.length; i++) {
+      var p = tpPlaced[i];
+      if (p.kind === 'ride' && p.open) rides.push(p);
+      else if (p.kind === 'stall' && p.open) stalls.push(p);
+    }
+    // Sick guests head for First Aid first; bursting guests head for a restroom.
+    if (g.sick) {
+      for (i = 0; i < tpPlaced.length; i++) {
+        var aid = tpPlaced[i];
+        if (aid.kind === 'facility' && aid.id === 'firstaid' && aid.open && tpGoTo(g, 'aid', aid)) return;
+      }
+      // No First Aid reachable: leave unhappy (and maybe throw up).
+      g.happy = Math.max(0, g.happy - 20);
+      if (Math.random() < 0.5) tpAddLitter(tpColOf(g.x), tpRowOf(g.y), 2);
+      tpSetExit(g); return;
+    }
+    if (g.bladder > 70 && g.retryT <= 0) {
+      for (i = 0; i < tpPlaced.length; i++) {
+        var wc = tpPlaced[i];
+        if (wc.kind === 'facility' && wc.id === 'restroom' && wc.open && tpGoTo(g, 'restroom', wc)) return;
+      }
+      g.retryT = 240; // no restroom handy — try again later
+    }
+    if (g.happy <= 15 || (g.rides >= 3 && Math.random() < 0.45)) { tpSetExit(g); return; }
+    var need = null;
+    if (g.hunger > 60) need = 'snack';
+    else if (g.thirst > 60) need = 'drink';
+    if (need) {
+      for (i = 0; i < stalls.length; i++)
+        if (stalls[i].id === need && tpGoTo(g, 'stall', stalls[i])) return;
+    }
+    var roll = Math.random();
+    if (roll < 0.65 && rides.length) {
+      if (tpGoTo(g, 'ride', rides[Math.floor(Math.random() * rides.length)])) return;
+    }
+    if (roll < 0.8) {
+      for (i = 0; i < stalls.length; i++)
+        if (stalls[i].id === 'gift' && tpGoTo(g, 'stall', stalls[i])) return;
+    }
+    if (roll < 0.88 && stalls.length) {
+      if (tpGoTo(g, 'stall', stalls[Math.floor(Math.random() * stalls.length)])) return;
+    }
+    tpGoWander(g);
+  }
+  function tpReassignQueue(ride) {
+    for (var i = 0; i < ride.queue.length; i++) ride.queue[i].queuePos = i;
+  }
+  function tpLeaveQueue(g) {
+    var ride = g.rideRef;
+    if (ride) {
+      var idx = ride.queue.indexOf(g);
+      if (idx >= 0) ride.queue.splice(idx, 1);
+      tpReassignQueue(ride);
+    }
+    g.rideRef = null; g.state = 'walk';
+  }
+  function tpQueueSlot(g) {
+    var ride = g.rideRef;
+    if (!ride || !ride.entrance) return { x: g.x, y: g.y };
+    var ex = TP_X0 + ride.entrance.c * TP_TILE + 6, ey = TP_Y0 + ride.entrance.r * TP_TILE + 6;
+    var i = g.queuePos || 0;
+    return { x: ex + (i % 4) * 4 - 6, y: ey + Math.floor(i / 4) * 4 - 2 };
+  }
+  function tpArrive(g) {
+    if (g.state === 'exit') { g.gone = true; return; }
+    if (g.destKind === 'ride') {
+      var ride = g.destRef;
+      if (ride && ride.open && tpPlaced.indexOf(ride) >= 0) {
+        ride.queue.push(g);
+        g.state = 'queue'; g.rideRef = ride; g.queuePos = ride.queue.length - 1;
+      } else tpPickDest(g);
+    } else if (g.destKind === 'restroom') {
+      var wc = g.destRef;
+      if (wc && wc.open && tpPlaced.indexOf(wc) >= 0 && wc.using < 2) {
+        wc.using++; g.state = 'restroom'; g.restroomT = 120;
+      } else { g.retryT = 240; tpPickDest(g); }
+    } else if (g.destKind === 'aid') {
+      var aid = g.destRef;
+      if (aid && aid.open && tpPlaced.indexOf(aid) >= 0) { g.state = 'aid'; g.aidT = 150; }
+      else tpPickDest(g);
+    } else if (g.destKind === 'stall') {
+      var st = g.destRef;
+      if (st && st.open && tpPlaced.indexOf(st) >= 0) { g.state = 'stall'; g.stallT = 70; }
+      else tpPickDest(g);
+    } else tpPickDest(g); // wander arrival: pick something new
+  }
+
+  /* ---------- Guest / ride simulation (one 1/60s step) ---------- */
+  function tpGuestStep(g) {
+    g.hungerF++;
+    if (g.hungerF >= 600) { g.hungerF = 0; if (g.hunger < 100) g.hunger++; }
+    g.thirstF++;
+    if (g.thirstF >= 450) { g.thirstF = 0; if (g.thirst < 100) g.thirst++; }
+    g.bladderF++;
+    if (g.bladderF >= 450) { g.bladderF = 0; if (g.bladder < 100) g.bladder++; }
+    if (g.retryT > 0) g.retryT--;
+    if (g.state === 'ride') return; // riders are driven by the ride
+    if (g.state === 'stall') {
+      g.stallT--;
+      if (g.stallT <= 0) {
+        var st = g.destRef;
+        if (st) {
+          tpMoney += st.item.price; tpTotalEarned += st.item.price;
+          tpDayIncome += st.item.price; tpDayGuests++; tpGuestsServed++;
+          if (st.id === 'snack') g.hunger = 0;
+          else if (st.id === 'drink') g.thirst = 0;
+          g.trash = 1; // finished food/drink leaves trash (bin it or drop it)
+          g.happy = Math.min(100, g.happy + 8);
+        }
+        tpPickDest(g);
+      }
+      return;
+    }
+    if (g.state === 'restroom') {
+      g.restroomT--;
+      if (g.restroomT <= 0) {
+        var wc = g.destRef;
+        if (wc) wc.using = Math.max(0, wc.using - 1);
+        g.bladder = 0; g.happy = Math.min(100, g.happy + 5);
+        tpPickDest(g);
+      }
+      return;
+    }
+    if (g.state === 'aid') {
+      g.aidT--;
+      if (g.aidT <= 0) {
+        g.sick = false; g.happy = Math.min(100, g.happy + 10);
+        tpPickDest(g);
+      }
+      return;
+    }
+    if (g.state === 'queue') {
+      g.sadF++;
+      // An organised queue lane keeps guests patient: happiness decays half as fast.
+      var qInt = tpNearQueuePath(g) ? 180 : 90;
+      if (g.sadF >= qInt) { g.sadF = 0; g.happy = Math.max(0, g.happy - 1); }
+      if (g.happy <= 15) { tpLeaveQueue(g); tpSetExit(g); return; }
+      var slot = tpQueueSlot(g);
+      g.x += (slot.x - g.x) * 0.2; g.y += (slot.y - g.y) * 0.2;
+      return;
+    }
+    // walking ('walk' or 'exit')
+    g.sadF++;
+    if (g.sadF >= 600) { g.sadF = 0; g.happy = Math.max(0, g.happy - 1); }
+    if (g.bladder >= 100 && g.state !== 'exit') {
+      // Couldn't hold it: accident, litter, and they leave embarrassed.
+      g.bladder = 0; g.happy = Math.max(0, g.happy - 15);
+      tpAddLitter(tpColOf(g.x), tpRowOf(g.y), 1);
+      tpSetExit(g); return;
+    }
+    if (g.rowdy && Math.random() < 0.002) g.trash = 1; // rowdy guests keep making trash
+    if (g.trash > 0 && Math.random() < (g.rowdy ? 0.01 : 0.002)) tpDropTrash(g);
+    if ((g.hunger >= 100 || g.thirst >= 100) && g.state !== 'exit') {
+      if (g.sadF >= 120) { g.sadF = 0; g.happy = Math.max(0, g.happy - 2); }
+      if (g.happy <= 15) { tpSetExit(g); return; }
+    }
+    if (!g.path || g.wp >= g.path.length) { tpArrive(g); return; }
+    var nxt = g.path[g.wp];
+    if (!tpWalkable(nxt.c, nxt.r)) {
+      // Path broken (demolished) — re-route to the same destination.
+      var ok = false;
+      if (g.destKind === 'ride' || g.destKind === 'stall') ok = tpGoTo(g, g.destKind, g.destRef);
+      else if (g.destKind === 'exit') { tpSetExit(g); ok = true; }
+      if (!ok) tpPickDest(g);
+      return;
+    }
+    var wx = TP_X0 + nxt.c * TP_TILE + 6, wy = TP_Y0 + nxt.r * TP_TILE + 6;
+    var dx = wx - g.x, dy = wy - g.y, d = Math.sqrt(dx * dx + dy * dy);
+    var sp = g.speed * tpTileSpeed(g.x, g.y); // road underfoot: tiled fast, gravel slow
+    if (d <= sp) { g.x = wx; g.y = wy; g.wp++; if (g.wp >= g.path.length) tpArrive(g); }
+    else { g.x += dx / d * sp; g.y += dy / d * sp; }
+  }
+  function tpRideStep(inst) {
+    var i;
+    for (i = inst.riders.length - 1; i >= 0; i--) {
+      var rd = inst.riders[i];
+      rd.rideT--;
+      if (rd.rideT <= 0) {
+        inst.riders.splice(i, 1);
+        tpMoney += inst.item.ticket; tpTotalEarned += inst.item.ticket;
+        tpDayIncome += inst.item.ticket; tpDayGuests++; tpGuestsServed++;
+        rd.happy = Math.min(100, rd.happy + inst.item.excite * 3);
+        rd.rides++;
+        if (inst.item.excite >= 6 && Math.random() < 0.04) rd.sick = true; // intense ride made them queasy
+        rd.rideRef = null; rd.state = 'walk';
+        if (inst.entrance) {
+          rd.x = TP_X0 + inst.entrance.c * TP_TILE + 6;
+          rd.y = TP_Y0 + inst.entrance.r * TP_TILE + 6;
+        }
+        tpPickDest(rd);
+      }
+    }
+    if (inst.broken) return; // broken: riders aboard finish, nobody new boards
+    if (!inst.open) {
+      while (inst.queue.length) {
+        var qg = inst.queue.shift();
+        qg.rideRef = null; qg.state = 'walk';
+        tpPickDest(qg);
+      }
+      return;
+    }
+    inst.timer--;
+    if (inst.timer > 0) return;
+    if (!inst.queue.length) { inst.timer = 60; return; }
+    var n = Math.min(inst.item.cap, inst.queue.length);
+    for (var j = 0; j < n; j++) {
+      var b = inst.queue.shift();
+      b.state = 'ride'; b.rideT = inst.item.dur;
+      inst.riders.push(b);
+    }
+    tpReassignQueue(inst);
+    inst.timer = inst.item.cycle;
+    inst.uses++;
+    if (Math.random() < Math.min(0.03, 0.005 + inst.uses * 0.001)) tpBreakRide(inst);
+  }
+
+  /* ---------- New systems: litter / cleanliness / staff / breakdowns ---------- */
+  function tpRestroomCount() {
+    var n = 0;
+    for (var i = 0; i < tpPlaced.length; i++) if (tpPlaced[i].id === 'restroom') n++;
+    return n;
+  }
+  function tpStaffCount(type) {
+    var n = 0;
+    for (var i = 0; i < tpStaff.length; i++) if (tpStaff[i].type === type) n++;
+    return n;
+  }
+  function tpHireStaff(type, free) {
+    var item = tpFindItem('staff', type);
+    if (!item) return false;
+    if (tpStaffCount(type) >= (item.max || 3)) return false;
+    if (tpStaff.length >= TP_STAFF_MAX) return false;
+    if (!free) {
+      if (tpMoney < item.cost) return false;
+      tpMoney -= item.cost;
+    }
+    tpStaff.push({ type: type, wage: item.wage, x: TP_SPAWN_X, y: TP_SPAWN_Y,
+      path: null, wp: 0, pathTarget: null, state: 'idle', target: null, t: 0, spot: null });
+    return true;
+  }
+  function tpAddLitter(c, r, n) {
+    if (c < 0 || c >= TP_COLS || r < 0 || r >= TP_ROWS) return;
+    var key = c + ',' + r;
+    var cur = tpLitter[key] || 0;
+    var add = Math.min(n, 3 - cur);
+    if (add <= 0) return;
+    tpLitter[key] = cur + add;
+    tpLitterTotal += add;
+  }
+  function tpDropTrash(g) {
+    g.trash = 0;
+    var c = tpColOf(g.x), r = tpRowOf(g.y);
+    // A nearby trash can (not full) swallows the trash instead.
+    for (var i = 0; i < tpPlaced.length; i++) {
+      var p = tpPlaced[i];
+      if (p.kind === 'can' && p.active && p.fill < 10 &&
+          Math.abs(p.c - c) <= 1 && Math.abs(p.r - r) <= 1) { p.fill++; return; }
+    }
+    tpAddLitter(c, r, 1);
+  }
+  function tpComputeClean() {
+    var full = 0;
+    for (var i = 0; i < tpPlaced.length; i++)
+      if (tpPlaced[i].kind === 'can' && tpPlaced[i].fill >= 10) full++;
+    var c = 100 - tpLitterTotal * 2 - full * 3;
+    if (c < 0) c = 0; if (c > 100) c = 100;
+    return c;
+  }
+  function tpBreakRide(inst) {
+    if (inst.broken) return;
+    inst.broken = true;
+    var hasEng = false;
+    for (var i = 0; i < tpStaff.length; i++) if (tpStaff[i].type === 'engineer') { hasEng = true; break; }
+    tpToast = hasEng ? inst.item.name + ' BROKE DOWN!' : inst.item.name + ' BROKEN! HIRE AN ENGINEER';
+    tpToastFrames = 150;
+    JMFGAMES.beep(220, 0.15);
+  }
+  function tpAssignEngineers() {
+    for (var i = 0; i < tpPlaced.length; i++) {
+      var ride = tpPlaced[i];
+      if (ride.kind !== 'ride' || !ride.broken) continue;
+      var assigned = false;
+      for (var j = 0; j < tpStaff.length; j++)
+        if (tpStaff[j].type === 'engineer' && tpStaff[j].target === ride) { assigned = true; break; }
+      if (assigned) continue;
+      for (var k = 0; k < tpStaff.length; k++) {
+        var e = tpStaff[k];
+        if (e.type === 'engineer' && e.state === 'idle') { e.target = ride; e.state = 'repair'; e.path = null; break; }
+      }
+    }
+  }
+  function tpRandomPathTile() {
+    var tiles = [];
+    for (var r = 0; r < TP_ROWS; r++)
+      for (var c = 0; c < TP_COLS; c++) if (tpConnected[r][c]) tiles.push({ c: c, r: r });
+    if (!tiles.length) return null;
+    return tiles[Math.floor(Math.random() * tiles.length)];
+  }
+  function tpStaffWalkTo(s, tc, tr) {
+    // Walk the paths to a tile centre; returns true on arrival (or if unreachable).
+    var cc = tpColOf(s.x), cr = tpRowOf(s.y);
+    if (cc === tc && cr === tr) return true;
+    if (!s.path || s.pathTarget !== tc + ',' + tr) {
+      var p = tpBFS(cc, cr, tc, tr);
+      if (!p) { s.path = null; return true; }
+      s.path = p; s.wp = 0; s.pathTarget = tc + ',' + tr;
+    }
+    if (s.wp >= s.path.length) { s.path = null; return true; }
+    var nxt = s.path[s.wp];
+    var wx = TP_X0 + nxt.c * TP_TILE + 6, wy = TP_Y0 + nxt.r * TP_TILE + 6;
+    var dx = wx - s.x, dy = wy - s.y, d = Math.sqrt(dx * dx + dy * dy);
+    if (d <= 0.7) {
+      s.x = wx; s.y = wy; s.wp++;
+      if (s.wp >= s.path.length) { s.path = null; return true; }
+    } else { s.x += dx / d * 0.7; s.y += dy / d * 0.7; }
+    return false;
+  }
+  function tpRowdyAura() {
+    // Rowdy guests annoy everyone standing close by.
+    for (var i = 0; i < tpGuests.length; i++) {
+      var g = tpGuests[i];
+      if (!g.rowdy || g.state === 'ride') continue;
+      for (var j = 0; j < tpGuests.length; j++) {
+        if (i === j) continue;
+        var o = tpGuests[j];
+        if (o.state === 'ride') continue;
+        var dx = o.x - g.x, dy = o.y - g.y;
+        if (dx * dx + dy * dy < 576) o.happy = Math.max(0, o.happy - 1);
+      }
+    }
+  }
+  function tpStaffStep(s) {
+    if (s.type === 'engineer') {
+      if ((s.state === 'repair' || s.state === 'fixing') && (!s.target || tpPlaced.indexOf(s.target) < 0 || !s.target.broken)) {
+        s.target = null; s.state = 'idle'; s.t = 0; return;
+      }
+      if (s.state === 'repair') {
+        var ent = s.target.entrance;
+        if (!ent) { s.target = null; s.state = 'idle'; return; }
+        if (tpStaffWalkTo(s, ent.c, ent.r)) { s.state = 'fixing'; s.t = 180; }
+        return;
+      }
+      if (s.state === 'fixing') {
+        s.t--;
+        if (s.t <= 0) {
+          var r2 = s.target;
+          if (r2) { r2.broken = false; r2.uses = 0; tpToast = r2.item.name + ' FIXED!'; tpToastFrames = 90; JMFGAMES.beep(880, 0.08); }
+          s.target = null; s.state = 'idle';
+        }
+        return;
+      }
+      if (!s.spot) s.spot = tpRandomPathTile();
+      if (s.spot && tpStaffWalkTo(s, s.spot.c, s.spot.r)) s.spot = null;
+      return;
+    }
+    if (s.type === 'cleaner') {
+      // Sweep litter underfoot; empty full trash cans nearby.
+      var cc = tpColOf(s.x), cr = tpRowOf(s.y);
+      var key = cc + ',' + cr;
+      if ((tpLitter[key] || 0) > 0) {
+        s.t++;
+        if (s.t >= 20) {
+          s.t = 0;
+          tpLitter[key]--; tpLitterTotal--;
+          if (tpLitter[key] <= 0) delete tpLitter[key];
+        }
+        return;
+      }
+      for (var i = 0; i < tpPlaced.length; i++) {
+        var p = tpPlaced[i];
+        if (p.kind === 'can' && p.fill >= 10 && Math.abs(p.c - cc) <= 1 && Math.abs(p.r - cr) <= 1) {
+          s.t++;
+          if (s.t >= 60) { s.t = 0; p.fill = 0; }
+          return;
+        }
+      }
+      s.t = 0;
+      if (!s.spot) {
+        var best = null, bestN = 0;
+        for (var k in tpLitter) {
+          var parts = k.split(',');
+          var dc = +parts[0], dr = +parts[1];
+          if (tpLitter[k] > bestN && tpWalkable(dc, dr)) { bestN = tpLitter[k]; best = { c: dc, r: dr }; }
+        }
+        s.spot = best || tpRandomPathTile();
+      }
+      if (s.spot && tpStaffWalkTo(s, s.spot.c, s.spot.r)) s.spot = null;
+      return;
+    }
+    if (s.type === 'entertainer') {
+      if (s.state !== 'perform') {
+        if (!s.spot) s.spot = tpRandomPathTile();
+        if (s.spot && tpStaffWalkTo(s, s.spot.c, s.spot.r)) { s.state = 'perform'; s.t = 600; }
+        return;
+      }
+      s.t--;
+      for (var j = 0; j < tpGuests.length; j++) {
+        var g = tpGuests[j];
+        if (g.state === 'ride') continue;
+        var dx = g.x - s.x, dy = g.y - s.y;
+        if (dx * dx + dy * dy < 1296) g.happy = Math.min(100, g.happy + 0.02);
+      }
+      if (s.t <= 0) { s.state = 'idle'; s.spot = null; }
+      return;
+    }
+    if (s.type === 'security') {
+      var rowdy = null, bestD = 48 * 48;
+      for (var m = 0; m < tpGuests.length; m++) {
+        var rg = tpGuests[m];
+        if (!rg.rowdy || rg.state === 'ride' || rg.state === 'exit') continue;
+        var ddx = rg.x - s.x, ddy = rg.y - s.y, dd = ddx * ddx + ddy * ddy;
+        if (dd < bestD) { bestD = dd; rowdy = rg; }
+      }
+      if (rowdy) {
+        if (bestD < 64) { // within 8px: escort them out
+          rowdy.rowdy = false;
+          tpSetExit(rowdy);
+          tpToast = 'ROWDY GUEST ESCORTED OUT'; tpToastFrames = 90;
+          JMFGAMES.beep(440, 0.08);
+          return;
+        }
+        tpStaffWalkTo(s, tpColOf(rowdy.x), tpRowOf(rowdy.y));
+        return;
+      }
+      if (!s.spot) s.spot = tpRandomPathTile();
+      if (s.spot && tpStaffWalkTo(s, s.spot.c, s.spot.r)) s.spot = null;
+      return;
+    }
+  }
+  function tpGoalProgress() {
+    var v = 0, total = 1;
+    if (tpGoal === 0) { v = tpRideCount(); total = 1; }
+    else if (tpGoal === 1) { v = tpRestroomCount(); total = 1; }
+    else if (tpGoal === 2) { v = tpGuests.length; total = 10; }
+    else if (tpGoal === 3) { v = Math.floor(tpTotalEarned); total = 2000; }
+    else if (tpGoal === 4) { v = tpStaff.length; total = 1; }
+    else if (tpGoal === 5) { v = tpGuests.length; total = 25; }
+    else if (tpGoal === 6) { v = tpParkVal; total = 15000; }
+    else if (tpGoal === 7) { v = tpRating(); total = 4.0; }
+    else if (tpGoal === 8) { v = tpGuests.length; total = 40; }
+    else if (tpGoal === 9) { v = tpParkVal; total = 25000; }
+    return { text: TP_GOALS[tpGoal].text, done: v, total: total };
+  }
+  function tpCheckGoals() {
+    if (tpLegend || tpGoal >= TP_GOALS.length) return;
+    var p = tpGoalProgress();
+    if (p.done >= p.total) {
+      var bonus = TP_GOALS[tpGoal].bonus;
+      tpMoney += bonus;
+      // Don't clobber an alert that is already showing (e.g. a breakdown
+      // warning): the goal still completes and pays, its toast just waits
+      // for a free slot. The goal line advancing shows it meanwhile.
+      if (tpToastFrames <= 0) { tpToast = 'GOAL! +$' + bonus; tpToastFrames = 150; }
+      JMFGAMES.beep(880, 0.12);
+      tpGoal++;
+      if (tpGoal >= TP_GOALS.length) {
+        tpLegend = true;
+        if (tpToastFrames <= 0) { tpToast = 'PARK LEGEND!'; tpToastFrames = 200; }
+      }
+      tpSave();
+    }
+  }
+  function tpEndDay() {
+    var upkeep = 0, wages = 0, i;
+    for (i = 0; i < tpPlaced.length; i++)
+      if (tpPlaced[i].kind === 'ride' || tpPlaced[i].kind === 'facility') upkeep += tpPlaced[i].item.upkeep || 0;
+    for (i = 0; i < tpStaff.length; i++) wages += tpStaff[i].wage;
+    tpMoney -= upkeep + wages;
+    tpReport = { income: tpDayIncome, upkeep: upkeep, wages: wages, guests: tpDayGuests, rating: tpRating() };
+    tpPhase = 'report';
+    tpSave();
+    JMFGAMES.beep(660, 0.12);
+  }
+  function tpNextDay() {
+    tpDay++;
+    tpDayTimer = 0; tpDayIncome = 0; tpDayGuests = 0;
+    tpPhase = 'park';
+    JMFGAMES.beep(880, 0.08);
+  }
+  /* ---------- Camera: the park is 24x16, the screen shows 160x96 of it.
+     The camera follows the cursor — it stays put while the cursor is in the
+     middle of the view and pans smoothly (lerped) when the cursor nears an
+     edge, so the player can reach and build on every tile. ---------- */
+  function tpUpdateCamera() {
+    var cx = tpCursor.c * TP_TILE + TP_TILE / 2;
+    var cy = tpCursor.r * TP_TILE + TP_TILE / 2;
+    var vx = cx - tpCamX, vy = TP_VIEW_Y0 + (cy - tpCamY);
+    var tx = tpCamX, ty = tpCamY, m = 24; // 2-tile margin
+    if (vx < m) tx = cx - m;
+    else if (vx > 160 - m) tx = cx - (160 - m);
+    if (vy < TP_VIEW_Y0 + m) ty = cy - m;
+    else if (vy > TP_VIEW_Y0 + TP_VIEW_H - m) ty = cy - (TP_VIEW_H - m);
+    var maxX = TP_COLS * TP_TILE - 160, maxY = TP_ROWS * TP_TILE - TP_VIEW_H;
+    if (tx < 0) tx = 0; if (tx > maxX) tx = maxX;
+    if (ty < 0) ty = 0; if (ty > maxY) ty = maxY;
+    tpCamX += (tx - tpCamX) * 0.35;
+    tpCamY += (ty - tpCamY) * 0.35;
+    if (Math.abs(tx - tpCamX) < 0.5) tpCamX = tx;
+    if (Math.abs(ty - tpCamY) < 0.5) tpCamY = ty;
+  }
+  function tpSnapCamera() {
+    tpCamX = Math.max(0, Math.min(TP_COLS * TP_TILE - 160, tpCursor.c * TP_TILE + 6 - 80));
+    tpCamY = Math.max(0, Math.min(TP_ROWS * TP_TILE - TP_VIEW_H, tpCursor.r * TP_TILE + 6 - 48));
+  }
+  function tpUpdate() {
+    tpFrame++;
+    // Hold B alone fast-scrolls within the category (after 24f, every 5f).
+    // (A tap cycles once via tpBack, which resets tpBHold, so taps never fast-scroll.)
+    if (!tpPaused && tpPhase === 'park' && JMFGAMES.isDown('b')) {
+      tpBHold++;
+      if (tpBHold >= 24 && (tpBHold - 24) % 5 === 0) tpCycleItem();
+    } else tpBHold = 0;
+    tpUpdateCamera(); // the view glides after the cursor, even while paused
+    if (tpPaused || tpPhase === 'report') return;
+    tpDayTimer++;
+    if (tpDayTimer >= TP_DAY_LEN) { tpEndDay(); return; }
+    tpSpawnTimer++;
+    // A bigger, busier park draws a bigger crowd: the more rides open, the
+    // faster guests arrive (floor 30 frames so the gate never floods).
+    var spawnEvery = Math.max(30, 80 - tpOpenRideCount() * 4);
+    if (tpSpawnTimer >= spawnEvery) {
+      tpSpawnTimer = 0;
+      if (tpGuests.length < tpAttendCap()) tpSpawnGuest();
+    }
+    for (var i = tpGuests.length - 1; i >= 0; i--) {
+      tpGuestStep(tpGuests[i]);
+      if (tpGuests[i].gone) tpGuests.splice(i, 1);
+    }
+    for (var j = 0; j < tpPlaced.length; j++)
+      if (tpPlaced[j].kind === 'ride') tpRideStep(tpPlaced[j]);
+    tpAssignEngineers();
+    for (var s = 0; s < tpStaff.length; s++) tpStaffStep(tpStaff[s]);
+    if (tpFrame % 60 === 0) { tpRowdyAura(); tpClean = tpComputeClean(); }
+    tpCheckGoals();
+    if (tpToastFrames > 0) tpToastFrames--;
+    if (tpFrame % 600 === 0) tpSave();
+  }
+
+  /* ---------- Input ---------- */
+  function tpMove(dx, dy) {
+    if (tpPhase === 'report' || tpPaused) return;
+    // Hold B + D-pad = jump to the previous/next build category (no cursor move).
+    // Left/Up = previous category, Right/Down = next category.
+    if ((dx !== 0 || dy !== 0) && JMFGAMES.isDown('b')) {
+      if (dx < 0 || dy < 0) tpJumpCat(-1); else tpJumpCat(1);
+      JMFGAMES.beep(700, 0.05);
+      return;
+    }
+    var it = TP_ITEMS[tpItemIdx];
+    var nc = tpCursor.c + dx, nr = tpCursor.r + dy;
+    if (nc < 0) nc = 0; if (nr < 0) nr = 0;
+    if (nc > TP_COLS - it.w) nc = TP_COLS - it.w;
+    if (nr > TP_ROWS - it.h) nr = TP_ROWS - it.h;
+    if (nc !== tpCursor.c || nr !== tpCursor.r) {
+      tpCursor.c = nc; tpCursor.r = nr;
+      JMFGAMES.beep(600, 0.03);
+    }
+  }
+  function tpBack() {
+    // B cycles the build item within its category (B never returns to the menu mid-play).
+    // Hold B + D-pad jumps categories (see tpMove); hold B alone fast-scrolls (see tpUpdate).
+    if (tpPhase === 'report' || tpPaused) return;
+    tpBHold = 0; // a fresh tap restarts the hold timer so fast-scroll does not fire on taps
+    tpCycleItem();
+    JMFGAMES.beep(520 + tpItemIdx * 20, 0.05);
+  }
+  function tpAction() {
+    if (tpPhase === 'report') { tpNextDay(); return; }
+    if (tpPaused) return;
+    var it = TP_ITEMS[tpItemIdx];
+    var c = tpCursor.c, r = tpCursor.r;
+    if (it.kind === 'demolish') { tpDemolishAt(c, r); return; }
+    if (it.kind === 'staff') {
+      if (tpStaffCount(it.id) >= (it.max || 3)) {
+        tpToast = 'MAX ' + it.name + ' (3)'; tpToastFrames = 60; JMFGAMES.beep(180, 0.12);
+        return;
+      }
+      if (tpStaff.length >= TP_STAFF_MAX) {
+        tpToast = 'MAX STAFF (8)'; tpToastFrames = 60; JMFGAMES.beep(180, 0.12);
+        return;
+      }
+      if (tpMoney < it.cost) {
+        tpToast = 'NOT ENOUGH MONEY!'; tpToastFrames = 60; JMFGAMES.beep(180, 0.12);
+        return;
+      }
+      if (tpHireStaff(it.id)) {
+        tpSave();
+        JMFGAMES.beep(760, 0.07);
+        tpToast = it.name.replace('HIRE ', '') + ' HIRED!'; tpToastFrames = 90;
+        tpCheckGoals();
+      }
+      return;
+    }
+    if (!tpFootprintFree(it, c, r)) {
+      tpToast = 'BLOCKED!'; tpToastFrames = 60; JMFGAMES.beep(180, 0.12);
+      return;
+    }
+    if (tpMoney < it.cost) {
+      tpToast = 'NOT ENOUGH MONEY!'; tpToastFrames = 60; JMFGAMES.beep(180, 0.12);
+      return;
+    }
+    tpMoney -= it.cost;
+    tpPlaceInstance(it, c, r);
+    tpRecompute();
+    tpSave();
+    JMFGAMES.beep(760, 0.07);
+    if (it.kind === 'ride' || it.kind === 'stall' || it.kind === 'facility') {
+      var inst = tpGrid[r][c];
+      if (inst && !inst.open) {
+        tpToast = 'NO PATH - GUESTS CAN\'T REACH IT'; tpToastFrames = 120;
+      }
+    }
+    tpCheckGoals();
+  }
+  function tpGoalLine() {
+    var cell = (tpGrid[tpCursor.r] && tpGrid[tpCursor.r][tpCursor.c]) || null;
+    if (cell && cell !== 'gate' && cell.kind) {
+      if (cell.kind === 'ride')
+        return cell.item.name + ' *' + cell.item.excite + ' $' + cell.item.ticket +
+          ' Q:' + cell.queue.length + ' R:' + cell.riders.length + (cell.broken ? ' BROKEN!' : '');
+      if (cell.kind === 'stall') return cell.item.name + ' $' + cell.item.price;
+      if (cell.kind === 'facility') return cell.item.name + (cell.open ? '' : ' NO PATH!') + (cell.id === 'restroom' && cell.using ? ' BUSY' : '');
+      if (cell.kind === 'can') return 'TRASH CAN ' + cell.fill + '/10' + (cell.active ? '' : ' NO PATH!');
+      if (cell.kind === 'path') return cell.item.name;
+      if (cell.kind === 'decor') return cell.item.name;
+    }
+    if (cell === 'gate') return 'ENTRANCE';
+    if (tpLegend) return '* PARK LEGEND! *';
+    var p = tpGoalProgress();
+    var prog;
+    if (tpGoal === 7) prog = p.done.toFixed(1);
+    else if (tpGoal === 3 || tpGoal === 6 || tpGoal === 9) prog = '$' + Math.floor(p.done);
+    else prog = p.done + '/' + p.total;
+    return 'GOAL: ' + p.text + '  ' + prog;
+  }
+
+  /* ---------- Drawing ---------- */
+  function tpDrawPath(x, y, inst) {
+    var pid = (inst && inst.id) || 'path';
+    if (pid === 'gravel') {
+      // Cheap dirt: dusty brown, speckled.
+      ctx.fillStyle = '#b8a080'; ctx.fillRect(x, y, 12, 12);
+      ctx.fillStyle = '#8a7a5a';
+      ctx.fillRect(x + 2, y + 3, 1, 1); ctx.fillRect(x + 7, y + 2, 1, 1);
+      ctx.fillRect(x + 4, y + 8, 1, 1); ctx.fillRect(x + 9, y + 7, 1, 1);
+      ctx.fillStyle = '#d0c0a0';
+      ctx.fillRect(x + 3, y + 6, 1, 1); ctx.fillRect(x + 8, y + 10, 1, 1);
+    } else if (pid === 'brick') {
+      // Red brick: brick courses with dark mortar.
+      ctx.fillStyle = '#a04030'; ctx.fillRect(x, y, 12, 12);
+      ctx.fillStyle = '#7a3a28';
+      ctx.fillRect(x, y + 3, 12, 1); ctx.fillRect(x, y + 7, 12, 1);
+      ctx.fillRect(x + 5, y, 1, 3); ctx.fillRect(x + 2, y + 4, 1, 3); ctx.fillRect(x + 8, y + 4, 1, 3);
+      ctx.fillRect(x + 5, y + 8, 1, 3);
+      ctx.fillStyle = '#c06048';
+      ctx.fillRect(x + 1, y + 1, 4, 2); ctx.fillRect(x + 7, y + 5, 4, 2);
+    } else if (pid === 'boardwalk') {
+      // Wooden planks: horizontal boards with dark gaps.
+      ctx.fillStyle = '#a08050'; ctx.fillRect(x, y, 12, 12);
+      ctx.fillStyle = '#6a4a2a';
+      ctx.fillRect(x, y + 3, 12, 1); ctx.fillRect(x, y + 7, 12, 1);
+      ctx.fillRect(x, y + 11, 12, 1);
+      ctx.fillStyle = '#c0a070';
+      ctx.fillRect(x + 1, y + 1, 10, 2); ctx.fillRect(x + 1, y + 5, 10, 2); ctx.fillRect(x + 1, y + 9, 10, 2);
+    } else if (pid === 'tiled') {
+      // Fancy tiles: blue/white checker.
+      var ti, tj;
+      for (ti = 0; ti < 4; ti++) for (tj = 0; tj < 4; tj++) {
+        ctx.fillStyle = (ti + tj) % 2 === 0 ? '#3a8fd8' : '#f0f0f0';
+        ctx.fillRect(x + ti * 3, y + tj * 3, 3, 3);
+      }
+      ctx.fillStyle = '#2a6fa8';
+      ctx.fillRect(x + 1, y + 1, 1, 1); ctx.fillRect(x + 10, y + 10, 1, 1);
+    } else if (pid === 'queue') {
+      // Queue lane: tan base, metal rails on both sides, yellow centre dashes.
+      ctx.fillStyle = '#c8b088'; ctx.fillRect(x, y, 12, 12);
+      ctx.fillStyle = '#5a5a5a';
+      ctx.fillRect(x + 1, y, 1, 12); ctx.fillRect(x + 10, y, 1, 12);
+      ctx.fillStyle = '#ffd94a';
+      ctx.fillRect(x + 5, y + 2, 2, 2); ctx.fillRect(x + 5, y + 6, 2, 2); ctx.fillRect(x + 5, y + 10, 2, 1);
+    } else {
+      // Standard concrete path.
+      ctx.fillStyle = '#d9b77c'; ctx.fillRect(x, y, 12, 12);
+      ctx.fillStyle = '#e8cc96'; ctx.fillRect(x + 2, y + 2, 8, 8);
+      ctx.fillStyle = '#c8a668'; ctx.fillRect(x + 5, y + 5, 2, 2);
+    }
+  }
+  function tpDrawGate(x, y) {
+    ctx.fillStyle = '#b8b8b8'; ctx.fillRect(x, y, 12, 12);
+    ctx.fillStyle = '#8a8a8a'; ctx.fillRect(x, y, 12, 2);
+    ctx.fillStyle = '#d83a2e'; ctx.fillRect(x + 2, y + 3, 3, 3); ctx.fillRect(x + 7, y + 3, 3, 3);
+    ctx.fillStyle = '#f0f0f0'; ctx.fillRect(x + 5, y + 3, 2, 3);
+    ctx.fillStyle = '#333333'; ctx.fillRect(x + 3, y + 8, 6, 2);
+  }
+  function tpDrawRide(x, y, inst) {
+    var cx = x + (inst.w * TP_TILE) / 2, cy = y + (inst.h * TP_TILE) / 2;
+    var i, a;
+    if (inst.id === 'cups') {
+      ctx.fillStyle = '#e8e8e8';
+      ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#888888';
+      ctx.beginPath(); ctx.arc(cx, cy, 1.5, 0, Math.PI * 2); ctx.fill();
+      var cupCols = ['#e33', '#33e', '#ec0'];
+      for (i = 0; i < 3; i++) {
+        a = tpFrame * 0.03 + i * 2.1;
+        ctx.fillStyle = cupCols[i];
+        ctx.beginPath(); ctx.arc(cx + Math.cos(a) * 3, cy + Math.sin(a) * 3, 1.5, 0, Math.PI * 2); ctx.fill();
+      }
+    } else if (inst.id === 'carousel') {
+      ctx.fillStyle = '#f0d080';
+      ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#d83a2e';
+      ctx.beginPath(); ctx.moveTo(cx - 5, cy - 1); ctx.lineTo(cx, cy - 8); ctx.lineTo(cx + 5, cy - 1); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#f0f0f0';
+      ctx.beginPath(); ctx.moveTo(cx - 2, cy - 1); ctx.lineTo(cx, cy - 8); ctx.lineTo(cx + 2, cy - 1); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#7a4a22'; ctx.fillRect(cx - 1, cy - 1, 2, 5);
+    } else if (inst.id === 'bumper') {
+      ctx.fillStyle = '#9aa0a8'; ctx.fillRect(x, y, 24, 12);
+      ctx.fillStyle = '#e8c832';
+      ctx.fillRect(x, y, 24, 1); ctx.fillRect(x, y + 11, 24, 1);
+      ctx.fillRect(x, y, 1, 12); ctx.fillRect(x + 23, y, 1, 12);
+      var carCols = ['#e33', '#33e'];
+      for (i = 0; i < 2; i++) {
+        var bx = x + 4 + i * 11 + Math.sin(tpFrame * 0.05 + i * 2) * 2;
+        var by = y + 4 + Math.cos(tpFrame * 0.04 + i) * 1.5;
+        ctx.fillStyle = carCols[i]; ctx.fillRect(bx, by, 4, 3);
+      }
+    } else if (inst.id === 'haunted') {
+      ctx.fillStyle = '#4a3a6a'; ctx.fillRect(x + 2, y + 4, 20, 8);
+      ctx.fillStyle = '#2e2140';
+      ctx.beginPath(); ctx.moveTo(x + 1, y + 4); ctx.lineTo(x + 12, y - 1); ctx.lineTo(x + 23, y + 4); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ffd94a';
+      ctx.fillRect(x + 5, y + 6, 2, 2); ctx.fillRect(x + 17, y + 6, 2, 2);
+      ctx.fillStyle = '#7a5aa0'; ctx.fillRect(x + 10, y + 7, 4, 5);
+      ctx.fillStyle = '#f0f0f0';
+      ctx.fillRect(x + 15, y + Math.sin(tpFrame * 0.08) * 1.5, 3, 3);
+    } else if (inst.id === 'ferris') {
+      ctx.fillStyle = '#8a8a8a';
+      ctx.fillRect(cx - 7, cy + 2, 2, 8); ctx.fillRect(cx + 5, cy + 2, 2, 8);
+      ctx.fillStyle = '#f0f0f0';
+      ctx.beginPath(); ctx.arc(cx, cy - 1, 9, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#79b34a';
+      ctx.beginPath(); ctx.arc(cx, cy - 1, 7.5, 0, Math.PI * 2); ctx.fill();
+      var gonCols = ['#e33', '#33e', '#ec0', '#f68'];
+      for (i = 0; i < 4; i++) {
+        a = tpFrame * 0.02 + i * Math.PI / 2;
+        ctx.fillStyle = gonCols[i];
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(a) * 8, cy - 1 + Math.sin(a) * 8, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#333333';
+      ctx.beginPath(); ctx.arc(cx, cy - 1, 1.5, 0, Math.PI * 2); ctx.fill();
+    } else if (inst.id === 'flume') {
+      ctx.fillStyle = '#3a8fd8';
+      ctx.fillRect(x + 2, y + 16, 20, 5); // bottom channel
+      ctx.fillRect(x + 2, y + 6, 5, 11); // left channel
+      ctx.fillStyle = '#7ab8e8';
+      ctx.fillRect(x + 3, y + 17, 18, 2);
+      var p = tpFrame % 160, lx, ly;
+      if (p < 80) { lx = x + 3 + p * 0.2; ly = y + 17; }
+      else { lx = x + 3; ly = y + 17 - (p - 80) * 0.14; }
+      ctx.fillStyle = '#7a4a22'; ctx.fillRect(lx, ly, 5, 3);
+      ctx.fillStyle = '#f0f0f0'; ctx.fillRect(lx + 6, ly + 1, 2, 1);
+    } else if (inst.id === 'tower') {
+      ctx.fillStyle = '#8a8a8a'; ctx.fillRect(cx - 5, cy + 9, 10, 3);
+      ctx.fillStyle = '#b8b8b8'; ctx.fillRect(cx - 2, cy - 10, 4, 20);
+      var ty = cy - 8 + (Math.sin(tpFrame * 0.05) * 0.5 + 0.5) * 12;
+      ctx.fillStyle = '#e33'; ctx.fillRect(cx - 4, ty, 8, 3);
+      ctx.fillStyle = '#ffd94a';
+      ctx.beginPath(); ctx.arc(cx, cy - 11, 1.5, 0, Math.PI * 2); ctx.fill();
+    } else if (inst.id === 'coaster') {
+      // Track loop (rounded look via 4 rails) + train running the loop.
+      ctx.fillStyle = '#8a5a2e';
+      ctx.fillRect(x + 2, y + 2, 20, 2); ctx.fillRect(x + 2, y + 20, 20, 2);
+      ctx.fillRect(x + 2, y + 2, 2, 20); ctx.fillRect(x + 20, y + 2, 2, 20);
+      ctx.fillStyle = '#5a3a1a';
+      ctx.fillRect(x + 4, y + 10, 2, 10); ctx.fillRect(x + 18, y + 10, 2, 10);
+      var per = 80, trainCols = ['#e33', '#ec0', '#33e'];
+      for (i = 0; i < 3; i++) {
+        var pos = (tpFrame * 0.9 + i * 27) % per, px, py;
+        if (pos < 20) { px = x + 3 + pos; py = y + 2; }
+        else if (pos < 40) { px = x + 21; py = y + 3 + (pos - 20); }
+        else if (pos < 60) { px = x + 21 - (pos - 40); py = y + 21; }
+        else { px = x + 3; py = y + 21 - (pos - 60); }
+        ctx.fillStyle = trainCols[i];
+        ctx.fillRect(px - 1, py - 1, 3, 3);
+      }
+    } else if (inst.id === 'tiny') {
+      // Kiddie cars on a little oval road: grey ring, green middle, 2 cars orbiting.
+      ctx.fillStyle = '#8a8a8a';
+      ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#4a8a4a';
+      ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fill();
+      var ta = tpFrame * 0.04;
+      ctx.fillStyle = '#e33';
+      ctx.beginPath(); ctx.arc(cx + Math.cos(ta) * 4, cy + Math.sin(ta) * 4, 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#33e';
+      ctx.beginPath(); ctx.arc(cx + Math.cos(ta + Math.PI) * 4, cy + Math.sin(ta + Math.PI) * 4, 1.5, 0, Math.PI * 2); ctx.fill();
+    } else if (inst.id === 'dipper') {
+      // Mini coaster: one gentle hill, tiny train rolling over it.
+      ctx.fillStyle = '#8a5a2e';
+      ctx.fillRect(x + 2, y + 9, 2, 3); ctx.fillRect(x + 11, y + 6, 2, 6); ctx.fillRect(x + 20, y + 9, 2, 3);
+      ctx.fillStyle = '#c8956a';
+      ctx.fillRect(x + 2, y + 8, 9, 1); ctx.fillRect(x + 11, y + 5, 2, 1); ctx.fillRect(x + 13, y + 6, 9, 1);
+      var dp = (tpFrame * 0.4) % 36, dpx, dpy;
+      if (dp < 18) { dpx = x + 2 + dp; dpy = y + 7 - Math.max(0, 3 - Math.abs(dp - 9) * 0.33); }
+      else { dpx = x + 20 - (dp - 18); dpy = y + 7 - Math.max(0, 3 - Math.abs(27 - dp) * 0.33); }
+      ctx.fillStyle = '#e33'; ctx.fillRect(dpx, dpy, 3, 2);
+      ctx.fillStyle = '#ec0'; ctx.fillRect(dpx + (dp < 18 ? -4 : 4), dpy, 3, 2);
+    } else if (inst.id === 'whirl') {
+      // Scrambler: central hub, 4 arms spinning, a car at each arm end.
+      ctx.fillStyle = '#9aa0a8'; ctx.fillRect(x + 1, y + 3, 22, 6);
+      ctx.fillStyle = '#e8c832'; ctx.fillRect(x + 1, y + 3, 22, 1); ctx.fillRect(x + 1, y + 8, 22, 1);
+      var wa = tpFrame * 0.05, wCols = ['#e33', '#33e', '#ec0', '#f68'];
+      ctx.fillStyle = '#555555';
+      ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI * 2); ctx.fill();
+      for (i = 0; i < 4; i++) {
+        var ang = wa + i * Math.PI / 2;
+        var ex = cx + Math.cos(ang) * 7, ey = cy + Math.sin(ang) * 3.5;
+        ctx.fillStyle = wCols[i];
+        ctx.beginPath(); ctx.arc(ex, ey, 2, 0, Math.PI * 2); ctx.fill();
+      }
+    } else if (inst.id === 'splash') {
+      // Water slide: tall blue chute, rider slides down into a splash pool.
+      ctx.fillStyle = '#3a8fd8';
+      ctx.fillRect(x + 4, y + 1, 4, 16);
+      ctx.fillStyle = '#7ab8e8';
+      ctx.fillRect(x + 5, y + 2, 2, 14);
+      ctx.fillStyle = '#3a8fd8';
+      ctx.beginPath(); ctx.arc(x + 6, y + 19, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 4, y + 18, 1, 1); ctx.fillRect(x + 8, y + 20, 1, 1);
+      var sp = (tpFrame * 0.35) % 18, sy = y + 1 + sp;
+      ctx.fillStyle = '#e33'; ctx.fillRect(x + 5, sy, 2, 2);
+    } else if (inst.id === 'rogue') {
+      // Pirate ship: hull swinging from a top pivot.
+      var ra = Math.sin(tpFrame * 0.04) * 0.5;
+      ctx.fillStyle = '#8a8a8a';
+      ctx.fillRect(x + 3, y + 1, 2, 3); ctx.fillRect(x + 19, y + 1, 2, 3);
+      ctx.fillStyle = '#7a4a22'; ctx.fillRect(x + 3, y + 1, 18, 1);
+      var rx = cx + Math.sin(ra) * 6, ry = cy + 2 + Math.cos(ra) * 2;
+      ctx.fillStyle = '#8a5a2e';
+      ctx.beginPath(); ctx.moveTo(rx - 6, ry); ctx.lineTo(rx + 6, ry); ctx.lineTo(rx + 4, ry + 3); ctx.lineTo(rx - 4, ry + 3); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#7a4a22'; ctx.fillRect(rx - 1, ry - 4, 2, 4);
+      ctx.fillStyle = '#e33';
+      ctx.beginPath(); ctx.moveTo(rx + 1, ry - 4); ctx.lineTo(rx + 5, ry - 3); ctx.lineTo(rx + 1, ry - 2); ctx.closePath(); ctx.fill();
+    } else if (inst.id === 'express') {
+      // Train: straight track, loco + 2 cars rolling back and forth.
+      ctx.fillStyle = '#9aa0a8'; ctx.fillRect(x + 1, y + 8, 22, 2);
+      ctx.fillStyle = '#5a3a1a';
+      ctx.fillRect(x + 3, y + 10, 2, 1); ctx.fillRect(x + 11, y + 10, 2, 1); ctx.fillRect(x + 19, y + 10, 2, 1);
+      var ep = (tpFrame * 0.3) % 36, ex2 = ep < 18 ? x + 2 + ep : x + 20 - (ep - 18);
+      var eoff = ep < 18 ? -1 : 1; // cars trail behind the loco in either direction
+      ctx.fillStyle = '#e33'; ctx.fillRect(ex2, y + 4, 5, 4);
+      ctx.fillStyle = '#333333'; ctx.fillRect(ex2 + 2, y + 2, 2, 2);
+      ctx.fillStyle = '#33e'; ctx.fillRect(ex2 + eoff * 6, y + 5, 5, 3);
+      ctx.fillStyle = '#ec0'; ctx.fillRect(ex2 + eoff * 12, y + 5, 5, 3);
+    } else if (inst.id === 'swing') {
+      // Pendulum: tall A-frame, long arm swinging a round gondola wide.
+      var sa = Math.sin(tpFrame * 0.05) * 0.9;
+      ctx.fillStyle = '#8a8a8a';
+      ctx.fillRect(x + 2, y + 8, 2, 4); ctx.fillRect(x + 20, y + 8, 2, 4);
+      ctx.fillStyle = '#b8b8b8';
+      ctx.fillRect(x + 3, y + 2, 2, 6); ctx.fillRect(x + 19, y + 2, 2, 6);
+      var sx = cx + Math.sin(sa) * 9, sy2 = cy - 4 + Math.cos(sa) * 9;
+      ctx.fillStyle = '#555555';
+      ctx.beginPath(); ctx.moveTo(cx, cy - 4); ctx.lineTo(sx, sy2); ctx.lineWidth = 1; ctx.strokeStyle = '#555555'; ctx.stroke();
+      ctx.fillStyle = '#c04ad8';
+      ctx.beginPath(); ctx.arc(sx, sy2, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f0f0f0';
+      ctx.beginPath(); ctx.arc(sx, sy2, 1.5, 0, Math.PI * 2); ctx.fill();
+    } else if (inst.id === 'rapid') {
+      // River rapids: winding blue channel, white water, round raft floating it.
+      ctx.fillStyle = '#3a8fd8';
+      ctx.fillRect(x + 2, y + 3, 20, 4);
+      ctx.fillRect(x + 2, y + 13, 20, 4);
+      ctx.fillRect(x + 2, y + 3, 4, 14);
+      ctx.fillRect(x + 18, y + 3, 4, 14);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 6 + (tpFrame % 12), y + 4, 1, 1);
+      ctx.fillRect(x + 14 - (tpFrame % 12), y + 14, 1, 1);
+      var rp = (tpFrame * 0.25) % 48, rpx, rpy;
+      if (rp < 16) { rpx = x + 4 + rp; rpy = y + 4; }
+      else if (rp < 24) { rpx = x + 19; rpy = y + 4 + (rp - 16); }
+      else if (rp < 40) { rpx = x + 19 - (rp - 24); rpy = y + 14; }
+      else { rpx = x + 4; rpy = y + 14 - (rp - 40); }
+      ctx.fillStyle = '#c8956a';
+      ctx.beginPath(); ctx.arc(rpx, rpy, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#e33';
+      ctx.beginPath(); ctx.arc(rpx, rpy, 1.2, 0, Math.PI * 2); ctx.fill();
+    } else if (inst.id === 'timber') {
+      // Wooden coaster: timber supports, big hill, train cresting it.
+      ctx.fillStyle = '#8a5a2e';
+      ctx.fillRect(x + 3, y + 14, 2, 8); ctx.fillRect(x + 11, y + 8, 2, 14); ctx.fillRect(x + 19, y + 14, 2, 8);
+      ctx.fillStyle = '#c8956a';
+      ctx.fillRect(x + 2, y + 13, 9, 2); ctx.fillRect(x + 11, y + 7, 2, 2); ctx.fillRect(x + 13, y + 9, 9, 2);
+      var tp2 = (tpFrame * 0.5) % 40, tx2, ty2;
+      if (tp2 < 20) { tx2 = x + 2 + tp2; ty2 = y + 12 - Math.max(0, 5 - Math.abs(tp2 - 10) * 0.5); }
+      else { tx2 = x + 22 - (tp2 - 20); ty2 = y + 12 - Math.max(0, 5 - Math.abs(30 - tp2) * 0.5); }
+      ctx.fillStyle = '#7a4a22'; ctx.fillRect(tx2, ty2, 3, 2);
+      ctx.fillStyle = '#e8c832'; ctx.fillRect(tx2 + (tp2 < 20 ? -4 : 4), ty2, 3, 2);
+    } else if (inst.id === 'launch') {
+      // Launched coaster: steep launch straight + loop, train shooting through fast.
+      ctx.fillStyle = '#8a5a2e';
+      ctx.fillRect(x + 3, y + 16, 2, 6); ctx.fillRect(x + 11, y + 10, 2, 12); ctx.fillRect(x + 19, y + 16, 2, 6);
+      ctx.fillStyle = '#e33';
+      ctx.beginPath(); ctx.arc(cx + 5, cy - 2, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#79b34a';
+      ctx.beginPath(); ctx.arc(cx + 5, cy - 2, 4, 0, Math.PI * 2); ctx.fill();
+      var lp = (tpFrame * 1.4) % 56, lx2, ly2;
+      if (lp < 14) { lx2 = x + 3 + lp; ly2 = y + 16 - lp * 0.7; }
+      else if (lp < 28) { lx2 = cx + 5 + Math.cos((lp - 14) / 14 * Math.PI * 2) * 5; ly2 = cy - 2 + Math.sin((lp - 14) / 14 * Math.PI * 2) * 5; }
+      else if (lp < 42) { lx2 = x + 19 - (lp - 28); ly2 = y + 16 - (42 - lp) * 0.7; }
+      else { lx2 = x + 3 + (lp - 42); ly2 = y + 16; }
+      ctx.fillStyle = '#ec0'; ctx.fillRect(lx2 - 1, ly2 - 1, 3, 3);
+    }
+    // Riders aboard: tiny dots on the ride while it runs.
+    if (inst.riders && inst.riders.length) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cx - 4, cy + (inst.h * TP_TILE) / 2 - 2, 2, 2);
+      ctx.fillRect(cx + 2, cy + (inst.h * TP_TILE) / 2 - 2, 2, 2);
+    }
+    if (inst.broken) {
+      // Blinking red warning so a breakdown is unmissable.
+      if ((tpFrame >> 4) % 2 === 0) {
+        ctx.fillStyle = '#ff3333'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('!', cx, y - 2);
+        ctx.textAlign = 'left';
+      }
+    }
+  }
+  function tpDrawFacility(x, y, inst) {
+    if (inst.id === 'restroom') {
+      // Blue-and-white restroom hut: pitched roof, door, window.
+      ctx.fillStyle = '#e8f0f8'; ctx.fillRect(x + 1, y + 4, 10, 8); // pale walls
+      ctx.fillStyle = '#3a8fd8'; // pitched roof
+      ctx.beginPath(); ctx.moveTo(x, y + 4); ctx.lineTo(x + 6, y); ctx.lineTo(x + 12, y + 4); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#2e6fb0'; ctx.fillRect(x + 1, y + 4, 10, 1); // roof edge
+      ctx.fillStyle = '#3a8fd8'; ctx.fillRect(x + 5, y + 7, 3, 5); // door
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 6, y + 9, 1, 1); // handle
+      ctx.fillStyle = '#7ab8e8'; ctx.fillRect(x + 2, y + 5, 2, 2); // window
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 2, y + 5, 2, 1); // window shine
+    } else if (inst.id === 'firstaid') {
+      // Little clinic: white walls, red roof stripe, big red cross.
+      ctx.fillStyle = '#f0f0f0'; ctx.fillRect(x + 1, y + 3, 10, 9); // walls
+      ctx.fillStyle = '#d83a2e'; ctx.fillRect(x + 1, y + 1, 10, 2); // roof stripe
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 1, y + 3, 10, 1); // trim
+      ctx.fillStyle = '#d83a2e'; // red cross
+      ctx.fillRect(x + 5, y + 4, 2, 5); ctx.fillRect(x + 3, y + 5, 6, 2);
+      ctx.fillStyle = '#ff6a5e'; ctx.fillRect(x + 5, y + 5, 2, 2); // bright centre
+    }
+  }
+  function tpDrawCan(x, y, inst) {
+    // Body colour shows how full it is: green -> yellow -> orange (full).
+    var f = inst.fill || 0;
+    var body = f >= 8 ? '#ff8800' : f >= 4 ? '#e8c832' : '#4a8a4a';
+    ctx.fillStyle = '#2e4a2e'; ctx.fillRect(x + 3, y + 2, 6, 2); // rim / lid
+    ctx.fillStyle = body; ctx.fillRect(x + 4, y + 4, 4, 7); // body
+    ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(x + 4, y + 4, 1, 7); // shine
+    if (f >= 10) { // full: overflowing, needs a cleaner
+      ctx.fillStyle = '#e8e8e8'; ctx.fillRect(x + 4, y + 0, 2, 1); // overflow
+      ctx.fillStyle = '#ffdd00'; ctx.fillRect(x + 5, y + 1, 2, 2); // warning dot
+    }
+  }
+  function tpDrawStaff(s) {
+    var gx = Math.round(s.x), gy = Math.round(s.y);
+    var col = s.type === 'cleaner' ? '#3a6fd8' : s.type === 'engineer' ? '#e87a1e' :
+              s.type === 'entertainer' ? '#c04ad8' : '#2e3a6a';
+    // Uniformed figure, bigger than a guest and white-outlined so staff
+    // stand out from guests at a glance.
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(gx - 2, gy - 5, 4, 6); // white outline
+    ctx.fillStyle = '#f0c080'; ctx.fillRect(gx - 1, gy - 4, 2, 2); // head
+    ctx.fillStyle = col; ctx.fillRect(gx - 1, gy - 2, 3, 4); // uniform body
+    if (s.type === 'cleaner') {
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(gx - 1, gy - 5, 2, 1); // cap
+      ctx.fillStyle = '#8a6a3a'; // broom: diagonal stick + bristles
+      ctx.fillRect(gx + 2, gy - 4, 1, 2); ctx.fillRect(gx + 3, gy - 2, 1, 2);
+      ctx.fillStyle = '#d8b25a'; ctx.fillRect(gx + 3, gy, 2, 1);
+      var ck = tpColOf(s.x) + ',' + tpRowOf(s.y);
+      if (tpLitter[ck]) { // actively sweeping: dust puffs at the broom tip
+        ctx.fillStyle = '#d8d8d8';
+        var puff = (tpFrame >> 3) % 2;
+        ctx.fillRect(gx + 3 + puff, gy + 1, 1, 1);
+        ctx.fillRect(gx + 4 - puff, gy + 2, 1, 1);
+      }
+    } else if (s.type === 'engineer') {
+      ctx.fillStyle = '#ffd94a'; // hard hat: brim + dome
+      ctx.fillRect(gx - 1, gy - 5, 3, 1); ctx.fillRect(gx, gy - 6, 1, 1);
+      ctx.fillStyle = '#cccccc'; // wrench
+      ctx.fillRect(gx + 2, gy - 3, 1, 3); ctx.fillRect(gx + 2, gy - 4, 2, 1);
+    } else if (s.type === 'entertainer') {
+      ctx.fillStyle = '#ff9ad8'; // party hat (triangle)
+      ctx.beginPath(); ctx.moveTo(gx - 1, gy - 4); ctx.lineTo(gx, gy - 7); ctx.lineTo(gx + 1, gy - 4); ctx.closePath(); ctx.fill();
+      if (s.state === 'perform') {
+        // Performing: bobbing sparkle + floating confetti around them.
+        var bob = (tpFrame >> 4) % 2;
+        ctx.fillStyle = '#ffd94a';
+        ctx.fillRect(gx - 1, gy - 11 + bob, 3, 1);
+        ctx.fillRect(gx, gy - 12 + bob, 1, 3);
+        ctx.fillStyle = '#e33'; ctx.fillRect(gx - 4, gy - 8 + bob, 1, 1);
+        ctx.fillStyle = '#3a8fd8'; ctx.fillRect(gx + 3, gy - 7 - bob, 1, 1);
+      } else {
+        ctx.fillStyle = '#ffd94a';
+        ctx.fillRect(gx - 1, gy - 8 + ((tpFrame >> 4) % 2), 2, 2); // star
+      }
+    } else if (s.type === 'security') {
+      ctx.fillStyle = '#1a2440'; ctx.fillRect(gx - 1, gy - 5, 3, 1); // cap
+      ctx.fillStyle = '#202020'; ctx.fillRect(gx - 1, gy - 4, 2, 1); // sunglasses
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(gx, gy - 2, 1, 3); // shirt stripe
+      ctx.fillStyle = '#ffd94a'; ctx.fillRect(gx + 1, gy - 1, 1, 1); // badge
+    }
+    if (s.state === 'fixing') {
+      ctx.fillStyle = '#ffdd00'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('!', gx, gy - 8);
+      ctx.textAlign = 'left';
+    }
+  }
+  function tpDrawStall(x, y, inst) {
+    ctx.fillStyle = '#e8c890'; ctx.fillRect(x + 1, y + 4, 10, 8);
+    var awn = inst.id === 'snack' ? '#d83a2e' : inst.id === 'drink' ? '#3a8fd8' : '#e88ab0';
+    for (var i = 0; i < 4; i++) {
+      ctx.fillStyle = i % 2 === 0 ? awn : '#f0f0f0';
+      ctx.fillRect(x + 1 + i * 3, y + 2, 3, 3);
+    }
+    ctx.fillStyle = inst.id === 'snack' ? '#8a5a2e' : inst.id === 'drink' ? '#3a8fd8' : '#e88ab0';
+    ctx.fillRect(x + 5, y + 7, 2, 2);
+    ctx.fillStyle = '#7a4a22'; ctx.fillRect(x + 2, y + 10, 8, 1);
+  }
+  function tpDrawDecor(x, y, inst) {
+    if (inst.id === 'tree') {
+      var sway = Math.round(Math.sin(tpFrame * 0.03 + x * 0.7) * 1); // breeze
+      ctx.fillStyle = '#7a4a22'; ctx.fillRect(x + 5, y + 7, 2, 5);
+      ctx.fillStyle = '#2e8b3a';
+      ctx.beginPath(); ctx.arc(x + 6 + sway, y + 5, 4.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#5ac85a';
+      ctx.beginPath(); ctx.arc(x + 4 + sway, y + 3, 1.5, 0, Math.PI * 2); ctx.fill();
+    } else if (inst.id === 'flowers') {
+      ctx.fillStyle = '#3f8c2a'; ctx.fillRect(x + 3, y + 6, 6, 1);
+      ctx.fillStyle = '#e33'; ctx.fillRect(x + 3, y + 4, 2, 2);
+      ctx.fillStyle = '#ec0'; ctx.fillRect(x + 6, y + 3, 2, 2);
+      ctx.fillStyle = '#f0f0f0'; ctx.fillRect(x + 8, y + 5, 2, 2);
+    } else if (inst.id === 'fountain') {
+      ctx.fillStyle = '#7ab8e8';
+      ctx.beginPath(); ctx.arc(x + 6, y + 6, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#3a8fd8';
+      ctx.beginPath(); ctx.arc(x + 6, y + 6, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      var fx = (tpFrame % 2 === 0) ? 0 : 2;
+      ctx.fillRect(x + 4 + fx, y + 4, 1, 1);
+      ctx.fillRect(x + 7 - fx, y + 7, 1, 1);
+    } else if (inst.id === 'bush') {
+      ctx.fillStyle = '#2e8b3a';
+      ctx.beginPath(); ctx.arc(x + 6, y + 8, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#5ac85a';
+      ctx.beginPath(); ctx.arc(x + 4, y + 6, 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 8, y + 7, 1.2, 0, Math.PI * 2); ctx.fill();
+    } else if (inst.id === 'oak') {
+      // Broad dark canopy, thick trunk, acorns.
+      var osw = Math.round(Math.sin(tpFrame * 0.03 + x * 0.7) * 1);
+      ctx.fillStyle = '#5a3a1a'; ctx.fillRect(x + 5, y + 7, 3, 5);
+      ctx.fillStyle = '#1e6b2a';
+      ctx.beginPath(); ctx.arc(x + 6 + osw, y + 4, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#2e8b3a';
+      ctx.beginPath(); ctx.arc(x + 3 + osw, y + 5, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 9 + osw, y + 5, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#8a5a2e';
+      ctx.fillRect(x + 4 + osw, y + 7, 1, 1); ctx.fillRect(x + 8 + osw, y + 8, 1, 1);
+    } else if (inst.id === 'lamp') {
+      ctx.fillStyle = '#333333'; ctx.fillRect(x + 5, y + 3, 2, 9);
+      ctx.fillStyle = '#ffd94a';
+      ctx.beginPath(); ctx.arc(x + 6, y + 2, 2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,217,74,0.25)';
+      ctx.beginPath(); ctx.arc(x + 6, y + 3, 4, 0, Math.PI * 2); ctx.fill();
+    } else if (inst.id === 'pine') {
+      // Tall triangle conifer, dark green, tiered.
+      ctx.fillStyle = '#5a3a1a'; ctx.fillRect(x + 5, y + 9, 2, 3);
+      ctx.fillStyle = '#1e5b2a';
+      ctx.beginPath(); ctx.moveTo(x + 6, y); ctx.lineTo(x + 2, y + 6); ctx.lineTo(x + 10, y + 6); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x + 6, y + 3); ctx.lineTo(x + 1, y + 10); ctx.lineTo(x + 11, y + 10); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#2e8b3a';
+      ctx.beginPath(); ctx.moveTo(x + 6, y + 1); ctx.lineTo(x + 3, y + 6); ctx.lineTo(x + 9, y + 6); ctx.closePath(); ctx.fill();
+    } else if (inst.id === 'palm') {
+      // Curved trunk, radiating fronds, coconuts.
+      ctx.fillStyle = '#8a6a3a';
+      ctx.fillRect(x + 5, y + 6, 2, 6);
+      ctx.fillRect(x + 4, y + 4, 2, 2);
+      ctx.fillStyle = '#3f9c3a';
+      ctx.beginPath(); ctx.moveTo(x + 5, y + 4); ctx.lineTo(x + 1, y + 1); ctx.lineTo(x + 2, y + 4); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x + 5, y + 4); ctx.lineTo(x + 11, y + 1); ctx.lineTo(x + 10, y + 4); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x + 5, y + 4); ctx.lineTo(x + 6, y); ctx.lineTo(x + 8, y + 4); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#8a5a2e';
+      ctx.fillRect(x + 5, y + 5, 1, 1); ctx.fillRect(x + 7, y + 5, 1, 1);
+    } else if (inst.id === 'bench') {
+      ctx.fillStyle = '#8a5a2e';
+      ctx.fillRect(x + 2, y + 6, 8, 2);
+      ctx.fillRect(x + 2, y + 3, 8, 1);
+      ctx.fillRect(x + 3, y + 4, 1, 2); ctx.fillRect(x + 8, y + 4, 1, 2);
+      ctx.fillStyle = '#5a3a1a';
+      ctx.fillRect(x + 3, y + 8, 1, 3); ctx.fillRect(x + 8, y + 8, 1, 3);
+    } else if (inst.id === 'willow') {
+      // Drooping branches hanging from a high canopy.
+      var wsw = Math.round(Math.sin(tpFrame * 0.03 + x * 0.7) * 1);
+      ctx.fillStyle = '#5a3a1a'; ctx.fillRect(x + 5, y + 6, 2, 6);
+      ctx.fillStyle = '#7ac87a';
+      ctx.beginPath(); ctx.arc(x + 6 + wsw, y + 4, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#5ac85a';
+      ctx.fillRect(x + 2 + wsw, y + 5, 1, 5);
+      ctx.fillRect(x + 4 + wsw, y + 6, 1, 4);
+      ctx.fillRect(x + 7 + wsw, y + 6, 1, 4);
+      ctx.fillRect(x + 9 + wsw, y + 5, 1, 5);
+    } else if (inst.id === 'cherry') {
+      // Pink blossom canopy, dark trunk, drifting petals.
+      var csw = Math.round(Math.sin(tpFrame * 0.03 + x * 0.7) * 1);
+      ctx.fillStyle = '#4a2a2a'; ctx.fillRect(x + 5, y + 7, 2, 5);
+      ctx.fillStyle = '#f0a0c0';
+      ctx.beginPath(); ctx.arc(x + 6 + csw, y + 4, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f8c0d8';
+      ctx.beginPath(); ctx.arc(x + 4 + csw, y + 3, 2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 8 + csw, y + 5, 2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f0a0c0';
+      ctx.fillRect(x + 3 + ((tpFrame >> 3) % 6), y + 9, 1, 1);
+      ctx.fillRect(x + 8 - ((tpFrame >> 3) % 6), y + 10, 1, 1);
+    } else if (inst.id === 'pond') {
+      ctx.fillStyle = '#3a8fd8';
+      ctx.beginPath(); ctx.arc(x + 6, y + 6, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#7ab8e8';
+      ctx.beginPath(); ctx.arc(x + 6, y + 6, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#2e8b3a';
+      ctx.beginPath(); ctx.arc(x + 4, y + 5, 1.2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 8, y + 8, 1.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 5 + ((tpFrame >> 4) % 2), y + 7, 1, 1);
+    } else if (inst.id === 'statue') {
+      ctx.fillStyle = '#9aa0a8'; ctx.fillRect(x + 3, y + 9, 6, 3);
+      ctx.fillStyle = '#c8ccd0'; ctx.fillRect(x + 4, y + 8, 4, 1);
+      ctx.fillStyle = '#b8bcc0';
+      ctx.fillRect(x + 5, y + 3, 2, 5);
+      ctx.beginPath(); ctx.arc(x + 6, y + 2, 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#8a8a8a';
+      ctx.fillRect(x + 4, y + 4, 1, 1); ctx.fillRect(x + 7, y + 4, 1, 1);
+    }
+  }
+  function tpDrawGuest(g) {
+    if (g.state === 'ride') return; // aboard — hidden inside the ride
+    var gx = Math.round(g.x), gy = Math.round(g.y);
+    ctx.fillStyle = '#f0c080'; ctx.fillRect(gx - 1, gy - 3, 2, 2);
+    ctx.fillStyle = g.color; ctx.fillRect(gx - 1, gy - 1, 2, 3);
+  }
+  function tpDrawCursor(x, y) {
+    // Drawn in SCREEN coords, last, so the cursor is always on top
+    // (including over the minimap).
+    var it = TP_ITEMS[tpItemIdx];
+    if (it.kind === 'staff') return; // hiring has no footprint; nothing to preview
+    var w = it.w * TP_TILE, h = it.h * TP_TILE;
+    var note = it.kind === 'demolish' ? '' : tpPlacementNote(it);
+    var ok = it.kind === 'demolish' || note === '';
+    if (it.kind !== 'demolish' && tpFootprintFree(it, tpCursor.c, tpCursor.r)) {
+      ctx.save(); ctx.globalAlpha = 0.55;
+      var fake = { kind: it.kind, id: it.id, item: it, c: tpCursor.c, r: tpCursor.r,
+        w: it.w, h: it.h, queue: [], riders: [], timer: 0, open: false, entrance: null };
+      if (it.kind === 'ride') tpDrawRide(x, y, fake);
+      else if (it.kind === 'stall') tpDrawStall(x, y, fake);
+      else if (it.kind === 'decor') tpDrawDecor(x, y, fake);
+      else if (it.kind === 'facility') tpDrawFacility(x, y, fake);
+      else if (it.kind === 'can') tpDrawCan(x, y, fake);
+      else if (it.kind === 'path') tpDrawPath(x, y, it);
+      ctx.restore();
+    }
+    ctx.fillStyle = ok ? '#ffffff' : '#ff4444';
+    ctx.fillRect(x - 1, y - 1, w + 2, 1); ctx.fillRect(x - 1, y + h, w + 2, 1);
+    ctx.fillRect(x - 1, y - 1, 1, h + 2); ctx.fillRect(x + w, y - 1, 1, h + 2);
+    if ((it.kind === 'ride' || it.kind === 'stall') && note === 'NO PATH!') {
+      ctx.fillStyle = '#ffdd00'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('!', x + w / 2, y - 3);
+      ctx.textAlign = 'left';
+    }
+  }
+  function tpDrawMinimap() {
+    // 1px per tile, top-right of the park band: where you are in the big park.
+    var mx = 133, my = 24; // 24 wide + 2 border = 26 (133..159), 16 + 2 = 18 tall
+    ctx.fillStyle = '#0f380f'; ctx.fillRect(mx, my, 26, 18);
+    for (var r = 0; r < TP_ROWS; r++) {
+      for (var c = 0; c < TP_COLS; c++) {
+        var cell = tpGrid[r][c];
+        var col = '#1e5a1e'; // empty grass
+        if (cell === 'gate') col = '#ffffff';
+        else if (cell) {
+          if (cell.kind === 'path') col = '#d9b77c';
+          else if (cell.kind === 'ride') col = '#ffd94a';
+          else if (cell.kind === 'stall') col = '#ff9a3d';
+          else if (cell.kind === 'facility') col = '#3a8fd8';
+          else if (cell.kind === 'can') col = '#4a8a4a';
+          else if (cell.kind === 'decor') col = '#2e8b3a';
+        }
+        ctx.fillStyle = col;
+        ctx.fillRect(mx + 1 + c, my + 1 + r, 1, 1);
+      }
+    }
+    // Viewport box (white) + cursor dot (red).
+    ctx.fillStyle = '#ffffff';
+    var vx = mx + 1 + Math.round(tpCamX / TP_TILE), vy = my + 1 + Math.round(tpCamY / TP_TILE);
+    var vw = Math.round(160 / TP_TILE), vh = Math.round(TP_VIEW_H / TP_TILE);
+    ctx.fillRect(vx, vy, vw, 1); ctx.fillRect(vx, vy + vh - 1, vw, 1);
+    ctx.fillRect(vx, vy, 1, vh); ctx.fillRect(vx + vw - 1, vy, 1, vh);
+    ctx.fillStyle = '#ff4444';
+    ctx.fillRect(mx + 1 + tpCursor.c, my + 1 + tpCursor.r, 2, 2);
+  }
+  function drawPark() {
+    var c, r, i;
+    ctx.fillStyle = '#0f380f'; ctx.fillRect(0, 0, W, 22);
+    ctx.fillStyle = '#0f380f'; ctx.fillRect(0, 122, W, 22);
+    ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'left'; ctx.font = '8px monospace';
+    ctx.fillStyle = tpMoney < 0 ? '#ff6666' : '#9bac0f';
+    ctx.fillText('$' + tpMoney, 3, 9);
+    ctx.fillStyle = '#9bac0f';
+    ctx.fillText('G' + tpGuests.length, 52, 9);
+    ctx.fillText('*' + tpRating().toFixed(1), 80, 9);
+    ctx.fillStyle = tpClean >= 70 ? '#9bac0f' : tpClean >= 40 ? '#ffd94a' : '#ff6666';
+    ctx.fillText('C' + Math.round(tpClean), 106, 9);
+    ctx.fillStyle = '#9bac0f';
+    ctx.fillText('S' + tpStaff.length, 128, 9);
+    ctx.fillText('D' + tpDay, 144, 9);
+    ctx.fillText(tpGoalLine(), 3, 18);
+    // Park band: the camera translates world coords to the screen. Only
+    // the visible viewport tiles are drawn (the park is 24x16; the screen
+    // shows ~14x8 of it), so a massive park costs the same to draw as a
+    // small one. Camera is rounded so the pixel art stays crisp.
+    var camX = Math.round(tpCamX), camY = Math.round(tpCamY);
+    ctx.save();
+    ctx.translate(-camX, TP_VIEW_Y0 - camY);
+    var c0 = Math.max(0, Math.floor(camX / TP_TILE));
+    var c1 = Math.min(TP_COLS - 1, Math.floor((camX + 160) / TP_TILE));
+    var r0 = Math.max(0, Math.floor(camY / TP_TILE));
+    var r1 = Math.min(TP_ROWS - 1, Math.floor((camY + TP_VIEW_H) / TP_TILE));
+    for (r = r0; r <= r1; r++) {
+      for (c = c0; c <= c1; c++) {
+        var x = TP_X0 + c * TP_TILE, y = TP_Y0 + r * TP_TILE;
+        var cell = tpGrid[r][c];
+        ctx.fillStyle = ((c + r) % 2 === 0) ? '#58a83c' : '#4f9c34';
+        ctx.fillRect(x, y, TP_TILE, TP_TILE);
+        if (cell === 'gate') { tpDrawGate(x, y); continue; }
+        if (!cell) {
+          if ((c * 7 + r * 13) % 5 === 0) {
+            ctx.fillStyle = '#3f8c2a';
+            ctx.fillRect(x + 3, y + 5, 2, 2); ctx.fillRect(x + 8, y + 8, 2, 2);
+          }
+        } else if (cell.kind === 'path') { tpDrawPath(x, y, cell); }
+        var lit = tpLitter[c + ',' + r];
+        if (lit) {
+          // Crumpled paper: pale ball with a brown edge — visible on grass or path.
+          var lp = [[2, 3], [8, 7], [5, 9]];
+          for (var li = 0; li < lit && li < 3; li++) {
+            ctx.fillStyle = '#e8e8e8'; ctx.fillRect(x + lp[li][0], y + lp[li][1], 2, 2);
+            ctx.fillStyle = '#8a6a3a'; ctx.fillRect(x + lp[li][0], y + lp[li][1] + 1, 1, 1);
+          }
+        }
+      }
+    }
+    // Placed items whose footprint touches the visible window (drawn from
+    // tpPlaced, so a 2x2 ride never pops when only its far half is in view).
+    for (i = 0; i < tpPlaced.length; i++) {
+      var p = tpPlaced[i];
+      if (p.c + p.w - 1 < c0 || p.c > c1 || p.r + p.h - 1 < r0 || p.r > r1) continue;
+      var px = TP_X0 + p.c * TP_TILE, py = TP_Y0 + p.r * TP_TILE;
+      if (p.kind === 'ride') tpDrawRide(px, py, p);
+      else if (p.kind === 'stall') tpDrawStall(px, py, p);
+      else if (p.kind === 'decor') tpDrawDecor(px, py, p);
+      else if (p.kind === 'facility') tpDrawFacility(px, py, p);
+      else if (p.kind === 'can') tpDrawCan(px, py, p);
+    }
+    // Guests and staff in view (12px margin so figures don't pop at the edge).
+    for (i = 0; i < tpGuests.length; i++) {
+      var g = tpGuests[i];
+      if (g.x < camX - 12 || g.x > camX + 172 || g.y < camY - 12 || g.y > camY + 108) continue;
+      tpDrawGuest(g);
+    }
+    for (i = 0; i < tpStaff.length; i++) {
+      var s = tpStaff[i];
+      if (s.x < camX - 12 || s.x > camX + 172 || s.y < camY - 12 || s.y > camY + 108) continue;
+      tpDrawStaff(s);
+    }
+    ctx.restore();
+    ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'left'; ctx.font = '8px monospace';
+    var it = TP_ITEMS[tpItemIdx];
+    var cat = TP_CATS[tpCatOf(tpItemIdx)];
+    var bl = cat.label + ' ' + tpCatPos(tpItemIdx) + '/' + tpCatCount(tpCatOf(tpItemIdx)) + ' ' + it.name + (it.cost ? ' $' + it.cost : '');
+    if (it.kind === 'staff') bl += ' (' + tpStaffCount(it.id) + '/' + (it.max || 3) + ')';
+    if (it.kind !== 'demolish' && tpPhase === 'park') {
+      var note = tpPlacementNote(it);
+      if (note) bl += '  ' + note;
+    }
+    ctx.fillText(bl, 3, 130);
+    ctx.fillText(it.kind === 'demolish' ? 'A: REMOVE  B: NEXT  B+DIR: CAT' : it.kind === 'staff' ? 'A: HIRE  B: NEXT  B+DIR: CAT' : 'A: BUILD  B: NEXT  B+DIR: CAT', 3, 140);
+    tpDrawMinimap();
+    // Cursor last, in screen coords, so it is always on top (even over the minimap).
+    tpDrawCursor(tpCursor.c * TP_TILE - Math.round(tpCamX),
+                 TP_VIEW_Y0 + tpCursor.r * TP_TILE - Math.round(tpCamY));
+    if (tpToastFrames > 0) {
+      ctx.fillStyle = 'rgba(15,56,15,0.9)'; ctx.fillRect(14, 56, 132, 18);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
+      ctx.fillText(tpToast, W / 2, 68);
+      ctx.textAlign = 'left';
+    }
+    if (tpPhase === 'report' && tpReport) {
+      ctx.fillStyle = 'rgba(15,56,15,0.92)'; ctx.fillRect(18, 36, 124, 84);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('DAY ' + tpDay + ' REPORT', W / 2, 50);
+      ctx.font = '8px monospace';
+      ctx.fillText('INCOME +$' + tpReport.income, W / 2, 63);
+      ctx.fillText('UPKEEP -$' + tpReport.upkeep, W / 2, 75);
+      ctx.fillText('WAGES -$' + (tpReport.wages || 0), W / 2, 87);
+      ctx.fillText('GUESTS SERVED ' + tpReport.guests, W / 2, 99);
+      ctx.fillText('RATING *' + tpReport.rating.toFixed(1), W / 2, 111);
+      ctx.textAlign = 'left';
+    }
+    if (tpPaused) {
+      ctx.fillStyle = 'rgba(15,56,15,0.7)'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('PAUSED', W / 2, 70);
+      ctx.font = '8px monospace';
+      ctx.fillText('START: RESUME', W / 2, 86);
+      ctx.textAlign = 'left';
+    }
+  }
+
   /* ---------- Input (one handler per button, dispatched by screen) ---------- */
   JMFGAMES.on('press', 'up', function () {
     if (dsGame) return;
@@ -5897,6 +7705,7 @@ function chMoveStr(m) {
       else if (currentGame === 'pool') { if (poPhase === 'level') poOppMove(-1); }
       else if (currentGame === 'run') ruUp();
       else if (currentGame === 'siege') siUp();
+      else if (currentGame === 'park') tpMove(0, -1);
       else flap();
     }
   });
@@ -5914,6 +7723,7 @@ function chMoveStr(m) {
       else if (currentGame === 'pool') { if (poPhase === 'level') poOppMove(1); }
       else if (currentGame === 'run') ruDown();
       else if (currentGame === 'siege') siDown();
+      else if (currentGame === 'park') tpMove(0, 1);
     }
   });
   JMFGAMES.on('press', 'left', function () {
@@ -5925,6 +7735,7 @@ function chMoveStr(m) {
     else if (screen === 'play' && currentGame === 'overlord') { ovCycleUnit(-1); }
     else if (screen === 'play' && currentGame === 'solitaire') solMove('left');
     else if (screen === 'play' && currentGame === 'run') ruLane(-1);
+    else if (screen === 'play' && currentGame === 'park') tpMove(-1, 0);
   });
   JMFGAMES.on('press', 'right', function () {
     if (dsGame) return;
@@ -5935,6 +7746,7 @@ function chMoveStr(m) {
     else if (screen === 'play' && currentGame === 'overlord') { ovCycleUnit(1); }
     else if (screen === 'play' && currentGame === 'solitaire') solMove('right');
     else if (screen === 'play' && currentGame === 'run') ruLane(1);
+    else if (screen === 'play' && currentGame === 'park') tpMove(1, 0);
   });
   JMFGAMES.on('press', 'a', function () {
     if (dsGame) { dsDoDelete(dsGame); return; } // confirm delete-save
@@ -5951,11 +7763,12 @@ function chMoveStr(m) {
         else if (g.name === 'SOLITAIRE') { currentGame = 'solitaire'; startSolitaire(); }
         else if (g.name === 'SUBWAY RUNNER') { currentGame = 'run'; startRunner(); }
         else if (g.name === 'SLINGSHOT SIEGE') { currentGame = 'siege'; startSiege(); }
+        else if (g.name === 'THRILL PARK') { currentGame = 'park'; startPark(); }
         else { currentGame = 'sky'; startGame(); }
       }
       else { comingName = g.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
-    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else flap(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else if (currentGame === 'park') tpAction(); else flap(); }
     else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else if (currentGame === 'pool') poRematch(); else startGame(); }
   });
   JMFGAMES.on('press', 'b', function () {
@@ -5971,6 +7784,7 @@ function chMoveStr(m) {
     if (currentGame === 'holdem' && hePaused) { dsAsk('holdem'); return; }
     if (currentGame === 'overlord' && ovPaused) { dsAsk('overlord'); return; }
     if (currentGame === 'solitaire' && solPaused) { dsAsk('solitaire'); return; }
+    if (currentGame === 'park' && tpPaused) { dsAsk('park'); return; }
     if (currentGame === 'sky') skyDive();
     else if (currentGame === 'block') bqBack();
     else if (currentGame === 'bj') bjBack();
@@ -5982,6 +7796,7 @@ function chMoveStr(m) {
     else if (currentGame === 'pool') poBack();
     else if (currentGame === 'run') ruBack();
     else if (currentGame === 'siege') siBack();
+    else if (currentGame === 'park') tpBack();
   });
   JMFGAMES.on('press', 'start', function () {
     if (dsGame) return;
@@ -5996,13 +7811,14 @@ function chMoveStr(m) {
     else if (currentGame === 'pool') { if (!poOver) { poPaused = !poPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'run') { if (ruPhase === 'run') { ruPaused = !ruPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'siege') { if (siPhase === 'aim' || siPhase === 'flight') { siPaused = !siPaused; JMFGAMES.beep(330, 0.06); } }
+    else if (currentGame === 'park') { if (tpPhase !== 'report') { tpPaused = !tpPaused; JMFGAMES.beep(330, 0.06); } }
     else if (!dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
   });
   JMFGAMES.on('press', 'menu', function () {
     // Menu is the ONLY way back to the main menu: from a game (even
     // mid-hand), level/color select, game-over, or pause.
     dsGame = null; // cancel any delete-save confirmation
-    if (screen === 'play' || screen === 'over' || screen === 'coming') { toMenu(); }
+    if (screen === 'play' || screen === 'over' || screen === 'coming') { if (currentGame === 'park') tpSave(); toMenu(); }
   });
 
   /* ---------- Update (one fixed 1/60s step) ---------- */
@@ -6016,6 +7832,7 @@ function chMoveStr(m) {
     if (currentGame === 'pool') { poUpdate(); return; }
     if (currentGame === 'run') { ruUpdate(); return; }
     if (currentGame === 'siege') { siUpdate(); return; }
+    if (currentGame === 'park') { tpUpdate(); return; }
     if (currentGame !== 'sky') return; // Hold'em has no per-frame update; without this, Sky Soar physics runs during Hold'em and the falling bird hits the ground -> gameOver() -> 'over' screen (BUSTED panel) on Hold'em launch after Sky was played
     if (paused || dead || !started) return;
     bird.vy = Math.min(bird.vy + GRAV, MAXFALL);
@@ -6208,7 +8025,7 @@ function chMoveStr(m) {
     if (screen !== 'play') JMFGAMES.musicStop();
     if (screen === 'menu') drawMenu();
     else if (screen === 'coming') drawComing();
-    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else drawGame(); }
+    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else if (currentGame === 'park') drawPark(); else drawGame(); }
     else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else drawOver(); }
     // Delete-save confirmation overlay (on top of any screen), or the
     // pause-overlay hint for games whose delete option lives on pause.
@@ -6221,6 +8038,7 @@ function chMoveStr(m) {
       else if (currentGame === 'holdem' && hePaused) dsHintY = 98;
       else if (currentGame === 'overlord' && ovPaused) dsHintY = 98;
       else if (currentGame === 'solitaire' && solPaused) dsHintY = 110; // 'A: NEW GAME' sits at 98
+      else if (currentGame === 'park' && tpPaused) dsHintY = 98;
       if (dsHintY) {
         ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
         ctx.fillText('B: DELETE SAVE', W / 2, dsHintY);
