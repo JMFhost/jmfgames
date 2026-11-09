@@ -242,7 +242,8 @@
     { name: 'BLOCKQUEST', playable: true },
     { name: 'BLACKJACK ROYALE', playable: true },
     { name: "TEXAS HOLD'EM", playable: true },
-    { name: 'CHESS CLUB', playable: true }
+    { name: 'CHESS CLUB', playable: true },
+    { name: "OVERLORD'S BASTION", playable: true }
   ];
 
   /* ---------- 100 sceneries (from the standalone Sky Soar) ---------- */
@@ -250,7 +251,7 @@
 
   /* ---------- State ---------- */
   var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
-  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' — which game is on the play/over screens
+  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' — which game is on the play/over screens
   var menuIndex = 0;
   var comingName = '';
   var best = 0;
@@ -1975,6 +1976,351 @@ function chMoveStr(m) {
     ctx.textAlign = 'left';
   }
 
+  /* ================================================================
+     OVERLORD'S BASTION — console redesign of the standalone
+     2D lane siege (Overlord vs. The Saint).
+     Simplifications (standalone -> console):
+     - 5 lanes -> 3 lanes; 10 units (6 troops + 4 towers) -> 3 troops,
+       no towers (no grid placement UI on 160x144).
+     - No upgrades, no saves, no themes, no castle upgrade.
+     - Overlord hero ability -> AUTOMATIC: Abyssal Void Lightning
+       strikes the AI unit closest to the Dark Castle every 12s (60 dmg).
+     - Saint hero ability dropped (no sunbeams); AI compensates with a
+       steady spawn timer.
+     - Lifesteal kept on the Demon (20% of damage dealt).
+     - Castles 1200 HP each (standalone 1000; raised because console
+       battles resolve fast — the focused auto-player won in 24s at 1000).
+     - Units kept: Beast 35 / Gorgon 60 / Demon 95 (player);
+       Soldier 30 / Archer 45 / Knight 80 (AI).
+     Controls: Up/Down pick lane, Left/Right cycle unit, A summon,
+     B menu, Start pause. Persistence: jmf-games-overlord-wins/losses/
+     best-time (fastest win in seconds, 0 = none).
+     ================================================================ */
+  var OV_UNITS = [
+    { name: 'BEAST', cost: 35, hp: 160, dmg: 26, range: 12, speed: 16, rate: 0.9, color: '#a855f7', letter: 'B', ls: 0 },
+    { name: 'GORGON', cost: 60, hp: 250, dmg: 32, range: 42, speed: 10, rate: 1.1, color: '#16a34a', letter: 'G', ls: 0 },
+    { name: 'DEMON', cost: 95, hp: 460, dmg: 52, range: 12, speed: 12, rate: 0.95, color: '#dc2626', letter: 'D', ls: 0.2 }
+  ];
+  var OV_AI_UNITS = [
+    { name: 'SOLDIER', cost: 30, hp: 130, dmg: 20, range: 12, speed: 13, rate: 1.0, color: '#3b82f6', letter: 'S', ls: 0 },
+    { name: 'ARCHER', cost: 45, hp: 95, dmg: 24, range: 42, speed: 11, rate: 1.25, color: '#10b981', letter: 'A', ls: 0 },
+    { name: 'KNIGHT', cost: 80, hp: 340, dmg: 38, range: 12, speed: 9, rate: 1.1, color: '#94a3b8', letter: 'K', ls: 0 }
+  ];
+  var OV_WINS_KEY = 'jmf-games-overlord-wins';
+  var OV_LOSSES_KEY = 'jmf-games-overlord-losses';
+  var OV_BEST_KEY = 'jmf-games-overlord-best-time';
+  var ovWins = 0, ovLosses = 0, ovBestTime = 0;
+  try { ovWins = parseInt(localStorage.getItem(OV_WINS_KEY) || '0', 10) || 0; } catch (e) { ovWins = 0; }
+  try { ovLosses = parseInt(localStorage.getItem(OV_LOSSES_KEY) || '0', 10) || 0; } catch (e) { ovLosses = 0; }
+  try { ovBestTime = parseInt(localStorage.getItem(OV_BEST_KEY) || '0', 10) || 0; } catch (e) { ovBestTime = 0; }
+  function ovSaveRecord() {
+    try {
+      localStorage.setItem(OV_WINS_KEY, String(ovWins));
+      localStorage.setItem(OV_LOSSES_KEY, String(ovLosses));
+      localStorage.setItem(OV_BEST_KEY, String(ovBestTime));
+    } catch (e) {}
+  }
+
+  var OV_LANE_Y = [31, 61, 91]; // lane centers
+  var OV_DARK_X = 16, OV_SAINT_X = 144; // castle faces
+  var ovMana = 160, ovAiMana = 160;
+  var ovDarkHp = 1200, ovSaintHp = 1200;
+  var ovLane = 1, ovUnitIdx = 0;
+  var ovUnits = [], ovProjs = [];
+  var ovTime = 0, ovAiT = 2.0, ovBoltT = 12, ovBoltFx = null;
+  var ovDeployCd = 0, ovPaused = false, ovOver = false, ovWon = false;
+  var ovBlink = 0;
+
+  function startOverlord() {
+    ovMana = 160; ovAiMana = 160;
+    ovDarkHp = 1200; ovSaintHp = 1200;
+    ovLane = 1; ovUnitIdx = 0;
+    ovUnits = []; ovProjs = [];
+    ovTime = 0; ovAiT = 2.0; ovBoltT = 12; ovBoltFx = null;
+    ovDeployCd = 0; ovPaused = false; ovOver = false; ovWon = false;
+    screen = 'play';
+    JMFGAMES.beep(660, 0.08);
+  }
+  function ovFmtTime(s) {
+    var m = Math.floor(s / 60), ss = Math.floor(s % 60);
+    return m + ':' + (ss < 10 ? '0' : '') + ss;
+  }
+  function ovPickLane(d) {
+    if (screen !== 'play' || ovPaused || ovOver) return;
+    ovLane = (ovLane + d + 3) % 3;
+    JMFGAMES.beep(600, 0.04);
+  }
+  function ovCycleUnit(d) {
+    if (screen !== 'play' || ovPaused || ovOver) return;
+    ovUnitIdx = (ovUnitIdx + d + OV_UNITS.length) % OV_UNITS.length;
+    JMFGAMES.beep(600, 0.04);
+  }
+  function ovSpawn(def, side, lane) {
+    var u = {
+      side: side, lane: lane,
+      x: side === 'p' ? 20 : 140, y: OV_LANE_Y[lane],
+      hp: def.hp, max: def.hp, dmg: def.dmg, range: def.range,
+      speed: def.speed, rate: def.rate, cd: 0,
+      color: def.color, letter: def.letter, ls: def.ls || 0,
+      ranged: def.range > 20
+    };
+    ovUnits.push(u);
+    return u;
+  }
+  function ovDeploy() {
+    if (screen !== 'play' || ovPaused || ovOver) return;
+    if (ovDeployCd > 0) return;
+    var def = OV_UNITS[ovUnitIdx];
+    if (ovMana < def.cost) { JMFGAMES.beep(180, 0.12); return; }
+    ovMana -= def.cost;
+    ovDeployCd = 0.6;
+    ovSpawn(def, 'p', ovLane);
+    JMFGAMES.beep(660, 0.06);
+  }
+  function ovAiSpawn() {
+    // Pick a lane: 70% the lane where the player threatens most (max
+    // player x), else random.
+    var lane = Math.floor(Math.random() * 3);
+    var threatLane = -1, threatX = -1;
+    for (var i = 0; i < ovUnits.length; i++) {
+      var u = ovUnits[i];
+      if (u.side === 'p' && u.x > threatX) { threatX = u.x; threatLane = u.lane; }
+    }
+    if (threatLane >= 0 && Math.random() < 0.7) lane = threatLane;
+    var def = null;
+    if (ovAiMana >= 80 && Math.random() < 0.3) def = OV_AI_UNITS[2];
+    else if (ovAiMana >= 45 && Math.random() < 0.5) def = OV_AI_UNITS[1];
+    else if (ovAiMana >= 30) def = OV_AI_UNITS[0];
+    if (!def) return;
+    ovAiMana -= def.cost;
+    ovSpawn(def, 'a', lane);
+  }
+  function ovDamage(target, dmg, attacker) {
+    if (!target) return;
+    if (target.castle) {
+      // target.side is the castle's owner: 'a' = Saint, 'p' = Dark
+      if (target.side === 'a') ovSaintHp -= dmg; else ovDarkHp -= dmg;
+    } else {
+      target.hp -= dmg;
+      if (attacker && attacker.ls && attacker.hp > 0) {
+        attacker.hp = Math.min(attacker.max, attacker.hp + dmg * attacker.ls);
+      }
+    }
+  }
+  function ovEnd(win) {
+    if (ovOver) return;
+    ovOver = true; ovWon = win;
+    if (win) {
+      ovWins++;
+      var t = Math.floor(ovTime);
+      if (ovBestTime === 0 || t < ovBestTime) ovBestTime = t;
+      JMFGAMES.beep(990, 0.2);
+    } else {
+      ovLosses++;
+      JMFGAMES.beep(220, 0.25);
+    }
+    ovSaveRecord();
+    screen = 'over';
+  }
+  function ovUpdate() {
+    ovBlink = (ovBlink + 1) % 60;
+    if (screen !== 'play' || ovPaused || ovOver) return;
+    var dt = 1 / 60;
+    ovTime += dt;
+    if (ovDeployCd > 0) ovDeployCd -= dt;
+    ovMana = Math.min(999, ovMana + 8 * dt);
+    ovAiMana = Math.min(999, ovAiMana + 8 * dt);
+    // AI spawn timer
+    ovAiT -= dt;
+    if (ovAiT <= 0) { ovAiT = 2.2 + Math.random() * 1.0; ovAiSpawn(); }
+    // Overlord lightning: every 12s zap the AI unit nearest the Dark Castle
+    ovBoltT -= dt;
+    if (ovBoltT <= 0) {
+      var tgt = null;
+      for (var i = 0; i < ovUnits.length; i++) {
+        var u = ovUnits[i];
+        if (u.side === 'a' && (!tgt || u.x < tgt.x)) tgt = u;
+      }
+      if (tgt) {
+        ovBoltFx = { x: tgt.x, y: tgt.y, lane: tgt.lane, frames: 8 };
+        ovDamage(tgt, 60, null);
+        JMFGAMES.beep(990, 0.15);
+        ovBoltT = 12;
+      } else { ovBoltT = 3; }
+    }
+    if (ovBoltFx) { ovBoltFx.frames--; if (ovBoltFx.frames <= 0) ovBoltFx = null; }
+    // Projectiles
+    for (var pi = ovProjs.length - 1; pi >= 0; pi--) {
+      var pr = ovProjs[pi];
+      var pt = pr.target;
+      if (!pt || (pt.hp !== undefined && pt.hp <= 0)) { ovProjs.splice(pi, 1); continue; }
+      var tx = pt.castle ? (pt.side === 'a' ? OV_SAINT_X : OV_DARK_X) : pt.x;
+      var ty = pt.castle ? OV_LANE_Y[pt.lane] : pt.y;
+      var dx = tx - pr.x, dy = ty - pr.y;
+      var d = Math.sqrt(dx * dx + dy * dy);
+      if (d < 5) { ovDamage(pt, pr.dmg, pr.attacker); ovProjs.splice(pi, 1); continue; }
+      pr.x += dx / d * 110 * dt;
+      pr.y += dy / d * 110 * dt;
+    }
+    // Units: march, stop in range, attack
+    for (var ui = 0; ui < ovUnits.length; ui++) {
+      var u2 = ovUnits[ui];
+      if (u2.hp <= 0) continue;
+      var foe = null, bestD = 1e9;
+      for (var fi = 0; fi < ovUnits.length; fi++) {
+        var f = ovUnits[fi];
+        if (f.side === u2.side || f.hp <= 0 || f.lane !== u2.lane) continue;
+        var dd = Math.abs(f.x - u2.x);
+        if (dd < bestD) { bestD = dd; foe = f; }
+      }
+      var castleDist = u2.side === 'p' ? (OV_SAINT_X - u2.x) : (u2.x - OV_DARK_X);
+      var target = null;
+      if (foe && bestD <= u2.range) target = foe;
+      else if (castleDist <= u2.range) target = { castle: true, side: u2.side === 'p' ? 'a' : 'p', lane: u2.lane };
+      if (target) {
+        u2.cd -= dt;
+        if (u2.cd <= 0) {
+          u2.cd = u2.rate;
+          if (u2.ranged) {
+            ovProjs.push({ x: u2.x, y: u2.y, target: target, dmg: u2.dmg, attacker: u2, color: u2.color });
+          } else {
+            ovDamage(target, u2.dmg, u2);
+          }
+        }
+      } else {
+        u2.x += (u2.side === 'p' ? 1 : -1) * u2.speed * dt;
+        if (u2.side === 'p' && u2.x > 140) u2.x = 140;
+        if (u2.side === 'a' && u2.x < 20) u2.x = 20;
+      }
+    }
+    // Remove the dead
+    ovUnits = ovUnits.filter(function (u) { return u.hp > 0; });
+    // Win / lose
+    if (ovSaintHp <= 0) { ovSaintHp = 0; ovEnd(true); }
+    else if (ovDarkHp <= 0) { ovDarkHp = 0; ovEnd(false); }
+  }
+  function drawOverlord() {
+    ctx.fillStyle = '#9bac0f'; ctx.fillRect(0, 0, W, H);
+    // Top HUD: castle HP
+    ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('DARK ' + Math.max(0, Math.ceil(ovDarkHp)), 2, 10);
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.max(0, Math.ceil(ovSaintHp)) + ' SAINT', W - 2, 10);
+    ctx.textAlign = 'left';
+    // Lanes (selected lane highlighted)
+    for (var i = 0; i < 3; i++) {
+      var ly = 16 + i * 30;
+      if (i === ovLane) { ctx.fillStyle = '#a8bd12'; ctx.fillRect(18, ly, 124, 30); }
+      ctx.fillStyle = '#0f380f';
+      ctx.fillRect(18, ly, 124, 1);
+    }
+    ctx.fillRect(18, 106, 124, 1);
+    // Castles with crenellations
+    ctx.fillStyle = '#4c1d95'; ctx.fillRect(2, 16, 14, 90);
+    ctx.fillRect(2, 12, 4, 4); ctx.fillRect(7, 12, 4, 4); ctx.fillRect(12, 12, 4, 4);
+    ctx.fillStyle = '#d97706'; ctx.fillRect(144, 16, 14, 90);
+    ctx.fillRect(144, 12, 4, 4); ctx.fillRect(149, 12, 4, 4); ctx.fillRect(154, 12, 4, 4);
+    ctx.fillStyle = '#f0f8d8'; ctx.textAlign = 'center'; ctx.font = 'bold 8px monospace';
+    ctx.fillText('O', 9, 62);
+    ctx.fillText('S', 151, 62);
+    ctx.textAlign = 'left';
+    // Projectiles
+    for (var pi = 0; pi < ovProjs.length; pi++) {
+      var pr = ovProjs[pi];
+      ctx.fillStyle = pr.color;
+      ctx.fillRect(pr.x - 1, pr.y - 1, 3, 3);
+    }
+    // Units
+    for (var ui = 0; ui < ovUnits.length; ui++) {
+      var u = ovUnits[ui];
+      ctx.fillStyle = u.color;
+      ctx.fillRect(u.x - 5, u.y - 5, 10, 10);
+      ctx.fillStyle = '#0f380f';
+      ctx.fillRect(u.x - 5, u.y - 5, 10, 1);
+      ctx.fillRect(u.x - 5, u.y + 4, 10, 1);
+      ctx.fillRect(u.x - 5, u.y - 5, 1, 10);
+      ctx.fillRect(u.x + 4, u.y - 5, 1, 10);
+      ctx.fillStyle = u.color === '#94a3b8' ? '#0f380f' : '#ffffff';
+      ctx.textAlign = 'center'; ctx.font = 'bold 8px monospace';
+      ctx.fillText(u.letter, u.x, u.y + 3);
+      ctx.textAlign = 'left';
+      // HP bar
+      ctx.fillStyle = '#0f380f';
+      ctx.fillRect(u.x - 5, u.y - 9, 10, 2);
+      ctx.fillStyle = '#f0f8d8';
+      ctx.fillRect(u.x - 5, u.y - 9, Math.max(0, 10 * u.hp / u.max), 2);
+    }
+    // Lightning bolt
+    if (ovBoltFx) {
+      ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      var bx = ovBoltFx.x, by = ovBoltFx.y;
+      ctx.moveTo(bx, 14);
+      ctx.lineTo(bx - 3, 14 + (by - 14) * 0.33);
+      ctx.lineTo(bx + 3, 14 + (by - 14) * 0.66);
+      ctx.lineTo(bx, by);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.fillStyle = 'rgba(253,224,71,0.5)';
+      ctx.beginPath(); ctx.arc(bx, by, 7, 0, Math.PI * 2); ctx.fill();
+    }
+    // Bottom bar: unit slots
+    for (var si = 0; si < OV_UNITS.length; si++) {
+      var def = OV_UNITS[si];
+      var sx = 4 + si * 52;
+      var afford = ovMana >= def.cost && ovDeployCd <= 0;
+      if (si === ovUnitIdx) {
+        ctx.fillStyle = '#0f380f';
+        ctx.fillRect(sx, 110, 48, 12);
+        ctx.fillStyle = '#9bac0f';
+      } else {
+        ctx.fillStyle = '#0f380f';
+        ctx.fillRect(sx, 110, 48, 1); ctx.fillRect(sx, 121, 48, 1);
+        ctx.fillRect(sx, 110, 1, 12); ctx.fillRect(sx + 47, 110, 1, 12);
+        ctx.fillStyle = afford ? '#0f380f' : '#6b7a1f';
+      }
+      ctx.textAlign = 'center'; ctx.font = '8px monospace';
+      ctx.fillText(def.name + ' ' + def.cost, sx + 24, 119);
+      ctx.textAlign = 'left';
+    }
+    // Mana + lane + hint
+    ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('MANA ' + Math.floor(ovMana) + ' +8/S', 4, 130);
+    ctx.textAlign = 'right';
+    ctx.fillText('LANE ' + (ovLane + 1), W - 4, 130);
+    ctx.textAlign = 'center';
+    ctx.fillText('U/D LANE L/R UNIT A SUMMON', W / 2, 141);
+    ctx.textAlign = 'left';
+    if (ovPaused) {
+      ctx.fillStyle = 'rgba(15,56,15,0.7)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('PAUSED', W / 2, 70);
+      ctx.font = '8px monospace';
+      ctx.fillText('START: RESUME', W / 2, 86);
+      ctx.textAlign = 'left';
+    }
+  }
+  function drawOverlordOver() {
+    drawOverlord();
+    ctx.fillStyle = 'rgba(15,56,15,0.55)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#9bac0f';
+    ctx.fillRect(18, 42, 124, 78);
+    ctx.fillStyle = '#0f380f';
+    ctx.fillRect(18, 42, 124, 2);
+    ctx.fillRect(18, 118, 124, 2);
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(ovWon ? 'VICTORY!' : 'DEFEAT', W / 2, 58);
+    ctx.font = '8px monospace';
+    ctx.fillText(ovWon ? 'SAINT CASTLE FALLS' : 'DARK CASTLE FALLS', W / 2, 74);
+    ctx.fillText('TIME ' + ovFmtTime(ovTime), W / 2, 86);
+    ctx.fillText('W ' + ovWins + '  L ' + ovLosses + (ovBestTime > 0 ? '  BEST ' + ovFmtTime(ovBestTime) : ''), W / 2, 98);
+    ctx.fillText('A: PLAY AGAIN  B: MENU', W / 2, 112);
+    ctx.textAlign = 'left';
+  }
+
   /* ---------- Input (one handler per button, dispatched by screen) ---------- */
   JMFGAMES.on('press', 'up', function () {
     if (screen === 'menu') { menuIndex = (menuIndex + GAMES.length - 1) % GAMES.length; JMFGAMES.beep(600, 0.04); }
@@ -1983,6 +2329,7 @@ function chMoveStr(m) {
       else if (currentGame === 'bj') { bjAdjustBet(10); bjCycleAction(-1); }
       else if (currentGame === 'holdem') { heAdjustRaise(10); }
       else if (currentGame === 'chess') { chMove(-1, 0); }
+      else if (currentGame === 'overlord') { ovPickLane(-1); }
       else flap();
     }
   });
@@ -1993,6 +2340,7 @@ function chMoveStr(m) {
       else if (currentGame === 'bj') { bjAdjustBet(-10); bjCycleAction(1); }
       else if (currentGame === 'holdem') { heAdjustRaise(-10); }
       else if (currentGame === 'chess') { chMove(1, 0); }
+      else if (currentGame === 'overlord') { ovPickLane(1); }
     }
   });
   JMFGAMES.on('press', 'left', function () {
@@ -2000,12 +2348,14 @@ function chMoveStr(m) {
     else if (screen === 'play' && currentGame === 'bj') { bjAdjustBet(-50); bjCycleAction(-1); }
     else if (screen === 'play' && currentGame === 'holdem') { heCycleAction(-1); }
     else if (screen === 'play' && currentGame === 'chess') chMove(0, -1);
+    else if (screen === 'play' && currentGame === 'overlord') { ovCycleUnit(-1); }
   });
   JMFGAMES.on('press', 'right', function () {
     if (screen === 'play' && currentGame === 'block') bqMove(0, 1);
     else if (screen === 'play' && currentGame === 'bj') { bjAdjustBet(50); bjCycleAction(1); }
     else if (screen === 'play' && currentGame === 'holdem') { heCycleAction(1); }
     else if (screen === 'play' && currentGame === 'chess') chMove(0, 1);
+    else if (screen === 'play' && currentGame === 'overlord') { ovCycleUnit(1); }
   });
   JMFGAMES.on('press', 'a', function () {
     if (screen === 'menu') {
@@ -2015,18 +2365,20 @@ function chMoveStr(m) {
         else if (g.name === 'BLACKJACK ROYALE') { currentGame = 'bj'; startBlackjack(); }
         else if (g.name === "TEXAS HOLD'EM") { currentGame = 'holdem'; startHoldem(); }
         else if (g.name === 'CHESS CLUB') { currentGame = 'chess'; startChess(); }
+        else if (g.name === "OVERLORD'S BASTION") { currentGame = 'overlord'; startOverlord(); }
         else { currentGame = 'sky'; startGame(); }
       }
       else { comingName = g.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
-    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else flap(); }
-    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else startGame(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else flap(); }
+    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else startGame(); }
   });
   JMFGAMES.on('press', 'b', function () {
     if (screen === 'play' && currentGame === 'block') { bqBack(); }
     else if (screen === 'play' && currentGame === 'bj') { bjBack(); }
     else if (screen === 'play' && currentGame === 'holdem') { heBack(); }
     else if (screen === 'play' && currentGame === 'chess') { chBack(); }
+    else if (screen === 'play' && currentGame === 'overlord') { toMenu(); }
     else if (screen === 'play' || screen === 'over' || screen === 'coming') { toMenu(); }
   });
   JMFGAMES.on('press', 'start', function () {
@@ -2035,6 +2387,7 @@ function chMoveStr(m) {
     else if (currentGame === 'bj') { bjPaused = !bjPaused; JMFGAMES.beep(330, 0.06); }
     else if (currentGame === 'holdem') { hePaused = !hePaused; JMFGAMES.beep(330, 0.06); }
     else if (currentGame === 'chess') { if (!chOver) { chPaused = !chPaused; JMFGAMES.beep(330, 0.06); } }
+    else if (currentGame === 'overlord') { if (!ovOver) { ovPaused = !ovPaused; JMFGAMES.beep(330, 0.06); } }
     else if (!dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
   });
   JMFGAMES.on('press', 'select', function () {
@@ -2049,6 +2402,7 @@ function chMoveStr(m) {
     if (currentGame === 'block') { bqUpdate(); return; }
     if (currentGame === 'bj') { bjUpdate(); return; }
     if (currentGame === 'chess') { chUpdate(); return; }
+    if (currentGame === 'overlord') { ovUpdate(); return; }
     if (currentGame !== 'sky') return; // Hold'em has no per-frame update; without this, Sky Soar physics runs during Hold'em and the falling bird hits the ground -> gameOver() -> 'over' screen (BUSTED panel) on Hold'em launch after Sky was played
     if (paused || dead || !started) return;
     bird.vy = Math.min(bird.vy + GRAV, MAXFALL);
@@ -2154,7 +2508,7 @@ function chMoveStr(m) {
     ctx.fillText('SELECT A GAME', W / 2, 32);
     ctx.textAlign = 'left';
     for (var i = 0; i < GAMES.length; i++) {
-      var y = 50 + i * 16;
+      var y = 48 + i * 14; // 6 games: 48..118, footer at 126/138 stays clear
       if (i === menuIndex) {
         ctx.fillStyle = '#0f380f';
         ctx.fillRect(8, y - 10, 144, 13);
@@ -2234,8 +2588,8 @@ function chMoveStr(m) {
   function draw() {
     if (screen === 'menu') drawMenu();
     else if (screen === 'coming') drawComing();
-    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else drawGame(); }
-    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else drawOver(); }
+    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else drawGame(); }
+    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else drawOver(); }
   }
 
   /* ---------- Main loop: fixed 60Hz logic steps, any display rate ---------- */
