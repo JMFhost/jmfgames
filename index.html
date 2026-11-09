@@ -246,7 +246,8 @@
     solitaire: { bpm: 96, wave: 'sine', notes: [[72,2],[76,2],[79,2],[76,2],[81,2],[79,2],[76,2],[72,2],[74,2],[77,2],[81,2],[77,2],[74,2],[72,2],[67,2],[0,2]] },
     beat:    { bpm: 132, wave: 'square', notes: [[57,1],[0,1],[57,1],[60,1],[57,1],[0,1],[62,1],[60,1],[57,1],[0,1],[57,1],[64,1],[62,1],[60,1],[57,1],[55,1]] },
     pool:    { bpm: 100, wave: 'triangle', notes: [[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[67,1],[69,1],[67,1],[64,1],[0,1]] },
-    run:     { bpm: 152, wave: 'square', notes: [[64,1],[67,1],[69,1],[67,1],[64,1],[0,1],[62,1],[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[62,1],[0,1]] }
+    run:     { bpm: 152, wave: 'square', notes: [[64,1],[67,1],[69,1],[67,1],[64,1],[0,1],[62,1],[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[62,1],[0,1]] },
+    siege:   { bpm: 120, wave: 'square', notes: [[57,1],[60,1],[64,1],[60,1],[65,1],[64,1],[62,1],[60,1],[57,1],[60,1],[64,1],[67,1],[64,1],[62,1],[60,1],[0,1]] }
   };
   var musicTimer = null, musicStep = 0, musicNext = 0, musicTune = null, musicActive = false;
   function midiFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
@@ -357,6 +358,7 @@
     { name: 'EMBERFALL BRAWL', playable: true },
     { name: "OVERLORD'S BASTION", playable: true },
     { name: 'SKY SOAR', playable: true },
+    { name: 'SLINGSHOT SIEGE', playable: true },
     { name: 'SOLITAIRE', playable: true },
     { name: 'SUBWAY RUNNER', playable: true },
     { name: "TEXAS HOLD'EM", playable: true }
@@ -367,7 +369,7 @@
 
   /* ---------- State ---------- */
   var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
-  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'run' — which game is on the play/over screens
+  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'run' | 'siege' — which game is on the play/over screens
   var menuIndex = 0;
   var comingName = '';
   var best = 0;
@@ -376,7 +378,7 @@
 
   /* ---------- Delete-save (shared): one confirmation overlay for all
      games. dsGame = which game's save is being deleted ('sky' | 'block' |
-     'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool'),
+     'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'siege'),
      or null. A confirms, B cancels. Confirming clears ONLY that game's
      localStorage keys and resets it to fresh defaults; pause-overlay games
      restart fresh immediately, select-screen games stay on their select
@@ -395,6 +397,7 @@
     else if (game === 'solitaire') { dsClearKeys([SOL_WIN_KEY, SOL_BEST_MOVES_KEY, SOL_BEST_TIME_KEY]); solWins = 0; solBestMoves = 0; solBestTime = 0; startSolitaire(); }
     else if (game === 'beat') { dsClearKeys([BU_BEST_KEY]); buBest = 0; }
     else if (game === 'pool') { dsClearKeys([PO_WIN_KEY, PO_LOSS_KEY]); poWins = 0; poLosses = 0; }
+    else if (game === 'siege') { dsClearKeys([SI_KEY]); siSave = { unlocked: 1, best: {}, totalTargets: 0 }; siPhase = 'stages'; siSel = 0; siPaused = false; }
     JMFGAMES.beep(880, 0.1);
   }
   function drawDsConfirm() {
@@ -4047,8 +4050,13 @@ function chMoveStr(m) {
      8-ball early = loss, 8-ball on the break = re-rack.
      Controls: hold D-pad Left/Right to rotate the aim (B toggles
      fine aim), hold Up/Down for power, A shoots, Start pauses,
-     Menu returns to the main menu. Five AI levels, picked before
-     the match: CASUAL, GOOD, PROFESSIONAL, MASTER, GRANDMASTER.
+     Menu returns to the main menu. Five AI opponents, picked before
+     the match: SHARK (precision), BRUISER (power), GHOST (tactics),
+     TRICKSTER (angles), ACE (all-round). All are near-perfect;
+     they differ in play style, not skill. Power is computed from
+     the table physics (friction, cut angle, distances), position
+     play predicts the cue ball's rest spot, and the AI plays safe
+     or breaks clusters when there is no good shot.
      Wins/losses saved in localStorage 'jmf-games-pool-wins' /
      'jmf-games-pool-losses'.
      ================================================================ */
@@ -4058,15 +4066,25 @@ function chMoveStr(m) {
   var PO_R = 3, PO_PR = 6.5;
   var PO_HEAD_X = 45, PO_FOOT_X = 111, PO_MID_Y = 68;
   var PO_COLORS = ['#FFFFFF', '#FFD21F', '#1E40FF', '#FF2E2E', '#7C3AED', '#FF7A00', '#0B7A3E', '#7A2E0E', '#111111', '#FFD21F', '#1E40FF', '#FF2E2E', '#7C3AED', '#FF7A00', '#0B7A3E', '#7A2E0E'];
-  var PO_LEVELS = [
-    { name: 'CASUAL',       aimErr: 8,   powErr: 25, pick: 'random', pos: 0,    wild: 0.15 },
-    { name: 'GOOD',         aimErr: 5,   powErr: 15, pick: 'best3',  pos: 0,    wild: 0 },
-    { name: 'PROFESSIONAL', aimErr: 3,   powErr: 10, pick: 'best',   pos: 0.05, wild: 0 },
-    { name: 'MASTER',       aimErr: 1.5, powErr: 6,  pick: 'best',   pos: 0.15, wild: 0 },
-    { name: 'GRANDMASTER',  aimErr: 0.7, powErr: 3,  pick: 'best',   pos: 0.25, wild: 0 }
+  // Five AI opponents. All are near-perfect (aim error 0.5 deg, exact
+  // physics power, best-ball selection); they differ in STYLE, not
+  // skill: how they weigh cuts vs distance, how hard they play
+  // position, how readily they play safe, and whether they break
+  // clusters. No difficulty scaling — every opponent is super good.
+  // Five AI opponents. All are near-perfect (aim error 0.5 deg, exact
+  // physics power, best-ball selection); they differ in STYLE, not
+  // skill: how they weigh cuts vs distance, how hard they play
+  // position, how readily they play safe, and whether they break
+  // clusters. No difficulty scaling — every opponent is super good.
+  var PO_OPPONENTS = [
+    { name: 'SHARK',     blurb: 'PRECISION + PERFECT POSITION', pos: 0.5,  cutW: 2.0, distW: 0.15, powerBoost: 1.0,  safeThresh: 120, cluster: true },
+    { name: 'BRUISER',   blurb: 'POWER: SMASHES CLUSTERS',     pos: 0.15, cutW: 1.0, distW: 0.08, powerBoost: 1.15, safeThresh: 140, cluster: true },
+    { name: 'GHOST',     blurb: 'TACTICS: PLAYS SAFE, TRAPS YOU', pos: 0.3, cutW: 1.5, distW: 0.15, powerBoost: 1.0,  safeThresh: 100, cluster: true },
+    { name: 'TRICKSTER', blurb: 'ANGLES: THIN CUTS, CUE CONTROL', pos: 0.45, cutW: 0.7, distW: 0.12, powerBoost: 1.05, safeThresh: 120, cluster: true },
+    { name: 'ACE',       blurb: 'ALL-ROUND: NO WEAKNESS',      pos: 0.35, cutW: 1.5, distW: 0.12, powerBoost: 1.05, safeThresh: 120, cluster: true }
   ];
-  var PO_LEVEL_NAMES = ['CASUAL', 'GOOD', 'PROFESSIONAL', 'MASTER', 'GRANDMASTER'];
-  var poLevel = 0, poPhase = 'level'; // 'level' | 'aim' | 'roll' | 'aiAim'
+  var PO_OPP_NAMES = ['SHARK', 'BRUISER', 'GHOST', 'TRICKSTER', 'ACE'];
+  var poOpp = 0, poPhase = 'level'; // 'level' | 'aim' | 'roll' | 'aiAim'
   var poBalls = [];
   var poTurn = 'you'; // 'you' | 'ai'
   var poGroupYou = null, poGroupAI = null; // 'solid' | 'stripe' | null
@@ -4120,7 +4138,7 @@ function chMoveStr(m) {
     return { x: ax, y: ay };
   }
   function startPool() {
-    poLevel = 0; poPhase = 'level';
+    poOpp = 0; poPhase = 'level';
     poBalls = [];
     poTurn = 'you';
     poGroupYou = null; poGroupAI = null;
@@ -4134,9 +4152,9 @@ function chMoveStr(m) {
     JMFGAMES.beep(660, 0.08);
   }
   function poRematch() {
-    var lvl = poLevel;
+    var lvl = poOpp;
     startPool();
-    poLevel = lvl;
+    poOpp = lvl;
     poBeginMatch();
   }
   function poRack() {
@@ -4231,12 +4249,48 @@ function chMoveStr(m) {
       if (t < 0) t = 0; if (t > 1) t = 1;
       var px = x1 + t * dx, py = y1 + t * dy;
       var ex = b.x - px, ey = b.y - py;
-      if (ex * ex + ey * ey < (PO_R + 1) * (PO_R + 1)) return true;
+      if (ex * ex + ey * ey < (2 * PO_R + 1.0) * (2 * PO_R + 1.0)) return true;
     }
     return false;
   }
+  // Physics power model. Friction removes 1.8 px/s of speed per px a
+  // ball travels (0.985 per 1/120s substep), so a ball needs 1.8*d px/s
+  // to roll distance d. The object ball must arrive at the pocket with
+  // some speed left (+20), and only cos(cut) of the cue ball's contact
+  // speed goes into the object ball. The cue also loses 1.8*d1 getting
+  // to the ghost spot. So the cue's launch speed must be:
+  //   v = (1.8*d2 + 20) / cos(cut) + 1.8*d1
+  // and power% = v / 260 * 100. If v > 260 the shot is unmakeable at
+  // that cut — the cost model steers the AI to a makeable ball instead.
+  function poPowerNeeded(d1, d2, cutDeg) {
+    var cosCut = Math.cos(cutDeg * Math.PI / 180);
+    if (cosCut < 0.15) cosCut = 0.15;
+    return (1.8 * d2 + 20) / cosCut + 1.8 * d1;
+  }
+  // Where the cue ball ends up after a cut: it deflects along the
+  // tangent (perpendicular to the object ball's path) with speed
+  // vContact*sin(cut), then rolls until friction stops it (0.5556 px
+  // per px/s of speed). Returns the predicted rest spot, clamped to
+  // the felt.
+  function poPredictCueRest(gx, gy, cueX, cueY, px, py, ox, oy, vContact, cutDeg) {
+    var ux = px - ox, uy = py - oy;
+    var ul = Math.sqrt(ux * ux + uy * uy) || 1; ux /= ul; uy /= ul;
+    var ax = gx - cueX, ay = gy - cueY;
+    var al = Math.sqrt(ax * ax + ay * ay) || 1; ax /= al; ay /= al;
+    var tx = -uy, ty = ux;
+    if (ax * tx + ay * ty < 0) { tx = -tx; ty = -ty; }
+    var drift = vContact * Math.sin(cutDeg * Math.PI / 180) * 0.5556;
+    var rx = gx + tx * drift, ry = gy + ty * drift;
+    var t = PO_TABLE;
+    if (rx < t.x0 + PO_R) rx = t.x0 + PO_R;
+    if (rx > t.x1 - PO_R) rx = t.x1 - PO_R;
+    if (ry < t.y0 + PO_R) ry = t.y0 + PO_R;
+    if (ry > t.y1 - PO_R) ry = t.y1 - PO_R;
+    return { x: rx, y: ry };
+  }
+  var poAiLastKind = '';
   function poAiChoose() {
-    var lvl = PO_LEVELS[poLevel];
+    var opp = PO_OPPONENTS[poOpp];
     var cue = poBall(0);
     if (!cue) return null;
     var myGroup = poGroupAI;
@@ -4249,12 +4303,13 @@ function chMoveStr(m) {
       else if (b.n !== 8) targets.push(b);
     }
     if (!targets.length) return null;
+    var onEight = poOnEight('ai');
     var pockets = poPockets();
     var cands = [];
     for (var ti = 0; ti < targets.length; ti++) {
       var o = targets[ti];
       for (var pi = 0; pi < pockets.length; pi++) {
-        var p = poPocketAim(pockets[pi]); // aim at the pocket mouth, not the raw centre
+        var p = poPocketAim(pockets[pi]);
         var ox = p.x - o.x, oy = p.y - o.y;
         var od = Math.sqrt(ox * ox + oy * oy);
         if (od < 1) continue;
@@ -4263,53 +4318,184 @@ function chMoveStr(m) {
         var cx = gx - cue.x, cy = gy - cue.y;
         var d1 = Math.sqrt(cx * cx + cy * cy);
         if (d1 < 1) continue;
-        // Cut angle: angle between cue->ghost and object->pocket.
         var cosCut = (cx * ux + cy * uy) / d1;
         if (cosCut > 1) cosCut = 1; if (cosCut < -1) cosCut = -1;
         var cut = Math.acos(cosCut) * 180 / Math.PI;
-        if (cut > 80) continue; // near-impossible cut
-        var blocked = poSegBlocked(o.x, o.y, p.x, p.y, o.n, 0) || poSegBlocked(cue.x, cue.y, gx, gy, 0, o.n);
-        var cost = cut * 1.5 + d1 * 0.15 + od * 0.15 + (blocked ? 40 : 0);
-        if (lvl.pos > 0) {
-          // Position play: prefer a shot whose ghost-ball spot is near the
-          // next easiest ball, so the cue ball ends up well placed.
+        if (cut > 80) continue;
+        if (poSegBlocked(cue.x, cue.y, gx, gy, 0, o.n)) continue; // cue path blocked: first hit would be the wrong ball
+        var blocked = poSegBlocked(o.x, o.y, p.x, p.y, o.n, 0);
+        var vNeed = poPowerNeeded(d1, od, cut);
+        var powerPenalty = 0;
+        if (vNeed > 260) powerPenalty = 100 + (vNeed - 260) / 2;
+        else if (vNeed > 230) powerPenalty = (vNeed - 230) * 0.5;
+        var cost = cut * opp.cutW + d1 * opp.distW + od * opp.distW + (blocked ? 60 : 0) + powerPenalty;
+        if (!onEight && opp.pos > 0) {
+          // Position play: predict where the cue ball stops (tangent
+          // drift) and prefer shots that leave it near the next ball.
+          var vContact = Math.min(vNeed, 260) - 1.8 * d1;
+          if (vContact < 0) vContact = 0;
+          var rest = poPredictCueRest(gx, gy, cue.x, cue.y, p.x, p.y, o.x, o.y, vContact, cut);
           var bestNext = 999;
           for (var ni = 0; ni < targets.length; ni++) {
             if (targets[ni].n === o.n) continue;
-            var nx = targets[ni].x - gx, ny = targets[ni].y - gy;
+            var nx = targets[ni].x - rest.x, ny = targets[ni].y - rest.y;
             var nd = Math.sqrt(nx * nx + ny * ny);
             if (nd < bestNext) bestNext = nd;
           }
-          if (bestNext < 999) cost += lvl.pos * bestNext * 0.5;
+          if (bestNext < 999) cost += opp.pos * bestNext * 0.5;
         }
-        cands.push({ ball: o, pocket: p, gx: gx, gy: gy, cost: cost, d1: d1, d2: od, cut: cut });
+        cands.push({ ball: o, pocket: p, gx: gx, gy: gy, cost: cost, d1: d1, d2: od, cut: cut, vNeed: vNeed });
       }
     }
-    if (!cands.length) {
-      // No makeable shot: aim at the nearest target ball straight on.
-      var nb = targets[0], nd0 = 999;
-      for (var qi = 0; qi < targets.length; qi++) {
-        var dxq = targets[qi].x - cue.x, dyq = targets[qi].y - cue.y;
-        var dq = Math.sqrt(dxq * dxq + dyq * dyq);
-        if (dq < nd0) { nd0 = dq; nb = targets[qi]; }
-      }
-      var ang0 = Math.atan2(nb.y - cue.y, nb.x - cue.x);
-      ang0 += (Math.random() * 2 - 1) * lvl.aimErr * Math.PI / 180;
-      return { angle: ang0, power: 55 };
-    }
+    if (!cands.length) { poAiLastKind = 'safety'; return poAiSafety(opp, targets, cue); }
     cands.sort(function (a, b) { return a.cost - b.cost; });
-    var pick;
-    if (lvl.pick === 'random') pick = cands[Math.floor(Math.random() * cands.length)];
-    else if (lvl.pick === 'best3') pick = cands[Math.floor(Math.random() * Math.min(3, cands.length))];
-    else pick = cands[0];
+    var pick = cands[0];
+    if (!onEight && pick.cost > 85 && opp.cluster) {
+      var brk = poAiClusterBreak(targets, cue);
+      if (brk) { poAiLastKind = 'cluster'; return brk; }
+    }
+    if (!onEight && pick.cost > opp.safeThresh) {
+      poAiLastKind = 'safety';
+      return poAiSafety(opp, targets, cue);
+    }
+    poAiLastKind = 'normal';
+    // Power: the physics minimum to pocket the ball, plus extra to
+    // shape position (more power = further tangent drift toward the
+    // next ball), capped so the cue ball does not fly into a pocket.
+    var vFinal = Math.min(pick.vNeed, 260);
+    if (!onEight && pick.cut > 15) {
+      var bestNext2 = 999;
+      for (var mi = 0; mi < targets.length; mi++) {
+        if (targets[mi].n === pick.ball.n) continue;
+        var mx2 = targets[mi].x - pick.gx, my2 = targets[mi].y - pick.gy;
+        var md2 = Math.sqrt(mx2 * mx2 + my2 * my2);
+        if (md2 < bestNext2) bestNext2 = md2;
+      }
+      if (bestNext2 < 999) {
+        var sinCut = Math.sin(pick.cut * Math.PI / 180);
+        if (sinCut > 0.25) {
+          var vPos = bestNext2 / (0.5556 * sinCut) + 1.8 * pick.d1;
+          if (vPos > vFinal) vFinal = Math.min(vPos, Math.min(pick.vNeed * 1.25, 260));
+        }
+      }
+    }
+    // Scratch guard: if the extra position power would leave the cue ball
+    // stopped near a pocket, fall back to the minimum pocketing power.
+    var vContactF = Math.min(vFinal, 260) - 1.8 * pick.d1;
+    if (vContactF < 0) vContactF = 0;
+    var restF = poPredictCueRest(pick.gx, pick.gy, cue.x, cue.y, pick.pocket.x, pick.pocket.y, pick.ball.x, pick.ball.y, vContactF, pick.cut);
+    var nearPocket = false;
+    var pkts = poPockets();
+    for (var qi = 0; qi < pkts.length; qi++) {
+      var qdx = restF.x - pkts[qi].x, qdy = restF.y - pkts[qi].y;
+      if (qdx * qdx + qdy * qdy < 10 * 10) { nearPocket = true; break; }
+    }
+    if (nearPocket) vFinal = Math.min(pick.vNeed, 260);
+    var pow = vFinal / 260 * 100 * opp.powerBoost;
+    if (pow > 100) pow = 100; if (pow < 10) pow = 10;
     var ang = Math.atan2(pick.gy - cue.y, pick.gx - cue.x);
-    ang += (Math.random() * 2 - 1) * lvl.aimErr * Math.PI / 180;
-    if (lvl.wild && Math.random() < lvl.wild) ang += (Math.random() * 2 - 1) * 20 * Math.PI / 180;
-    var pow = 40 + (pick.d1 + pick.d2) * 0.4;
-    if (pow < 40) pow = 40; if (pow > 100) pow = 100;
-    pow += (Math.random() * 2 - 1) * lvl.powErr;
+    ang += (Math.random() * 2 - 1) * 0.25 * Math.PI / 180;
+    return { angle: ang, power: pow };
+  }
+  function poAiSafety(opp, targets, cue) {
+    // No good shot: roll up to a target ball with a soft straight hit and
+    // stop the cue ball there. Pick the target that leaves the cue ball
+    // farthest from the player's balls and close to a cushion, so the
+    // player is left a hard shot. The path must be clear (verified) and
+    // the power is just enough to reach the ball, so it cannot scratch
+    // or hit the wrong ball first.
+    var best = null, bestScore = -999;
+    var t = PO_TABLE;
+    for (var i = 0; i < targets.length; i++) {
+      var b = targets[i];
+      var dx = b.x - cue.x, dy = b.y - cue.y;
+      var d = Math.sqrt(dx * dx + dy * dy);
+      if (d < 1) continue;
+      if (1.8 * d + 15 > 260) continue; // unreachable at 100% power: cue would stop short
+      var ux = dx / d, uy = dy / d;
+      var gx = b.x - ux * 2 * PO_R, gy = b.y - uy * 2 * PO_R;
+      if (poSegBlocked(cue.x, cue.y, gx, gy, 0, b.n)) continue;
+      var nearPkt = false;
+      var pkts0 = poPockets();
+      for (var q0 = 0; q0 < pkts0.length; q0++) {
+        var qdx0 = gx - pkts0[q0].x, qdy0 = gy - pkts0[q0].y;
+        if (qdx0 * qdx0 + qdy0 * qdy0 < 12 * 12) { nearPkt = true; break; }
+      }
+      if (nearPkt) continue; // cue would stop inside a pocket mouth: scratch
+      // Distance from the ghost spot to the player's nearest ball (want far).
+      var pd = 999;
+      for (var k = 0; k < poBalls.length; k++) {
+        var pb = poBalls[k];
+        if (pb.pocketed || pb.n === 0) continue;
+        if (poGroupYou && poGroupOf(pb.n) !== poGroupYou) continue;
+        if (!poGroupYou && poGroupOf(pb.n) === poGroupAI) continue;
+        if (!poGroupYou && pb.n === 8) continue;
+        var ex = pb.x - gx, ey = pb.y - gy;
+        var ed = Math.sqrt(ex * ex + ey * ey);
+        if (ed < pd) pd = ed;
+      }
+      if (pd > 999) pd = 60;
+      // Distance from the ghost spot to the nearest cushion (want near).
+      var cd = Math.min(gx - t.x0, t.x1 - gx, gy - t.y0, t.y1 - gy);
+      var score = pd * 1.0 - cd * 0.25 - d * 0.1;
+      if (score > bestScore) { bestScore = score; best = { gx: gx, gy: gy, d: d }; }
+    }
+    if (!best) {
+      // No clear roll-up: try every target nearest-first for a clear
+      // straight hit, so the cue still contacts an own ball first.
+      var sorted = targets.slice().sort(function (a, b) {
+        var da = Math.hypot(a.x - cue.x, a.y - cue.y), db = Math.hypot(b.x - cue.x, b.y - cue.y);
+        return da - db;
+      });
+      for (var m = 0; m < sorted.length; m++) {
+        var tb = sorted[m];
+        var tdx = tb.x - cue.x, tdy = tb.y - cue.y;
+        var td = Math.sqrt(tdx * tdx + tdy * tdy) || 1;
+        if (1.8 * td + 15 > 260) continue; // unreachable at 100% power
+        var tgx = tb.x - tdx / td * 2 * PO_R, tgy = tb.y - tdy / td * 2 * PO_R;
+        if (!poSegBlocked(cue.x, cue.y, tgx, tgy, 0, tb.n)) {
+          var tang = Math.atan2(tgy - cue.y, tgx - cue.x);
+          var tpow = (1.8 * td + 15) / 260 * 100;
+          if (tpow < 10) tpow = 10; if (tpow > 100) tpow = 100;
+          return { angle: tang, power: tpow };
+        }
+      }
+      // No clear path to any ball: shoot at the nearest target with the
+      // power needed to reach it (a foul is likely, but the table changes
+      // and the game moves on). A fixed low power would stop short and
+      // hit nothing.
+      var nb = sorted[0];
+      var nd = Math.hypot(nb.x - cue.x, nb.y - cue.y);
+      var npow = (1.8 * (nd - 2 * PO_R) + 20) / 260 * 100;
+      if (npow > 100) npow = 100; if (npow < 10) npow = 10;
+      var ang0 = Math.atan2(nb.y - cue.y, nb.x - cue.x);
+      return { angle: ang0, power: npow };
+    }
+    var ang = Math.atan2(best.gy - cue.y, best.gx - cue.x);
+    ang += (Math.random() * 2 - 1) * 0.25 * Math.PI / 180;
+    var pow = (1.8 * best.d + 15) / 260 * 100;
     if (pow < 10) pow = 10; if (pow > 100) pow = 100;
     return { angle: ang, power: pow };
+  }
+  function poAiClusterBreak(targets, cue) {
+    // Smash into the densest cluster of own balls to open the table.
+    var best = null, bestN = 0;
+    for (var i = 0; i < targets.length; i++) {
+      var n = 0;
+      for (var j = 0; j < targets.length; j++) {
+        if (i === j) continue;
+        var dx = targets[j].x - targets[i].x, dy = targets[j].y - targets[i].y;
+        if (dx * dx + dy * dy < 16 * 16) n++;
+      }
+      if (n > bestN) { bestN = n; best = targets[i]; }
+    }
+    if (!best || bestN < 1) return null;
+    var dx = best.x - cue.x, dy = best.y - cue.y;
+    var d = Math.sqrt(dx * dx + dy * dy) || 1;
+    var gx = best.x - dx / d * 2 * PO_R, gy = best.y - dy / d * 2 * PO_R;
+    if (poSegBlocked(cue.x, cue.y, gx, gy, 0, best.n)) return null; // would hit another ball first
+    var ang = Math.atan2(gy - cue.y, gx - cue.x);
+    return { angle: ang, power: 95 };
   }
   function poAiStartTurn() {
     var ch = poAiChoose();
@@ -4563,14 +4749,14 @@ function chMoveStr(m) {
       }
     }
   }
-  function poLevelMove(d) {
+  function poOppMove(d) {
     if (poPhase !== 'level') return;
-    poLevel = (poLevel + d + PO_LEVELS.length + 1) % (PO_LEVELS.length + 1);
+    poOpp = (poOpp + d + PO_OPPONENTS.length + 1) % (PO_OPPONENTS.length + 1);
     JMFGAMES.beep(600, 0.04);
   }
   function poAction() {
     if (screen !== 'play' || poPaused || poOver) return;
-    if (poPhase === 'level') { if (poLevel === PO_LEVELS.length) { dsAsk('pool'); return; } poBeginMatch(); return; }
+    if (poPhase === 'level') { if (poOpp === PO_OPPONENTS.length) { dsAsk('pool'); return; } poBeginMatch(); return; }
     if (poPhase === 'aim') poPlayerShoot();
   }
   function poBack() {
@@ -4619,10 +4805,10 @@ function chMoveStr(m) {
     var youLeft = poGroupYou ? poBallsLeft(poGroupYou) : 0;
     var aiLeft = poGroupAI ? poBallsLeft(poGroupAI) : 0;
     var head = '';
-    if (poPhase === 'level') head = 'PICK AI LEVEL';
+    if (poPhase === 'level') head = 'PICK OPPONENT';
     else if (poTurn === 'you') head = 'YOUR TURN ' + poGroupName(poGroupYou) + (poGroupYou ? ' ' + youLeft : '');
     else head = 'AI TURN ' + poGroupName(poGroupAI) + (poGroupAI ? ' ' + aiLeft : '');
-    ctx.fillText(head, 4, 10);
+    ctx.fillText(head, 6, 10);
     ctx.textAlign = 'right';
     ctx.fillText('W' + poWins + ' L' + poLosses, W - 4, 10);
     ctx.textAlign = 'left';
@@ -4643,22 +4829,25 @@ function chMoveStr(m) {
     }
     if (poPhase === 'level') {
       ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
-      ctx.fillText('8 BALL POOL', W / 2, 44);
+      ctx.fillText('8 BALL POOL', W / 2, 40);
       ctx.font = '8px monospace';
-      for (var li = 0; li < PO_LEVELS.length; li++) {
-        var y = 60 + li * 11;
-        if (li === poLevel) {
+      ctx.fillStyle = '#9bac0f';
+      var blurb = poOpp < PO_OPPONENTS.length ? PO_OPPONENTS[poOpp].blurb : 'RESET YOUR WINS + LOSSES';
+      ctx.fillText(blurb, W / 2, 52);
+      for (var li = 0; li < PO_OPPONENTS.length; li++) {
+        var y = 66 + li * 11;
+        if (li === poOpp) {
           ctx.fillStyle = '#0f380f'; ctx.fillRect(28, y - 8, 104, 10);
           ctx.fillStyle = '#9bac0f';
-          ctx.fillText('> ' + (li + 1) + ' ' + PO_LEVEL_NAMES[li], W / 2, y);
+          ctx.fillText('> ' + (li + 1) + ' ' + PO_OPP_NAMES[li], W / 2, y);
         } else {
           ctx.fillStyle = '#9bac0f';
-          ctx.fillText((li + 1) + ' ' + PO_LEVEL_NAMES[li], W / 2, y);
+          ctx.fillText((li + 1) + ' ' + PO_OPP_NAMES[li], W / 2, y);
         }
       }
-      // DELETE SAVE row (index PO_LEVELS.length).
-      var dsRowY = 60 + PO_LEVELS.length * 11;
-      if (poLevel === PO_LEVELS.length) {
+      // DELETE SAVE row (index PO_OPPONENTS.length).
+      var dsRowY = 66 + PO_OPPONENTS.length * 11;
+      if (poOpp === PO_OPPONENTS.length) {
         ctx.fillStyle = '#0f380f'; ctx.fillRect(28, dsRowY - 8, 104, 10);
         ctx.fillStyle = '#9bac0f';
         ctx.fillText('> DELETE SAVE', W / 2, dsRowY);
@@ -4667,7 +4856,7 @@ function chMoveStr(m) {
         ctx.fillText('DELETE SAVE', W / 2, dsRowY);
       }
       ctx.fillStyle = '#9bac0f';
-      ctx.fillText('UP/DOWN PICK  A PLAY', W / 2, 126);
+      ctx.fillText('UP/DOWN PICK  A PLAY', W / 2, 134);
       ctx.textAlign = 'left';
       return;
     }
@@ -5162,6 +5351,528 @@ function chMoveStr(m) {
     ctx.fillStyle = '#e8b93c'; ctx.fillRect(x - 8, y - 5, 3, 6);
   }
 
+  /* ================================================================
+     SLINGSHOT SIEGE (console) — original slingshot physics game on
+     the 160x144 screen. Launch stones, boulders and bombs from a
+     slingshot at enemy forts; knock every target down to clear the
+     stage. 16 challenge stages (pick one, clear it to unlock the
+     next), progress auto-saves to localStorage
+     'jmf-games-slingshot-siege-save', DELETE SAVE on the stage-select
+     screen wipes it (shared confirm overlay).
+     Controls: Left/Right aim angle, Up/Down power, A launch,
+     B cycle projectile, Start pauses, Menu returns to the main menu.
+     Physics: gravity arcs, circle-vs-block collision, blocks fall
+     when their support is destroyed, targets die when hit, crushed,
+     or when they fall and land after a drop of 4px or more.
+     ================================================================ */
+  var SI_KEY = 'jmf-games-slingshot-siege-save';
+  var SI_GRAV = 0.12, SI_X0 = 18, SI_Y0 = 104, SI_GROUND = 128;
+  var SI_PROJ = [
+    { name: 'STONE', r: 2.5, dmg: 1, color: '#b8b8c0' },
+    { name: 'BOULDER', r: 3.5, dmg: 2, color: '#6a6a72' },
+    { name: 'BOMB', r: 2.5, dmg: 2, color: '#222222' }
+  ];
+  // Stage format: blocks [x, y, w, h, mat] (W wood hp1, S stone hp2,
+  // I ice hp1); targets [x, y] with y = feet position on a block top
+  // or on the ground (128). All blocks sit flush on the ground or on
+  // another block's top edge.
+  var SI_STAGES = [
+    { name: 'FIRST SHOT', shots: 3, blocks: [[118,116,6,12,'W']], targets: [[136,128]] },
+    { name: 'TWIN POSTS', shots: 3, blocks: [[110,116,6,12,'W'],[134,116,6,12,'W']], targets: [[122,128],[146,128]] },
+    { name: 'WOOD TOWER', shots: 4, blocks: [[118,116,6,12,'W'],[132,116,6,12,'W'],[116,110,24,6,'W']], targets: [[128,110],[150,128]] },
+    { name: 'STONE WALL', shots: 4, blocks: [[110,104,12,24,'S']], targets: [[140,128]] },
+    { name: 'THE BRIDGE', shots: 4, blocks: [[104,116,6,12,'S'],[140,116,6,12,'S'],[102,110,46,6,'W']], targets: [[115,110],[133,110]] },
+    { name: 'PYRAMID', shots: 4, blocks: [[104,122,18,6,'W'],[122,122,18,6,'W'],[113,116,18,6,'W']], targets: [[122,116],[150,128]] },
+    { name: 'DOUBLE TOWER', shots: 5, blocks: [[98,116,6,12,'W'],[110,116,6,12,'W'],[96,110,22,6,'W'],[126,116,6,12,'W'],[138,116,6,12,'W'],[124,110,22,6,'W']], targets: [[107,110],[135,110],[152,128]] },
+    { name: 'STONE FORT', shots: 5, blocks: [[104,104,6,24,'S'],[130,104,6,24,'S'],[102,98,36,6,'S']], targets: [[121,98],[117,128]] },
+    { name: 'THE STAIRS', shots: 4, blocks: [[100,122,12,6,'W'],[112,116,12,12,'W'],[124,110,12,18,'W']], targets: [[106,122],[118,116],[130,110]] },
+    { name: 'HIGH PLATFORM', shots: 5, blocks: [[100,98,6,30,'S'],[124,98,6,30,'S'],[98,92,34,6,'S']], targets: [[108,92],[122,92],[150,128]] },
+    { name: 'MIXED FORT', shots: 5, blocks: [[100,116,40,12,'S'],[108,104,6,12,'W'],[124,104,6,12,'W'],[106,98,26,6,'W']], targets: [[119,98],[148,128]] },
+    { name: 'THE GATE', shots: 5, blocks: [[96,104,8,24,'S'],[144,104,8,24,'S'],[96,98,56,6,'W']], targets: [[110,98],[124,98],[138,98],[124,128]] },
+    { name: 'ICE HOUSE', shots: 5, blocks: [[104,104,6,24,'I'],[134,104,6,24,'I'],[102,98,40,6,'I']], targets: [[112,128],[128,128],[122,98]] },
+    { name: 'TRIPLE TOWER', shots: 5, blocks: [[96,116,6,12,'W'],[106,116,6,12,'W'],[94,110,18,6,'W'],[118,116,6,12,'W'],[128,116,6,12,'W'],[116,110,18,6,'W'],[140,116,6,12,'W'],[150,116,6,12,'W'],[138,110,18,6,'W']], targets: [[105,110],[127,110],[149,110]] },
+    { name: 'THE CASTLE', shots: 6, blocks: [[96,116,28,12,'S'],[124,116,28,12,'S'],[104,104,6,12,'W'],[120,104,6,12,'W'],[102,98,26,6,'W'],[136,104,6,12,'W'],[134,98,10,6,'W']], targets: [[115,98],[110,116],[145,116]] },
+    { name: 'FINAL SIEGE', shots: 6, blocks: [[96,104,6,24,'S'],[150,104,6,24,'S'],[94,98,64,6,'W'],[110,116,6,12,'W'],[140,116,6,12,'W'],[108,110,36,6,'I']], targets: [[126,98],[140,98],[119,110],[135,110]] }
+  ];
+  var siSave = { unlocked: 1, best: {}, totalTargets: 0 };
+  function siLoadSave() {
+    try {
+      var s = localStorage.getItem(SI_KEY);
+      if (s) {
+        var p = JSON.parse(s);
+        if (p && typeof p.unlocked === 'number') {
+          siSave.unlocked = Math.max(1, Math.min(SI_STAGES.length, p.unlocked));
+          siSave.best = p.best || {};
+          siSave.totalTargets = p.totalTargets || 0;
+        }
+      }
+    } catch (e) { siSave = { unlocked: 1, best: {}, totalTargets: 0 }; }
+  }
+  function siPersist() { try { localStorage.setItem(SI_KEY, JSON.stringify(siSave)); } catch (e) {} }
+  siLoadSave();
+  var siPhase, siSel, siStage, siAngle, siPower, siProjIdx, siShotsLeft, siScore,
+      siBlocks, siTargets, siProj, siParts, siBoom, siPaused, siFlightFrames, siStable;
+  siPhase = 'stages'; siSel = 0; siPaused = false;
+  siStage = 0; siAngle = 45; siPower = 60; siProjIdx = 0; siShotsLeft = 0; siScore = 0;
+  siBlocks = []; siTargets = []; siProj = null; siParts = []; siBoom = null;
+  siFlightFrames = 0; siStable = 0;
+  function startSiege() {
+    siLoadSave(); // load = opening the game restores saved progress
+    siPhase = 'stages'; siSel = 0; siPaused = false;
+    screen = 'play';
+    JMFGAMES.musicPlay('siege');
+    JMFGAMES.beep(660, 0.08);
+  }
+  function siStartStage(idx) {
+    var st = SI_STAGES[idx];
+    siStage = idx; siScore = 0; siShotsLeft = st.shots;
+    siAngle = 45; siPower = 60; siProjIdx = 0; siProj = null;
+    siParts = []; siBoom = null; siPaused = false;
+    siFlightFrames = 0; siStable = 0;
+    siBlocks = st.blocks.map(function (b) {
+      var hp = b[4] === 'S' ? 2 : 1;
+      return { x: b[0], y: b[1], w: b[2], h: b[3], mat: b[4], hp: hp, maxHp: hp, vy: 0 };
+    });
+    siTargets = st.targets.map(function (t) {
+      return { x: t[0], y: t[1], alive: true, falling: false, fallFrom: 0, vy: 0 };
+    });
+    siPhase = 'aim';
+    JMFGAMES.beep(880, 0.1);
+  }
+  function siTargetsLeft() {
+    var n = 0;
+    for (var i = 0; i < siTargets.length; i++) if (siTargets[i].alive) n++;
+    return n;
+  }
+  function siUp() {
+    if (siPhase === 'stages') {
+      siSel = (siSel + SI_STAGES.length) % (SI_STAGES.length + 1); // 16 stages + DELETE SAVE
+      JMFGAMES.beep(600, 0.04);
+    }
+  }
+  function siDown() {
+    if (siPhase === 'stages') {
+      siSel = (siSel + 1) % (SI_STAGES.length + 1);
+      JMFGAMES.beep(600, 0.04);
+    }
+  }
+  function siCycleProj() {
+    if (siPhase !== 'aim' || siPaused) return;
+    siProjIdx = (siProjIdx + 1) % SI_PROJ.length;
+    JMFGAMES.beep(520 + siProjIdx * 120, 0.06);
+  }
+  function siAction() {
+    if (siPhase === 'stages') {
+      if (siSel === SI_STAGES.length) { dsAsk('siege'); return; } // DELETE SAVE row
+      if (siSel < siSave.unlocked) siStartStage(siSel);
+      else JMFGAMES.beep(180, 0.12); // locked stage
+    } else if (siPhase === 'aim') {
+      if (siPaused || siShotsLeft <= 0) return;
+      siLaunch();
+    } else if (siPhase === 'clear') {
+      siPhase = 'stages';
+      siSel = Math.min(siStage + 1, SI_STAGES.length - 1);
+      JMFGAMES.beep(660, 0.08);
+    } else if (siPhase === 'fail') {
+      siStartStage(siStage); // A retries the stage
+    }
+  }
+  function siBack() {
+    if (siPhase === 'aim') siCycleProj(); // B cycles projectile type
+  }
+  function siLaunch() {
+    var rad = siAngle * Math.PI / 180;
+    var v = 1.2 + siPower * 0.042;
+    var t = SI_PROJ[siProjIdx];
+    siProj = { x: SI_X0, y: SI_Y0, vx: Math.cos(rad) * v, vy: -Math.sin(rad) * v, type: siProjIdx, r: t.r, dmg: t.dmg, active: true };
+    siShotsLeft--;
+    siPhase = 'flight'; siFlightFrames = 0; siStable = 0;
+    JMFGAMES.beep(700, 0.08);
+  }
+  function siInteg(p) { // one half-step of the shared integrator (preview + live flight)
+    p.vy += SI_GRAV * 0.5;
+    p.x += p.vx * 0.5;
+    p.y += p.vy * 0.5;
+  }
+  function siCircleBlock(px, py, r, b) {
+    var cx = Math.max(b.x, Math.min(px, b.x + b.w));
+    var cy = Math.max(b.y, Math.min(py, b.y + b.h));
+    var dx = px - cx, dy = py - cy;
+    return dx * dx + dy * dy <= r * r;
+  }
+  function siDamageBlock(b, dmg) {
+    b.hp -= dmg;
+    if (b.hp <= 0) {
+      siBlocks.splice(siBlocks.indexOf(b), 1);
+      siScore += 25;
+      siDebris(b.x + b.w / 2, b.y + b.h / 2, b.mat);
+      JMFGAMES.beep(300, 0.08);
+    } else {
+      JMFGAMES.beep(200, 0.05);
+    }
+  }
+  function siKillTarget(t) {
+    if (!t.alive) return;
+    t.alive = false; t.falling = false;
+    siScore += 100;
+    siSave.totalTargets++;
+    siPersist();
+    siDebris(t.x, t.y - 4, 'T');
+    JMFGAMES.beep(990, 0.12);
+  }
+  function siDebris(x, y, mat) {
+    var col = mat === 'W' ? '#b07a3a' : (mat === 'S' ? '#8a8a9a' : (mat === 'I' ? '#a8d8f0' : '#c03028'));
+    for (var i = 0; i < 4; i++) {
+      siParts.push({ x: x, y: y, vx: (Math.random() - 0.5) * 2.4, vy: -Math.random() * 2, t: 0, life: 18 + Math.floor(Math.random() * 8), color: col, size: 2 });
+    }
+  }
+  function siExplode(x, y) {
+    siBoom = { x: x, y: y, t: 15 };
+    JMFGAMES.beep(140, 0.2);
+    for (var i = siBlocks.length - 1; i >= 0; i--) {
+      var b = siBlocks[i];
+      var cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+      var d = Math.sqrt((cx - x) * (cx - x) + (cy - y) * (cy - y));
+      if (d < 10) siDamageBlock(b, 2);
+      else if (d < 18) siDamageBlock(b, 1);
+    }
+    for (var j = 0; j < siTargets.length; j++) {
+      var t = siTargets[j];
+      if (!t.alive) continue;
+      var d2 = Math.sqrt((t.x - x) * (t.x - x) + (t.y - 4 - y) * (t.y - 4 - y));
+      if (d2 < 14) siKillTarget(t);
+    }
+  }
+  function siStepProj() {
+    if (!siProj || !siProj.active) return;
+    var p = siProj;
+    for (var s = 0; s < 2; s++) {
+      siInteg(p);
+      for (var i = 0; i < siBlocks.length; i++) {
+        var b = siBlocks[i];
+        if (siCircleBlock(p.x, p.y, p.r, b)) {
+          if (p.type === 2) siExplode(p.x, p.y);
+          else siDamageBlock(b, p.dmg);
+          p.active = false;
+          return;
+        }
+      }
+      for (var j = 0; j < siTargets.length; j++) {
+        var t = siTargets[j];
+        if (!t.alive) continue;
+        if (siCircleBlock(p.x, p.y, p.r, { x: t.x - 3, y: t.y - 8, w: 6, h: 8 })) {
+          if (p.type === 2) siExplode(p.x, p.y);
+          else siKillTarget(t);
+          p.active = false;
+          return;
+        }
+      }
+      if (p.y + p.r >= SI_GROUND) {
+        if (p.type === 2) siExplode(p.x, SI_GROUND - 1);
+        else siDebris(p.x, SI_GROUND - 2, 'W');
+        p.active = false;
+        return;
+      }
+      if (p.x > 162 || p.x < -4 || p.y > 146 || p.y < -20) { p.active = false; return; }
+    }
+  }
+  function siBlockSupported(b) {
+    if (b.y + b.h >= SI_GROUND - 0.5) return true;
+    for (var i = 0; i < siBlocks.length; i++) {
+      var o = siBlocks[i];
+      if (o === b || o.vy !== 0) continue; // only stationary blocks support
+      if (Math.abs(o.y - (b.y + b.h)) <= 2 && o.x < b.x + b.w - 1 && o.x + o.w > b.x + 1) return true;
+    }
+    return false;
+  }
+  function siStepBlocks() {
+    var anyFalling = false;
+    for (var i = 0; i < siBlocks.length; i++) {
+      var b = siBlocks[i];
+      if (siBlockSupported(b)) { b.vy = 0; continue; }
+      anyFalling = true;
+      b.vy += SI_GRAV;
+      var prevBot = b.y + b.h;
+      b.y += b.vy;
+      // crush a target underneath while falling (checked before landing snaps)
+      for (var k = 0; k < siTargets.length; k++) {
+        var t = siTargets[k];
+        if (!t.alive) continue;
+        if (b.x < t.x + 3 && b.x + b.w > t.x - 3 && b.y < t.y && b.y + b.h > t.y - 8) siKillTarget(t);
+      }
+      if (b.y + b.h >= SI_GROUND) { b.y = SI_GROUND - b.h; b.vy = 0; continue; }
+      // land on a stationary block below
+      for (var j = 0; j < siBlocks.length; j++) {
+        var o = siBlocks[j];
+        if (o === b || o.vy !== 0) continue;
+        if (prevBot <= o.y + 2 && b.y + b.h >= o.y && o.x < b.x + b.w - 1 && o.x + o.w > b.x + 1 && b.y < o.y) {
+          b.y = o.y - b.h; b.vy = 0;
+          break;
+        }
+      }
+    }
+    return anyFalling;
+  }
+  function siTargetSupported(t) {
+    if (t.y >= SI_GROUND - 0.5) return true;
+    for (var i = 0; i < siBlocks.length; i++) {
+      var o = siBlocks[i];
+      if (o.vy !== 0) continue;
+      if (Math.abs(o.y - t.y) <= 2 && o.x < t.x + 3 && o.x + o.w > t.x - 3) return true;
+    }
+    return false;
+  }
+  function siStepTargets() {
+    var anyFalling = false;
+    for (var i = 0; i < siTargets.length; i++) {
+      var t = siTargets[i];
+      if (!t.alive) continue;
+      if (siTargetSupported(t)) {
+        if (t.falling) {
+          // just landed back on a support: a drop of 4px or more is fatal
+          if (t.y - t.fallFrom >= 4) siKillTarget(t);
+          else { t.falling = false; t.vy = 0; }
+        }
+        continue;
+      }
+      anyFalling = true;
+      if (!t.falling) { t.falling = true; t.fallFrom = t.y; }
+      t.vy += SI_GRAV;
+      t.y += t.vy;
+      if (t.y >= SI_GROUND) {
+        if (t.y - t.fallFrom >= 4) siKillTarget(t);
+        else { t.y = SI_GROUND; t.falling = false; t.vy = 0; }
+      }
+    }
+    return anyFalling;
+  }
+  function siClear() {
+    siScore += 200 * siShotsLeft;
+    if (siScore > (siSave.best[siStage] || 0)) siSave.best[siStage] = siScore;
+    if (siStage + 1 < SI_STAGES.length && siSave.unlocked < siStage + 2) siSave.unlocked = siStage + 2;
+    siPersist();
+    siPhase = 'clear';
+    JMFGAMES.beep(990, 0.2);
+  }
+  function siFail() {
+    if (siScore > (siSave.best[siStage] || 0)) siSave.best[siStage] = siScore;
+    siPersist();
+    siPhase = 'fail';
+    JMFGAMES.beep(220, 0.25);
+  }
+  function siUpdate() {
+    if (screen !== 'play') return;
+    if (!siPaused) {
+      for (var i = siParts.length - 1; i >= 0; i--) {
+        var pt = siParts[i];
+        pt.t++;
+        pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.08;
+        if (pt.t >= pt.life || pt.y > 142) siParts.splice(i, 1);
+      }
+      if (siBoom) { siBoom.t--; if (siBoom.t <= 0) siBoom = null; }
+    }
+    if (siPhase === 'aim') {
+      if (siPaused) return;
+      // Held D-pad adjusts aim smoothly (polling, like Pool).
+      if (JMFGAMES.isDown('left')) { siAngle = Math.max(10, siAngle - 0.9); }
+      if (JMFGAMES.isDown('right')) { siAngle = Math.min(80, siAngle + 0.9); }
+      if (JMFGAMES.isDown('up')) { siPower = Math.min(100, siPower + 1.6); }
+      if (JMFGAMES.isDown('down')) { siPower = Math.max(20, siPower - 1.6); }
+    } else if (siPhase === 'flight') {
+      if (siPaused) return;
+      siFlightFrames++;
+      siStepProj();
+      var fallingB = siStepBlocks();
+      var fallingT = siStepTargets();
+      var projDone = !siProj || !siProj.active;
+      if (projDone && !fallingB && !fallingT) siStable++;
+      else siStable = 0;
+      if (siStable >= 12 || siFlightFrames > 600) {
+        if (siTargetsLeft() === 0) siClear();
+        else if (siShotsLeft > 0) { siPhase = 'aim'; siProj = null; }
+        else siFail();
+      }
+    }
+  }
+  function drawSiStages() {
+    ctx.fillStyle = '#9bac0f'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('SLINGSHOT SIEGE', W / 2, 14);
+    ctx.font = '8px monospace';
+    ctx.fillText('SELECT STAGE', W / 2, 26);
+    var total = SI_STAGES.length + 1; // stages + DELETE SAVE
+    var vis = 6, top = Math.max(0, Math.min(siSel - 2, total - vis));
+    if (siSel < top) top = siSel;
+    for (var i = 0; i < vis; i++) {
+      var idx = top + i;
+      if (idx >= total) break;
+      var y = 38 + i * 11;
+      var isDel = idx === SI_STAGES.length;
+      var locked = !isDel && idx >= siSave.unlocked;
+      var label = isDel ? 'DELETE SAVE' : ('S' + (idx + 1) + ' ' + SI_STAGES[idx].name);
+      if (idx === siSel) {
+        ctx.fillStyle = '#0f380f'; ctx.fillRect(8, y - 8, 144, 10);
+        ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'left';
+        ctx.fillText('>', 14, y);
+        ctx.fillText(label, 26, y);
+        ctx.textAlign = 'right';
+        if (!isDel) ctx.fillText(locked ? 'LOCKED' : ('BEST ' + (siSave.best[idx] || 0)), 152, y);
+        ctx.textAlign = 'center';
+      } else {
+        ctx.fillStyle = '#0f380f'; ctx.textAlign = 'left';
+        ctx.fillText(label, 26, y);
+        ctx.textAlign = 'right';
+        if (!isDel) ctx.fillText(locked ? 'LOCKED' : ('BEST ' + (siSave.best[idx] || 0)), 152, y);
+        ctx.textAlign = 'center';
+      }
+    }
+    ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace';
+    ctx.fillText('TARGETS DOWN ' + siSave.totalTargets, W / 2, 116);
+    ctx.fillText('UP/DN PICK - A PLAY', W / 2, 128);
+    ctx.fillText('MENU: BACK', W / 2, 140);
+    ctx.textAlign = 'left';
+  }
+  function drawSiSlingshot() {
+    ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(18, SI_GROUND); ctx.lineTo(13, 106); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(18, SI_GROUND); ctx.lineTo(23, 106); ctx.stroke();
+    ctx.fillStyle = '#6b4423'; ctx.fillRect(14, SI_GROUND - 2, 8, 2);
+    if (siPhase === 'aim' && !siPaused) {
+      var rad = siAngle * Math.PI / 180;
+      var px = SI_X0 - Math.cos(rad) * 7, py = SI_Y0 + Math.sin(rad) * 7;
+      ctx.strokeStyle = '#3a2a1a'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(13, 106); ctx.lineTo(px, py); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(23, 106); ctx.lineTo(px, py); ctx.stroke();
+      var t = SI_PROJ[siProjIdx];
+      ctx.fillStyle = t.color;
+      ctx.beginPath(); ctx.arc(px, py, t.r, 0, Math.PI * 2); ctx.fill();
+      if (siProjIdx === 2) { ctx.fillStyle = '#ff8c42'; ctx.fillRect(px - 1, py - t.r - 3, 2, 3); }
+    }
+  }
+  function drawSiBlocks() {
+    for (var i = 0; i < siBlocks.length; i++) {
+      var b = siBlocks[i];
+      if (b.mat === 'W') ctx.fillStyle = '#b07a3a';
+      else if (b.mat === 'S') ctx.fillStyle = '#8a8a9a';
+      else ctx.fillStyle = '#a8d8f0';
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(b.x, b.y, b.w, 1);
+      ctx.fillRect(b.x, b.y + b.h - 1, b.w, 1);
+      if (b.mat === 'W') { ctx.fillStyle = '#8a5a2a'; ctx.fillRect(b.x + 2, b.y + Math.floor(b.h / 2), b.w - 4, 1); }
+      if (b.hp < b.maxHp) { // cracked stone
+        ctx.fillStyle = '#1c1c1c';
+        ctx.fillRect(b.x + Math.floor(b.w / 2) - 1, b.y + 1, 1, b.h - 2);
+        ctx.fillRect(b.x + Math.floor(b.w / 2), b.y + Math.floor(b.h / 2), 2, 1);
+      }
+    }
+  }
+  function drawSiTargets() {
+    for (var i = 0; i < siTargets.length; i++) {
+      var t = siTargets[i];
+      if (!t.alive) continue;
+      ctx.fillStyle = '#5a5a6a'; ctx.fillRect(t.x - 3, t.y - 9, 6, 2); // helmet
+      ctx.fillStyle = '#c03028'; ctx.fillRect(t.x - 3, t.y - 7, 6, 7); // body
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(t.x - 2, t.y - 6, 1, 1); ctx.fillRect(t.x + 1, t.y - 6, 1, 1); // eyes
+      ctx.fillStyle = '#7a1f1f'; ctx.fillRect(t.x - 3, t.y - 1, 6, 1); // feet
+    }
+  }
+  function drawSiProj() {
+    var p = siProj, t = SI_PROJ[p.type];
+    ctx.fillStyle = t.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+    if (p.type === 2) {
+      ctx.fillStyle = (siFlightFrames % 6 < 3) ? '#ff8c42' : '#ffd93d';
+      ctx.fillRect(p.x - 1, p.y - p.r - 3, 2, 3);
+    } else if (p.type === 1) {
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath(); ctx.arc(p.x - 1, p.y - 1, 1, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  function drawSiPreview() {
+    var rad = siAngle * Math.PI / 180;
+    var v = 1.2 + siPower * 0.042;
+    var p = { x: SI_X0, y: SI_Y0, vx: Math.cos(rad) * v, vy: -Math.sin(rad) * v };
+    for (var i = 0; i < 40; i++) {
+      siInteg(p); siInteg(p); // one frame = two half-steps, same as live flight
+      if (p.y > SI_GROUND || p.x > 158) break;
+      if (i % 3 === 0) {
+        ctx.fillStyle = 'rgba(255,255,255,' + (0.9 - i * 0.02) + ')';
+        ctx.beginPath(); ctx.arc(p.x, p.y, 1.2, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+  }
+  function drawSiParts() {
+    for (var i = 0; i < siParts.length; i++) {
+      var pt = siParts[i];
+      ctx.fillStyle = pt.color;
+      ctx.fillRect(pt.x - 1, pt.y - 1, pt.size, pt.size);
+    }
+  }
+  function drawSiBoom() {
+    var r = (15 - siBoom.t) * 1.2;
+    ctx.fillStyle = 'rgba(255,140,66,0.85)';
+    ctx.beginPath(); ctx.arc(siBoom.x, siBoom.y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,217,61,0.9)';
+    ctx.beginPath(); ctx.arc(siBoom.x, siBoom.y, r * 0.55, 0, Math.PI * 2); ctx.fill();
+  }
+  function drawSiege() {
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#7ec8ff'); g.addColorStop(1, '#ffe9a8');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#fff7ad';
+    ctx.beginPath(); ctx.arc(140, 24, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillRect(64, 30, 22, 5); ctx.fillRect(70, 26, 12, 5);
+    ctx.fillRect(110, 38, 18, 4);
+    ctx.fillStyle = '#4a7c3a'; ctx.fillRect(0, SI_GROUND, W, 3);
+    ctx.fillStyle = '#5a4a3a'; ctx.fillRect(0, SI_GROUND + 3, W, H - SI_GROUND - 3);
+    if (siPhase === 'stages') { drawSiStages(); return; }
+    drawSiSlingshot();
+    drawSiBlocks();
+    drawSiTargets();
+    if (siPhase === 'aim' && !siPaused) drawSiPreview();
+    if (siProj && siProj.active) drawSiProj();
+    drawSiParts();
+    if (siBoom) drawSiBoom();
+    ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('S' + (siStage + 1) + '  SHOTS ' + siShotsLeft + '  TGT ' + siTargetsLeft(), 2, 10);
+    ctx.textAlign = 'right';
+    ctx.fillText('SC ' + siScore, 158, 10);
+    ctx.textAlign = 'left';
+    ctx.fillText(SI_PROJ[siProjIdx].name + '  ANG ' + Math.round(siAngle) + '  PWR ' + Math.round(siPower) + '%', 2, 19);
+    if (siPhase === 'clear') {
+      ctx.fillStyle = 'rgba(15,56,15,0.85)'; ctx.fillRect(20, 44, 120, 62);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('STAGE CLEAR!', W / 2, 60);
+      ctx.font = '8px monospace';
+      ctx.fillText('SCORE ' + siScore + '  BEST ' + (siSave.best[siStage] || 0), W / 2, 76);
+      ctx.fillText('SHOTS LEFT ' + siShotsLeft + '  (+' + (200 * siShotsLeft) + ')', W / 2, 88);
+      ctx.fillText('NEXT STAGE UNLOCKED', W / 2, 98);
+      ctx.fillText('A: CONTINUE', W / 2, 108);
+      ctx.textAlign = 'left';
+    } else if (siPhase === 'fail') {
+      ctx.fillStyle = 'rgba(15,56,15,0.85)'; ctx.fillRect(20, 40, 120, 70);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('OUT OF SHOTS', W / 2, 56);
+      ctx.font = '8px monospace';
+      ctx.fillText('STAGE ' + (siStage + 1) + '  ' + SI_STAGES[siStage].name, W / 2, 70);
+      ctx.fillText('TARGETS LEFT ' + siTargetsLeft(), W / 2, 82);
+      ctx.fillText('SCORE ' + siScore + '  BEST ' + (siSave.best[siStage] || 0), W / 2, 94);
+      ctx.fillText('A: RETRY  MENU: EXIT', W / 2, 106);
+      ctx.textAlign = 'left';
+    } else if (siPaused) {
+      ctx.fillStyle = 'rgba(15,56,15,0.7)'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('PAUSED', W / 2, 70);
+      ctx.font = '8px monospace';
+      ctx.fillText('START: RESUME', W / 2, 86);
+      ctx.textAlign = 'left';
+    }
+  }
+
   /* ---------- Input (one handler per button, dispatched by screen) ---------- */
   JMFGAMES.on('press', 'up', function () {
     if (dsGame) return;
@@ -5174,8 +5885,9 @@ function chMoveStr(m) {
       else if (currentGame === 'overlord') { ovPickLane(-1); }
       else if (currentGame === 'solitaire') solMove('up');
       else if (currentGame === 'beat') { if (buPhase === 'select') buSelMove(-1); else if (buPhase === 'upgrade') buUpMove(-1); }
-      else if (currentGame === 'pool') { if (poPhase === 'level') poLevelMove(-1); }
+      else if (currentGame === 'pool') { if (poPhase === 'level') poOppMove(-1); }
       else if (currentGame === 'run') ruUp();
+      else if (currentGame === 'siege') siUp();
       else flap();
     }
   });
@@ -5190,8 +5902,9 @@ function chMoveStr(m) {
       else if (currentGame === 'overlord') { ovPickLane(1); }
       else if (currentGame === 'solitaire') solMove('down');
       else if (currentGame === 'beat') { if (buPhase === 'select') buSelMove(1); else if (buPhase === 'upgrade') buUpMove(1); }
-      else if (currentGame === 'pool') { if (poPhase === 'level') poLevelMove(1); }
+      else if (currentGame === 'pool') { if (poPhase === 'level') poOppMove(1); }
       else if (currentGame === 'run') ruDown();
+      else if (currentGame === 'siege') siDown();
     }
   });
   JMFGAMES.on('press', 'left', function () {
@@ -5228,11 +5941,12 @@ function chMoveStr(m) {
         else if (g.name === "OVERLORD'S BASTION") { currentGame = 'overlord'; startOverlord(); }
         else if (g.name === 'SOLITAIRE') { currentGame = 'solitaire'; startSolitaire(); }
         else if (g.name === 'SUBWAY RUNNER') { currentGame = 'run'; startRunner(); }
+        else if (g.name === 'SLINGSHOT SIEGE') { currentGame = 'siege'; startSiege(); }
         else { currentGame = 'sky'; startGame(); }
       }
       else { comingName = g.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
-    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else flap(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else flap(); }
     else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else if (currentGame === 'pool') poRematch(); else startGame(); }
   });
   JMFGAMES.on('press', 'b', function () {
@@ -5258,6 +5972,7 @@ function chMoveStr(m) {
     else if (currentGame === 'beat') buDodge();
     else if (currentGame === 'pool') poBack();
     else if (currentGame === 'run') ruBack();
+    else if (currentGame === 'siege') siBack();
   });
   JMFGAMES.on('press', 'start', function () {
     if (dsGame) return;
@@ -5271,6 +5986,7 @@ function chMoveStr(m) {
     else if (currentGame === 'beat') { if (!buOver) { buPaused = !buPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'pool') { if (!poOver) { poPaused = !poPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'run') { if (ruPhase === 'run') { ruPaused = !ruPaused; JMFGAMES.beep(330, 0.06); } }
+    else if (currentGame === 'siege') { if (siPhase === 'aim' || siPhase === 'flight') { siPaused = !siPaused; JMFGAMES.beep(330, 0.06); } }
     else if (!dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
   });
   JMFGAMES.on('press', 'menu', function () {
@@ -5290,6 +6006,7 @@ function chMoveStr(m) {
     if (currentGame === 'beat') { buUpdate(); return; }
     if (currentGame === 'pool') { poUpdate(); return; }
     if (currentGame === 'run') { ruUpdate(); return; }
+    if (currentGame === 'siege') { siUpdate(); return; }
     if (currentGame !== 'sky') return; // Hold'em has no per-frame update; without this, Sky Soar physics runs during Hold'em and the falling bird hits the ground -> gameOver() -> 'over' screen (BUSTED panel) on Hold'em launch after Sky was played
     if (paused || dead || !started) return;
     bird.vy = Math.min(bird.vy + GRAV, MAXFALL);
@@ -5395,7 +6112,7 @@ function chMoveStr(m) {
     ctx.fillText('SELECT A GAME', W / 2, 32);
     ctx.textAlign = 'left';
     for (var i = 0; i < GAMES.length; i++) {
-      var y = 44 + i * 8; // 10 games: 44..116; last highlight ends at 118, footer text starts ~126 — no overlap
+      var y = 42 + i * 7; // 11 games: 42..112; last highlight ends at 114, footer text starts ~126 — no overlap
       if (i === menuIndex) {
         ctx.fillStyle = '#0f380f';
         ctx.fillRect(8, y - 8, 144, 10);
@@ -5477,7 +6194,7 @@ function chMoveStr(m) {
     if (screen !== 'play') JMFGAMES.musicStop();
     if (screen === 'menu') drawMenu();
     else if (screen === 'coming') drawComing();
-    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else drawGame(); }
+    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else drawGame(); }
     else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else drawOver(); }
     // Delete-save confirmation overlay (on top of any screen), or the
     // pause-overlay hint for games whose delete option lives on pause.
