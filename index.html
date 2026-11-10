@@ -385,6 +385,22 @@
     if (menuIndex < menuTop) menuTop = menuIndex;
     else if (menuIndex >= menuTop + MENU_ROWS) menuTop = menuIndex - MENU_ROWS + 1;
   }
+  // Hold-to-fast-scroll (menu only): holding Up/Down auto-repeats after
+  // ~350ms (21 frames), then one row per ~100ms (6 frames), until the
+  // button is released. A quick tap still moves exactly 1 row. The
+  // repeat runs only while screen === 'menu'; gameplay is untouched.
+  var menuHoldDir = '', menuHoldFrames = 0, menuHoldLast = 0;
+  function menuHoldTick() {
+    if (!menuHoldDir) return;
+    if (!JMFGAMES.isDown(menuHoldDir)) { menuHoldDir = ''; return; }
+    menuHoldFrames++; menuHoldLast++;
+    if (menuHoldFrames > 21 && menuHoldLast >= 6) {
+      if (menuHoldDir === 'up') menuIndex = (menuIndex + GAMES.length - 1) % GAMES.length;
+      else menuIndex = (menuIndex + 1) % GAMES.length;
+      menuClamp(); JMFGAMES.beep(600, 0.04);
+      menuHoldLast = 0;
+    }
+  }
   var comingName = '';
   var best = 0;
   try { best = parseInt(localStorage.getItem('jmf-games-sky-soar-best') || '0', 10) || 0; } catch (e) { best = 0; }
@@ -5980,11 +5996,10 @@ function chMoveStr(m) {
       for (var k = 0; k < blocks.length; k++) blocks[k][0] += shift;
       for (var m2 = 0; m2 < targets.length; m2++) targets[m2][0] += shift;
     }
-    // shots: 3 base, +1 per tier third, +1 for big structures, cap 6
-    var shots = 3 + Math.floor(tier * 3);
-    if (blocks.length >= 9) shots++;
-    if (targets.length >= 5) shots++;
-    if (shots > 6) shots = 6;
+    // shots: Jesse's simple formula by target count (exact assignment)
+    var siShotsByTgt = { 1: 2, 2: 3, 3: 4, 4: 6, 5: 8 };
+    var shots = siShotsByTgt[targets.length];
+    if (shots === undefined) shots = 6; // no generated stage has 6 targets; fallback never fires
     // name: template + variant (kept short so 'S100 ' + name fits the row)
     var used = SI_TPL_USED[tpl]++;
     var vnum = used + 1;
@@ -9670,7 +9685,7 @@ function chMoveStr(m) {
   /* ---------- Input (one handler per button, dispatched by screen) ---------- */
   JMFGAMES.on('press', 'up', function () {
     if (dsGame) return;
-    if (screen === 'menu') { menuIndex = (menuIndex + GAMES.length - 1) % GAMES.length; menuClamp(); JMFGAMES.beep(600, 0.04); }
+    if (screen === 'menu') { menuIndex = (menuIndex + GAMES.length - 1) % GAMES.length; menuClamp(); JMFGAMES.beep(600, 0.04); menuHoldDir = 'up'; menuHoldFrames = 0; menuHoldLast = 0; }
     else if (screen === 'play') {
       if (currentGame === 'block') bqMove(-1, 0);
       else if (currentGame === 'bj') { bjAdjustBet(10); bjCycleAction(-1); }
@@ -9690,7 +9705,7 @@ function chMoveStr(m) {
   });
   JMFGAMES.on('press', 'down', function () {
     if (dsGame) return;
-    if (screen === 'menu') { menuIndex = (menuIndex + 1) % GAMES.length; menuClamp(); JMFGAMES.beep(600, 0.04); }
+    if (screen === 'menu') { menuIndex = (menuIndex + 1) % GAMES.length; menuClamp(); JMFGAMES.beep(600, 0.04); menuHoldDir = 'down'; menuHoldFrames = 0; menuHoldLast = 0; }
     else if (screen === 'play') {
       if (currentGame === 'block') bqMove(1, 0);
       else if (currentGame === 'bj') { bjAdjustBet(-10); bjCycleAction(1); }
@@ -9707,6 +9722,8 @@ function chMoveStr(m) {
       else if (currentGame === 'shooter') { /* ship moves via isDown in shUpdate */ }
     }
   });
+  JMFGAMES.on('release', 'up', function () { if (menuHoldDir === 'up') menuHoldDir = ''; });
+  JMFGAMES.on('release', 'down', function () { if (menuHoldDir === 'down') menuHoldDir = ''; });
   JMFGAMES.on('press', 'left', function () {
     if (dsGame) return;
     if (screen === 'play' && currentGame === 'block') bqMove(0, -1);
@@ -9817,6 +9834,8 @@ function chMoveStr(m) {
 
   /* ---------- Update (one fixed 1/60s step) ---------- */
   function update() {
+    if (screen === 'menu') { menuHoldTick(); return; }
+    menuHoldDir = ''; // not on the menu: no hold-repeat
     if (screen !== 'play') return;
     if (currentGame === 'block') { bqUpdate(); return; }
     if (currentGame === 'bj') { bjUpdate(); return; }
