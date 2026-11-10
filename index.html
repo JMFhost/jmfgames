@@ -401,6 +401,46 @@
       menuHoldLast = 0;
     }
   }
+  // Hold-to-fast-scroll (in-game list/select screens): the SAME timing as
+  // the main menu — tap = 1 row, hold >~350ms (21 frames) then 1 row per
+  // ~100ms (6 frames), until released. listHoldMove() returns the move
+  // function for the list screen we are on RIGHT NOW, or null anywhere
+  // else — so holding Up/Down during gameplay can never move a list:
+  // Slingshot aim polls isDown directly, Subway run jumps/slides, and
+  // every gameplay branch returns null here. Covers: Slingshot
+  // stage-select (100 stages + DELETE SAVE), Subway stage-select
+  // (12 + DELETE SAVE), Pool opponent-select (5 + DELETE SAVE), Chess
+  // level-select (5) / colour-select (3 + DELETE SAVE), Emberfall
+  // hero-select (3 + DELETE SAVE) / upgrade-select (3).
+  var listHoldDir = '', listHoldFrames = 0, listHoldLast = 0;
+  function listHoldMove() {
+    if (screen !== 'play' || dsGame) return null;
+    if (currentGame === 'siege' && siPhase === 'stages') return function (d) { if (d < 0) siUp(); else siDown(); };
+    if (currentGame === 'run' && ruPhase === 'stages') return function (d) { if (d < 0) ruUp(); else ruDown(); };
+    if (currentGame === 'pool' && poPhase === 'level') return function (d) { poOppMove(d); };
+    if (currentGame === 'beat' && buPhase === 'select') return function (d) { buSelMove(d); };
+    if (currentGame === 'beat' && buPhase === 'upgrade') return function (d) { buUpMove(d); };
+    if (currentGame === 'chess' && (chState === 'level' || chState === 'color')) return function (d) { chMove(d, 0); };
+    return null;
+  }
+  function listHoldTick() {
+    if (!listHoldDir) return;
+    if (!JMFGAMES.isDown(listHoldDir)) { listHoldDir = ''; return; }
+    var mv = listHoldMove();
+    if (!mv) { listHoldDir = ''; return; }
+    listHoldFrames++; listHoldLast++;
+    if (listHoldFrames > 21 && listHoldLast >= 6) {
+      mv(listHoldDir === 'up' ? -1 : 1);
+      JMFGAMES.beep(600, 0.04);
+      listHoldLast = 0;
+    }
+  }
+  function listHoldArm(dir) {
+    // Called from the Up/Down press handlers AFTER the tap move: arm the
+    // hold-repeat only if that press landed on a list screen.
+    if (listHoldMove()) { listHoldDir = dir; listHoldFrames = 0; listHoldLast = 0; }
+    else listHoldDir = '';
+  }
   var comingName = '';
   var best = 0;
   try { best = parseInt(localStorage.getItem('jmf-games-sky-soar-best') || '0', 10) || 0; } catch (e) { best = 0; }
@@ -9702,6 +9742,7 @@ function chMoveStr(m) {
       else if (currentGame === 'shooter') { /* ship moves via isDown in shUpdate */ }
       else flap();
     }
+    listHoldArm('up');
   });
   JMFGAMES.on('press', 'down', function () {
     if (dsGame) return;
@@ -9721,9 +9762,10 @@ function chMoveStr(m) {
       else if (currentGame === 'dummy') duMoveAim(0, 1);
       else if (currentGame === 'shooter') { /* ship moves via isDown in shUpdate */ }
     }
+    listHoldArm('down');
   });
-  JMFGAMES.on('release', 'up', function () { if (menuHoldDir === 'up') menuHoldDir = ''; });
-  JMFGAMES.on('release', 'down', function () { if (menuHoldDir === 'down') menuHoldDir = ''; });
+  JMFGAMES.on('release', 'up', function () { if (menuHoldDir === 'up') menuHoldDir = ''; if (listHoldDir === 'up') listHoldDir = ''; });
+  JMFGAMES.on('release', 'down', function () { if (menuHoldDir === 'down') menuHoldDir = ''; if (listHoldDir === 'down') listHoldDir = ''; });
   JMFGAMES.on('press', 'left', function () {
     if (dsGame) return;
     if (screen === 'play' && currentGame === 'block') bqMove(0, -1);
@@ -9834,8 +9876,9 @@ function chMoveStr(m) {
 
   /* ---------- Update (one fixed 1/60s step) ---------- */
   function update() {
-    if (screen === 'menu') { menuHoldTick(); return; }
+    if (screen === 'menu') { menuHoldTick(); listHoldDir = ''; return; }
     menuHoldDir = ''; // not on the menu: no hold-repeat
+    listHoldTick(); // in-game list screens: hold-to-fast-scroll (no-op elsewhere)
     if (screen !== 'play') return;
     if (currentGame === 'block') { bqUpdate(); return; }
     if (currentGame === 'bj') { bjUpdate(); return; }
@@ -9971,8 +10014,9 @@ function chMoveStr(m) {
     if (menuTop > 0) ctx.fillText('▲', 156, 34);
     if (menuEnd < GAMES.length) ctx.fillText('▼', 156, 118);
     ctx.fillStyle = '#0f380f'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
-    ctx.fillText('SKY SOAR BEST: ' + best, W / 2, 126);
-    ctx.fillText('UP/DOWN MOVE - A PLAY', W / 2, 138);
+    ctx.fillText((menuIndex + 1) + ' OF ' + GAMES.length, W / 2, 120);
+    ctx.fillText('SKY SOAR BEST: ' + best, W / 2, 130);
+    ctx.fillText('UP/DOWN MOVE - A PLAY', W / 2, 140);
     ctx.textAlign = 'left';
   }
   function drawComing() {
