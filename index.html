@@ -3600,53 +3600,80 @@ function chMoveStr(m) {
     ctx.textAlign = 'left';
   }
 
-  /* ================================================================
-     EMBERFALL BRAWL (console) — original roguelite beat 'em up on
+    /* ================================================================
+     EMBERFALL BRAWL (console) — original roguelite AUTO-BATTLER on
      the 160x144 screen. The Ash Legion burns Cindral; pick one of
-     three rebels and fight wave after wave down the burning street.
-     Controls: D-pad moves the hero (held movement), A attacks, B
-     dodge-rolls (brief invulnerability), Start pauses, Menu returns
-     to the main menu. After each cleared wave, pick one upgrade:
-     POWER +4 damage, VIGOR +25 max HP and heal 25, SWIFT +12 speed.
-     Death ends the run (permadeath); best waves cleared is saved in
-     localStorage 'jmf-games-beatemup-best'.
-     Heroes: BRAM (slow, heavy, 120 HP), KIRA (fast blade, 90 HP),
-     ASH (swiftest, 70 HP). Enemies: GRUNT, IMP, CULTIST (ranged).
+     three rebels and your hero fights the waves BY HIMSELF — you
+     command, you don't button-mash. The D-pad picks on menus, A
+     summons the other two heroes for 3 seconds (20s cooldown), B
+     fires your hero's own ultimate (10s cooldown, unique per hero),
+     Start pauses, Menu returns to the main menu. After each cleared
+     wave, pick one of three upgrades from a pool of ten to make the
+     hero stronger. Death ends the run (permadeath); best waves
+     cleared is saved in localStorage 'jmf-games-beatemup-best'.
+     Heroes: BRAM (120 HP, 14 dmg, slow — ULT: GROUND SLAM),
+     KIRA (90 HP, 9 dmg, mid — ULT: WHIRLWIND), ASH (70 HP, 6 dmg,
+     fast — ULT: SHADOW DASH). Enemies: GRUNT (flanks), IMP
+     (hit-and-run, wave 2+), CULTIST (ranged, wave 3+).
      ================================================================ */
   var BU_BEST_KEY = 'jmf-games-beatemup-best';
   var BU_ARENA = { x0: 8, x1: 152, y0: 36, y1: 130 };
   var BU_HEROES = [
-    { name: 'BRAM', tag: 'HEAVY FISTS', hp: 120, dmg: 14, spd: 55, rate: 0.50, color: '#E8590C', kind: 'bram' },
-    { name: 'KIRA', tag: 'FAST BLADE', hp: 90, dmg: 9, spd: 75, rate: 0.32, color: '#3B82F6', kind: 'kira' },
-    { name: 'ASH', tag: 'SWIFT DAGGERS', hp: 70, dmg: 6, spd: 95, rate: 0.22, color: '#22C55E', kind: 'ash' }
+    { name: 'BRAM', tag: 'HEAVY FISTS', hp: 120, dmg: 14, spd: 55, rate: 0.50, color: '#E8590C', kind: 'bram', ult: 'GROUND SLAM', ultShort: 'SLAM' },
+    { name: 'KIRA', tag: 'FAST BLADE', hp: 90, dmg: 9, spd: 75, rate: 0.32, color: '#3B82F6', kind: 'kira', ult: 'WHIRLWIND', ultShort: 'WHIRL' },
+    { name: 'ASH', tag: 'SWIFT DAGGERS', hp: 70, dmg: 6, spd: 95, rate: 0.22, color: '#22C55E', kind: 'ash', ult: 'SHADOW DASH', ultShort: 'DASH' }
   ];
   var BU_ENEMIES = {
-    grunt: { name: 'GRUNT', hp: 24, dmg: 6, spd: 22, color: '#9CA3AF', kind: 'grunt', ranged: false },
-    imp: { name: 'IMP', hp: 12, dmg: 4, spd: 42, color: '#A855F7', kind: 'imp', ranged: false },
-    cultist: { name: 'CULTIST', hp: 18, dmg: 5, spd: 18, color: '#DC2626', kind: 'cultist', ranged: true }
+    grunt: { name: 'GRUNT', hp: 24, dmg: 5, spd: 28, color: '#9CA3AF', kind: 'grunt', ranged: false },
+    imp: { name: 'IMP', hp: 12, dmg: 3, spd: 45, color: '#A855F7', kind: 'imp', ranged: false },
+    cultist: { name: 'CULTIST', hp: 18, dmg: 4, spd: 20, color: '#DC2626', kind: 'cultist', ranged: true }
   };
   var BU_UPGRADES = [
-    { name: 'POWER', desc: '+4 DAMAGE' },
-    { name: 'VIGOR', desc: '+25 HP, HEAL 25' },
-    { name: 'SWIFT', desc: '+12 SPEED' }
+    { id: 'power', name: 'POWER', desc: '+4 DAMAGE' },
+    { id: 'vigor', name: 'VIGOR', desc: '+25 HP, HEAL 25' },
+    { id: 'swift', name: 'SWIFT', desc: '+12 SPEED' },
+    { id: 'fury', name: 'FURY', desc: '+25% ATK SPEED' },
+    { id: 'reach', name: 'REACH', desc: '+6 ATK RANGE' },
+    { id: 'crit', name: 'CRIT', desc: '+10% CRIT CHANCE' },
+    { id: 'vamp', name: 'VAMP', desc: 'HEAL 5% OF DMG' },
+    { id: 'armor', name: 'ARMOR', desc: '-15% DMG TAKEN' },
+    { id: 'rally', name: 'RALLY', desc: '+1S SUMMON TIME' },
+    { id: 'focus', name: 'FOCUS', desc: '-4S SUMMON CD' }
   ];
-  var buHero = null, buHeroIdx = 0;
+  var buHero = null, buHeroIdx = 0; // buHero = the main fighter object
+  var buFighters = [];
   var buPhase = 'select'; // 'select' | 'fight' | 'upgrade'
   var buWave = 0, buCleared = 0, buKills = 0, buBest = 0;
-  var buMaxHp = 0, buHp = 0, buDmg = 0, buSpd = 0, buRate = 0, buBonusDmg = 0, buBonusSpd = 0;
-  var buX = 80, buY = 90, buFace = 1;
-  var buAtkCd = 0, buSwingT = 0, buRollCd = 0, buRolling = false, buRollT = 0, buRollDir = 1, buInvulnT = 0, buHitT = 0;
   var buEnemies = [], buProjs = [], buSpawnQ = [], buSpawnT = 0, buBannerT = 0;
-  var buPaused = false, buOver = false, buUpSel = 0;
-  var buEmbers = [];
+  var buPaused = false, buOver = false, buUpSel = 0, buUpChoices = [];
+  var buSummonCd = 0, buSummonDur = 3, buSummonCdMax = 20;
+  var buUpCounts = {}; // times each upgrade id has been picked this run (caps below)
+  var buFloats = [], buParts = [], buDeaths = [];
+  var buEmbers = [], buShakeT = 0, buFrame = 0;
   try { buBest = parseInt(localStorage.getItem(BU_BEST_KEY) || '0', 10) || 0; } catch (e) { buBest = 0; }
   function buSaveBest() { try { localStorage.setItem(BU_BEST_KEY, String(buBest)); } catch (e) {} }
+  function buMakeFighter(def, x, y, isSummon) {
+    return {
+      kind: def.kind, name: def.name, color: def.color,
+      x: x, y: y, face: 1,
+      maxHp: def.hp, hp: def.hp,
+      dmg: def.dmg, spd: def.spd, rate: def.rate,
+      range: 14, crit: 0, lifesteal: 0, armor: 0,
+      atkCd: 0, swingT: 0, spinT: 0, hitT: 0, invulnT: 0,
+      walkPh: Math.random() * 6, moving: false,
+      thinkT: Math.random() * 0.2, tx: x, ty: y, mode: 'idle', target: null, kiteT: 0, flank: 0,
+      isSummon: !!isSummon, summonT: 0, fadeT: 0,
+      ultCd: 0, dashT: 0, dashX: 1, dashY: 0
+    };
+  }
   function startBeat() {
-    buHero = null; buHeroIdx = 0;
+    buHero = null; buHeroIdx = 0; buFighters = [];
     buPhase = 'select';
     buWave = 0; buCleared = 0; buKills = 0;
     buEnemies = []; buProjs = []; buSpawnQ = [];
-    buPaused = false; buOver = false;
+    buFloats = []; buParts = []; buDeaths = [];
+    buSummonCd = 0; buSummonDur = 3; buSummonCdMax = 20; buUpCounts = {};
+    buPaused = false; buOver = false; buShakeT = 0;
     buEmbers = [];
     for (var i = 0; i < 10; i++) buEmbers.push({ x: Math.random() * W, y: Math.random() * H, s: 0.2 + Math.random() * 0.4 });
     screen = 'play';
@@ -3655,20 +3682,18 @@ function chMoveStr(m) {
   }
   function buPickHero() {
     if (buHeroIdx === BU_HEROES.length) { dsAsk('beat'); return; }
-    buHero = BU_HEROES[buHeroIdx];
-    buMaxHp = buHero.hp; buHp = buMaxHp;
-    buDmg = buHero.dmg; buSpd = buHero.spd; buRate = buHero.rate;
-    buBonusDmg = 0; buBonusSpd = 0;
-    buX = 40; buY = 90; buFace = 1;
-    buAtkCd = 0; buSwingT = 0; buRollCd = 0; buRolling = false; buInvulnT = 0; buHitT = 0;
+    var def = BU_HEROES[buHeroIdx];
+    buHero = buMakeFighter(def, 40, 90, false);
+    buFighters = [buHero];
     buWave = 0; buCleared = 0; buKills = 0;
+    buSummonCd = 0; buSummonDur = 3; buSummonCdMax = 20;
     buStartWave(1);
     JMFGAMES.beep(880, 0.1);
   }
   function buStartWave(n) {
     buWave = n;
     buPhase = 'fight';
-    var total = Math.min(12, 3 + n);
+    var total = Math.min(16, 3 + n);
     var q = [];
     var imps = n >= 2 ? Math.floor(total / 3) : 0;
     var cults = n >= 3 ? Math.floor(total / 4) : 0;
@@ -3683,58 +3708,227 @@ function chMoveStr(m) {
   }
   function buSpawnEnemy(type) {
     var base = BU_ENEMIES[type];
-    var scale = Math.min(1.8, 1 + 0.08 * (buWave - 1));
+    // Enemies keep getting tougher as waves climb, so the hero's upgrades
+    // never out-scale them for long: HP +10%/wave (cap 3.5x), damage +4%/wave,
+    // speed +4%/wave (cap 1.6x) so the early waves are gentle.
+    var scale = Math.min(3.5, 1 + 0.10 * (buWave - 1));
+    var dmgScale = 1 + 0.04 * (buWave - 1);
+    var spdScale = Math.min(1.6, 1 + 0.04 * (buWave - 1));
     var left = Math.random() < 0.5;
     var hp = Math.round(base.hp * scale);
     buEnemies.push({
       type: type, x: left ? 4 : 156, y: 40 + Math.random() * 88,
-      hp: hp, maxHp: hp, dmg: base.dmg, spd: base.spd,
+      hp: hp, maxHp: hp, dmg: Math.max(1, Math.round(base.dmg * dmgScale)), spd: Math.round(base.spd * spdScale),
       color: base.color, kind: base.kind, ranged: base.ranged,
-      cd: 0.5 + Math.random() * 0.5, throwT: 1 + Math.random(), hitT: 0, face: left ? 1 : -1
+      cd: 0.5 + Math.random() * 0.5, throwT: 1 + Math.random(), hitT: 0, face: left ? 1 : -1,
+      flank: (Math.random() * 1.6 - 0.8), mode: 'stalk', modeT: 0,
+      strafeDir: Math.random() < 0.5 ? -1 : 1, strafeT: 1 + Math.random(), dashHit: false
     });
   }
-  function buHurtHero(dmg) {
-    if (buRolling || buInvulnT > 0 || buOver) return;
-    buHp -= dmg;
-    buHitT = 8; buInvulnT = 0.5;
-    JMFGAMES.beep(220, 0.1);
+  function buDist(ax, ay, bx, by) { var dx = bx - ax, dy = by - ay; return Math.sqrt(dx * dx + dy * dy); }
+  function buNearestFighter(e) {
+    var best = null, bd = 1e9;
+    for (var i = 0; i < buFighters.length; i++) {
+      var f = buFighters[i];
+      if (f.hp <= 0 || f.fadeT > 0) continue;
+      var d = buDist(e.x, e.y, f.x, f.y);
+      if (d < bd) { bd = d; best = f; }
+    }
+    return best || buHero;
   }
-  function buAttack() {
-    if (buPhase !== 'fight' || buPaused || buOver || buRolling) return;
-    if (buAtkCd > 0) return;
-    buAtkCd = buRate;
-    buSwingT = 6;
-    JMFGAMES.beep(520, 0.05);
-    var dmg = buDmg + buBonusDmg;
+  function buEnemiesNear(f, r) {
+    var n = 0;
+    for (var i = 0; i < buEnemies.length; i++) {
+      var e = buEnemies[i];
+      if (e.hp > 0 && buDist(f.x, f.y, e.x, e.y) <= r) n++;
+    }
+    return n;
+  }
+  // --- Hero AI: re-thought a few times a second (cheap), not every frame.
+  // Target priority: CULTISTs first (ranged danger), then the most-hurt
+  // enemy in reach, then the nearest. Low HP or surrounded -> back off.
+  function buThink(f) {
+    var best = null, bestScore = -1e9;
     for (var i = 0; i < buEnemies.length; i++) {
       var e = buEnemies[i];
       if (e.hp <= 0) continue;
-      var dx = e.x - buX, dy = e.y - buY;
-      // Point-blank: an enemy right on top of the hero is hittable either
-      // way — without this, a foe at dx ~ 0 can sit on the hero unhittable
-      // while it keeps landing hits.
-      var inFront = (dx * buFace >= 0) || (Math.abs(dx) <= 2);
-      if (Math.abs(dy) <= 12 && inFront && Math.abs(dx) <= 17) {
-        e.hp -= dmg;
-        e.hitT = 6;
-        e.x += buFace * 4;
-        if (e.hp <= 0) { buKills++; JMFGAMES.beep(880, 0.07); }
+      var d = buDist(f.x, f.y, e.x, e.y);
+      var score = -d * 0.8 + (1 - e.hp / e.maxHp) * 60;
+      if (e.type === 'cultist') score += 200;
+      if (score > bestScore) { bestScore = score; best = e; }
+    }
+    f.target = best;
+    if (!best) { f.mode = 'idle'; f.tx = f.x; f.ty = f.y; return; }
+    var d = buDist(f.x, f.y, best.x, best.y);
+    var near = buEnemiesNear(f, 14);
+    if (f.hp < f.maxHp * 0.4 && near > 0) {
+      // Retreat: away from the crowd, biased toward the arena centre
+      // (never hug a wall or a corner while hurt).
+      var cx = 0, cy = 0, n = 0;
+      for (var j = 0; j < buEnemies.length; j++) {
+        var o = buEnemies[j];
+        if (o.hp > 0 && buDist(f.x, f.y, o.x, o.y) <= 30) { cx += o.x; cy += o.y; n++; }
+      }
+      if (n > 0) {
+        var ax = f.x - cx / n, ay = f.y - cy / n;
+        var al = Math.sqrt(ax * ax + ay * ay) || 1;
+        f.tx = (f.x + ax / al * 22 + 80) / 2;
+        f.ty = (f.y + ay / al * 22 + 83) / 2;
+      } else { f.tx = 80; f.ty = 83; }
+      f.tx = Math.max(BU_ARENA.x0, Math.min(BU_ARENA.x1, f.tx));
+      f.ty = Math.max(BU_ARENA.y0, Math.min(BU_ARENA.y1, f.ty));
+      f.mode = 'retreat';
+      return;
+    }
+    if (near >= 2 && f.hp < f.maxHp * 0.75 && f.kiteT <= 0) {
+      // Kite: step back out of the crowd, then re-engage.
+      var kx = 0, ky = 0, kn = 0;
+      for (var k = 0; k < buEnemies.length; k++) {
+        var q = buEnemies[k];
+        if (q.hp > 0 && buDist(f.x, f.y, q.x, q.y) <= 16) { kx += q.x; ky += q.y; kn++; }
+      }
+      if (kn > 0) {
+        var bx = f.x - kx / kn, by = f.y - ky / kn;
+        var bl = Math.sqrt(bx * bx + by * by) || 1;
+        f.tx = Math.max(BU_ARENA.x0, Math.min(BU_ARENA.x1, f.x + bx / bl * 14));
+        f.ty = Math.max(BU_ARENA.y0, Math.min(BU_ARENA.y1, f.y + by / bl * 14));
+        f.mode = 'kite'; f.kiteT = 0.45;
+        return;
       }
     }
+    if (d <= f.range) {
+      f.mode = 'attack';
+      f.face = best.x >= f.x ? 1 : -1;
+      return;
+    }
+    // Chase: close to just inside range, with a flank offset so allies
+    // spread around the target instead of piling on one spot.
+    var dx = best.x - f.x, dy = best.y - f.y;
+    var dd = Math.sqrt(dx * dx + dy * dy) || 1;
+    var stop = Math.max(0, d - f.range + 2);
+    var px = -dy / dd * f.flank, py = dx / dd * f.flank;
+    f.tx = Math.max(BU_ARENA.x0, Math.min(BU_ARENA.x1, f.x + dx / dd * stop + px));
+    f.ty = Math.max(BU_ARENA.y0, Math.min(BU_ARENA.y1, f.y + dy / dd * stop + py));
+    f.mode = 'chase';
   }
-  function buDodge() {
-    if (buPhase !== 'fight' || buPaused || buOver || buRolling) return;
-    if (buRollCd > 0) return;
-    buRolling = true; buRollT = 0.25; buRollCd = 1.0;
-    buRollDir = buFace;
-    if (JMFGAMES.isDown('left')) buRollDir = -1;
-    else if (JMFGAMES.isDown('right')) buRollDir = 1;
-    JMFGAMES.beep(440, 0.06);
+  function buFighterAttack(f, e) {
+    f.atkCd = f.rate;
+    f.swingT = 6;
+    f.face = e.x >= f.x ? 1 : -1;
+    JMFGAMES.beep(f.kind === 'bram' ? 420 : 520, 0.04);
+    var crit = Math.random() < f.crit;
+    var dmg = Math.round(f.dmg * (crit ? 2 : 1));
+    buDamageEnemy(e, dmg, f, crit);
+  }
+  function buDamageEnemy(e, dmg, src, crit) {
+    e.hp -= dmg;
+    e.hitT = 6;
+    var dx = src ? (e.x - src.x) : 1;
+    e.x += (dx >= 0 ? 1 : -1) * 2;
+    buFloats.push({ x: e.x, y: e.y - 12, txt: String(dmg) + (crit ? '!' : ''), t: 30, col: crit ? '#F59E0B' : '#FFFFFF' });
+    for (var i = 0; i < 3; i++) buParts.push({ x: e.x, y: e.y - 4, vx: (Math.random() - 0.5) * 40, vy: -10 - Math.random() * 20, t: 14, col: '#FDE68A' });
+    if (src && src.lifesteal > 0 && src.hp > 0) src.hp = Math.min(src.maxHp, src.hp + dmg * src.lifesteal);
+    if (e.hp <= 0) {
+      buKills++;
+      buDeaths.push({ x: e.x, y: e.y, t: 20, kind: e.kind, color: e.color });
+      JMFGAMES.beep(880, 0.07);
+    }
+  }
+  function buHurtFighter(f, dmg) {
+    if (f.invulnT > 0 || buOver || f.hp <= 0) return;
+    var taken = Math.max(1, Math.round(dmg * (1 - f.armor)));
+    f.hp -= taken;
+    f.hitT = 8; f.invulnT = 0.5;
+    buFloats.push({ x: f.x, y: f.y - 12, txt: '-' + taken, t: 26, col: '#EF4444' });
+    if (!f.isSummon) JMFGAMES.beep(220, 0.1);
+    if (f.hp <= 0) {
+      f.hp = 0;
+      if (f.isSummon) f.fadeT = 0.3;
+      else buEnd();
+    }
+  }
+  // --- A: SUMMON. The other two heroes fight alongside for exactly
+  // 3 seconds (upgradable), then vanish. Cooldown exactly 20s.
+  function buSummon() {
+    if (buPhase !== 'fight' || buPaused || buOver || !buHero || buHero.hp <= 0) return;
+    if (buSummonCd > 0) return;
+    buSummonCd = buSummonCdMax;
+    var others = [];
+    for (var i = 0; i < BU_HEROES.length; i++) if (BU_HEROES[i].kind !== buHero.kind) others.push(BU_HEROES[i]);
+    for (var j = 0; j < others.length; j++) {
+      var f = buMakeFighter(others[j], Math.max(BU_ARENA.x0, Math.min(BU_ARENA.x1, buHero.x + (j === 0 ? -12 : 12))), buHero.y + 4, true);
+      f.summonT = buSummonDur;
+      f.flank = j === 0 ? -12 : 12;
+      f.thinkT = 0;
+      buFighters.push(f);
+      for (var p = 0; p < 10; p++) {
+        var a = Math.random() * Math.PI * 2;
+        buParts.push({ x: f.x, y: f.y - 4, vx: Math.cos(a) * 50, vy: Math.sin(a) * 50 - 10, t: 18, col: '#FFFFFF' });
+      }
+    }
+    JMFGAMES.beep(990, 0.12);
+  }
+  // --- B: ULTIMATE. Unique per hero, cooldown exactly 10 seconds.
+  // BRAM: GROUND SLAM (AoE shockwave + knockback). KIRA: WHIRLWIND
+  // (spinning blade hits everything around her). ASH: SHADOW DASH
+  // (dash through the densest cluster, slicing all in the path).
+  function buUltimate() {
+    if (buPhase !== 'fight' || buPaused || buOver || !buHero || buHero.hp <= 0) return;
+    if (buHero.ultCd > 0) return;
+    buHero.ultCd = 10;
+    var h = buHero;
+    if (h.kind === 'bram') {
+      for (var i = 0; i < buEnemies.length; i++) {
+        var e = buEnemies[i];
+        if (e.hp <= 0) continue;
+        if (buDist(h.x, h.y, e.x, e.y) <= 30) {
+          buDamageEnemy(e, Math.round(h.dmg * 2.5), h, false);
+          var dx = e.x - h.x, dy = e.y - h.y;
+          var dl = Math.sqrt(dx * dx + dy * dy) || 1;
+          e.x = Math.max(2, Math.min(158, e.x + dx / dl * 10));
+          e.y = Math.max(30, Math.min(136, e.y + dy / dl * 5));
+        }
+      }
+      buShakeT = 8;
+      for (var p = 0; p < 16; p++) {
+        var a = p / 16 * Math.PI * 2;
+        buParts.push({ x: h.x, y: h.y + 2, vx: Math.cos(a) * 70, vy: Math.sin(a) * 40, t: 16, col: '#F59E0B' });
+      }
+      JMFGAMES.beep(140, 0.2);
+    } else if (h.kind === 'kira') {
+      h.spinT = 14;
+      for (var j = 0; j < buEnemies.length; j++) {
+        var w = buEnemies[j];
+        if (w.hp <= 0) continue;
+        if (buDist(h.x, h.y, w.x, w.y) <= 24) buDamageEnemy(w, Math.round(h.dmg * 2.2), h, false);
+      }
+      for (var q = 0; q < 12; q++) {
+        var b = Math.random() * Math.PI * 2;
+        buParts.push({ x: h.x, y: h.y - 4, vx: Math.cos(b) * 60, vy: Math.sin(b) * 60, t: 14, col: '#93C5FD' });
+      }
+      JMFGAMES.beep(700, 0.12);
+    } else {
+      var tgt = null, ts = -1e9;
+      for (var k = 0; k < buEnemies.length; k++) {
+        var c = buEnemies[k];
+        if (c.hp <= 0) continue;
+        var sc = (c.type === 'cultist' ? 100 : 0) - buDist(h.x, h.y, c.x, c.y);
+        if (sc > ts) { ts = sc; tgt = c; }
+      }
+      if (tgt) {
+        var ddx = tgt.x - h.x, ddy = tgt.y - h.y;
+        var ddl = Math.sqrt(ddx * ddx + ddy * ddy) || 1;
+        h.dashX = ddx / ddl; h.dashY = ddy / ddl;
+        h.face = h.dashX >= 0 ? 1 : -1;
+      } else { h.dashX = h.face; h.dashY = 0; }
+      h.dashT = 0.22; h.invulnT = 0.3;
+      JMFGAMES.beep(880, 0.1);
+    }
   }
   function buAction() {
     if (buPhase === 'select') buPickHero();
     else if (buPhase === 'upgrade') buApplyUpgrade();
-    else buAttack();
+    else buSummon();
   }
   function buSelMove(d) {
     if (buPhase !== 'select') return;
@@ -3743,13 +3937,50 @@ function chMoveStr(m) {
   }
   function buUpMove(d) {
     if (buPhase !== 'upgrade') return;
-    buUpSel = (buUpSel + d + BU_UPGRADES.length) % BU_UPGRADES.length;
+    buUpSel = (buUpSel + d + buUpChoices.length) % buUpChoices.length;
     JMFGAMES.beep(600, 0.04);
   }
+  function buRollUpgrades() {
+    var h = buHero;
+    // Per-upgrade pick caps, so the hero's power plateaus while the
+    // enemies keep scaling — no infinite god-mode spiral.
+    var cap = { power: 10, vigor: 6, swift: 4, fury: 7, reach: 4, crit: 5, vamp: 3, armor: 3, rally: 2, focus: 2 };
+    var avail = [];
+    for (var i = 0; i < BU_UPGRADES.length; i++) {
+      var u = BU_UPGRADES[i];
+      if ((buUpCounts[u.id] || 0) >= cap[u.id]) continue;
+      if (u.id === 'armor' && h.armor >= 0.45) continue;
+      if (u.id === 'rally' && buSummonDur >= 5) continue;
+      if (u.id === 'focus' && buSummonCdMax <= 12) continue;
+      if (u.id === 'crit' && h.crit >= 0.5) continue;
+      if (u.id === 'vamp' && h.lifesteal >= 0.15) continue;
+      if (u.id === 'fury' && h.rate <= 0.13) continue;
+      if (u.id === 'reach' && h.range >= 35) continue;
+      avail.push(u);
+    }
+    for (var s = avail.length - 1; s > 0; s--) { var r = Math.floor(Math.random() * (s + 1)); var t = avail[s]; avail[s] = avail[r]; avail[r] = t; }
+    buUpChoices = avail.slice(0, 3);
+    // When most upgrades are maxed, pad with a plain heal (never offer a
+    // maxed upgrade, which would do nothing).
+    var healUp = { id: 'heal', name: 'RECOVER', desc: '+30 HP NOW' };
+    while (buUpChoices.length < 3) buUpChoices.push(healUp);
+    buUpSel = 0;
+  }
   function buApplyUpgrade() {
-    if (buUpSel === 0) buBonusDmg += 4;
-    else if (buUpSel === 1) { buMaxHp += 25; buHp = Math.min(buMaxHp, buHp + 25); }
-    else buBonusSpd += 12;
+    var u = buUpChoices[buUpSel];
+    var h = buHero;
+    buUpCounts[u.id] = (buUpCounts[u.id] || 0) + 1;
+    if (u.id === 'power') h.dmg += 4;
+    else if (u.id === 'vigor') { h.maxHp += 25; h.hp = Math.min(h.maxHp, h.hp + 25); }
+    else if (u.id === 'swift') h.spd += 12;
+    else if (u.id === 'fury') h.rate = Math.max(0.12, h.rate * 0.8);
+    else if (u.id === 'reach') h.range = Math.min(35, h.range + 6);
+    else if (u.id === 'crit') h.crit = Math.min(0.5, h.crit + 0.1);
+    else if (u.id === 'vamp') h.lifesteal = Math.min(0.15, h.lifesteal + 0.05);
+    else if (u.id === 'armor') h.armor = Math.min(0.45, h.armor + 0.15);
+    else if (u.id === 'rally') buSummonDur = Math.min(5, buSummonDur + 1);
+    else if (u.id === 'focus') buSummonCdMax = Math.max(12, buSummonCdMax - 4);
+    else if (u.id === 'heal') h.hp = Math.min(h.maxHp, h.hp + 30);
     JMFGAMES.beep(990, 0.1);
     buStartWave(buWave + 1);
   }
@@ -3761,65 +3992,164 @@ function chMoveStr(m) {
   }
   function buUpdate() {
     if (screen !== 'play' || buPaused || buOver) return;
+    buFrame++;
     var dt = 1 / 60;
     for (var ei = 0; ei < buEmbers.length; ei++) {
       var em = buEmbers[ei];
       em.y -= em.s; em.x += 0.1;
       if (em.y < 0) { em.y = H; em.x = Math.random() * W; }
     }
+    for (var fi = buFloats.length - 1; fi >= 0; fi--) { var fl = buFloats[fi]; fl.y -= 0.5; fl.t--; if (fl.t <= 0) buFloats.splice(fi, 1); }
+    for (var pi = buParts.length - 1; pi >= 0; pi--) { var pa = buParts[pi]; pa.x += pa.vx * dt; pa.y += pa.vy * dt; pa.vy += 30 * dt; pa.t--; if (pa.t <= 0) buParts.splice(pi, 1); }
+    for (var di = buDeaths.length - 1; di >= 0; di--) { buDeaths[di].t--; if (buDeaths[di].t <= 0) buDeaths.splice(di, 1); }
+    if (buShakeT > 0) buShakeT--;
     if (buPhase !== 'fight') return;
     if (buBannerT > 0) buBannerT--;
-    if (buAtkCd > 0) buAtkCd -= dt;
-    if (buSwingT > 0) buSwingT--;
-    if (buRollCd > 0) buRollCd -= dt;
-    if (buInvulnT > 0) buInvulnT -= dt;
-    if (buHitT > 0) buHitT--;
-    var mx = (JMFGAMES.isDown('right') ? 1 : 0) - (JMFGAMES.isDown('left') ? 1 : 0);
-    var my = (JMFGAMES.isDown('down') ? 1 : 0) - (JMFGAMES.isDown('up') ? 1 : 0);
-    var spd = buSpd + buBonusSpd;
-    if (buRolling) {
-      buX += buRollDir * spd * 3 * dt;
-      buRollT -= dt;
-      if (buRollT <= 0) buRolling = false;
-    } else {
-      if (mx !== 0 && my !== 0) { mx *= 0.7071; my *= 0.7071; }
-      buX += mx * spd * dt;
-      buY += my * spd * dt;
-      if (mx !== 0) buFace = mx > 0 ? 1 : -1;
+    if (buSummonCd > 0) buSummonCd -= dt;
+    // --- fighters (hero + summons), driven by their own AI ---
+    for (var f2 = 0; f2 < buFighters.length; f2++) {
+      var f = buFighters[f2];
+      if (f.atkCd > 0) f.atkCd -= dt;
+      if (f.swingT > 0) f.swingT--;
+      if (f.spinT > 0) f.spinT--;
+      if (f.hitT > 0) f.hitT--;
+      if (f.invulnT > 0) f.invulnT -= dt;
+      if (f.ultCd > 0) f.ultCd -= dt;
+      if (f.isSummon && f.summonT > 0) {
+        f.summonT -= dt;
+        if (f.summonT <= 0 && f.fadeT <= 0) f.fadeT = 0.3;
+      }
+      if (f.fadeT > 0) { f.fadeT -= dt; continue; }
+      if (f.hp <= 0) continue;
+      // ASH ultimate: dash through enemies, slicing all in the path.
+      if (f.dashT > 0) {
+        f.dashT -= dt;
+        f.x += f.dashX * 320 * dt;
+        f.y += f.dashY * 320 * dt;
+        f.x = Math.max(BU_ARENA.x0, Math.min(BU_ARENA.x1, f.x));
+        f.y = Math.max(BU_ARENA.y0, Math.min(BU_ARENA.y1, f.y));
+        buParts.push({ x: f.x, y: f.y - 4, vx: 0, vy: 0, t: 10, col: f.color });
+        for (var de = 0; de < buEnemies.length; de++) {
+          var de2 = buEnemies[de];
+          if (de2.hp > 0 && !de2.dashHit && buDist(f.x, f.y, de2.x, de2.y) <= 10) {
+            de2.dashHit = true;
+            buDamageEnemy(de2, Math.round(f.dmg * 2), f, false);
+          }
+        }
+        if (f.dashT <= 0) { for (var dr = 0; dr < buEnemies.length; dr++) buEnemies[dr].dashHit = false; }
+        continue;
+      }
+      if (f.thinkT > 0) f.thinkT -= dt; else { buThink(f); f.thinkT = 0.2; }
+      if (f.kiteT > 0) f.kiteT -= dt;
+      var mdx = f.tx - f.x, mdy = f.ty - f.y;
+      var md = Math.sqrt(mdx * mdx + mdy * mdy);
+      f.moving = false;
+      if (f.mode === 'chase' || f.mode === 'retreat' || f.mode === 'kite') {
+        if (md > 2) {
+          f.x += mdx / md * f.spd * dt;
+          f.y += mdy / md * f.spd * dt;
+          f.moving = true;
+          f.walkPh += dt * 10;
+          if (mdx !== 0) f.face = mdx > 0 ? 1 : -1;
+        }
+      }
+      f.x = Math.max(BU_ARENA.x0, Math.min(BU_ARENA.x1, f.x));
+      f.y = Math.max(BU_ARENA.y0, Math.min(BU_ARENA.y1, f.y));
+      if (f.mode === 'attack' && f.target && f.target.hp > 0 && f.atkCd <= 0) {
+        var td = buDist(f.x, f.y, f.target.x, f.target.y);
+        if (td <= f.range) buFighterAttack(f, f.target);
+        else f.thinkT = 0; // target drifted out — re-think now
+      }
     }
-    if (buX < BU_ARENA.x0) buX = BU_ARENA.x0;
-    if (buX > BU_ARENA.x1) buX = BU_ARENA.x1;
-    if (buY < BU_ARENA.y0) buY = BU_ARENA.y0;
-    if (buY > BU_ARENA.y1) buY = BU_ARENA.y1;
-    if (buSpawnQ.length > 0 && buEnemies.length < 6) {
+    // Allies don't stack on one tile.
+    for (var a = 0; a < buFighters.length; a++) {
+      for (var b = a + 1; b < buFighters.length; b++) {
+        var fa = buFighters[a], fb = buFighters[b];
+        if (fa.hp <= 0 || fb.hp <= 0 || fa.fadeT > 0 || fb.fadeT > 0) continue;
+        var sx = fb.x - fa.x, sy = fb.y - fa.y;
+        var sd = Math.sqrt(sx * sx + sy * sy);
+        if (sd > 0 && sd < 8) {
+          var push = (8 - sd) / 2;
+          fa.x -= sx / sd * push; fa.y -= sy / sd * push;
+          fb.x += sx / sd * push; fb.y += sy / sd * push;
+        }
+      }
+    }
+    buFighters = buFighters.filter(function (ff) {
+      if (!ff.isSummon) return true;
+      // A summon leaves once its time is up and its fade finished (a
+      // dead summon leaves at once; the death animation lives in buDeaths).
+      return ff.hp > 0 && (ff.summonT > 0 || ff.fadeT > 0);
+    });
+    if (!buHero || buHero.hp <= 0) { if (!buOver) buEnd(); return; }
+    // --- spawning: pressure rises with the wave — more enemies alive at
+    // once and faster spawns, so the hero can be overwhelmed late.
+    var buMaxAlive = Math.min(10, 6 + Math.floor((buWave - 1) / 3));
+    var buSpawnInt = Math.max(0.5, 1.1 - 0.04 * (buWave - 1));
+    if (buSpawnQ.length > 0 && buEnemies.length < buMaxAlive) {
       buSpawnT -= dt;
-      if (buSpawnT <= 0) { buSpawnEnemy(buSpawnQ.shift()); buSpawnT = 1.1; }
+      if (buSpawnT <= 0) { buSpawnEnemy(buSpawnQ.shift()); buSpawnT = buSpawnInt; }
     }
+    // --- enemies: smarter than "walk at the player" ---
     for (var i = 0; i < buEnemies.length; i++) {
       var e = buEnemies[i];
       if (e.hp <= 0) continue;
       if (e.hitT > 0) e.hitT--;
       if (e.cd > 0) e.cd -= dt;
-      var dx = buX - e.x, dy = buY - e.y;
+      var tgt = buNearestFighter(e);
+      var dx = tgt.x - e.x, dy = tgt.y - e.y;
       var dist = Math.sqrt(dx * dx + dy * dy) || 1;
       e.face = dx >= 0 ? 1 : -1;
       if (e.ranged) {
-        if (Math.abs(dx) > 48) {
-          e.x += (dx / dist) * e.spd * dt;
-          e.y += (dy / dist) * e.spd * 0.6 * dt;
+        // CULTIST: keep its distance, strafe, shoot from range.
+        if (dist < 42) {
+          e.x -= dx / dist * e.spd * dt;
+          e.y -= dy / dist * e.spd * 0.5 * dt;
+        } else if (dist > 64) {
+          e.x += dx / dist * e.spd * dt;
+          e.y += dy / dist * e.spd * 0.6 * dt;
         } else {
-          e.throwT -= dt;
-          if (e.throwT <= 0) {
-            e.throwT = 1.6;
-            buProjs.push({ x: e.x, y: e.y - 2, vx: dx / dist * 70, vy: dy / dist * 70, dmg: e.dmg, life: 3 });
-            JMFGAMES.beep(700, 0.05);
+          e.strafeT -= dt;
+          if (e.strafeT <= 0) { e.strafeDir *= -1; e.strafeT = 1 + Math.random() * 1.5; }
+          e.x += -dy / dist * e.strafeDir * e.spd * 0.5 * dt;
+          e.y += dx / dist * e.strafeDir * e.spd * 0.5 * dt;
+        }
+        e.throwT -= dt;
+        if (e.throwT <= 0) {
+          e.throwT = 1.6;
+          buProjs.push({ x: e.x, y: e.y - 2, vx: dx / dist * 70, vy: dy / dist * 70, dmg: e.dmg, life: 3 });
+          JMFGAMES.beep(700, 0.05);
+        }
+      } else if (e.type === 'imp') {
+        // IMP: dart in, hit, pull back out.
+        if (e.mode === 'flee') {
+          e.modeT -= dt;
+          e.x -= dx / dist * e.spd * 1.4 * dt;
+          e.y -= dy / dist * e.spd * 1.4 * dt;
+          if (e.modeT <= 0) e.mode = 'stalk';
+        } else {
+          if (dist <= 11) {
+            if (e.cd <= 0) { e.cd = 0.9; buHurtFighter(tgt, e.dmg); e.mode = 'flee'; e.modeT = 0.6; }
+          } else {
+            e.x += dx / dist * e.spd * dt;
+            e.y += dy / dist * e.spd * 0.7 * dt;
           }
         }
-      } else if (Math.abs(dx) <= 9 && Math.abs(dy) <= 8) {
-        if (e.cd <= 0) { e.cd = 0.9; buHurtHero(e.dmg); }
       } else {
-        e.x += (dx / dist) * e.spd * dt;
-        e.y += (dy / dist) * e.spd * 0.7 * dt;
+        // GRUNT: flanking approach — each grunt holds its own angle so
+        // they spread around the hero instead of single-filing in.
+        var fx = dx / dist, fy = dy / dist;
+        var ca = Math.cos(e.flank), sa = Math.sin(e.flank);
+        var rx = fx * ca - fy * sa, ry = fx * sa + fy * ca;
+        if (dist <= 11) {
+          if (e.cd <= 0) { e.cd = 0.9; buHurtFighter(tgt, e.dmg); }
+        } else {
+          var gx = tgt.x - rx * 9, gy = tgt.y - ry * 9;
+          var gdx = gx - e.x, gdy = gy - e.y;
+          var gd = Math.sqrt(gdx * gdx + gdy * gdy) || 1;
+          e.x += gdx / gd * e.spd * dt;
+          e.y += gdy / gd * e.spd * 0.7 * dt;
+        }
       }
       if (e.x < 2) e.x = 2;
       if (e.x > 158) e.x = 158;
@@ -3828,73 +4158,102 @@ function chMoveStr(m) {
       for (var j = i + 1; j < buEnemies.length; j++) {
         var o = buEnemies[j];
         if (o.hp <= 0) continue;
-        var sx = o.x - e.x, sy = o.y - e.y;
-        var sd = Math.sqrt(sx * sx + sy * sy);
-        if (sd > 0 && sd < 9) {
-          var push = (9 - sd) / 2;
-          e.x -= sx / sd * push; e.y -= sy / sd * push;
-          o.x += sx / sd * push; o.y += sy / sd * push;
+        var sx2 = o.x - e.x, sy2 = o.y - e.y;
+        var sd2 = Math.sqrt(sx2 * sx2 + sy2 * sy2);
+        if (sd2 > 0 && sd2 < 9) {
+          var push2 = (9 - sd2) / 2;
+          e.x -= sx2 / sd2 * push2; e.y -= sy2 / sd2 * push2;
+          o.x += sx2 / sd2 * push2; o.y += sy2 / sd2 * push2;
         }
       }
     }
-    for (var pi = buProjs.length - 1; pi >= 0; pi--) {
-      var p = buProjs[pi];
+    // --- projectiles (hit any fighter, hero or summoned) ---
+    for (var pi2 = buProjs.length - 1; pi2 >= 0; pi2--) {
+      var p = buProjs[pi2];
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
-      var pdx = buX - p.x, pdy = buY - p.y;
-      if (Math.abs(pdx) < 6 && Math.abs(pdy) < 7) {
-        buHurtHero(p.dmg);
-        buProjs.splice(pi, 1);
-        continue;
+      var hit = false;
+      for (var pf = 0; pf < buFighters.length; pf++) {
+        var ff = buFighters[pf];
+        if (ff.hp > 0 && Math.abs(ff.x - p.x) < 6 && Math.abs(ff.y - p.y) < 7) { buHurtFighter(ff, p.dmg); hit = true; break; }
       }
-      if (p.life <= 0 || p.x < 0 || p.x > W || p.y < 0 || p.y > H) buProjs.splice(pi, 1);
+      if (hit) { buProjs.splice(pi2, 1); continue; }
+      if (p.life <= 0 || p.x < 0 || p.x > W || p.y < 0 || p.y > H) buProjs.splice(pi2, 1);
     }
     buEnemies = buEnemies.filter(function (e) { return e.hp > 0; });
     if (buSpawnQ.length === 0 && buEnemies.length === 0) {
       buCleared = buWave;
-      buPhase = 'upgrade'; buUpSel = 0;
+      buPhase = 'upgrade';
+      // Catch a breath: clearing a wave restores 15% of max HP, so a run
+      // is a slow grind down, not a one-way bleed.
+      if (buHero) buHero.hp = Math.min(buHero.maxHp, buHero.hp + Math.round(buHero.maxHp * 0.15));
+      buRollUpgrades();
       JMFGAMES.beep(990, 0.12);
       return;
     }
-    if (buHp <= 0) { buHp = 0; buEnd(); }
+    if (buHero.hp <= 0) { buHero.hp = 0; buEnd(); }
   }
-  function buDrawFigure(x, y, color, dir, kind, flash) {
+  function buDrawFigure(x, y, color, dir, kind, flash, bob, swing, spin) {
     ctx.save();
-    ctx.translate(x, y);
+    ctx.translate(x, y + (bob || 0));
     if (dir < 0) ctx.scale(-1, 1);
     var C = flash ? '#ffffff' : color;
     var D = '#0f380f';
+    // Ground shadow.
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(-4, 4, 8, 2);
+    // Feet (alternate with the walk bob).
+    var fOff = (bob || 0) > 0 ? 1 : 0;
+    ctx.fillStyle = D;
+    ctx.fillRect(-3, 3 + (fOff ? 0 : 1), 2, 2);
+    ctx.fillRect(1, 3 + (fOff ? 1 : 0), 2, 2);
     if (kind === 'bram') {
       ctx.fillStyle = C;
       ctx.beginPath(); ctx.arc(0, -5, 3.5, 0, Math.PI * 2); ctx.fill();
       ctx.fillRect(-4, -2, 8, 7);
-      ctx.fillRect(3, -1, 3, 3);
-      ctx.fillRect(-6, -1, 3, 3);
+      ctx.fillStyle = '#FDE68A'; // heavy gloves
+      if (swing) { ctx.fillRect(6, -4, 4, 4); ctx.fillRect(-7, -1, 3, 3); }
+      else { ctx.fillRect(3, -1, 3, 3); ctx.fillRect(-6, -1, 3, 3); }
+      ctx.fillStyle = '#DC2626'; // headband
+      ctx.fillRect(-3, -8, 6, 1);
+      ctx.fillRect(3, -8, 2, 2);
       ctx.fillStyle = D;
       ctx.fillRect(1, -6, 2, 1);
     } else if (kind === 'kira') {
       ctx.fillStyle = C;
       ctx.beginPath(); ctx.arc(0, -5, 3, 0, Math.PI * 2); ctx.fill();
       ctx.fillRect(-3, -2, 6, 7);
-      ctx.fillStyle = '#E5E7EB';
-      ctx.fillRect(3, -8, 2, 10);
-      ctx.fillRect(3, -8, 5, 2);
+      ctx.fillStyle = '#E5E7EB'; // long sword
+      if (swing) { ctx.fillRect(4, -9, 9, 2); ctx.fillRect(3, -3, 3, 2); }
+      else { ctx.fillRect(3, -8, 2, 10); ctx.fillRect(3, -8, 5, 2); }
+      ctx.fillStyle = '#1E3A8A'; // headband
+      ctx.fillRect(-3, -8, 6, 1);
       ctx.fillStyle = D;
       ctx.fillRect(1, -6, 2, 1);
+      if (spin) {
+        ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, -3, 10, (14 - spin) * 0.9, (14 - spin) * 0.9 + 2.2);
+        ctx.stroke();
+      }
     } else if (kind === 'ash') {
       ctx.fillStyle = C;
       ctx.beginPath(); ctx.arc(0, -4, 3, 0, Math.PI * 2); ctx.fill();
       ctx.fillRect(-3, -1, 6, 5);
-      ctx.fillStyle = '#E5E7EB';
+      ctx.fillStyle = '#E5E7EB'; // twin daggers
       ctx.fillRect(3, -2, 3, 1);
       ctx.fillRect(-6, -2, 3, 1);
-      ctx.fillStyle = '#F59E0B';
-      ctx.fillRect(-3, -5, 6, 1);
+      ctx.fillStyle = '#F59E0B'; // gold headband
+      ctx.fillRect(-3, -7, 6, 1);
+      ctx.fillStyle = D;
+      ctx.fillRect(1, -5, 1, 1);
     } else if (kind === 'grunt') {
       ctx.fillStyle = C;
       ctx.beginPath(); ctx.arc(0, -5, 3, 0, Math.PI * 2); ctx.fill();
       ctx.fillRect(-4, -2, 8, 7);
-      ctx.fillStyle = '#6B7280';
+      ctx.fillStyle = '#6B7280'; // spear
       ctx.fillRect(4, -9, 1, 12);
+      ctx.fillStyle = '#D1D5DB';
+      ctx.fillRect(4, -11, 1, 2);
       ctx.fillStyle = D;
       ctx.fillRect(1, -6, 2, 1);
     } else if (kind === 'imp') {
@@ -3910,10 +4269,16 @@ function chMoveStr(m) {
       ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(-4, 5); ctx.lineTo(4, 5); ctx.closePath(); ctx.fill();
       ctx.fillStyle = D;
       ctx.beginPath(); ctx.arc(0, -5, 1.5, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#F59E0B';
+      ctx.fillStyle = '#F59E0B'; // fire orb
       ctx.beginPath(); ctx.arc(5, -8, 1.5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = C;
       ctx.fillRect(4, -8, 1, 10);
+    }
+    if (swing && (kind === 'bram' || kind === 'ash')) {
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(10, -2, 6, -1.2, 1.2);
+      ctx.stroke();
     }
     ctx.restore();
   }
@@ -3922,7 +4287,7 @@ function chMoveStr(m) {
     ctx.font = 'bold 10px monospace';
     ctx.fillText('CHOOSE YOUR FIGHTER', W / 2, 20);
     ctx.font = '8px monospace';
-    ctx.fillText('THE ASH LEGION BURNS CINDRAL', W / 2, 32);
+    ctx.fillText('THE HERO FIGHTS ALONE - YOU COMMAND', W / 2, 32);
     for (var i = 0; i < BU_HEROES.length; i++) {
       var h = BU_HEROES[i];
       var y = 48 + i * 25;
@@ -3934,10 +4299,10 @@ function chMoveStr(m) {
       } else {
         ctx.fillStyle = '#F8FAFC';
       }
-      buDrawFigure(22, y + 2, h.color, 1, h.kind, false);
+      buDrawFigure(22, y + 2, h.color, 1, h.kind, false, 0, 0, 0);
       ctx.textAlign = 'left';
       ctx.fillText(h.name + ' - ' + h.tag, 34, y - 1);
-      ctx.fillText('HP ' + h.hp + '  DMG ' + h.dmg + '  SPD ' + h.spd, 34, y + 9);
+      ctx.fillText('HP ' + h.hp + '  DMG ' + h.dmg + '  ULT ' + h.ultShort, 34, y + 9);
       ctx.textAlign = 'center';
     }
     // DELETE SAVE row (index BU_HEROES.length).
@@ -3957,24 +4322,50 @@ function chMoveStr(m) {
     ctx.textAlign = 'left';
   }
   function buDrawUpgrade() {
+    var h = buHero;
     ctx.fillStyle = '#26263A';
-    ctx.fillRect(18, 30, 124, 84);
+    ctx.fillRect(18, 24, 124, 98);
     ctx.fillStyle = '#F8FAFC';
-    ctx.fillRect(18, 30, 124, 2);
-    ctx.fillRect(18, 112, 124, 2);
+    ctx.fillRect(18, 24, 124, 2);
+    ctx.fillRect(18, 120, 124, 2);
     ctx.textAlign = 'center';
     ctx.font = 'bold 10px monospace';
-    ctx.fillText('WAVE CLEAR!', W / 2, 46);
+    ctx.fillText('WAVE CLEAR!', W / 2, 38);
     ctx.font = '8px monospace';
-    ctx.fillText('CHOOSE AN UPGRADE', W / 2, 58);
-    for (var i = 0; i < BU_UPGRADES.length; i++) {
-      var y = 74 + i * 12;
-      var line = (i === buUpSel ? '> ' : '  ') + BU_UPGRADES[i].name + ' ' + BU_UPGRADES[i].desc;
+    ctx.fillText('CHOOSE AN UPGRADE', W / 2, 48);
+    // Current hero stats, so the choice is a real decision.
+    ctx.fillStyle = '#F59E0B';
+    ctx.fillText('HP ' + h.hp + '/' + h.maxHp + '  DMG ' + h.dmg + '  SPD ' + h.spd, W / 2, 58);
+    ctx.fillStyle = '#F8FAFC';
+    ctx.fillText('CRIT ' + Math.round(h.crit * 100) + '%  ARMOR ' + Math.round(h.armor * 100) + '%  SUM ' + buSummonDur + 'S/' + buSummonCdMax + 'S', W / 2, 68);
+    for (var i = 0; i < buUpChoices.length; i++) {
+      var y = 82 + i * 12;
+      var line = (i === buUpSel ? '> ' : '  ') + buUpChoices[i].name + ' ' + buUpChoices[i].desc;
       ctx.fillStyle = (i === buUpSel) ? '#F59E0B' : '#F8FAFC';
       ctx.fillText(line, W / 2, y);
     }
     ctx.fillStyle = '#F8FAFC';
-    ctx.fillText('A: TAKE IT', W / 2, 108);
+    ctx.fillText('A: TAKE IT', W / 2, 116);
+    ctx.textAlign = 'left';
+  }
+  function buDrawCooldowns() {
+    // Top strip under the HP bar: A SUMMON (20s) and B ULT (10s).
+    ctx.font = '8px monospace'; ctx.textAlign = 'left';
+    var sReady = buSummonCd <= 0;
+    var uReady = buHero && buHero.ultCd <= 0;
+    var ultName = buHero ? BU_HEROES[buHeroIdx].ultShort : 'ULT';
+    ctx.fillStyle = sReady ? '#22C55E' : '#F8FAFC';
+    ctx.fillText('A SUM', 4, 29);
+    ctx.fillStyle = '#111827'; ctx.fillRect(30, 24, 28, 5);
+    ctx.fillStyle = sReady ? '#22C55E' : '#F59E0B';
+    ctx.fillRect(30, 24, Math.max(1, 28 * (sReady ? 1 : 1 - buSummonCd / buSummonCdMax)), 5);
+    if (!sReady) { ctx.fillStyle = '#F8FAFC'; ctx.fillText(Math.ceil(buSummonCd) + 's', 60, 29); }
+    ctx.fillStyle = uReady ? '#22C55E' : '#F8FAFC';
+    ctx.fillText('B ' + ultName, 76, 29);
+    ctx.fillStyle = '#111827'; ctx.fillRect(112, 24, 28, 5);
+    ctx.fillStyle = uReady ? '#22C55E' : '#F59E0B';
+    ctx.fillRect(112, 24, Math.max(1, 28 * (uReady ? 1 : 1 - buHero.ultCd / 10)), 5);
+    if (!uReady) { ctx.fillStyle = '#F8FAFC'; ctx.fillText(Math.ceil(buHero.ultCd) + 's', 142, 29); }
     ctx.textAlign = 'left';
   }
   function drawBeat() {
@@ -3985,37 +4376,82 @@ function chMoveStr(m) {
     ctx.fillStyle = '#F59E0B';
     for (var i = 0; i < buEmbers.length; i++) ctx.fillRect(buEmbers[i].x, buEmbers[i].y, 1, 1);
     if (buPhase === 'select') { buDrawSelect(); return; }
+    // --- HUD (never shaken) ---
     ctx.fillStyle = '#F8FAFC'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
     ctx.fillText('WAVE ' + buWave, 4, 10);
     ctx.textAlign = 'right';
     ctx.fillText('KILLS ' + buKills, 156, 10);
     ctx.textAlign = 'left';
+    var lowHp = buHero && buHero.hp > 0 && buHero.hp <= buHero.maxHp * 0.3;
     ctx.fillStyle = '#7F1D1D'; ctx.fillRect(4, 13, 152, 5);
-    ctx.fillStyle = buHp > buMaxHp * 0.3 ? '#22C55E' : '#EF4444';
-    ctx.fillRect(4, 13, Math.max(0, 152 * buHp / buMaxHp), 5);
+    ctx.fillStyle = lowHp ? ((buFrame % 30 < 15) ? '#EF4444' : '#F59E0B') : (buHero.hp > buHero.maxHp * 0.3 ? '#22C55E' : '#EF4444');
+    ctx.fillRect(4, 13, Math.max(0, 152 * buHero.hp / buHero.maxHp), 5);
+    if (buPhase !== 'upgrade') buDrawCooldowns();
     if (buPhase === 'upgrade') { buDrawUpgrade(); return; }
-    for (var ei = 0; ei < buEnemies.length; ei++) {
-      var e = buEnemies[ei];
-      buDrawFigure(e.x, e.y, e.color, e.face, e.kind, e.hitT > 0);
-      ctx.fillStyle = '#111827'; ctx.fillRect(e.x - 5, e.y - 12, 10, 2);
-      ctx.fillStyle = '#EF4444'; ctx.fillRect(e.x - 5, e.y - 12, Math.max(0, 10 * e.hp / e.maxHp), 2);
+    // --- World (shaken by BRAM's slam) ---
+    ctx.save();
+    if (buShakeT > 0) ctx.translate((Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4);
+    // Draw all combatants sorted by y so nearer figures overlap farther ones.
+    var draws = [];
+    for (var ei = 0; ei < buEnemies.length; ei++) draws.push({ y: buEnemies[ei].y, kind: 'e', ref: buEnemies[ei] });
+    for (var fi2 = 0; fi2 < buFighters.length; fi2++) draws.push({ y: buFighters[fi2].y, kind: 'f', ref: buFighters[fi2] });
+    draws.sort(function (a, b) { return a.y - b.y; });
+    for (var di2 = 0; di2 < draws.length; di2++) {
+      var d = draws[di2];
+      if (d.kind === 'e') {
+        var e = d.ref;
+        buDrawFigure(e.x, e.y, e.color, e.face, e.kind, e.hitT > 0, 0, 0, 0);
+        ctx.fillStyle = '#111827'; ctx.fillRect(e.x - 5, e.y - 12, 10, 2);
+        ctx.fillStyle = '#EF4444'; ctx.fillRect(e.x - 5, e.y - 12, Math.max(0, 10 * e.hp / e.maxHp), 2);
+      } else {
+        var f = d.ref;
+        if (f.fadeT > 0) ctx.globalAlpha = Math.max(0, f.fadeT / 0.3);
+        var bob = f.moving ? Math.sin(f.walkPh) * 1 : 0;
+        buDrawFigure(f.x, f.y, f.color, f.face, f.kind, f.hitT > 0, bob, f.swingT > 0 ? 1 : 0, f.spinT > 0 ? f.spinT : 0);
+        ctx.globalAlpha = 1;
+        // Low-HP hero pulses a red outline so the danger is obvious.
+        if (!f.isSummon && lowHp && buFrame % 30 < 15) {
+          ctx.strokeStyle = '#EF4444'; ctx.lineWidth = 1;
+          ctx.strokeRect(f.x - 6, f.y - 11, 12, 17);
+        }
+        // Summoned allies get a small white ring so they read as temporary.
+        if (f.isSummon) {
+          ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.arc(f.x, f.y + 4, 6, 0, Math.PI * 2); ctx.stroke();
+        }
+      }
     }
+    // Deaths: figures sink and fade.
+    for (var dd = 0; dd < buDeaths.length; dd++) {
+      var dead = buDeaths[dd];
+      ctx.globalAlpha = Math.max(0, dead.t / 20);
+      buDrawFigure(dead.x, dead.y + (20 - dead.t) * 0.3, dead.color, 1, dead.kind, false, 0, 0, 0);
+      ctx.globalAlpha = 1;
+    }
+    // Projectiles.
     ctx.fillStyle = '#FB923C';
-    for (var pi = 0; pi < buProjs.length; pi++) {
-      ctx.beginPath(); ctx.arc(buProjs[pi].x, buProjs[pi].y, 2, 0, Math.PI * 2); ctx.fill();
+    for (var pi3 = 0; pi3 < buProjs.length; pi3++) {
+      ctx.beginPath(); ctx.arc(buProjs[pi3].x, buProjs[pi3].y, 2, 0, Math.PI * 2); ctx.fill();
     }
-    if (buRolling) {
-      ctx.fillStyle = buHero.color;
-      ctx.beginPath(); ctx.arc(buX, buY + 2, 4, 0, Math.PI * 2); ctx.fill();
-    } else {
-      buDrawFigure(buX, buY, buHero.color, buFace, buHero.kind, buHitT > 0);
+    // Particles.
+    for (var pa2 = 0; pa2 < buParts.length; pa2++) {
+      var pt = buParts[pa2];
+      ctx.globalAlpha = Math.max(0, pt.t / 18);
+      ctx.fillStyle = pt.col;
+      ctx.fillRect(pt.x, pt.y, 2, 2);
     }
-    if (buSwingT > 0) {
-      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(buX + buFace * 10, buY - 2, 6, -1.2, 1.2);
-      ctx.stroke();
+    ctx.globalAlpha = 1;
+    // Floating damage numbers.
+    ctx.font = '8px monospace'; ctx.textAlign = 'center';
+    for (var fl2 = 0; fl2 < buFloats.length; fl2++) {
+      var fb = buFloats[fl2];
+      ctx.globalAlpha = Math.max(0, fb.t / 15);
+      ctx.fillStyle = fb.col;
+      ctx.fillText(fb.txt, fb.x, fb.y);
     }
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'left';
+    ctx.restore();
     if (buBannerT > 0) {
       ctx.fillStyle = '#F8FAFC'; ctx.textAlign = 'center'; ctx.font = 'bold 12px monospace';
       ctx.fillText('WAVE ' + buWave, W / 2, 70);
@@ -4030,6 +4466,7 @@ function chMoveStr(m) {
       ctx.fillText('PAUSED', W / 2, 70);
       ctx.font = '8px monospace';
       ctx.fillText('START: RESUME', W / 2, 86);
+      ctx.fillText('B: DELETE SAVE', W / 2, 98);
       ctx.textAlign = 'left';
     }
   }
@@ -4051,7 +4488,7 @@ function chMoveStr(m) {
     ctx.textAlign = 'left';
   }
 
-  /* ================================================================
+/* ================================================================
      8 BALL POOL (console) — original console 8-ball pool on the
      160x144 screen. Real table (green felt, wooden rails, 6 pockets),
      real balls (solids 1-7, stripes 9-15, 8-ball, cue ball), real
@@ -7840,6 +8277,7 @@ function chMoveStr(m) {
     if (currentGame === 'holdem' && hePaused) { dsAsk('holdem'); return; }
     if (currentGame === 'overlord' && ovPaused) { dsAsk('overlord'); return; }
     if (currentGame === 'solitaire' && solPaused) { dsAsk('solitaire'); return; }
+    if (currentGame === 'beat' && buPaused) { dsAsk('beat'); return; }
     if (currentGame === 'park' && tpPaused) { dsAsk('park'); return; }
     if (currentGame === 'sky') skyDive();
     else if (currentGame === 'block') bqBack();
@@ -7848,7 +8286,7 @@ function chMoveStr(m) {
     else if (currentGame === 'chess') chBack();
     else if (currentGame === 'overlord') ovCycleUnit(-1); // previous unit
     else if (currentGame === 'solitaire') solBack();
-    else if (currentGame === 'beat') buDodge();
+    else if (currentGame === 'beat') buUltimate();
     else if (currentGame === 'pool') poBack();
     else if (currentGame === 'run') ruBack();
     else if (currentGame === 'siege') siBack();
