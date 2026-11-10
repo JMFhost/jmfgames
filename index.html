@@ -362,9 +362,9 @@
     { name: "OVERLORD'S BASTION", playable: true },
     { name: 'RAGDOLL RUCKUS', playable: true },
     { name: 'SKY SOAR', playable: true },
-    { name: 'STAR STRIKE', playable: true },
     { name: 'SLINGSHOT SIEGE', playable: true },
     { name: 'SOLITAIRE', playable: true },
+    { name: 'STAR STRIKE', playable: true },
     { name: 'SUBWAY RUNNER', playable: true },
     { name: "TEXAS HOLD'EM", playable: true },
     { name: 'THRILL PARK', playable: true }
@@ -5669,7 +5669,7 @@ function chMoveStr(m) {
     ctx.fillText('SC ' + ruScore + ' C' + ruCoins, 158, 10);
     ctx.textAlign = 'left';
     if (ruPhase === 'clear') {
-      ctx.fillStyle = 'rgba(15,56,15,0.85)'; ctx.fillRect(20, 44, 120, 62);
+      ctx.fillStyle = 'rgba(15,56,15,0.85)'; ctx.fillRect(20, 44, 120, 70);
       ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
       ctx.fillText('STAGE CLEAR!', W / 2, 60);
       ctx.font = '8px monospace';
@@ -5810,8 +5810,8 @@ function chMoveStr(m) {
      SLINGSHOT SIEGE (console) — original slingshot physics game on
      the 160x144 screen. Launch stones, boulders and bombs from a
      slingshot at enemy forts; knock every target down to clear the
-     stage. 16 challenge stages (pick one, clear it to unlock the
-     next), progress auto-saves to localStorage
+     stage. 100 challenge stages (pick one, clear it to unlock the
+     next), with higher stages harder; progress auto-saves to localStorage
      'jmf-games-slingshot-siege-save', DELETE SAVE on the stage-select
      screen wipes it (shared confirm overlay).
      Controls: Left/Right aim angle, Up/Down power, A launch,
@@ -5831,7 +5831,7 @@ function chMoveStr(m) {
   // I ice hp1); targets [x, y] with y = feet position on a block top
   // or on the ground (128). All blocks sit flush on the ground or on
   // another block's top edge.
-  var SI_STAGES = [
+  var SI_BASE_STAGES = [
     { name: 'FIRST SHOT', shots: 3, blocks: [[118,116,6,12,'W']], targets: [[136,128]] },
     { name: 'TWIN POSTS', shots: 3, blocks: [[110,116,6,12,'W'],[134,116,6,12,'W']], targets: [[122,128],[146,128]] },
     { name: 'WOOD TOWER', shots: 4, blocks: [[118,116,6,12,'W'],[132,116,6,12,'W'],[116,110,24,6,'W']], targets: [[128,110],[150,128]] },
@@ -5849,6 +5849,152 @@ function chMoveStr(m) {
     { name: 'THE CASTLE', shots: 6, blocks: [[96,116,28,12,'S'],[124,116,28,12,'S'],[104,104,6,12,'W'],[120,104,6,12,'W'],[102,98,26,6,'W'],[136,104,6,12,'W'],[134,98,10,6,'W']], targets: [[115,98],[110,116],[145,116]] },
     { name: 'FINAL SIEGE', shots: 6, blocks: [[96,104,6,24,'S'],[150,104,6,24,'S'],[94,98,64,6,'W'],[110,116,6,12,'W'],[140,116,6,12,'W'],[108,110,36,6,'I']], targets: [[126,98],[140,98],[119,110],[135,110]] }
   ];
+  // ---- generated stages 17-100 (seeded mulberry32: identical every load) ----
+  function siRng(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  // Short template names keep 'S100 ' + name <= 16 chars in the stage list.
+  var SI_TPL = ['TOWER', 'FORT', 'BRIDGE', 'PYRAMID', 'STAIRS', 'GATE', 'CASTLE', 'TRIO'];
+  var SI_TPL_USED = [0, 0, 0, 0, 0, 0, 0, 0];
+  function siGenStage(n) {
+    var rng = siRng(n * 2654435761 + 97);
+    var tier = (n - 17) / 83; // 0 at stage 17, 1 at stage 100
+    var tpl = Math.floor(rng() * 8);
+    var stoneP = Math.min(0.65, 0.15 + tier * 0.5);
+    var mat = function () { return rng() < stoneP ? 'S' : 'W'; };
+    var blocks = [], targets = [];
+    function post(x, h, m) { blocks.push([x, 128 - h, 6, h, m]); }
+    function beam(x, topY, w, m) { blocks.push([x, topY, w, 6, m]); }
+    function tgt(x, y) { targets.push([x, y]); }
+    if (tpl === 0) { // TOWER: 2-4 posts + a beam
+      var cols = 2 + (n >= 45 ? 1 : 0) + (n >= 75 ? 1 : 0);
+      var ph = 12 + (n >= 35 ? 12 : 0) + (n >= 65 ? 6 : 0);
+      var gap = 8 + Math.floor(rng() * 4);
+      var bx = 96;
+      for (var c = 0; c < cols; c++) post(bx + c * (6 + gap), ph, mat());
+      var bTop = 128 - ph - 6;
+      beam(bx - 2, bTop, (cols - 1) * (6 + gap) + 10, mat());
+      tgt(bx + 8, bTop);
+      if (cols >= 3) tgt(bx + (cols - 1) * (6 + gap) - 2, bTop);
+      tgt(bx + (cols - 1) * (6 + gap) + 8, 128);
+      if (rng() < 0.4 + tier * 0.4) tgt(bx - 8, 128);
+    } else if (tpl === 1) { // FORT: stone walls + roof, inside target
+      var wh = 24 + (n >= 50 ? 6 : 0);
+      var walls = 2 + (n >= 60 ? 1 : 0);
+      var fx = 96, fg = 20 + Math.floor(rng() * 5);
+      for (var w = 0; w < walls; w++) post(fx + w * (6 + fg), wh, 'S');
+      var rTop = 128 - wh - 6;
+      beam(fx - 2, rTop, (walls - 1) * (6 + fg) + 10, 'S');
+      tgt(fx + 8, rTop);
+      if (walls >= 3) tgt(fx + 6 + fg + 8, rTop);
+      tgt(fx + 12 + Math.floor(fg / 2), 128);
+      if (rng() < 0.5) tgt(fx - 8, 128);
+    } else if (tpl === 2) { // BRIDGE: posts + long beam
+      var span = 34 + Math.floor(rng() * 6) + (n >= 55 ? 8 : 0);
+      post(100, 12, mat()); post(100 + span, 12, mat());
+      if (n >= 55) post(100 + Math.floor(span / 2), 12, 'S');
+      beam(98, 110, span + 10, mat());
+      tgt(100 + Math.floor(span / 3), 110);
+      tgt(100 + Math.floor(span * 2 / 3), 110);
+      tgt(100 + Math.floor(span / 2), 128); // under the beam, between the posts
+    } else if (tpl === 3) { // PYRAMID: stepped layers, collapse kills
+      var layers = 3 + (n >= 40 ? 1 : 0);
+      var pw = 54 - (n >= 40 ? 6 : 0);
+      var py = 128;
+      for (var l = 0; l < layers; l++) {
+        var w = pw - l * 14;
+        var x = 100 + l * 7;
+        if (l === 0) {
+          beam(x, py - 6, Math.floor(w / 2), mat());
+          beam(x + Math.floor(w / 2), py - 6, w - Math.floor(w / 2), mat());
+        } else {
+          beam(x, py - 6, w, mat());
+        }
+        py -= 6;
+      }
+      tgt(100 + Math.floor(pw / 2), 128 - layers * 6);
+      tgt(110, 116);
+      tgt(94, 128);
+    } else if (tpl === 4) { // STAIRS: ascending steps
+      var steps = 3 + (n >= 45 ? 1 : 0) + (n >= 80 ? 1 : 0);
+      var sx = 96;
+      for (var s = 0; s < steps; s++) {
+        blocks.push([sx + s * 12, 128 - (s + 1) * 6, 12, (s + 1) * 6, mat()]);
+        tgt(sx + s * 12 + 6, 128 - (s + 1) * 6);
+      }
+      tgt(90, 128); // left of the stairs, clear ground
+    } else if (tpl === 5) { // GATE: tall posts + top beam, target underneath
+      var gh = 24 + (n >= 55 ? 6 : 0);
+      var ggap = 36 + Math.floor(rng() * 6) + (n >= 70 ? 8 : 0);
+      post(96, gh, 'S'); post(96 + ggap, gh, 'S');
+      if (n >= 70) post(96 + Math.floor(ggap / 2), gh, 'S');
+      beam(94, 128 - gh - 6, ggap + 10, mat());
+      tgt(96 + 12, 128 - gh - 6);
+      tgt(96 + ggap - 6, 128 - gh - 6);
+      if (n >= 70) tgt(96 + Math.floor(ggap / 2) + 3, 128 - gh - 6);
+      tgt(96 + Math.floor(ggap / 2) + (n >= 70 ? 12 : 0), 128);
+    } else if (tpl === 6) { // CASTLE: stone base + towers + roof
+      var cx = 96;
+      blocks.push([cx, 116, 28, 12, 'S']);
+      blocks.push([cx + 28, 116, 28, 12, 'S']);
+      var th6 = 12 + (n >= 60 ? 12 : 0);
+      blocks.push([cx + 4, 116 - th6, 6, th6, mat()]);
+      blocks.push([cx + 46, 116 - th6, 6, th6, mat()]);
+      beam(cx + 2, 116 - th6 - 6, 52, mat());
+      tgt(cx + 14, 116 - th6 - 6);
+      tgt(cx + 42, 116 - th6 - 6);
+      tgt(cx + 28, 116);
+      tgt(cx - 8, 128);
+    } else { // TRIO: three small towers
+      var tx = 96, tops = [];
+      for (var tt = 0; tt < 3; tt++) {
+        var th = 12 + (rng() < 0.3 + tier * 0.3 ? 12 : 0);
+        var m7 = rng() < 0.25 ? 'I' : mat();
+        post(tx, th, m7); post(tx + 12, th, m7);
+        beam(tx - 1, 128 - th - 6, 20, m7);
+        tgt(tx + 8, 128 - th - 6);
+        tops.push({ x: tx + 8, y: 128 - th - 6 });
+        tx += 20;
+      }
+      if (n >= 75) { // 4th target beside the first on the tallest beam
+        var ti = 0;
+        for (var q = 1; q < 3; q++) if (tops[q].y < tops[ti].y) ti = q;
+        tgt(tops[ti].x + 8, tops[ti].y);
+      }
+    }
+    // clamp the whole structure into the play zone (x 60..158, clear of the
+    // slingshot and on-screen). Two-step so both ends fit (span <= 70 < 98).
+    var minX = 999, maxX = -999;
+    for (var i = 0; i < blocks.length; i++) { minX = Math.min(minX, blocks[i][0]); maxX = Math.max(maxX, blocks[i][0] + blocks[i][2]); }
+    for (var j = 0; j < targets.length; j++) { minX = Math.min(minX, targets[j][0] - 3); maxX = Math.max(maxX, targets[j][0] + 3); }
+    var shift = 0;
+    if (maxX > 158) shift = 158 - maxX;
+    if (minX + shift < 60) shift = 60 - minX;
+    if (shift !== 0) {
+      for (var k = 0; k < blocks.length; k++) blocks[k][0] += shift;
+      for (var m2 = 0; m2 < targets.length; m2++) targets[m2][0] += shift;
+    }
+    // shots: 3 base, +1 per tier third, +1 for big structures, cap 6
+    var shots = 3 + Math.floor(tier * 3);
+    if (blocks.length >= 9) shots++;
+    if (targets.length >= 5) shots++;
+    if (shots > 6) shots = 6;
+    // name: template + variant (kept short so 'S100 ' + name fits the row)
+    var used = SI_TPL_USED[tpl]++;
+    var vnum = used + 1;
+    var suf = used === 0 ? '' : ' ' + (vnum <= 9 ? vnum : String.fromCharCode(55 + vnum));
+    var name = SI_TPL[tpl] + suf;
+    if (name.length > 11) name = name.slice(0, 11);
+    return { name: name, shots: shots, blocks: blocks, targets: targets };
+  }
+  var SI_STAGES = SI_BASE_STAGES.slice();
+  for (var siGi = 17; siGi <= 100; siGi++) SI_STAGES.push(siGenStage(siGi));
   var siSave = { unlocked: 1, best: {}, totalTargets: 0 };
   function siLoadSave() {
     try {
@@ -6166,6 +6312,7 @@ function chMoveStr(m) {
       var isDel = idx === SI_STAGES.length;
       var locked = !isDel && idx >= siSave.unlocked;
       var label = isDel ? 'DELETE SAVE' : ('S' + (idx + 1) + ' ' + SI_STAGES[idx].name);
+      if (label.length > 16) label = label.slice(0, 16);
       if (idx === siSel) {
         ctx.fillStyle = '#0f380f'; ctx.fillRect(8, y - 8, 144, 10);
         ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'left';
@@ -6182,6 +6329,9 @@ function chMoveStr(m) {
         ctx.textAlign = 'center';
       }
     }
+    if (top > 0) { ctx.fillStyle = '#0f380f'; ctx.textAlign = 'right'; ctx.fillText('▲', 156, 30); }
+    if (top + vis < total) { ctx.fillStyle = '#0f380f'; ctx.textAlign = 'right'; ctx.fillText('▼', 156, 104); }
+    ctx.textAlign = 'center';
     ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace';
     ctx.fillText('TARGETS DOWN ' + siSave.totalTargets, W / 2, 116);
     ctx.fillText('UP/DN PICK - A PLAY', W / 2, 128);
@@ -6299,13 +6449,13 @@ function chMoveStr(m) {
     ctx.textAlign = 'left';
     ctx.fillText(SI_PROJ[siProjIdx].name + '  ANG ' + Math.round(siAngle) + '  PWR ' + Math.round(siPower) + '%', 2, 19);
     if (siPhase === 'clear') {
-      ctx.fillStyle = 'rgba(15,56,15,0.85)'; ctx.fillRect(20, 44, 120, 62);
+      ctx.fillStyle = 'rgba(15,56,15,0.85)'; ctx.fillRect(20, 44, 120, 70);
       ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
       ctx.fillText('STAGE CLEAR!', W / 2, 60);
       ctx.font = '8px monospace';
       ctx.fillText('SCORE ' + siScore + '  BEST ' + (siSave.best[siStage] || 0), W / 2, 76);
       ctx.fillText('SHOTS LEFT ' + siShotsLeft + '  (+' + (200 * siShotsLeft) + ')', W / 2, 88);
-      ctx.fillText('NEXT STAGE UNLOCKED', W / 2, 98);
+      ctx.fillText(siStage + 1 < SI_STAGES.length ? 'NEXT STAGE UNLOCKED' : 'ALL 100 STAGES CLEAR!', W / 2, 98);
       ctx.fillText('A: CONTINUE', W / 2, 108);
       ctx.textAlign = 'left';
     } else if (siPhase === 'fail') {
