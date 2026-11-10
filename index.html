@@ -8196,6 +8196,12 @@ function chMoveStr(m) {
      tumbles, spins and bounces off the walls and floor. Rapid hits
      build a combo multiplier that boosts coins; coins unlock bigger
      weapons. STITCH never dies — he always pops back up.
+     v2: visible weapon animations (fist jab, bat swing, hammer slam,
+     sword slash, rock/bolt trails, lobbed bomb), cartoon blood
+     splatter + hit flash + damage-scaled shake, and STITCH WANDERS
+     and DODGES — he sidesteps the crosshair and incoming shots, so
+     the player has to chase him. He telegraphs a dodge (crouch +
+     "!"), recovers after it, and gets tired after 3 dodges in a row.
      Save: localStorage 'jmf-games-dummy-save' (coins, unlocked
      weapons bitmask, total damage, best combo). Start pauses
      (B while paused = DELETE SAVE).
@@ -8220,6 +8226,13 @@ function chMoveStr(m) {
   var duFloats = [], duParts = [], duProjs = [], duBooms = [];
   var duShakeT = 0, duFrame = 0, duSwingT = 0, duToast = '', duToastT = 0;
   var duSaveT = 0, duCoinsDirty = false, duLastSave = 0;
+  // v2 juice: blood splats, hit flash, shake magnitude, combo pulse, weapon anim
+  var duBlood = [], duFlashT = 0, duShakeMag = 2, duComboPulseT = 0, duLastMult = 1;
+  var duAnim = { kind: '', t: 0, dur: 0, x: 80, y: 80, ang: 0 };
+  // v2 brain: STITCH wanders the arena and dodges the crosshair / shots
+  var duWalkTx = 80, duWalkPause = 40, duWalkDir = 1;
+  var duDodgePhase = '', duDodgeT = 0, duDodgeVx = 0;
+  var duDodgeCool = 0, duDodgeCount = 0, duTiredT = 0;
   function duSave() {
     try { localStorage.setItem(DU_SAVE_KEY, JSON.stringify({ c: duCoins, u: duUnlocked, t: duTotalDmg, b: duBestCombo })); } catch (e) {}
     duCoinsDirty = false; duLastSave = duFrame;
@@ -8238,6 +8251,11 @@ function chMoveStr(m) {
     duFloats = []; duParts = []; duProjs = []; duBooms = [];
     duShakeT = 0; duSwingT = 0; duToast = ''; duToastT = 0;
     duAim.x = 80; duAim.y = 80;
+    duBlood = []; duFlashT = 0; duShakeMag = 2; duComboPulseT = 0; duLastMult = 1;
+    duAnim.kind = ''; duAnim.t = 0; duAnim.dur = 0;
+    duWalkTx = 80; duWalkPause = 40; duWalkDir = 1;
+    duDodgePhase = ''; duDodgeT = 0; duDodgeVx = 0;
+    duDodgeCool = 0; duDodgeCount = 0; duTiredT = 0;
   }
   function startDummy() {
     duResetDummy();
@@ -8247,12 +8265,19 @@ function chMoveStr(m) {
     JMFGAMES.beep(660, 0.08);
   }
   function duFloat(x, y, txt, color) { duFloats.push({ x: x, y: y, txt: txt, color: color, t: 45 }); if (duFloats.length > 12) duFloats.shift(); }
-  function duPartsBurst(x, y, color, n, spd) {
+  function duPartsBurst(x, y, color, n, spd, sz) {
     for (var i = 0; i < n; i++) {
       var a = Math.random() * Math.PI * 2, s = (0.5 + Math.random()) * spd;
-      duParts.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 0.5, t: 20 + Math.floor(Math.random() * 15), color: color });
+      duParts.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 0.5, t: 20 + Math.floor(Math.random() * 15), color: color, s: sz || 2 });
     }
-    if (duParts.length > 80) duParts.splice(0, duParts.length - 80);
+    if (duParts.length > 90) duParts.splice(0, duParts.length - 90);
+  }
+  function duBloodBurst(x, y, n) {
+    for (var i = 0; i < n; i++) {
+      var a = Math.random() * Math.PI * 2, s = (0.5 + Math.random()) * 1.8;
+      duParts.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 0.8, t: 18 + Math.floor(Math.random() * 14), color: Math.random() < 0.5 ? '#C0392B' : '#E74C3C', blood: true, s: 2 });
+    }
+    if (duParts.length > 90) duParts.splice(0, duParts.length - 90);
   }
   function duApplyHit(dmg, kb, fromX, fromY, zone, isBomb) {
     var mult = zone === 'head' ? 1.5 : 1;
@@ -8264,7 +8289,7 @@ function chMoveStr(m) {
     du.vy += dy / len * power - 1.5;
     if (zone === 'head') { du.angVel += (dx >= 0 ? 0.35 : -0.35); duFloat(du.x, du.y - 20, 'HEADSHOT!', '#FFD93D'); }
     if (zone === 'legs') { du.vy -= 2.5; du.angVel += 0.2; }
-    if (isBomb) { duFlatT = 60; duShakeT = 12; }
+    if (isBomb) { duFlatT = 60; duShakeT = 12; duShakeMag = 4; }
     if (dd >= 12) duDizzyT = 120;
     duBruise = Math.min(100, duBruise + dd);
     if (duComboT < 150) duCombo++; else duCombo = 1;
@@ -8275,7 +8300,15 @@ function chMoveStr(m) {
     duFloat(du.x, du.y - 14, '+' + dd, zone === 'head' ? '#FFD93D' : '#FFFFFF');
     duFloat(du.x, du.y - 24, '+' + coins + ' COINS', '#F59E0B');
     duPartsBurst(du.x, du.y, '#FFFFFF', 5, 1.5);
-    if (kb >= 2.2 || dd >= 12) duShakeT = Math.max(duShakeT, 4);
+    // --- v2 juice: blood, hit flash, damage-scaled shake, impact stars, combo pulse ---
+    duFlashT = 4;
+    duBloodBurst(du.x, du.y, Math.min(20, 4 + dd + (zone === 'head' ? 4 : 0)));
+    if (dd >= 8) duPartsBurst(du.x, du.y - 6, '#FFD93D', 4, 1.2, 3);
+    duShakeT = Math.max(duShakeT, Math.min(12, 2 + Math.floor(dd / 3)));
+    duShakeMag = Math.max(duShakeMag, 1 + Math.min(3, Math.floor(dd / 8)));
+    var nm = duComboMult();
+    if (nm > duLastMult) { duComboPulseT = 14; duFloat(80, 40, 'COMBO x' + nm + '!', '#FFD93D'); }
+    duLastMult = nm;
     JMFGAMES.beep(zone === 'head' ? 990 : 660, 0.06);
     du.rest = 0;
   }
@@ -8297,22 +8330,29 @@ function chMoveStr(m) {
     }
     if (duCd > 0) return;
     duCd = w.cd;
+    var ang = Math.atan2(du.y - duAim.y, du.x - duAim.x);
     if (w.kind === 'rock' || w.kind === 'bolt') {
       var sx = 14, sy = 118;
       var dx = duAim.x - sx, dy = duAim.y - sy;
       var len = Math.max(4, Math.hypot(dx, dy));
       var sp = w.kind === 'rock' ? 5 : 7;
       duProjs.push({ x: sx, y: sy, vx: dx / len * sp, vy: dy / len * sp, tx: duAim.x, ty: duAim.y, kind: w.kind, dmg: w.dmg, kb: w.kb, t: 150 });
+      duAnim.kind = '';
       JMFGAMES.beep(w.kind === 'rock' ? 500 : 900, 0.05);
     } else if (w.kind === 'bomb') {
-      duBooms.push({ x: duAim.x, y: duAim.y, r: 4, t: 0 });
-      duShakeT = 12;
+      // lobbed bomb: arcs from the floor-left to the aim point, explodes on arrival
+      var fx = 22;
+      duProjs.push({ x: 14, y: 118, vx: (duAim.x - 14) / fx, vy: -4.5, tx: duAim.x, ty: duAim.y, kind: 'bomb', dmg: w.dmg, kb: w.kb, t: 90 });
+      duAnim.kind = '';
       JMFGAMES.beep(120, 0.2);
-      var d = Math.hypot(du.x - duAim.x, du.y - duAim.y);
-      if (d < 36) duApplyHit(w.dmg, w.kb, duAim.x, duAim.y, 'body', true);
-      duPartsBurst(duAim.x, duAim.y, '#F59E0B', 14, 2.5);
+      // no instant damage — the blast hits when it lands (STITCH can dodge it)
     } else {
-      duSwingT = 6;
+      // melee: visible per-weapon swing animation at the aim point
+      duSwingT = 8;
+      if (w.name === 'BAT') duAnim = { kind: 'bat', t: 0, dur: 8, x: duAim.x, y: duAim.y, ang: ang };
+      else if (w.name === 'HAMMER') duAnim = { kind: 'hammer', t: 0, dur: 10, x: duAim.x, y: duAim.y, ang: ang };
+      else if (w.name === 'SWORD') duAnim = { kind: 'sword', t: 0, dur: 6, x: duAim.x, y: duAim.y, ang: ang };
+      else duAnim = { kind: 'fist', t: 0, dur: 6, x: duAim.x, y: duAim.y, ang: ang };
       var d2 = Math.hypot(du.x - duAim.x, du.y - duAim.y);
       if (d2 < 20) {
         var zone = duAim.y < du.y - 6 ? 'head' : (duAim.y > du.y + 6 ? 'legs' : 'body');
@@ -8329,9 +8369,86 @@ function chMoveStr(m) {
   }
   function duMoveAim(dx, dy) {
     if (screen !== 'play' || duPaused) return;
-    duAim.x = Math.max(DU_ARENA.x0 + 2, Math.min(DU_ARENA.x1 - 2, duAim.x + dx * 8));
-    duAim.y = Math.max(DU_ARENA.y0 + 4, Math.min(DU_ARENA.y1 - 2, duAim.y + dy * 8));
+    // v2: faster crosshair (10px/press) so chasing a dodging STITCH feels good
+    duAim.x = Math.max(DU_ARENA.x0 + 2, Math.min(DU_ARENA.x1 - 2, duAim.x + dx * 10));
+    duAim.y = Math.max(DU_ARENA.y0 + 4, Math.min(DU_ARENA.y1 - 2, duAim.y + dy * 10));
     JMFGAMES.beep(700, 0.02);
+  }
+  function duBrain() {
+    // STITCH's brain: wander the arena, dodge the crosshair / incoming shots.
+    // He can only think when settled on the floor — never while flung, dizzy or flat.
+    var onFloor = du.y >= DU_ARENA.y1 - DU_FEET - 0.5;
+    var spd = Math.hypot(du.vx, du.vy);
+    // tired after 3 dodges in a row: rests, cannot dodge or walk
+    if (duTiredT > 0) {
+      duTiredT--;
+      if (duTiredT === 0) duDodgeCount = 0;
+      du.vx *= 0.8;
+      return;
+    }
+    // windup: crouched, telegraphing the dodge — still hittable
+    if (duDodgePhase === 'windup') {
+      duDodgeT--;
+      du.vx *= 0.8;
+      if (duDodgeT <= 0) {
+        duDodgePhase = 'dash'; duDodgeT = 8;
+        var dx = du.x - duAim.x;
+        duDodgeVx = (Math.abs(dx) > 3 ? Math.sign(dx) : (du.x < 80 ? -1 : 1)) * 4;
+        du.vx = duDodgeVx; du.vy = -2.2;
+        JMFGAMES.beep(500, 0.05);
+      }
+      return;
+    }
+    // dash: keep the horizontal burst going
+    if (duDodgePhase === 'dash') {
+      duDodgeT--;
+      du.vx = duDodgeVx;
+      if (duDodgeT <= 0) {
+        duDodgePhase = 'recover'; duDodgeT = 45;
+        duDodgeCount++;
+        if (duDodgeCount >= 3) { duTiredT = 90; duDodgePhase = ''; duDodgeCount = 0; }
+      }
+      return;
+    }
+    // recovery: slow walk, cannot dodge — the window to hit him
+    if (duDodgePhase === 'recover') {
+      duDodgeT--;
+      if (duDodgeT <= 0) duDodgePhase = '';
+    }
+    if (duDodgeCool > 0) duDodgeCool--;
+    // dodge decision: crosshair close, or a projectile incoming — ~50% when alert
+    if (onFloor && spd < 2 && duFlatT <= 0 && duDizzyT <= 0 && duDodgePhase !== 'recover') {
+      var aimD = Math.hypot(du.x - duAim.x, du.y - duAim.y);
+      var projNear = false;
+      for (var i = 0; i < duProjs.length; i++) {
+        if (Math.hypot(du.x - duProjs[i].x, du.y - duProjs[i].y) < 42) { projNear = true; break; }
+      }
+      if ((aimD < 24 || projNear) && duDodgeCool <= 0) {
+        // scared STITCH dodges more as the combo grows (cap +20%)
+        var chance = 0.5 + Math.min(0.2, duCombo * 0.02);
+        if (Math.random() < chance) {
+          duDodgePhase = 'windup'; duDodgeT = 8;
+          JMFGAMES.beep(750, 0.04);
+        }
+        duDodgeCool = 40;
+      }
+    }
+    // wander: walk the floor to a random spot, pause, repeat
+    if (onFloor && spd < 2 && duFlatT <= 0 && duDodgePhase !== 'windup') {
+      if (duWalkPause > 0) { duWalkPause--; du.vx *= 0.8; }
+      else {
+        var wSpd = duDodgePhase === 'recover' ? 0.3 : (duCombo >= 8 ? 0.7 : 0.55);
+        var dx2 = duWalkTx - du.x;
+        if (Math.abs(dx2) < 3) {
+          duWalkPause = 30 + Math.floor(Math.random() * 60);
+          duWalkTx = DU_ARENA.x0 + 14 + Math.random() * (DU_ARENA.x1 - DU_ARENA.x0 - 28);
+        } else {
+          du.vx = Math.sign(dx2) * wSpd;
+          duWalkDir = Math.sign(dx2);
+          du.ang *= 0.96; du.angVel *= 0.85;
+        }
+      }
+    }
   }
   function duUpdate() {
     if (duPaused) return;
@@ -8339,12 +8456,21 @@ function chMoveStr(m) {
     if (duCd > 0) duCd--;
     if (duSwingT > 0) duSwingT--;
     if (duShakeT > 0) duShakeT--;
+    if (duShakeT <= 0) duShakeMag = 2;
     if (duDizzyT > 0) duDizzyT--;
     if (duFlatT > 0) duFlatT--;
     if (duToastT > 0) duToastT--;
+    if (duFlashT > 0) duFlashT--;
+    if (duComboPulseT > 0) duComboPulseT--;
+    if (duAnim.t < duAnim.dur) {
+      duAnim.t++;
+      if (duAnim.kind === 'hammer' && duAnim.t === 4) duShakeT = Math.max(duShakeT, 3); // slam thud, even on a miss
+    }
     duComboT++;
-    if (duComboT > 150) duCombo = 0;
+    if (duComboT > 150) { duCombo = 0; duLastMult = 1; }
     if (duBruise > 0) duBruise = Math.max(0, duBruise - 0.05);
+    // --- STITCH's brain runs before the physics so it sets velocities ---
+    duBrain();
     // --- ragdoll physics: gravity, bounce, spin, settle ---
     du.vy += 0.18;
     du.x += du.vx; du.y += du.vy; du.ang += du.angVel;
@@ -8366,12 +8492,29 @@ function chMoveStr(m) {
       if (Math.abs(target - du.ang) < 0.02) { du.ang = target; du.angVel = 0; }
       du.vx *= 0.9;
     }
-    // --- projectiles ---
+    // --- projectiles (rock / bolt fly straight; bomb lobs and detonates) ---
     for (var i = duProjs.length - 1; i >= 0; i--) {
       var p = duProjs[i];
       p.x += p.vx; p.y += p.vy;
       if (p.kind === 'rock') p.vy += 0.08;
+      if (p.kind === 'bomb') p.vy += 0.25;
       p.t--;
+      if (p.kind === 'bomb') {
+        var pastTxB = (p.vx > 0 && p.x >= p.tx) || (p.vx < 0 && p.x <= p.tx);
+        var landed = p.y >= DU_ARENA.y1 - 2 || p.t <= 0;
+        if ((pastTxB && p.vy > 0) || landed) {
+          duBooms.push({ x: p.x, y: p.y, r: 4, t: 0 });
+          duShakeT = 12; duShakeMag = 4;
+          duPartsBurst(p.x, p.y, '#F59E0B', 14, 2.5);
+          duPartsBurst(p.x, p.y, '#6B7280', 6, 1.5);
+          var bd = Math.hypot(du.x - p.x, du.y - p.y);
+          if (bd < 36) duApplyHit(p.dmg, p.kb, p.x, p.y, 'body', true);
+          JMFGAMES.beep(90, 0.25);
+          duProjs.splice(i, 1);
+          continue;
+        }
+        continue;
+      }
       var pd = Math.hypot(du.x - p.x, du.y - p.y);
       if (pd < 14) {
         duApplyHit(p.dmg, p.kb, p.x - p.vx, p.y - p.vy, 'body', false);
@@ -8396,11 +8539,21 @@ function chMoveStr(m) {
       duFloats[f].y -= 0.5; duFloats[f].t--;
       if (duFloats[f].t <= 0) duFloats.splice(f, 1);
     }
-    // --- particles ---
+    // --- particles (blood sticks to the floor/walls as a splat, then fades) ---
     for (var q = duParts.length - 1; q >= 0; q--) {
       var pt = duParts[q];
       pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.1; pt.t--;
+      if (pt.blood && (pt.y >= DU_ARENA.y1 - 1 || pt.x <= DU_ARENA.x0 + 1 || pt.x >= DU_ARENA.x1 - 1)) {
+        duBlood.push({ x: Math.max(DU_ARENA.x0 + 2, Math.min(DU_ARENA.x1 - 2, pt.x)), y: pt.y >= DU_ARENA.y1 - 1 ? DU_ARENA.y1 - 1 : pt.y, r: 2 + Math.random() * 2, t: 180 });
+        if (duBlood.length > 14) duBlood.shift();
+        duParts.splice(q, 1);
+        continue;
+      }
       if (pt.t <= 0) duParts.splice(q, 1);
+    }
+    for (var b2 = duBlood.length - 1; b2 >= 0; b2--) {
+      duBlood[b2].t--;
+      if (duBlood[b2].t <= 0) duBlood.splice(b2, 1);
     }
     // --- throttled save (coins change often; also saved on unlock / best) ---
     duSaveT++;
@@ -8412,12 +8565,18 @@ function chMoveStr(m) {
     ctx.translate(x, y);
     ctx.rotate(du.ang);
     if (duFlatT > 0) ctx.scale(1.4, 0.45);
+    else if (duDodgePhase === 'windup') ctx.scale(1.15, 0.7); // crouched, about to dodge
+    else if (duTiredT > 0) ctx.scale(1.1, 0.8); // slumped, resting
     var flail = Math.min(1, Math.abs(du.angVel) * 3 + Math.hypot(du.vx, du.vy) * 0.08);
     var t = duFrame * 0.35;
     var armA = Math.sin(t) * (0.4 + flail * 0.9);
     var armB = Math.sin(t + 2.1) * (0.4 + flail * 0.9);
     var legA = Math.sin(t + 1.2) * (0.3 + flail * 0.7);
     var legB = Math.sin(t + 3.3) * (0.3 + flail * 0.7);
+    // v2: hit flash — the dummy turns white for a few frames when struck
+    var flash = duFlashT > 0;
+    var bodyCol = flash ? '#FFFFFF' : '#C8A165';
+    var headCol = flash ? '#FFFFFF' : '#D9B77C';
     // legs + shoes
     ctx.strokeStyle = '#8A6D3B'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(-3, 6); ctx.lineTo(-3 + Math.sin(legA) * 5, 11 + Math.cos(legA) * 2); ctx.stroke();
@@ -8426,7 +8585,7 @@ function chMoveStr(m) {
     ctx.fillRect(-3 + Math.sin(legA) * 5 - 2, 11 + Math.cos(legA) * 2, 5, 3);
     ctx.fillRect(3 + Math.sin(legB) * 5 - 2, 11 + Math.cos(legB) * 2, 5, 3);
     // body
-    ctx.fillStyle = '#C8A165';
+    ctx.fillStyle = bodyCol;
     ctx.fillRect(-6, -4, 12, 11);
     ctx.strokeStyle = '#8A6D3B'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(-6, 0); ctx.lineTo(6, 0); ctx.stroke();
@@ -8440,11 +8599,11 @@ function chMoveStr(m) {
       if (duBruise > 60) { ctx.beginPath(); ctx.arc(3, -1, 2.5, 0, Math.PI * 2); ctx.fill(); }
     }
     // arms
-    ctx.strokeStyle = '#C8A165'; ctx.lineWidth = 3;
+    ctx.strokeStyle = bodyCol; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(-6, -2); ctx.lineTo(-6 + Math.cos(armA) * -6, -2 + Math.sin(armA) * 6); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(6, -2); ctx.lineTo(6 + Math.cos(armB) * 6, -2 + Math.sin(armB) * 6); ctx.stroke();
     // head
-    ctx.fillStyle = '#D9B77C';
+    ctx.fillStyle = headCol;
     ctx.beginPath(); ctx.arc(0, -10, 6, 0, Math.PI * 2); ctx.fill();
     if (duDizzyT > 0) {
       ctx.strokeStyle = '#1C1C1C'; ctx.lineWidth = 1;
@@ -8467,6 +8626,18 @@ function chMoveStr(m) {
     ctx.beginPath(); ctx.moveTo(5, 3); ctx.lineTo(8, 1); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(-5, 5); ctx.lineTo(-8, 7); ctx.stroke();
     ctx.restore();
+    // dodge telegraph: red "!" above his head while winding up
+    if (duDodgePhase === 'windup') {
+      ctx.fillStyle = '#EF4444'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('!', x, y - 22);
+      ctx.textAlign = 'left';
+    }
+    // tired: a sleepy "Z" drifts above his head while he rests
+    if (duTiredT > 0) {
+      ctx.fillStyle = '#93C5FD'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('Z', x + 8, y - 20 + Math.sin(duFrame * 0.1) * 2);
+      ctx.textAlign = 'left';
+    }
     // dizzy stars orbit the head in world space
     if (duDizzyT > 0) {
       ctx.fillStyle = '#FFD93D';
@@ -8491,9 +8662,19 @@ function chMoveStr(m) {
     // rug under STITCH's home spot
     ctx.fillStyle = '#C0392B'; ctx.fillRect(60, DU_ARENA.y1 - 4, 40, 5);
     ctx.fillStyle = '#E8B93C'; ctx.fillRect(60, DU_ARENA.y1 - 4, 40, 1);
-    // arena contents (shaken on big hits)
+    // arena contents (shaken on big hits — magnitude scales with damage)
     ctx.save();
-    if (duShakeT > 0) ctx.translate((Math.random() * 4 - 2) | 0, (Math.random() * 4 - 2) | 0);
+    if (duShakeT > 0) {
+      var sm = duShakeMag;
+      ctx.translate(((Math.random() * 2 * sm - sm) | 0), ((Math.random() * 2 * sm - sm) | 0));
+    }
+    // blood splats stuck to the floor
+    for (var bs = 0; bs < duBlood.length; bs++) {
+      var sp = duBlood[bs];
+      ctx.fillStyle = 'rgba(192,57,43,' + Math.min(0.85, sp.t / 90) + ')';
+      ctx.beginPath(); ctx.arc(sp.x, sp.y, sp.r, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(sp.x + sp.r, sp.y + 1, sp.r * 0.6, 0, Math.PI * 2); ctx.fill();
+    }
     // shooter (slingshot / blaster muzzle) at the floor's left end
     var w = DU_WEAPONS[duWeaponIdx];
     if (w.kind === 'rock' || w.kind === 'bolt') {
@@ -8506,15 +8687,29 @@ function chMoveStr(m) {
       ctx.restore();
     }
     duDrawDummy();
-    // projectiles
+    // projectiles (rock / bolt with trails, bomb with sparking fuse)
     for (var i = 0; i < duProjs.length; i++) {
       var p = duProjs[i];
       if (p.kind === 'rock') {
+        ctx.strokeStyle = 'rgba(156,163,175,0.6)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(p.x - p.vx * 2, p.y - p.vy * 2); ctx.lineTo(p.x, p.y); ctx.stroke();
         ctx.fillStyle = '#6B7280';
         ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
-      } else {
+      } else if (p.kind === 'bolt') {
+        ctx.strokeStyle = 'rgba(255,217,61,0.6)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(p.x - p.vx * 2, p.y - p.vy * 2); ctx.lineTo(p.x, p.y); ctx.stroke();
         ctx.fillStyle = '#FFD93D';
-        ctx.fillRect(p.x - 2, p.y - 1, 5, 2);
+        ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath(); ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2); ctx.fill();
+        ctx.lineWidth = 1;
+      } else if (p.kind === 'bomb') {
+        ctx.fillStyle = (duFrame % 2 === 0) ? '#FFD93D' : '#F59E0B';
+        ctx.fillRect(p.x + 2, p.y - 6, 2, 2);
+        ctx.fillStyle = '#1C1C1C';
+        ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#6B7280';
+        ctx.fillRect(p.x - 1, p.y - 5, 2, 2);
       }
     }
     // explosion rings
@@ -8525,27 +8720,63 @@ function chMoveStr(m) {
       ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.stroke();
       ctx.lineWidth = 1;
     }
-    // melee swing arc
-    if (duSwingT > 0) {
-      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(du.x, du.y, 15, -1.2 + (6 - duSwingT) * 0.4, 0.4 + (6 - duSwingT) * 0.4);
-      ctx.stroke();
-      ctx.lineWidth = 1;
+    // weapon attack animation at the aim point (absolute coords, no translate)
+    if (duAnim.t < duAnim.dur && duAnim.kind) {
+      var ap = duAnim.t / duAnim.dur;
+      var ax = duAnim.x, ay = duAnim.y, aa = duAnim.ang;
+      if (duAnim.kind === 'fist') {
+        var ext = Math.sin(ap * Math.PI) * 12;
+        var fx = ax + Math.cos(aa) * ext, fy = ay + Math.sin(aa) * ext;
+        ctx.fillStyle = '#D9B77C';
+        ctx.beginPath(); ctx.arc(fx, fy, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#8A6D3B';
+        ctx.fillRect(fx - 3, fy - 1, 2, 2);
+        ctx.fillRect(fx + 1, fy - 1, 2, 2);
+      } else if (duAnim.kind === 'bat') {
+        var ba = aa - 1.2 + ap * 2.4;
+        for (var g = 0; g < 3; g++) {
+          var ga = ba - g * 0.35;
+          ctx.strokeStyle = g === 0 ? '#8A6D3B' : 'rgba(138,109,59,' + (0.35 - g * 0.12) + ')';
+          ctx.lineWidth = g === 0 ? 4 : 2;
+          ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ax + Math.cos(ga) * 16, ay + Math.sin(ga) * 16); ctx.stroke();
+        }
+        ctx.lineWidth = 1;
+        ctx.fillStyle = '#5A3A1A';
+        ctx.beginPath(); ctx.arc(ax, ay, 2, 0, Math.PI * 2); ctx.fill();
+      } else if (duAnim.kind === 'hammer') {
+        var hy = ap < 0.4 ? ay - 18 + (ap / 0.4) * 2 : ay - 16 + ((ap - 0.4) / 0.6) * 12;
+        ctx.strokeStyle = '#8A6D3B'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(ax, hy + 3); ctx.lineTo(ax, ay + 2); ctx.stroke();
+        ctx.fillStyle = '#6B7280';
+        ctx.fillRect(ax - 5, hy - 2, 10, 5);
+        ctx.lineWidth = 1;
+      } else if (duAnim.kind === 'sword') {
+        var sa2 = aa + 0.5 - ap * 1.6;
+        ctx.strokeStyle = 'rgba(224,242,254,0.9)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(ax, ay, 14, sa2 - 0.7, sa2 + 0.7); ctx.stroke();
+        ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(ax + Math.cos(sa2 - 0.7) * 14, ay + Math.sin(sa2 - 0.7) * 14);
+        ctx.lineTo(ax + Math.cos(sa2 + 0.7) * 14, ay + Math.sin(sa2 + 0.7) * 14);
+        ctx.stroke();
+      }
     }
     // particles
     for (var q = 0; q < duParts.length; q++) {
       var pt = duParts[q];
       ctx.fillStyle = pt.color;
-      ctx.fillRect(pt.x - 1, pt.y - 1, 2, 2);
+      var ps = pt.s || 2;
+      ctx.fillRect(pt.x - ps / 2, pt.y - ps / 2, ps, ps);
     }
-    // floating damage / coin numbers
-    ctx.font = '8px monospace'; ctx.textAlign = 'center';
+    // floating damage / coin numbers (fresh floats pop bigger)
+    ctx.textAlign = 'center';
     for (var f = 0; f < duFloats.length; f++) {
       var fl = duFloats[f];
+      ctx.font = fl.t > 39 ? 'bold 10px monospace' : '8px monospace';
       ctx.fillStyle = fl.color;
       ctx.fillText(fl.txt, fl.x, fl.y);
     }
+    ctx.font = '8px monospace';
     ctx.textAlign = 'left';
     // aim cursor (green when it will hit STITCH)
     var nearDummy = Math.hypot(du.x - duAim.x, du.y - duAim.y) < 20;
@@ -8560,7 +8791,9 @@ function chMoveStr(m) {
     // HUD
     ctx.fillStyle = '#F8FAFC'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
     ctx.fillText('COINS ' + duCoins, 4, 10);
+    if (duComboPulseT > 0) { ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 8px monospace'; }
     ctx.fillText(duCombo > 0 ? 'COMBO x' + duComboMult() : 'COMBO -', 64, 10);
+    ctx.fillStyle = '#F8FAFC'; ctx.font = '8px monospace';
     ctx.fillText('BEST x' + duBestCombo, 118, 10);
     var sel = DU_WEAPONS[duWeaponIdx];
     var locked = !(duUnlocked & (1 << duWeaponIdx));
