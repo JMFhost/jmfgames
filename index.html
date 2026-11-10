@@ -6049,7 +6049,7 @@ function chMoveStr(m) {
     var inst = { kind: item.kind, id: item.id || item.kind, item: item,
       c: c, r: r, w: item.w, h: item.h,
       queue: [], riders: [], timer: 120, open: false, entrance: null,
-      broken: false, uses: 0, using: 0, fill: 0, active: false };
+      broken: false, uses: 0, using: 0, fill: 0, active: false, sitter: null };
     for (var j = 0; j < item.h; j++)
       for (var i = 0; i < item.w; i++) tpGrid[r + j][c + i] = inst;
     tpPlaced.push(inst);
@@ -6209,6 +6209,18 @@ function chMoveStr(m) {
           }
         }
       }
+      if (inst.kind === 'decor' && inst.id === 'bench') {
+        // A bench only works when it sits next to a connected path.
+        inst.entrance = null;
+        var adj3 = tpAdjacentTiles(inst);
+        for (var b = 0; b < adj3.length; b++) {
+          var t3 = adj3[b];
+          if (t3.c >= 0 && t3.c < TP_COLS && t3.r >= 0 && t3.r < TP_ROWS && tpConnected[t3.r][t3.c]) {
+            inst.entrance = { c: t3.c, r: t3.r };
+            break;
+          }
+        }
+      }
     }
   }
   function tpRideCount() {
@@ -6241,9 +6253,8 @@ function chMoveStr(m) {
   function tpPlacementNote(it) {
     if (it.kind === 'staff') {
       if (tpStaffCount(it.id) >= (it.max || 3) || tpStaff.length >= TP_STAFF_MAX) return 'MAX';
-      return tpMoney < it.cost ? 'NO $' : '';
+      return '';
     }
-    if (tpMoney < it.cost) return 'NO $';
     if (!tpFootprintFree(it, tpCursor.c, tpCursor.r)) return 'BLOCKED';
     if (it.kind === 'ride' || it.kind === 'stall' || it.kind === 'facility' || it.kind === 'can') {
       var adj = tpAdjacentTiles({ c: tpCursor.c, r: tpCursor.r, w: it.w, h: it.h });
@@ -6330,6 +6341,7 @@ function chMoveStr(m) {
       happy: 65 + Math.floor(Math.random() * 20), rides: 0,
       bladder: 10 + Math.floor(Math.random() * 30),
       sick: false, rowdy: Math.random() < 0.08, trash: 0, restroomT: 0, aidT: 0,
+      tired: 0, tiredF: 0, sitT: 0,
       color: TP_GUEST_COLORS[Math.floor(Math.random() * TP_GUEST_COLORS.length)],
       speed: 0.5 + Math.random() * 0.2, gone: false,
       hungerF: 0, thirstF: 0, sadF: 0, bladderF: 0, retryT: 0
@@ -6360,6 +6372,18 @@ function chMoveStr(m) {
     if (!p) { tpSetExit(g); return; }
     g.path = p; g.wp = 0; g.state = 'walk'; g.destKind = 'wander'; g.destRef = null;
   }
+  function tpSeekBench(g) {
+    // Nearest free bench next to a connected path; one guest per bench.
+    var best = null, bestD = 1e9;
+    for (var i = 0; i < tpPlaced.length; i++) {
+      var b = tpPlaced[i];
+      if (b.kind !== 'decor' || b.id !== 'bench' || !b.entrance || b.sitter) continue;
+      var d = Math.abs(b.c - tpColOf(g.x)) + Math.abs(b.r - tpRowOf(g.y));
+      if (d < bestD) { bestD = d; best = b; }
+    }
+    if (!best) return false;
+    return tpGoTo(g, 'bench', best);
+  }
   function tpPickDest(g) {
     g.destRef = null; g.destKind = null; g.path = null;
     var rides = [], stalls = [], i;
@@ -6387,6 +6411,11 @@ function chMoveStr(m) {
       g.retryT = 240; // no restroom handy — try again later
     }
     if (g.happy <= 15 || (g.rides >= 3 && Math.random() < 0.45)) { tpSetExit(g); return; }
+    // Tired guests rest on a bench (nearest free one by a connected path).
+    // 40 = about three rides, or a long walk: benches get used in normal play.
+    if (g.tired >= 40 || (g.tired >= 25 && g.happy <= 30)) {
+      if (tpSeekBench(g)) return;
+    }
     var need = null;
     if (g.hunger > 60) need = 'snack';
     else if (g.thirst > 60) need = 'drink';
@@ -6443,6 +6472,12 @@ function chMoveStr(m) {
       var aid = g.destRef;
       if (aid && aid.open && tpPlaced.indexOf(aid) >= 0) { g.state = 'aid'; g.aidT = 150; }
       else tpPickDest(g);
+    } else if (g.destKind === 'bench') {
+      var bn = g.destRef;
+      if (bn && bn.entrance && tpPlaced.indexOf(bn) >= 0 && !bn.sitter) {
+        bn.sitter = g; g.state = 'sit'; g.sitT = 300;
+        g.x = TP_X0 + bn.c * TP_TILE + 6; g.y = TP_Y0 + bn.r * TP_TILE + 6;
+      } else tpPickDest(g);
     } else if (g.destKind === 'stall') {
       var st = g.destRef;
       if (st && st.open && tpPlaced.indexOf(st) >= 0) { g.state = 'stall'; g.stallT = 70; }
@@ -6494,8 +6529,20 @@ function chMoveStr(m) {
       }
       return;
     }
+    if (g.state === 'sit') {
+      g.sitT--;
+      if (g.sitT <= 0) {
+        var bn = g.destRef;
+        if (bn && bn.sitter === g) bn.sitter = null;
+        g.tired = 0; g.happy = Math.min(100, g.happy + 10);
+        tpPickDest(g);
+      }
+      return;
+    }
     if (g.state === 'queue') {
       g.sadF++;
+      g.tiredF++;
+      if (g.tiredF >= 180) { g.tiredF = 0; if (g.tired < 100) g.tired++; }
       // An organised queue lane keeps guests patient: happiness decays half as fast.
       var qInt = tpNearQueuePath(g) ? 180 : 90;
       if (g.sadF >= qInt) { g.sadF = 0; g.happy = Math.max(0, g.happy - 1); }
@@ -6507,6 +6554,8 @@ function chMoveStr(m) {
     // walking ('walk' or 'exit')
     g.sadF++;
     if (g.sadF >= 600) { g.sadF = 0; g.happy = Math.max(0, g.happy - 1); }
+    g.tiredF++;
+    if (g.tiredF >= 180) { g.tiredF = 0; if (g.tired < 100) g.tired++; }
     if (g.bladder >= 100 && g.state !== 'exit') {
       // Couldn't hold it: accident, litter, and they leave embarrassed.
       g.bladder = 0; g.happy = Math.max(0, g.happy - 15);
@@ -6546,6 +6595,7 @@ function chMoveStr(m) {
         tpDayIncome += inst.item.ticket; tpDayGuests++; tpGuestsServed++;
         rd.happy = Math.min(100, rd.happy + inst.item.excite * 3);
         rd.rides++;
+        rd.tired = Math.min(100, rd.tired + 12); // rides are tiring
         if (inst.item.excite >= 6 && Math.random() < 0.04) rd.sick = true; // intense ride made them queasy
         rd.rideRef = null; rd.state = 'walk';
         if (inst.entrance) {
@@ -7510,6 +7560,12 @@ function chMoveStr(m) {
   function tpDrawGuest(g) {
     if (g.state === 'ride') return; // aboard — hidden inside the ride
     var gx = Math.round(g.x), gy = Math.round(g.y);
+    if (g.state === 'sit') {
+      // Seated on the bench: head above the backrest, body on the seat.
+      ctx.fillStyle = '#f0c080'; ctx.fillRect(gx - 1, gy - 4, 2, 2);
+      ctx.fillStyle = g.color; ctx.fillRect(gx - 1, gy - 2, 2, 2);
+      return;
+    }
     ctx.fillStyle = '#f0c080'; ctx.fillRect(gx - 1, gy - 3, 2, 2);
     ctx.fillStyle = g.color; ctx.fillRect(gx - 1, gy - 1, 2, 3);
   }
