@@ -249,7 +249,8 @@
     run:     { bpm: 152, wave: 'square', notes: [[64,1],[67,1],[69,1],[67,1],[64,1],[0,1],[62,1],[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[62,1],[0,1]] },
     siege:   { bpm: 120, wave: 'square', notes: [[57,1],[60,1],[64,1],[60,1],[65,1],[64,1],[62,1],[60,1],[57,1],[60,1],[64,1],[67,1],[64,1],[62,1],[60,1],[0,1]] },
     park:    { bpm: 120, wave: 'triangle', notes: [[72,1],[76,1],[79,1],[76,1],[84,1],[79,1],[76,1],[72,1],[74,1],[77,1],[81,1],[77,1],[79,1],[76,1],[74,1],[0,1]] },
-    dummy:   { bpm: 140, wave: 'square', notes: [[72,1],[0,1],[76,1],[79,1],[0,1],[76,1],[74,1],[0,1],[72,1],[0,1],[74,1],[76,1],[79,1],[76,1],[74,1],[72,1]] }
+    dummy:   { bpm: 140, wave: 'square', notes: [[72,1],[0,1],[76,1],[79,1],[0,1],[76,1],[74,1],[0,1],[72,1],[0,1],[74,1],[76,1],[79,1],[76,1],[74,1],[72,1]] },
+    shooter: { bpm: 148, wave: 'square', notes: [[57,1],[0,1],[57,1],[60,1],[64,1],[0,1],[62,1],[60,1],[57,1],[0,1],[55,1],[57,1],[60,1],[62,1],[64,1],[67,1]] }
   };
   var musicTimer = null, musicStep = 0, musicNext = 0, musicTune = null, musicActive = false;
   function midiFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
@@ -361,6 +362,7 @@
     { name: "OVERLORD'S BASTION", playable: true },
     { name: 'RAGDOLL RUCKUS', playable: true },
     { name: 'SKY SOAR', playable: true },
+    { name: 'STAR STRIKE', playable: true },
     { name: 'SLINGSHOT SIEGE', playable: true },
     { name: 'SOLITAIRE', playable: true },
     { name: 'SUBWAY RUNNER', playable: true },
@@ -373,7 +375,7 @@
 
   /* ---------- State ---------- */
   var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
-  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'run' | 'siege' | 'park' | 'dummy' — which game is on the play/over screens
+  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'run' | 'siege' | 'park' | 'dummy' | 'shooter' — which game is on the play/over screens
   var menuIndex = 0;
   /* Scrollable menu: 9 visible rows at the readable 8px pitch (7px
      overlapped). menuTop = first visible game; the window follows the
@@ -390,7 +392,7 @@
 
   /* ---------- Delete-save (shared): one confirmation overlay for all
      games. dsGame = which game's save is being deleted ('sky' | 'block' |
-     'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'siege' | 'park' | 'dummy'),
+     'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'siege' | 'park' | 'dummy' | 'shooter'),
      or null. A confirms, B cancels. Confirming clears ONLY that game's
      localStorage keys and resets it to fresh defaults; pause-overlay games
      restart fresh immediately, select-screen games stay on their select
@@ -412,6 +414,7 @@
     else if (game === 'siege') { dsClearKeys([SI_KEY]); siSave = { unlocked: 1, best: {}, totalTargets: 0 }; siPhase = 'stages'; siSel = 0; siPaused = false; }
     else if (game === 'park') { dsClearKeys([TP_KEY]); tpResetFresh(); tpPaused = false; }
     else if (game === 'dummy') { dsClearKeys([DU_SAVE_KEY]); duCoins = 0; duUnlocked = 1; duTotalDmg = 0; duBestCombo = 0; duResetDummy(); duPaused = false; }
+    else if (game === 'shooter') { dsClearKeys([SH_SAVE_KEY]); shBest = 0; shBestWave = 0; shTotalKills = 0; shResetRun(); shPaused = false; }
     JMFGAMES.beep(880, 0.1);
   }
   function drawDsConfirm() {
@@ -8829,6 +8832,691 @@ function chMoveStr(m) {
     }
   }
 
+/* ================================================================
+   STAR STRIKE (console) — original vertical space shooter on the
+   160x144 screen. You pilot a lone starfighter against waves of
+   invaders: blast drones, fighters, tanks and kamikazes, grab
+   power-ups, and face a boss every 5 waves. Three lives, bombs
+   to clear the screen, weapon upgrades up to triple shot.
+   Controls: D-pad moves the ship, A fires (hold to auto-fire),
+   B drops a bomb (clears enemy bullets, damages everything),
+   Start pauses, Menu returns to the main menu.
+   Best score, highest wave and total kills saved in localStorage
+   'jmf-games-shooter-save'.
+   ================================================================ */
+  var SH_SAVE_KEY = 'jmf-games-shooter-save';
+  var SH_SCORE = { drone: 50, kami: 75, fighter: 100, tank: 200 };
+  var shScore = 0, shBest = 0, shBestWave = 0, shTotalKills = 0;
+  var shWave = 0, shKills = 0, shLives = 3, shBombs = 2, shWeapon = 1, shShield = false;
+  var shOver = false, shPaused = false, shFrame = 0;
+  var shShip = { x: 80, y: 126 };
+  var shFireCd = 0, shInvulnT = 0, shBombFlashT = 0, shShakeT = 0, shShakeMag = 0;
+  var shBullets = [], shEBullets = [], shEnemies = [], shPows = [], shParts = [], shFloats = [];
+  var shBoss = null;
+  var shWaveState = 'banner'; // 'banner' | 'fight' | 'clear'
+  var shStateT = 0, shSpawnList = [], shSpawnT = 0, shBossTrickleT = 0;
+  var shStars1 = [], shStars2 = [], shNeb = [];
+  (function shInitStars() {
+    var i;
+    for (i = 0; i < 28; i++) shStars1.push({ x: Math.floor(Math.random() * 160), y: Math.floor(Math.random() * 144) });
+    for (i = 0; i < 14; i++) shStars2.push({ x: Math.floor(Math.random() * 160), y: Math.floor(Math.random() * 144), s: Math.random() < 0.5 ? 1 : 2 });
+    shNeb = [{ x: 30, y: 30, r: 26, c: '#7C3AED' }, { x: 120, y: 90, r: 30, c: '#0E7490' }, { x: 90, y: 150, r: 22, c: '#BE185D' }];
+  })();
+  function shSave() {
+    try { localStorage.setItem(SH_SAVE_KEY, JSON.stringify({ b: shBest, w: shBestWave, k: shTotalKills })); } catch (e) {}
+  }
+  function shLoad() {
+    try {
+      var s = JSON.parse(localStorage.getItem(SH_SAVE_KEY) || 'null');
+      if (s) { shBest = s.b | 0; shBestWave = s.w | 0; shTotalKills = s.k | 0; }
+    } catch (e) {}
+  }
+  shLoad();
+  function shFloat(x, y, txt, color) {
+    shFloats.push({ x: x, y: y, txt: txt, color: color, t: 50 });
+    if (shFloats.length > 12) shFloats.shift();
+  }
+  function shPartsBurst(x, y, color, n, spd, sz) {
+    for (var i = 0; i < n; i++) {
+      var a = Math.random() * Math.PI * 2, s = (0.4 + Math.random()) * spd;
+      shParts.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, t: 16 + Math.floor(Math.random() * 14), color: color, s: sz || 2, ring: false });
+    }
+    if (shParts.length > 90) shParts.splice(0, shParts.length - 90);
+  }
+  function shRing(x, y, color) {
+    shParts.push({ x: x, y: y, vx: 0, vy: 0, t: 14, color: color, s: 2, ring: true, r: 3 });
+    if (shParts.length > 90) shParts.splice(0, shParts.length - 90);
+  }
+  function shBoom(x, y, big) {
+    shPartsBurst(x, y, '#F97316', big ? 14 : 8, big ? 2.2 : 1.6, 2);
+    shPartsBurst(x, y, '#FDE68A', big ? 8 : 4, big ? 1.6 : 1.2, 2);
+    shRing(x, y, '#FDE68A');
+    if (big) { shShakeT = 10; shShakeMag = 3; }
+  }
+  function shSpeedMul() { return Math.min(1.5, 1 + (shWave - 1) * 0.04); }
+  function shEnemyRadius(t) { return t === 0 ? 5 : t === 1 ? 7 : t === 2 ? 10 : 6; }
+  function shEnemyHp(t) {
+    if (t === 0) return 1;
+    if (t === 1) return 2;
+    if (t === 2) return Math.min(8, 5 + Math.floor((shWave - 1) / 5));
+    return 1;
+  }
+  function shEnemyScore(t) {
+    if (t === 0) return SH_SCORE.drone;
+    if (t === 1) return SH_SCORE.fighter;
+    if (t === 2) return SH_SCORE.tank;
+    return SH_SCORE.kami;
+  }
+  function shSpawnEnemy(t) {
+    var e = {
+      t: t, x: 12 + Math.random() * 136, y: -10, hp: shEnemyHp(t), maxHp: shEnemyHp(t),
+      baseX: 0, ft: 0, fireT: 60 + Math.floor(Math.random() * 60), r: shEnemyRadius(t),
+      flashT: 0, dead: false
+    };
+    e.baseX = e.x;
+    shEnemies.push(e);
+    if (shEnemies.length > 18) shEnemies.shift();
+  }
+  function shMakeBoss() {
+    var idx = Math.floor(shWave / 5); // 1 for wave 5, 2 for wave 10...
+    return {
+      x: 80, y: -22, hp: 50 + 20 * (idx - 1), maxHp: 50 + 20 * (idx - 1),
+      score: 2000 + 500 * (idx - 1), ft: 0, fireT: 90, pat: 0, patT: 0,
+      flashT: 0, entered: false
+    };
+  }
+  function shBuildWave() {
+    shSpawnList = [];
+    if (shWave % 5 === 0) { shBoss = shMakeBoss(); return; }
+    var n = Math.min(5 + shWave, 14), i, r, t;
+    for (i = 0; i < n; i++) {
+      r = Math.random();
+      if (shWave >= 4 && r < 0.15) t = 2;
+      else if (shWave >= 3 && r < 0.35) t = 3;
+      else if (shWave >= 2 && r < 0.65) t = 1;
+      else t = 0;
+      shSpawnList.push(t);
+    }
+    for (i = shSpawnList.length - 1; i > 0; i--) {
+      var k = Math.floor(Math.random() * (i + 1)), tmp = shSpawnList[i];
+      shSpawnList[i] = shSpawnList[k]; shSpawnList[k] = tmp;
+    }
+  }
+  function shNextWave() {
+    shWave++;
+    shBuildWave();
+    shWaveState = 'banner';
+    shStateT = 70;
+    shSpawnT = 40;
+    shBossTrickleT = 240;
+  }
+  function shResetRun() {
+    shScore = 0; shWave = 0; shKills = 0; shLives = 3; shBombs = 2; shWeapon = 1; shShield = false;
+    shOver = false; shPaused = false; shFireCd = 0; shInvulnT = 0; shBombFlashT = 0; shShakeT = 0;
+    shShip.x = 80; shShip.y = 126;
+    shBullets = []; shEBullets = []; shEnemies = []; shPows = []; shParts = []; shFloats = [];
+    shBoss = null;
+    shNextWave();
+  }
+  function startShooter() {
+    shResetRun();
+    screen = 'play';
+    JMFGAMES.musicPlay('shooter');
+    JMFGAMES.beep(660, 0.08);
+  }
+  function shFire() {
+    if (shOver || shPaused || shBullets.length >= 24 || shFireCd > 0) return;
+    var x = shShip.x, y = shShip.y - 8;
+    if (shWeapon === 1) shBullets.push({ x: x, y: y, vx: 0, vy: -3.2 });
+    else if (shWeapon === 2) {
+      shBullets.push({ x: x - 3, y: y, vx: 0, vy: -3.2 });
+      shBullets.push({ x: x + 3, y: y, vx: 0, vy: -3.2 });
+    } else {
+      shBullets.push({ x: x - 4, y: y, vx: -0.35, vy: -3.2 });
+      shBullets.push({ x: x, y: y, vx: 0, vy: -3.2 });
+      shBullets.push({ x: x + 4, y: y, vx: 0.35, vy: -3.2 });
+    }
+    shFireCd = shWeapon === 1 ? 14 : shWeapon === 2 ? 12 : 11;
+    JMFGAMES.beep(990, 0.03);
+  }
+  function shBomb() {
+    if (shOver || shPaused) return;
+    if (shBombs <= 0) { shFloat(shShip.x, shShip.y - 16, 'NO BOMBS', '#FCA5A5'); JMFGAMES.beep(220, 0.08); return; }
+    shBombs--;
+    shBombFlashT = 10; shShakeT = 12; shShakeMag = 4;
+    shFloat(80, 60, 'BOMB!', '#FDE68A');
+    JMFGAMES.beep(180, 0.25);
+    var i, e;
+    for (i = 0; i < shEBullets.length; i++) shPartsBurst(shEBullets[i].x, shEBullets[i].y, '#FDE68A', 2, 1, 1);
+    shEBullets = [];
+    for (i = 0; i < shEnemies.length; i++) {
+      e = shEnemies[i];
+      e.hp -= 6; e.flashT = 3;
+      if (e.hp <= 0 && !e.dead) shKillEnemy(e);
+    }
+    if (shBoss) {
+      shBoss.hp -= 10; shBoss.flashT = 3;
+      if (shBoss.hp <= 0) shKillBoss();
+    }
+  }
+  function shDropPow(x, y) {
+    var r = Math.random();
+    var kind = r < 0.45 ? 'W' : r < 0.7 ? 'S' : r < 0.9 ? 'B' : 'L';
+    shPows.push({ x: x, y: y, kind: kind, t: 0 });
+    if (shPows.length > 8) shPows.shift();
+  }
+  function shKillEnemy(e) {
+    if (e.dead) return;
+    e.dead = true;
+    shBoom(e.x, e.y, e.t === 2);
+    shScore += shEnemyScore(e.t);
+    shKills++; shTotalKills++;
+    shFloat(e.x, e.y - 6, '+' + shEnemyScore(e.t), '#FDE68A');
+    if (shScore > shBest) { shBest = shScore; shSave(); }
+    var chance = e.t === 2 ? 0.25 : e.t === 1 ? 0.12 : e.t === 3 ? 0.10 : 0.08;
+    if (Math.random() < chance) shDropPow(e.x, e.y);
+    JMFGAMES.beep(520, 0.05);
+  }
+  function shKillBoss() {
+    if (!shBoss) return;
+    var b = shBoss;
+    shBoom(b.x, b.y, true);
+    shBoom(b.x - 14, b.y + 4, true);
+    shBoom(b.x + 14, b.y + 4, true);
+    shScore += b.score;
+    shKills++; shTotalKills++;
+    shFloat(b.x, b.y - 10, 'BOSS DOWN! +' + b.score, '#FDE68A');
+    if (shScore > shBest) { shBest = shScore; shSave(); }
+    shDropPow(b.x, b.y);
+    shBoss = null;
+    JMFGAMES.beep(140, 0.3);
+  }
+  function shPlayerHit() {
+    if (shInvulnT > 0 || shOver) return;
+    if (shShield) {
+      shShield = false;
+      shInvulnT = 60;
+      shPartsBurst(shShip.x, shShip.y, '#67E8F9', 10, 1.6, 2);
+      shFloat(shShip.x, shShip.y - 16, 'SHIELD DOWN!', '#67E8F9');
+      JMFGAMES.beep(440, 0.12);
+      return;
+    }
+    shLives--;
+    shWeapon = 1;
+    shBoom(shShip.x, shShip.y, true);
+    shShakeT = 14; shShakeMag = 4;
+    JMFGAMES.beep(160, 0.3);
+    if (shLives <= 0) {
+      shOver = true;
+      if (shWave > shBestWave) shBestWave = shWave;
+      shSave();
+      screen = 'over';
+      return;
+    }
+    shInvulnT = 120;
+    shShip.x = 80; shShip.y = 126;
+  }
+  function shEnemyShootAimed(e, spd) {
+    var dx = shShip.x - e.x, dy = shShip.y - e.y;
+    var len = Math.max(4, Math.hypot(dx, dy));
+    shEBullets.push({ x: e.x, y: e.y + 4, vx: dx / len * spd, vy: dy / len * spd });
+    if (shEBullets.length > 40) shEBullets.shift();
+  }
+  function shUpdate() {
+    if (shPaused || shOver) return;
+    shFrame++;
+    var i, j, e, b, p;
+    // starfield scroll
+    for (i = 0; i < shStars1.length; i++) { shStars1[i].y += 0.4; if (shStars1[i].y >= 144) { shStars1[i].y -= 144; shStars1[i].x = Math.floor(Math.random() * 160); } }
+    for (i = 0; i < shStars2.length; i++) { shStars2[i].y += 1.0; if (shStars2[i].y >= 144) { shStars2[i].y -= 144; shStars2[i].x = Math.floor(Math.random() * 160); } }
+    for (i = 0; i < shNeb.length; i++) { shNeb[i].y += 0.15; if (shNeb[i].y - shNeb[i].r > 144) shNeb[i].y = -shNeb[i].r; }
+    if (shFireCd > 0) shFireCd--;
+    if (shInvulnT > 0) shInvulnT--;
+    if (shBombFlashT > 0) shBombFlashT--;
+    if (shShakeT > 0) shShakeT--;
+    // wave state machine
+    if (shWaveState === 'banner') {
+      shStateT--;
+      if (shStateT <= 0) shWaveState = 'fight';
+    } else if (shWaveState === 'fight') {
+      if (shSpawnList.length > 0) {
+        shSpawnT--;
+        if (shSpawnT <= 0) {
+          shSpawnEnemy(shSpawnList.shift());
+          shSpawnT = Math.max(30, 64 - shWave * 2);
+        }
+      } else if (shEnemies.length === 0 && !shBoss) {
+        var bonus = 100 + 50 * shWave;
+        shScore += bonus;
+        if (shScore > shBest) { shBest = shScore; }
+        if (shWave > shBestWave) shBestWave = shWave;
+        shSave();
+        shFloat(80, 60, 'WAVE CLEAR! +' + bonus, '#FDE68A');
+        shWaveState = 'clear';
+        shStateT = 80;
+        JMFGAMES.beep(880, 0.12);
+      }
+      // boss-wave trickle: a few drones join late boss fights
+      if (shBoss && shWave >= 10) {
+        shBossTrickleT--;
+        if (shBossTrickleT <= 0 && shEnemies.length < 6) {
+          shSpawnEnemy(0);
+          shBossTrickleT = 240;
+        }
+      }
+    } else if (shWaveState === 'clear') {
+      shStateT--;
+      if (shStateT <= 0) shNextWave();
+    }
+    // ship movement (hold D-pad) + auto-fire (hold A)
+    var sp = 1.7;
+    if (JMFGAMES.isDown('left')) shShip.x -= sp;
+    if (JMFGAMES.isDown('right')) shShip.x += sp;
+    if (JMFGAMES.isDown('up')) shShip.y -= sp;
+    if (JMFGAMES.isDown('down')) shShip.y += sp;
+    if (shShip.x < 6) shShip.x = 6;
+    if (shShip.x > 154) shShip.x = 154;
+    if (shShip.y < 10) shShip.y = 10;
+    if (shShip.y > 138) shShip.y = 138;
+    if (JMFGAMES.isDown('a')) shFire();
+    // player bullets
+    for (i = shBullets.length - 1; i >= 0; i--) {
+      b = shBullets[i];
+      b.x += b.vx; b.y += b.vy;
+      if (b.y < -6 || b.x < -4 || b.x > 164) shBullets.splice(i, 1);
+    }
+    // enemies
+    var sm = shSpeedMul();
+    for (i = shEnemies.length - 1; i >= 0; i--) {
+      e = shEnemies[i];
+      if (e.dead) { shEnemies.splice(i, 1); continue; }
+      e.ft++;
+      if (e.flashT > 0) e.flashT--;
+      if (e.t === 0) { // drone: sine descent
+        e.y += 0.9 * sm;
+        e.x = e.baseX + Math.sin(e.ft * 0.06) * 14;
+      } else if (e.t === 1) { // fighter: sway + aimed shots
+        e.y += 0.45 * sm;
+        e.x = e.baseX + Math.sin(e.ft * 0.04) * 22;
+        e.fireT--;
+        if (e.fireT <= 0 && e.y > 0 && e.y < 90) {
+          shEnemyShootAimed(e, 1.5);
+          e.fireT = Math.max(70, 110 - shWave * 3);
+        }
+      } else if (e.t === 2) { // tank: slow + 3-spread
+        e.y += 0.32 * sm;
+        e.x = e.baseX + Math.sin(e.ft * 0.03) * 8;
+        e.fireT--;
+        if (e.fireT <= 0 && e.y > 0 && e.y < 80) {
+          shEBullets.push({ x: e.x - 4, y: e.y + 6, vx: -0.5, vy: 1.3 });
+          shEBullets.push({ x: e.x, y: e.y + 6, vx: 0, vy: 1.4 });
+          shEBullets.push({ x: e.x + 4, y: e.y + 6, vx: 0.5, vy: 1.3 });
+          if (shEBullets.length > 40) shEBullets.splice(0, shEBullets.length - 40);
+          e.fireT = Math.max(90, 140 - shWave * 3);
+        }
+      } else { // kamikaze: dives at the player
+        e.y += 1.5 * sm;
+        var dxk = shShip.x - e.x;
+        e.x += Math.max(-0.9, Math.min(0.9, dxk * 0.05));
+      }
+      if (e.x < 4) e.x = 4;
+      if (e.x > 156) e.x = 156;
+      if (e.y > 152) shEnemies.splice(i, 1); // escaped past the player
+    }
+    // boss
+    if (shBoss) {
+      var bo = shBoss;
+      bo.ft++;
+      if (bo.flashT > 0) bo.flashT--;
+      if (!bo.entered) {
+        bo.y += 0.5;
+        if (bo.y >= 26) { bo.entered = true; bo.y = 26; }
+      } else {
+        bo.x = 80 + Math.sin(bo.ft * 0.018) * 55;
+        bo.patT++;
+        if (bo.patT >= 140) { bo.patT = 0; bo.pat = (bo.pat + 1) % 3; }
+        bo.fireT--;
+        if (bo.fireT <= 0) {
+          if (bo.pat === 0) { // aimed burst
+            shEnemyShootAimed({ x: bo.x, y: bo.y + 8 }, 1.4);
+            shEnemyShootAimed({ x: bo.x - 10, y: bo.y + 8 }, 1.4);
+            shEnemyShootAimed({ x: bo.x + 10, y: bo.y + 8 }, 1.4);
+            bo.fireT = 55;
+          } else if (bo.pat === 1) { // 5-shot fan
+            for (var f = -2; f <= 2; f++) {
+              shEBullets.push({ x: bo.x, y: bo.y + 10, vx: f * 0.45, vy: 1.3 });
+            }
+            if (shEBullets.length > 40) shEBullets.splice(0, shEBullets.length - 40);
+            bo.fireT = 70;
+          } else { // sweeping shot
+            var ang = Math.sin(bo.ft * 0.05) * 0.7;
+            shEBullets.push({ x: bo.x, y: bo.y + 10, vx: ang, vy: 1.35 });
+            if (shEBullets.length > 40) shEBullets.shift();
+            bo.fireT = 22;
+          }
+        }
+      }
+    }
+    // enemy bullets
+    for (i = shEBullets.length - 1; i >= 0; i--) {
+      b = shEBullets[i];
+      b.x += b.vx; b.y += b.vy;
+      if (b.y < -6 || b.y > 150 || b.x < -4 || b.x > 164) shEBullets.splice(i, 1);
+    }
+    // power-ups drift down (magnet toward the ship when close)
+    for (i = shPows.length - 1; i >= 0; i--) {
+      p = shPows[i];
+      p.t++;
+      p.y += 0.5;
+      p.x += Math.sin(p.t * 0.05) * 0.3;
+      var dpx = shShip.x - p.x, dpy = shShip.y - p.y;
+      var dpd = Math.hypot(dpx, dpy);
+      if (dpd < 26 && dpd > 0.1) { p.x += dpx / dpd * 0.8; p.y += dpy / dpd * 0.8; }
+      if (p.y > 148) shPows.splice(i, 1);
+    }
+    // player bullets vs enemies
+    for (i = shBullets.length - 1; i >= 0; i--) {
+      b = shBullets[i];
+      var hitSomething = false;
+      for (j = shEnemies.length - 1; j >= 0; j--) {
+        e = shEnemies[j];
+        if (e.dead) continue;
+        var dx = b.x - e.x, dy = b.y - e.y;
+        if (dx * dx + dy * dy < (e.r + 3) * (e.r + 3)) {
+          e.hp -= 1; e.flashT = 3;
+          shPartsBurst(b.x, b.y, '#FDE68A', 3, 1, 1);
+          if (e.hp <= 0) shKillEnemy(e);
+          hitSomething = true;
+          break;
+        }
+      }
+      if (!hitSomething && shBoss) {
+        var bdx = b.x - shBoss.x, bdy = b.y - shBoss.y;
+        if (bdx * bdx + bdy * bdy < 27 * 27) {
+          shBoss.hp -= 1; shBoss.flashT = 3;
+          shPartsBurst(b.x, b.y, '#FDE68A', 3, 1, 1);
+          if (shBoss.hp <= 0) shKillBoss();
+          hitSomething = true;
+        }
+      }
+      if (hitSomething) shBullets.splice(i, 1);
+    }
+    // enemy bullets vs player
+    if (shInvulnT <= 0) {
+      for (i = shEBullets.length - 1; i >= 0; i--) {
+        b = shEBullets[i];
+        var pdx = b.x - shShip.x, pdy = b.y - shShip.y;
+        if (pdx * pdx + pdy * pdy < 49) {
+          shEBullets.splice(i, 1);
+          shPlayerHit();
+          break;
+        }
+      }
+    }
+    // enemies vs player (ram)
+    if (shInvulnT <= 0 && !shOver) {
+      for (i = shEnemies.length - 1; i >= 0; i--) {
+        e = shEnemies[i];
+        if (e.dead) continue;
+        var rdx = e.x - shShip.x, rdy = e.y - shShip.y;
+        var rr = e.r + 6;
+        if (rdx * rdx + rdy * rdy < rr * rr) {
+          shKillEnemy(e);
+          shPlayerHit();
+          break;
+        }
+      }
+      if (shBoss && !shOver) {
+        var bdx2 = shBoss.x - shShip.x, bdy2 = shBoss.y - shShip.y;
+        if (bdx2 * bdx2 + bdy2 * bdy2 < 30 * 30) shPlayerHit();
+      }
+    }
+    // power-ups vs player
+    for (i = shPows.length - 1; i >= 0; i--) {
+      p = shPows[i];
+      var cdx = p.x - shShip.x, cdy = p.y - shShip.y;
+      if (cdx * cdx + cdy * cdy < 100) {
+        if (p.kind === 'W') {
+          if (shWeapon < 3) { shWeapon++; shFloat(shShip.x, shShip.y - 16, 'WEAPON UP!', '#67E8F9'); }
+          else { shScore += 100; shFloat(shShip.x, shShip.y - 16, '+100', '#FDE68A'); }
+        } else if (p.kind === 'S') {
+          shShield = true;
+          shFloat(shShip.x, shShip.y - 16, 'SHIELD UP!', '#60A5FA');
+        } else if (p.kind === 'B') {
+          if (shBombs < 4) { shBombs++; shFloat(shShip.x, shShip.y - 16, 'BOMB +1', '#FB923C'); }
+          else { shScore += 100; shFloat(shShip.x, shShip.y - 16, '+100', '#FDE68A'); }
+        } else {
+          if (shLives < 5) { shLives++; shFloat(shShip.x, shShip.y - 16, 'EXTRA LIFE!', '#4ADE80'); }
+          else { shScore += 200; shFloat(shShip.x, shShip.y - 16, '+200', '#FDE68A'); }
+        }
+        if (shScore > shBest) { shBest = shScore; shSave(); }
+        JMFGAMES.beep(1040, 0.08);
+        shPows.splice(i, 1);
+      }
+    }
+    // particles
+    for (i = shParts.length - 1; i >= 0; i--) {
+      p = shParts[i];
+      p.t--;
+      if (p.ring) { p.r += 1.2; }
+      else { p.x += p.vx; p.y += p.vy; p.vy += 0.05; }
+      if (p.t <= 0) shParts.splice(i, 1);
+    }
+    // floats
+    for (i = shFloats.length - 1; i >= 0; i--) {
+      shFloats[i].t--;
+      shFloats[i].y -= 0.4;
+      if (shFloats[i].t <= 0) shFloats.splice(i, 1);
+    }
+  }
+  function shDrawShip() {
+    // drawn with translate so the harness can track the ship position
+    ctx.save();
+    ctx.translate(shShip.x, shShip.y);
+    if (shInvulnT > 0 && (shFrame % 8) >= 4) { ctx.restore(); return; } // blink while invulnerable
+    // engine flame (flickers)
+    var fl = 3 + (shFrame % 3);
+    ctx.fillStyle = '#F59E0B';
+    ctx.beginPath(); ctx.moveTo(-2, 5); ctx.lineTo(0, 5 + fl); ctx.lineTo(2, 5); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#FDE68A';
+    ctx.beginPath(); ctx.moveTo(-1, 5); ctx.lineTo(0, 5 + fl - 1); ctx.lineTo(1, 5); ctx.closePath(); ctx.fill();
+    // wings + body (sleek dart, nose up)
+    ctx.fillStyle = '#38BDF8';
+    ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(-6, 5); ctx.lineTo(-2, 4); ctx.lineTo(0, 2); ctx.lineTo(2, 4); ctx.lineTo(6, 5); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#0C4A6E';
+    ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(-2, 4); ctx.lineTo(2, 4); ctx.closePath(); ctx.fill();
+    // cockpit
+    ctx.fillStyle = '#E0F2FE';
+    ctx.fillRect(-1, -4, 2, 4);
+    // shield ring
+    if (shShield) {
+      ctx.strokeStyle = '#60A5FA';
+      ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function shDrawEnemy(e) {
+    var x = e.x, y = e.y;
+    if (e.flashT > 0) { ctx.fillStyle = '#FFFFFF'; }
+    if (e.t === 0) { // drone: small red dart, nose down
+      ctx.fillStyle = e.flashT > 0 ? '#FFFFFF' : '#F43F5E';
+      ctx.beginPath(); ctx.moveTo(0 + x, 6 + y); ctx.lineTo(-5 + x, -4 + y); ctx.lineTo(-2 + x, -2 + y); ctx.lineTo(0 + x, -4 + y); ctx.lineTo(2 + x, -2 + y); ctx.lineTo(5 + x, -4 + y); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = e.flashT > 0 ? '#FFFFFF' : '#FECDD3';
+      ctx.fillRect(x - 1, y - 2, 2, 3);
+    } else if (e.t === 1) { // fighter: purple arrow with wings
+      ctx.fillStyle = e.flashT > 0 ? '#FFFFFF' : '#A855F7';
+      ctx.beginPath(); ctx.moveTo(x, y + 7); ctx.lineTo(x - 7, y - 3); ctx.lineTo(x - 3, y - 2); ctx.lineTo(x, y - 5); ctx.lineTo(x + 3, y - 2); ctx.lineTo(x + 7, y - 3); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = e.flashT > 0 ? '#FFFFFF' : '#E9D5FF';
+      ctx.fillRect(x - 1, y - 3, 2, 4);
+    } else if (e.t === 2) { // tank: big orange hexagon with core
+      ctx.fillStyle = e.flashT > 0 ? '#FFFFFF' : '#F97316';
+      ctx.beginPath();
+      ctx.moveTo(x, y - 9); ctx.lineTo(x + 8, y - 5); ctx.lineTo(x + 8, y + 5); ctx.lineTo(x, y + 9); ctx.lineTo(x - 8, y + 5); ctx.lineTo(x - 8, y - 5);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = e.flashT > 0 ? '#FFFFFF' : '#7C2D12';
+      ctx.fillRect(x - 4, y - 4, 8, 8);
+      ctx.fillStyle = e.flashT > 0 ? '#FFFFFF' : '#FDE68A';
+      ctx.fillRect(x - 2, y - 2, 4, 4);
+    } else { // kamikaze: spiky yellow mine, flashes red
+      var flash = (e.ft % 12) < 6;
+      ctx.fillStyle = e.flashT > 0 ? '#FFFFFF' : (flash ? '#EF4444' : '#FACC15');
+      ctx.beginPath();
+      ctx.moveTo(x, y - 6); ctx.lineTo(x + 2, y - 2); ctx.lineTo(x + 6, y); ctx.lineTo(x + 2, y + 2); ctx.lineTo(x, y + 6); ctx.lineTo(x - 2, y + 2); ctx.lineTo(x - 6, y); ctx.lineTo(x - 2, y - 2);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = e.flashT > 0 ? '#FFFFFF' : '#7F1D1D';
+      ctx.fillRect(x - 2, y - 2, 4, 4);
+    }
+    // tiny HP pips for tough enemies
+    if (e.maxHp > 2 && e.hp < e.maxHp) {
+      ctx.fillStyle = '#FDE68A';
+      ctx.fillRect(x - 5, y - e.r - 5, 10 * (e.hp / e.maxHp), 2);
+    }
+  }
+  function shDrawBoss() {
+    var b = shBoss, x = b.x, y = b.y;
+    ctx.fillStyle = b.flashT > 0 ? '#FFFFFF' : '#DC2626';
+    ctx.beginPath();
+    ctx.moveTo(x - 22, y + 8); ctx.lineTo(x - 22, y - 2); ctx.lineTo(x - 10, y - 10); ctx.lineTo(x + 10, y - 10); ctx.lineTo(x + 22, y - 2); ctx.lineTo(x + 22, y + 8); ctx.lineTo(x + 12, y + 4); ctx.lineTo(x - 12, y + 4);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = b.flashT > 0 ? '#FFFFFF' : '#7F1D1D';
+    ctx.fillRect(x - 14, y - 6, 28, 5);
+    ctx.fillStyle = b.flashT > 0 ? '#FFFFFF' : '#FCA5A5';
+    ctx.fillRect(x - 18, y + 2, 4, 3);
+    ctx.fillRect(x + 14, y + 2, 4, 3);
+    ctx.fillRect(x - 2, y - 9, 4, 4);
+    // cannons
+    ctx.fillStyle = b.flashT > 0 ? '#FFFFFF' : '#450A0A';
+    ctx.fillRect(x - 12, y + 8, 3, 5);
+    ctx.fillRect(x + 9, y + 8, 3, 5);
+    // HP bar
+    ctx.fillStyle = '#450A0A';
+    ctx.fillRect(30, 22, 100, 4);
+    ctx.fillStyle = '#EF4444';
+    ctx.fillRect(30, 22, Math.max(0, 100 * (b.hp / b.maxHp)), 4);
+    ctx.fillStyle = '#FCA5A5';
+    ctx.textAlign = 'center'; ctx.font = '8px monospace';
+    ctx.fillText('BOSS', 80, 21);
+    ctx.textAlign = 'left';
+  }
+  function shDrawPow(p) {
+    var col = p.kind === 'W' ? '#67E8F9' : p.kind === 'S' ? '#60A5FA' : p.kind === 'B' ? '#FB923C' : '#4ADE80';
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#0F172A';
+    ctx.textAlign = 'center'; ctx.font = 'bold 8px monospace';
+    ctx.fillText(p.kind, p.x, p.y + 3);
+    ctx.textAlign = 'left';
+  }
+  function drawShooter() {
+    ctx.save();
+    if (shShakeT > 0) {
+      var mx = (Math.random() * 2 - 1) * shShakeMag, my = (Math.random() * 2 - 1) * shShakeMag;
+      ctx.translate(mx, my);
+    }
+    // space background
+    var grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#050818');
+    grad.addColorStop(1, '#0A1030');
+    ctx.fillStyle = grad;
+    ctx.fillRect(-6, -6, W + 12, H + 12);
+    // nebula blobs
+    var i;
+    for (i = 0; i < shNeb.length; i++) {
+      ctx.globalAlpha = 0.16;
+      ctx.fillStyle = shNeb[i].c;
+      ctx.beginPath(); ctx.arc(shNeb[i].x, shNeb[i].y, shNeb[i].r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // starfield (2 layers)
+    ctx.fillStyle = '#7C8DB5';
+    for (i = 0; i < shStars1.length; i++) ctx.fillRect(shStars1[i].x, shStars1[i].y, 1, 1);
+    ctx.fillStyle = '#E2E8F0';
+    for (i = 0; i < shStars2.length; i++) ctx.fillRect(shStars2[i].x, shStars2[i].y, shStars2[i].s, shStars2[i].s);
+    // power-ups
+    for (i = 0; i < shPows.length; i++) shDrawPow(shPows[i]);
+    // enemies
+    for (i = 0; i < shEnemies.length; i++) if (!shEnemies[i].dead) shDrawEnemy(shEnemies[i]);
+    // boss
+    if (shBoss) shDrawBoss();
+    // player bullets
+    ctx.fillStyle = '#67E8F9';
+    for (i = 0; i < shBullets.length; i++) ctx.fillRect(shBullets[i].x - 1, shBullets[i].y - 3, 2, 5);
+    // enemy bullets
+    ctx.fillStyle = '#FB7185';
+    for (i = 0; i < shEBullets.length; i++) ctx.fillRect(shEBullets[i].x - 1, shEBullets[i].y - 1, 3, 3);
+    // ship (translate — the harness tracks this)
+    if (!shOver) shDrawShip();
+    // particles
+    for (i = 0; i < shParts.length; i++) {
+      var pt = shParts[i];
+      ctx.fillStyle = pt.color;
+      if (pt.ring) {
+        ctx.strokeStyle = pt.color;
+        ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.stroke();
+      } else {
+        ctx.fillRect(pt.x - pt.s / 2, pt.y - pt.s / 2, pt.s, pt.s);
+      }
+    }
+    // floats
+    ctx.textAlign = 'center'; ctx.font = '8px monospace';
+    for (i = 0; i < shFloats.length; i++) {
+      ctx.fillStyle = shFloats[i].color;
+      ctx.fillText(shFloats[i].txt, shFloats[i].x, shFloats[i].y);
+    }
+    ctx.textAlign = 'left';
+    ctx.restore();
+    // bomb flash
+    if (shBombFlashT > 0) {
+      ctx.fillStyle = 'rgba(255,255,255,' + (shBombFlashT / 14) + ')';
+      ctx.fillRect(0, 0, W, H);
+    }
+    // HUD
+    ctx.fillStyle = '#E0F2FE'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('SCORE ' + shScore, 4, 9);
+    ctx.textAlign = 'right';
+    ctx.fillText('WAVE ' + shWave, 156, 9);
+    ctx.textAlign = 'left';
+    ctx.fillText('LIVES ' + shLives + '  BOMB ' + shBombs + '  WPN ' + shWeapon, 4, 18);
+    if (shShield) { ctx.fillStyle = '#60A5FA'; ctx.fillText('SHIELD', 118, 18); }
+    // wave banner
+    if (shWaveState === 'banner') {
+      ctx.fillStyle = 'rgba(5,8,24,0.85)';
+      ctx.fillRect(30, 58, 100, 24);
+      ctx.fillStyle = '#FDE68A'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText(shWave % 5 === 0 ? 'BOSS WAVE!' : 'WAVE ' + shWave, 80, 70);
+      ctx.font = '8px monospace';
+      ctx.fillText(shWave % 5 === 0 ? 'DESTROY THE FLAGSHIP' : 'GET READY', 80, 80);
+      ctx.textAlign = 'left';
+    }
+    // pause overlay
+    if (shPaused) {
+      ctx.fillStyle = 'rgba(5,8,24,0.7)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#E0F2FE'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('PAUSED', W / 2, 70);
+      ctx.font = '8px monospace';
+      ctx.fillText('START: RESUME', W / 2, 86);
+      ctx.textAlign = 'left';
+    }
+  }
+  function drawShooterOver() {
+    ctx.fillStyle = '#050818'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#E0F2FE';
+    ctx.fillRect(18, 42, 124, 78);
+    ctx.fillStyle = '#050818';
+    ctx.fillRect(18, 42, 124, 2);
+    ctx.fillRect(18, 118, 124, 2);
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('MISSION FAILED', W / 2, 58);
+    ctx.font = '8px monospace';
+    ctx.fillText('SCORE ' + shScore, W / 2, 74);
+    ctx.fillText('WAVE ' + shWave + '  KILLS ' + shKills, W / 2, 86);
+    ctx.fillText('BEST ' + shBest + '  TOP WAVE ' + shBestWave, W / 2, 98);
+    ctx.fillText('A: NEW RUN  MENU: EXIT', W / 2, 112);
+    ctx.textAlign = 'left';
+  }
+
   /* ---------- Input (one handler per button, dispatched by screen) ---------- */
   JMFGAMES.on('press', 'up', function () {
     if (dsGame) return;
@@ -8846,6 +9534,7 @@ function chMoveStr(m) {
       else if (currentGame === 'siege') siUp();
       else if (currentGame === 'park') tpMove(0, -1);
       else if (currentGame === 'dummy') duMoveAim(0, -1);
+      else if (currentGame === 'shooter') { /* ship moves via isDown in shUpdate */ }
       else flap();
     }
   });
@@ -8865,6 +9554,7 @@ function chMoveStr(m) {
       else if (currentGame === 'siege') siDown();
       else if (currentGame === 'park') tpMove(0, 1);
       else if (currentGame === 'dummy') duMoveAim(0, 1);
+      else if (currentGame === 'shooter') { /* ship moves via isDown in shUpdate */ }
     }
   });
   JMFGAMES.on('press', 'left', function () {
@@ -8878,6 +9568,7 @@ function chMoveStr(m) {
     else if (screen === 'play' && currentGame === 'run') ruLane(-1);
     else if (screen === 'play' && currentGame === 'park') tpMove(-1, 0);
     else if (screen === 'play' && currentGame === 'dummy') duMoveAim(-1, 0);
+    else if (screen === 'play' && currentGame === 'shooter') { /* ship moves via isDown in shUpdate */ }
   });
   JMFGAMES.on('press', 'right', function () {
     if (dsGame) return;
@@ -8890,6 +9581,7 @@ function chMoveStr(m) {
     else if (screen === 'play' && currentGame === 'run') ruLane(1);
     else if (screen === 'play' && currentGame === 'park') tpMove(1, 0);
     else if (screen === 'play' && currentGame === 'dummy') duMoveAim(1, 0);
+    else if (screen === 'play' && currentGame === 'shooter') { /* ship moves via isDown in shUpdate */ }
   });
   JMFGAMES.on('press', 'a', function () {
     if (dsGame) { dsDoDelete(dsGame); return; } // confirm delete-save
@@ -8908,12 +9600,13 @@ function chMoveStr(m) {
         else if (g.name === 'SLINGSHOT SIEGE') { currentGame = 'siege'; startSiege(); }
         else if (g.name === 'THRILL PARK') { currentGame = 'park'; startPark(); }
         else if (g.name === 'RAGDOLL RUCKUS') { currentGame = 'dummy'; startDummy(); }
+        else if (g.name === 'STAR STRIKE') { currentGame = 'shooter'; startShooter(); }
         else { currentGame = 'sky'; startGame(); }
       }
       else { comingName = g.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
-    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else if (currentGame === 'park') tpAction(); else if (currentGame === 'dummy') duAction(); else flap(); }
-    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else if (currentGame === 'pool') poRematch(); else startGame(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else if (currentGame === 'park') tpAction(); else if (currentGame === 'dummy') duAction(); else if (currentGame === 'shooter') shFire(); else flap(); }
+    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else if (currentGame === 'pool') poRematch(); else if (currentGame === 'shooter') startShooter(); else startGame(); }
   });
   JMFGAMES.on('press', 'b', function () {
     // B is a real in-game action in every game; it NEVER returns to the
@@ -8931,6 +9624,7 @@ function chMoveStr(m) {
     if (currentGame === 'beat' && buPaused) { dsAsk('beat'); return; }
     if (currentGame === 'park' && tpPaused) { dsAsk('park'); return; }
     if (currentGame === 'dummy' && duPaused) { dsAsk('dummy'); return; }
+    if (currentGame === 'shooter' && shPaused) { dsAsk('shooter'); return; }
     if (currentGame === 'sky') skyDive();
     else if (currentGame === 'block') bqBack();
     else if (currentGame === 'bj') bjBack();
@@ -8944,6 +9638,7 @@ function chMoveStr(m) {
     else if (currentGame === 'siege') siBack();
     else if (currentGame === 'park') tpBack();
     else if (currentGame === 'dummy') duCycleWeapon();
+    else if (currentGame === 'shooter') shBomb();
   });
   JMFGAMES.on('press', 'start', function () {
     if (dsGame) return;
@@ -8960,13 +9655,14 @@ function chMoveStr(m) {
     else if (currentGame === 'siege') { if (siPhase === 'aim' || siPhase === 'flight') { siPaused = !siPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'park') { if (tpPhase !== 'report') { tpPaused = !tpPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'dummy') { duPaused = !duPaused; JMFGAMES.beep(330, 0.06); }
+    else if (currentGame === 'shooter') { if (!shOver) { shPaused = !shPaused; JMFGAMES.beep(330, 0.06); } }
     else if (!dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
   });
   JMFGAMES.on('press', 'menu', function () {
     // Menu is the ONLY way back to the main menu: from a game (even
     // mid-hand), level/color select, game-over, or pause.
     dsGame = null; // cancel any delete-save confirmation
-    if (screen === 'play' || screen === 'over' || screen === 'coming') { if (currentGame === 'park') tpSave(); if (currentGame === 'dummy') duSave(); toMenu(); }
+    if (screen === 'play' || screen === 'over' || screen === 'coming') { if (currentGame === 'park') tpSave(); if (currentGame === 'dummy') duSave(); if (currentGame === 'shooter') shSave(); toMenu(); }
   });
 
   /* ---------- Update (one fixed 1/60s step) ---------- */
@@ -8982,6 +9678,7 @@ function chMoveStr(m) {
     if (currentGame === 'siege') { siUpdate(); return; }
     if (currentGame === 'park') { tpUpdate(); return; }
     if (currentGame === 'dummy') { duUpdate(); return; }
+    if (currentGame === 'shooter') { shUpdate(); return; }
     if (currentGame !== 'sky') return; // Hold'em has no per-frame update; without this, Sky Soar physics runs during Hold'em and the falling bird hits the ground -> gameOver() -> 'over' screen (BUSTED panel) on Hold'em launch after Sky was played
     if (paused || dead || !started) return;
     bird.vy = Math.min(bird.vy + GRAV, MAXFALL);
@@ -9174,8 +9871,8 @@ function chMoveStr(m) {
     if (screen !== 'play') JMFGAMES.musicStop();
     if (screen === 'menu') drawMenu();
     else if (screen === 'coming') drawComing();
-    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else if (currentGame === 'park') drawPark(); else if (currentGame === 'dummy') drawDummy(); else drawGame(); }
-    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else drawOver(); }
+    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else if (currentGame === 'park') drawPark(); else if (currentGame === 'dummy') drawDummy(); else if (currentGame === 'shooter') drawShooter(); else drawGame(); }
+    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else if (currentGame === 'shooter') drawShooterOver(); else drawOver(); }
     // Delete-save confirmation overlay (on top of any screen), or the
     // pause-overlay hint for games whose delete option lives on pause.
     if (dsGame) drawDsConfirm();
@@ -9189,6 +9886,7 @@ function chMoveStr(m) {
       else if (currentGame === 'solitaire' && solPaused) dsHintY = 110; // 'A: NEW GAME' sits at 98
       else if (currentGame === 'park' && tpPaused) dsHintY = 98;
       else if (currentGame === 'dummy' && duPaused) dsHintY = 98;
+      else if (currentGame === 'shooter' && shPaused) dsHintY = 98;
       if (dsHintY) {
         ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
         ctx.fillText('B: DELETE SAVE', W / 2, dsHintY);
