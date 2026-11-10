@@ -248,7 +248,8 @@
     pool:    { bpm: 100, wave: 'triangle', notes: [[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[67,1],[69,1],[67,1],[64,1],[0,1]] },
     run:     { bpm: 152, wave: 'square', notes: [[64,1],[67,1],[69,1],[67,1],[64,1],[0,1],[62,1],[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[62,1],[0,1]] },
     siege:   { bpm: 120, wave: 'square', notes: [[57,1],[60,1],[64,1],[60,1],[65,1],[64,1],[62,1],[60,1],[57,1],[60,1],[64,1],[67,1],[64,1],[62,1],[60,1],[0,1]] },
-    park:    { bpm: 120, wave: 'triangle', notes: [[72,1],[76,1],[79,1],[76,1],[84,1],[79,1],[76,1],[72,1],[74,1],[77,1],[81,1],[77,1],[79,1],[76,1],[74,1],[0,1]] }
+    park:    { bpm: 120, wave: 'triangle', notes: [[72,1],[76,1],[79,1],[76,1],[84,1],[79,1],[76,1],[72,1],[74,1],[77,1],[81,1],[77,1],[79,1],[76,1],[74,1],[0,1]] },
+    dummy:   { bpm: 140, wave: 'square', notes: [[72,1],[0,1],[76,1],[79,1],[0,1],[76,1],[74,1],[0,1],[72,1],[0,1],[74,1],[76,1],[79,1],[76,1],[74,1],[72,1]] }
   };
   var musicTimer = null, musicStep = 0, musicNext = 0, musicTune = null, musicActive = false;
   function midiFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
@@ -358,6 +359,7 @@
     { name: 'CHESS CLUB', playable: true },
     { name: 'EMBERFALL BRAWL', playable: true },
     { name: "OVERLORD'S BASTION", playable: true },
+    { name: 'RAGDOLL RUCKUS', playable: true },
     { name: 'SKY SOAR', playable: true },
     { name: 'SLINGSHOT SIEGE', playable: true },
     { name: 'SOLITAIRE', playable: true },
@@ -371,7 +373,7 @@
 
   /* ---------- State ---------- */
   var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
-  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'run' | 'siege' | 'park' — which game is on the play/over screens
+  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'run' | 'siege' | 'park' | 'dummy' — which game is on the play/over screens
   var menuIndex = 0;
   /* Scrollable menu: 9 visible rows at the readable 8px pitch (7px
      overlapped). menuTop = first visible game; the window follows the
@@ -388,7 +390,7 @@
 
   /* ---------- Delete-save (shared): one confirmation overlay for all
      games. dsGame = which game's save is being deleted ('sky' | 'block' |
-     'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'siege' | 'park'),
+     'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'siege' | 'park' | 'dummy'),
      or null. A confirms, B cancels. Confirming clears ONLY that game's
      localStorage keys and resets it to fresh defaults; pause-overlay games
      restart fresh immediately, select-screen games stay on their select
@@ -409,6 +411,7 @@
     else if (game === 'pool') { dsClearKeys([PO_WIN_KEY, PO_LOSS_KEY]); poWins = 0; poLosses = 0; }
     else if (game === 'siege') { dsClearKeys([SI_KEY]); siSave = { unlocked: 1, best: {}, totalTargets: 0 }; siPhase = 'stages'; siSel = 0; siPaused = false; }
     else if (game === 'park') { dsClearKeys([TP_KEY]); tpResetFresh(); tpPaused = false; }
+    else if (game === 'dummy') { dsClearKeys([DU_SAVE_KEY]); duCoins = 0; duUnlocked = 1; duTotalDmg = 0; duBestCombo = 0; duResetDummy(); duPaused = false; }
     JMFGAMES.beep(880, 0.1);
   }
   function drawDsConfirm() {
@@ -8183,6 +8186,416 @@ function chMoveStr(m) {
     }
   }
 
+  /* ================================================================
+     RAGDOLL RUCKUS (console) — original ragdoll-hitting game on the
+     160x144 screen. STITCH the burlap ragdoll stands in a small
+     toy-room arena; aim with the D-pad (head / body / legs give
+     different reactions), A hits with the selected weapon, B cycles
+     weapons — A on a locked weapon buys it when you can afford it.
+     Hits fling STITCH around with simple ragdoll physics: he
+     tumbles, spins and bounces off the walls and floor. Rapid hits
+     build a combo multiplier that boosts coins; coins unlock bigger
+     weapons. STITCH never dies — he always pops back up.
+     Save: localStorage 'jmf-games-dummy-save' (coins, unlocked
+     weapons bitmask, total damage, best combo). Start pauses
+     (B while paused = DELETE SAVE).
+     ================================================================ */
+  var DU_SAVE_KEY = 'jmf-games-dummy-save';
+  var DU_ARENA = { x0: 8, x1: 152, y0: 22, y1: 122 }; // floor top y1, walls x0/x1
+  var DU_R = 11, DU_FEET = 14, DU_TOP = 40; // wall radius, floor offset, ceiling centre
+  var DU_WEAPONS = [
+    { name: 'FISTS', short: 'FST', price: 0, dmg: 3, kb: 1.0, cd: 18, kind: 'melee' },
+    { name: 'BAT', short: 'BAT', price: 150, dmg: 6, kb: 2.2, cd: 22, kind: 'melee' },
+    { name: 'HAMMER', short: 'HAM', price: 400, dmg: 12, kb: 1.6, cd: 30, kind: 'melee' },
+    { name: 'SLING', short: 'SLG', price: 700, dmg: 8, kb: 1.4, cd: 26, kind: 'rock' },
+    { name: 'SWORD', short: 'SWD', price: 1200, dmg: 10, kb: 1.2, cd: 12, kind: 'melee' },
+    { name: 'BLASTER', short: 'BLS', price: 2000, dmg: 7, kb: 1.0, cd: 8, kind: 'bolt' },
+    { name: 'BOMB', short: 'BOM', price: 3500, dmg: 25, kb: 3.5, cd: 40, kind: 'bomb' }
+  ];
+  var duCoins = 0, duUnlocked = 1, duTotalDmg = 0, duBestCombo = 0;
+  var duWeaponIdx = 0, duCd = 0, duPaused = false;
+  var duAim = { x: 80, y: 80 };
+  var du = { x: 80, y: 108, vx: 0, vy: 0, ang: 0, angVel: 0, rest: 0 };
+  var duCombo = 0, duComboT = 999, duBruise = 0, duDizzyT = 0, duFlatT = 0;
+  var duFloats = [], duParts = [], duProjs = [], duBooms = [];
+  var duShakeT = 0, duFrame = 0, duSwingT = 0, duToast = '', duToastT = 0;
+  var duSaveT = 0, duCoinsDirty = false, duLastSave = 0;
+  function duSave() {
+    try { localStorage.setItem(DU_SAVE_KEY, JSON.stringify({ c: duCoins, u: duUnlocked, t: duTotalDmg, b: duBestCombo })); } catch (e) {}
+    duCoinsDirty = false; duLastSave = duFrame;
+  }
+  function duLoad() {
+    try {
+      var s = JSON.parse(localStorage.getItem(DU_SAVE_KEY) || 'null');
+      if (s) { duCoins = s.c | 0; duUnlocked = (s.u | 0) || 1; duTotalDmg = s.t | 0; duBestCombo = s.b | 0; }
+    } catch (e) {}
+  }
+  duLoad();
+  function duComboMult() { return Math.min(5, 1 + Math.floor(duCombo / 4)); }
+  function duResetDummy() {
+    du.x = 80; du.y = DU_ARENA.y1 - DU_FEET; du.vx = 0; du.vy = 0; du.ang = 0; du.angVel = 0; du.rest = 0;
+    duCombo = 0; duComboT = 999; duDizzyT = 0; duFlatT = 0; duBruise = 0;
+    duFloats = []; duParts = []; duProjs = []; duBooms = [];
+    duShakeT = 0; duSwingT = 0; duToast = ''; duToastT = 0;
+    duAim.x = 80; duAim.y = 80;
+  }
+  function startDummy() {
+    duResetDummy();
+    duPaused = false; duCd = 0; duWeaponIdx = 0;
+    screen = 'play';
+    JMFGAMES.musicPlay('dummy');
+    JMFGAMES.beep(660, 0.08);
+  }
+  function duFloat(x, y, txt, color) { duFloats.push({ x: x, y: y, txt: txt, color: color, t: 45 }); if (duFloats.length > 12) duFloats.shift(); }
+  function duPartsBurst(x, y, color, n, spd) {
+    for (var i = 0; i < n; i++) {
+      var a = Math.random() * Math.PI * 2, s = (0.5 + Math.random()) * spd;
+      duParts.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 0.5, t: 20 + Math.floor(Math.random() * 15), color: color });
+    }
+    if (duParts.length > 80) duParts.splice(0, duParts.length - 80);
+  }
+  function duApplyHit(dmg, kb, fromX, fromY, zone, isBomb) {
+    var mult = zone === 'head' ? 1.5 : 1;
+    var dd = Math.round(dmg * mult);
+    var dx = du.x - fromX, dy = du.y - fromY;
+    var len = Math.max(4, Math.hypot(dx, dy));
+    var power = kb * (6 + dmg * 0.5);
+    du.vx += dx / len * power;
+    du.vy += dy / len * power - 1.5;
+    if (zone === 'head') { du.angVel += (dx >= 0 ? 0.35 : -0.35); duFloat(du.x, du.y - 20, 'HEADSHOT!', '#FFD93D'); }
+    if (zone === 'legs') { du.vy -= 2.5; du.angVel += 0.2; }
+    if (isBomb) { duFlatT = 60; duShakeT = 12; }
+    if (dd >= 12) duDizzyT = 120;
+    duBruise = Math.min(100, duBruise + dd);
+    if (duComboT < 150) duCombo++; else duCombo = 1;
+    duComboT = 0;
+    var coins = dd * duComboMult();
+    duCoins += coins; duTotalDmg += dd; duCoinsDirty = true;
+    if (duCombo > duBestCombo) { duBestCombo = duCombo; duSave(); }
+    duFloat(du.x, du.y - 14, '+' + dd, zone === 'head' ? '#FFD93D' : '#FFFFFF');
+    duFloat(du.x, du.y - 24, '+' + coins + ' COINS', '#F59E0B');
+    duPartsBurst(du.x, du.y, '#FFFFFF', 5, 1.5);
+    if (kb >= 2.2 || dd >= 12) duShakeT = Math.max(duShakeT, 4);
+    JMFGAMES.beep(zone === 'head' ? 990 : 660, 0.06);
+    du.rest = 0;
+  }
+  function duAction() {
+    if (screen !== 'play' || duPaused) return;
+    var w = DU_WEAPONS[duWeaponIdx];
+    // Buying a locked weapon is instant — it is NOT gated by the attack
+    // cooldown, so a tap to buy right after a swing always works.
+    if (!(duUnlocked & (1 << duWeaponIdx))) {
+      if (duCoins >= w.price) {
+        duCoins -= w.price; duUnlocked |= (1 << duWeaponIdx);
+        duToast = w.name + ' UNLOCKED!'; duToastT = 90;
+        JMFGAMES.beep(880, 0.12); duSave();
+      } else {
+        duToast = 'NEED ' + w.price + ' COINS'; duToastT = 60;
+        JMFGAMES.beep(180, 0.1);
+      }
+      return;
+    }
+    if (duCd > 0) return;
+    duCd = w.cd;
+    if (w.kind === 'rock' || w.kind === 'bolt') {
+      var sx = 14, sy = 118;
+      var dx = duAim.x - sx, dy = duAim.y - sy;
+      var len = Math.max(4, Math.hypot(dx, dy));
+      var sp = w.kind === 'rock' ? 5 : 7;
+      duProjs.push({ x: sx, y: sy, vx: dx / len * sp, vy: dy / len * sp, tx: duAim.x, ty: duAim.y, kind: w.kind, dmg: w.dmg, kb: w.kb, t: 150 });
+      JMFGAMES.beep(w.kind === 'rock' ? 500 : 900, 0.05);
+    } else if (w.kind === 'bomb') {
+      duBooms.push({ x: duAim.x, y: duAim.y, r: 4, t: 0 });
+      duShakeT = 12;
+      JMFGAMES.beep(120, 0.2);
+      var d = Math.hypot(du.x - duAim.x, du.y - duAim.y);
+      if (d < 36) duApplyHit(w.dmg, w.kb, duAim.x, duAim.y, 'body', true);
+      duPartsBurst(duAim.x, duAim.y, '#F59E0B', 14, 2.5);
+    } else {
+      duSwingT = 6;
+      var d2 = Math.hypot(du.x - duAim.x, du.y - duAim.y);
+      if (d2 < 20) {
+        var zone = duAim.y < du.y - 6 ? 'head' : (duAim.y > du.y + 6 ? 'legs' : 'body');
+        duApplyHit(w.dmg, w.kb, duAim.x, duAim.y, zone, false);
+      } else {
+        JMFGAMES.beep(300, 0.03);
+      }
+    }
+  }
+  function duCycleWeapon() {
+    if (screen !== 'play' || duPaused) return;
+    duWeaponIdx = (duWeaponIdx + 1) % DU_WEAPONS.length;
+    JMFGAMES.beep(600, 0.04);
+  }
+  function duMoveAim(dx, dy) {
+    if (screen !== 'play' || duPaused) return;
+    duAim.x = Math.max(DU_ARENA.x0 + 2, Math.min(DU_ARENA.x1 - 2, duAim.x + dx * 8));
+    duAim.y = Math.max(DU_ARENA.y0 + 4, Math.min(DU_ARENA.y1 - 2, duAim.y + dy * 8));
+    JMFGAMES.beep(700, 0.02);
+  }
+  function duUpdate() {
+    if (duPaused) return;
+    duFrame++;
+    if (duCd > 0) duCd--;
+    if (duSwingT > 0) duSwingT--;
+    if (duShakeT > 0) duShakeT--;
+    if (duDizzyT > 0) duDizzyT--;
+    if (duFlatT > 0) duFlatT--;
+    if (duToastT > 0) duToastT--;
+    duComboT++;
+    if (duComboT > 150) duCombo = 0;
+    if (duBruise > 0) duBruise = Math.max(0, duBruise - 0.05);
+    // --- ragdoll physics: gravity, bounce, spin, settle ---
+    du.vy += 0.18;
+    du.x += du.vx; du.y += du.vy; du.ang += du.angVel;
+    du.angVel *= 0.985; du.vx *= 0.995;
+    if (du.x < DU_ARENA.x0 + DU_R) { du.x = DU_ARENA.x0 + DU_R; du.vx = -du.vx * 0.6; du.angVel *= 0.7; }
+    if (du.x > DU_ARENA.x1 - DU_R) { du.x = DU_ARENA.x1 - DU_R; du.vx = -du.vx * 0.6; du.angVel *= 0.7; }
+    if (du.y < DU_TOP) { du.y = DU_TOP; du.vy = -du.vy * 0.5; }
+    if (du.y > DU_ARENA.y1 - DU_FEET) {
+      du.y = DU_ARENA.y1 - DU_FEET;
+      du.vy = -du.vy * 0.55; du.vx *= 0.85; du.angVel *= 0.7;
+      if (Math.abs(du.vy) < 0.8) du.vy = 0;
+    }
+    var spd = Math.hypot(du.vx, du.vy);
+    if (spd < 0.5 && du.y >= DU_ARENA.y1 - DU_FEET - 0.5) du.rest++; else du.rest = 0;
+    if (du.rest > 90) {
+      var k = Math.round(du.ang / (Math.PI * 2));
+      var target = k * Math.PI * 2;
+      du.ang += (target - du.ang) * 0.05;
+      if (Math.abs(target - du.ang) < 0.02) { du.ang = target; du.angVel = 0; }
+      du.vx *= 0.9;
+    }
+    // --- projectiles ---
+    for (var i = duProjs.length - 1; i >= 0; i--) {
+      var p = duProjs[i];
+      p.x += p.vx; p.y += p.vy;
+      if (p.kind === 'rock') p.vy += 0.08;
+      p.t--;
+      var pd = Math.hypot(du.x - p.x, du.y - p.y);
+      if (pd < 14) {
+        duApplyHit(p.dmg, p.kb, p.x - p.vx, p.y - p.vy, 'body', false);
+        duProjs.splice(i, 1);
+        continue;
+      }
+      var pastTx = (p.vx > 0 && p.x >= p.tx) || (p.vx < 0 && p.x <= p.tx);
+      var pastTy = (p.vy > 0 && p.y >= p.ty) || (p.vy < 0 && p.y <= p.ty);
+      if (p.t <= 0 || pastTx || pastTy || p.x < DU_ARENA.x0 || p.x > DU_ARENA.x1 || p.y > DU_ARENA.y1 || p.y < DU_ARENA.y0) {
+        duPartsBurst(p.x, p.y, '#9CA3AF', 3, 1);
+        duProjs.splice(i, 1);
+      }
+    }
+    // --- explosion rings ---
+    for (var j = duBooms.length - 1; j >= 0; j--) {
+      var b = duBooms[j];
+      b.t++; b.r += 2.5;
+      if (b.t > 14) duBooms.splice(j, 1);
+    }
+    // --- floats ---
+    for (var f = duFloats.length - 1; f >= 0; f--) {
+      duFloats[f].y -= 0.5; duFloats[f].t--;
+      if (duFloats[f].t <= 0) duFloats.splice(f, 1);
+    }
+    // --- particles ---
+    for (var q = duParts.length - 1; q >= 0; q--) {
+      var pt = duParts[q];
+      pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.1; pt.t--;
+      if (pt.t <= 0) duParts.splice(q, 1);
+    }
+    // --- throttled save (coins change often; also saved on unlock / best) ---
+    duSaveT++;
+    if (duCoinsDirty && duFrame - duLastSave > 30) duSave();
+  }
+  function duDrawDummy() {
+    var x = du.x, y = du.y;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(du.ang);
+    if (duFlatT > 0) ctx.scale(1.4, 0.45);
+    var flail = Math.min(1, Math.abs(du.angVel) * 3 + Math.hypot(du.vx, du.vy) * 0.08);
+    var t = duFrame * 0.35;
+    var armA = Math.sin(t) * (0.4 + flail * 0.9);
+    var armB = Math.sin(t + 2.1) * (0.4 + flail * 0.9);
+    var legA = Math.sin(t + 1.2) * (0.3 + flail * 0.7);
+    var legB = Math.sin(t + 3.3) * (0.3 + flail * 0.7);
+    // legs + shoes
+    ctx.strokeStyle = '#8A6D3B'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-3, 6); ctx.lineTo(-3 + Math.sin(legA) * 5, 11 + Math.cos(legA) * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(3, 6); ctx.lineTo(3 + Math.sin(legB) * 5, 11 + Math.cos(legB) * 2); ctx.stroke();
+    ctx.fillStyle = '#7A2E2E';
+    ctx.fillRect(-3 + Math.sin(legA) * 5 - 2, 11 + Math.cos(legA) * 2, 5, 3);
+    ctx.fillRect(3 + Math.sin(legB) * 5 - 2, 11 + Math.cos(legB) * 2, 5, 3);
+    // body
+    ctx.fillStyle = '#C8A165';
+    ctx.fillRect(-6, -4, 12, 11);
+    ctx.strokeStyle = '#8A6D3B'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-6, 0); ctx.lineTo(6, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-6, 4); ctx.lineTo(6, 4); ctx.stroke();
+    ctx.fillStyle = '#E8590C';
+    ctx.fillRect(1, 1, 4, 4);
+    // bruises
+    if (duBruise > 25) {
+      ctx.fillStyle = 'rgba(128,0,128,' + Math.min(0.7, duBruise / 120) + ')';
+      ctx.beginPath(); ctx.arc(-3, 2, 3, 0, Math.PI * 2); ctx.fill();
+      if (duBruise > 60) { ctx.beginPath(); ctx.arc(3, -1, 2.5, 0, Math.PI * 2); ctx.fill(); }
+    }
+    // arms
+    ctx.strokeStyle = '#C8A165'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-6, -2); ctx.lineTo(-6 + Math.cos(armA) * -6, -2 + Math.sin(armA) * 6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(6, -2); ctx.lineTo(6 + Math.cos(armB) * 6, -2 + Math.sin(armB) * 6); ctx.stroke();
+    // head
+    ctx.fillStyle = '#D9B77C';
+    ctx.beginPath(); ctx.arc(0, -10, 6, 0, Math.PI * 2); ctx.fill();
+    if (duDizzyT > 0) {
+      ctx.strokeStyle = '#1C1C1C'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(-4, -12); ctx.lineTo(-1, -9); ctx.moveTo(-1, -12); ctx.lineTo(-4, -9); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(1, -12); ctx.lineTo(4, -9); ctx.moveTo(4, -12); ctx.lineTo(1, -9); ctx.stroke();
+    } else {
+      ctx.fillStyle = '#C0392B';
+      ctx.beginPath(); ctx.arc(-2, -11, 1.3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(2, -11, 1.3, 0, Math.PI * 2); ctx.fill();
+    }
+    // stitched mouth
+    ctx.strokeStyle = '#5A3A1A'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-3, -6); ctx.lineTo(-1, -7); ctx.lineTo(1, -6); ctx.lineTo(3, -7); ctx.stroke();
+    // bow tie
+    ctx.fillStyle = '#C0392B';
+    ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(-3, -6); ctx.lineTo(-3, -2); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(3, -6); ctx.lineTo(3, -2); ctx.closePath(); ctx.fill();
+    // straw poking out
+    ctx.strokeStyle = '#F2D492'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(5, 3); ctx.lineTo(8, 1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-5, 5); ctx.lineTo(-8, 7); ctx.stroke();
+    ctx.restore();
+    // dizzy stars orbit the head in world space
+    if (duDizzyT > 0) {
+      ctx.fillStyle = '#FFD93D';
+      for (var i = 0; i < 3; i++) {
+        var a = duFrame * 0.15 + i * 2.094;
+        ctx.fillRect(x + Math.cos(a) * 10 - 1, y - 10 + Math.sin(a) * 4 - 1, 3, 3);
+      }
+    }
+  }
+  function drawDummy() {
+    // toy-room background
+    ctx.fillStyle = '#4A3B6B'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#8B5A2B'; ctx.fillRect(0, DU_ARENA.y1, W, H - DU_ARENA.y1);
+    ctx.fillStyle = '#6B4226';
+    ctx.fillRect(0, DU_ARENA.y1 + 7, W, 1);
+    ctx.fillRect(0, DU_ARENA.y1 + 14, W, 1);
+    // poster with a star
+    ctx.fillStyle = '#F8FAFC'; ctx.fillRect(118, 34, 28, 22);
+    ctx.fillStyle = '#26263A'; ctx.fillRect(120, 36, 24, 18);
+    ctx.fillStyle = '#FFD93D';
+    ctx.beginPath(); ctx.arc(132, 45, 5, 0, Math.PI * 2); ctx.fill();
+    // rug under STITCH's home spot
+    ctx.fillStyle = '#C0392B'; ctx.fillRect(60, DU_ARENA.y1 - 4, 40, 5);
+    ctx.fillStyle = '#E8B93C'; ctx.fillRect(60, DU_ARENA.y1 - 4, 40, 1);
+    // arena contents (shaken on big hits)
+    ctx.save();
+    if (duShakeT > 0) ctx.translate((Math.random() * 4 - 2) | 0, (Math.random() * 4 - 2) | 0);
+    // shooter (slingshot / blaster muzzle) at the floor's left end
+    var w = DU_WEAPONS[duWeaponIdx];
+    if (w.kind === 'rock' || w.kind === 'bolt') {
+      var sa = Math.atan2(duAim.y - 118, duAim.x - 14);
+      ctx.save();
+      ctx.translate(14, 118);
+      ctx.rotate(sa);
+      ctx.fillStyle = w.kind === 'rock' ? '#8A6D3B' : '#9CA3AF';
+      ctx.fillRect(0, -2, 10, 4);
+      ctx.restore();
+    }
+    duDrawDummy();
+    // projectiles
+    for (var i = 0; i < duProjs.length; i++) {
+      var p = duProjs[i];
+      if (p.kind === 'rock') {
+        ctx.fillStyle = '#6B7280';
+        ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
+      } else {
+        ctx.fillStyle = '#FFD93D';
+        ctx.fillRect(p.x - 2, p.y - 1, 5, 2);
+      }
+    }
+    // explosion rings
+    for (var j = 0; j < duBooms.length; j++) {
+      var b = duBooms[j];
+      ctx.strokeStyle = 'rgba(245,158,11,' + Math.max(0, 1 - b.t / 14) + ')';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+    // melee swing arc
+    if (duSwingT > 0) {
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(du.x, du.y, 15, -1.2 + (6 - duSwingT) * 0.4, 0.4 + (6 - duSwingT) * 0.4);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+    // particles
+    for (var q = 0; q < duParts.length; q++) {
+      var pt = duParts[q];
+      ctx.fillStyle = pt.color;
+      ctx.fillRect(pt.x - 1, pt.y - 1, 2, 2);
+    }
+    // floating damage / coin numbers
+    ctx.font = '8px monospace'; ctx.textAlign = 'center';
+    for (var f = 0; f < duFloats.length; f++) {
+      var fl = duFloats[f];
+      ctx.fillStyle = fl.color;
+      ctx.fillText(fl.txt, fl.x, fl.y);
+    }
+    ctx.textAlign = 'left';
+    // aim cursor (green when it will hit STITCH)
+    var nearDummy = Math.hypot(du.x - duAim.x, du.y - duAim.y) < 20;
+    ctx.strokeStyle = nearDummy ? '#22C55E' : '#FFFFFF'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(duAim.x - 5, duAim.y); ctx.lineTo(duAim.x - 2, duAim.y);
+    ctx.moveTo(duAim.x + 2, duAim.y); ctx.lineTo(duAim.x + 5, duAim.y);
+    ctx.moveTo(duAim.x, duAim.y - 5); ctx.lineTo(duAim.x, duAim.y - 2);
+    ctx.moveTo(duAim.x, duAim.y + 2); ctx.lineTo(duAim.x, duAim.y + 5);
+    ctx.stroke();
+    ctx.restore();
+    // HUD
+    ctx.fillStyle = '#F8FAFC'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('COINS ' + duCoins, 4, 10);
+    ctx.fillText(duCombo > 0 ? 'COMBO x' + duComboMult() : 'COMBO -', 64, 10);
+    ctx.fillText('BEST x' + duBestCombo, 118, 10);
+    var sel = DU_WEAPONS[duWeaponIdx];
+    var locked = !(duUnlocked & (1 << duWeaponIdx));
+    ctx.fillText(sel.name + '  DMG ' + sel.dmg, 4, 19);
+    ctx.fillText(locked ? 'LOCKED ' + sel.price : (duCd > 0 ? 'WAIT' : 'READY'), 104, 19);
+    // weapon strip
+    for (var s = 0; s < DU_WEAPONS.length; s++) {
+      var sx = 6 + s * 21, sy = 130;
+      if (s === duWeaponIdx) { ctx.fillStyle = '#F8FAFC'; ctx.fillRect(sx, sy, 19, 9); ctx.fillStyle = '#26263A'; }
+      else { ctx.fillStyle = '#F8FAFC'; }
+      ctx.fillText(DU_WEAPONS[s].short, sx + 3, sy + 7);
+      if (!(duUnlocked & (1 << s))) { ctx.fillStyle = '#EF4444'; ctx.fillRect(sx + 8, sy - 2, 3, 2); ctx.fillStyle = '#F8FAFC'; }
+    }
+    ctx.fillStyle = '#F8FAFC'; ctx.textAlign = 'center';
+    ctx.fillText('A HIT  B WEAPON', W / 2, 143);
+    ctx.textAlign = 'left';
+    // toast
+    if (duToastT > 0) {
+      ctx.fillStyle = 'rgba(15,56,15,0.9)'; ctx.fillRect(30, 58, 100, 16);
+      ctx.fillStyle = '#F8FAFC'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
+      ctx.fillText(duToast, W / 2, 69);
+      ctx.textAlign = 'left';
+    }
+    // pause overlay
+    if (duPaused) {
+      ctx.fillStyle = 'rgba(15,56,15,0.7)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('PAUSED', W / 2, 70);
+      ctx.font = '8px monospace';
+      ctx.fillText('START: RESUME', W / 2, 86);
+      ctx.textAlign = 'left';
+    }
+  }
+
   /* ---------- Input (one handler per button, dispatched by screen) ---------- */
   JMFGAMES.on('press', 'up', function () {
     if (dsGame) return;
@@ -8199,6 +8612,7 @@ function chMoveStr(m) {
       else if (currentGame === 'run') ruUp();
       else if (currentGame === 'siege') siUp();
       else if (currentGame === 'park') tpMove(0, -1);
+      else if (currentGame === 'dummy') duMoveAim(0, -1);
       else flap();
     }
   });
@@ -8217,6 +8631,7 @@ function chMoveStr(m) {
       else if (currentGame === 'run') ruDown();
       else if (currentGame === 'siege') siDown();
       else if (currentGame === 'park') tpMove(0, 1);
+      else if (currentGame === 'dummy') duMoveAim(0, 1);
     }
   });
   JMFGAMES.on('press', 'left', function () {
@@ -8229,6 +8644,7 @@ function chMoveStr(m) {
     else if (screen === 'play' && currentGame === 'solitaire') solMove('left');
     else if (screen === 'play' && currentGame === 'run') ruLane(-1);
     else if (screen === 'play' && currentGame === 'park') tpMove(-1, 0);
+    else if (screen === 'play' && currentGame === 'dummy') duMoveAim(-1, 0);
   });
   JMFGAMES.on('press', 'right', function () {
     if (dsGame) return;
@@ -8240,6 +8656,7 @@ function chMoveStr(m) {
     else if (screen === 'play' && currentGame === 'solitaire') solMove('right');
     else if (screen === 'play' && currentGame === 'run') ruLane(1);
     else if (screen === 'play' && currentGame === 'park') tpMove(1, 0);
+    else if (screen === 'play' && currentGame === 'dummy') duMoveAim(1, 0);
   });
   JMFGAMES.on('press', 'a', function () {
     if (dsGame) { dsDoDelete(dsGame); return; } // confirm delete-save
@@ -8257,11 +8674,12 @@ function chMoveStr(m) {
         else if (g.name === 'SUBWAY RUNNER') { currentGame = 'run'; startRunner(); }
         else if (g.name === 'SLINGSHOT SIEGE') { currentGame = 'siege'; startSiege(); }
         else if (g.name === 'THRILL PARK') { currentGame = 'park'; startPark(); }
+        else if (g.name === 'RAGDOLL RUCKUS') { currentGame = 'dummy'; startDummy(); }
         else { currentGame = 'sky'; startGame(); }
       }
       else { comingName = g.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
-    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else if (currentGame === 'park') tpAction(); else flap(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else if (currentGame === 'park') tpAction(); else if (currentGame === 'dummy') duAction(); else flap(); }
     else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else if (currentGame === 'pool') poRematch(); else startGame(); }
   });
   JMFGAMES.on('press', 'b', function () {
@@ -8279,6 +8697,7 @@ function chMoveStr(m) {
     if (currentGame === 'solitaire' && solPaused) { dsAsk('solitaire'); return; }
     if (currentGame === 'beat' && buPaused) { dsAsk('beat'); return; }
     if (currentGame === 'park' && tpPaused) { dsAsk('park'); return; }
+    if (currentGame === 'dummy' && duPaused) { dsAsk('dummy'); return; }
     if (currentGame === 'sky') skyDive();
     else if (currentGame === 'block') bqBack();
     else if (currentGame === 'bj') bjBack();
@@ -8291,6 +8710,7 @@ function chMoveStr(m) {
     else if (currentGame === 'run') ruBack();
     else if (currentGame === 'siege') siBack();
     else if (currentGame === 'park') tpBack();
+    else if (currentGame === 'dummy') duCycleWeapon();
   });
   JMFGAMES.on('press', 'start', function () {
     if (dsGame) return;
@@ -8306,13 +8726,14 @@ function chMoveStr(m) {
     else if (currentGame === 'run') { if (ruPhase === 'run') { ruPaused = !ruPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'siege') { if (siPhase === 'aim' || siPhase === 'flight') { siPaused = !siPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'park') { if (tpPhase !== 'report') { tpPaused = !tpPaused; JMFGAMES.beep(330, 0.06); } }
+    else if (currentGame === 'dummy') { duPaused = !duPaused; JMFGAMES.beep(330, 0.06); }
     else if (!dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
   });
   JMFGAMES.on('press', 'menu', function () {
     // Menu is the ONLY way back to the main menu: from a game (even
     // mid-hand), level/color select, game-over, or pause.
     dsGame = null; // cancel any delete-save confirmation
-    if (screen === 'play' || screen === 'over' || screen === 'coming') { if (currentGame === 'park') tpSave(); toMenu(); }
+    if (screen === 'play' || screen === 'over' || screen === 'coming') { if (currentGame === 'park') tpSave(); if (currentGame === 'dummy') duSave(); toMenu(); }
   });
 
   /* ---------- Update (one fixed 1/60s step) ---------- */
@@ -8327,6 +8748,7 @@ function chMoveStr(m) {
     if (currentGame === 'run') { ruUpdate(); return; }
     if (currentGame === 'siege') { siUpdate(); return; }
     if (currentGame === 'park') { tpUpdate(); return; }
+    if (currentGame === 'dummy') { duUpdate(); return; }
     if (currentGame !== 'sky') return; // Hold'em has no per-frame update; without this, Sky Soar physics runs during Hold'em and the falling bird hits the ground -> gameOver() -> 'over' screen (BUSTED panel) on Hold'em launch after Sky was played
     if (paused || dead || !started) return;
     bird.vy = Math.min(bird.vy + GRAV, MAXFALL);
@@ -8519,7 +8941,7 @@ function chMoveStr(m) {
     if (screen !== 'play') JMFGAMES.musicStop();
     if (screen === 'menu') drawMenu();
     else if (screen === 'coming') drawComing();
-    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else if (currentGame === 'park') drawPark(); else drawGame(); }
+    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else if (currentGame === 'park') drawPark(); else if (currentGame === 'dummy') drawDummy(); else drawGame(); }
     else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else drawOver(); }
     // Delete-save confirmation overlay (on top of any screen), or the
     // pause-overlay hint for games whose delete option lives on pause.
@@ -8533,6 +8955,7 @@ function chMoveStr(m) {
       else if (currentGame === 'overlord' && ovPaused) dsHintY = 98;
       else if (currentGame === 'solitaire' && solPaused) dsHintY = 110; // 'A: NEW GAME' sits at 98
       else if (currentGame === 'park' && tpPaused) dsHintY = 98;
+      else if (currentGame === 'dummy' && duPaused) dsHintY = 98;
       if (dsHintY) {
         ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
         ctx.fillText('B: DELETE SAVE', W / 2, dsHintY);
