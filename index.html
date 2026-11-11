@@ -6178,12 +6178,24 @@ function chIndigoBg() {
   g.addColorStop(0, '#3B3B8F'); g.addColorStop(1, '#1E1E5A');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
 }
+// Retro DMG green background for the menu screens (level / color /
+// puzzle list) — matches the console's main menu. The board keeps indigo.
+function chGreenBg() {
+  ctx.fillStyle = '#0F380F'; ctx.fillRect(0, 0, W, H);
+}
 
 function drawChessLevel() {
-  chIndigoBg();
-  ctx.fillStyle = '#F5E9C8'; ctx.textAlign = 'center';
+  chGreenBg();
+  ctx.textAlign = 'center';
   ctx.font = 'bold 12px monospace';
+  // Title: layered pixel shadow like the main menu title.
+  ctx.fillStyle = '#8BAC0F';
+  ctx.fillText('CHESS CLUB', W / 2 + 1, 17);
+  ctx.fillStyle = '#306230';
+  ctx.fillText('CHESS CLUB', W / 2 + 2, 18);
+  ctx.fillStyle = '#9BBC0F';
   ctx.fillText('CHESS CLUB', W / 2, 16);
+  ctx.fillStyle = '#8BAC0F';
   ctx.font = '8px monospace';
   ctx.fillText('SELECT LEVEL  -  RATING ' + chRating + '  STREAK ' + chStreak, W / 2, 28);
   ctx.textAlign = 'left';
@@ -6194,48 +6206,55 @@ function drawChessLevel() {
   for (var j = 0; j < rows.length; j++) {
     var y = 44 + j * 12;
     if (j === chLevelIdx) {
-      ctx.fillStyle = '#FFD93D';
+      ctx.fillStyle = '#8BAC0F';
       ctx.fillRect(20, y - 9, 200, 11);
-      ctx.fillStyle = '#1E1E5A';
+      ctx.fillStyle = '#0F380F';
       ctx.fillText('>', 24, y);
       ctx.fillText(rows[j].label, 34, y);
       ctx.textAlign = 'right';
       ctx.fillText(rows[j].desc, 216, y);
       ctx.textAlign = 'left';
     } else {
-      ctx.fillStyle = '#F5E9C8';
+      ctx.fillStyle = '#9BBC0F';
       ctx.fillText(rows[j].label, 34, y);
       ctx.textAlign = 'right';
       ctx.fillText(rows[j].desc, 216, y);
       ctx.textAlign = 'left';
     }
   }
-  ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#8BAC0F'; ctx.textAlign = 'center';
   ctx.fillText('W ' + chWins + '  L ' + chLosses + '  D ' + chDraws + '   PROMO=AUTO-QUEEN', W / 2, 140);
   ctx.fillText('A: START  MENU: EXIT', W / 2, 152);
   ctx.textAlign = 'left';
 }
 function drawChessColor() {
-  chIndigoBg();
-  ctx.fillStyle = '#F5E9C8'; ctx.textAlign = 'center';
+  chGreenBg();
+  ctx.textAlign = 'center';
   ctx.font = 'bold 12px monospace';
+  // Title: layered pixel shadow like the main menu title.
+  ctx.fillStyle = '#8BAC0F';
+  ctx.fillText('CHESS CLUB', W / 2 + 1, 17);
+  ctx.fillStyle = '#306230';
+  ctx.fillText('CHESS CLUB', W / 2 + 2, 18);
+  ctx.fillStyle = '#9BBC0F';
   ctx.fillText('CHESS CLUB', W / 2, 16);
+  ctx.fillStyle = '#8BAC0F';
   ctx.font = '8px monospace';
   ctx.fillText('SELECT COLOR', W / 2, 28);
   ctx.textAlign = 'left';
   for (var i = 0; i < CH_COLORS.length; i++) {
     var y = 48 + i * 13;
     if (i === chColorIdx) {
-      ctx.fillStyle = '#FFD93D';
+      ctx.fillStyle = '#8BAC0F';
       ctx.fillRect(20, y - 9, 200, 12);
-      ctx.fillStyle = '#1E1E5A';
+      ctx.fillStyle = '#0F380F';
       ctx.fillText('>', 24, y);
       ctx.fillText(CH_COLORS[i].name, 34, y);
       ctx.textAlign = 'right';
       ctx.fillText(CH_COLORS[i].desc, 216, y);
       ctx.textAlign = 'left';
     } else {
-      ctx.fillStyle = '#F5E9C8';
+      ctx.fillStyle = '#9BBC0F';
       ctx.fillText(CH_COLORS[i].name, 34, y);
       ctx.textAlign = 'right';
       ctx.fillText(CH_COLORS[i].desc, 216, y);
@@ -6244,25 +6263,32 @@ function drawChessColor() {
   }
   var dsRowY = 48 + CH_COLORS.length * 13;
   if (chColorIdx === CH_COLORS.length) {
-    ctx.fillStyle = '#FFD93D';
+    ctx.fillStyle = '#8BAC0F';
     ctx.fillRect(20, dsRowY - 9, 200, 12);
-    ctx.fillStyle = '#1E1E5A';
+    ctx.fillStyle = '#0F380F';
     ctx.fillText('>', 24, dsRowY);
     ctx.fillText('DELETE SAVE', 34, dsRowY);
   } else {
-    ctx.fillStyle = '#F5E9C8';
+    ctx.fillStyle = '#9BBC0F';
     ctx.fillText('DELETE SAVE', 34, dsRowY);
   }
-  ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#8BAC0F'; ctx.textAlign = 'center';
   ctx.fillText(CH_LEVELS[chLevel].name + ' ' + CH_LEVELS[chLevel].elo, W / 2, 140);
   ctx.fillText('A: START  B: BACK', W / 2, 152);
   ctx.textAlign = 'left';
 }
 function drawChessPuzzleList() {
-  chIndigoBg();
-  ctx.fillStyle = '#F5E9C8'; ctx.textAlign = 'center';
+  chGreenBg();
+  ctx.textAlign = 'center';
   ctx.font = 'bold 12px monospace';
+  // Title: layered pixel shadow like the main menu title.
+  ctx.fillStyle = '#8BAC0F';
+  ctx.fillText('TACTICS PUZZLES', W / 2 + 1, 17);
+  ctx.fillStyle = '#306230';
+  ctx.fillText('TACTICS PUZZLES', W / 2 + 2, 18);
+  ctx.fillStyle = '#9BBC0F';
   ctx.fillText('TACTICS PUZZLES', W / 2, 16);
+  ctx.fillStyle = '#8BAC0F';
   ctx.font = '8px monospace';
   ctx.fillText('SOLVE FOR +15 RATING', W / 2, 28);
   ctx.textAlign = 'left';
@@ -6270,28 +6296,32 @@ function drawChessPuzzleList() {
     var y = 46 + i * 13;
     var done = !!chPuzzlesSolved[CH_PUZZLES[i].name];
     if (i === chPuzzleIdx) {
-      ctx.fillStyle = '#FFD93D';
+      ctx.fillStyle = '#8BAC0F';
       ctx.fillRect(20, y - 9, 200, 12);
-      ctx.fillStyle = '#1E1E5A';
+      ctx.fillStyle = '#0F380F';
       ctx.fillText('>', 24, y);
       ctx.fillText(CH_PUZZLES[i].name, 34, y);
       ctx.textAlign = 'right';
       ctx.fillText(done ? 'SOLVED' : CH_PUZZLES[i].type.toUpperCase(), 216, y);
       ctx.textAlign = 'left';
     } else {
-      ctx.fillStyle = done ? '#fde047' : '#F5E9C8';
+      // Solved rows read mid-green, unsolved light-green — the
+      // distinction the old gold-vs-cream gave, in retro greens.
+      ctx.fillStyle = done ? '#8BAC0F' : '#9BBC0F';
       ctx.fillText(CH_PUZZLES[i].name, 34, y);
       ctx.textAlign = 'right';
       ctx.fillText(done ? 'SOLVED' : CH_PUZZLES[i].type.toUpperCase(), 216, y);
       ctx.textAlign = 'left';
     }
   }
-  ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#8BAC0F'; ctx.textAlign = 'center';
   ctx.fillText('A: PLAY  B: BACK', W / 2, 152);
   ctx.textAlign = 'left';
 }
 function drawChess() {
-  chIndigoBg();
+  // Menu states paint their own retro-green background; the indigo
+  // backdrop is only for the board / play states.
+  if (chState !== 'level' && chState !== 'color' && chState !== 'puzzlelist') chIndigoBg();
   if (chState === 'level') { drawChessLevel(); return; }
   if (chState === 'color') { drawChessColor(); return; }
   if (chState === 'puzzlelist') { drawChessPuzzleList(); return; }
