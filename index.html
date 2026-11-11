@@ -2561,28 +2561,30 @@
       var shy = Math.round((cqRand() - 0.5) * cqShake);
       ctx.translate(shx, shy);
     }
-    ctx.fillStyle = '#1E1E4A';
+    ctx.fillStyle = cqPhase === 'select' ? '#0F380F' : '#1E1E4A';
     ctx.fillRect(0, 0, 240, 160);
     if (cqPhase === 'select') {
-      ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
-      ctx.fillText('CARD QUEST', 120, 20);
-      ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace';
+      ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#8BAC0F'; ctx.fillText('CARD QUEST', 121, 21);
+      ctx.fillStyle = '#306230'; ctx.fillText('CARD QUEST', 122, 22);
+      ctx.fillStyle = '#9BBC0F'; ctx.fillText('CARD QUEST', 120, 20);
+      ctx.fillStyle = '#8BAC0F'; ctx.font = '8px monospace';
       ctx.fillText('PICK YOUR FIGHTER', 120, 32);
       ctx.textAlign = 'left';
       for (var i = 0; i < CQ_CHARS.length; i++) {
         var ch = CQ_CHARS[i], y = 44 + i * 19;
         var locked = !cqIsUnlocked(i);
-        if (i === cqCharIdx) { ctx.fillStyle = '#FFD93D'; ctx.fillRect(10, y - 10, 220, 20); }
+        if (i === cqCharIdx) { ctx.fillStyle = '#8BAC0F'; ctx.fillRect(10, y - 10, 220, 20); }
         /* Hero portrait left of the text (locked heroes dimmed). */
         cqDrawFigRects(CQ_HERO_FIG[ch.name], 20, y, 0.55, false);
-        if (locked) { ctx.fillStyle = 'rgba(30,30,74,0.45)'; ctx.fillRect(12, y - 10, 16, 18); }
-        ctx.fillStyle = i === cqCharIdx ? '#1E1E5A' : '#E8E8FF';
+        if (locked) { ctx.fillStyle = 'rgba(15,56,15,0.45)'; ctx.fillRect(12, y - 10, 16, 18); }
+        ctx.fillStyle = i === cqCharIdx ? '#0F380F' : '#9BBC0F';
         ctx.font = 'bold 9px monospace';
         ctx.fillText(ch.name + ' THE ' + ch.title, 32, y);
         ctx.font = '7px monospace';
         ctx.fillText(locked ? ('LOCKED - ' + (ch.cost || 0) + ' PTS') : ('HP ' + ch.hp + ' - ' + ch.info), 32, y + 7);
       }
-      ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#8BAC0F'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
       ctx.fillText('POINTS ' + CQ_POINTS + '  WINS ' + CQ_WINS, 120, 157);
       ctx.textAlign = 'left';
     } else if (cqPhase === 'fight') {
@@ -3081,13 +3083,13 @@
     ctx.fillRect(x, y + BD_CELL - 2, BD_CELL, 2);
   }
   function drawBlockDrop() {
-    ctx.fillStyle = '#1E1E5A'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#0F380F'; ctx.fillRect(0, 0, W, H);
     // No top bar: the well uses the full 160px height. SCORE and BEST
     // live in the right panel instead (see below).
     // Well background + faint grid.
-    ctx.fillStyle = '#0F0F2E';
+    ctx.fillStyle = '#0F380F';
     ctx.fillRect(BD_X, BD_Y, BD_COLS * BD_CELL, BD_ROWS * BD_CELL);
-    ctx.fillStyle = '#23234A';
+    ctx.fillStyle = '#306230';
     for (var gx = 1; gx < BD_COLS; gx++) ctx.fillRect(BD_X + gx * BD_CELL, BD_Y, 1, BD_ROWS * BD_CELL);
     for (var gy = 1; gy < BD_ROWS; gy++) ctx.fillRect(BD_X, BD_Y + gy * BD_CELL, BD_COLS * BD_CELL, 1);
     // Placed blocks (flash white while a clear is animating).
@@ -3129,7 +3131,7 @@
     // at the left screen edge (BD_X=0), so the left line sits at x=0
     // and the right line at x=160 — no negative coords (the bounds
     // test rejects anything off-screen).
-    ctx.fillStyle = '#FFD93D';
+    ctx.fillStyle = '#9BBC0F';
     ctx.fillRect(BD_X, 0, BD_COLS * BD_CELL, 1);
     ctx.fillRect(BD_X, H - 1, BD_COLS * BD_CELL, 1);
     ctx.fillRect(BD_X, 0, 1, H);
@@ -3138,14 +3140,14 @@
     // at the top, then the NEXT preview. The preview uses the same
     // 8px square cells as the well — a 4-block STRAIGHT is 32px wide,
     // so the 64px box holds it with room to spare.
-    ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'left';
+    ctx.fillStyle = '#9BBC0F'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'left';
     ctx.fillText('SCORE ' + bdScore, BD_PX, 11);
     ctx.fillText('BEST ' + bdBest, BD_PX, 22);
     ctx.font = 'bold 8px monospace';
     ctx.fillText('NEXT', BD_PX, 36);
-    ctx.fillStyle = '#12123A';
+    ctx.fillStyle = '#306230';
     ctx.fillRect(BD_PX, 40, 64, 36);
-    ctx.fillStyle = '#FFD93D';
+    ctx.fillStyle = '#9BBC0F';
     ctx.fillRect(BD_PX, 40, 64, 1);
     ctx.fillRect(BD_PX, 75, 64, 1);
     ctx.fillRect(BD_PX, 40, 1, 36);
@@ -3158,7 +3160,7 @@
       ctx.fillRect(nx0 + np.cells[ni][1] * ncell, ny0 + np.cells[ni][0] * ncell, ncell - 1, ncell - 1);
     }
     // Stats.
-    ctx.fillStyle = '#F5E9C8'; ctx.font = '8px monospace';
+    ctx.fillStyle = '#9BBC0F'; ctx.font = '8px monospace';
     ctx.fillText('LEVEL', BD_PX, 88);
     ctx.textAlign = 'right';
     ctx.fillText(String(bdLevel), W - 4, 88);
@@ -3167,7 +3169,7 @@
     ctx.textAlign = 'right';
     ctx.fillText(String(bdLines), W - 4, 100);
     ctx.textAlign = 'left';
-    ctx.fillStyle = '#A7F3D0';
+    ctx.fillStyle = '#8BAC0F';
     ctx.fillText('A: ROTATE', BD_PX, 112);
     ctx.fillText('B: HARD DROP', BD_PX, 122);
     // 'DOWN: SOFT DROP' is 16 chars and would run past x=240 in the
@@ -3178,16 +3180,16 @@
     if (bdToastT > 0) {
       ctx.font = 'bold 9px monospace';
       var tw = bdToast.length * 6 + 12;
-      ctx.fillStyle = 'rgba(18,18,58,0.92)';
+      ctx.fillStyle = 'rgba(15,56,15,0.92)';
       ctx.fillRect(W / 2 - tw / 2, 66, tw, 16);
-      ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#9BBC0F'; ctx.textAlign = 'center';
       ctx.fillText(bdToast, W / 2, 77);
       ctx.textAlign = 'left';
     }
     if (bdPaused) {
-      ctx.fillStyle = 'rgba(18,18,58,0.78)';
+      ctx.fillStyle = 'rgba(15,56,15,0.78)';
       ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center'; ctx.font = 'bold 12px monospace';
+      ctx.fillStyle = '#9BBC0F'; ctx.textAlign = 'center'; ctx.font = 'bold 12px monospace';
       ctx.fillText('PAUSED', W / 2, 76);
       ctx.font = '8px monospace';
       ctx.fillText('START: RESUME', W / 2, 92);
@@ -3196,11 +3198,11 @@
   }
   function drawBlockDropOver() {
     drawBlockDrop();
-    ctx.fillStyle = 'rgba(18,18,58,0.55)';
+    ctx.fillStyle = 'rgba(15,56,15,0.55)';
     ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#FFD93D';
+    ctx.fillStyle = '#9BBC0F';
     ctx.fillRect(40, 40, 160, 84);
-    ctx.fillStyle = '#1E1E5A';
+    ctx.fillStyle = '#306230';
     ctx.fillRect(40, 40, 160, 2);
     ctx.fillRect(40, 122, 160, 2);
     ctx.textAlign = 'center';
@@ -7404,13 +7406,16 @@ function ovDrawFigure(x, y, letter, color, dir, anim) {
   }
 }
 function drawOverlordSelect() {
-  var selG = ctx.createLinearGradient(0, 0, 0, H);
-  selG.addColorStop(0, '#3B3B8F'); selG.addColorStop(1, '#1E1E5A');
-  ctx.fillStyle = selG; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#0F380F'; ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center';
   ctx.font = 'bold 12px monospace';
+  ctx.fillStyle = '#8BAC0F';
+  ctx.fillText("OVERLORD'S BASTION", W / 2 + 1, 17);
+  ctx.fillStyle = '#306230';
+  ctx.fillText("OVERLORD'S BASTION", W / 2 + 2, 18);
+  ctx.fillStyle = '#9BBC0F';
   ctx.fillText("OVERLORD'S BASTION", W / 2, 16);
-  ctx.font = '8px monospace'; ctx.fillStyle = '#f5e9c8';
+  ctx.font = '8px monospace'; ctx.fillStyle = '#9BBC0F';
   ctx.fillText('CAMPAIGN - BEAT EACH SAINT TO UNLOCK THE NEXT', W / 2, 28);
   ctx.textAlign = 'left';
   for (var i = 0; i < 5; i++) {
@@ -7418,16 +7423,16 @@ function drawOverlordSelect() {
     var unlocked = i < ovCampaignUnlocked;
     var label = (i + 1) + '. ' + OV_STAGES[i].name;
     if (i === ovStageIdx) {
-      ctx.fillStyle = '#e8c33c';
+      ctx.fillStyle = '#8BAC0F';
       ctx.fillRect(20, y - 9, 200, 12);
-      ctx.fillStyle = '#1a1a2e';
+      ctx.fillStyle = '#0F380F';
       ctx.fillText('>', 24, y);
       ctx.fillText(label, 34, y);
       ctx.textAlign = 'right';
       ctx.fillText(unlocked ? OV_STAGES[i].desc : 'LOCKED', 216, y);
       ctx.textAlign = 'left';
     } else {
-      ctx.fillStyle = unlocked ? '#f5e9c8' : '#8a8ab8';
+      ctx.fillStyle = unlocked ? '#9BBC0F' : '#306230';
       ctx.fillText(label, 34, y);
       ctx.textAlign = 'right';
       ctx.fillText(unlocked ? OV_STAGES[i].desc : 'LOCKED', 216, y);
@@ -7436,25 +7441,26 @@ function drawOverlordSelect() {
   }
   var qy = 44 + 5 * 13;
   if (ovStageIdx === 5) {
-    ctx.fillStyle = '#e8c33c';
+    ctx.fillStyle = '#8BAC0F';
     ctx.fillRect(20, qy - 9, 200, 12);
-    ctx.fillStyle = '#1a1a2e';
+    ctx.fillStyle = '#0F380F';
     ctx.fillText('>', 24, qy);
     ctx.fillText('QUICK BATTLE', 34, qy);
     ctx.textAlign = 'right';
     ctx.fillText('VS THE SAINT', 216, qy);
     ctx.textAlign = 'left';
   } else {
-    ctx.fillStyle = '#f5e9c8';
+    ctx.fillStyle = '#9BBC0F';
     ctx.fillText('QUICK BATTLE', 34, qy);
     ctx.textAlign = 'right';
     ctx.fillText('VS THE SAINT', 216, qy);
     ctx.textAlign = 'left';
   }
-  ctx.fillStyle = '#f5e9c8'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#9BBC0F'; ctx.textAlign = 'center';
   ctx.fillText('W ' + ovWins + '  L ' + ovLosses + (ovBestTime > 0 ? '  BEST ' + ovFmtTime(ovBestTime) : '') + '   UNLOCKED ' + ovCampaignUnlocked + '/5', W / 2, 128);
-  ctx.fillText('SPELLS: LIGHTNING + FIREBALL - A CASTS ON YOUR LANE', W / 2, 140);
-  ctx.fillText('A: FIGHT  MENU: EXIT', W / 2, 152);
+  ctx.fillText('SPELLS: LIGHTNING + FIREBALL', W / 2, 138);
+  ctx.fillText('A CASTS ON YOUR LANE', W / 2, 148);
+  ctx.fillText('A: FIGHT  MENU: EXIT', W / 2, 158);
   ctx.textAlign = 'left';
 }
 // A castle: stone tower with battlements, a waving banner, a gate,
@@ -11992,6 +11998,7 @@ function poDrawBall(b) {
 }
 function drawPool() {
   var t = PO_TABLE;
+  if (poPhase !== 'level') { // level screen covers all: skip shared header/table
   var g = ctx.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, '#0d3a24'); g.addColorStop(1, '#0a2a1a');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
@@ -12034,14 +12041,19 @@ function drawPool() {
     ctx.fillStyle = 'rgba(255,255,255,0.25)';
     ctx.beginPath(); ctx.arc(pockets[pi].x - 2, pockets[pi].y - 2, 2, 0, 7); ctx.fill();
   }
+  }
   if (poPhase === 'level') {
-    var lg = ctx.createLinearGradient(0, 0, 0, H);
-    lg.addColorStop(0, '#3B3B8F'); lg.addColorStop(1, '#1E1E5A');
-    ctx.fillStyle = lg; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center'; ctx.font = 'bold 11px monospace';
+    // Retro DMG green: flat dark-green background, light-green title
+    // with the same layered shadow as the main menu title.
+    ctx.fillStyle = '#0F380F'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#8BAC0F'; ctx.textAlign = 'center'; ctx.font = 'bold 11px monospace';
+    ctx.fillText('8 BALL POOL', W / 2 + 1, 39);
+    ctx.fillStyle = '#306230';
+    ctx.fillText('8 BALL POOL', W / 2 + 2, 40);
+    ctx.fillStyle = '#9BBC0F';
     ctx.fillText('8 BALL POOL', W / 2, 38);
     ctx.font = '8px monospace';
-    ctx.fillStyle = '#f5e9c8';
+    ctx.fillStyle = '#9BBC0F';
     var blurb = poOpp < PO_OPPONENTS.length ? PO_OPPONENTS[poOpp].blurb : 'RESET YOUR WINS + LOSSES';
     ctx.fillText(blurb, W / 2, 50);
     ctx.fillText('TRICK SHOTS ' + poTricksCount() + '/' + PO_TRICKS.length + '   STREAK ' + poStreak + ' (BEST ' + poBestStreak + ')', W / 2, 60);
@@ -12049,24 +12061,24 @@ function drawPool() {
       var y = 72 + li * 11;
       var rowTxt = (li + 1) + ' ' + PO_OPP_NAMES[li] + '  W' + poOppWins[li];
       if (li === poOpp) {
-        ctx.fillStyle = '#e8c33c'; ctx.fillRect(28, y - 8, 184, 10);
-        ctx.fillStyle = '#1E1E5A';
+        ctx.fillStyle = '#8BAC0F'; ctx.fillRect(28, y - 8, 184, 10);
+        ctx.fillStyle = '#0F380F';
         ctx.fillText('> ' + rowTxt, W / 2, y);
       } else {
-        ctx.fillStyle = '#f5e9c8';
+        ctx.fillStyle = '#9BBC0F';
         ctx.fillText(rowTxt, W / 2, y);
       }
     }
     var dsRowY = 72 + PO_OPPONENTS.length * 11;
     if (poOpp === PO_OPPONENTS.length) {
-      ctx.fillStyle = '#e8c33c'; ctx.fillRect(28, dsRowY - 8, 184, 10);
-      ctx.fillStyle = '#1E1E5A';
+      ctx.fillStyle = '#8BAC0F'; ctx.fillRect(28, dsRowY - 8, 184, 10);
+      ctx.fillStyle = '#0F380F';
       ctx.fillText('> DELETE SAVE', W / 2, dsRowY);
     } else {
-      ctx.fillStyle = '#f5e9c8';
+      ctx.fillStyle = '#9BBC0F';
       ctx.fillText('DELETE SAVE', W / 2, dsRowY);
     }
-    ctx.fillStyle = '#f5e9c8';
+    ctx.fillStyle = '#9BBC0F';
     ctx.fillText('UP/DOWN PICK  A PLAY', W / 2, 142);
     ctx.fillText('TRICKS: LONG/BANK/DOUBLE/TRIPLE/BREAK/SPIN/RAIL', W / 2, 152);
     ctx.textAlign = 'left';
@@ -12648,14 +12660,17 @@ function drawRunner() {
   }
 }
 function drawRuStages() {
-  var sg = ctx.createLinearGradient(0, 0, 0, H);
-  sg.addColorStop(0, '#3B3B8F'); sg.addColorStop(1, '#1E1E5A');
-  ctx.fillStyle = sg; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#0F380F'; ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center';
   ctx.font = 'bold 10px monospace';
+  ctx.fillStyle = '#8BAC0F';
+  ctx.fillText('SUBWAY RUNNER', W / 2 + 1, 15);
+  ctx.fillStyle = '#306230';
+  ctx.fillText('SUBWAY RUNNER', W / 2 + 2, 16);
+  ctx.fillStyle = '#9BBC0F';
   ctx.fillText('SUBWAY RUNNER', W / 2, 14);
   ctx.font = '8px monospace';
-  ctx.fillStyle = '#f5e9c8';
+  ctx.fillStyle = '#9BBC0F';
   ctx.fillText('SELECT STAGE', W / 2, 26);
   var total = RU_STAGES.length + 2; /* stages + DAILY + DELETE SAVE */
   var vis = 7, top = Math.max(0, Math.min(ruSel - 2, total - vis));
@@ -12669,32 +12684,32 @@ function drawRuStages() {
     var locked = !isDel && !isDaily && idx >= ruSave.unlocked;
     var label = isDel ? 'DELETE SAVE' : (isDaily ? 'DAILY: ' + ruDailyStage().label : ('S' + (idx + 1) + ' ' + RU_STAGES[idx].label));
     if (idx === ruSel) {
-      ctx.fillStyle = '#e8c33c'; ctx.fillRect(8, y - 8, 224, 10);
-      ctx.fillStyle = '#1E1E5A'; ctx.textAlign = 'left';
+      ctx.fillStyle = '#8BAC0F'; ctx.fillRect(8, y - 8, 224, 10);
+      ctx.fillStyle = '#0F380F'; ctx.textAlign = 'left';
       ctx.fillText('>', 14, y);
       ctx.fillText(label, 26, y);
       ctx.textAlign = 'right';
       if (!isDel) ctx.fillText(isDaily ? ('BEST ' + (ruSave.dailyBest || 0)) : (locked ? 'LOCKED' : ('BEST ' + (ruSave.best[idx] || 0))), 228, y);
       ctx.textAlign = 'center';
     } else {
-      ctx.fillStyle = '#f5e9c8'; ctx.textAlign = 'left';
+      ctx.fillStyle = '#9BBC0F'; ctx.textAlign = 'left';
       ctx.fillText(label, 26, y);
       ctx.textAlign = 'right';
       if (!isDel) ctx.fillText(isDaily ? ('BEST ' + (ruSave.dailyBest || 0)) : (locked ? 'LOCKED' : ('BEST ' + (ruSave.best[idx] || 0))), 228, y);
       ctx.textAlign = 'center';
     }
   }
-  ctx.fillStyle = '#f5e9c8'; ctx.font = '8px monospace';
+  ctx.fillStyle = '#9BBC0F'; ctx.font = '8px monospace';
   ctx.fillText('COINS ' + ruSave.totalCoins + '   BEST ' + ruSave.bestDist + 'M', W / 2, 124);
   ctx.fillText('UP/DN PICK - A PLAY', W / 2, 136);
   ctx.fillText('MENU: BACK', W / 2, 148);
   if (ruConfirm) {
-    ctx.fillStyle = 'rgba(30,30,90,0.9)'; ctx.fillRect(48, 46, 144, 56);
-    ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 10px monospace';
+    ctx.fillStyle = '#306230'; ctx.fillRect(48, 46, 144, 56);
+    ctx.fillStyle = '#9BBC0F'; ctx.font = 'bold 10px monospace';
     ctx.fillText('DELETE ALL', W / 2, 62);
     ctx.fillText('PROGRESS?', W / 2, 74);
     ctx.font = '8px monospace';
-    ctx.fillStyle = '#f5e9c8';
+    ctx.fillStyle = '#9BBC0F';
     ctx.fillText('A: YES  B: NO', W / 2, 92);
   }
   ctx.textAlign = 'left';
@@ -13447,14 +13462,19 @@ function siUpdate() {
   }
 }
 function drawSiStages() {
-  /* console style: indigo gradient like the console menu. */
-  var g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#3B3B8F'); g.addColorStop(1, '#1E1E5A');
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center';
+  /* retro DMG green: solid dark-green background like the console menu. */
+  ctx.fillStyle = '#0F380F'; ctx.fillRect(0, 0, W, H);
+  /* Title: stepped 3-layer pixel shadow like the main menu title
+     (mid-green rim at +1, dark shadow at +2), same size and position. */
+  ctx.textAlign = 'center';
   ctx.font = 'bold 10px monospace';
+  ctx.fillStyle = '#8BAC0F';
+  ctx.fillText('SLINGSHOT SIEGE', W / 2 + 1, 15);
+  ctx.fillStyle = '#306230';
+  ctx.fillText('SLINGSHOT SIEGE', W / 2 + 2, 16);
+  ctx.fillStyle = '#9BBC0F';
   ctx.fillText('SLINGSHOT SIEGE', W / 2, 14);
-  ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace';
+  ctx.fillStyle = '#8BAC0F'; ctx.font = '8px monospace';
   ctx.fillText('SELECT STAGE', W / 2, 26);
   var total = SI_STAGES.length + 1;
   var vis = 7, top = Math.max(0, Math.min(siSel - 3, total - vis));
@@ -13469,28 +13489,28 @@ function drawSiStages() {
     var label = isDel ? 'DELETE SAVE' : ('S' + (idx + 1) + ' ' + SI_STAGES[idx].name + bossTag);
     if (label.length > 22) label = label.slice(0, 22);
     if (idx === siSel) {
-      /* gold highlight bar, dark text — the console menu's selected row */
-      ctx.fillStyle = '#FFD93D'; ctx.fillRect(8, y - 8, 224, 10);
-      ctx.fillStyle = '#1E1E5A'; ctx.textAlign = 'left';
+      /* mid-green highlight bar, dark text — the console menu's selected row */
+      ctx.fillStyle = '#8BAC0F'; ctx.fillRect(8, y - 8, 224, 10);
+      ctx.fillStyle = '#0F380F'; ctx.textAlign = 'left';
       ctx.fillText('>', 14, y);
       ctx.fillText(label, 26, y);
       ctx.textAlign = 'right';
       if (!isDel) ctx.fillText(locked ? 'LOCKED' : ('BEST ' + (siSave.best[idx] || 0)), 228, y);
       ctx.textAlign = 'center';
     } else {
-      ctx.fillStyle = '#E8E8FF'; ctx.textAlign = 'left';
+      ctx.fillStyle = '#9BBC0F'; ctx.textAlign = 'left';
       ctx.fillText(label, 26, y);
       ctx.textAlign = 'right';
       if (!isDel) ctx.fillText(locked ? 'LOCKED' : ('BEST ' + (siSave.best[idx] || 0)), 228, y);
       ctx.textAlign = 'center';
     }
   }
-  if (top > 0) { ctx.fillStyle = '#C9C9F2'; ctx.textAlign = 'right'; ctx.fillText('^', 236, 30); }
-  if (top + vis < total) { ctx.fillStyle = '#C9C9F2'; ctx.textAlign = 'right'; ctx.fillText('v', 236, 114); }
+  if (top > 0) { ctx.fillStyle = '#8BAC0F'; ctx.textAlign = 'right'; ctx.fillText('^', 236, 30); }
+  if (top + vis < total) { ctx.fillStyle = '#8BAC0F'; ctx.textAlign = 'right'; ctx.fillText('v', 236, 114); }
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#E8E8FF'; ctx.font = '8px monospace';
+  ctx.fillStyle = '#9BBC0F'; ctx.font = '8px monospace';
   ctx.fillText('TARGETS DOWN ' + siSave.totalTargets, W / 2, 128);
-  ctx.fillStyle = '#FFD93D';
+  ctx.fillStyle = '#8BAC0F';
   ctx.fillText('UP/DN PICK - A PLAY', W / 2, 140);
   ctx.fillText('MENU: BACK', W / 2, 152);
   ctx.textAlign = 'left';
@@ -19306,11 +19326,16 @@ function drawShooterOver() {
     // Phase 1 — ENEMY REVEAL: the 4 enemy AI players are shown BEFORE
     // the player picks anything (counter-pick: the player sees the
     // enemy vehicles, names and personalities first).
-    ctx.fillStyle = 'rgba(18,18,54,0.82)'; ctx.fillRect(0, 0, 240, 160);
+    ctx.fillStyle = '#0F380F'; ctx.fillRect(0, 0, 240, 160);
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#F8FAFC'; ctx.font = 'bold 12px monospace';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillStyle = '#8BAC0F';
+    ctx.fillText('ENEMY SQUAD', 121, 17);
+    ctx.fillStyle = '#306230';
+    ctx.fillText('ENEMY SQUAD', 122, 18);
+    ctx.fillStyle = '#9BBC0F';
     ctx.fillText('ENEMY SQUAD', 120, 16);
-    ctx.font = '8px monospace'; ctx.fillStyle = '#F87171';
+    ctx.font = '8px monospace'; ctx.fillStyle = '#8BAC0F';
     ctx.fillText('4 FOES — THEY OUTNUMBER YOU 4 TO 3', 120, 27);
     for (var i = 0; i < 4; i++) {
       var pilot = AR_PILOTS[arEnemyPilots[i]];
@@ -19321,14 +19346,14 @@ function drawShooterOver() {
       ctx.fillStyle = def.lite; ctx.fillRect(26, y - 2, 14, 2);
       ctx.fillStyle = def.barrel; ctx.fillRect(38, y - 5, 6, 2);
       ctx.textAlign = 'left';
-      ctx.fillStyle = '#F8FAFC';
+      ctx.fillStyle = '#9BBC0F';
       ctx.fillText(pilot.name + ' — ' + pilot.pers + ' — ' + def.name, 48, y);
       ctx.fillText('HP ' + def.hp + '  DMG ' + arDmgTxt(def) + '  R' + def.radius + '  ULT ' + def.ult, 48, y + 10);
     }
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#FDE68A';
+    ctx.fillStyle = '#9BBC0F';
     ctx.fillText('WINS ' + arWins + '   BEST DAMAGE ' + arBestDmg, 120, 148);
-    ctx.fillStyle = '#C7D2FE';
+    ctx.fillStyle = '#8BAC0F';
     ctx.fillText('A: CONTINUE   MENU: QUIT', 120, 158);
     ctx.textAlign = 'left';
   }
@@ -19350,48 +19375,58 @@ function drawShooterOver() {
   function arDrawMapPick() {
     // Phase 2 — MAP PICK: name, miniature layout preview, and the
     // favour/weakness line for each of the 4 maps.
-    ctx.fillStyle = 'rgba(18,18,54,0.82)'; ctx.fillRect(0, 0, 240, 160);
+    ctx.fillStyle = '#0F380F'; ctx.fillRect(0, 0, 240, 160);
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#F8FAFC'; ctx.font = 'bold 12px monospace';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillStyle = '#8BAC0F';
+    ctx.fillText('PICK YOUR MAP', 121, 14);
+    ctx.fillStyle = '#306230';
+    ctx.fillText('PICK YOUR MAP', 122, 15);
+    ctx.fillStyle = '#9BBC0F';
     ctx.fillText('PICK YOUR MAP', 120, 13);
-    ctx.font = '8px monospace'; ctx.fillStyle = '#C7D2FE';
+    ctx.font = '8px monospace'; ctx.fillStyle = '#8BAC0F';
     ctx.fillText('EACH MAP PLAYS DIFFERENTLY', 120, 24);
     for (var i = 0; i < 4; i++) {
       var map = AR_MAPS[i];
       var y = 40 + i * 28;
       var sel = i === arMapIdx;
       if (sel) {
-        ctx.fillStyle = '#F8FAFC'; ctx.fillRect(8, y - 11, 224, 26);
+        ctx.fillStyle = '#8BAC0F'; ctx.fillRect(8, y - 11, 224, 26);
       }
       arDrawMapPreview(i, 204, y - 8, 30, 16);
       ctx.textAlign = 'left';
-      ctx.fillStyle = sel ? '#1F2937' : '#F8FAFC';
+      ctx.fillStyle = sel ? '#0F380F' : '#9BBC0F';
       ctx.fillText(map.name, 48, y);
       ctx.fillText(map.favor + '  ' + map.weak, 48, y + 10);
     }
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#FDE68A';
+    ctx.fillStyle = '#9BBC0F';
     ctx.fillText(AR_MAPS[arMapIdx].info, 120, 149);
-    ctx.fillStyle = '#C7D2FE';
+    ctx.fillStyle = '#8BAC0F';
     ctx.fillText('UP/DOWN PICK   A: CONFIRM   B: BACK', 120, 158);
     ctx.textAlign = 'left';
   }
   function arDrawPickRows(rows, selIdx, winIdx, title, subtitle, detail, hints) {
     // Shared scrollable pick list: 4 rows visible, highlight bar 26px
     // covers the name line AND the stats line (Emberfall lesson).
-    ctx.fillStyle = 'rgba(18,18,54,0.82)'; ctx.fillRect(0, 0, 240, 160);
+    ctx.fillStyle = '#0F380F'; ctx.fillRect(0, 0, 240, 160);
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#F8FAFC'; ctx.font = 'bold 12px monospace';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillStyle = '#8BAC0F';
+    ctx.fillText(title, 121, 14);
+    ctx.fillStyle = '#306230';
+    ctx.fillText(title, 122, 15);
+    ctx.fillStyle = '#9BBC0F';
     ctx.fillText(title, 120, 13);
-    ctx.font = '8px monospace'; ctx.fillStyle = '#C7D2FE';
+    ctx.font = '8px monospace'; ctx.fillStyle = '#8BAC0F';
     ctx.fillText(subtitle, 120, 24);
     // Scroll hints live on the TITLE row edges (y=13), NOT beside the rows:
     // the old '^ MORE ABOVE' at (232,36) covered the top row's [TAG], and
     // 'v MORE BELOW' at (232,144) collided with the PASSIVE footer at 149
     // (live visual check, Nov 11). The title is centred, so both edges are free.
     ctx.font = '8px monospace';
-    if (winIdx > 0) { ctx.fillStyle = '#C7D2FE'; ctx.textAlign = 'left'; ctx.fillText('MORE ^', 8, 13); }
-    if (winIdx + 4 < rows.length) { ctx.fillStyle = '#C7D2FE'; ctx.textAlign = 'right'; ctx.fillText('MORE v', 232, 13); }
+    if (winIdx > 0) { ctx.fillStyle = '#8BAC0F'; ctx.textAlign = 'left'; ctx.fillText('MORE ^', 8, 13); }
+    if (winIdx + 4 < rows.length) { ctx.fillStyle = '#8BAC0F'; ctx.textAlign = 'right'; ctx.fillText('MORE v', 232, 13); }
     ctx.textAlign = 'center';
     for (var i = 0; i < 4; i++) {
       var idx = winIdx + i;
@@ -19400,15 +19435,15 @@ function drawShooterOver() {
       var y = 40 + i * 28;
       var sel = idx === selIdx;
       if (sel) {
-        ctx.fillStyle = '#F8FAFC'; ctx.fillRect(8, y - 11, 224, 26);
-        ctx.fillStyle = '#1F2937'; ctx.fillText('>', 13, y + 2);
+        ctx.fillStyle = '#8BAC0F'; ctx.fillRect(8, y - 11, 224, 26);
+        ctx.fillStyle = '#0F380F'; ctx.fillText('>', 13, y + 2);
       }
       ctx.fillStyle = row.def.dark; ctx.fillRect(26, y - 2, 14, 6);
       ctx.fillStyle = row.def.col; ctx.fillRect(26, y - 2, 14, 4);
       ctx.fillStyle = row.def.lite; ctx.fillRect(26, y - 2, 14, 2);
       ctx.fillStyle = row.def.barrel; ctx.fillRect(38, y - 5, 6, 2);
       ctx.textAlign = 'left';
-      ctx.fillStyle = sel ? '#1F2937' : '#F8FAFC';
+      ctx.fillStyle = sel ? '#0F380F' : '#9BBC0F';
       ctx.fillText(row.line1, 48, y);
       ctx.fillText(row.line2, 48, y + 10);
     }
@@ -19418,9 +19453,9 @@ function drawShooterOver() {
     // 'P' and trailing 'R' live, Nov 11). The defs are shortened to fit,
     // so this cap is a guard, not a trimmer.
     var det = detail.length > 44 ? detail.slice(0, 43) + '…' : detail;
-    ctx.fillStyle = '#FDE68A'; ctx.font = '8px monospace';
+    ctx.fillStyle = '#9BBC0F'; ctx.font = '8px monospace';
     ctx.fillText(det, 120, 149);
-    ctx.fillStyle = '#C7D2FE';
+    ctx.fillStyle = '#8BAC0F';
     ctx.fillText(hints, 120, 158);
     ctx.textAlign = 'left';
   }
@@ -19474,16 +19509,21 @@ function drawShooterOver() {
   function arDrawPause() {
     // Pause screen: controls, both rosters (3 vs 4) with names,
     // personalities and vehicles, round/wind/HP summary.
-    ctx.fillStyle = 'rgba(18,18,54,0.88)'; ctx.fillRect(0, 0, 240, 160);
+    ctx.fillStyle = '#0F380F'; ctx.fillRect(0, 0, 240, 160);
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#F8FAFC'; ctx.font = 'bold 12px monospace';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillStyle = '#8BAC0F';
+    ctx.fillText('PAUSED', 121, 25);
+    ctx.fillStyle = '#306230';
+    ctx.fillText('PAUSED', 122, 26);
+    ctx.fillStyle = '#9BBC0F';
     ctx.fillText('PAUSED', 120, 24);
-    ctx.font = '8px monospace'; ctx.fillStyle = '#C7D2FE';
+    ctx.font = '8px monospace'; ctx.fillStyle = '#8BAC0F';
     ctx.fillText('LEFT/RIGHT AIM   UP/DOWN POWER', 120, 38);
     ctx.fillText('A FIRE   B ULTIMATE (WHEN READY)', 120, 48);
-    ctx.fillStyle = '#22C55E';
+    ctx.fillStyle = '#9BBC0F';
     ctx.fillText('YOUR SQUAD (3)', 120, 60);
-    ctx.fillStyle = '#F8FAFC';
+    ctx.fillStyle = '#9BBC0F';
     var y = 68;
     for (var i = 0; i < arVehicles.length; i++) {
       var f = arVehicles[i];
@@ -19492,19 +19532,19 @@ function drawShooterOver() {
       ctx.fillText(who + ' — ' + f.pers + ' — ' + f.def.name + '  ' + f.hp + 'HP', 120, y);
       y += 9;
     }
-    ctx.fillStyle = '#EF4444';
+    ctx.fillStyle = '#8BAC0F';
     ctx.fillText('ENEMIES (4)', 120, y + 3);
     y += 12;
-    ctx.fillStyle = '#F8FAFC';
+    ctx.fillStyle = '#9BBC0F';
     for (var j = 0; j < arVehicles.length; j++) {
       var e = arVehicles[j];
       if (e.team !== 1) continue;
       ctx.fillText(e.pilot + ' — ' + e.pers + ' — ' + e.def.name + '  ' + e.hp + 'HP', 120, y);
       y += 9;
     }
-    ctx.fillStyle = '#FDE68A';
+    ctx.fillStyle = '#9BBC0F';
     ctx.fillText('ROUND ' + arRound + '  WIND ' + (arWind > 0 ? '>>' : (arWind < 0 ? '<<' : '-')) + ' ' + Math.abs(arWind) + '  YOU ' + arTeamHp(0) + '  FOE ' + arTeamHp(1), 120, y + 4);
-    ctx.fillStyle = '#C7D2FE';
+    ctx.fillStyle = '#8BAC0F';
     ctx.fillText('START: RESUME   MENU: QUIT   B: DELETE SAVE', 120, y + 13);
     ctx.textAlign = 'left';
   }
