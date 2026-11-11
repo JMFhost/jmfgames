@@ -399,6 +399,7 @@
   ];
   var menuLevel = 0, menuReturnLevel = 0;
   var topIndex = 0, topTop = 0;
+  var topFrame = 0; // animation clock for the top-level menu: +1 per update while on the menu screen (drawTopMenu/drawTopCover read it; the Retro list never does)
   function menuList() { return menuLevel === 0 ? TOPMENU : GAMES; }
   function menuCurIdx() { return menuLevel === 0 ? topIndex : menuIndex; }
   function menuSetIdx(v) { if (menuLevel === 0) topIndex = v; else menuIndex = v; }
@@ -6082,9 +6083,9 @@ function cqBgFinal() {
    path (chEval3) for GRANDMASTER. New in console:
    - Bigger 18px board (144x144), centred, no side panel — a single
      status line on top (level, move, rating), controls on the bottom.
-     Real WOOD board: warm maple light squares, rich walnut dark
-     squares, a darker walnut frame, and larger outlined pieces that
-     read clearly on both wood tones.
+     Real RETRO board: DMG light/mid green squares with a bevel,
+     a dark-green frame, and larger outlined pieces with a shadow
+     and halo that read clearly on both green tones.
    - REAL strength ladder: EASY plays like a human beginner
      (1-ply greedy, ~30% plausible mistakes, never random blunders
      into hanging its queen for nothing... it still drops pieces
@@ -6850,25 +6851,34 @@ var chBlink = 0;
 // at y=159. 18px is the largest square that fits cleanly: the 160px
 // height minus the two 8px text lines leaves ~144px, so 19px (152px)
 // would overlap the status/controls text. The board is made to feel
-// larger with a wooden frame that extends into the side margins
+// larger with a dark-green frame that extends into the side margins
 // (board+frame 152px wide) and larger 14px outlined pieces.
 // The 44px right margin alone cannot fit a readable move list: at 7px
 // it only holds 9-char lines, but real games produce 10-11 char lines
 // once the move number hits double digits (e.g. '10. Qxf7#',
 // '25. exd8=Q+'). Shifting the board 8px left gives a 51px panel that
 // fits those lines, while the board stays 18px and the left margin is
-// still a clean 36px indigo gap.
-// Wood board: warm maple light squares, rich walnut dark squares,
-// darker walnut frame. Pieces are outlined glyphs (no circles) so they
-// read on both wood tones: ivory fill + dark outline for White,
-// near-black fill + ivory outline for Black.
+// still a clean 36px green gap.
+// Retro DMG board: light/mid green squares with a beveled look (a
+// lighter top strip and a darker bottom strip on every square), dark
+// green frame with a bevel highlight. Pieces are outlined glyphs (no
+// circles) with a drop shadow and a 15px halo so they read on both
+// green tones: near-white fill + dark-green outline for White,
+// very-dark-green fill + near-white outline for Black. (WCAG: the
+// white outline reads 6.0/5.0 on the two squares, the black fill
+// reads 7.9/6.6 — one of fill/outline always clears 4.5.)
 var CH_X0 = 40, CH_Y0 = 8, CH_SQ = 18;
-var CH_WOOD_LIGHT = '#E8C88A'; // maple
-var CH_WOOD_DARK = '#8B5A2B';  // walnut
-var CH_WOOD_FRAME = '#6B4423'; // darker walnut frame
-var CH_WOOD_OUTLINE = '#3B2416'; // dark brown outline (highlights/pieces)
-var CH_PIECE_W_FILL = '#FFF8DC'; // ivory
-var CH_PIECE_B_FILL = '#1A0F0A'; // near-black brown
+var CH_SQ_LIGHT = '#9BBC0F'; // DMG light green
+var CH_SQ_DARK = '#8BAC0F';  // DMG mid green
+var CH_FRAME = '#0F380F';     // dark green frame
+var CH_FRAME_EDGE = '#306230'; // frame/panel edge line
+var CH_FRAME_HI = '#8BAC0F';  // frame bevel highlight (top/left)
+var CH_FRAME_LO = '#0A280A';  // frame bevel shade (bottom/right)
+var CH_OUTLINE = '#0F380F';   // dark green outline (highlights/pieces)
+var CH_PIECE_W_FILL = '#F2F5FF'; // near-white
+var CH_PIECE_B_FILL = '#06200A'; // very dark green
+var CH_PIECE_W_OUT = '#0F380F';  // dark green outline (White)
+var CH_PIECE_B_OUT = '#F2F5FF';  // near-white outline (Black)
 function chDispR(sq) { return chFlip ? 7 - chRow(sq) : chRow(sq); }
 function chDispC(sq) { return chFlip ? 7 - chCol(sq) : chCol(sq); }
 function chSqAt(r, c) { return chFlip ? (7 - r) * 8 + (7 - c) : r * 8 + c; }
@@ -7131,14 +7141,17 @@ function chBack() {
 }
 function chUpdate() { chBlink = (chBlink + 1) % 60; }
 
-// console palette: indigo gradient background, same as the console menu.
-function chIndigoBg() {
+// Retro board backdrop: a deep green gradient (lighter at the top, like
+// light falling on the table) over the whole 240x160 screen. The menus
+// use the flat dark green; the board gets the gradient for depth.
+function chBoardBg() {
   var g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#3B3B8F'); g.addColorStop(1, '#1E1E5A');
+  g.addColorStop(0, '#143D14'); g.addColorStop(0.5, '#0F380F'); g.addColorStop(1, '#0A260A');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
 }
 // Retro DMG green background for the menu screens (level / color /
-// puzzle list) — matches the console's main menu. The board keeps indigo.
+// puzzle list) — matches the console's main menu. The board is retro
+// green too, with the gradient backdrop above.
 function chGreenBg() {
   ctx.fillStyle = '#0F380F'; ctx.fillRect(0, 0, W, H);
 }
@@ -7278,18 +7291,23 @@ function drawChessPuzzleList() {
   ctx.textAlign = 'left';
 }
 function drawChess() {
-  // Menu states paint their own retro-green background; the indigo
+  // Menu states paint their own retro-green background; the gradient
   // backdrop is only for the board / play states.
-  if (chState !== 'level' && chState !== 'color' && chState !== 'puzzlelist') chIndigoBg();
+  if (chState !== 'level' && chState !== 'color' && chState !== 'puzzlelist') chBoardBg();
   if (chState === 'level') { drawChessLevel(); return; }
   if (chState === 'color') { drawChessColor(); return; }
   if (chState === 'puzzlelist') { drawChessPuzzleList(); return; }
   // Top status line: level (left), move + rating (right). One 8px line
-  // at y=7; the board starts at y=8, so nothing overlaps.
-  ctx.fillStyle = '#F5E9C8'; ctx.textAlign = 'left'; ctx.font = 'bold 8px monospace';
+  // at y=7; the board starts at y=8, so nothing overlaps. The level
+  // name gets the layered pixel shadow like the menu titles.
+  ctx.textAlign = 'left'; ctx.font = 'bold 8px monospace';
+  ctx.fillStyle = '#306230';
+  ctx.fillText(chState === 'puzzle' ? 'PUZZLE: ' + chPuzzle.name : CH_LEVELS[chLevel].name, 5, 8);
+  ctx.fillStyle = '#9BBC0F';
   ctx.fillText(chState === 'puzzle' ? 'PUZZLE: ' + chPuzzle.name : CH_LEVELS[chLevel].name, 4, 7);
   ctx.textAlign = 'right'; ctx.font = '8px monospace';
   var chTopRight = chState === 'puzzle' ? chPuzzleMsg : 'MOVE ' + chMoveNo + '  RATING ' + chRating;
+  ctx.fillStyle = '#8BAC0F';
   ctx.fillText(chTopRight, W - 4, 7);
   if (chState === 'play' && chInCheck(chS, chS.turn)) {
     // Red CHECK! tucked just left of the move/rating text (width is
@@ -7298,81 +7316,110 @@ function drawChess() {
     ctx.fillText('CHECK!', W - 4 - chTopRight.length * 5 - 6, 7);
   }
   ctx.textAlign = 'left';
-  // Wood board: maple light squares, walnut dark squares, darker walnut
+  // Retro board: DMG light/mid green squares with a bevel (a lighter
+  // top strip and a darker bottom strip on every square), dark-green
   // frame (4px sides into the margins, 4px top/bottom strips over the
-  // edge squares' rim). Pieces are drawn after the frame so they sit
-  // on top. Board+frame footprint is 152px wide (x 44..195).
-  ctx.fillStyle = CH_WOOD_FRAME;
+  // edge squares' rim) with a bevel highlight on the top/left and a
+  // shade on the bottom/right. Pieces are drawn after the frame so
+  // they sit on top. Board+frame footprint is 152px wide (x 36..188).
+  ctx.fillStyle = CH_FRAME;
   ctx.fillRect(CH_X0 - 4, CH_Y0, 8 * CH_SQ + 8, 8 * CH_SQ);
   for (var r = 0; r < 8; r++) {
     for (var c = 0; c < 8; c++) {
       var x = CH_X0 + c * CH_SQ, y = CH_Y0 + r * CH_SQ;
-      ctx.fillStyle = ((r + c) % 2 === 0) ? CH_WOOD_LIGHT : CH_WOOD_DARK;
+      ctx.fillStyle = ((r + c) % 2 === 0) ? CH_SQ_LIGHT : CH_SQ_DARK;
       ctx.fillRect(x, y, CH_SQ, CH_SQ);
+      // Bevel: light falls from the top, shade pools at the bottom.
+      ctx.fillStyle = 'rgba(255,255,255,0.14)';
+      ctx.fillRect(x, y, CH_SQ, 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.16)';
+      ctx.fillRect(x, y + CH_SQ - 2, CH_SQ, 2);
     }
   }
   // Frame top/bottom strips (4px, over the edge squares' rim).
-  ctx.fillStyle = CH_WOOD_FRAME;
+  ctx.fillStyle = CH_FRAME;
   ctx.fillRect(CH_X0 - 4, CH_Y0, 8 * CH_SQ + 8, 4);
   ctx.fillRect(CH_X0 - 4, CH_Y0 + 8 * CH_SQ - 4, 8 * CH_SQ + 8, 4);
-  // Pieces: outlined 14px glyphs (no circles). Ivory fill + dark outline
-  // for White, near-black fill + ivory outline for Black — one of the
-  // fill/outline always contrasts with either wood tone.
+  // Frame bevel: light top/left edges, dark bottom/right edges.
+  ctx.fillStyle = CH_FRAME_HI;
+  ctx.fillRect(CH_X0 - 4, CH_Y0, 8 * CH_SQ + 8, 1);
+  ctx.fillRect(CH_X0 - 4, CH_Y0, 1, 8 * CH_SQ);
+  ctx.fillStyle = CH_FRAME_LO;
+  ctx.fillRect(CH_X0 - 4, CH_Y0 + 8 * CH_SQ - 1, 8 * CH_SQ + 8, 1);
+  ctx.fillRect(CH_X0 + 8 * CH_SQ + 3, CH_Y0, 1, 8 * CH_SQ);
+  // Pieces: 14px glyphs (no circles) with a drop shadow, a 15px halo in
+  // the outline colour, a 1px stroke and the fill — four passes so each
+  // piece reads crisply on both green tones. Near-white fill +
+  // dark-green outline for White, very-dark-green fill + near-white
+  // outline for Black: one of fill/outline always clears 4.5:1 on
+  // either square (white outline 6.0/5.0, black fill 7.9/6.6).
   for (var r2 = 0; r2 < 8; r2++) {
     for (var c2 = 0; c2 < 8; c2++) {
       var p = chS.b[chSqAt(r2, c2)];
       if (p === '') continue;
       var white = chColor(p) === 'w';
       var px = CH_X0 + c2 * CH_SQ, py = CH_Y0 + r2 * CH_SQ;
-      ctx.font = '14px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = white ? CH_WOOD_OUTLINE : CH_PIECE_W_FILL;
-      ctx.strokeText(CH_GLYPH[p], px + CH_SQ / 2, py + CH_SQ / 2 + 1);
+      var pcx = px + CH_SQ / 2, pcy = py + CH_SQ / 2 + 1;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '14px monospace';
+      ctx.fillStyle = 'rgba(15,56,15,0.35)';
+      ctx.fillText(CH_GLYPH[p], pcx + 1, pcy + 1);
+      ctx.font = '15px monospace';
+      ctx.fillStyle = white ? CH_PIECE_W_OUT : CH_PIECE_B_OUT;
+      ctx.fillText(CH_GLYPH[p], pcx, pcy);
+      ctx.font = '14px monospace'; ctx.lineWidth = 1;
+      ctx.strokeStyle = white ? CH_PIECE_W_OUT : CH_PIECE_B_OUT;
+      ctx.strokeText(CH_GLYPH[p], pcx, pcy);
       ctx.fillStyle = white ? CH_PIECE_W_FILL : CH_PIECE_B_FILL;
-      ctx.fillText(CH_GLYPH[p], px + CH_SQ / 2, py + CH_SQ / 2 + 1);
+      ctx.fillText(CH_GLYPH[p], pcx, pcy);
       ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
     }
   }
-  // Last-move highlight: dark outline + gold, visible on both woods.
+  // Last-move highlight: dark-green outline + near-white inner line,
+  // visible on both greens. (Selection inverts this: white outer,
+  // dark inner — so the two never look alike.)
   if (chLastMove) {
     [chLastMove.from, chLastMove.to].forEach(function (sq) {
       var lx = CH_X0 + chDispC(sq) * CH_SQ + 1, ly = CH_Y0 + chDispR(sq) * CH_SQ + 1;
-      ctx.strokeStyle = CH_WOOD_OUTLINE; ctx.lineWidth = 4;
+      ctx.strokeStyle = CH_OUTLINE; ctx.lineWidth = 4;
       ctx.strokeRect(lx, ly, CH_SQ - 2, CH_SQ - 2);
-      ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2;
+      ctx.strokeStyle = '#F2F5FF'; ctx.lineWidth = 2;
       ctx.strokeRect(lx, ly, CH_SQ - 2, CH_SQ - 2);
     });
     ctx.lineWidth = 1;
   }
-  // Selected square + legal-move targets.
+  // Selected square + legal-move targets. Selection is the inverse of
+  // the last-move highlight (white outer, dark inner) so the two are
+  // never confused. Captures keep the red ring; empty targets get a
+  // dark dot with a near-white centre (was gold).
   if (chSel >= 0) {
     var sx = CH_X0 + chDispC(chSel) * CH_SQ + 1, sy = CH_Y0 + chDispR(chSel) * CH_SQ + 1;
-    ctx.strokeStyle = CH_WOOD_OUTLINE; ctx.lineWidth = 4;
+    ctx.strokeStyle = '#F2F5FF'; ctx.lineWidth = 4;
     ctx.strokeRect(sx, sy, CH_SQ - 2, CH_SQ - 2);
-    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+    ctx.strokeStyle = CH_OUTLINE; ctx.lineWidth = 2;
     ctx.strokeRect(sx, sy, CH_SQ - 2, CH_SQ - 2);
     ctx.lineWidth = 1;
     for (var i = 0; i < chSelMoves.length; i++) {
       var t = chSelMoves[i].to;
       var tx = CH_X0 + chDispC(t) * CH_SQ, ty = CH_Y0 + chDispR(t) * CH_SQ;
       if (chSelMoves[i].captured !== '') {
-        ctx.strokeStyle = CH_WOOD_OUTLINE; ctx.lineWidth = 3;
+        ctx.strokeStyle = CH_OUTLINE; ctx.lineWidth = 3;
         ctx.strokeRect(tx + 2, ty + 2, CH_SQ - 4, CH_SQ - 4);
         ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 2;
         ctx.strokeRect(tx + 2, ty + 2, CH_SQ - 4, CH_SQ - 4);
         ctx.lineWidth = 1;
       } else {
-        ctx.fillStyle = CH_WOOD_OUTLINE;
+        ctx.fillStyle = CH_OUTLINE;
         ctx.beginPath(); ctx.arc(tx + CH_SQ / 2, ty + CH_SQ / 2, 3, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#FFD93D';
+        ctx.fillStyle = '#F2F5FF';
         ctx.beginPath(); ctx.arc(tx + CH_SQ / 2, ty + CH_SQ / 2, 2, 0, Math.PI * 2); ctx.fill();
       }
     }
   }
-  // Blinking cursor: dark outline + white, visible on both woods.
+  // Blinking cursor: dark outline + white, visible on both greens.
   if (!chPaused && chBlink < 40) {
     var cx = CH_X0 + chDispC(chCur) * CH_SQ + 0.5, cy = CH_Y0 + chDispR(chCur) * CH_SQ + 0.5;
-    ctx.strokeStyle = CH_WOOD_OUTLINE; ctx.lineWidth = 2;
+    ctx.strokeStyle = CH_OUTLINE; ctx.lineWidth = 2;
     ctx.strokeRect(cx, cy, CH_SQ - 1, CH_SQ - 1);
     ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
     ctx.strokeRect(cx, cy, CH_SQ - 1, CH_SQ - 1);
@@ -7381,17 +7428,19 @@ function drawChess() {
   // line, scrolling to the latest. Title + up to 16 lines at 7px / 8px
   // pitch. Shown during a game (play/puzzle/over) only — the level,
   // colour and puzzle-list screens return before this point.
-  ctx.fillStyle = '#1E1E5A'; ctx.fillRect(189, 8, 51, 144);
-  ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 7px monospace'; ctx.textAlign = 'left';
+  ctx.fillStyle = '#0F380F'; ctx.fillRect(189, 8, 51, 144);
+  ctx.strokeStyle = CH_FRAME_EDGE; ctx.lineWidth = 1;
+  ctx.strokeRect(189.5, 8.5, 50, 143);
+  ctx.fillStyle = '#9BBC0F'; ctx.font = 'bold 7px monospace'; ctx.textAlign = 'left';
   ctx.fillText('MOVES', 191, 16);
-  ctx.font = '7px monospace'; ctx.fillStyle = '#F5E9C8';
+  ctx.font = '7px monospace'; ctx.fillStyle = '#8BAC0F';
   var histStart = Math.max(0, chHist.length - 16);
   for (var hi = histStart; hi < chHist.length; hi++) {
     ctx.fillText(chHist[hi], 191, 26 + (hi - histStart) * 8);
   }
   // Bottom controls line (baseline 159; the board ends at y=152, so the
   // text sits fully below it with a clear gap).
-  ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
+  ctx.fillStyle = '#9BBC0F'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
   if (chState === 'puzzle') {
     if (chPuzzleSolved) ctx.fillText('SOLVED! A: BACK TO LIST', W / 2, 159);
     else if (chSel >= 0) ctx.fillText(chAlg(chSel) + ' ' + chPieceName(chS.b[chSel]) + '  A: MOVE  B: CANCEL', W / 2, 159);
@@ -7400,22 +7449,24 @@ function drawChess() {
   else ctx.fillText('A: SELECT  B: CANCEL', W / 2, 159);
   ctx.textAlign = 'left';
   if (chPaused) {
-    ctx.fillStyle = 'rgba(18,18,54,0.7)';
+    ctx.fillStyle = 'rgba(15,56,15,0.75)';
     ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+    ctx.fillStyle = '#9BBC0F'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
     ctx.fillText('PAUSED', W / 2, 78);
-    ctx.font = '8px monospace';
+    ctx.font = '8px monospace'; ctx.fillStyle = '#8BAC0F';
     ctx.fillText('START: RESUME', W / 2, 94);
     ctx.textAlign = 'left';
   }
 }
 function drawChessOver() {
   drawChess();
-  ctx.fillStyle = 'rgba(18,18,54,0.55)';
+  ctx.fillStyle = 'rgba(15,56,15,0.6)';
   ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = '#F5E9C8';
+  // Mid-green panel with dark-green text and bars — the selected-bar
+  // look from the menus, inverted onto the board.
+  ctx.fillStyle = '#8BAC0F';
   ctx.fillRect(30, 42, 180, 80);
-  ctx.fillStyle = '#1E1E5A';
+  ctx.fillStyle = '#0F380F';
   ctx.fillRect(30, 42, 180, 2);
   ctx.fillRect(30, 120, 180, 2);
   ctx.textAlign = 'center';
@@ -20740,7 +20791,7 @@ function drawShooterOver() {
   /* ---------- Update (one fixed 1/60s step) ---------- */
   var perfectFrames = 0;
   function update() {
-    if (screen === 'menu') { menuHoldTick(); listHoldDir = ''; return; }
+    if (screen === 'menu') { topFrame++; menuHoldTick(); listHoldDir = ''; return; }
     menuHoldDir = ''; // not on the menu: no hold-repeat
     listHoldTick(); // in-game list screens: hold-to-fast-scroll (no-op elsewhere)
     if (screen !== 'play') return;
@@ -21172,20 +21223,28 @@ function drawShooterOver() {
       ctx.strokeStyle = '#3A4666'; ctx.lineWidth = 1; ctx.strokeRect(cx, cy, 36, 32);
       ctx.fillStyle = '#10141F'; ctx.fillRect(cx + 4, cy + 3, 20, 15);
       ctx.fillStyle = '#9ACD32'; ctx.fillRect(cx + 5, cy + 4, 18, 13);
+      // The LCD is alive: a tiny ball bounces across the little screen
+      // and one pixel blinks, so the handheld looks switched on.
       ctx.fillStyle = '#4A6B1F'; ctx.fillRect(cx + 8, cy + 8, 3, 3);
-      ctx.fillRect(cx + 14, cy + 7, 2, 2);
+      if ((topFrame & 32) === 0) ctx.fillRect(cx + 14, cy + 7, 2, 2);
+      var lcdBx = cx + 6 + (Math.floor(topFrame / 2) % 14);
+      var lcdByCyc = topFrame % 20;
+      var lcdBy = cy + 5 + (lcdByCyc < 10 ? lcdByCyc : 20 - lcdByCyc);
+      ctx.fillStyle = '#1F3A17'; ctx.fillRect(lcdBx, lcdBy, 2, 2);
       ctx.fillStyle = '#4A5878';
       ctx.fillRect(cx + 6, cy + 21, 3, 9);
       ctx.fillRect(cx + 3, cy + 24, 9, 3);
       ctx.fillStyle = '#D95D4E'; ctx.fillRect(cx + 26, cy + 22, 3, 3);
       ctx.fillStyle = '#4DA3FF'; ctx.fillRect(cx + 31, cy + 25, 3, 3);
     } else {
-      // Joystick: base, stick, ball top, one button.
+      // Joystick: base, stick, ball top, one button. The ball bobs
+      // gently (idle motion, so future big-game cards inherit it).
       ctx.fillStyle = '#232A3D'; ctx.fillRect(cx + 4, cy + 22, 28, 8);
       ctx.strokeStyle = '#3A4666'; ctx.lineWidth = 1; ctx.strokeRect(cx + 4, cy + 22, 28, 8);
       ctx.fillStyle = '#4A5878'; ctx.fillRect(cx + 16, cy + 10, 4, 13);
-      ctx.fillStyle = '#D95D4E'; ctx.fillRect(cx + 14, cy + 5, 8, 8);
-      ctx.fillStyle = '#F2F5FF'; ctx.fillRect(cx + 16, cy + 7, 2, 2);
+      var joyBob = Math.round(2 * Math.sin(topFrame * 0.05));
+      ctx.fillStyle = '#D95D4E'; ctx.fillRect(cx + 14, cy + 5 + joyBob, 8, 8);
+      ctx.fillStyle = '#F2F5FF'; ctx.fillRect(cx + 16, cy + 7 + joyBob, 2, 2);
       ctx.fillStyle = '#4DA3FF'; ctx.fillRect(cx + 28, cy + 24, 4, 4);
     }
   }
@@ -21193,15 +21252,24 @@ function drawShooterOver() {
     var list = TOPMENU;
     var idx = topIndex;
     var top = topTop;
+    var tf = topFrame; // animation phase: +1 per update while on this menu
     // Deep charcoal/navy background with depth.
     var bg = ctx.createLinearGradient(0, 0, 0, H);
     bg.addColorStop(0, '#0B1026'); bg.addColorStop(0.55, '#131A30'); bg.addColorStop(1, '#070A14');
     ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-    // Soft glow behind the title.
-    ctx.fillStyle = 'rgba(64,110,220,0.20)';
-    ctx.beginPath(); ctx.arc(120, 26, 64, 0, 6.2832); ctx.fill();
-    ctx.fillStyle = 'rgba(77,163,255,0.10)';
-    ctx.beginPath(); ctx.arc(120, 26, 34, 0, 6.2832); ctx.fill();
+    // Two large soft glowing circles drifting slowly behind the menu —
+    // different sizes, speeds and phases so they never line up. Very
+    // subtle (low alpha): the card stays readable at all times.
+    ctx.fillStyle = 'rgba(64,110,220,0.10)';
+    ctx.beginPath(); ctx.arc(120 + 52 * Math.sin(tf * 0.004), 72 + 26 * Math.sin(tf * 0.007 + 1.3), 46, 0, 6.2832); ctx.fill();
+    ctx.fillStyle = 'rgba(77,163,255,0.08)';
+    ctx.beginPath(); ctx.arc(120 + 70 * Math.sin(tf * 0.003 + 2.1), 84 + 30 * Math.cos(tf * 0.005 + 0.6), 30, 0, 6.2832); ctx.fill();
+    // Soft glow behind the title: gently pulsing, drifting a touch.
+    var topPulse = 0.5 + 0.5 * Math.sin(tf * 0.02);
+    ctx.fillStyle = 'rgba(64,110,220,' + (0.14 + 0.10 * topPulse).toFixed(2) + ')';
+    ctx.beginPath(); ctx.arc(120 + 6 * Math.sin(tf * 0.003), 26 + 3 * Math.cos(tf * 0.004), 64, 0, 6.2832); ctx.fill();
+    ctx.fillStyle = 'rgba(77,163,255,' + (0.07 + 0.05 * topPulse).toFixed(2) + ')';
+    ctx.beginPath(); ctx.arc(120 + 6 * Math.sin(tf * 0.003), 26 + 3 * Math.cos(tf * 0.004), 34, 0, 6.2832); ctx.fill();
     // Bottom shade grounds the footer.
     var shade = ctx.createLinearGradient(0, 128, 0, H);
     shade.addColorStop(0, 'rgba(0,0,0,0)'); shade.addColorStop(1, 'rgba(0,0,0,0.32)');
@@ -21211,7 +21279,19 @@ function drawShooterOver() {
     ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
     ctx.fillStyle = '#22305A'; ctx.fillText('JMF GAMES', W / 2 + 1, 21);
     ctx.fillStyle = '#F2F5FF'; ctx.fillText('JMF GAMES', W / 2, 20);
+    // Shimmer sweep across the title: a soft light band drifting back
+    // and forth over the letters every ~6 seconds (360 frames), subtle
+    // enough that the text stays fully readable at all times.
+    var shimCyc = tf % 360;
+    var shimT = shimCyc < 180 ? shimCyc / 180 : (360 - shimCyc) / 180;
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(74 + shimT * 92, 10, 14, 14);
+    // Accent rule under the title, with a bright segment travelling
+    // along it (ping-pong, ~3 seconds each way).
     ctx.fillStyle = '#4DA3FF'; ctx.fillRect(W / 2 - 32, 26, 64, 2);
+    var segCyc = tf % 180;
+    var segT = segCyc < 90 ? segCyc / 90 : (180 - segCyc) / 90;
+    ctx.fillStyle = '#D6EBFF'; ctx.fillRect((W / 2 - 32) + segT * 48, 26, 16, 2);
     ctx.fillStyle = '#8A94B8'; ctx.font = '10px monospace';
     ctx.fillText('SELECT A GAME', W / 2, 36);
     ctx.textAlign = 'left';
@@ -21222,12 +21302,19 @@ function drawShooterOver() {
       var e = list[i];
       var sel = (i === idx);
       if (sel) {
-        ctx.fillStyle = 'rgba(77,163,255,0.20)'; ctx.fillRect(8, y - 2, 224, 48);
+        // Selected card: glow gently pulses, and a faint light sweep
+        // drifts across the card (ping-pong, ~6 seconds each way).
+        var cardPulse = 0.5 + 0.5 * Math.sin(tf * 0.03);
+        ctx.fillStyle = 'rgba(77,163,255,' + (0.14 + 0.12 * cardPulse).toFixed(2) + ')'; ctx.fillRect(8, y - 2, 224, 48);
         var cg = ctx.createLinearGradient(0, y, 0, y + TOP_CARD_H);
         cg.addColorStop(0, '#26335C'); cg.addColorStop(1, '#1A2340');
         ctx.fillStyle = cg; ctx.fillRect(10, y, 220, TOP_CARD_H);
         ctx.strokeStyle = '#4DA3FF'; ctx.lineWidth = 2; ctx.strokeRect(10, y, 220, TOP_CARD_H);
         ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.fillRect(12, y + 1, 216, 2);
+        var cardCyc = tf % 360;
+        var cardT = cardCyc < 180 ? cardCyc / 180 : (360 - cardCyc) / 180;
+        var cardBandX = 10 + cardT * 196;
+        ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(cardBandX, y, 24, TOP_CARD_H);
       } else {
         var cg2 = ctx.createLinearGradient(0, y, 0, y + TOP_CARD_H);
         cg2.addColorStop(0, '#1B2340'); cg2.addColorStop(1, '#141A2E');
