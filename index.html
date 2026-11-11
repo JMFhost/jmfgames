@@ -246,6 +246,7 @@
     holdem:   { bpm: 120, wave: 'triangle', notes: [[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[0,1]] },
     chess:    { bpm: 96, wave: 'sine', notes: [[60,2],[67,2],[69,2],[67,2],[65,2],[64,2],[62,2],[60,2]] },
     overlord: { bpm: 100, wave: 'sawtooth', notes: [[57,1],[60,1],[62,1],[64,1],[62,1],[60,1],[57,1],[55,1],[57,1],[60,1],[62,1],[64,1],[67,1],[64,1],[62,1],[60,1]] },
+    pinball:  { bpm: 132, wave: 'square', notes: [[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[62,1],[64,1],[67,1],[69,1],[72,1],[74,1],[72,1],[69,1],[0,1]] },
     solitaire: { bpm: 96, wave: 'sine', notes: [[72,2],[76,2],[79,2],[76,2],[81,2],[79,2],[76,2],[72,2],[74,2],[77,2],[81,2],[77,2],[74,2],[72,2],[67,2],[0,2]] },
     beat:    { bpm: 132, wave: 'square', notes: [[57,1],[0,1],[57,1],[60,1],[57,1],[0,1],[62,1],[60,1],[57,1],[0,1],[57,1],[64,1],[62,1],[60,1],[57,1],[55,1]] },
     pool:    { bpm: 100, wave: 'triangle', notes: [[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[67,1],[69,1],[67,1],[64,1],[0,1]] },
@@ -364,11 +365,12 @@
     { name: '8 BALL POOL', playable: true },
     { name: 'BLACKJACK ROYALE', playable: true },
     { name: 'BLOCK DROP', playable: true },
-    { name: 'BLOCKQUEST', playable: true },
+    { name: 'BLOCK QUEST', playable: true },
     { name: 'CHESS CLUB', playable: true },
     { name: 'EMBERFALL BRAWL', playable: true },
     { name: 'HARVEST HAVEN', playable: true },
     { name: "OVERLORD'S BASTION", playable: true },
+    { name: 'PINBALL', playable: true },
     { name: 'RAGDOLL RUCKUS', playable: true },
     { name: 'SKY SOAR', playable: true },
     { name: 'SLINGSHOT SIEGE', playable: true },
@@ -383,7 +385,7 @@
 
   /* ---------- State ---------- */
   var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
-  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'run' | 'siege' | 'park' | 'dummy' | 'shooter' | 'farm' — which game is on the play/over screens
+  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'pinball' | 'solitaire' | 'beat' | 'pool' | 'run' | 'siege' | 'park' | 'dummy' | 'shooter' | 'farm' — which game is on the play/over screens
   var menuIndex = 0;
   /* Scrollable menu: 6 visible rows at a 15px pitch, 12px names so the
      game list is big and easy to read. menuTop = first visible game;
@@ -452,7 +454,7 @@
 
   /* ---------- Delete-save (shared): one confirmation overlay for all
      games. dsGame = which game's save is being deleted ('sky' | 'block' |
-     'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'siege' | 'park' | 'dummy' | 'shooter' | 'farm'),
+     'bj' | 'holdem' | 'chess' | 'overlord' | 'pinball' | 'solitaire' | 'beat' | 'pool' | 'siege' | 'park' | 'dummy' | 'shooter' | 'farm'),
      or null. A confirms, B cancels. Confirming clears ONLY that game's
      localStorage keys and resets it to fresh defaults; pause-overlay games
      restart fresh immediately, select-screen games stay on their select
@@ -469,6 +471,7 @@
     else if (game === 'holdem') { dsClearKeys([HE_BAL_KEY, HE_AI_KEY, HE_BEST_KEY]); heBalance = 1000; heAiBalance = 1000; heBest = 1000; startHoldem(); }
     else if (game === 'chess') { dsClearKeys([CH_WINS_KEY, CH_LOSSES_KEY, CH_DRAWS_KEY]); chWins = 0; chLosses = 0; chDraws = 0; chState = 'level'; chLevelIdx = 0; chColorIdx = 0; }
     else if (game === 'overlord') { dsClearKeys([OV_WINS_KEY, OV_LOSSES_KEY, OV_BEST_KEY]); ovWins = 0; ovLosses = 0; ovBestTime = 0; startOverlord(); }
+    else if (game === 'pinball') { dsClearKeys(['jmf-games-pinball-best']); pbBest = 0; startPinball(); }
     else if (game === 'solitaire') { dsClearKeys([SOL_WIN_KEY, SOL_BEST_MOVES_KEY, SOL_BEST_TIME_KEY]); solWins = 0; solBestMoves = 0; solBestTime = 0; startSolitaire(); }
     else if (game === 'beat') { dsClearKeys([BU_BEST_KEY]); buBest = 0; }
     else if (game === 'pool') { dsClearKeys([PO_WIN_KEY, PO_LOSS_KEY]); poWins = 0; poLosses = 0; }
@@ -1068,8 +1071,10 @@
    Best score: localStorage 'jmf-games-blockdrop-best'.
    ================================================================ */
   var BD_COLS = 10, BD_ROWS = 20;
-  var BD_CELL = 7, BD_X = 10, BD_Y = 15;
-  var BD_PX = 88; // right panel x
+  // Wider well: 8px cells, full-height (20 rows x 8 = 160). The well is
+  // 80px wide (was 70) and the right panel is a narrower sidebar.
+  var BD_CELL = 8, BD_X = 8, BD_Y = 0;
+  var BD_PX = 96; // right panel x (well right edge is BD_X + 80 = 88)
   // Pieces: rotation-0 cells in an n x n box, (row, col). Rotation is
   // 90 degrees clockwise: (r, c) -> (c, n-1-r), applied rot times.
   var BD_PIECES = [
@@ -1133,8 +1138,10 @@
     return bdBag.shift();
   }
   function bdFallInterval() {
-    // Frames per row: 48 at level 1, 4 fewer per level, floor 6.
-    return Math.max(6, 48 - (bdLevel - 1) * 4);
+    // Frames per row: 60 at level 1 (1s/row at 60fps — slow and easy to
+    // start), 3 fewer per level, floor 12. Gentler than the original
+    // 48/-4/floor-6 so the game stays playable as it speeds up.
+    return Math.max(12, 60 - (bdLevel - 1) * 3);
   }
   function startBlockDrop() {
     bdGrid = bdEmptyGrid();
@@ -1276,12 +1283,8 @@
   }
   function drawBlockDrop() {
     ctx.fillStyle = '#1E1E5A'; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#12123A'; ctx.fillRect(0, 0, W, 13);
-    ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'left'; ctx.font = 'bold 9px monospace';
-    ctx.fillText('SCORE ' + bdScore, 4, 10);
-    ctx.textAlign = 'right';
-    ctx.fillText('BEST ' + bdBest, W - 4, 10);
-    ctx.textAlign = 'left';
+    // No top bar: the well uses the full 160px height. SCORE and BEST
+    // live in the right panel instead (see below).
     // Well background + faint grid.
     ctx.fillStyle = '#0F0F2E';
     ctx.fillRect(BD_X, BD_Y, BD_COLS * BD_CELL, BD_ROWS * BD_CELL);
@@ -1322,38 +1325,44 @@
         bdDrawCell(BD_X + (bdCur.x + gcells[ci][1]) * BD_CELL, BD_Y + (bdCur.y + gcells[ci][0]) * BD_CELL, gcolor);
       }
     }
-    // Well frame.
+    // Well frame. The well uses the full height, so the top/bottom
+    // lines sit on the screen edges (y=0 and y=159) instead of
+    // BD_Y-1 / BD_Y+160, which would be off-screen.
     ctx.fillStyle = '#FFD93D';
-    ctx.fillRect(BD_X - 1, BD_Y - 1, BD_COLS * BD_CELL + 2, 1);
-    ctx.fillRect(BD_X - 1, BD_Y + BD_ROWS * BD_CELL, BD_COLS * BD_CELL + 2, 1);
-    ctx.fillRect(BD_X - 1, BD_Y - 1, 1, BD_ROWS * BD_CELL + 2);
-    ctx.fillRect(BD_X + BD_COLS * BD_CELL, BD_Y - 1, 1, BD_ROWS * BD_CELL + 2);
-    // Right panel: NEXT preview box.
-    ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'left';
-    ctx.fillText('NEXT', BD_PX, 24);
+    ctx.fillRect(BD_X - 1, 0, BD_COLS * BD_CELL + 2, 1);
+    ctx.fillRect(BD_X - 1, H - 1, BD_COLS * BD_CELL + 2, 1);
+    ctx.fillRect(BD_X - 1, 0, 1, H);
+    ctx.fillRect(BD_X + BD_COLS * BD_CELL, 0, 1, H);
+    // Right panel: SCORE / BEST stacked at the top (the top bar is
+    // gone — the well uses the full height), then the NEXT preview.
+    ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('SCORE ' + bdScore, BD_PX, 11);
+    ctx.fillText('BEST ' + bdBest, BD_PX, 22);
+    ctx.font = 'bold 8px monospace';
+    ctx.fillText('NEXT', BD_PX, 36);
     ctx.fillStyle = '#12123A';
-    ctx.fillRect(BD_PX, 28, 52, 34);
+    ctx.fillRect(BD_PX, 40, 52, 34);
     ctx.fillStyle = '#FFD93D';
-    ctx.fillRect(BD_PX, 28, 52, 1);
-    ctx.fillRect(BD_PX, 61, 52, 1);
-    ctx.fillRect(BD_PX, 28, 1, 34);
-    ctx.fillRect(BD_PX + 51, 28, 1, 34);
+    ctx.fillRect(BD_PX, 40, 52, 1);
+    ctx.fillRect(BD_PX, 73, 52, 1);
+    ctx.fillRect(BD_PX, 40, 1, 34);
+    ctx.fillRect(BD_PX + 51, 40, 1, 34);
     var np = BD_PIECES[bdNextIdx], ncell = 6;
     var nw = np.size * ncell, nh = np.size * ncell;
-    var nx0 = BD_PX + Math.floor((52 - nw) / 2), ny0 = 28 + Math.floor((34 - nh) / 2);
+    var nx0 = BD_PX + Math.floor((52 - nw) / 2), ny0 = 40 + Math.floor((34 - nh) / 2);
     for (var ni = 0; ni < np.cells.length; ni++) {
       ctx.fillStyle = np.color;
       ctx.fillRect(nx0 + np.cells[ni][1] * ncell, ny0 + np.cells[ni][0] * ncell, ncell - 1, ncell - 1);
     }
     // Stats.
     ctx.fillStyle = '#F5E9C8'; ctx.font = '8px monospace';
-    ctx.fillText('LEVEL', BD_PX, 78);
+    ctx.fillText('LEVEL', BD_PX, 88);
     ctx.textAlign = 'right';
-    ctx.fillText(String(bdLevel), W - 4, 78);
+    ctx.fillText(String(bdLevel), W - 4, 88);
     ctx.textAlign = 'left';
-    ctx.fillText('LINES', BD_PX, 90);
+    ctx.fillText('LINES', BD_PX, 100);
     ctx.textAlign = 'right';
-    ctx.fillText(String(bdLines), W - 4, 90);
+    ctx.fillText(String(bdLines), W - 4, 100);
     ctx.textAlign = 'left';
     ctx.fillStyle = '#A7F3D0';
     ctx.fillText('A: ROTATE', BD_PX, 112);
@@ -4625,63 +4634,103 @@ function drawChessOver() {
    3 lanes on a wider field (castles at x 26 / 214, spawn 30 / 210).
    Mana start 160, cap 999, income 8/s BOTH sides (fair — the Saint
    never out-earns the player). Castles 2000 HP, units deal 0.4x
-   damage to castles. Player lightning 12s, Saint lightning 6s
-   (campaign stages scale the Saint bolt 10s..5s).
-   Rosters are symmetric 6-tier pairs (same cost, same stats):
+   damage to castles.
+   ROSTER: the original 4 symmetric troop pairs only —
      Beast<->Knight 45, Gorgon<->Mage 60, Demon<->Champion 95,
-     Devil<->Hero 140, NEW Archer<->Ranger 70, NEW Guardian<->Paladin 110.
-   Counter relationships: Knight closes on Archer (fast vs ranged);
-   Champion DPS breaks Guardian (tank); Mage mirrors Gorgon;
-   Hero mirrors Devil. Every unit has a counter and a counter-ee.
-   NEW: CAMPAIGN — 5 Saints (Apprentice, Adept, Warlord, Saint,
-   Grand Saint) with unlocks; beating one unlocks the next and A
-   advances straight to it. Quick Battle stays for a single match.
-   NEW: the Saint is aggressive AND smart — it counters the right
-   troop per lane, times pushes (only when the player is weak or
-   outmatched), saves mana for the counter it needs, spawns combo
-   pushes, and ADAPTS: if the player spams one unit type it
-   pre-counters that type. Same 8/s mana, no hidden info — the
-   Saint's mana bar is visible, so the player can read its economy.
+     Devil<->Hero 140. (Archer/Guardian were removed; the two extra
+     slots are now MAGIC SPELLS, see below.) Every unit has a
+     mirror counter, so no unit is unanswerable.
+   SPELLS (2 per side, replacing the 2 removed troop buttons; they
+   cost MANA and have cooldowns, so casting is a real choice
+   against spending mana on troops):
+     Player: LIGHTNING (60 mana, 12s — zaps the strongest enemy in
+       the selected lane for 60) and FIREBALL (90 mana, 15s — burns
+       EVERY enemy in the selected lane for 45). Aim with Up/Down
+       (the lane), pick the spell with Left/Right, A casts it.
+     Saint: PLAGUE (80 mana — 10 damage now + 8/s for 4s to every
+       player unit in a lane) and CURSE (70 mana — player units in
+       a lane deal 40% less damage for 5s). Both are DIFFERENT
+       types from the player's spells (damage-over-time and a
+       debuff, not a bolt or an instant area blast). The Saint's
+       old free bolt is gone — it pays mana and cooldowns like the
+       player, and its spell cooldowns shorten as its skill rises.
+   CAMPAIGN — 5 Saints (Apprentice, Adept, Warlord, Saint, Grand
+   Saint) with unlocks; beating one unlocks the next and A advances
+   straight to it. Quick Battle stays for a single match.
+   AI: difficulty comes from better DECISIONS, never from hidden
+   info or rigged numbers — same 8/s mana, same rosters, the Saint
+   sees only what the player can see. Higher skill means: exact
+   counter-picks in the right lane (low skill picks wrong counters
+   and random lanes), spells saved for high-value moments (a clump
+   for PLAGUE, a real push for CURSE) instead of firing on
+   cooldown, mana saved for the counter a push needs, and pushes
+   aimed at the player's weakest lane. Apprentice is dumb (random
+   lanes, fires spells on cooldown, spends mana immediately);
+   Grand Saint does all four well.
+   GRAPHICS: detailed pixel figures with a walk cycle (swinging
+   legs, body bob), an attack wind-up + strike (weapon raise, then
+   a lunge), a hit flash + knockback, and a death fall + fade.
+   Castles have battlements, banners, a gate, and damage states
+   (cracks and smoke as HP falls). The castle name labels are
+   drawn VERTICALLY inside the towers so they fit — the old
+   horizontal "SAINT" was wider than its 18px castle.
    Physics: units never stack — same-side units in a lane keep an
    11px gap (separation pass every frame); attacks use real range
    and per-unit fire rates; mana/castle math exact.
    Persistence: jmf-games-overlord-wins/losses/best-time (unchanged),
    campaign unlocks in 'jmf-games-overlord-campaign'.
    Controls: Up/Down pick lane (or stage on the select screen),
-   Left/Right cycle unit, B cycles unit backward, A summon (or
-   start on the select screen), Start pause, Menu exits.
+   Left/Right cycle slot (4 troops + 2 spells), B cycles slot
+   backward, A summon / cast spell (or start on the select screen),
+   Start pause, Menu exits.
    ================================================================ */
 var OV_UNITS = [
   { name: 'BEAST', cost: 45, hp: 130, dmg: 24, range: 12, speed: 13, rate: 0.9, color: '#a855f7', letter: 'B', ls: 0 },
   { name: 'GORGON', cost: 60, hp: 250, dmg: 32, range: 42, speed: 10, rate: 1.1, color: '#16a34a', letter: 'G', ls: 0 },
   { name: 'DEMON', cost: 95, hp: 390, dmg: 48, range: 12, speed: 12, rate: 0.95, color: '#dc2626', letter: 'D', ls: 0.02 },
-  { name: 'DEVIL', cost: 140, hp: 550, dmg: 60, range: 12, speed: 11, rate: 1.0, color: '#ea580c', letter: 'V', ls: 0.05 },
-  { name: 'ARCHER', cost: 70, hp: 180, dmg: 26, range: 55, speed: 11, rate: 1.3, color: '#0ea5e9', letter: 'A', ls: 0 },
-  { name: 'GUARDIAN', cost: 110, hp: 620, dmg: 30, range: 12, speed: 8, rate: 1.2, color: '#f59e0b', letter: 'U', ls: 0.03 }
+  { name: 'DEVIL', cost: 140, hp: 550, dmg: 60, range: 12, speed: 11, rate: 1.0, color: '#ea580c', letter: 'V', ls: 0.05 }
 ];
 var OV_AI_UNITS = [
   { name: 'KNIGHT', cost: 45, hp: 130, dmg: 24, range: 12, speed: 13, rate: 0.9, color: '#94a3b8', letter: 'K', ls: 0 },
   { name: 'MAGE', cost: 60, hp: 250, dmg: 32, range: 42, speed: 10, rate: 1.1, color: '#8b5cf6', letter: 'M', ls: 0 },
   { name: 'CHAMPION', cost: 95, hp: 390, dmg: 48, range: 12, speed: 12, rate: 0.95, color: '#d97706', letter: 'C', ls: 0.02 },
-  { name: 'HERO', cost: 140, hp: 550, dmg: 60, range: 12, speed: 11, rate: 1.0, color: '#fbbf24', letter: 'H', ls: 0.05 },
-  { name: 'RANGER', cost: 70, hp: 180, dmg: 26, range: 55, speed: 11, rate: 1.3, color: '#38bdf8', letter: 'R', ls: 0 },
-  { name: 'PALADIN', cost: 110, hp: 620, dmg: 30, range: 12, speed: 8, rate: 1.2, color: '#fde047', letter: 'P', ls: 0.03 }
+  { name: 'HERO', cost: 140, hp: 550, dmg: 60, range: 12, speed: 11, rate: 1.0, color: '#fbbf24', letter: 'H', ls: 0.05 }
 ];
 // Counter map: the AI unit index that answers each player unit.
-// B->Knight (mirror), G->Mage (mirror; Knight loses to Gorgon),
-// D->Champion (mirror), V->Hero (mirror), A->Knight (fast closer
-// catches the outranging Archer), U->Champion (high DPS breaks tank).
-var OV_COUNTER = { B: 0, G: 1, D: 2, V: 3, A: 0, U: 2 };
+// Mirrors only — every unit is answered by its mirror.
+var OV_COUNTER = { B: 0, G: 1, D: 2, V: 3 };
 function ovCounterIdx(letter) { return (OV_COUNTER[letter] !== undefined) ? OV_COUNTER[letter] : 0; }
 function ovUnitTier(letter) {
   if (letter === 'B' || letter === 'K') return 0;
   if (letter === 'G' || letter === 'M') return 1;
   if (letter === 'D' || letter === 'C') return 2;
   if (letter === 'V' || letter === 'H') return 3;
-  if (letter === 'A' || letter === 'R') return 4;
-  if (letter === 'U' || letter === 'P') return 5;
-  return 0;
+  return 0; // unknown / removed letters (old saves) map to tier 0, never crash
 }
+// --- Magic spells (2 per side) ---
+// Player spells: a single-target bolt and an instant area blast.
+var OV_SPELLS = [
+  { name: 'LIGHTNING', cost: 60, cd: 12, dmg: 130, desc: 'ZAPS THE STRONGEST ENEMY IN YOUR LANE' },
+  { name: 'FIREBALL', cost: 90, cd: 15, dmg: 80, desc: 'BURNS EVERY ENEMY IN YOUR LANE' }
+];
+// Saint spells: DIFFERENT types from the player's — a damage-over-
+// time and a damage debuff. Cooldowns shorten with Saint skill.
+var OV_AI_SPELLS = [
+  { name: 'PLAGUE', cost: 80, cd: [22, 20, 18, 16, 14], dmg: 10, tick: 8, dur: 4, desc: 'ROTS A LANE: 10 NOW + 8/S FOR 4S' },
+  { name: 'CURSE', cost: 70, cd: [20, 18, 16, 14, 12], dur: 5, mult: 0.6, desc: 'WEAKENS A LANE: -40% DAMAGE FOR 5S' }
+];
+// Spell-value thresholds by Saint skill: how good a moment must be
+// before the Saint spends mana on a spell. Apprentice (0) fires on
+// cooldown (threshold 0 = any moment); Grand Saint (4) waits.
+var OV_AI_PLAGUE_MIN = [0, 1, 2, 2, 3]; // min clump size (+1 if a Devil is in it)
+var OV_AI_CURSE_MIN = [0, 5, 15, 25, 30]; // min player DPS in the lane
+// Selection slots: 4 troops + 2 spells, cycled with Left/Right/B.
+var OV_SLOTS = [];
+(function () {
+  var i;
+  for (i = 0; i < OV_UNITS.length; i++) OV_SLOTS.push({ kind: 'unit', def: OV_UNITS[i] });
+  for (i = 0; i < OV_SPELLS.length; i++) OV_SLOTS.push({ kind: 'spell', def: OV_SPELLS[i], spellIdx: i });
+})();
 var OV_WINS_KEY = 'jmf-games-overlord-wins';
 var OV_LOSSES_KEY = 'jmf-games-overlord-losses';
 var OV_BEST_KEY = 'jmf-games-overlord-best-time';
@@ -4703,29 +4752,46 @@ function ovSaveRecord() {
   } catch (e) {}
 }
 // Campaign stages: difficulty comes from AI skill (think speed,
-// counter accuracy, push sizing, combos) and Saint bolt interval —
-// NEVER from income (always 8/s) or stats (rosters are symmetric).
+// counter accuracy, push sizing, combos, spell sense) — NEVER from
+// income (always 8/s) or stats (rosters are symmetric).
 var OV_STAGES = [
-  { name: 'APPRENTICE', skill: 0, bolt: 10, desc: 'LEARNING' },
-  { name: 'ADEPT', skill: 1, bolt: 8, desc: 'STEADY' },
-  { name: 'WARLORD', skill: 2, bolt: 7, desc: 'CUNNING' },
-  { name: 'SAINT', skill: 3, bolt: 6, desc: 'RUTHLESS' },
-  { name: 'GRAND SAINT', skill: 4, bolt: 5, desc: 'LEGENDARY' }
+  { name: 'APPRENTICE', skill: 0, desc: 'LEARNING' },
+  { name: 'ADEPT', skill: 1, desc: 'STEADY' },
+  { name: 'WARLORD', skill: 2, desc: 'CUNNING' },
+  { name: 'SAINT', skill: 3, desc: 'RUTHLESS' },
+  { name: 'GRAND SAINT', skill: 4, desc: 'LEGENDARY' }
 ];
-var OV_AI_THINK = [0.9, 0.7, 0.55, 0.45, 0.35]; // seconds between AI thinks
-var OV_AI_ERR = [0.35, 0.25, 0.12, 0.05, 0]; // chance to pick a wrong counter
+var OV_AI_THINK = [1.4, 1.0, 0.7, 0.5, 0.35]; // seconds between AI thinks
+var OV_AI_ERR = [0.5, 0.35, 0.2, 0.08, 0]; // chance to pick a wrong counter
+// Defensive awareness: how far a player unit must advance before the
+// Saint bothers to counter it. The Apprentice only notices a push
+// once it is deep in its half (x>120); the Grand Saint reacts the
+// moment a unit leaves the player's castle (x>34). This is a
+// THINKING difference — same mana, same rosters, no hidden info.
+var OV_AI_DEFEND_X = [120, 90, 60, 45, 34];
+// Defensive reliability: the chance the Saint NOTICES a push at all.
+// This is rolled ONCE per player unit, the first time the Saint
+// looks at it — a push the Apprentice fails to notice is never
+// countered (it can still be stopped by a Saint push or a spell,
+// but no dedicated counter is ever sent). The Grand Saint notices
+// every push; the Apprentice notices only half.
+var OV_AI_DEFEND_P = [0.5, 0.65, 0.8, 0.9, 1.0];
 var OV_LANE_Y = [40, 80, 120];
 var OV_DARK_X = 26, OV_SAINT_X = 214; // castle faces
 var OV_P_SPAWN_X = 30, OV_A_SPAWN_X = 210;
-var OV_CASTLE_HP = 2000, OV_CASTLE_DMG = 0.4;
+var OV_CASTLE_HP = 2000, OV_CASTLE_DMG = 0.7; // 0.7x castle damage:
+// a unit that breaks through must HURT, or matches stalemate into
+// a war of attrition (a Devil now deals 42/hit; a 10s breakthrough ~21%)
 var OV_AI_INCOME = 8;
 var ovMana = 160, ovAiMana = 160;
 var ovDarkHp = OV_CASTLE_HP, ovSaintHp = OV_CASTLE_HP;
 var ovLane = 1, ovUnitIdx = 0;
-var ovUnits = [], ovProjs = [], ovFx = [];
-var ovTime = 0, ovAiT = 2.0, ovBoltT = 12, ovBoltFx = null;
-var ovSaintBoltT = 6, ovSaintBoltFx = null;
-var ovSaintBoltInterval = 6;
+var ovUnits = [], ovProjs = [], ovFx = [], ovFloats = [];
+var ovTime = 0, ovAiT = 2.0;
+var ovBoltFx = null, ovFireFx = null;
+var ovSpellCd = [0, 0], ovAiSpellCd = [0, 0];
+var ovLanePlagueT = [0, 0, 0], ovLanePlagueTick = [0, 0, 0];
+var ovLaneCurseT = [0, 0, 0];
 var ovDeployCd = 0, ovPaused = false, ovOver = false, ovWon = false;
 var ovBlink = 0;
 var ovState = 'select'; // 'select' | 'play' | 'over'
@@ -4755,13 +4821,15 @@ function ovStartMatch(stageIdx, isCampaign) {
   ovCampaignStage = stageIdx;
   var st = isCampaign ? OV_STAGES[stageIdx] : OV_STAGES[3];
   ovAiSkill = st.skill;
-  ovSaintBoltInterval = st.bolt;
   ovMana = 160; ovAiMana = 160;
   ovDarkHp = OV_CASTLE_HP; ovSaintHp = OV_CASTLE_HP;
   ovLane = 1; ovUnitIdx = 0;
-  ovUnits = []; ovProjs = []; ovFx = [];
-  ovTime = 0; ovAiT = 1.0; ovBoltT = 12; ovBoltFx = null;
-  ovSaintBoltT = ovSaintBoltInterval; ovSaintBoltFx = null;
+  ovUnits = []; ovProjs = []; ovFx = []; ovFloats = [];
+  ovTime = 0; ovAiT = 1.0;
+  ovBoltFx = null; ovFireFx = null;
+  ovSpellCd = [0, 0]; ovAiSpellCd = [0, 0];
+  ovLanePlagueT = [0, 0, 0]; ovLanePlagueTick = [0, 0, 0];
+  ovLaneCurseT = [0, 0, 0];
   ovDeployCd = 0; ovPaused = false; ovOver = false; ovWon = false;
   ovPushLane = -1; ovPushTicks = 0;
   ovPlayerUse = {};
@@ -4773,6 +4841,10 @@ function ovStartMatch(stageIdx, isCampaign) {
 function ovFmtTime(s) {
   var m = Math.floor(s / 60), ss = Math.floor(s % 60);
   return m + ':' + (ss < 10 ? '0' : '') + ss;
+}
+function ovAddFloat(x, y, txt, col) {
+  ovFloats.push({ x: x, y: y, txt: txt, col: col || '#f5e9c8', t: 50 });
+  if (ovFloats.length > 24) ovFloats.splice(0, ovFloats.length - 24);
 }
 function ovPickLane(d) {
   if (screen !== 'play' || ovPaused || ovOver) return;
@@ -4787,7 +4859,7 @@ function ovPickLane(d) {
 function ovCycleUnit(d) {
   if (screen !== 'play' || ovPaused || ovOver) return;
   if (ovState === 'select') return;
-  ovUnitIdx = (ovUnitIdx + d + OV_UNITS.length) % OV_UNITS.length;
+  ovUnitIdx = (ovUnitIdx + d + OV_SLOTS.length) % OV_SLOTS.length;
   JMFGAMES.beep(600, 0.04);
 }
 function ovSpawn(def, side, lane) {
@@ -4797,7 +4869,8 @@ function ovSpawn(def, side, lane) {
     hp: def.hp, max: def.hp, dmg: def.dmg, range: def.range,
     speed: def.speed, rate: def.rate, cd: 0,
     color: def.color, letter: def.letter, ls: def.ls || 0,
-    ranged: def.range > 20, hitT: 0
+    ranged: def.range > 20, hitT: 0,
+    walkPh: 0, atkT: 0, atkTarget: null, dieT: 0, kb: 0
   };
   ovUnits.push(u);
   return u;
@@ -4814,7 +4887,10 @@ function ovDeploy() {
     return;
   }
   if (ovDeployCd > 0) return;
-  var def = OV_UNITS[ovUnitIdx];
+  var slot = OV_SLOTS[ovUnitIdx];
+  if (!slot) return;
+  if (slot.kind === 'spell') { ovCastSpell(slot.spellIdx); return; }
+  var def = slot.def;
   if (ovMana < def.cost) { JMFGAMES.beep(180, 0.12); return; }
   ovMana -= def.cost;
   ovDeployCd = 0.6;
@@ -4822,6 +4898,105 @@ function ovDeploy() {
   ovSpawn(def, 'p', ovLane);
   JMFGAMES.beep(660, 0.06);
 }
+// --- Player spells (A on a spell slot; aimed at the selected lane) ---
+function ovCastSpell(i) {
+  var sp = OV_SPELLS[i];
+  if (!sp) return;
+  if (ovSpellCd[i] > 0) { JMFGAMES.beep(180, 0.12); return; }
+  if (i === 0) {
+    // LIGHTNING: the strongest (most advanced) enemy in the lane.
+    var tgt = null;
+    for (var k = 0; k < ovUnits.length; k++) {
+      var u = ovUnits[k];
+      if (u.side === 'a' && u.lane === ovLane && u.hp > 0 && (!tgt || u.x < tgt.x)) tgt = u;
+    }
+    if (!tgt) { ovAddFloat(120, 40, 'NO TARGET', '#f5e9c8'); JMFGAMES.beep(180, 0.12); return; }
+    if (ovMana < sp.cost) { JMFGAMES.beep(180, 0.12); return; }
+    ovMana -= sp.cost;
+    ovSpellCd[i] = sp.cd;
+    ovDeployCd = 0.6;
+    ovBoltFx = { x: tgt.x, y: tgt.y, lane: tgt.lane, frames: 8 };
+    ovDamage(tgt, sp.dmg, null);
+    ovAddFloat(tgt.x, tgt.y - 14, '-' + sp.dmg, '#fde047');
+    ovAddFloat(tgt.x, tgt.y - 24, 'LIGHTNING!', '#fde047');
+    JMFGAMES.beep(990, 0.15);
+  } else {
+    // FIREBALL: every enemy in the lane — but only worth casting if
+    // there is something to burn. It flies in, then explodes.
+    var n = 0, sx = 0;
+    for (var k2 = 0; k2 < ovUnits.length; k2++) {
+      var u2 = ovUnits[k2];
+      if (u2.side === 'a' && u2.lane === ovLane && u2.hp > 0) { n++; sx += u2.x; }
+    }
+    if (n === 0) { ovAddFloat(120, 40, 'NO TARGET', '#f5e9c8'); JMFGAMES.beep(180, 0.12); return; }
+    if (ovMana < sp.cost) { JMFGAMES.beep(180, 0.12); return; }
+    ovMana -= sp.cost;
+    ovSpellCd[i] = sp.cd;
+    ovDeployCd = 0.6;
+    ovFireFx = { x: 30, y: OV_LANE_Y[ovLane], tx: sx / n, lane: ovLane };
+    JMFGAMES.beep(520, 0.12);
+  }
+}
+// --- Saint spells (cast by the AI; same mana pool, real cooldowns) ---
+function ovAiCastSpell(i, lane) {
+  var sp = OV_AI_SPELLS[i];
+  if (!sp) return false;
+  if (ovAiSpellCd[i] > 0 || ovAiMana < sp.cost) return false;
+  ovAiMana -= sp.cost;
+  ovAiSpellCd[i] = sp.cd[ovAiSkill];
+  if (i === 0) {
+    // PLAGUE: 10 now + 8/s for 4s to every player unit in the lane.
+    ovLanePlagueT[lane] = sp.dur;
+    ovLanePlagueTick[lane] = 0;
+    for (var k = 0; k < ovUnits.length; k++) {
+      var u = ovUnits[k];
+      if (u.side === 'p' && u.lane === lane && u.hp > 0) {
+        ovDamage(u, sp.dmg, null);
+        ovAddFloat(u.x, u.y - 14, '-' + sp.dmg, '#4ade80');
+      }
+    }
+    ovAddFloat(120, OV_LANE_Y[lane] - 18, 'PLAGUE!', '#4ade80');
+    JMFGAMES.beep(300, 0.2);
+  } else {
+    // CURSE: the lane's player units deal 40% less damage for 5s.
+    ovLaneCurseT[lane] = sp.dur;
+    ovAddFloat(120, OV_LANE_Y[lane] - 18, 'CURSED!', '#c084fc');
+    JMFGAMES.beep(240, 0.2);
+  }
+  return true;
+}
+// Best lane for a Saint spell, and how good it is. Apprentice (skill
+// 0) picks a random lane and fires on cooldown — it never waits.
+function ovAiSpellLane(i) {
+  if (ovAiSkill === 0) return { lane: Math.floor(Math.random() * 3), value: 1 };
+  var bestLane = 0, bestVal = -1;
+  for (var l = 0; l < 3; l++) {
+    var v = 0;
+    if (i === 0) {
+      // PLAGUE wants a clump (a Devil in the lane counts double).
+      for (var k = 0; k < ovUnits.length; k++) {
+        var u = ovUnits[k];
+        if (u.side === 'p' && u.lane === l && u.hp > 0) { v += 1; if (u.letter === 'V') v += 1; }
+      }
+    } else {
+      // CURSE wants a real push: total player DPS in the lane.
+      for (var k2 = 0; k2 < ovUnits.length; k2++) {
+        var u2 = ovUnits[k2];
+        if (u2.side === 'p' && u2.lane === l && u2.hp > 0) v += u2.dmg / u2.rate;
+      }
+    }
+    if (v > bestVal) { bestVal = v; bestLane = l; }
+  }
+  return { lane: bestLane, value: bestVal };
+}
+function ovAiSpellThreshold(i) {
+  if (i === 0) return OV_AI_PLAGUE_MIN[ovAiSkill];
+  return OV_AI_CURSE_MIN[ovAiSkill];
+}
+function ovAiShouldCast(i, value) {
+  return value >= ovAiSpellThreshold(i);
+}
+
 // --- Saint AI (smart + aggressive) ---
 function ovLaneThreat(lane) {
   var t = 0;
@@ -4870,6 +5045,9 @@ function ovWeakestLane() {
   return cands[Math.floor(Math.random() * cands.length)];
 }
 function ovPickPushLane() {
+  // Apprentice pushes at a random lane; smarter Saints push the
+  // player's weakest lane (where the castle is most exposed).
+  if (ovAiSkill === 0) return Math.floor(Math.random() * 3);
   if (ovPushLane >= 0 && ovPushTicks > 0) {
     var scores = [ovLanePlayerScore(0), ovLanePlayerScore(1), ovLanePlayerScore(2)];
     var min = Math.min(scores[0], scores[1], scores[2]);
@@ -4915,37 +5093,98 @@ function ovLaneMostOf(letter) {
   }
   return { lane: bestLane, n: bestN };
 }
+// The most dangerous player unit in a lane that the Saint can
+// counter: past its awareness line and noticed (the notice roll
+// happens once per unit, the first time it crosses the line — a
+// push the Saint fails to notice is never countered). Falls
+// through to the next unit if the most dangerous one was ignored.
+function ovLaneCounterTarget(lane) {
+  var cands = [];
+  for (var i = 0; i < ovUnits.length; i++) {
+    var u = ovUnits[i];
+    if (u.side !== 'p' || u.lane !== lane || u.ignoredByAi) continue;
+    if (u.x <= OV_AI_DEFEND_X[ovAiSkill]) continue;
+    var prox = (u.x - 30) / 180;
+    if (prox < 0) prox = 0; if (prox > 1) prox = 1;
+    cands.push({ u: u, sc: u.hp * (u.dmg / u.rate) * (0.3 + prox) });
+  }
+  cands.sort(function (a, b) { return b.sc - a.sc; });
+  for (var j = 0; j < cands.length; j++) {
+    var c = cands[j].u;
+    if (c.noticedByAi === undefined) {
+      c.noticedByAi = Math.random() < OV_AI_DEFEND_P[ovAiSkill];
+      if (!c.noticedByAi) { c.ignoredByAi = true; continue; }
+    }
+    return c;
+  }
+  return null;
+}
 function ovAiSpawn() {
   // 1. DEFENSE (most threatened lane first): pick the counter for
-  // the most dangerous player unit — mirrored tier, or the cross
-  // counter (Knight vs Archer, Champion vs Guardian). Low-skill
-  // Saints sometimes pick the WRONG counter (the error rate); the
-  // Grand Saint never does. If the counter is unaffordable, SAVE
-  // mana for it — the castle (2000 HP, 0.4x damage) can absorb a
-  // few hits. Only a Knight delay at the castle door (x > 185).
+  // the most dangerous player unit — its mirror. Low-skill Saints
+  // sometimes pick the WRONG counter (the error rate); the Grand
+  // Saint never does. If the counter is unaffordable, SAVE mana
+  // for it — the castle (2000 HP, 0.4x damage) can absorb a few
+  // hits. Only a Knight delay at the castle door (x > 185).
   var threats = [ovLaneThreat(0), ovLaneThreat(1), ovLaneThreat(2)];
   var order = [0, 1, 2].sort(function (a, b) { return threats[b] - threats[a]; });
   for (var di = 0; di < 3; di++) {
     var lane = order[di];
-    var danger = ovLaneDanger(lane);
-    if (!danger || danger.x <= 34) continue;
+    var danger = ovLaneCounterTarget(lane);
+    if (!danger) continue;
     var counterIdx = ovCounterIdx(danger.letter);
     if (Math.random() < OV_AI_ERR[ovAiSkill]) {
-      counterIdx = Math.floor(Math.random() * OV_AI_UNITS.length); // wrong counter
+      // Wrong counter: a plausible mistake — a random cheaper unit,
+      // but never the Hero (140) when a cheaper counter would do.
+      // A mistake should waste mana, not accidentally deploy the
+      // strongest unit and win the game by luck.
+      counterIdx = Math.floor(Math.random() * 3); // Knight, Mage, Champion
+      if (counterIdx === ovCounterIdx(danger.letter)) counterIdx = (counterIdx + 1) % 3;
     }
     var counterTier = ovUnitTier(OV_AI_UNITS[counterIdx].letter);
     if (ovLaneHasTier(lane, counterTier)) continue;
     var counter = OV_AI_UNITS[counterIdx];
+    var spawned = false;
     if (ovAiMana >= counter.cost) {
       ovAiMana -= counter.cost;
       ovSpawn(counter, 'a', lane);
+      spawned = true;
     } else if (danger.x > 185 && ovAiMana >= OV_AI_UNITS[0].cost) {
       ovAiMana -= OV_AI_UNITS[0].cost;
       ovSpawn(OV_AI_UNITS[0], 'a', lane);
+      spawned = true;
     }
+    // One counter per think: the Saint answers the single most
+    // dangerous lane, then waits for its next think. Faster Saints
+    // (shorter think interval) counter far more often — that is
+    // the difficulty curve, not extra mana or stats.
+    if (spawned) break;
     if (ovAiMana < OV_AI_UNITS[0].cost) break;
   }
-  // 2. ADAPTATION: the player is spamming one unit type — pre-counter
+  // 2. SPELLS (one per think): pick the ready, affordable spell
+  // with the best value-for-threshold ratio, and only cast it if
+  // the moment clears this skill's threshold. Apprentice fires on
+  // cooldown at a random lane; Grand Saint waits for a clump (for
+  // PLAGUE) or a real push (for CURSE) and aims at the most
+  // dangerous lane. Never cast while a player unit is at the
+  // castle door — save the mana for the counter instead.
+  var doorThreat = false;
+  for (var dt2 = 0; dt2 < 3; dt2++) {
+    var dd = ovLaneDanger(dt2);
+    if (dd && dd.x > 170) { doorThreat = true; break; }
+  }
+  if (!doorThreat) {
+    var bestSpell = -1, bestLane = 0, bestRatio = -1;
+    for (var sp2 = 0; sp2 < 2; sp2++) {
+      if (ovAiSpellCd[sp2] > 0 || ovAiMana < OV_AI_SPELLS[sp2].cost) continue;
+      var pick = ovAiSpellLane(sp2);
+      if (!ovAiShouldCast(sp2, pick.value)) continue;
+      var ratio = pick.value / Math.max(1, ovAiSpellThreshold(sp2));
+      if (ratio > bestRatio) { bestRatio = ratio; bestSpell = sp2; bestLane = pick.lane; }
+    }
+    if (bestSpell >= 0) ovAiCastSpell(bestSpell, bestLane);
+  }
+  // 3. ADAPTATION: the player is spamming one unit type — pre-counter
   // it in the lane where it masses, before it overruns the Saint.
   var spam = ovPlayerSpamLetter();
   if (spam) {
@@ -4959,37 +5198,46 @@ function ovAiSpawn() {
       }
     }
   }
-  // 3. PUSH (timed, not spammed): only when no player unit is past
-  // x 150 in any lane AND (the Saint's field is at least 90% as
-  // strong as the player's, or the player is broke on mana). Push
-  // with the strongest affordable unit the skill allows; high-skill
-  // Saints push in COMBOS (two units, same lane) so the force
-  // arrives together instead of trickling in.
-  var anyThreat = false;
-  for (var ti = 0; ti < 3; ti++) {
-    var td = ovLaneDanger(ti);
-    if (td && td.x > 150) { anyThreat = true; break; }
+  // 4. PUSH (timed, not spammed): push a lane that has no player
+  // unit past x 150 (the Saint can push lane 1 while defending
+  // lane 2 — it does not wait for the whole field to be clear),
+  // and only when the Saint's field is at least as strong as the
+  // player's — smarter Saints push even when slightly weaker — or
+  // the player is broke on mana. Push with the strongest
+  // affordable unit the skill allows; high-skill Saints push in
+  // COMBOS (two units, same lane) so the force arrives together
+  // instead of trickling in. High-skill Saints also keep a reserve
+  // when the player has a Devil out (save for the Hero counter).
+  var need = 0.9 - ovAiSkill * 0.05; // Grand Saint pushes at 70% strength
+  var devilOut = false;
+  for (var dk = 0; dk < ovUnits.length; dk++) {
+    if (ovUnits[dk].side === 'p' && ovUnits[dk].letter === 'V' && ovUnits[dk].hp > 0) { devilOut = true; break; }
   }
-  if (!anyThreat && (ovSideStrength('a') >= ovSideStrength('p') * 0.9 || ovMana < 60)) {
-    var maxTier = (ovAiSkill === 0) ? 2 : 3; // Apprentice never leads with a Hero
-    for (var t = maxTier; t >= 0; t--) {
-      var def = OV_AI_UNITS[t];
-      if (ovAiMana >= def.cost) {
-        var pushLane = ovPickPushLane();
-        ovAiMana -= def.cost;
-        ovSpawn(def, 'a', pushLane);
-        // Combo: a second unit in the same lane (skill 2+).
-        if (ovAiSkill >= 2) {
-          for (var t2 = 1; t2 >= 0; t2--) {
-            var def2 = OV_AI_UNITS[t2];
-            if (ovAiMana >= def2.cost) {
-              ovAiMana -= def2.cost;
-              ovSpawn(def2, 'a', pushLane);
-              break;
+  if ((ovSideStrength('a') >= ovSideStrength('p') * need || ovMana < 60) &&
+      !(ovAiSkill >= 2 && devilOut && ovAiMana < 140)) {
+    var pushLane = ovPickPushLane();
+    // Only push a lane with no deep threat in it.
+    var plDanger = ovLaneDanger(pushLane);
+    if (!plDanger || plDanger.x <= 150) {
+      var maxTier = (ovAiSkill === 0) ? 2 : 3; // Apprentice never leads with a Hero
+      for (var t = maxTier; t >= 0; t--) {
+        var def = OV_AI_UNITS[t];
+        if (ovAiMana >= def.cost) {
+          ovAiMana -= def.cost;
+          ovSpawn(def, 'a', pushLane);
+          // Combo: a second unit in the same lane (skill 2+).
+          if (ovAiSkill >= 2) {
+            for (var t2 = 1; t2 >= 0; t2--) {
+              var def2 = OV_AI_UNITS[t2];
+              if (ovAiMana >= def2.cost) {
+                ovAiMana -= def2.cost;
+                ovSpawn(def2, 'a', pushLane);
+                break;
+              }
             }
           }
+          break;
         }
-        break;
       }
     }
   }
@@ -5003,7 +5251,9 @@ function ovDamage(target, dmg, attacker) {
   } else {
     target.hp -= dmg;
     target.hitT = 4;
+    target.kb = (target.side === 'p' ? -2 : 2); // shoved away from its attacker
     ovFx.push({ x: target.x, y: target.y, frames: 6, max: 6 });
+    if (target.hp <= 0 && !target.dieT) target.dieT = 14; // death fall + fade
     if (attacker && attacker.ls && attacker.hp > 0) {
       attacker.hp = Math.min(attacker.max, attacker.hp + dmg * attacker.ls);
     }
@@ -5035,13 +5285,14 @@ function ovEnd(win) {
 // gap. Enforce a chain from the leader back: each follower must sit
 // at least 11px behind the unit ahead of it (min/max propagation,
 // so a 3-unit pile spreads to 11px gaps, not just the first pair).
+// Dying units (falling) are left out of the chain.
 function ovSeparate() {
   for (var lane = 0; lane < 3; lane++) {
     for (var side = 0; side < 2; side++) {
       var list = [];
       for (var i = 0; i < ovUnits.length; i++) {
         var u = ovUnits[i];
-        if (u.lane === lane && ((side === 0 && u.side === 'p') || (side === 1 && u.side === 'a'))) list.push(u);
+        if (u.lane === lane && u.hp > 0 && ((side === 0 && u.side === 'p') || (side === 1 && u.side === 'a'))) list.push(u);
       }
       // Leader first: player leader is the highest x, AI leader the lowest.
       list.sort(function (a, b) { return (side === 0) ? (b.x - a.x) : (a.x - b.x); });
@@ -5066,39 +5317,59 @@ function ovUpdate() {
   if (ovDeployCd > 0) ovDeployCd -= dt;
   ovMana = Math.min(999, ovMana + 8 * dt);
   ovAiMana = Math.min(999, ovAiMana + OV_AI_INCOME * dt);
+  var ci;
+  for (ci = 0; ci < 2; ci++) {
+    if (ovSpellCd[ci] > 0) ovSpellCd[ci] -= dt;
+    if (ovAiSpellCd[ci] > 0) ovAiSpellCd[ci] -= dt;
+  }
   ovAiT -= dt;
   if (ovAiT <= 0) { ovAiT = OV_AI_THINK[ovAiSkill] + Math.random() * 0.15; ovAiSpawn(); }
-  ovBoltT -= dt;
-  if (ovBoltT <= 0) {
-    var tgt = null;
-    for (var i = 0; i < ovUnits.length; i++) {
-      var u = ovUnits[i];
-      if (u.side === 'a' && (!tgt || u.x < tgt.x)) tgt = u;
+  // Plague ticks: 8/s to every player unit in a plagued lane.
+  for (var pl = 0; pl < 3; pl++) {
+    if (ovLanePlagueT[pl] > 0) {
+      ovLanePlagueT[pl] -= dt;
+      ovLanePlagueTick[pl] += dt;
+      if (ovLanePlagueTick[pl] >= 1) {
+        ovLanePlagueTick[pl] -= 1;
+        for (var pk = 0; pk < ovUnits.length; pk++) {
+          var pu = ovUnits[pk];
+          if (pu.side === 'p' && pu.lane === pl && pu.hp > 0) {
+            ovDamage(pu, OV_AI_SPELLS[0].tick, null);
+            ovAddFloat(pu.x, pu.y - 14, '-' + OV_AI_SPELLS[0].tick, '#4ade80');
+          }
+        }
+      }
     }
-    if (tgt) {
-      ovBoltFx = { x: tgt.x, y: tgt.y, lane: tgt.lane, frames: 8 };
-      ovDamage(tgt, 60, null);
-      JMFGAMES.beep(990, 0.15);
-      ovBoltT = 12;
-    } else { ovBoltT = 3; }
+    if (ovLaneCurseT[pl] > 0) ovLaneCurseT[pl] -= dt;
   }
-  ovSaintBoltT -= dt;
-  if (ovSaintBoltT <= 0) {
-    var stgt = null;
-    for (var si = 0; si < ovUnits.length; si++) {
-      var su = ovUnits[si];
-      if (su.side === 'p' && (!stgt || su.x > stgt.x)) stgt = su;
+  // Fireball flight: streaks from the Dark castle, then explodes on
+  // every enemy in the lane.
+  if (ovFireFx) {
+    ovFireFx.x += 8;
+    if (ovFireFx.x >= ovFireFx.tx) {
+      var fl = ovFireFx, fLane = fl.lane;
+      ovFireFx = null;
+      ovFx.push({ x: fl.tx, y: fl.y, frames: 10, max: 10 });
+      ovFx.push({ x: fl.tx - 8, y: fl.y - 4, frames: 8, max: 8 });
+      ovFx.push({ x: fl.tx + 8, y: fl.y + 4, frames: 8, max: 8 });
+      for (var fk = 0; fk < ovUnits.length; fk++) {
+        var fu = ovUnits[fk];
+        if (fu.side === 'a' && fu.lane === fLane && fu.hp > 0) {
+          ovDamage(fu, OV_SPELLS[1].dmg, null);
+          ovAddFloat(fu.x, fu.y - 14, '-' + OV_SPELLS[1].dmg, '#fb923c');
+        }
+      }
+      ovAddFloat(fl.tx, fl.y - 18, 'FIREBALL!', '#fb923c');
+      JMFGAMES.beep(440, 0.15);
     }
-    if (stgt) {
-      ovSaintBoltFx = { x: stgt.x, y: stgt.y, lane: stgt.lane, frames: 8 };
-      ovDamage(stgt, 60, null);
-      JMFGAMES.beep(660, 0.15);
-      ovSaintBoltT = ovSaintBoltInterval;
-    } else { ovSaintBoltT = 3; }
   }
   if (ovBoltFx) { ovBoltFx.frames--; if (ovBoltFx.frames <= 0) ovBoltFx = null; }
-  if (ovSaintBoltFx) { ovSaintBoltFx.frames--; if (ovSaintBoltFx.frames <= 0) ovSaintBoltFx = null; }
   for (var fi = ovFx.length - 1; fi >= 0; fi--) { ovFx[fi].frames--; if (ovFx[fi].frames <= 0) ovFx.splice(fi, 1); }
+  for (var fli = ovFloats.length - 1; fli >= 0; fli--) {
+    ovFloats[fli].t--;
+    ovFloats[fli].y -= 0.3;
+    if (ovFloats[fli].t <= 0) ovFloats.splice(fli, 1);
+  }
   for (var pi = ovProjs.length - 1; pi >= 0; pi--) {
     var pr = ovProjs[pi];
     var pt = pr.target;
@@ -5113,8 +5384,13 @@ function ovUpdate() {
   }
   for (var ui = 0; ui < ovUnits.length; ui++) {
     var u2 = ovUnits[ui];
-    if (u2.hp <= 0) continue;
+    if (u2.hp <= 0) { if (u2.dieT > 0) u2.dieT--; continue; } // falling, then gone
     if (u2.hitT > 0) u2.hitT--;
+    if (u2.kb) { // knockback shove, decaying
+      u2.x += u2.kb;
+      u2.kb *= 0.7;
+      if (Math.abs(u2.kb) < 0.3) u2.kb = 0;
+    }
     var foe = null, bestD = 1e9;
     for (var fj = 0; fj < ovUnits.length; fj++) {
       var f = ovUnits[fj];
@@ -5126,24 +5402,39 @@ function ovUpdate() {
     var target = null;
     if (foe && bestD <= u2.range) target = foe;
     else if (castleDist <= u2.range) target = { castle: true, side: u2.side === 'p' ? 'a' : 'p', lane: u2.lane };
-    if (target) {
+    if (u2.atkT > 0) {
+      // Mid-swing: wind-up, then the STRIKE lands on frame 6.
+      u2.cd -= dt;
+      u2.atkT--;
+      if (u2.atkT === 6) {
+        var st = u2.atkTarget;
+        if (st && (st.castle || st.hp > 0)) {
+          var cursed = (u2.side === 'p' && ovLaneCurseT[u2.lane] > 0);
+          var dealt = cursed ? u2.dmg * OV_AI_SPELLS[1].mult : u2.dmg;
+          if (u2.ranged) {
+            ovProjs.push({ x: u2.x, y: u2.y, target: st, dmg: dealt, attacker: u2, color: u2.color });
+          } else {
+            ovDamage(st, dealt, u2);
+          }
+        }
+        u2.atkTarget = null;
+      }
+    } else if (target) {
       u2.cd -= dt;
       if (u2.cd <= 0) {
         u2.cd = u2.rate;
-        if (u2.ranged) {
-          ovProjs.push({ x: u2.x, y: u2.y, target: target, dmg: u2.dmg, attacker: u2, color: u2.color });
-        } else {
-          ovDamage(target, u2.dmg, u2);
-        }
+        u2.atkT = 12; // 7 frames wind-up, strike, 5 frames recover
+        u2.atkTarget = target;
       }
     } else {
       u2.x += (u2.side === 'p' ? 1 : -1) * u2.speed * dt;
       if (u2.side === 'p' && u2.x > OV_A_SPAWN_X - 4) u2.x = OV_A_SPAWN_X - 4;
       if (u2.side === 'a' && u2.x < OV_P_SPAWN_X + 4) u2.x = OV_P_SPAWN_X + 4;
+      u2.walkPh = (u2.walkPh || 0) + dt * 9; // marching legs
     }
   }
   ovSeparate(); // units never stack
-  ovUnits = ovUnits.filter(function (u) { return u.hp > 0; });
+  ovUnits = ovUnits.filter(function (u) { return u.hp > 0 || u.dieT > 0; });
   if (ovSaintHp <= 0) { ovSaintHp = 0; ovEnd(true); }
   else if (ovDarkHp <= 0) { ovDarkHp = 0; ovEnd(false); }
 }
@@ -5151,11 +5442,29 @@ function ovUpdate() {
 // distinct: no two units look alike). Player (warm) faces right,
 // Saint (cool) faces left — drawn facing right, mirrored with
 // scale(-1,1) for the Saint.
-function ovDrawFigure(x, y, letter, color, dir) {
+// anim: { walkPh, atkT, dieT, cursed } — walk cycle (swinging legs
+// + body bob), attack wind-up (lean back) + strike (lunge forward),
+// death fall + fade, and a purple ring while cursed.
+function ovDrawFigure(x, y, letter, color, dir, anim) {
+  anim = anim || {};
+  var walkPh = anim.walkPh || 0, atkT = anim.atkT || 0, dieT = anim.dieT || 0;
+  var bob = Math.sin(walkPh * 2) * 0.7;
+  var lean = 0, lunge = 0;
+  if (atkT > 7) lean = -0.14; // wind-up: lean back, weapon raised
+  else if (atkT >= 5) { lean = 0.1; lunge = 2.5; } // strike: lunge in
+  var fall = 0, alpha = 1;
+  if (dieT > 0) { fall = (1 - dieT / 14) * 1.25; alpha = 0.25 + 0.75 * (dieT / 14); }
   ctx.save();
-  ctx.translate(x, y);
+  ctx.globalAlpha = alpha;
+  ctx.translate(x + lunge * dir, y + bob);
   ctx.scale(dir * 1.4, 1.4);
+  ctx.rotate(lean + fall);
   var D = '#1a1a2e';
+  // Marching legs (swing with the walk phase; still when fighting).
+  var sw = Math.sin(walkPh) * 1.4;
+  ctx.fillStyle = D;
+  ctx.fillRect(-2.5 + sw, 5, 2, 3);
+  ctx.fillRect(0.5 - sw, 5, 2, 3);
   if (letter === 'B') {
     ctx.fillStyle = color;
     ctx.beginPath(); ctx.moveTo(-4, -3); ctx.lineTo(-6, -7); ctx.lineTo(-2, -5); ctx.closePath(); ctx.fill();
@@ -5166,6 +5475,12 @@ function ovDrawFigure(x, y, letter, color, dir) {
     ctx.beginPath(); ctx.arc(1.5, -2, 0.8, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = color;
     ctx.fillRect(-3, 2, 6, 4);
+    // War club in hand.
+    ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(4, -1); ctx.lineTo(8, -6); ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.fillStyle = '#8b5a2b';
+    ctx.beginPath(); ctx.arc(8, -6, 1.8, 0, Math.PI * 2); ctx.fill();
   } else if (letter === 'G') {
     ctx.fillStyle = color;
     ctx.beginPath(); ctx.arc(0, 4, 2.5, 0, Math.PI * 2); ctx.fill();
@@ -5179,6 +5494,9 @@ function ovDrawFigure(x, y, letter, color, dir) {
     ctx.beginPath(); ctx.arc(1, -5.5, 0.7, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(-1, 0); ctx.moveTo(0, -2); ctx.lineTo(1, 0); ctx.stroke();
+    // Venom orb in hand (she is ranged).
+    ctx.fillStyle = '#a3e635';
+    ctx.beginPath(); ctx.arc(5, -1, 1.5, 0, Math.PI * 2); ctx.fill();
   } else if (letter === 'D') {
     ctx.fillStyle = color;
     ctx.beginPath(); ctx.moveTo(-3, -4); ctx.lineTo(-7, -8); ctx.lineTo(-1, -6); ctx.closePath(); ctx.fill();
@@ -5189,6 +5507,9 @@ function ovDrawFigure(x, y, letter, color, dir) {
     ctx.beginPath(); ctx.arc(1.5, -1, 1, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = color;
     ctx.fillRect(-3, 3, 6, 3);
+    // Bat wings.
+    ctx.beginPath(); ctx.moveTo(-3, -2); ctx.lineTo(-8, -6); ctx.lineTo(-4, -1); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(3, -2); ctx.lineTo(8, -6); ctx.lineTo(4, -1); ctx.closePath(); ctx.fill();
   } else if (letter === 'M') {
     ctx.fillStyle = color;
     ctx.beginPath(); ctx.moveTo(-3, 6); ctx.lineTo(3, 6); ctx.lineTo(2, -2); ctx.lineTo(-2, -2); ctx.closePath(); ctx.fill();
@@ -5238,8 +5559,11 @@ function ovDrawFigure(x, y, letter, color, dir) {
     ctx.fillStyle = '#fde047';
     ctx.beginPath(); ctx.arc(-1.5, -1, 1, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc(1.5, -1, 1, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = color; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(-3, 3); ctx.lineTo(-7, 7); ctx.lineTo(-4, 7); ctx.stroke();
+    // Trident.
+    ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(5, 6); ctx.lineTo(5, -8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(3, -8); ctx.lineTo(3, -5); ctx.moveTo(5, -9); ctx.lineTo(5, -5); ctx.moveTo(7, -8); ctx.lineTo(7, -5); ctx.stroke();
+    ctx.lineWidth = 1;
     ctx.fillStyle = color;
     ctx.fillRect(-3, 3, 6, 3);
   } else if (letter === 'K') {
@@ -5255,40 +5579,19 @@ function ovDrawFigure(x, y, letter, color, dir) {
     ctx.fillRect(3, -1, 4, 6);
     ctx.strokeStyle = D; ctx.lineWidth = 1;
     ctx.strokeRect(3.5, -0.5, 3, 5);
-  } else if (letter === 'A' || letter === 'R') {
-    // Archer / Ranger: hooded figure with a bow and quiver.
+  } else {
+    // Fallback for any unknown / removed letter: a plain figure.
     ctx.fillStyle = color;
-    ctx.beginPath(); ctx.arc(0, -3, 3, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(-3, -4); ctx.lineTo(0, -9); ctx.lineTo(3, -4); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = color;
-    ctx.fillRect(-2.5, 0, 5, 6);
-    ctx.strokeStyle = D; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(5, -1, 5, -Math.PI / 2, Math.PI / 2); ctx.stroke();
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(5, -6); ctx.lineTo(5, 4); ctx.stroke();
-    ctx.strokeStyle = '#fde047';
-    ctx.beginPath(); ctx.moveTo(5, -1); ctx.lineTo(8, -1); ctx.stroke();
-    ctx.fillStyle = '#8b5a2b';
-    ctx.fillRect(-6, -6, 2, 5);
-  } else if (letter === 'U' || letter === 'P') {
-    // Guardian / Paladin: big tower shield + war hammer, heavy helm.
-    ctx.fillStyle = color;
-    ctx.fillRect(-3.5, -7, 7, 6);
-    ctx.fillStyle = D;
-    ctx.fillRect(-3.5, -4, 7, 1);
-    ctx.fillStyle = '#e5e7eb';
-    ctx.beginPath(); ctx.moveTo(4, -5); ctx.lineTo(8, -3); ctx.lineTo(8, 4); ctx.lineTo(4, 6); ctx.lineTo(2, 0); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = D; ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.fillStyle = color;
-    ctx.fillRect(-3.5, -1, 7, 7);
-    ctx.strokeStyle = D; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(-5, -8); ctx.lineTo(-5, 5); ctx.stroke();
-    ctx.lineWidth = 1;
-    ctx.fillStyle = '#9ca3af';
-    ctx.fillRect(-8, -9, 6, 3);
+    ctx.beginPath(); ctx.arc(0, -2, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(-3, 1, 6, 5);
   }
   ctx.restore();
+  // Cursed ring (drawn unscaled, under the figure's feet).
+  if (anim.cursed) {
+    ctx.strokeStyle = '#c084fc'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.ellipse(x, y + 8, 8, 2.5, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 1;
+  }
 }
 function drawOverlordSelect() {
   var selG = ctx.createLinearGradient(0, 0, 0, H);
@@ -5339,19 +5642,108 @@ function drawOverlordSelect() {
     ctx.textAlign = 'left';
   }
   ctx.fillStyle = '#f5e9c8'; ctx.textAlign = 'center';
-  ctx.fillText('W ' + ovWins + '  L ' + ovLosses + (ovBestTime > 0 ? '  BEST ' + ovFmtTime(ovBestTime) : '') + '   UNLOCKED ' + ovCampaignUnlocked + '/5', W / 2, 140);
+  ctx.fillText('W ' + ovWins + '  L ' + ovLosses + (ovBestTime > 0 ? '  BEST ' + ovFmtTime(ovBestTime) : '') + '   UNLOCKED ' + ovCampaignUnlocked + '/5', W / 2, 128);
+  ctx.fillText('SPELLS: LIGHTNING + FIREBALL - A CASTS ON YOUR LANE', W / 2, 140);
   ctx.fillText('A: FIGHT  MENU: EXIT', W / 2, 152);
   ctx.textAlign = 'left';
 }
+// A castle: stone tower with battlements, a waving banner, a gate,
+// and damage states (cracks + smoke as HP falls). cx is the castle
+// centre x, col its colour, label its vertical name ('DARK'/'SAINT'),
+// hpFrac 0..1. The name is drawn VERTICALLY inside the 18px-wide
+// tower: at bold 8px monospace "SAINT" is 5 x 4.8 = 24px long, which
+// fits the 98px-tall tower with room to spare, and its 8px height
+// sits 5px inside each tower edge. The old horizontal label was
+// 24px wide in an 18px tower — it spilled off both sides.
+function ovDrawCastle(cx, col, label, hpFrac) {
+  var x0 = cx - 9;
+  ctx.fillStyle = col;
+  ctx.fillRect(x0, 22, 18, 98);
+  // Stone courses.
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  for (var by = 34; by < 118; by += 12) ctx.fillRect(x0, by, 18, 1);
+  ctx.fillRect(x0 + 8, 22, 1, 98);
+  // Crenellations.
+  ctx.fillStyle = col;
+  ctx.fillRect(x0, 18, 5, 4); ctx.fillRect(x0 + 7, 18, 5, 4); ctx.fillRect(x0 + 14, 18, 4, 4);
+  // Banner on a pole, waving (tattered when the castle is nearly down).
+  var wave = Math.sin(ovTime * 3 + cx) * 1.5;
+  ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx, 18); ctx.lineTo(cx, 8); ctx.stroke();
+  ctx.fillStyle = hpFrac < 0.25 ? '#7c6a4a' : '#fde047';
+  var flagLen = hpFrac < 0.25 ? 5 : 9;
+  ctx.beginPath();
+  ctx.moveTo(cx, 8);
+  ctx.lineTo(cx + flagLen, 10 + wave);
+  ctx.lineTo(cx, 13);
+  ctx.closePath(); ctx.fill();
+  // Gate on the inner face (facing the field).
+  ctx.fillStyle = '#1a1a2e';
+  var gx = (cx < 120) ? x0 + 18 - 2 : x0 - 4;
+  ctx.fillRect(gx, 104, 6, 16);
+  ctx.fillStyle = col;
+  ctx.fillRect(gx, 104, 6, 2);
+  // Damage states: cracks, then smoke.
+  if (hpFrac < 0.5) {
+    ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x0 + 4, 40); ctx.lineTo(x0 + 7, 52); ctx.lineTo(x0 + 3, 62); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x0 + 13, 70); ctx.lineTo(x0 + 10, 82); ctx.lineTo(x0 + 14, 92); ctx.stroke();
+  }
+  if (hpFrac < 0.25) {
+    ctx.strokeStyle = 'rgba(0,0,0,0.65)';
+    ctx.beginPath(); ctx.moveTo(x0 + 9, 26); ctx.lineTo(x0 + 6, 38); ctx.lineTo(x0 + 11, 48); ctx.stroke();
+    // Rubble at the base.
+    ctx.fillStyle = '#6b7280';
+    ctx.fillRect(x0 - 2, 118, 5, 3); ctx.fillRect(x0 + 12, 119, 6, 3);
+    // Smoke puff, rising.
+    ctx.fillStyle = 'rgba(180,180,190,0.7)';
+    var sy = 16 - ((ovBlink % 30) / 30) * 8;
+    ctx.beginPath(); ctx.arc(cx + ((ovBlink % 2 === 0) ? 2 : -2), sy, 3, 0, Math.PI * 2); ctx.fill();
+  }
+  // Vertical name label, centred in the tower.
+  ctx.save();
+  ctx.translate(cx, 71);
+  ctx.rotate(Math.PI / 2); // text reads top to bottom
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#f0f8d8';
+  ctx.font = 'bold 8px monospace';
+  ctx.fillText(label, 0, 0);
+  ctx.restore();
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+}
 function drawOverlord() {
-  // Gradient sky at top, textured two-tone grass field below.
+  // Gradient sky at top, sun + drifting clouds, textured grass field.
   var skyG = ctx.createLinearGradient(0, 0, 0, 22);
   skyG.addColorStop(0, '#274b8f'); skyG.addColorStop(1, '#4a7fc1');
   ctx.fillStyle = skyG; ctx.fillRect(0, 0, W, 22);
+  ctx.fillStyle = '#fde047';
+  ctx.beginPath(); ctx.arc(196, 9, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  var cx1 = 30 + (ovTime * 2) % 220;
+  ctx.beginPath(); ctx.ellipse(cx1, 7, 8, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse((cx1 + 110) % 240, 13, 6, 2, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#3e8e41'; ctx.fillRect(0, 22, W, H - 22);
   ctx.fillStyle = '#37853a';
   for (var gx = 0; gx < W; gx += 48) ctx.fillRect(gx, 22, 24, H - 22);
   ctx.fillStyle = '#2c6e31'; ctx.fillRect(0, 148, W, 12);
+  // Dirt paths down each lane (where the troops march).
+  ctx.fillStyle = '#8a6d3b';
+  for (var pl = 0; pl < 3; pl++) ctx.fillRect(28, OV_LANE_Y[pl] - 3, 184, 6);
+  ctx.fillStyle = '#7a5f31';
+  for (var px = 30; px < 210; px += 14) {
+    ctx.fillRect(px, OV_LANE_Y[0] - 1, 3, 2);
+    ctx.fillRect(px + 7, OV_LANE_Y[1] - 1, 3, 2);
+    ctx.fillRect(px, OV_LANE_Y[2] - 1, 3, 2);
+  }
+  // Grass tufts (fixed spots, so they never flicker).
+  ctx.fillStyle = '#2f7a33';
+  var tufts = [[40, 30], [90, 56], [150, 34], [200, 58], [60, 96], [120, 100], [180, 94], [100, 134], [170, 132]];
+  for (var ti = 0; ti < tufts.length; ti++) {
+    ctx.fillRect(tufts[ti][0], tufts[ti][1], 1, 3);
+    ctx.fillRect(tufts[ti][0] + 2, tufts[ti][1], 1, 3);
+  }
   if (ovState === 'select') { drawOverlordSelect(); return; }
   // Top HUD: castle HP bars + mana bars (both sides visible — fair).
   ctx.fillStyle = '#f0f8d8'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
@@ -5363,7 +5755,7 @@ function drawOverlord() {
   ctx.textAlign = 'left';
   ctx.fillStyle = '#4c1d95'; ctx.fillRect(4, 12, 100 * Math.max(0, ovDarkHp) / OV_CASTLE_HP, 3);
   ctx.fillStyle = '#d97706'; ctx.fillRect(W - 104, 12, 100 * Math.max(0, ovSaintHp) / OV_CASTLE_HP, 3);
-  // Lanes.
+  // Lanes (the selected lane is highlighted).
   for (var i = 0; i < 3; i++) {
     var ly = OV_LANE_Y[i] - 18;
     ctx.fillStyle = (i === ovLane) ? '#2a6b3a' : ((i % 2 === 0) ? '#1a4d2e' : '#143d24');
@@ -5373,26 +5765,53 @@ function drawOverlord() {
   }
   ctx.fillStyle = '#1a1a2e';
   ctx.fillRect(26, OV_LANE_Y[2] + 18, 188, 1);
-  // Castles with crenellations.
-  ctx.fillStyle = '#4c1d95'; ctx.fillRect(6, 22, 18, 98);
-  ctx.fillRect(6, 18, 5, 4); ctx.fillRect(13, 18, 5, 4); ctx.fillRect(20, 18, 4, 4);
-  ctx.fillStyle = '#d97706'; ctx.fillRect(216, 22, 18, 98);
-  ctx.fillRect(216, 18, 5, 4); ctx.fillRect(223, 18, 5, 4); ctx.fillRect(230, 18, 4, 4);
-  ctx.fillStyle = '#f0f8d8'; ctx.textAlign = 'center'; ctx.font = 'bold 8px monospace';
-  ctx.fillText('DARK', 15, 72);
-  ctx.fillText('SAINT', 225, 72);
-  ctx.textAlign = 'left';
+  // Spell lane effects: plague cloud / curse shroud.
+  for (var el = 0; el < 3; el++) {
+    var ely = OV_LANE_Y[el] - 18;
+    if (ovLanePlagueT[el] > 0) {
+      ctx.fillStyle = 'rgba(74,222,128,0.25)';
+      ctx.fillRect(26, ely, 188, 36);
+      ctx.fillStyle = '#4ade80';
+      var bx = 40 + ((ovBlink * 3) % 160);
+      ctx.beginPath(); ctx.arc(bx, OV_LANE_Y[el] - 6, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(bx + 60, OV_LANE_Y[el] + 6, 2.5, 0, Math.PI * 2); ctx.fill();
+    }
+    if (ovLaneCurseT[el] > 0) {
+      ctx.fillStyle = 'rgba(192,132,252,0.22)';
+      ctx.fillRect(26, ely, 188, 36);
+      ctx.fillStyle = '#e9d5ff';
+      ctx.beginPath(); ctx.arc(32, OV_LANE_Y[el], 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(30, OV_LANE_Y[el] - 1, 1.5, 1.5);
+      ctx.fillRect(33, OV_LANE_Y[el] - 1, 1.5, 1.5);
+    }
+  }
+  // Castles.
+  ovDrawCastle(15, '#4c1d95', 'DARK', Math.max(0, ovDarkHp) / OV_CASTLE_HP);
+  ovDrawCastle(225, '#d97706', 'SAINT', Math.max(0, ovSaintHp) / OV_CASTLE_HP);
   // Projectiles.
   for (var pi = 0; pi < ovProjs.length; pi++) {
     var pr = ovProjs[pi];
     ctx.fillStyle = pr.color;
     ctx.fillRect(pr.x - 1, pr.y - 1, 3, 3);
   }
+  // Fireball in flight (orange streak + trail).
+  if (ovFireFx) {
+    ctx.fillStyle = '#fb923c';
+    ctx.beginPath(); ctx.arc(ovFireFx.x, ovFireFx.y, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath(); ctx.arc(ovFireFx.x, ovFireFx.y, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(251,146,60,0.5)';
+    ctx.fillRect(ovFireFx.x - 10, ovFireFx.y - 1, 10, 2);
+  }
   // Units with HP bars and hit flash.
   for (var ui = 0; ui < ovUnits.length; ui++) {
     var u = ovUnits[ui];
     var shx = (u.hitT > 0) ? ((u.hitT % 2 === 0) ? 1 : -1) : 0;
-    ovDrawFigure(u.x + shx, u.y, u.letter, u.color, u.side === 'p' ? 1 : -1);
+    var cursed = (u.side === 'p' && ovLaneCurseT[u.lane] > 0);
+    ovDrawFigure(u.x + shx, u.y, u.letter, u.color, u.side === 'p' ? 1 : -1,
+      { walkPh: u.walkPh || 0, atkT: u.atkT || 0, dieT: u.dieT || 0, cursed: cursed });
+    if (u.hp <= 0) continue; // falling figures get no HP bar
     if (u.hitT > 0) {
       ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5;
       ctx.beginPath();
@@ -5417,38 +5836,36 @@ function drawOverlord() {
     ctx.stroke();
     ctx.lineWidth = 1;
   }
-  // Lightning bolts.
+  // Floating damage numbers / labels.
+  ctx.font = '7px monospace'; ctx.textAlign = 'center';
+  for (var fli = 0; fli < ovFloats.length; fli++) {
+    var fl2 = ovFloats[fli];
+    ctx.fillStyle = fl2.col;
+    ctx.fillText(fl2.txt, fl2.x, fl2.y);
+  }
+  ctx.textAlign = 'left';
+  // Lightning bolt (player spell).
   if (ovBoltFx) {
     ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2;
     ctx.beginPath();
-    var bx = ovBoltFx.x, by = ovBoltFx.y;
-    ctx.moveTo(bx, 16);
-    ctx.lineTo(bx - 3, 16 + (by - 16) * 0.33);
-    ctx.lineTo(bx + 3, 16 + (by - 16) * 0.66);
-    ctx.lineTo(bx, by);
+    var bx2 = ovBoltFx.x, by2 = ovBoltFx.y;
+    ctx.moveTo(bx2, 16);
+    ctx.lineTo(bx2 - 3, 16 + (by2 - 16) * 0.33);
+    ctx.lineTo(bx2 + 3, 16 + (by2 - 16) * 0.66);
+    ctx.lineTo(bx2, by2);
     ctx.stroke();
     ctx.lineWidth = 1;
     ctx.fillStyle = 'rgba(253,224,71,0.5)';
-    ctx.beginPath(); ctx.arc(bx, by, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(bx2, by2, 8, 0, Math.PI * 2); ctx.fill();
   }
-  if (ovSaintBoltFx) {
-    ctx.strokeStyle = '#c084fc'; ctx.lineWidth = 2;
-    ctx.beginPath();
-    var sx2 = ovSaintBoltFx.x, sy2 = ovSaintBoltFx.y;
-    ctx.moveTo(sx2, 16);
-    ctx.lineTo(sx2 - 3, 16 + (sy2 - 16) * 0.33);
-    ctx.lineTo(sx2 + 3, 16 + (sy2 - 16) * 0.66);
-    ctx.lineTo(sx2, sy2);
-    ctx.stroke();
-    ctx.lineWidth = 1;
-    ctx.fillStyle = 'rgba(192,132,252,0.5)';
-    ctx.beginPath(); ctx.arc(sx2, sy2, 8, 0, Math.PI * 2); ctx.fill();
-  }
-  // Bottom bar: 6 unit slots.
-  for (var si = 0; si < OV_UNITS.length; si++) {
-    var def = OV_UNITS[si];
+  // Bottom bar: 4 troop slots + 2 spell slots.
+  for (var si = 0; si < OV_SLOTS.length; si++) {
+    var slot = OV_SLOTS[si];
     var sx = 4 + si * 39;
-    var afford = ovMana >= def.cost && ovDeployCd <= 0;
+    var isSpell = slot.kind === 'spell';
+    var cost = slot.def.cost;
+    var cdLeft = isSpell ? ovSpellCd[slot.spellIdx] : 0;
+    var afford = ovMana >= cost && cdLeft <= 0 && ovDeployCd <= 0;
     if (si === ovUnitIdx) {
       ctx.fillStyle = '#f0f8d8';
       ctx.fillRect(sx, 130, 37, 16);
@@ -5459,9 +5876,24 @@ function drawOverlord() {
       ctx.fillRect(sx, 130, 1, 16); ctx.fillRect(sx + 36, 130, 1, 16);
       ctx.fillStyle = afford ? '#f0f8d8' : '#b8b8d0';
     }
+    if (isSpell && si !== ovUnitIdx) {
+      ctx.strokeStyle = '#e8c33c'; ctx.lineWidth = 1;
+      ctx.strokeRect(sx + 0.5, 130.5, 36, 15);
+    }
     ctx.textAlign = 'center'; ctx.font = '6px monospace';
-    ctx.fillText(def.name, sx + 18, 138);
-    ctx.fillText(String(def.cost), sx + 18, 145);
+    ctx.fillText(slot.def.name, sx + 18, 138);
+    if (isSpell && cdLeft > 0) {
+      ctx.fillText(Math.ceil(cdLeft) + 's', sx + 18, 145);
+    } else {
+      ctx.fillText(String(cost), sx + 18, 145);
+    }
+    ctx.textAlign = 'left';
+  }
+  // Selected-slot hint (spells explain themselves).
+  var sel = OV_SLOTS[ovUnitIdx];
+  if (sel && sel.kind === 'spell') {
+    ctx.fillStyle = '#e8c33c'; ctx.font = '6px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(sel.def.name + ': ' + sel.def.desc, W / 2, 127);
     ctx.textAlign = 'left';
   }
   // Mana (both sides) + lane + hint.
@@ -5476,9 +5908,12 @@ function drawOverlord() {
     ctx.fillStyle = 'rgba(30,30,90,0.75)';
     ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
-    ctx.fillText('PAUSED', W / 2, 78);
+    ctx.fillText('PAUSED', W / 2, 62);
     ctx.font = '8px monospace'; ctx.fillStyle = '#f5e9c8';
-    ctx.fillText('START: RESUME', W / 2, 94);
+    ctx.fillText('UP/DOWN: LANE   LEFT/RIGHT: SLOT', W / 2, 78);
+    ctx.fillText('A: SUMMON / CAST SPELL   B: PREV SLOT', W / 2, 90);
+    ctx.fillText('SPELLS: LIGHTNING 60 / FIREBALL 90', W / 2, 102);
+    ctx.fillText('START: RESUME', W / 2, 116);
     ctx.textAlign = 'left';
   }
 }
@@ -5502,6 +5937,792 @@ function drawOverlordOver() {
   ctx.fillText(ovAdvanceNext ? 'A: NEXT SAINT  MENU: EXIT' : 'A: REMATCH  MENU: EXIT', W / 2, 116);
   ctx.textAlign = 'left';
 }
+
+  /* ==================== pinball (GBA) ==================== */
+/* ================================================================
+   PINBALL (GBA) — "CORAL REEF", an original pinball table on the
+   240x160 GBA screen. Real ball physics (gravity, bounce, friction,
+   flipper momentum), a plunger lane, 3 jellyfish pop bumpers, 3 pearl
+   rollover lanes, 3 starfish targets, a wave ramp, slingshots, and
+   PEARL STORM multiball — with particles, flashes, screen shake,
+   floating score pops, and animated flippers, bumpers and decor.
+   Controls: Left/Right D-pad = left/right flipper (hold to swing),
+   A = plunger (hold to charge, release to launch), B = NUDGE the
+   table (too many nudges too fast = TILT, ball lost), Start pauses,
+   Menu returns to the main menu.
+   Scoring: bumper 100, slingshot 50, rollover lane 150, starfish
+   target 200, wave ramp 500, JACKPOT 2000, REEF BONUS 1000 (all 3
+   pearl lanes), ramp combos x2/x3, PEARL STORM multiball x2 scoring.
+   3 balls per game. Best score: localStorage 'jmf-games-pinball-best'.
+   ================================================================ */
+  var PB_BEST_KEY = 'jmf-games-pinball-best';
+
+  /* ---------- Physics constants ---------- */
+  var PB_GRAV = 0.18;      // gravity, px/frame^2
+  var PB_MAXV = 8;         // ball speed cap, px/frame (a full launch needs 8 to arrive at the top slant fast enough to deflect into the field; 8/3 = 2.7px per substep, still under the ball radius, so no tunnelling)
+  var PB_REST = 0.55;      // wall restitution (bounciness)
+  var PB_FRICT = 0.995;    // rolling friction per frame
+  var PB_SUB = 3;          // physics substeps per frame (no tunnelling)
+  var PB_BALL_R = 3;       // ball radius
+
+  /* ---------- Table geometry ---------- */
+  // Walls: line segments the ball bounces off.
+  var PB_WALLS = [
+    { x1: 6, y1: 40, x2: 40, y2: 18 },    // top-left slant
+    { x1: 40, y1: 18, x2: 200, y2: 18 },  // top flat
+    { x1: 200, y1: 18, x2: 234, y2: 40 }, // top-right slant (curves launch left)
+    { x1: 6, y1: 40, x2: 6, y2: 138 },    // left wall
+    { x1: 220, y1: 60, x2: 220, y2: 128 },// plunger-lane divider (ends at y=60 so a ball deflected left off the top slant at y~40 crosses into the field; below 60 it still separates the lane from the field)
+    { x1: 234, y1: 40, x2: 234, y2: 150 },// right outer wall
+    { x1: 30, y1: 106, x2: 58, y2: 134 }, // left inlane guide
+    { x1: 210, y1: 106, x2: 182, y2: 134 },// right inlane guide
+    { x1: 34, y1: 140, x2: 92, y2: 144 }, // left floor (outlane gap x<34 drains; floor ends at the flipper pivot)
+    { x1: 206, y1: 140, x2: 148, y2: 144 },// right floor (outlane gap x>206 drains; floor ends at the flipper pivot)
+    { x1: 220, y1: 150, x2: 234, y2: 150 } // plunger-lane floor
+  ];
+  // Pop bumpers: jellyfish (x, y, r, colour, pulse).
+  var PB_BUMPERS = [
+    { x: 70, y: 48, r: 7, col: '#FF6B9D', pulse: 0 },
+    { x: 120, y: 40, r: 7, col: '#22D3EE', pulse: 0 },
+    { x: 170, y: 48, r: 7, col: '#FACC15', pulse: 0 }
+  ];
+  // Rollover lanes: pearl sensors (light all 3 = REEF BONUS + JACKPOT lit).
+  var PB_LANES = [
+    { x: 60, y: 26, r: 4, lit: false },
+    { x: 120, y: 22, r: 4, lit: false },
+    { x: 180, y: 26, r: 4, lit: false }
+  ];
+  // Standup targets: starfish bank (all 3 down = PEARL STORM multiball).
+  var PB_TARGETS = [
+    { x: 196, y: 62, w: 8, h: 10, down: false, cd: 0 },
+    { x: 196, y: 78, w: 8, h: 10, down: false, cd: 0 },
+    { x: 196, y: 94, w: 8, h: 10, down: false, cd: 0 }
+  ];
+  // Slingshots: face segment + kick (ball hitting the face is kicked away).
+  var PB_SLINGS = [
+    { x1: 62, y1: 116, x2: 86, y2: 130, pulse: 0 }, // left
+    { x1: 178, y1: 116, x2: 154, y2: 130, pulse: 0 } // right
+  ];
+  // Wave ramp: entrance sensor; a fast upward ball is captured and rides
+  // the cubic Bezier to the exit at the top.
+  var PB_RAMP_IN = { x: 16, y: 100, r: 6 };
+  var PB_RAMP_P0 = { x: 16, y: 100 }, PB_RAMP_P1 = { x: 10, y: 55 },
+      PB_RAMP_P2 = { x: 70, y: 26 }, PB_RAMP_P3 = { x: 150, y: 34 }; // wave ramp: entrance left, exit right of the middle bumper (clears every lane sensor)
+  // Flippers: pivot, length, rest/active angles (radians, screen coords).
+  var PB_FLIP_LEN = 22;
+  var PB_FLIP_L = { px: 92, py: 140, rest: 0.45, active: -0.5, ang: 0.45, prev: 0.45 };
+  var PB_FLIP_R = { px: 148, py: 140, rest: Math.PI - 0.45, active: Math.PI + 0.5, ang: Math.PI - 0.45, prev: Math.PI - 0.45 };
+
+  /* ---------- State ---------- */
+  var pbScore = 0, pbBest = 0, pbBallsLeft = 3, pbBallNum = 1;
+  var pbPhase = 'launch'; // 'launch' | 'play' | 'over'
+  var pbPaused = false, pbOver = false;
+  var pbBalls = [];       // {x,y,vx,vy,trail:[],stillT,ramp:-1}
+  var pbCharge = 0, pbCharging = false;
+  var pbMulti = false;    // PEARL STORM multiball active (x2 scoring)
+  var pbJackpot = false;  // ramp JACKPOT lit
+  var pbCombo = 0, pbLastRampT = -9999;
+  var pbLaneResetT = 0, pbTargetResetT = 0;
+  var pbNudgeCount = 0, pbNudgeDecay = 0, pbNudgeAlt = 1;
+  var pbTilt = 0;         // frames of TILT remaining (flippers dead)
+  var pbFrame = 0;
+  var pbParts = [];       // particles {x,y,vx,vy,life,max,col,r}
+  var pbRings = [];       // expanding rings {x,y,r,life}
+  var pbPops = [];        // floating score text {x,y,txt,t,col}
+  var pbFlash = 0, pbShakeMag = 0, pbShakeT = 0;
+  var pbBanner = '', pbBannerT = 0;
+  var pbRandSeed = 1234567;
+  try { pbBest = parseInt(localStorage.getItem(PB_BEST_KEY) || '0', 10) || 0; } catch (e) { pbBest = 0; }
+
+  /* ---------- Helpers ---------- */
+  function pbRand() { // deterministic LCG (no Math.random: tests stay stable)
+    pbRandSeed = (pbRandSeed * 1103515245 + 12345) & 0x7fffffff;
+    return pbRandSeed / 0x7fffffff;
+  }
+  function pbSaveBest() { try { localStorage.setItem(PB_BEST_KEY, String(pbBest)); } catch (e) {} }
+  function pbAddScore(n, x, y, label) {
+    if (pbMulti) n *= 2;
+    pbScore += n;
+    if (pbScore > pbBest) { pbBest = pbScore; pbSaveBest(); }
+    if (x !== undefined) pbPops.push({ x: x, y: y, txt: '+' + n + (label ? ' ' + label : ''), t: 0, col: '#FFD93D' });
+  }
+  function pbBurst(x, y, col, n, spd) {
+    for (var i = 0; i < n; i++) {
+      var a = (i / n) * Math.PI * 2 + pbRand() * 0.6;
+      var s = spd * (0.4 + pbRand() * 0.8);
+      pbParts.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 0.6, life: 22 + Math.floor(pbRand() * 10), max: 32, col: col, r: 1 + pbRand() * 1.4 });
+    }
+  }
+  function pbRing(x, y, col) { pbRings.push({ x: x, y: y, r: 3, life: 18, col: col }); }
+  function pbFlashIt(v) { if (v > pbFlash) pbFlash = v; }
+  function pbShakeIt(mag, t) { if (mag > pbShakeMag) pbShakeMag = mag; if (t > pbShakeT) pbShakeT = t; }
+  function pbShowBanner(txt, t) { pbBanner = txt; pbBannerT = t || 90; }
+  function pbClampV(b) {
+    var s = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+    if (s > PB_MAXV) { b.vx *= PB_MAXV / s; b.vy *= PB_MAXV / s; }
+  }
+
+  /* ---------- Start / actions ---------- */
+  function pbSpawnLaneBall() {
+    return { x: 227, y: 147, vx: 0, vy: 0, trail: [], stillT: 0, ramp: -1 };
+  }
+  function startPinball() {
+    pbScore = 0; pbBallsLeft = 3; pbBallNum = 1;
+    pbPhase = 'launch'; pbPaused = false; pbOver = false;
+    pbBalls = [pbSpawnLaneBall()];
+    pbCharge = 0; pbCharging = false;
+    pbMulti = false; pbJackpot = false; pbCombo = 0; pbLastRampT = -9999;
+    pbLaneResetT = 0; pbTargetResetT = 0;
+    pbNudgeCount = 0; pbNudgeDecay = 0; pbTilt = 0;
+    pbParts = []; pbRings = []; pbPops = [];
+    pbFlash = 0; pbShakeMag = 0; pbShakeT = 0;
+    pbBanner = ''; pbBannerT = 0;
+    for (var i = 0; i < PB_LANES.length; i++) PB_LANES[i].lit = false;
+    for (var j = 0; j < PB_TARGETS.length; j++) { PB_TARGETS[j].down = false; PB_TARGETS[j].cd = 0; }
+    for (var k = 0; k < PB_BUMPERS.length; k++) PB_BUMPERS[k].pulse = 0;
+    for (var m = 0; m < PB_SLINGS.length; m++) PB_SLINGS[m].pulse = 0;
+    PB_FLIP_L.ang = PB_FLIP_L.rest; PB_FLIP_L.prev = PB_FLIP_L.rest;
+    PB_FLIP_R.ang = PB_FLIP_R.rest; PB_FLIP_R.prev = PB_FLIP_R.rest;
+    screen = 'play';
+    JMFGAMES.musicPlay('pinball');
+    JMFGAMES.beep(660, 0.08);
+  }
+  // A: on the launch phase, start charging the plunger (release in pbUpdate).
+  function pbAction() {
+    if (screen !== 'play' || pbPaused || pbOver) return;
+    if (pbPhase === 'launch' && !pbCharging) { pbCharging = true; pbCharge = 0; JMFGAMES.beep(520, 0.05); }
+  }
+  // B: NUDGE the table. Too many nudges too fast = TILT (ball lost).
+  function pbNudge() {
+    if (screen !== 'play' || pbPaused || pbOver || pbTilt > 0) return;
+    if (pbBalls.length === 0) return;
+    pbNudgeAlt = -pbNudgeAlt;
+    for (var i = 0; i < pbBalls.length; i++) {
+      var b = pbBalls[i];
+      b.vx += pbNudgeAlt * 1.4;
+      b.vy -= 1.2;
+      pbClampV(b);
+    }
+    pbNudgeCount++;
+    pbNudgeDecay = 120; // count decays by 1 every 120 frames
+    pbShakeIt(2, 8);
+    JMFGAMES.beep(200, 0.06);
+    if (pbNudgeCount >= 3) {
+      pbTiltBall();
+    } else if (pbNudgeCount === 2) {
+      pbShowBanner('TILT WARNING!', 60);
+    }
+  }
+  function pbTiltBall() {
+    pbTilt = 90;
+    pbNudgeCount = 0;
+    pbBalls = []; // the ball is lost
+    pbFlashIt(12);
+    pbShakeIt(5, 20);
+    pbShowBanner('TILT!', 90);
+    JMFGAMES.beep(110, 0.3);
+    pbNextBall();
+  }
+  function pbNextBall() {
+    pbBallsLeft--;
+    pbMulti = false;
+    if (pbBallsLeft > 0) {
+      pbBallNum++;
+      pbBalls = [pbSpawnLaneBall()];
+      pbPhase = 'launch';
+      pbCharge = 0; pbCharging = false;
+      pbShowBanner('BALL ' + pbBallNum, 70);
+    } else {
+      pbOver = true;
+      pbPhase = 'over';
+      screen = 'over';
+      pbSaveBest();
+      JMFGAMES.beep(220, 0.25);
+    }
+  }
+
+  /* ---------- Collision helpers ---------- */
+  // Circle vs line segment: push the ball out and reflect velocity.
+  // Returns true if a collision happened. rest = restitution for this hit.
+  function pbCollideSeg(b, s, rest) {
+    var dx = s.x2 - s.x1, dy = s.y2 - s.y1;
+    var len2 = dx * dx + dy * dy;
+    var t = len2 > 0 ? ((b.x - s.x1) * dx + (b.y - s.y1) * dy) / len2 : 0;
+    if (t < 0) t = 0; else if (t > 1) t = 1;
+    var cx = s.x1 + dx * t, cy = s.y1 + dy * t;
+    var nx = b.x - cx, ny = b.y - cy;
+    var d = Math.sqrt(nx * nx + ny * ny);
+    if (d >= PB_BALL_R + 0.5 || d === 0) return false;
+    nx /= d; ny /= d;
+    b.x += nx * (PB_BALL_R + 0.5 - d);
+    b.y += ny * (PB_BALL_R + 0.5 - d);
+    var vn = b.vx * nx + b.vy * ny;
+    if (vn < 0) {
+      b.vx -= (1 + rest) * vn * nx;
+      b.vy -= (1 + rest) * vn * ny;
+    }
+    return true;
+  }
+  // Circle vs circle (pop bumper): returns true on hit.
+  function pbCollideCirc(b, c) {
+    var nx = b.x - c.x, ny = b.y - c.y;
+    var d = Math.sqrt(nx * nx + ny * ny);
+    if (d >= PB_BALL_R + c.r || d === 0) return false;
+    nx /= d; ny /= d;
+    b.x = c.x + nx * (PB_BALL_R + c.r);
+    b.y = c.y + ny * (PB_BALL_R + c.r);
+    return true;
+  }
+  function pbRampPoint(t) { // cubic Bezier point on the wave ramp, t 0..1
+    var u = 1 - t;
+    var x = u * u * u * PB_RAMP_P0.x + 3 * u * u * t * PB_RAMP_P1.x + 3 * u * t * t * PB_RAMP_P2.x + t * t * t * PB_RAMP_P3.x;
+    var y = u * u * u * PB_RAMP_P0.y + 3 * u * u * t * PB_RAMP_P1.y + 3 * u * t * t * PB_RAMP_P2.y + t * t * t * PB_RAMP_P3.y;
+    return { x: x, y: y };
+  }
+  function pbStartMultiball() {
+    pbMulti = true;
+    pbBalls.push({ x: 100, y: 30, vx: -1, vy: 1, trail: [], stillT: 0, ramp: -1 });
+    pbBalls.push({ x: 140, y: 30, vx: 1, vy: 1, trail: [], stillT: 0, ramp: -1 });
+    pbFlashIt(10);
+    pbRing(120, 30, '#FFD93D');
+    pbBurst(120, 30, '#FFD93D', 20, 2.2);
+    pbShowBanner('PEARL STORM! MULTIBALL x2!', 110);
+    JMFGAMES.beep(990, 0.15);
+  }
+  function pbCheckLanes() {
+    var all = true;
+    for (var i = 0; i < PB_LANES.length; i++) if (!PB_LANES[i].lit) all = false;
+    if (all) {
+      pbAddScore(1000, 120, 30, 'REEF BONUS');
+      pbJackpot = true;
+      pbLaneResetT = 90;
+      pbShowBanner('REEF BONUS +1000 — JACKPOT LIT!', 90);
+      pbFlashIt(8);
+      JMFGAMES.beep(880, 0.12);
+    }
+  }
+
+  /* ---------- Update ---------- */
+  function pbUpdate() {
+    if (screen !== 'play') return;
+    pbFrame++;
+    // Timers / effects decay even while paused (visual only).
+    if (pbFlash > 0) pbFlash--;
+    if (pbShakeT > 0) { pbShakeT--; if (pbShakeT === 0) pbShakeMag = 0; }
+    if (pbBannerT > 0) pbBannerT--;
+    if (pbTilt > 0) pbTilt--;
+    for (var pi = pbParts.length - 1; pi >= 0; pi--) {
+      var pt = pbParts[pi];
+      pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.05; pt.life--;
+      if (pt.life <= 0) pbParts.splice(pi, 1);
+    }
+    for (var ri = pbRings.length - 1; ri >= 0; ri--) {
+      pbRings[ri].r += 1.2; pbRings[ri].life--;
+      if (pbRings[ri].life <= 0) pbRings.splice(ri, 1);
+    }
+    for (var oi = pbPops.length - 1; oi >= 0; oi--) {
+      pbPops[oi].y -= 0.5; pbPops[oi].t++;
+      if (pbPops[oi].t > 40) pbPops.splice(oi, 1);
+    }
+    for (var bi = 0; bi < PB_BUMPERS.length; bi++) if (PB_BUMPERS[bi].pulse > 0) PB_BUMPERS[bi].pulse--;
+    for (var si = 0; si < PB_SLINGS.length; si++) if (PB_SLINGS[si].pulse > 0) PB_SLINGS[si].pulse--;
+    for (var ti = 0; ti < PB_TARGETS.length; ti++) if (PB_TARGETS[ti].cd > 0) PB_TARGETS[ti].cd--;
+    if (pbLaneResetT > 0) { pbLaneResetT--; if (pbLaneResetT === 0) for (var li = 0; li < PB_LANES.length; li++) PB_LANES[li].lit = false; }
+    if (pbTargetResetT > 0) { pbTargetResetT--; if (pbTargetResetT === 0) for (var tj = 0; tj < PB_TARGETS.length; tj++) PB_TARGETS[tj].down = false; }
+    if (pbNudgeDecay > 0) { pbNudgeDecay--; if (pbNudgeDecay === 0 && pbNudgeCount > 0) pbNudgeCount--; }
+    if (pbPaused || pbOver) return;
+
+    // Plunger: hold A to charge, release to launch.
+    if (pbPhase === 'launch') {
+      if (pbCharging) {
+        if (JMFGAMES.isDown('a')) {
+          if (pbCharge < 1) pbCharge += 1 / 40;
+        } else {
+          // Release: launch up the lane (min power still clears the top).
+          var b0 = pbBalls[0];
+          if (b0) {
+            b0.vy = -(7.5 + pbCharge * 2.5); // full charge -10 (clamped to -8): arrives at the top slant fast enough to deflect left into the field
+            b0.vx = 0;
+            pbPhase = 'play';
+            JMFGAMES.beep(880, 0.1);
+          }
+          pbCharging = false; pbCharge = 0;
+        }
+      }
+    }
+
+    // Flippers follow the held D-pad (dead while TILT is active).
+    var wantL = pbTilt <= 0 && JMFGAMES.isDown('left');
+    var wantR = pbTilt <= 0 && JMFGAMES.isDown('right');
+    pbFlipStep(PB_FLIP_L, wantL);
+    pbFlipStep(PB_FLIP_R, wantR);
+
+    // Physics: 3 substeps per frame so a fast ball can't tunnel a wall.
+    for (var s = 0; s < PB_SUB; s++) pbStepPhysics(1 / PB_SUB);
+
+    // Ball trail (fast balls only) + stuck rescue + drain.
+    for (var k = pbBalls.length - 1; k >= 0; k--) {
+      var b = pbBalls[k];
+      var spd = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+      if (spd > 3) {
+        b.trail.push({ x: b.x, y: b.y, life: 8 });
+        if (b.trail.length > 10) b.trail.shift();
+      }
+      for (var tr = b.trail.length - 1; tr >= 0; tr--) { b.trail[tr].life--; if (b.trail[tr].life <= 0) b.trail.splice(tr, 1); }
+      if (spd < 0.12 && pbPhase === 'play') {
+        b.stillT++;
+        if (b.stillT > 300) { // stuck ball: give it a nudge so play continues
+          b.vx = (pbFrame % 2 === 0 ? 1 : -1) * 1.5; b.vy = -2; b.stillT = 0;
+          pbPops.push({ x: b.x, y: b.y - 8, txt: 'STUCK? NUDGE!', t: 0, col: '#FFD93D' });
+        }
+      } else b.stillT = 0;
+      // Shooter-lane auto-kick: a ball that wanders into the plunger lane
+      // during play is kicked back up and over into the field.
+      // Shooter-lane auto-kick: a ball that fell back down the lane during play
+      // gets one strong kick straight up the lane (only while FALLING — never
+      // while the launch is still rising, or the kick would overwrite the
+      // launch velocity; straight up, so it cannot clip the divider's top
+      // corner the way a leftward kick would).
+      if (pbPhase === 'play' && b.x > 221 && b.y > 128 && b.vy > 0.5) { b.vy = -7; b.vx = 0; }
+      if (b.y - PB_BALL_R > 158) { // drained
+        pbBalls.splice(k, 1);
+        pbPops.push({ x: 120, y: 140, txt: 'BALL LOST', t: 0, col: '#FF6B6B' });
+        if (pbBalls.length === 0) pbNextBall();
+        else if (pbBalls.length === 1) pbMulti = false;
+      }
+    }
+  }
+  function pbFlipStep(f, wantUp) {
+    f.prev = f.ang;
+    var target = wantUp ? f.active : f.rest;
+    var isLeft = (f === PB_FLIP_L);
+    // Angles: left flipper swings rest 0.45 -> active -0.5 (up); right
+    // mirrors (rest PI-0.45 -> active PI+0.5). Move toward the target.
+    var step = wantUp ? 0.35 : 0.2;
+    if (Math.abs(f.ang - target) <= step) f.ang = target;
+    else f.ang += (target > f.ang ? step : -step);
+    void isLeft;
+  }
+  function pbStepPhysics(dt) {
+    for (var i = 0; i < pbBalls.length; i++) {
+      var b = pbBalls[i];
+      if (b.ramp >= 0) { // riding the wave ramp: follow the Bezier
+        b.ramp += dt / 40;
+        if (b.ramp >= 1) {
+          var ex = pbRampPoint(1);
+          b.x = ex.x; b.y = ex.y; b.vx = 1.8; b.vy = 1.0; b.ramp = -1;
+          var pts = 500, label = '';
+          if (pbJackpot) { pts = 2000; label = 'JACKPOT!'; pbJackpot = false; }
+          if (pbFrame - pbLastRampT < 300 && pbLastRampT > 0) { pbCombo = Math.min(3, pbCombo + 1); pts *= pbCombo; label = (label ? label + ' ' : '') + 'COMBO x' + pbCombo + '!'; }
+          else pbCombo = 1;
+          pbLastRampT = pbFrame;
+          pbAddScore(pts, b.x, b.y, label || 'RAMP');
+          pbBurst(b.x, b.y, '#22D3EE', 12, 2);
+          pbRing(b.x, b.y, '#22D3EE');
+          if (pts >= 2000) pbFlashIt(8);
+          JMFGAMES.beep(760, 0.08);
+        } else {
+          var p = pbRampPoint(b.ramp);
+          b.x = p.x; b.y = p.y; b.vx = 0; b.vy = 0;
+        }
+        continue;
+      }
+      b.vy += PB_GRAV * dt; // gravity: 0.18 per frame across 3 substeps
+      b.vx *= Math.pow(PB_FRICT, dt);
+      b.vy *= Math.pow(PB_FRICT, dt);
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      pbClampV(b);
+      // Walls.
+      for (var w = 0; w < PB_WALLS.length; w++) pbCollideSeg(b, PB_WALLS[w], PB_REST);
+      // Pop bumpers: kick + points + burst + ring + pulse.
+      for (var u = 0; u < PB_BUMPERS.length; u++) {
+        var bp = PB_BUMPERS[u];
+        if (pbCollideCirc(b, bp)) {
+          var nx = (b.x - bp.x), ny = (b.y - bp.y);
+          var d = Math.sqrt(nx * nx + ny * ny) || 1;
+          b.vx = (nx / d) * 6.5; b.vy = (ny / d) * 6.5;
+          pbClampV(b);
+          bp.pulse = 10;
+          pbAddScore(100, bp.x, bp.y - 12, '');
+          pbBurst(bp.x, bp.y, bp.col, 12, 1.8);
+          pbRing(bp.x, bp.y, bp.col);
+          JMFGAMES.beep(990, 0.05);
+        }
+      }
+      // Slingshots: kick away + points + kick animation.
+      for (var s2 = 0; s2 < PB_SLINGS.length; s2++) {
+        var sl = PB_SLINGS[s2];
+        if (pbCollideSeg(b, sl, 0.6)) {
+          var sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+          if (sp > 0.8) {
+            // Impulse away from the sling face (up-outward).
+            var dirx = (s2 === 0) ? 0.5 : -0.5;
+            b.vx += dirx * 2.5; b.vy -= 2.0;
+            pbClampV(b);
+            sl.pulse = 8;
+            pbAddScore(50, b.x, b.y - 8, '');
+            JMFGAMES.beep(700, 0.04);
+          }
+        }
+      }
+      // Rollover lanes: light + points; all 3 = REEF BONUS + JACKPOT lit.
+      for (var ln = 0; ln < PB_LANES.length; ln++) {
+        var la = PB_LANES[ln];
+        if (!la.lit) {
+          var ldx = b.x - la.x, ldy = b.y - la.y;
+          if (ldx * ldx + ldy * ldy < 49) {
+            la.lit = true;
+            pbAddScore(150, la.x, la.y - 8, 'LANE');
+            pbBurst(la.x, la.y, '#FFD93D', 8, 1.2);
+            JMFGAMES.beep(840, 0.06);
+            pbCheckLanes();
+          }
+        }
+      }
+      // Starfish targets: knock down + points; all 3 = PEARL STORM.
+      for (var tg = 0; tg < PB_TARGETS.length; tg++) {
+        var tt = PB_TARGETS[tg];
+        if (tt.down || tt.cd > 0) continue;
+        var nearX = Math.max(tt.x, Math.min(b.x, tt.x + tt.w));
+        var nearY = Math.max(tt.y, Math.min(b.y, tt.y + tt.h));
+        var tdx = b.x - nearX, tdy = b.y - nearY;
+        if (tdx * tdx + tdy * tdy < (PB_BALL_R + 1) * (PB_BALL_R + 1)) {
+          tt.down = true; tt.cd = 30;
+          pbAddScore(200, tt.x + 4, tt.y - 6, 'TARGET');
+          pbBurst(tt.x + 4, tt.y + 5, '#FF9F1C', 8, 1.4);
+          JMFGAMES.beep(920, 0.06);
+          var allDown = true;
+          for (var td = 0; td < PB_TARGETS.length; td++) if (!PB_TARGETS[td].down) allDown = false;
+          if (allDown) { pbTargetResetT = 60; pbStartMultiball(); }
+        }
+      }
+      // Wave ramp entrance: a fast upward ball is captured.
+      if (b.ramp < 0) {
+        var rdx = b.x - PB_RAMP_IN.x, rdy = b.y - PB_RAMP_IN.y;
+        if (rdx * rdx + rdy * rdy < 64 && b.vy < -1.5) {
+          b.ramp = 0;
+          b.vx = 0; b.vy = 0;
+          JMFGAMES.beep(660, 0.08);
+        }
+      }
+      // Flippers.
+      pbFlipCollide(b, PB_FLIP_L, true);
+      pbFlipCollide(b, PB_FLIP_R, false);
+    }
+  }
+  function pbFlipCollide(b, f, isLeft) {
+    var tipX = f.px + Math.cos(f.ang) * PB_FLIP_LEN;
+    var tipY = f.py + Math.sin(f.ang) * PB_FLIP_LEN;
+    var dx = tipX - f.px, dy = tipY - f.py;
+    var len2 = dx * dx + dy * dy;
+    var t = len2 > 0 ? ((b.x - f.px) * dx + (b.y - f.py) * dy) / len2 : 0;
+    if (t < 0) t = 0; else if (t > 1) t = 1;
+    var cx = f.px + dx * t, cy = f.py + dy * t;
+    var nx = b.x - cx, ny = b.y - cy;
+    var d = Math.sqrt(nx * nx + ny * ny);
+    if (d >= PB_BALL_R + 1.5 || d === 0) return;
+    nx /= d; ny /= d;
+    b.x += nx * (PB_BALL_R + 1.5 - d);
+    b.y += ny * (PB_BALL_R + 1.5 - d);
+    // Flipper surface velocity at the contact point (from its swing).
+    var omega = f.ang - f.prev; // rad per frame
+    var dist = t * PB_FLIP_LEN;
+    var svx = -Math.sin(f.ang) * omega * dist;
+    var svy = Math.cos(f.ang) * omega * dist;
+    var vn = (b.vx - svx) * nx + (b.vy - svy) * ny;
+    if (vn < 0) {
+      b.vx -= 1.4 * vn * nx;
+      b.vy -= 1.4 * vn * ny;
+    }
+    // Active flipper kick: upward velocity grows toward the tip.
+    var swingingUp = isLeft ? (f.ang < f.prev) : (f.ang > f.prev);
+    var wantUp = isLeft ? JMFGAMES.isDown('left') : JMFGAMES.isDown('right');
+    if (swingingUp || wantUp) {
+      var tip = t; // 0 at pivot, 1 at tip
+      var kickVy = -(3.2 + tip * 3.8);
+      if (b.vy > kickVy) b.vy = kickVy;
+      b.vx += (isLeft ? 1 : -1) * 0.8 * tip;
+      pbClampV(b);
+    }
+  }
+
+  /* ---------- Draw ---------- */
+  function pbDrawFlipper(f) {
+    var tipX = f.px + Math.cos(f.ang) * PB_FLIP_LEN;
+    var tipY = f.py + Math.sin(f.ang) * PB_FLIP_LEN;
+    ctx.strokeStyle = '#FFD93D';
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(f.px, f.py); ctx.lineTo(tipX, tipY); ctx.stroke();
+    ctx.strokeStyle = '#FFF3C4';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(f.px, f.py); ctx.lineTo(tipX, tipY); ctx.stroke();
+    ctx.fillStyle = '#1E1E5A';
+    ctx.beginPath(); ctx.arc(f.px, f.py, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.lineWidth = 1;
+  }
+  function drawPinball() {
+    // Screen shake (visual only).
+    var shX = 0, shY = 0;
+    if (pbShakeMag > 0 && pbShakeT > 0) {
+      shX = (pbRand() - 0.5) * pbShakeMag * 2;
+      shY = (pbRand() - 0.5) * pbShakeMag * 2;
+    }
+    ctx.save();
+    ctx.translate(shX, shY);
+    // Playfield: deep reef water with light rays + speckles.
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#0B3D4A'); g.addColorStop(1, '#062A33');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    for (var sp = 0; sp < 24; sp++) {
+      var sx = (sp * 47 + 13) % 230 + 5, sy = (sp * 89 + 29) % 150 + 5;
+      ctx.fillRect(sx, sy, 2, 2);
+    }
+    ctx.strokeStyle = 'rgba(120,220,255,0.12)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(20, 60); ctx.quadraticCurveTo(120, 70, 220, 55); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(10, 110); ctx.quadraticCurveTo(120, 120, 230, 105); ctx.stroke();
+    ctx.lineWidth = 1;
+    // Bubbles rising (animated decor).
+    ctx.strokeStyle = 'rgba(200,240,255,0.5)';
+    for (var bu = 0; bu < 5; bu++) {
+      var bx = 30 + ((bu * 53 + Math.floor(pbFrame * 0.3)) % 180);
+      var by = 150 - ((Math.floor(pbFrame * 0.5) + bu * 37) % 130);
+      ctx.beginPath(); ctx.arc(bx, by, 1.5, 0, Math.PI * 2); ctx.stroke();
+    }
+    // Octopus decor (animated: arms wave) — background art, not a collider.
+    var ox = 120, oy = 66;
+    ctx.strokeStyle = '#8B5CF6';
+    ctx.lineWidth = 2;
+    for (var arm = 0; arm < 4; arm++) {
+      var sway = Math.sin(pbFrame * 0.08 + arm * 1.4) * 3;
+      ctx.beginPath();
+      ctx.moveTo(ox - 9 + arm * 6, oy + 4);
+      ctx.quadraticCurveTo(ox - 9 + arm * 6 + sway, oy + 12, ox - 9 + arm * 6 + sway * 1.5, oy + 17);
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#7C3AED';
+    ctx.beginPath(); ctx.arc(ox, oy, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath(); ctx.arc(ox - 2, oy - 1, 1.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ox + 2, oy - 1, 1.2, 0, Math.PI * 2); ctx.fill();
+    ctx.lineWidth = 1;
+    // Wave ramp band (decorative: the captured ball rides the Bezier).
+    ctx.strokeStyle = '#14B8A6';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(PB_RAMP_P0.x, PB_RAMP_P0.y);
+    ctx.bezierCurveTo(PB_RAMP_P1.x, PB_RAMP_P1.y, PB_RAMP_P2.x, PB_RAMP_P2.y, PB_RAMP_P3.x, PB_RAMP_P3.y);
+    ctx.stroke();
+    ctx.strokeStyle = '#5EEAD4';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(PB_RAMP_P0.x, PB_RAMP_P0.y);
+    ctx.bezierCurveTo(PB_RAMP_P1.x, PB_RAMP_P1.y, PB_RAMP_P2.x, PB_RAMP_P2.y, PB_RAMP_P3.x, PB_RAMP_P3.y);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    // Walls.
+    ctx.strokeStyle = '#E8C33C';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (var wi = 0; wi < PB_WALLS.length; wi++) {
+      var wseg = PB_WALLS[wi];
+      ctx.moveTo(wseg.x1, wseg.y1); ctx.lineTo(wseg.x2, wseg.y2);
+    }
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    // Rollover lanes (pearl sensors): lit = glowing gold.
+    for (var li = 0; li < PB_LANES.length; li++) {
+      var la = PB_LANES[li];
+      ctx.fillStyle = la.lit ? '#FFD93D' : '#1E1E5A';
+      ctx.beginPath(); ctx.arc(la.x, la.y, la.r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = la.lit ? '#FFF3C4' : '#E8C33C';
+      ctx.beginPath(); ctx.arc(la.x, la.y, la.r + 1.5, 0, Math.PI * 2); ctx.stroke();
+    }
+    // Pop bumpers: jellyfish (squash/pulse when hit).
+    for (var ui = 0; ui < PB_BUMPERS.length; ui++) {
+      var bp = PB_BUMPERS[ui];
+      var br = bp.r * (1 + bp.pulse * 0.025);
+      ctx.fillStyle = bp.col;
+      ctx.beginPath(); ctx.arc(bp.x, bp.y, br, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.beginPath(); ctx.arc(bp.x, bp.y, br * 0.45, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.beginPath(); ctx.arc(bp.x, bp.y, br + 1.5, 0, Math.PI * 2); ctx.stroke();
+    }
+    // Starfish targets: down = tilted gold, up = cream with red border.
+    for (var ti = 0; ti < PB_TARGETS.length; ti++) {
+      var tt = PB_TARGETS[ti];
+      ctx.save();
+      ctx.translate(tt.x + tt.w / 2, tt.y + tt.h / 2);
+      if (tt.down) ctx.rotate(0.35);
+      ctx.fillStyle = tt.down ? '#FFD93D' : '#F5E9C8';
+      ctx.fillRect(-tt.w / 2, -tt.h / 2, tt.w, tt.h);
+      ctx.strokeStyle = '#DC2626';
+      ctx.strokeRect(-tt.w / 2, -tt.h / 2, tt.w, tt.h);
+      ctx.restore();
+    }
+    // Slingshots (kick outward when hit).
+    for (var sgi = 0; sgi < PB_SLINGS.length; sgi++) {
+      var sl = PB_SLINGS[sgi];
+      var kick = sl.pulse * 0.4;
+      ctx.fillStyle = '#F97316';
+      ctx.beginPath();
+      if (sgi === 0) { ctx.moveTo(sl.x1, sl.y1); ctx.lineTo(sl.x2, sl.y2); ctx.lineTo(sl.x1, sl.y2 + kick); }
+      else { ctx.moveTo(sl.x1, sl.y1); ctx.lineTo(sl.x2, sl.y2); ctx.lineTo(sl.x1, sl.y2 + kick); }
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#FFD93D';
+      ctx.beginPath(); ctx.moveTo(sl.x1, sl.y1); ctx.lineTo(sl.x2, sl.y2); ctx.stroke();
+    }
+    // Flippers (animated swing).
+    pbDrawFlipper(PB_FLIP_L);
+    pbDrawFlipper(PB_FLIP_R);
+    // Plunger: power meter in the lane + spring block under the ball.
+    if (pbPhase === 'launch') {
+      ctx.fillStyle = '#1E1E5A';
+      ctx.fillRect(231, 60, 3, 80);
+      ctx.fillStyle = pbCharge > 0.66 ? '#FF6B6B' : (pbCharge > 0.33 ? '#FFD93D' : '#4ADE80');
+      ctx.fillRect(231, 140 - pbCharge * 80, 3, pbCharge * 80);
+      ctx.fillStyle = '#F5E9C8';
+      ctx.fillRect(222, 150 + pbCharge * 3, 10, 3);
+    }
+    // Ball trails (fast balls only).
+    for (var bi = 0; bi < pbBalls.length; bi++) {
+      var bb = pbBalls[bi];
+      for (var tr = 0; tr < bb.trail.length; tr++) {
+        var tp = bb.trail[tr];
+        ctx.fillStyle = 'rgba(255,255,255,' + (tp.life / 16).toFixed(2) + ')';
+        ctx.beginPath(); ctx.arc(tp.x, tp.y, 2, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    // Balls (with a spinning highlight dot).
+    for (var bj = 0; bj < pbBalls.length; bj++) {
+      var bl = pbBalls[bj];
+      ctx.fillStyle = '#F8FAFC';
+      ctx.beginPath(); ctx.arc(bl.x, bl.y, PB_BALL_R, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#94A3B8';
+      ctx.beginPath(); ctx.arc(bl.x, bl.y, PB_BALL_R, 0, Math.PI * 2); ctx.stroke();
+      var spinA = pbFrame * 0.15 + bl.x * 0.1;
+      ctx.fillStyle = '#38BDF8';
+      ctx.beginPath(); ctx.arc(bl.x + Math.cos(spinA) * 1.4, bl.y + Math.sin(spinA) * 1.4, 0.8, 0, Math.PI * 2); ctx.fill();
+    }
+    // Particles (skip any that drifted off-screen: invisible anyway).
+    for (var pi = 0; pi < pbParts.length; pi++) {
+      var pt = pbParts[pi];
+      if (pt.x < -4 || pt.x > 244 || pt.y < -4 || pt.y > 164) continue;
+      ctx.fillStyle = pt.col;
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.fill();
+    }
+    // Expanding rings.
+    for (var ri = 0; ri < pbRings.length; ri++) {
+      var rg = pbRings[ri];
+      ctx.strokeStyle = rg.col;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(rg.x, rg.y, rg.r, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+    // Floating score pops.
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 8px monospace';
+    for (var oi = 0; oi < pbPops.length; oi++) {
+      var pp = pbPops[oi];
+      ctx.fillStyle = pp.col;
+      ctx.fillText(pp.txt, pp.x, pp.y);
+    }
+    ctx.textAlign = 'left';
+    // Launch hint.
+    if (pbPhase === 'launch' && !pbPaused && !pbOver) {
+      ctx.fillStyle = '#FFD93D';
+      ctx.font = 'bold 8px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('HOLD A: POWER — RELEASE TO LAUNCH', 120, 96);
+      ctx.textAlign = 'left';
+    }
+    // Nudge / tilt indicators.
+    if (pbNudgeCount > 0 && pbTilt <= 0) {
+      ctx.fillStyle = pbNudgeCount === 2 ? '#FF6B6B' : '#FFD93D';
+      ctx.font = '8px monospace';
+      ctx.fillText('NUDGE x' + pbNudgeCount, 4, 156);
+    }
+    if (pbTilt > 0) {
+      ctx.fillStyle = '#FF6B6B';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('TILT!', 120, 80);
+      ctx.textAlign = 'left';
+    }
+    // Banner (multiball, jackpot, ball number...).
+    if (pbBannerT > 0) {
+      ctx.fillStyle = '#FFD93D';
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(pbBanner, 120, 60);
+      ctx.textAlign = 'left';
+    }
+    // HUD.
+    ctx.fillStyle = '#1E1E5A';
+    ctx.fillRect(0, 0, W, 12);
+    ctx.fillStyle = '#FFD93D';
+    ctx.font = 'bold 9px monospace';
+    ctx.fillText('SCORE ' + pbScore, 4, 9);
+    ctx.fillStyle = '#F5E9C8';
+    ctx.font = '8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('BALL ' + pbBallNum + (pbMulti ? '  MULTIBALL x2' : ''), 120, 9);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#FFD93D';
+    ctx.font = 'bold 9px monospace';
+    ctx.fillText('BEST ' + pbBest, W - 4, 9);
+    ctx.textAlign = 'left';
+    // Pause overlay: scoring table + controls (B: DELETE SAVE hint at y=152
+    // is drawn by the core below this box).
+    if (pbPaused) {
+      ctx.fillStyle = 'rgba(18,18,58,0.55)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#FFD93D';
+      ctx.fillRect(24, 26, 192, 106);
+      ctx.fillStyle = '#1E1E5A';
+      ctx.fillRect(24, 26, 192, 2);
+      ctx.fillRect(24, 130, 192, 2);
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 10px monospace';
+      ctx.fillText('PAUSED — CORAL REEF', 120, 40);
+      ctx.font = '8px monospace';
+      ctx.fillText('BUMPER 100  SLING 50  LANE 150', 120, 54);
+      ctx.fillText('TARGET 200  RAMP 500  JACKPOT 2000', 120, 66);
+      ctx.fillText('REEF BONUS 1000  MULTIBALL x2', 120, 78);
+      ctx.fillText('LEFT/RIGHT: FLIPPERS  A: LAUNCH', 120, 92);
+      ctx.fillText('B: NUDGE (3 FAST = TILT)  START: RESUME', 120, 104);
+      ctx.fillText('A: RETRY  MENU: EXIT', 120, 118);
+      ctx.textAlign = 'left';
+    }
+    ctx.restore();
+    // Full-screen flash (after restore: not shaken).
+    if (pbFlash > 0) {
+      ctx.fillStyle = 'rgba(255,255,255,' + (pbFlash / 24).toFixed(2) + ')';
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+  function drawPinballOver() {
+    drawPinball();
+    ctx.fillStyle = 'rgba(18,18,58,0.55)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#FFD93D';
+    ctx.fillRect(40, 40, 160, 84);
+    ctx.fillStyle = '#1E1E5A';
+    ctx.fillRect(40, 40, 160, 2);
+    ctx.fillRect(40, 122, 160, 2);
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText('GAME OVER', W / 2, 58);
+    ctx.font = '9px monospace';
+    ctx.fillText('SCORE ' + pbScore, W / 2, 74);
+    ctx.fillText('BEST ' + pbBest, W / 2, 86);
+    ctx.fillText('BALLS PLAYED 3', W / 2, 98);
+    ctx.fillText('A: RETRY  MENU: EXIT', W / 2, 112);
+    ctx.textAlign = 'left';
+  }
 
   /* ==================== solitaire (GBA) ==================== */
 /* ================================================================
@@ -6247,6 +7468,22 @@ var buPaused = false, buOver = false, buUpSel = 0, buUpChoices = [];
 var buSummonCd = 0, buSummonDur = 20, buSummonCdMax = 20;
 var buUpCounts = {};
 var buFloats = [], buParts = [], buDeaths = [];
+/* Add a floating label, staggering it upward when it would land on top of
+   another live float — announcement floats at the summon moment used to
+   stack on the same spot and overlap into one unreadable line. */
+function buAddFloat(x, y, txt, t, col) {
+  var ny = y, shifts = 0;
+  while (shifts < 4) {
+    var hit = false;
+    for (var i = 0; i < buFloats.length; i++) {
+      var f = buFloats[i];
+      if (Math.abs(f.x - x) < 50 && Math.abs(f.y - ny) < 9) { hit = true; break; }
+    }
+    if (!hit) break;
+    ny -= 10; shifts++;
+  }
+  buFloats.push({ x: x, y: ny, txt: txt, t: t, col: col });
+}
 var buEmbers = [], buShakeT = 0, buFrame = 0;
 var buSynergy = null; /* {name, desc, t} active while summons fight */
 var buMeteor = null; /* {x,y,t} delayed NOVA meteor telegraph */
@@ -6496,7 +7733,7 @@ function buDamageEnemy(e, dmg, src, crit) {
   e.hp -= dmg;
   e.hitT = 6;
   buApplyKnockback(e, src, 2 + dmg * 0.35);
-  buFloats.push({ x: e.x, y: e.y - 14, txt: String(dmg) + (crit ? '!' : ''), t: 30, col: crit ? '#F59E0B' : '#FFFFFF' });
+  buAddFloat(e.x, e.y - 14, String(dmg) + (crit ? '!' : ''), 30, crit ? '#F59E0B' : '#FFFFFF');
   for (var i = 0; i < 3; i++) buParts.push({ x: e.x, y: e.y - 4, vx: (Math.random() - 0.5) * 40, vy: -10 - Math.random() * 20, t: 14, col: '#FDE68A' });
   if (src && src.lifesteal > 0 && src.hp > 0) src.hp = Math.min(src.maxHp, src.hp + dmg * src.lifesteal);
   if (e.hp <= 0) {
@@ -6513,7 +7750,7 @@ function buHurtFighter(f, dmg) {
   f.hitT = 8; f.invulnT = 0.5;
   /* Hit reaction: the fighter is shoved back from the blow. */
   f.vx += (f.x >= W / 2 ? 1 : -1) * 40; f.vy += 14;
-  buFloats.push({ x: f.x, y: f.y - 14, txt: '-' + taken, t: 26, col: '#EF4444' });
+  buAddFloat(f.x, f.y - 14, '-' + taken, 26, '#EF4444');
   if (!f.isSummon) JMFGAMES.beep(220, 0.1);
   if (f.hp <= 0) {
     f.hp = 0;
@@ -6544,10 +7781,10 @@ function buSummon() {
       buParts.push({ x: f.x, y: f.y - 4, vx: Math.cos(a) * 50, vy: Math.sin(a) * 50 - 10, t: 18, col: '#FFFFFF' });
     }
   }
-  buFloats.push({ x: buHero.x, y: buHero.y - 34, txt: 'SUMMON! 4 ALLIES ' + buSummonDur + 'S!', t: 60, col: '#FDE68A' });
+  buAddFloat(buHero.x, buHero.y - 34, 'SUMMON! 4 ALLIES ' + buSummonDur + 'S!', 60, '#FDE68A');
   if (syn) {
     buSynergy = { name: syn.name, desc: syn.desc, t: buSummonDur };
-    buFloats.push({ x: buHero.x, y: buHero.y - 22, txt: 'SYNERGY: ' + syn.name + '!', t: 60, col: '#FDE68A' });
+    buAddFloat(buHero.x, buHero.y - 22, 'SYNERGY: ' + syn.name + '!', 60, '#FDE68A');
   }
   JMFGAMES.beep(990, 0.12);
 }
@@ -6622,7 +7859,7 @@ function buFireUlt(f) {
     h.dashT = 0.22; h.invulnT = 0.3;
     JMFGAMES.beep(880, 0.1);
   }
-  buFloats.push({ x: h.x, y: h.y - 22, txt: h.ult + '!', t: 50, col: '#FDE68A' });
+  buAddFloat(h.x, h.y - 22, h.ult + '!', 50, '#FDE68A');
 }
 /* B button: manual ultimate override — fires immediately if ready. */
 function buUltimate() {
@@ -6656,7 +7893,7 @@ function buHealTick(f, dt) {
   f.hp = Math.min(f.maxHp, f.hp + amt);
   f.healAcc += amt;
   if (f.healAcc >= 2) {
-    buFloats.push({ x: f.x, y: f.y - 16, txt: '+' + Math.round(f.healAcc), t: 30, col: '#22C55E' });
+    buAddFloat(f.x, f.y - 16, '+' + Math.round(f.healAcc), 30, '#22C55E');
     f.healAcc = 0;
   }
 }
@@ -6706,7 +7943,7 @@ function buAutoSkills(f, dt) {
         var a = p / 10 * Math.PI * 2;
         buParts.push({ x: f.x, y: f.y + 2, vx: Math.cos(a) * 60, vy: Math.sin(a) * 30, t: 14, col: '#F59E0B' });
       }
-      buFloats.push({ x: f.x, y: f.y - 20, txt: 'SHOCKWAVE!', t: 50, col: '#F59E0B' });
+      buAddFloat(f.x, f.y - 20, 'SHOCKWAVE!', 50, '#F59E0B');
       JMFGAMES.beep(140, 0.15);
       f.sk1Cd = 6;
     }
@@ -6716,7 +7953,7 @@ function buAutoSkills(f, dt) {
         var e2 = buEnemies[j];
         if (e2.hp > 0) { e2.tauntT = 2; e2.tauntF = f; }
       }
-      buFloats.push({ x: f.x, y: f.y - 20, txt: 'ROAR!', t: 50, col: '#F59E0B' });
+      buAddFloat(f.x, f.y - 20, 'ROAR!', 50, '#F59E0B');
       JMFGAMES.beep(180, 0.15);
       f.sk2Cd = 10;
     }
@@ -6728,7 +7965,7 @@ function buAutoSkills(f, dt) {
         var e3 = buEnemies[k];
         if (e3.hp > 0 && buDist(f.x, f.y, e3.x, e3.y) <= 26) buDamageEnemy(e3, Math.round(f.dmg * 1.8), f, false);
       }
-      buFloats.push({ x: f.x, y: f.y - 20, txt: 'BLADE SPIN!', t: 50, col: '#93C5FD' });
+      buAddFloat(f.x, f.y - 20, 'BLADE SPIN!', 50, '#93C5FD');
       JMFGAMES.beep(700, 0.1);
       f.sk1Cd = 5;
     }
@@ -6741,7 +7978,7 @@ function buAutoSkills(f, dt) {
         f.dashX = dx / dl; f.dashY = dy / dl;
         f.face = f.dashX >= 0 ? 1 : -1;
         f.dashT = 0.18; f.invulnT = 0.25;
-        buFloats.push({ x: f.x, y: f.y - 20, txt: 'DASH STRIKE!', t: 50, col: '#93C5FD' });
+        buAddFloat(f.x, f.y - 20, 'DASH STRIKE!', 50, '#93C5FD');
         JMFGAMES.beep(880, 0.08);
         f.sk2Cd = 8;
       }
@@ -6761,7 +7998,7 @@ function buAutoSkills(f, dt) {
         f.y = Math.max(BU_ARENA.y0, Math.min(BU_ARENA.y1, wt.y));
         buDamageEnemy(wt, Math.round(f.dmg * 2), f, false);
         for (var q = 0; q < 8; q++) buParts.push({ x: f.x, y: f.y - 4, vx: (Math.random() - 0.5) * 60, vy: -Math.random() * 30, t: 12, col: '#22C55E' });
-        buFloats.push({ x: f.x, y: f.y - 20, txt: 'SHADOW STEP!', t: 50, col: '#22C55E' });
+        buAddFloat(f.x, f.y - 20, 'SHADOW STEP!', 50, '#22C55E');
         JMFGAMES.beep(980, 0.08);
         f.sk1Cd = 7;
       }
@@ -6772,7 +8009,7 @@ function buAutoSkills(f, dt) {
       if (st) {
         buDamageEnemy(st, Math.round(f.dmg * 1.2), f, false);
         buDamageEnemy(st, Math.round(f.dmg * 1.2), f, false);
-        buFloats.push({ x: f.x, y: f.y - 20, txt: 'SWIFT CUT!', t: 50, col: '#22C55E' });
+        buAddFloat(f.x, f.y - 20, 'SWIFT CUT!', 50, '#22C55E');
         JMFGAMES.beep(980, 0.06);
         f.sk2Cd = 6;
       }
@@ -6785,7 +8022,7 @@ function buAutoSkills(f, dt) {
         var fx = ft.x - f.x, fy = ft.y - f.y;
         var fl = Math.sqrt(fx * fx + fy * fy) || 1;
         buProjs.push({ x: f.x, y: f.y - 4, vx: fx / fl * 130, vy: fy / fl * 130, dmg: Math.round(f.dmg * 2), life: 2, fromHero: true, src: f, col: '#F97316', r: 3, aoe: 24, crit: false });
-        buFloats.push({ x: f.x, y: f.y - 20, txt: 'FIREBALL!', t: 50, col: '#F97316' });
+        buAddFloat(f.x, f.y - 20, 'FIREBALL!', 50, '#F97316');
         JMFGAMES.beep(520, 0.1);
         f.sk1Cd = 4;
       }
@@ -6797,7 +8034,7 @@ function buAutoSkills(f, dt) {
         var a2 = r / 10 * Math.PI * 2;
         buParts.push({ x: f.x, y: f.y - 4, vx: Math.cos(a2) * 40, vy: Math.sin(a2) * 40, t: 14, col: '#EC4899' });
       }
-      buFloats.push({ x: f.x, y: f.y - 20, txt: 'EMBER SHIELD!', t: 50, col: '#EC4899' });
+      buAddFloat(f.x, f.y - 20, 'EMBER SHIELD!', 50, '#EC4899');
       JMFGAMES.beep(660, 0.1);
       f.sk2Cd = 15;
     }
@@ -6808,7 +8045,7 @@ function buAutoSkills(f, dt) {
       if (bt) {
         buDamageEnemy(bt, Math.round(f.dmg * 1.5), f, false);
         bt.staggerT = Math.max(bt.staggerT, 12);
-        buFloats.push({ x: f.x, y: f.y - 20, txt: 'SHIELD BASH!', t: 50, col: '#5EEAD4' });
+        buAddFloat(f.x, f.y - 20, 'SHIELD BASH!', 50, '#5EEAD4');
         JMFGAMES.beep(300, 0.12);
         f.sk1Cd = 6;
       }
@@ -6823,7 +8060,7 @@ function buAutoSkills(f, dt) {
         for (var c = 0; c < buFighters.length; c++) {
           if (buFighters[c].hp > 0) buFighters[c].aegisT = Math.max(buFighters[c].aegisT, 1.5);
         }
-        buFloats.push({ x: f.x, y: f.y - 20, txt: 'BULWARK!', t: 50, col: '#5EEAD4' });
+        buAddFloat(f.x, f.y - 20, 'BULWARK!', 50, '#5EEAD4');
         JMFGAMES.beep(440, 0.12);
         f.sk2Cd = 14;
       }
@@ -6934,7 +8171,7 @@ function buBossThink(e, dt) {
     if (e.pat === 2 && !e.summoned && e.hp < e.maxHp * 0.5) {
       e.summoned = true;
       buSpawnEnemy('imp'); buSpawnEnemy('imp');
-      buFloats.push({ x: e.x, y: e.y - 20, txt: 'EMBER LORD CALLS IMPS!', t: 50, col: '#F97316' });
+      buAddFloat(e.x, e.y - 20, 'EMBER LORD CALLS IMPS!', 50, '#F97316');
       e.pat = 0; e.patT = 2.2;
       return false;
     }
@@ -18663,7 +19900,7 @@ function hvDrawExpansion() {
       var g = GAMES[menuIndex];
       if (g.playable) {
         if (g.name === '8 BALL POOL') { currentGame = 'pool'; startPool(); }
-        else if (g.name === 'BLOCKQUEST') { currentGame = 'block'; startBlockQuest(); }
+        else if (g.name === 'BLOCK QUEST') { currentGame = 'block'; startBlockQuest(); }
         else if (g.name === 'BLOCK DROP') { currentGame = 'drop'; startBlockDrop(); }
         else if (g.name === 'BLACKJACK ROYALE') { currentGame = 'bj'; startBlackjack(); }
         else if (g.name === "TEXAS HOLD'EM") { currentGame = 'holdem'; startHoldem(); }
@@ -18671,6 +19908,7 @@ function hvDrawExpansion() {
         else if (g.name === 'EMBERFALL BRAWL') { currentGame = 'beat'; startBeat(); }
         else if (g.name === 'HARVEST HAVEN') { currentGame = 'farm'; startFarm(); }
         else if (g.name === "OVERLORD'S BASTION") { currentGame = 'overlord'; startOverlord(); }
+        else if (g.name === 'PINBALL') { currentGame = 'pinball'; startPinball(); }
         else if (g.name === 'SOLITAIRE') { currentGame = 'solitaire'; startSolitaire(); }
         else if (g.name === 'SUBWAY RUNNER') { currentGame = 'run'; startRunner(); }
         else if (g.name === 'SLINGSHOT SIEGE') { currentGame = 'siege'; startSiege(); }
@@ -18681,8 +19919,8 @@ function hvDrawExpansion() {
       }
       else { comingName = g.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
-    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'drop') bdAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else if (currentGame === 'park') tpAction(); else if (currentGame === 'dummy') duAction(); else if (currentGame === 'shooter') shFire(); else if (currentGame === 'farm') hvAction(); else flap(); }
-    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'drop') startBlockDrop(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else if (currentGame === 'pool') poRematch(); else if (currentGame === 'shooter') startShooter(); else startGame(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'drop') bdAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'pinball') pbAction(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else if (currentGame === 'park') tpAction(); else if (currentGame === 'dummy') duAction(); else if (currentGame === 'shooter') shFire(); else if (currentGame === 'farm') hvAction(); else flap(); }
+    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'drop') startBlockDrop(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'pinball') startPinball(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else if (currentGame === 'pool') poRematch(); else if (currentGame === 'shooter') startShooter(); else startGame(); }
   });
   JMFGAMES.on('press', 'b', function () {
     // B is a real in-game action in every game; it NEVER returns to the
@@ -18697,6 +19935,7 @@ function hvDrawExpansion() {
     if (currentGame === 'bj' && bjPaused) { dsAsk('bj'); return; }
     if (currentGame === 'holdem' && hePaused) { dsAsk('holdem'); return; }
     if (currentGame === 'overlord' && ovPaused) { dsAsk('overlord'); return; }
+    if (currentGame === 'pinball' && pbPaused) { dsAsk('pinball'); return; }
     if (currentGame === 'solitaire' && solPaused) { dsAsk('solitaire'); return; }
     if (currentGame === 'beat' && buPaused) { dsAsk('beat'); return; }
     if (currentGame === 'park' && tpPaused) { dsAsk('park'); return; }
@@ -18715,6 +19954,7 @@ function hvDrawExpansion() {
     else if (currentGame === 'holdem') heBack();
     else if (currentGame === 'chess') chBack();
     else if (currentGame === 'overlord') ovCycleUnit(-1); // previous unit
+    else if (currentGame === 'pinball') pbNudge();
     else if (currentGame === 'solitaire') solBack();
     else if (currentGame === 'beat') buUltimate();
     else if (currentGame === 'pool') poBack();
@@ -18734,6 +19974,7 @@ function hvDrawExpansion() {
     else if (currentGame === 'holdem') { hePaused = !hePaused; JMFGAMES.beep(330, 0.06); }
     else if (currentGame === 'chess') { if (!chOver) { chPaused = !chPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'overlord') { if (!ovOver) { ovPaused = !ovPaused; JMFGAMES.beep(330, 0.06); } }
+    else if (currentGame === 'pinball') { if (!pbOver) { pbPaused = !pbPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'solitaire') { if (!solOver) { solPaused = !solPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'beat') { if (!buOver) { buPaused = !buPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'pool') { if (!poOver) { poPaused = !poPaused; JMFGAMES.beep(330, 0.06); } }
@@ -18765,6 +20006,7 @@ function hvDrawExpansion() {
     if (currentGame === 'bj') { bjUpdate(); return; }
     if (currentGame === 'chess') { chUpdate(); return; }
     if (currentGame === 'overlord') { ovUpdate(); return; }
+    if (currentGame === 'pinball') { pbUpdate(); return; }
     if (currentGame === 'beat') { buUpdate(); return; }
     if (currentGame === 'pool') { poUpdate(); return; }
     if (currentGame === 'run') { ruUpdate(); return; }
@@ -19333,8 +20575,8 @@ function hvDrawExpansion() {
     if (screen !== 'play') JMFGAMES.musicStop();
     if (screen === 'menu') drawMenu();
     else if (screen === 'coming') drawComing();
-    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'drop') drawBlockDrop(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else if (currentGame === 'park') drawPark(); else if (currentGame === 'dummy') drawDummy(); else if (currentGame === 'shooter') drawShooter(); else if (currentGame === 'farm') drawFarm(); else drawGame(); }
-    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'drop') drawBlockDropOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else if (currentGame === 'shooter') drawShooterOver(); else drawOver(); }
+    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'drop') drawBlockDrop(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'pinball') drawPinball(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else if (currentGame === 'park') drawPark(); else if (currentGame === 'dummy') drawDummy(); else if (currentGame === 'shooter') drawShooter(); else if (currentGame === 'farm') drawFarm(); else drawGame(); }
+    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'drop') drawBlockDropOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'pinball') drawPinballOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else if (currentGame === 'shooter') drawShooterOver(); else drawOver(); }
     // Delete-save confirmation overlay (on top of any screen), or the
     // pause-overlay hint for games whose delete option lives on pause.
     if (dsGame) drawDsConfirm();
@@ -19346,6 +20588,7 @@ function hvDrawExpansion() {
       else if (currentGame === 'bj' && bjPaused) dsHintY = 152;
       else if (currentGame === 'holdem' && hePaused) dsHintY = 152;
       else if (currentGame === 'overlord' && ovPaused) dsHintY = 152;
+      else if (currentGame === 'pinball' && pbPaused) dsHintY = 152;
       else if (currentGame === 'solitaire' && solPaused) dsHintY = 152; // pause-panel text sits above it
       else if (currentGame === 'park' && tpPaused) dsHintY = 152;
       else if (currentGame === 'dummy' && duPaused) dsHintY = 152;
