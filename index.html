@@ -356,7 +356,7 @@
    240x160 canvas, full console color. Controlled ONLY by the console
    buttons via the JMFGAMES input API (D-pad, A, B, Start, Menu).
    Screens: 'menu' (game select) | 'coming' (coming soon)
-            'play' (Sky Soar) | 'over' (game over panel)
+            'splash' (universal pre-game credit, 3s) | 'play' | 'over'
    Game sections are spliced in between the core head and the core
    tail (input routing, update, draw, loop).
    ================================================================ */
@@ -375,6 +375,7 @@
     { name: 'CARD QUEST', playable: true },
     { name: 'CHESS CLUB', playable: true },
     { name: 'EMBERFALL BRAWL', playable: true },
+    { name: "HAVEN'S STAND", playable: true },
     { name: "OVERLORD'S BASTION", playable: true },
     { name: 'PINBALL', playable: true },
     { name: 'RAGDOLL RUCKUS', playable: true },
@@ -388,16 +389,14 @@
     { name: 'VOLLEY SQUAD', playable: true }
   ];
 
-  /* ---------- Top-level menu: collections + big games ---------- */
-  /* The top level lists collections and standalone big games. RETRO
-     GAMES holds all eighteen quick games; a big game joins the top
-     level with one line, e.g. { name: "HAVEN'S STAND", playable: true }.
-     menuLevel 0 = top level, 1 = inside RETRO GAMES. menuReturnLevel
-     remembers which list a game was launched from, so Menu returns
-     there (not always to the top level). */
+  /* ---------- Top-level menu: collections only ---------- */
+  /* The top level lists collections. RETRO GAMES holds all nineteen
+     games (games under 5MB live in Retro Games); the top level never
+     lists a game directly. menuLevel 0 = top level, 1 = inside RETRO
+     GAMES. menuReturnLevel remembers which list a game was launched
+     from, so Menu returns there (not always to the top level). */
   var TOPMENU = [
-    { name: 'RETRO GAMES', collection: true },
-    { name: "HAVEN'S STAND", playable: true, sub: 'ZOMBIE SHELTER' }
+    { name: 'RETRO GAMES', collection: true }
   ];
   var menuLevel = 0, menuReturnLevel = 0;
   var topIndex = 0, topTop = 0;
@@ -409,7 +408,7 @@
   var SCENERY = [{"name":"Golden Hour Meadow","top":"#FFE9A8","bot":"#FF8FA3","h1":"#E8A85C","h2":"#6FA85A"},{"name":"Peach Sunrise Over Hills","top":"#FFD9A0","bot":"#FF6B9D","h1":"#D98A5F","h2":"#7A8E5A"},{"name":"Misty Lavender Morning","top":"#E8D9FF","bot":"#F2C6E0","h1":"#A793D6","h2":"#7D7AA8"},{"name":"Rose Gold Horizon","top":"#FFD6A5","bot":"#C77DFF","h1":"#D17AA0","h2":"#8E5F7A"},{"name":"Amber Valley Dawn","top":"#FFE3A3","bot":"#E07A3F","h1":"#C9823A","h2":"#6F8A45"},{"name":"Soft Pink Sakura Morning","top":"#FFDCE8","bot":"#FF8FAB","h1":"#E89AB5","h2":"#E79BB0"},{"name":"Emerald Hills Day","top":"#A8E6A1","bot":"#2E8B57","h1":"#4EA35A","h2":"#2B7A3D"},{"name":"Azure Sky & White Clouds","top":"#7EC8FF","bot":"#FFFFFF","h1":"#7FB069","h2":"#4A7C59"},{"name":"Turquoise Lagoon Day","top":"#4DE3FF","bot":"#FFF6B7","h1":"#28B8A8","h2":"#F2C14E"},{"name":"Sunny Sunflower Fields","top":"#FFE66D","bot":"#FF9F1C","h1":"#E9A331","h2":"#5B8C3E"},{"name":"Crystal Lake Noon","top":"#AEEBFF","bot":"#9ADFFF","h1":"#7AB8D6","h2":"#3E7CB1"},{"name":"Tropical Palm Paradise","top":"#7FFFD4","bot":"#FFE66D","h1":"#1F9D7A","h2":"#F2A93B"},{"name":"Mediterranean Coast Day","top":"#8ED0FF","bot":"#7FB069","h1":"#D9B98A","h2":"#2E86AB"},{"name":"Alpine Meadow Summer","top":"#B8F1FF","bot":"#FFD166","h1":"#6BAF8A","h2":"#3F7A5A"},{"name":"Bamboo Forest Light","top":"#D6F5B0","bot":"#56AB2F","h1":"#5B9E4D","h2":"#2E6B2E"},{"name":"Rainbow After Rain","top":"#A8C0FF","bot":"#FFE29A","h1":"#7AA0C4","h2":"#5A8A5A"},{"name":"Lavender Fields Provence","top":"#D8B4FE","bot":"#F0ABFC","h1":"#8B5CF6","h2":"#5B3A8E"},{"name":"Desert Cactus Noon","top":"#FFD89B","bot":"#E76F51","h1":"#C77D4A","h2":"#A66A2E"},{"name":"Canyon Red Rocks","top":"#FF9A76","bot":"#9B2226","h1":"#A83A2E","h2":"#7A211E"},{"name":"Arctic Ice Day","top":"#D6F0FF","bot":"#FFFFFF","h1":"#A8D8EA","h2":"#EAF6FF"},{"name":"Tangerine Sunset Beach","top":"#FFB75E","bot":"#FF3D68","h1":"#F2844A","h2":"#E86A5A"},{"name":"Crimson Sunset Canyon","top":"#FF512F","bot":"#7A0C4A","h1":"#7A1C3A","h2":"#4A0F2A"},{"name":"Violet Dusk Harbor","top":"#7B5EA7","bot":"#FF8FAB","h1":"#4A3B6B","h2":"#2E2A4A"},{"name":"Golden Gate Sunset","top":"#FF9966","bot":"#FFD166","h1":"#B84A2E","h2":"#6B2E2E"},{"name":"Pink Lake Sunset","top":"#FFC0CB","bot":"#FF6A88","h1":"#E07A8A","h2":"#B85A6A"},{"name":"Fiery Volcano Sunset","top":"#FF4E50","bot":"#2B0A0A","h1":"#3A0A0A","h2":"#1A0505"},{"name":"Sunset Over Vineyards","top":"#FFAF7B","bot":"#6A4C93","h1":"#7A4A6B","h2":"#4A2E4A"},{"name":"Amber Desert Dusk","top":"#E8A87C","bot":"#5C3D2E","h1":"#9A6A3A","h2":"#6B4A2E"},{"name":"Sunset City Skyline","top":"#FF9A56","bot":"#4A235A","h1":"#3A1A3A","h2":"#241228"},{"name":"Rose Sunset Over Ocean","top":"#FF8C94","bot":"#C44569","h1":"#A83A5A","h2":"#6B2340"},{"name":"Starry Milky Way","top":"#0B1026","bot":"#3B2F63","h1":"#1B2440","h2":"#0F162E"},{"name":"Moonlit Ocean Night","top":"#0A1A3A","bot":"#2E86AB","h1":"#123A6B","h2":"#0A2547"},{"name":"Midnight City Lights","top":"#0F0C29","bot":"#FF6B35","h1":"#1A123A","h2":"#0F0A26"},{"name":"Northern Lights Aurora","top":"#0B2E4F","bot":"#A8E063","h1":"#123A3A","h2":"#0A2A2A"},{"name":"Purple Galaxy Night","top":"#1A0033","bot":"#FF00CC","h1":"#2A0A4A","h2":"#1A0033"},{"name":"Firefly Forest Night","top":"#0A1F14","bot":"#FFE66D","h1":"#0F2E1E","h2":"#081F14"},{"name":"Snowy Night Village","top":"#1B2A4A","bot":"#F8F9FA","h1":"#DDE8F0","h2":"#8FA8B8"},{"name":"Neon Tokyo Night","top":"#0D0221","bot":"#FF2E88","h1":"#1A0A3A","h2":"#0D0221"},{"name":"Full Moon Over Desert","top":"#1A1A40","bot":"#F2D492","h1":"#3A2E5A","h2":"#241E3A"},{"name":"Twilight Lavender Night","top":"#2B1055","bot":"#E0B0FF","h1":"#4A2E6B","h2":"#2E1A4A"},{"name":"Cherry Blossom Spring","top":"#FFD6E8","bot":"#A8E6CF","h1":"#F2A8C0","h2":"#D67AA0"},{"name":"Spring Tulip Fields","top":"#FF9A9E","bot":"#FFD194","h1":"#E07A8A","h2":"#B85A6A"},{"name":"Fresh Rain Spring Forest","top":"#B8D8BA","bot":"#7FB069","h1":"#5A8A5A","h2":"#3E6B3E"},{"name":"Summer Waterfall Valley","top":"#7ED6DF","bot":"#F6E27A","h1":"#4A9A8A","h2":"#2E6B5A"},{"name":"Sunflower Summer Sunset","top":"#FFC94D","bot":"#FF5E62","h1":"#B87A1E","h2":"#7A5210"},{"name":"Autumn Maple Forest","top":"#FF9A3D","bot":"#8B2E1B","h1":"#8B2E1B","h2":"#5A1A0F"},{"name":"Golden Autumn Park","top":"#FFE8A3","bot":"#FB8500","h1":"#C98A1E","h2":"#8A5A10"},{"name":"Harvest Pumpkin Fields","top":"#FFB35C","bot":"#6B4226","h1":"#A86A2E","h2":"#6B4226"},{"name":"Winter Wonderland Pines","top":"#EAF6FF","bot":"#8EC9EE","h1":"#DDEFFF","h2":"#8EC9EE"},{"name":"Snowy Mountain Christmas","top":"#BDE0FE","bot":"#FFFFFF","h1":"#A8C8E8","h2":"#E8F4FF"},{"name":"Bali Rice Terraces","top":"#A8E063","bot":"#FFE66D","h1":"#4A8A2E","h2":"#2E6B1E"},{"name":"Santorini White & Blue","top":"#A8D8EA","bot":"#3A86FF","h1":"#FFFFFF","h2":"#3A86FF"},{"name":"Kyoto Temple Autumn","top":"#FFD6A5","bot":"#B56576","h1":"#A83A3A","h2":"#6B2E2E"},{"name":"Swiss Alps Winter","top":"#DFF3FF","bot":"#FFFFFF","h1":"#EAF6FF","h2":"#8EC9EE"},{"name":"Iceland Waterfall & Rainbow","top":"#A8E6CF","bot":"#FFD166","h1":"#6BAF8A","h2":"#3F7A5A"},{"name":"Egyptian Desert Oasis","top":"#FFE8A3","bot":"#EE964B","h1":"#D9A83A","h2":"#A87A2E"},{"name":"Amazon Rainforest Mist","top":"#A8D5BA","bot":"#2D6A4F","h1":"#2D6A4F","h2":"#1B4332"},{"name":"Great Wall Sunset","top":"#FF9E5E","bot":"#6A040F","h1":"#7A3A1E","h2":"#4A2110"},{"name":"Venice Canal Dusk","top":"#6A4C93","bot":"#FFAFCC","h1":"#3A2A5A","h2":"#241A3A"},{"name":"Paris Eiffel Dusk","top":"#FFAFCC","bot":"#FFC8DD","h1":"#7A5A8A","h2":"#4A3A5A"},{"name":"Floating Islands Sky","top":"#A8C0FF","bot":"#FFD6FF","h1":"#8A7AC0","h2":"#5A4A8A"},{"name":"Crystal Cave Glow","top":"#0F2027","bot":"#2C5364","h1":"#1A3A4A","h2":"#0F2027"},{"name":"Enchanted Mushroom Forest","top":"#0B3D2E","bot":"#FFD166","h1":"#123B2A","h2":"#0A2A1E"},{"name":"Dragon Valley Mist","top":"#5B5F97","bot":"#B8C0D8","h1":"#4A4E7A","h2":"#2E315A"},{"name":"Candy Cloud Kingdom","top":"#FFAFCC","bot":"#BDE0FE","h1":"#FF8FAB","h2":"#FB6F92"},{"name":"Underwater Coral World","top":"#0077B6","bot":"#90E0EF","h1":"#0077B6","h2":"#023E8A"},{"name":"Lava Volcano World","top":"#1A0A00","bot":"#FF4500","h1":"#2A0A00","h2":"#1A0500"},{"name":"Sky Castle Clouds","top":"#B8E0FF","bot":"#FFE29A","h1":"#8EC9EE","h2":"#5A8AB8"},{"name":"Magic Aurora Forest","top":"#0A2A43","bot":"#C084FC","h1":"#0A3A2A","h2":"#061F16"},{"name":"Dreamy Pastel Clouds","top":"#FFD6FF","bot":"#C8B6FF","h1":"#C8B6FF","h2":"#A78BFA"},{"name":"Stormy Ocean Waves","top":"#2C3E50","bot":"#7FB3D5","h1":"#2C3E50","h2":"#1A2A3A"},{"name":"Thunderstorm Over City","top":"#232526","bot":"#F2C94C","h1":"#232526","h2":"#111111"},{"name":"Rainy Neon Street","top":"#1A1A2E","bot":"#E94560","h1":"#1A1A2E","h2":"#0F0F1A"},{"name":"Foggy Pine Forest","top":"#8E9EAB","bot":"#7A8B6F","h1":"#7A8B6F","h2":"#4A5A4A"},{"name":"Snowstorm Mountain Pass","top":"#D3D3D3","bot":"#FFFFFF","h1":"#E8E8E8","h2":"#9AA8B8"},{"name":"Cloudy Highlands","top":"#A8B8C8","bot":"#8FA8B8","h1":"#7A8A9A","h2":"#5A6A7A"},{"name":"Monsoon Green Valley","top":"#2F5233","bot":"#A8D5BA","h1":"#2F5233","h2":"#1B3A22"},{"name":"Rainbow Storm Clearing","top":"#4A4E69","bot":"#FFE29A","h1":"#6B5A6B","h2":"#4A3E4A"},{"name":"Windy Desert Dunes","top":"#E6C87A","bot":"#F4E4BC","h1":"#C9A86A","h2":"#A88A4A"},{"name":"Icy Blizzard Peaks","top":"#E0F7FA","bot":"#FFFFFF","h1":"#D0F0FF","h2":"#8EC9EE"},{"name":"Coral Pink Beach","top":"#FFB7B2","bot":"#FF9AA2","h1":"#FF8FA3","h2":"#E86A8A"},{"name":"Emerald Rice Paddies","top":"#B5E48C","bot":"#D9ED92","h1":"#2A9D8F","h2":"#1B6B5A"},{"name":"Bluebell Forest Spring","top":"#B8E0D2","bot":"#A8C3E8","h1":"#7AA8D6","h2":"#5A7AA8"},{"name":"Sunflower Desert Sunset","top":"#FF9E00","bot":"#7B2CBF","h1":"#7A3A1E","h2":"#4A2110"},{"name":"Glacier Bay Icebergs","top":"#A8D8EA","bot":"#FFFFFF","h1":"#D0F4FF","h2":"#8EC9EE"},{"name":"Savannah Sunset Safari","top":"#FFB703","bot":"#023047","h1":"#B87A1E","h2":"#6B4A10"},{"name":"Countryside Cottage Dawn","top":"#FFE5B4","bot":"#A8E6CF","h1":"#C9A87A","h2":"#7A8A5A"},{"name":"Lighthouse Storm Coast","top":"#2C3E50","bot":"#AEB6BF","h1":"#2C3E50","h2":"#1A2A3A"},{"name":"Ancient Ruins Jungle","top":"#2E7D32","bot":"#A5D6A7","h1":"#2E7D32","h2":"#1B5E20"},{"name":"Hot Air Balloons Valley","top":"#FFD166","bot":"#8ECAE6","h1":"#7AB8A8","h2":"#4A8A7A"},{"name":"Bioluminescent Beach Night","top":"#001233","bot":"#00F5D4","h1":"#001845","h2":"#000A24"},{"name":"Lavender Sunset Fields","top":"#C084FC","bot":"#FBBF24","h1":"#8B5CF6","h2":"#5B3A8E"},{"name":"Mountain Lake Reflection","top":"#89CFF0","bot":"#FFAFCC","h1":"#5A8AB8","h2":"#3A6A98"},{"name":"Sakura Night Festival","top":"#1E1B4B","bot":"#F472B6","h1":"#2E1A4A","h2":"#1E1B4B"},{"name":"Golden Bamboo Sunset","top":"#FFD700","bot":"#2E7D32","h1":"#B8860B","h2":"#6B5A10"},{"name":"Aurora Over Frozen Lake","top":"#0B1D3A","bot":"#4ADE80","h1":"#DDEFFF","h2":"#8EC9EE"},{"name":"Desert Starry Oasis","top":"#0A0A2A","bot":"#FFD700","h1":"#2A2340","h2":"#1A1430"},{"name":"Tropical Sunset Waterfall","top":"#FF6B35","bot":"#2EC4B6","h1":"#2E8A6B","h2":"#1B5A45"},{"name":"Cloud Sea Sunrise","top":"#FFE8D6","bot":"#FFFFFF","h1":"#F2C6A0","h2":"#D9A87A"},{"name":"Eternal Horizon Grand Finale","top":"#FF6EC4","bot":"#4ADede","h1":"#7873F5","h2":"#4A2E8A"}];
 
   /* ---------- State ---------- */
-  var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
+  var screen = 'menu'; // 'menu' | 'coming' | 'splash' | 'play' | 'over'
   var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'pinball' | 'solitaire' | 'beat' | 'pool' | 'run' | 'siege' | 'park' | 'dummy' | 'shooter' | 'artillery' | 'cards' | 'haven' — which game is on the play/over screens
   var menuIndex = 0;
   /* Scrollable menu: 6 visible rows at a 15px pitch, 12px names so the
@@ -605,6 +604,16 @@
     menuLevel = menuReturnLevel; // back to the list the game came from
     menuClamp(); // keep the selection visible in the scroll window
     JMFGAMES.beep(440, 0.06);
+  }
+  // Universal animated splash (before ANY Retro game launch): the menu
+  // A handler sets splashPending + splashT = 0 and screen = 'splash';
+  // update() ticks splashT to 180 then splashLaunch() calls
+  // launchMenuGame(). A/B skip early, Menu cancels. Game-over restarts
+  // call startX() directly and never pass through here.
+  var splashPending = null, splashT = 0;
+  function splashLaunch() {
+    var name = splashPending; splashPending = null;
+    if (name) launchMenuGame(name);
   }
   // Launch a game by its menu name (shared by the top level and the
   // Retro Games list). Sky Soar is the core's own game, launched by the
@@ -20789,7 +20798,7 @@ function hvNewGame() { return hvResetFresh(); }
 function hvSave() {
   try {
     if (typeof localStorage === 'undefined') return false;
-    if (!hvS) return false; /* nothing loaded yet (splash / slot select) */
+    if (!hvS) return false; /* nothing loaded yet (slot select) */
     var c = JSON.parse(JSON.stringify(hvS));
     /* transient state is never saved: a load always starts a fresh day */
     c.attackers = []; c.bullets = []; c.parts = []; c.floaters = []; c.shake = 0;
@@ -20815,6 +20824,19 @@ function hvLoad() {
     if (!d.flags) d.flags = { warned: false, dog: false };
     if (!(Array.isArray(d.exped))) d.exped = [];
     if (!(Array.isArray(d.log))) d.log = [];
+    /* Legacy day-announcement lines (pre-fix saves pushed them into the
+       log, where hvDrawLog renders them in the bottom strip over the
+       ground-floor rooms): strip them on load so they can never reach
+       the bottom strip again. The announcement now lives only in the
+       top toast (hvDrawDayToast). */
+    d.log = d.log.filter(function (l) {
+      return l !== 'THE HAVEN STANDS.' && !/^DAY \d+: BUILD, GATHER, SURVIVE\.$/.test(String(l));
+    });
+    /* Day-1 announcement toast on load: a loaded day-1 save shows the
+       top toast once (it is module-level, never saved); later days show
+       none. This also clears a stale toast left over from a previous
+       slot in the same session. */
+    hvDayToastT = (d.day === 1) ? 300 : 0;
     if (typeof d.over !== 'boolean') d.over = false;
     if (typeof d.overReason !== 'string') d.overReason = '';
     /* transient state always resets on load */
@@ -22862,8 +22884,7 @@ function hvDrawHelpPanel() {
 
 function drawHaven() {
   var mode = (typeof hvMode !== 'undefined' && hvMode) ? hvMode : 'house';
-  /* Intro splash + slot select run before any game state exists. */
-  if (mode === 'splash') { hvDrawSplash(); return; }
+  /* Slot select runs before any game state exists. */
   if (mode === 'slots' || mode === 'confirmDelete') { hvDrawSlotMenu(); return; }
   if (!hvS) return;
   var dx = 0, dy = 0;
@@ -22924,42 +22945,6 @@ function drawHaven() {
   }
 }
 
-/* Intro splash: JMF Games Pocket Console credit, 3 seconds, A skips.
-   Clean premium card on the game's dark green — brand only, no game title. */
-function hvDrawSplash() {
-  ctx.fillStyle = '#0F380F';
-  ctx.fillRect(0, 0, 240, 160);
-  var a = 1;
-  if (typeof hvSplashT === 'number' && hvSplashT < 30) a = hvSplashT / 30;
-  ctx.save();
-  ctx.globalAlpha = a;
-  /* small joystick motif (the console's cover-art mark) */
-  ctx.strokeStyle = '#8BAC0F'; ctx.fillStyle = '#8BAC0F';
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(120, 66); ctx.lineTo(120, 48); ctx.stroke();
-  ctx.beginPath(); ctx.arc(120, 44, 5, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(120, 66, 3, 0, Math.PI * 2); ctx.fill();
-  ctx.fillRect(96, 68, 48, 2);
-  /* main credit line, two lines, bold */
-  ctx.fillStyle = '#9BBC0F';
-  ctx.font = 'bold 12px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('A JMF GAMES POCKET', 120, 92);
-  ctx.fillText('CONSOLE PRODUCTION', 120, 108);
-  ctx.fillStyle = '#8BAC0F';
-  ctx.fillRect(70, 116, 100, 1);
-  /* sub-line */
-  ctx.fillStyle = '#9BBC0F';
-  ctx.font = '8px monospace';
-  ctx.fillText('Developed and owned by JMF Games', 120, 130);
-  ctx.textAlign = 'left';
-  ctx.restore();
-  ctx.fillStyle = '#8BAC0F';
-  ctx.font = '8px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('A: SKIP', 120, 152);
-  ctx.textAlign = 'left';
-}
 /* Slot-select screen: 3 slots, each DAY n - POP n/n or EMPTY.
    B on a filled slot opens the delete confirm (confirmDelete mode). */
 function hvDrawSlotMenu() {
@@ -24757,7 +24742,6 @@ var hvSurvDetail = -1;   /* survivor id whose detail line is open, else -1 */
 var hvExpedDest = null;  /* destination id chosen in 'exped' mode */
 var hvRoomCtx = null;    /* {floor, slot} of the room open in 'room' mode */
 var hvPauseFrom = 'house'; /* mode to restore when leaving the pause menu */
-var hvSplashT = 0;      /* frames the intro splash has been up (180 = 3s) */
 var hvDeleteSlotTarget = 0; /* 1..3 while the slot-delete confirm is open */
 
 /* hvSave lives in part 01 (core). Keep the core one when assembled; only
@@ -25430,7 +25414,7 @@ function hvMove(dx, dy) {
     if (s !== 0) { hvMenuIdx = (hvMenuIdx + s + 3) % 3; hvBeep(600, 0.03); }
     return;
   }
-  if (hvMode === 'splash' || hvMode === 'confirmDelete') return;
+  if (hvMode === 'confirmDelete') return;
   if (typeof hvS === 'undefined' || !hvS) return;
   if (hvPaused && hvMode !== 'pause' && hvMode !== 'surv' && hvMode !== 'exped' && hvMode !== 'expedPick') return;
   if (hvMode === 'house') {
@@ -25470,7 +25454,6 @@ function hvMove(dx, dy) {
   hvBeep(600, 0.03);
 }
 function hvAction() {
-  if (hvMode === 'splash') { hvShowSlots(); hvBeep(760, 0.05); return; }
   if (hvMode === 'slots') { hvOpenSlot(hvMenuIdx + 1); return; }
   if (hvMode === 'confirmDelete') {
     if (hvDeleteSlotTarget >= 1 && hvDeleteSlotTarget <= 3) {
@@ -25592,7 +25575,6 @@ function hvAction() {
   }
 }
 function hvBack() {
-  if (hvMode === 'splash') { hvShowSlots(); return; }
   if (hvMode === 'slots') {
     var info = (typeof hvSlotInfo === 'function') ? hvSlotInfo(hvMenuIdx + 1) : null;
     if (!info) { hvBeep(180, 0.12); return; } /* empty slot: nothing to delete */
@@ -25674,12 +25656,6 @@ function hvCheckGameOver() {
   return true;
 }
 function hvUpdate() {
-  /* Intro splash runs before any game state exists: 180 frames = 3 seconds. */
-  if (hvMode === 'splash') {
-    hvSplashT++;
-    if (hvSplashT >= 180) hvShowSlots();
-    return;
-  }
   if (typeof hvS === 'undefined' || !hvS) return;
   hvTickParticles(); /* particles keep moving even while paused */
   if (typeof screen !== 'undefined' && screen !== 'play') return;
@@ -25721,16 +25697,14 @@ function hvUpdate() {
 }
 
 /* ---------- Entry point ---------- */
-/* Launch always opens the intro splash (3s, A skips), then slot select.
-   The splash shows on EVERY launch — no "seen" flag. */
+/* Launch goes straight to slot select: the core already shows its own
+   universal intro screen before every Retro game launches. */
 function startHaven() {
   currentGame = 'haven';
   screen = 'play';
   hvS = null;
   hvActiveSlot = 1;
   hvDeleteSlotTarget = 0;
-  hvSplashT = 0;
-  hvMode = 'splash';
   hvCursor = { floor: 0, slot: 0 };
   hvMenuIdx = 0;
   hvMenuList = [];
@@ -25746,8 +25720,9 @@ function startHaven() {
   hvPauseFrom = 'house';
   if (typeof JMFGAMES !== 'undefined' && JMFGAMES &&
       typeof JMFGAMES.musicPlay === 'function') JMFGAMES.musicPlay('haven');
+  hvShowSlots(); /* straight to slot select */
 }
-/* Slot-select screen (3 saves). Called after the splash, and after a
+/* Slot-select screen (3 saves). Called on launch, and after a
    pause-menu delete-save. hvS is null until a slot is picked. */
 function hvShowSlots() {
   hvS = null;
@@ -25922,15 +25897,20 @@ hvUpdate = function () {
     if (screen === 'menu') {
       var mEntry = menuList()[menuCurIdx()];
       if (menuLevel === 0 && mEntry.collection) {
-        // Enter the RETRO GAMES collection (the top level's only entry
-        // until a big game joins it).
+        // Enter the RETRO GAMES collection (the top level's only entry;
+        // every game lives inside Retro Games).
         menuLevel = 1; menuClamp(); JMFGAMES.beep(600, 0.04);
       } else if (mEntry.playable) {
         menuReturnLevel = menuLevel; // Menu returns to THIS list
-        launchMenuGame(mEntry.name);
+        // Universal splash first: every menu launch passes through the
+        // 3s credit screen (A/B skip, Menu cancels); the game itself
+        // starts only when splashLaunch() runs.
+        splashPending = mEntry.name; splashT = 0; screen = 'splash';
+        JMFGAMES.beep(600, 0.04);
       }
       else { menuReturnLevel = menuLevel; comingName = mEntry.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
+    else if (screen === 'splash') { splashLaunch(); JMFGAMES.beep(880, 0.06); } // A skips the splash
     else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'drop') bdAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'pinball') pbAction(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else if (currentGame === 'park') tpAction(); else if (currentGame === 'dummy') duAction(); else if (currentGame === 'shooter') shFire(); else if (currentGame === 'artillery') arAction(); else if (currentGame === 'cards') cqAction(); else if (currentGame === 'haven') hvAction(); else flap(); }
     else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'drop') startBlockDrop(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'pinball') startPinball(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else if (currentGame === 'pool') poRematch(); else if (currentGame === 'shooter') startShooter(); else if (currentGame === 'artillery') startArtillery(); else if (currentGame === 'cards') startCardQuest(); else if (currentGame === 'haven') startHaven(); else startGame(); }
   });
@@ -25940,6 +25920,7 @@ hvUpdate = function () {
     if (dsGame) { dsGame = null; JMFGAMES.beep(440, 0.06); return; } // cancel delete-save
     // B on the Retro Games list steps back to the top level.
     if (screen === 'menu' && menuLevel === 1) { menuLevel = 0; menuClamp(); JMFGAMES.beep(440, 0.06); return; }
+    if (screen === 'splash') { splashLaunch(); JMFGAMES.beep(880, 0.06); return; } // B skips the splash too
     if (screen !== 'play') return;
     // B while paused (games whose delete option lives on the pause overlay)
     // asks to delete that game's save.
@@ -25998,7 +25979,7 @@ hvUpdate = function () {
     else if (currentGame === 'shooter') { if (!shOver) { shPaused = !shPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'artillery') { if (!arOver) { arPaused = !arPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'cards') cqTogglePause();
-    else if (currentGame === 'haven') { if (typeof hvS !== 'undefined' && hvS) hvTogglePause(); } // hvS is null on splash / slot select: Start does nothing there (hvTogglePause would open a pause menu over the splash)
+    else if (currentGame === 'haven') { if (typeof hvS !== 'undefined' && hvS) hvTogglePause(); } // hvS is null on slot select: Start does nothing there (hvTogglePause would open a pause menu over it)
     else if (!dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
   });
   JMFGAMES.on('press', 'menu', function () {
@@ -26007,7 +25988,8 @@ hvUpdate = function () {
     // list the game was launched from (Retro Games for the quick games),
     // not always to the top level.
     dsGame = null; // cancel any delete-save confirmation
-    if (screen === 'play' || screen === 'over' || screen === 'coming') { if (currentGame === 'park') tpSave(); if (currentGame === 'dummy') duSave(); if (currentGame === 'shooter') shSave(); if (currentGame === 'haven' && screen === 'play') hvSave(); toMenu(); }
+    if (screen === 'splash') splashPending = null; // cancel the pending launch: no game started yet
+    if (screen === 'play' || screen === 'over' || screen === 'coming' || screen === 'splash') { if (currentGame === 'park') tpSave(); if (currentGame === 'dummy') duSave(); if (currentGame === 'shooter') shSave(); if (currentGame === 'haven' && screen === 'play') hvSave(); toMenu(); }
   });
 
   /* ---------- Update (one fixed 1/60s step) ---------- */
@@ -26017,6 +25999,7 @@ hvUpdate = function () {
     if (screen === 'menu') { topFrame++; menuHoldTick(); listHoldDir = ''; return; }
     menuHoldDir = ''; // not on the menu: no hold-repeat
     listHoldTick(); // in-game list screens: hold-to-fast-scroll (no-op elsewhere)
+    if (screen === 'splash') { splashT++; if (splashT >= 180) splashLaunch(); return; } // 3s credit, then the game starts
     if (screen !== 'play') return;
     if (currentGame === 'block') { bqUpdate(); return; }
     if (currentGame === 'drop') { bdUpdate(); return; }
@@ -26472,6 +26455,66 @@ hvUpdate = function () {
       ctx.fillStyle = '#4DA3FF'; ctx.fillRect(cx + 28, cy + 24, 4, 4);
     }
   }
+  // ---------- Universal animated splash: JMF Games Pocket Console credit,
+  // shown for 3 seconds (180 frames) before ANY Retro game launches. The
+  // design is the console credit card (dark green card, joystick motif,
+  // joystick motif, credit lines, rule, sub-line, skip footer) and animates
+  // it in the main-menu animation language, driven by splashT: drifting
+  // glow circles, a pulsing glow behind the title, a shimmer band
+  // ping-ponging across the title, and the joystick ball/stick bobbing.
+  // Text stays fully readable at all times (low alphas only). ----------
+  function drawSplash() {
+    var st = splashT; // animation phase: +1 per update while on the splash
+    ctx.fillStyle = '#0F380F';
+    ctx.fillRect(0, 0, 240, 160);
+    // Two large soft glowing circles drifting slowly behind the card —
+    // green-tinted, different sizes/speeds/phases, very subtle.
+    ctx.fillStyle = 'rgba(139,172,15,0.08)';
+    ctx.beginPath(); ctx.arc(120 + 52 * Math.sin(st * 0.004), 72 + 26 * Math.sin(st * 0.007 + 1.3), 46, 0, 6.2832); ctx.fill();
+    ctx.fillStyle = 'rgba(155,187,15,0.06)';
+    ctx.beginPath(); ctx.arc(120 + 70 * Math.sin(st * 0.003 + 2.1), 84 + 30 * Math.cos(st * 0.005 + 0.6), 30, 0, 6.2832); ctx.fill();
+    // Soft glow behind the title: gently pulsing on a ~5s cycle.
+    var spPulse = 0.5 + 0.5 * Math.sin(st * 0.021);
+    ctx.fillStyle = 'rgba(139,172,15,' + (0.10 + 0.10 * spPulse).toFixed(2) + ')';
+    ctx.beginPath(); ctx.arc(120 + 6 * Math.sin(st * 0.003), 100 + 3 * Math.cos(st * 0.004), 64, 0, 6.2832); ctx.fill();
+    // Whole-card fade-in over the first 30 frames.
+    var a = Math.min(1, st / 30);
+    ctx.save();
+    ctx.globalAlpha = a;
+    // Small joystick motif (the console's cover-art mark). The ball and
+    // stick bob gently (±2px, ~2s cycle); the base stays put.
+    var joyBob = Math.round(2 * Math.sin(st * 0.05));
+    ctx.strokeStyle = '#8BAC0F'; ctx.fillStyle = '#8BAC0F';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(120, 66); ctx.lineTo(120, 48 + joyBob); ctx.stroke();
+    ctx.beginPath(); ctx.arc(120, 44 + joyBob, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(120, 66, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(96, 68, 48, 2);
+    // Main credit line, two lines, bold.
+    ctx.fillStyle = '#9BBC0F';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('A JMF GAMES POCKET', 120, 92);
+    ctx.fillText('CONSOLE PRODUCTION', 120, 108);
+    // Shimmer sweep across the title lines: a soft light band drifting
+    // back and forth every ~6 seconds (360 frames), subtle enough that
+    // the text stays fully readable at all times.
+    var shimCyc = st % 360;
+    var shimT = shimCyc < 180 ? shimCyc / 180 : (360 - shimCyc) / 180;
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(55 + shimT * 100, 84, 14, 30);
+    ctx.fillStyle = '#8BAC0F';
+    ctx.fillRect(70, 116, 100, 1);
+    // Sub-line.
+    ctx.fillStyle = '#9BBC0F';
+    ctx.font = '8px monospace';
+    ctx.fillText('Developed and owned by JMF Games', 120, 130);
+    // Footer: both skip keys (A and B skip the splash).
+    ctx.fillStyle = '#8BAC0F';
+    ctx.fillText('A/B: SKIP', 120, 152);
+    ctx.textAlign = 'left';
+    ctx.restore();
+  }
   function drawTopMenu() {
     var list = TOPMENU;
     var idx = topIndex;
@@ -26761,6 +26804,7 @@ hvUpdate = function () {
     // Music plays only during gameplay; stop it on menu / coming / game-over.
     if (screen !== 'play') JMFGAMES.musicStop();
     if (screen === 'menu') drawMenu();
+    else if (screen === 'splash') drawSplash();
     else if (screen === 'coming') drawComing();
     else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'drop') drawBlockDrop(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'pinball') drawPinball(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else if (currentGame === 'park') drawPark(); else if (currentGame === 'dummy') drawDummy(); else if (currentGame === 'shooter') drawShooter(); else if (currentGame === 'artillery') drawArtillery(); else if (currentGame === 'cards') drawCardQuest(); else if (currentGame === 'haven') drawHaven(); else drawGame(); }
     else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'drop') drawBlockDropOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'pinball') drawPinballOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else if (currentGame === 'shooter') drawShooterOver(); else if (currentGame === 'artillery') drawArtilleryOver(); else if (currentGame === 'cards') drawCardQuestOver(); else if (currentGame === 'haven') drawHavenOver(); else drawOver(); }
