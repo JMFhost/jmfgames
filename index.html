@@ -1047,10 +1047,12 @@
      same value (a pair, or any two 10-value cards like 10+J or Q+K),
      first decision only, no re-split; a split A+10 is 21, pays 1:1
      (never 3:2); split Aces get exactly one card each and stand.
-     New in GBA: two AI table-mates (ROSA and MAX) who play visible
-     hands with real basic strategy — sharp on the High Roller table,
-     believably sloppy on the Low table. Win-streak bonuses, a
-     High Roller table that unlocks at $2,500, and achievements.
+     New in GBA: three AI table-mates (ROSA, MAX and RUBY) who play
+     visible hands with real basic strategy — sharp on the High Roller
+     table, believably sloppy on the Low table. RUBY is the aggressive
+     one: she doubles down more and hits the borderline stands the
+     others hold. Win-streak bonuses, a High Roller table that unlocks
+     at $2,500, and achievements.
      Balance: 'jmf-games-blackjack-balance',
      best: 'jmf-games-blackjack-best',
      achievements: 'jmf-games-blackjack-achievements' (new key;
@@ -1105,13 +1107,18 @@
   function bjMistakeRate() { return bjTable() === 'HIGH' ? 0.05 : 0.25; }
 
   /* AI table-mates. Cosmetic balances only — their wins and losses
-     never touch the player's money or the shoe's fairness. */
+     never touch the player's money or the shoe's fairness. Balances
+     reset to $500 each session (not persisted, same as before).
+     ROSA and MAX play basic strategy; RUBY is aggressive — she
+     doubles down more and hits the borderline stands. */
   var bjAiSeats = [
-    { name: 'ROSA', bal: 500, hand: [], bet: 20, result: '' },
-    { name: 'MAX', bal: 500, hand: [], bet: 50, result: '' }
+    { name: 'ROSA', bal: 500, hand: [], bet: 20, result: '', style: 'basic' },
+    { name: 'MAX', bal: 500, hand: [], bet: 50, result: '', style: 'basic' },
+    { name: 'RUBY', bal: 500, hand: [], bet: 30, result: '', style: 'aggro' }
   ];
   function bjAiBetFor(seat, i) {
-    var base = bjTable() === 'HIGH' ? (i === 0 ? 50 : 100) : (i === 0 ? 20 : 50);
+    var bases = bjTable() === 'HIGH' ? [50, 100, 75] : [20, 50, 30];
+    var base = bases[i] || 20;
     if (seat.bal < 10) seat.bal = 500; // broke mate rebuys, like a real table
     return Math.min(base, seat.bal);
   }
@@ -1199,8 +1206,11 @@
   /* AI mate decision: basic strategy, plus believable mistakes on the
      Low table — the classic ones: standing on 16 vs a 7, hitting 12
      vs a 4, standing on soft 18 vs a 9. `rand` is injected so tests
-     can drive it deterministically; live play passes Math.random(). */
-  function bjAiDecide(hand, upRank, canDouble, mistakeRate, rand) {
+     can drive it deterministically; live play passes Math.random().
+     `style` is the mate's personality: 'aggro' (RUBY) doubles down
+     more liberally and hits the borderline stands that basic
+     strategy would hold — a real decision change, not a label. */
+  function bjAiDecide(hand, upRank, canDouble, mistakeRate, rand, style) {
     var r = (typeof rand === 'number') ? rand : Math.random();
     var total = bjTotal(hand);
     var up = upRank === 1 ? 11 : upRank;
@@ -1209,6 +1219,17 @@
       if (!bjIsSoft(hand) && total === 12 && up >= 4 && up <= 6) return 'HIT'; // hits 12 vs 4-6
       if (bjIsSoft(hand) && total === 18 && up >= 9) return 'STAND'; // stands soft 18 vs 9+
     }
+    // RUBY (aggro): trusts the hit and the double. She doubles 11 vs
+    // any upcard (basic only doubles vs 2-10), doubles 10 vs a 10 or
+    // Ace and 9 vs a 7 (basic hits those), and hits hard 12 vs 4-6
+    // and hard 16 vs 2-6 (basic stands both).
+    if (style === 'aggro' && !bjIsSoft(hand)) {
+      if (canDouble && total === 11) return 'DBL';
+      if (canDouble && total === 10 && (up === 10 || up === 11)) return 'DBL';
+      if (canDouble && total === 9 && up === 7) return 'DBL';
+      if (total === 12 && up >= 4 && up <= 6) return 'HIT';
+      if (total === 16 && up >= 2 && up <= 6) return 'HIT';
+    }
     return bjBasicAction(hand, upRank, canDouble);
   }
   function bjAiPlaySeat(seat) {
@@ -1216,7 +1237,7 @@
     var guard = 0;
     while (guard++ < 12) {
       var up = bjDealer.length ? bjDealer[0].r : 10;
-      var a = bjAiDecide(seat.hand, up, seat.hand.length === 2 && seat.bal >= seat.bet, bjMistakeRate(), Math.random());
+      var a = bjAiDecide(seat.hand, up, seat.hand.length === 2 && seat.bal >= seat.bet, bjMistakeRate(), Math.random(), seat.style);
       if (a === 'STAND') break;
       if (a === 'DBL') {
         seat.bal -= seat.bet; seat.bet *= 2;
@@ -1560,8 +1581,11 @@
     }
   }
   function bjDrawAiHand(seat, x, y) {
+    // Tight 11px stride (cards 20 wide, 9px overlap): a 6-card hand
+    // is 75px, so it still fits inside one 80px table-mate column.
+    // Rank (top-left of each card) stays fully visible.
     for (var i = 0; i < seat.hand.length; i++) {
-      bjDrawCardAt(x + i * 15, y, seat.hand[i], false);
+      bjDrawCardAt(x + i * 11, y, seat.hand[i], false);
     }
   }
   function bjChipStack(cx, cy, n) {
@@ -1635,20 +1659,30 @@
     ctx.fillStyle = '#f5e9c8'; ctx.font = '8px monospace';
     ctx.fillText(dLabel, 6, 25);
     bjDrawHand(bjDealer, 8, 28, bjHoleDown);
-    // AI table-mates row.
-    ctx.fillStyle = '#f5e9c8';
+    // AI table-mates row: three seats in 80px columns (x=2, 82, 162).
+    // Label + result share the y=64 line (result in gold, right after
+    // the balance, so nothing runs past a column edge); cards at y=67.
+    var bjAiCols = [2, 82, 162];
     if (bjSplitHands && bjState !== 'result') {
-      ctx.fillText('ROSA ' + (bjAiSeats[0].hand.length ? bjTotal(bjAiSeats[0].hand) + ' ' + bjAiSeats[0].result : ''), 6, 64);
-      ctx.fillText('MAX ' + (bjAiSeats[1].hand.length ? bjTotal(bjAiSeats[1].hand) + ' ' + bjAiSeats[1].result : ''), 128, 64);
+      ctx.fillStyle = '#f5e9c8';
+      for (var mi = 0; mi < 3; mi++) {
+        var s0 = bjAiSeats[mi];
+        ctx.fillText(s0.name + ' ' + (s0.hand.length ? bjTotal(s0.hand) + ' ' + s0.result : ''), bjAiCols[mi], 64);
+      }
     } else {
-      ctx.fillText('ROSA $' + bjAiSeats[0].bal, 6, 64);
-      bjDrawAiHand(bjAiSeats[0], 8, 67);
-      if (bjAiSeats[0].result) { ctx.fillStyle = '#e8c33c'; ctx.fillText(bjAiSeats[0].result, 8 + bjAiSeats[0].hand.length * 15 + 4, 78); }
-      ctx.fillStyle = '#f5e9c8';
-      ctx.fillText('MAX $' + bjAiSeats[1].bal, 128, 64);
-      bjDrawAiHand(bjAiSeats[1], 130, 67);
-      if (bjAiSeats[1].result) { ctx.fillStyle = '#e8c33c'; ctx.fillText(bjAiSeats[1].result, 130 + bjAiSeats[1].hand.length * 15 + 4, 78); }
-      ctx.fillStyle = '#f5e9c8';
+      for (var mj = 0; mj < 3; mj++) {
+        var seat = bjAiSeats[mj];
+        var cx = bjAiCols[mj];
+        ctx.fillStyle = '#f5e9c8';
+        var aiLabel = seat.name + ' $' + seat.bal;
+        ctx.fillText(aiLabel, cx, 64);
+        if (seat.result) {
+          ctx.fillStyle = '#e8c33c';
+          ctx.fillText(seat.result, cx + ctx.measureText(aiLabel).width + 4, 64);
+        }
+        ctx.fillStyle = '#f5e9c8';
+        bjDrawAiHand(seat, cx + 2, 67);
+      }
     }
     if (bjSplitHands) {
       if (bjState === 'result') {
@@ -7616,25 +7650,25 @@ function drawPool() {
     }
   }
   ctx.fillStyle = '#1E1E5A';
-  ctx.fillRect(10, 142, 220, 6);
+  ctx.fillRect(10, 138, 220, 6);
   ctx.fillStyle = poPower > 70 ? '#FF2E2E' : (poPower > 40 ? '#FFD21F' : '#22C55E');
-  ctx.fillRect(11, 143, Math.round(218 * poPower / 100), 4);
+  ctx.fillRect(11, 139, Math.round(218 * poPower / 100), 4);
   /* spin meter (only meaningful while FINE is on) */
   ctx.fillStyle = '#1E1E5A';
-  ctx.fillRect(10, 150, 60, 4);
+  ctx.fillRect(10, 147, 60, 4);
   ctx.fillStyle = poSpin > 0 ? '#FF7A00' : (poSpin < 0 ? '#1E40FF' : '#555555');
   var sw = Math.round(30 * Math.abs(poSpin));
-  if (poSpin >= 0) ctx.fillRect(40, 150, sw, 4);
-  else ctx.fillRect(40 - sw, 150, sw, 4);
+  if (poSpin >= 0) ctx.fillRect(40, 147, sw, 4);
+  else ctx.fillRect(40 - sw, 147, sw, 4);
   ctx.fillStyle = '#f5e9c8'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
-  ctx.fillText('SPIN', 72, 154);
+  ctx.fillText('SPIN', 72, 151);
   ctx.textAlign = 'center';
   var hint = '';
   if (poPhase === 'aim' && poTurn === 'you') hint = poFine ? 'FINE: L/R AIM U/D SPIN ' + (poSpin >= 0 ? '+' : '') + poSpin.toFixed(1) + '  B OFF' : 'L/R AIM U/D PWR ' + Math.round(poPower) + '% A SHOOT B FINE';
   else if (poPhase === 'aiAim') hint = PO_OPP_NAMES[poOpp] + ' IS AIMING...';
   else if (poPhase === 'roll') hint = 'BALLS ROLLING...';
   else hint = 'A PLAY  MENU EXIT';
-  ctx.fillText(hint, W / 2 + 30, 154);
+  ctx.fillText(hint, W / 2 + 30, 158);
   ctx.textAlign = 'left';
   if (poMsgT > 0 && poMsg) {
     ctx.fillStyle = 'rgba(30,30,90,0.85)';
