@@ -20751,6 +20751,8 @@ var HV_LAST_NAMES = [
 
 /* ---------------- STATE ---------------- */
 var hvS = null; /* created by hvResetFresh() / hvLoad() */
+var hvDayToastT = 0; /* frames left on the day-1 announcement toast (300 = 5s);
+  module-level (not saved): set by hvResetFresh, ticked in hvUpdate. */
 
 function hvResetFresh() {
   hvS = {
@@ -20775,8 +20777,10 @@ function hvResetFresh() {
     s.x = spots[i][0]; s.y = spots[i][1]; s.tx = s.x; s.ty = s.y;
     hvS.survs.push(s);
   }
-  hvLog('THE HAVEN STANDS.');
-  hvLog('DAY 1: BUILD, GATHER, SURVIVE.');
+  /* Day-1 announcement is a timed top toast (hvDrawDayToast), NOT a log
+     line: the old log strip sits over the ground-floor rooms and the text
+     overlapped the rooms/survivors. */
+  hvDayToastT = 300;
   return true;
 }
 function hvNewGame() { return hvResetFresh(); }
@@ -20938,6 +20942,7 @@ function hvNewSurvivor() {
     mus: hvRnd(1, 5), qui: hvRnd(1, 5), bra: hvRnd(1, 5), cha: hvRnd(1, 5),
     hp: 0, maxHp: 0, morale: 60, hunger: 0, thirst: 0, sick: false, trait: trait.id,
     room: null, state: 'idle', x: 120, y: 138, tx: 120, ty: 138, walkT: 0,
+    strollT: 120 + Math.floor(Math.random() * 240), /* frames until next idle stroll */
     dead: false, away: false
   };
   s.maxHp = 60 + s.mus * 10 + (s.trait === 'TOUGH' ? 20 : 0);
@@ -21074,6 +21079,19 @@ function hvSurvTick(dawn) {
       if (Math.abs(dy) > step) s.y += (dy > 0 ? step : -step);
       s.walkT++;
     }
+  }
+  for (i = 0; i < hvS.survs.length; i++) { /* idle stroll: keep the house alive */
+    s = hvS.survs[i];
+    if (s.dead || s.away || (s.state !== 'idle' && s.state !== 'work')) continue;
+    if (typeof s.strollT !== 'number') s.strollT = 120 + Math.floor(Math.random() * 240);
+    if (--s.strollT > 0) continue;
+    s.strollT = 300 + Math.floor(Math.random() * 300);
+    var rg = null;
+    if (s.room && typeof hvRoomGeo === 'function') rg = hvRoomGeo(s.room.floor, s.room.slot);
+    if (rg) { s.tx = rg.x + 8 + Math.floor(Math.random() * (rg.w - 16)); s.ty = rg.y + 18; }
+    else { s.tx = 8 + Math.floor(Math.random() * 200); s.ty = 138; }
+    if (Math.abs(s.tx - s.x) < 8) continue; /* too close to bother walking */
+    s.state = 'walk';
   }
   if (!dawn) return;
   /* --- daily upkeep --- */
@@ -21226,7 +21244,10 @@ function hvDemolishRoom(room) {
     s = hvS.survs[i];
     if (s.room && s.room.floor === room.floor && s.room.slot === room.slot) {
       s.room = null;
-      if (s.state === 'work') s.state = 'idle';
+      if (s.state === 'work') { /* walk back down to the ground floor */
+        s.state = 'walk';
+        s.tx = 8 + Math.floor(Math.random() * 200); s.ty = 138;
+      }
     }
   }
   for (i = hvS.rooms.length - 1; i >= 0; i--) {
@@ -21264,14 +21285,26 @@ function hvAssign(survId, room) {
   }
   if (n >= def.workers) return false;
   s.room = { floor: real.floor, slot: real.slot };
-  s.state = 'work';
+  /* Walk to the room instead of teleporting there in state only: the
+     walk engine moves them at 0.6px/frame and flips back to 'work' on
+     arrival (hvSurvTick). Before this, no survivor ever entered 'walk'. */
+  var gg = (typeof hvRoomGeo === 'function') ? hvRoomGeo(real.floor, real.slot) : null;
+  if (gg) {
+    s.tx = gg.x + 8 + Math.floor(Math.random() * (gg.w - 16)); s.ty = gg.y + 18;
+    s.state = 'walk';
+  } else {
+    s.state = 'work';
+  }
   return true;
 }
 function hvUnassign(survId) {
   var s = hvSurvById(survId);
   if (!s) return false;
   s.room = null;
-  if (s.state === 'work') s.state = 'idle';
+  if (s.state === 'work') { /* stroll back to the ground floor */
+    s.state = 'walk';
+    s.tx = 8 + Math.floor(Math.random() * 200); s.ty = 138;
+  }
   return true;
 }
 
@@ -22388,9 +22421,13 @@ function hvDrawHud() {
   ctx.fillStyle = HV_C_TEXT;
   ctx.font = 'bold 8px monospace';
   ctx.textAlign = 'left';
+  /* Resources display as integers (Math.floor, all five): Water accrues
+     fractional production (daily rate / 2400 per frame) and the raw float
+     ("W40.104999999999905") overflowed the HUD and clipped the right edge.
+     The stored values stay floats — the economy needs them. */
   var txt = 'D' + hvS.day + ' ' + hvTimeWord() +
-    '  F' + r.food + ' W' + r.water + ' S' + r.scrap +
-    ' M' + r.med + ' A' + r.ammo +
+    '  F' + Math.floor(r.food) + ' W' + Math.floor(r.water) + ' S' + Math.floor(r.scrap) +
+    ' M' + Math.floor(r.med) + ' A' + Math.floor(r.ammo) +
     '  P' + hvDrawPop() + '/' + hvDrawPopCap();
   ctx.fillText(txt, 3, 10);
   ctx.textAlign = 'right';
@@ -22411,6 +22448,31 @@ function hvDrawLog() {
   for (i = 0; i < 2 && n - i > 0; i++) {
     ctx.fillText(String(hvS.log[n - 1 - i]).substr(0, 48), 3, 149 - i * 7);
   }
+}
+
+/* Day-1 announcement toast: two lines in a top strip over the roof (clear
+   of the rooms and survivors), sized to fit, fades out after 5s (300
+   frames). Replaces the old log lines, which sat in the bottom log strip
+   over the ground-floor rooms and overlapped them. */
+function hvDrawDayToast() {
+  if (typeof hvDayToastT !== 'number' || hvDayToastT <= 0 || !hvS) return;
+  var l1 = 'THE HAVEN STANDS.';
+  var l2 = 'DAY ' + hvS.day + ': BUILD, GATHER, SURVIVE.';
+  var w = (Math.max(l1.length, l2.length) * 5) + 16;
+  if (w > 232) w = 232;
+  var x = Math.floor((240 - w) / 2), y = 16, h = 24;
+  var a = hvDayToastT > 60 ? 1 : hvDayToastT / 60;
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.fillStyle = 'rgba(10,10,10,0.7)';
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = HV_C_TEXT;
+  ctx.font = 'bold 8px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(l1, 120, y + 10);
+  ctx.fillText(l2, 120, y + 20);
+  ctx.textAlign = 'left';
+  ctx.restore();
 }
 
 function hvDrawHint() {
@@ -22822,6 +22884,7 @@ function drawHaven() {
   ctx.restore();
   hvDrawHud();
   hvDrawLog();
+  hvDrawDayToast();
   // night banner / dusk early-warning banner
   if (hvS.night && hvS.night.active) {
     var nLeft = hvS.attackers ? hvS.attackers.length : 0;
@@ -25653,6 +25716,8 @@ function hvUpdate() {
     }
     if (hvCheckGameOver()) break;
   }
+  /* Day-1 toast ticks down once per frame (not per speed step). */
+  if (typeof hvDayToastT === 'number' && hvDayToastT > 0) hvDayToastT--;
 }
 
 /* ---------- Entry point ---------- */
