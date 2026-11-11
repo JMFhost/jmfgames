@@ -414,12 +414,16 @@
      the window follows the selection and wraps jump to the ends.
      Works for any game count. */
   var MENU_PITCH = 15, MENU_ROWS = 6, MENU_TOP_Y = 48, menuTop = 0;
+  /* Top-level game cards (menuLevel 0): large premium cards, 2 visible
+     at a 48px pitch. The Retro Games list keeps the 6-row retro layout. */
+  var TOP_ROWS = 2, TOP_PITCH = 48, TOP_TOP_Y = 44, TOP_CARD_H = 44;
   function menuClamp() {
     // Clamp the CURRENT level's cursor into its scroll window (top level
-    // uses topIndex/topTop, the Retro Games list uses menuIndex/menuTop).
+    // uses topIndex/topTop with TOP_ROWS, the Retro Games list uses
+    // menuIndex/menuTop with MENU_ROWS).
     if (menuLevel === 0) {
       if (topIndex < topTop) topTop = topIndex;
-      else if (topIndex >= topTop + MENU_ROWS) topTop = topIndex - MENU_ROWS + 1;
+      else if (topIndex >= topTop + TOP_ROWS) topTop = topIndex - TOP_ROWS + 1;
     } else {
       if (menuIndex < menuTop) menuTop = menuIndex;
       else if (menuIndex >= menuTop + MENU_ROWS) menuTop = menuIndex - MENU_ROWS + 1;
@@ -21151,15 +21155,118 @@ function drawShooterOver() {
       ctx.textAlign = 'left';
     }
   }
+  // ---------- Top-level menu: premium modern console-home look ----------
+  // The top level is the console's home screen: a dark rich navy
+  // background with depth, large game cards with mini cover art drawn in
+  // code, clean modern type. NOT the retro DMG green — that look lives
+  // inside RETRO GAMES (menuLevel 1), which keeps its exact retro draw.
+  // One card per top-level entry; 2 visible at a 48px pitch, scrolling
+  // like the retro list when more big games join.
+  function drawTopCover(e, cx, cy) {
+    // Mini cover art (36x32) for a top-level entry, drawn in code.
+    // Collections get the retro handheld motif; standalone big games get
+    // the joystick motif. New top-level entries can add their own case.
+    if (e.collection) {
+      // Retro handheld console: dark body, LCD screen, D-pad, buttons.
+      ctx.fillStyle = '#232A3D'; ctx.fillRect(cx, cy, 36, 32);
+      ctx.strokeStyle = '#3A4666'; ctx.lineWidth = 1; ctx.strokeRect(cx, cy, 36, 32);
+      ctx.fillStyle = '#10141F'; ctx.fillRect(cx + 4, cy + 3, 20, 15);
+      ctx.fillStyle = '#9ACD32'; ctx.fillRect(cx + 5, cy + 4, 18, 13);
+      ctx.fillStyle = '#4A6B1F'; ctx.fillRect(cx + 8, cy + 8, 3, 3);
+      ctx.fillRect(cx + 14, cy + 7, 2, 2);
+      ctx.fillStyle = '#4A5878';
+      ctx.fillRect(cx + 6, cy + 21, 3, 9);
+      ctx.fillRect(cx + 3, cy + 24, 9, 3);
+      ctx.fillStyle = '#D95D4E'; ctx.fillRect(cx + 26, cy + 22, 3, 3);
+      ctx.fillStyle = '#4DA3FF'; ctx.fillRect(cx + 31, cy + 25, 3, 3);
+    } else {
+      // Joystick: base, stick, ball top, one button.
+      ctx.fillStyle = '#232A3D'; ctx.fillRect(cx + 4, cy + 22, 28, 8);
+      ctx.strokeStyle = '#3A4666'; ctx.lineWidth = 1; ctx.strokeRect(cx + 4, cy + 22, 28, 8);
+      ctx.fillStyle = '#4A5878'; ctx.fillRect(cx + 16, cy + 10, 4, 13);
+      ctx.fillStyle = '#D95D4E'; ctx.fillRect(cx + 14, cy + 5, 8, 8);
+      ctx.fillStyle = '#F2F5FF'; ctx.fillRect(cx + 16, cy + 7, 2, 2);
+      ctx.fillStyle = '#4DA3FF'; ctx.fillRect(cx + 28, cy + 24, 4, 4);
+    }
+  }
+  function drawTopMenu() {
+    var list = TOPMENU;
+    var idx = topIndex;
+    var top = topTop;
+    // Deep charcoal/navy background with depth.
+    var bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0B1026'); bg.addColorStop(0.55, '#131A30'); bg.addColorStop(1, '#070A14');
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+    // Soft glow behind the title.
+    ctx.fillStyle = 'rgba(64,110,220,0.20)';
+    ctx.beginPath(); ctx.arc(120, 26, 64, 0, 6.2832); ctx.fill();
+    ctx.fillStyle = 'rgba(77,163,255,0.10)';
+    ctx.beginPath(); ctx.arc(120, 26, 34, 0, 6.2832); ctx.fill();
+    // Bottom shade grounds the footer.
+    var shade = ctx.createLinearGradient(0, 128, 0, H);
+    shade.addColorStop(0, 'rgba(0,0,0,0)'); shade.addColorStop(1, 'rgba(0,0,0,0.32)');
+    ctx.fillStyle = shade; ctx.fillRect(0, 128, W, 32);
+    // Title: clean modern treatment — near-white with a soft dark shadow
+    // and a thin bright accent rule underneath.
+    ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#22305A'; ctx.fillText('JMF GAMES', W / 2 + 1, 21);
+    ctx.fillStyle = '#F2F5FF'; ctx.fillText('JMF GAMES', W / 2, 20);
+    ctx.fillStyle = '#4DA3FF'; ctx.fillRect(W / 2 - 32, 26, 64, 2);
+    ctx.fillStyle = '#8A94B8'; ctx.font = '10px monospace';
+    ctx.fillText('SELECT A GAME', W / 2, 36);
+    ctx.textAlign = 'left';
+    // Cards.
+    var end = Math.min(top + TOP_ROWS, list.length);
+    for (var i = top; i < end; i++) {
+      var y = TOP_TOP_Y + (i - top) * TOP_PITCH;
+      var e = list[i];
+      var sel = (i === idx);
+      if (sel) {
+        ctx.fillStyle = 'rgba(77,163,255,0.20)'; ctx.fillRect(8, y - 2, 224, 48);
+        var cg = ctx.createLinearGradient(0, y, 0, y + TOP_CARD_H);
+        cg.addColorStop(0, '#26335C'); cg.addColorStop(1, '#1A2340');
+        ctx.fillStyle = cg; ctx.fillRect(10, y, 220, TOP_CARD_H);
+        ctx.strokeStyle = '#4DA3FF'; ctx.lineWidth = 2; ctx.strokeRect(10, y, 220, TOP_CARD_H);
+        ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.fillRect(12, y + 1, 216, 2);
+      } else {
+        var cg2 = ctx.createLinearGradient(0, y, 0, y + TOP_CARD_H);
+        cg2.addColorStop(0, '#1B2340'); cg2.addColorStop(1, '#141A2E');
+        ctx.fillStyle = cg2; ctx.fillRect(10, y, 220, TOP_CARD_H);
+        ctx.strokeStyle = '#2A3558'; ctx.lineWidth = 1; ctx.strokeRect(10, y, 220, TOP_CARD_H);
+      }
+      drawTopCover(e, 28, y + 6);
+      // '>' at x=16 on the name baseline keeps the test harness's
+      // selectedGame() working (it reads the '>' then the name).
+      if (sel) {
+        ctx.fillStyle = '#4DA3FF'; ctx.font = 'bold 12px monospace';
+        ctx.fillText('>', 16, y + 20);
+      }
+      ctx.fillStyle = sel ? '#FFFFFF' : '#D8DEEE';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText(e.name, 70, y + 20);
+      var sub = e.collection ? (GAMES.length + ' GAMES') : (e.sub || '');
+      if (sub) { ctx.fillStyle = '#9AA7C8'; ctx.font = '8px monospace'; ctx.fillText(sub, 70, y + 33); }
+    }
+    // Scroll indicators (top-right / bottom-right): more entries above / below.
+    ctx.fillStyle = '#8A94B8'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+    if (top > 0) ctx.fillText('▲', 234, 44);
+    if (end < list.length) ctx.fillText('▼', 234, 140);
+    ctx.fillStyle = '#7C88A8'; ctx.textAlign = 'center'; ctx.font = '10px monospace';
+    ctx.fillText((idx + 1) + ' OF ' + list.length + '  ·  UP/DOWN MOVE - A PLAY', W / 2, 152);
+    ctx.textAlign = 'left';
+  }
   function drawMenu() {
+    // Top level has its own premium draw (drawTopMenu); the Retro Games
+    // list below keeps the exact retro DMG green draw.
+    if (menuLevel === 0) { drawTopMenu(); return; }
     // Retro DMG menu, high-quality polish: 4-shade green monochrome only.
     // Layered title shadow, two-tone selection bar, double frame, lighter
     // scanlines. Layout is identical to before: same row positions, 12px
     // names, 15px pitch, 6 visible rows, same indicator and footer.
     // (The blinking start prompt was removed Nov 11: it blinked but Start
     // does nothing on the menu — A plays — so the prompt was misleading.)
-    // Two levels share this draw: the top level (collections + big games)
-    // and the Retro Games list. The subtitle names the list you are in.
+    // This draw is the Retro Games list only; the top level has its own
+    // premium draw (drawTopMenu). The subtitle names the list you are in.
     var list = menuList();
     var idx = menuCurIdx();
     var top = menuLevel === 0 ? topTop : menuTop;
