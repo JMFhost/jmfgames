@@ -250,7 +250,8 @@
     siege:   { bpm: 120, wave: 'square', notes: [[57,1],[60,1],[64,1],[60,1],[65,1],[64,1],[62,1],[60,1],[57,1],[60,1],[64,1],[67,1],[64,1],[62,1],[60,1],[0,1]] },
     park:    { bpm: 120, wave: 'triangle', notes: [[72,1],[76,1],[79,1],[76,1],[84,1],[79,1],[76,1],[72,1],[74,1],[77,1],[81,1],[77,1],[79,1],[76,1],[74,1],[0,1]] },
     dummy:   { bpm: 140, wave: 'square', notes: [[72,1],[0,1],[76,1],[79,1],[0,1],[76,1],[74,1],[0,1],[72,1],[0,1],[74,1],[76,1],[79,1],[76,1],[74,1],[72,1]] },
-    shooter: { bpm: 148, wave: 'square', notes: [[57,1],[0,1],[57,1],[60,1],[64,1],[0,1],[62,1],[60,1],[57,1],[0,1],[55,1],[57,1],[60,1],[62,1],[64,1],[67,1]] }
+    shooter: { bpm: 148, wave: 'square', notes: [[57,1],[0,1],[57,1],[60,1],[64,1],[0,1],[62,1],[60,1],[57,1],[0,1],[55,1],[57,1],[60,1],[62,1],[64,1],[67,1]] },
+    farm:    { bpm: 100, wave: 'triangle', notes: [[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[0,1]] }
   };
   var musicTimer = null, musicStep = 0, musicNext = 0, musicTune = null, musicActive = false;
   function midiFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
@@ -359,6 +360,7 @@
     { name: 'BLOCKQUEST', playable: true },
     { name: 'CHESS CLUB', playable: true },
     { name: 'EMBERFALL BRAWL', playable: true },
+    { name: 'HARVEST HAVEN', playable: true },
     { name: "OVERLORD'S BASTION", playable: true },
     { name: 'RAGDOLL RUCKUS', playable: true },
     { name: 'SKY SOAR', playable: true },
@@ -375,7 +377,7 @@
 
   /* ---------- State ---------- */
   var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
-  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'run' | 'siege' | 'park' | 'dummy' | 'shooter' — which game is on the play/over screens
+  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'run' | 'siege' | 'park' | 'dummy' | 'shooter' | 'farm' — which game is on the play/over screens
   var menuIndex = 0;
   /* Scrollable menu: 9 visible rows at the readable 8px pitch (7px
      overlapped). menuTop = first visible game; the window follows the
@@ -421,6 +423,7 @@
     if (currentGame === 'beat' && buPhase === 'select') return function (d) { buSelMove(d); };
     if (currentGame === 'beat' && buPhase === 'upgrade') return function (d) { buUpMove(d); };
     if (currentGame === 'chess' && (chState === 'level' || chState === 'color')) return function (d) { chMove(d, 0); };
+    if (currentGame === 'farm' && hvMenu) return function (d) { hvMenuMove(d); };
     return null;
   }
   function listHoldTick() {
@@ -448,7 +451,7 @@
 
   /* ---------- Delete-save (shared): one confirmation overlay for all
      games. dsGame = which game's save is being deleted ('sky' | 'block' |
-     'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'siege' | 'park' | 'dummy' | 'shooter'),
+     'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'siege' | 'park' | 'dummy' | 'shooter' | 'farm'),
      or null. A confirms, B cancels. Confirming clears ONLY that game's
      localStorage keys and resets it to fresh defaults; pause-overlay games
      restart fresh immediately, select-screen games stay on their select
@@ -468,6 +471,7 @@
     else if (game === 'beat') { dsClearKeys([BU_BEST_KEY]); buBest = 0; }
     else if (game === 'pool') { dsClearKeys([PO_WIN_KEY, PO_LOSS_KEY]); poWins = 0; poLosses = 0; }
     else if (game === 'siege') { dsClearKeys([SI_KEY]); siSave = { unlocked: 1, best: {}, totalTargets: 0 }; siPhase = 'stages'; siSel = 0; siPaused = false; }
+    else if (game === 'farm') { dsClearKeys([HV_KEY]); hvResetFresh(); hvPaused = false; }
     else if (game === 'park') { dsClearKeys([TP_KEY]); tpResetFresh(); tpPaused = false; }
     else if (game === 'dummy') { dsClearKeys([DU_SAVE_KEY]); duCoins = 0; duUnlocked = 1; duTotalDmg = 0; duBestCombo = 0; duResetDummy(); duPaused = false; }
     else if (game === 'shooter') { dsClearKeys([SH_SAVE_KEY]); shBest = 0; shBestWave = 0; shTotalKills = 0; shResetRun(); shPaused = false; }
@@ -9722,6 +9726,3419 @@ function chMoveStr(m) {
     ctx.textAlign = 'left';
   }
 
+  /* ================================================================
+     HARVEST HAVEN (console) — original farming simulation, 15th game.
+     All content is ORIGINAL: town "Maplewood", original NPCs, crops,
+     and art. No third-party game names, art, dialogue, or music.
+     Controls: D-pad walks (smooth, hold to walk), A uses the selected
+     tool / talks / opens, B cycles tools, Start pauses (B on pause =
+     delete save), Menu returns to the main menu.
+     Systems: farming, seasons, day/time/energy, money, tools,
+     animals, fishing, mining, foraging, townspeople, marriage,
+     festivals, shop, auto-save, music.
+     ================================================================ */
+  var HV_T = 8; // tile size px
+  var HV_MW = 56, HV_MH = 48; // map tiles (448 x 384 px world)
+  var HV_HUD = 18; // HUD strip height px
+  var HV_KEY = 'jmf-games-harvest-save';
+  var HV_SEASONS = ['SPRING', 'SUMMER', 'FALL', 'WINTER'];
+  var HV_SEASON_SHORT = ['SPR', 'SUM', 'FALL', 'WIN'];
+  var HV_GRASS = ['#7ec850', '#5da83c', '#c98a3d', '#dfe9f2']; // grass tint by season
+  var HV_TREE_TOP = ['#3d8b37', '#2f7a2e', '#d2691e', '#8fa8bf']; // tree canopy by season
+  var HV_DAY_START = 360; // 6:00 AM in minutes
+  var HV_DAY_END = 1560; // 2:00 AM next day — forced sleep
+  var HV_SEASON_DAYS = 28;
+
+  /* Crops: id, name, season (0-3), growth days, seed price, sell price. */
+  var HV_CROPS = [
+    { id: 'turnip', name: 'TURNIP', season: 0, days: 4, seed: 20, sell: 50 },
+    { id: 'potato', name: 'POTATO', season: 0, days: 6, seed: 40, sell: 90 },
+    { id: 'lettuce', name: 'LETTUCE', season: 0, days: 5, seed: 30, sell: 70 },
+    { id: 'strawberry', name: 'STRAWBERRY', season: 0, days: 8, seed: 100, sell: 220 },
+    { id: 'tomato', name: 'TOMATO', season: 1, days: 7, seed: 50, sell: 120 },
+    { id: 'corn', name: 'CORN', season: 1, days: 9, seed: 60, sell: 150 },
+    { id: 'melon', name: 'MELON', season: 1, days: 10, seed: 120, sell: 280 },
+    { id: 'pepper', name: 'PEPPER', season: 1, days: 6, seed: 40, sell: 100 },
+    { id: 'pumpkin', name: 'PUMPKIN', season: 2, days: 10, seed: 100, sell: 260 },
+    { id: 'carrot', name: 'CARROT', season: 2, days: 5, seed: 30, sell: 75 },
+    { id: 'cabbage', name: 'CABBAGE', season: 2, days: 7, seed: 50, sell: 130 },
+    { id: 'grape', name: 'GRAPE', season: 2, days: 8, seed: 80, sell: 200 },
+    { id: 'snowpea', name: 'SNOW PEA', season: 3, days: 6, seed: 40, sell: 95 },
+    { id: 'wroot', name: 'WINTER ROOT', season: 3, days: 7, seed: 50, sell: 120 },
+    { id: 'iceberry', name: 'ICEBERRY', season: 3, days: 8, seed: 80, sell: 210 },
+    { id: 'fcabbage', name: 'FROST CABBAGE', season: 3, days: 9, seed: 60, sell: 160 }
+  ];
+  function hvCropById(id) { for (var i = 0; i < HV_CROPS.length; i++) if (HV_CROPS[i].id === id) return HV_CROPS[i]; return null; }
+  function hvCropsForSeason(s) { var out = []; for (var i = 0; i < HV_CROPS.length; i++) if (HV_CROPS[i].season === s) out.push(HV_CROPS[i]); return out; }
+
+  /* Fish: id, name, seasons it appears in, sell price. */
+  var HV_FISH = [
+    { id: 'sunfish', name: 'SUNFISH', seasons: [0, 1, 2], sell: 40 },
+    { id: 'bass', name: 'BASS', seasons: [0, 1, 2], sell: 60 },
+    { id: 'catfish', name: 'CATFISH', seasons: [0, 1, 2, 3], sell: 80 },
+    { id: 'trout', name: 'TROUT', seasons: [0, 1, 3], sell: 90 },
+    { id: 'icefish', name: 'ICEFISH', seasons: [3], sell: 120 },
+    { id: 'goldfish', name: 'GOLDFISH', seasons: [0, 1, 2, 3], sell: 200 }
+  ];
+  function hvFishForSeason(s) { var out = []; for (var i = 0; i < HV_FISH.length; i++) if (HV_FISH[i].seasons.indexOf(s) >= 0) out.push(HV_FISH[i]); return out; }
+
+  /* Forage: id, name, seasons, sell price. */
+  var HV_FORAGE = [
+    { id: 'wberry', name: 'WILD BERRY', seasons: [0, 1], sell: 25 },
+    { id: 'dandelion', name: 'DANDELION', seasons: [0], sell: 15 },
+    { id: 'sunflower', name: 'SUNFLOWER', seasons: [1], sell: 30 },
+    { id: 'mushroom', name: 'MUSHROOM', seasons: [2], sell: 40 },
+    { id: 'acorn', name: 'ACORN', seasons: [2], sell: 20 },
+    { id: 'snowberry', name: 'SNOWBERRY', seasons: [3], sell: 35 },
+    { id: 'pinecone', name: 'PINECONE', seasons: [3], sell: 15 }
+  ];
+  function hvForageForSeason(s) { var out = []; for (var i = 0; i < HV_FORAGE.length; i++) if (HV_FORAGE[i].seasons.indexOf(s) >= 0) out.push(HV_FORAGE[i]); return out; }
+
+  /* Ores (from mine rocks): id, name, sell price, weight. */
+  var HV_ORES = [
+    { id: 'stone', name: 'STONE', sell: 10, w: 40 },
+    { id: 'copper', name: 'COPPER ORE', sell: 40, w: 25 },
+    { id: 'iron', name: 'IRON ORE', sell: 80, w: 18 },
+    { id: 'goldore', name: 'GOLD ORE', sell: 150, w: 10 },
+    { id: 'gem', name: 'GEM', sell: 250, w: 7 }
+  ];
+
+  /* Townspeople of Maplewood. hx/hy = home door tile (night), dx/dy =
+     daytime spot. fav = favorite gift item id. marry = eligible. */
+  var HV_NPCS = [
+    { id: 'bram', name: 'MAYOR BRAM', role: 'MAYOR', hx: 41, hy: 11, dx: 45, dy: 19, fav: 'dandelion', marry: false, color: '#8b5a2b', lines: ['Welcome to Maplewood! Our town grows a little every season.', 'The festivals here are the heart of Maplewood. Do not miss them!', 'A good farmer makes a good neighbor. Keep at it!'] },
+    { id: 'rose', name: 'ROSE', role: 'FLORIST', hx: 47, hy: 11, dx: 44, dy: 18, fav: 'sunflower', marry: true, color: '#e75480', lines: ['I grow the prettiest flowers in Maplewood. A sunflower always makes my day!', 'The square looks lovely when the festival flags go up.', 'I love the smell of rain on fresh soil. Do you?'] },
+    { id: 'finn', name: 'FINN', role: 'FISHER', hx: 34, hy: 20, dx: 11, dy: 25, fav: 'catfish', marry: true, color: '#2e86ab', lines: ['The pond bites best in the morning. Bring a rod sometime!', 'Caught a catfish this big once. You should have seen it!', 'Fish, like people, prefer a quiet spot and a good lure.'] },
+    { id: 'clara', name: 'CLARA', role: 'BAKER', hx: 41, hy: 16, dx: 33, dy: 14, fav: 'wberry', marry: true, color: '#d2691e', lines: ['Fresh bread every morning! Berries make the best jam, you know.', 'A warm loaf and a kind word go a long way around here.', 'If you bring me wild berries, I will trade you a smile.'] },
+    { id: 'gus', name: 'OLD GUS', role: 'MINER', hx: 47, hy: 16, dx: 24, dy: 4, fav: 'copper', marry: false, color: '#6b6b6b', lines: ['Mined these hills for forty years. The good ore is deep down.', 'A pickaxe and patience. That is all mining ever was.', 'Bring me copper and I will tell you where the gold hides.'] },
+    { id: 'pip', name: 'PIP', role: 'SHOPKEEPER', hx: 41, hy: 24, dx: 38, dy: 14, fav: 'gem', marry: false, color: '#7a2e6d', lines: ['Welcome to Pip\'s Shop! Seeds, feed, tools — all fresh, all fair!', 'A shiny gem catches my eye every time. Got one to sell?', 'Buy low, sell high, and always keep a little feed on hand.'] },
+    { id: 'nora', name: 'NORA', role: 'TEACHER', hx: 49, hy: 24, dx: 46, dy: 18, fav: 'iceberry', marry: true, color: '#4a6fa5', lines: ['I teach the town children their letters. Books are the best crop.', 'Winter berries are rare and lovely. I press them in my books.', 'A quiet evening, a good book, and a cup of tea. That is happiness.'] },
+    { id: 'sam', name: 'SAM', role: 'CARPENTER', hx: 34, hy: 24, dx: 30, dy: 14, fav: 'wood', marry: false, color: '#a0522d', lines: ['Need something built? Wood is my trade. Bring me logs!', 'A sturdy fence and a straight beam — that is a carpenter\'s pride.', 'Chop the tall pines in the south forest. Best wood in Maplewood.'] },
+    { id: 'june', name: 'JUNE', role: 'GARDENER', hx: 53, hy: 16, dx: 7, dy: 15, fav: 'carrot', marry: false, color: '#5da83c', lines: ['I tend the gardens near the field. Carrots are my favorite!', 'Water every morning, harvest before the season turns.', 'A garden is just a farm that fits in your pocket.'] },
+    { id: 'tim', name: 'TIM', role: 'CHILD', hx: 47, hy: 11, dx: 44, dy: 20, fav: 'wberry', marry: false, color: '#e8a33d', lines: ['I am going to be a great explorer! The forest has secret paths!', 'Wild berries are the best snack. Do not tell my sister!', 'One day I will catch a fish bigger than Finn\'s. Just watch!'] },
+    { id: 'dunstan', name: 'DUNSTAN', role: 'BLACKSMITH', hx: 47, hy: 16, dx: 43, dy: 18, fav: 'iron', marry: false, color: '#4a3728', lines: ['The forge never cools, and neither do I. Need a tool mended?', 'Iron bends for the patient. Rush it and it snaps.', 'Bring me ore and I will make you something that lasts.'] },
+    { id: 'marina', name: 'MARINA', role: 'FISHER', hx: 34, hy: 20, dx: 50, dy: 12, fav: 'bass', marry: true, color: '#00b4d8', lines: ['The pond keeps its secrets, but bass is my favorite one.', 'A quiet morning and a full creel - that is a good day.', 'Fish with me sometime. I will show you the deep spots.'] },
+    { id: 'hazel', name: 'HAZEL', role: 'COOK', hx: 41, hy: 16, dx: 47, dy: 19, fav: 'strawberry', marry: false, color: '#b5533c', lines: ['Strawberries make the best jam in Maplewood, and I should know!', 'My oven is always warm, and so is my kitchen.', 'A full belly makes a happy farmer. Come by for a slice!'] },
+    { id: 'edwin', name: 'EDWIN', role: 'TEACHER', hx: 41, hy: 11, dx: 36, dy: 8, fav: 'grape', marry: false, color: '#5b4b8a', lines: ['Grapes for the mind, books for the soul. Both take patience.', 'I teach the town children their letters, rain or shine.', 'A question is just a seed. Water it and it grows.'] },
+    { id: 'fern', name: 'FERN', role: 'GARDENER', hx: 49, hy: 24, dx: 5, dy: 17, fav: 'lettuce', marry: true, color: '#2e8b57', lines: ['Lettuce is the kindest crop - quick, green, and always grateful.', 'My garden grows what my hands remember.', 'A garden is a promise you water every morning.'] },
+    { id: 'jasper', name: 'JASPER', role: 'MUSICIAN', hx: 41, hy: 24, dx: 48, dy: 20, fav: 'melon', marry: true, color: '#9d4edd', lines: ['A melon is sweet, but a song is sweeter. Hear my new tune?', 'I play for the square every evening. Music keeps the town young.', 'Every festival needs a fiddle. Mine never leaves my side.'] },
+    { id: 'sable', name: 'SABLE', role: 'MERCHANT', hx: 41, hy: 24, dx: 40, dy: 12, fav: 'goldore', marry: true, color: '#d4af37', lines: ['I have seen a hundred towns, and Maplewood is the prettiest.', 'Gold ore catches my eye - I know a buyer in the city.', 'Trade with me and you will never go home empty-handed.'] },
+    { id: 'agnes', name: 'AGNES', role: 'ELDER', hx: 41, hy: 11, dx: 42, dy: 19, fav: 'mushroom', marry: false, color: '#a0a0a0', lines: ['I have watched this town grow for sixty years. It grows well.', 'Mushrooms remember the rain. I remember everything else.', 'Sit with me a while, child. Old stories keep best when shared.'] },
+    { id: 'kit', name: 'KIT', role: 'CHILD', hx: 47, hy: 11, dx: 6, dy: 20, fav: 'acorn', marry: false, color: '#ff6b6b', lines: ['I found an acorn bigger than my thumb! Want to see?', 'One day I will climb every tree in the forest. Every single one!', 'Tim says I am too small to explore. Watch me!'] },
+    { id: 'poppy', name: 'POPPY', role: 'CHILD', hx: 47, hy: 11, dx: 43, dy: 21, fav: 'snowberry', marry: false, color: '#f368e0', lines: ['Snowberries are the prettiest! I press them in my diary.', 'I am going to grow the biggest sunflower in Maplewood!', 'Do you like my flower crown? I made it myself!'] },
+    { id: 'cedar', name: 'CEDAR', role: 'CARPENTER', hx: 34, hy: 24, dx: 30, dy: 5, fav: 'stone', marry: false, color: '#6f4e37', lines: ['Sam says a straight cut is a kind cut. I am still learning.', 'Stone makes the best foundation. Wood makes the best home.', 'One day I will build a house all by myself. Just wait!'] },
+    { id: 'bea', name: 'BEA', role: 'BEEKEEPER', hx: 53, hy: 16, dx: 12, dy: 27, fav: 'sunflower', marry: false, color: '#f1c40f', lines: ['My bees love sunflowers almost as much as I do!', 'Honey is just sunshine the bees saved for winter.', 'Mind the hives - the bees are friendly, but they are busy.'] },
+    { id: 'mabel', name: 'MABEL', role: 'LIBRARIAN', hx: 41, hy: 16, dx: 44, dy: 8, fav: 'pumpkin', marry: false, color: '#7d3c98', lines: ['Pumpkins and books - both are better when shared.', 'My library has a book for every season. Come borrow one!', 'A quiet reader is the richest person in town.'] },
+    { id: 'roderick', name: 'RODERICK', role: 'GUARD', hx: 34, hy: 24, dx: 36, dy: 26, fav: 'trout', marry: false, color: '#34495e', lines: ['The roads are safe, and I aim to keep them that way.', 'A trout for dinner and a quiet night - that is a good shift.', 'If trouble comes to Maplewood, it will find me first.'] },
+    { id: 'violet', name: 'VIOLET', role: 'FLORIST', hx: 49, hy: 24, dx: 55, dy: 12, fav: 'dandelion', marry: false, color: '#d63384', lines: ['Dandelions are not weeds - they are sunshine that grows wild!', 'I can make a bouquet for any occasion, even a Tuesday.', 'Flowers speak when words run out. Take one for your farm!'] },
+    { id: 'brock', name: 'BROCK', role: 'MINER', hx: 47, hy: 16, dx: 44, dy: 26, fav: 'wroot', marry: false, color: '#5d6d7e', lines: ['Winter roots grow deep, just like the best ore.', 'The mine gives to those who respect it. Dig slow, dig safe.', 'Old Gus taught me everything. The hills still have secrets.'] },
+    { id: 'ivy', name: 'IVY', role: 'SEAMSTRESS', hx: 53, hy: 16, dx: 40, dy: 27, fav: 'cabbage', marry: false, color: '#1abc9c', lines: ['Cabbage for dinner, and a new dress by morning!', 'I can mend anything - a shirt, a sail, or a bad day.', 'Thread and needle, and a little patience. That is my whole trade.'] },
+    { id: 'sage', name: 'SAGE', role: 'DOCTOR', hx: 41, hy: 11, dx: 52, dy: 8, fav: 'pinecone', marry: false, color: '#229954', lines: ['Pinecones make a fine tea for a winter cough. Trust me.', 'A healer listens first and prescribes second.', 'The forest provides every remedy, if you know where to look.'] },
+    { id: 'rowan', name: 'ROWAN', role: 'HUNTER', hx: 34, hy: 20, dx: 52, dy: 26, fav: 'icefish', marry: false, color: '#7e5109', lines: ['Icefish in winter, and game in the hills. The land provides.', 'A hunter walks soft and listens hard. The forest tells all.', 'Bring me a good catch and I will share my best trail stew.'] },
+    { id: 'wren', name: 'WREN', role: 'STORYTELLER', hx: 41, hy: 16, dx: 46, dy: 20, fav: 'sunfish', marry: true, color: '#ca6f1e', lines: ['Every town has a hundred stories, and I know them all!', 'Sunfish for supper, and a story by the lantern light.', 'Sit by the square and I will tell you how Maplewood began.'] },
+    { id: 'garth', name: 'GARTH', role: 'RIVAL FARMER', hx: 34, hy: 20, dx: 28, dy: 25, fav: 'pumpkin', marry: false, color: '#c0392b', lines: ['My pumpkins are the biggest in Maplewood. Bigger than yours, farmer!', 'You call that a crop? My plot laughs at your plot!', 'Beat me at the Harvest Festival and I will eat my own hat. You will not.'] },
+  ];
+  function hvNpcById(id) { for (var i = 0; i < HV_NPCS.length; i++) if (HV_NPCS[i].id === id) return HV_NPCS[i]; return null; }
+
+  /* Festivals: one per season, on day 15, in the town square. */
+  var HV_FESTS = [
+    { season: 0, day: 15, name: 'FLOWER FESTIVAL', color: '#ff8fb1', desc: 'The square blooms! Join the flower show.' },
+    { season: 1, day: 15, name: 'SUMMER FAIR', color: '#ffd166', desc: 'Games and laughter in the summer sun!' },
+    { season: 2, day: 15, name: 'HARVEST FESTIVAL', color: '#e07a3f', desc: 'Celebrate the harvest with all of Maplewood!' },
+    { season: 3, day: 15, name: 'STARLIGHT FESTIVAL', color: '#8fb8ff', desc: 'Lanterns glow under the winter stars.' }
+  ];
+
+  /* Tools: B cycles through them. A uses the selected tool. */
+  var HV_TOOLS = [
+    { id: 'hoe', name: 'HOE' },
+    { id: 'can', name: 'WATER CAN' },
+    { id: 'seeds', name: 'SEEDS' },
+    { id: 'axe', name: 'AXE' },
+    { id: 'pick', name: 'PICKAXE' },
+    { id: 'rod', name: 'FISH ROD' },
+    { id: 'sword', name: 'SWORD' },
+    { id: 'fert', name: 'FERTILIZER' },
+    { id: 'sprinkler', name: 'SPRINKLER' }
+  ];
+
+  /* ---------- Map ---------- */
+  var hvMap = [];
+  function hvPaint(x0, y0, x1, y1, ch) {
+    for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++)
+      if (x >= 0 && x < HV_MW && y >= 0 && y < HV_MH) hvMap[y][x] = ch;
+  }
+  function hvBuildMap() {
+    hvMap = [];
+    for (var y = 0; y < HV_MH; y++) { hvMap.push([]); for (var x = 0; x < HV_MW; x++) hvMap[y][x] = 'g'; }
+    /* Mine (north): mine floor + rocks spawn on it. */
+    hvPaint(20, 0, 36, 6, 'm');
+    hvPaint(27, 7, 29, 7, 'p'); // mine entrance path
+    /* Farm (west-center): house, soil field, coop, barn, pond. */
+    hvPaint(3, 9, 7, 11, 'h'); hvMap[12][5] = 'd'; // player house + door
+    hvPaint(10, 13, 22, 21, 'x'); // tillable soil field
+    hvPaint(24, 9, 26, 11, 'c'); // coop
+    hvPaint(24, 15, 26, 17, 'b'); // barn
+    hvPaint(2, 24, 9, 28, 'w'); // pond
+    /* Town (east): shop, NPC houses, festival square. */
+    hvPaint(33, 9, 37, 11, 's'); // shop
+    hvPaint(40, 9, 42, 10, 'h'); hvMap[11][41] = 'd'; // House A
+    hvPaint(46, 9, 48, 10, 'h'); hvMap[11][47] = 'd'; // House B
+    hvPaint(40, 14, 42, 15, 'h'); hvMap[16][41] = 'd'; // House C
+    hvPaint(46, 14, 48, 15, 'h'); hvMap[16][47] = 'd'; // House D
+    hvPaint(33, 18, 35, 19, 'h'); hvMap[20][34] = 'd'; // House E
+    hvPaint(40, 22, 42, 23, 'h'); hvMap[24][41] = 'd'; // House F
+    hvPaint(48, 22, 50, 23, 'h'); hvMap[24][49] = 'd'; // House G
+    hvPaint(33, 22, 35, 23, 'h'); hvMap[24][34] = 'd'; // House H
+    hvPaint(52, 14, 54, 15, 'h'); hvMap[16][53] = 'd'; // House I
+    hvPaint(42, 17, 49, 21, 'f'); // festival square
+    /* Paths: farm <-> town, farm <-> mine, farm <-> forest. */
+    hvPaint(27, 13, 30, 13, 'p');
+    hvPaint(28, 8, 28, 12, 'p');
+    hvPaint(14, 22, 14, 29, 'p');
+    hvPaint(23, 13, 23, 21, 'p');
+    /* Forest (south): trees. */
+    var treeSpots = [[2, 31], [4, 33], [6, 31], [8, 35], [10, 32], [12, 35], [16, 31], [18, 34], [20, 31], [22, 35], [24, 32], [26, 34], [28, 31], [30, 35], [32, 32], [34, 34], [36, 31], [38, 35], [40, 32], [42, 34], [44, 31], [46, 35], [48, 32], [50, 34], [52, 31], [54, 33], [3, 37], [7, 38], [11, 37], [15, 38], [19, 37], [23, 38], [27, 37], [31, 38], [35, 37], [39, 38], [43, 37], [47, 38], [51, 37]];
+    for (var i = 0; i < treeSpots.length; i++) hvMap[treeSpots[i][1]][treeSpots[i][0]] = 't';
+    /* A few trees near the farm and town for looks. */
+    hvMap[8][1] = 't'; hvMap[8][26] = 't'; hvMap[26][1] = 't'; hvMap[26][27] = 't'; hvMap[8][38] = 't'; hvMap[28][55] = 't';
+    /* Fence around the farm field (visual, blocks). */
+    hvPaint(9, 12, 23, 12, 'e'); hvPaint(9, 22, 23, 22, 'e'); hvPaint(9, 13, 9, 21, 'e'); hvPaint(23, 13, 23, 21, 'e');
+    hvMap[13][9] = 'p'; // west gate into the field
+    hvMap[13][23] = 'p'; // east gate onto the path
+    /* Expansion: beach (south), NPC farm plots, greenhouse, museum, Town Hall, dock. */
+    hvPaint(14, 30, 14, 40, 'p'); // forest path continues south to the beach
+    hvPaint(0, 40, 55, 42, 'a'); // beach sand
+    hvPaint(0, 43, 55, 47, 'o'); // ocean
+    hvPaint(20, 42, 22, 42, 'k'); // dock (boat to the island)
+    hvPaint(24, 23, 29, 24, 'n'); // Fern's plot (24-26) + Garth's plot (27-29)
+    hvPaint(27, 26, 29, 27, 'n'); // June's plot
+    hvPaint(1, 13, 3, 15, 'G'); hvMap[16][2] = 'd'; // greenhouse + door
+    hvPaint(38, 7, 40, 8, 'U'); hvMap[9][39] = 'd'; // museum + door
+    hvPaint(52, 9, 54, 11, 'T'); hvMap[12][53] = 'd'; // Town Hall + door
+  }
+  function hvTileAt(tx, ty) {
+    if (tx < 0 || tx >= HV_MW || ty < 0 || ty >= HV_MH) return 'e';
+    return hvMap[ty][tx];
+  }
+  function hvSolid(ch) {
+    return ch === 'w' || ch === 't' || ch === 'r' || ch === 'h' || ch === 's' || ch === 'c' || ch === 'b' || ch === 'e' || ch === 'd' || ch === 'o' || ch === 'G' || ch === 'U' || ch === 'T';
+  }
+  function hvIsSolidAt(tx, ty) { return hvSolid(hvTileAt(tx, ty)); }
+
+  /* ---------- State ---------- */
+  var hvGold = 500, hvDay = 1, hvSeason = 0, hvYear = 1, hvTimeMin = HV_DAY_START, hvEnergy = 100;
+  var hvPx = 40, hvPy = 112; // player position in pixels (center) — tile (5,14), just south of the house door
+  var hvDir = 'down'; // 'up' | 'down' | 'left' | 'right'
+  var hvToolIdx = 0; // index into HV_TOOLS
+  var hvHasSteelHoe = false, hvHasSteelCan = false, hvHasBoots = false;
+  var hvInv = {}; // itemId -> count (crops, fish, forage, ores, eggs, milk, feed, seeds, wood, ring)
+  var hvSoil = {}; // "tx,ty" -> {tilled:true, crop:id|null, growth:int, watered:bool}
+  var hvChickens = 0, hvCows = 0, hvFedChick = false, hvFedCow = false, hvEggs = 0, hvMilk = 0;
+  var hvFriend = {}; // npcId -> points 0..100
+  var hvTalkDay = {}; // npcId -> "season-day" key of last talk
+  var hvGiftDay = {}; // npcId -> "season-day" key of last gift
+  var hvMarried = null; // spouse npc id or null
+  var hvPaused = false, hvOver = false;
+  var hvMenu = null; // {title, sub, items:[{label, sub, act}], sel, onBack}
+  var hvDialog = null; // {npc, line, hearts}
+  var hvMsg = '', hvMsgFrames = 0;
+  var hvFish = null; // {phase:'wait'|'bite'|'meter', t, meter, meterDir}
+  var hvFest = null; // {fest, phase:'join'|'play'|'done', round, hits, marker, markerDir}
+  var hvForage = []; // [{x,y,id}] on-map forage items
+  var hvRocks = []; // [{x,y,ore}] mine rocks
+  var hvCamX = 0, hvCamY = 0;
+  var hvTimeTick = 0;
+  var hvFestDoneDay = ''; // "season-day" key of the last festival completed
+
+  function hvDayKey() { return hvSeason + '-' + hvDay; }
+  function hvAddItem(id, n) { hvInv[id] = (hvInv[id] || 0) + n; if (hvInv[id] <= 0) delete hvInv[id]; }
+  function hvCount(id) { return hvInv[id] || 0; }
+  function hvShowMsg(s) { hvMsg = s; hvMsgFrames = 150; }
+  function hvHearts(id) { return Math.floor((hvFriend[id] || 0) / 10); }
+
+  function hvResetFresh() {
+    hvGold = 500; hvDay = 1; hvSeason = 0; hvYear = 1; hvTimeMin = HV_DAY_START; hvEnergy = 100;
+    hvPx = 40; hvPy = 112; hvDir = 'down'; hvToolIdx = 0;
+    hvHasSteelHoe = false; hvHasSteelCan = false; hvHasBoots = false;
+    hvInv = { seed_turnip: 5, feed: 5 };
+    hvSoil = {};
+    hvChickens = 0; hvCows = 0; hvFedChick = false; hvFedCow = false; hvEggs = 0; hvMilk = 0;
+    hvFriend = {}; hvTalkDay = {}; hvGiftDay = {};
+    hvMarried = null;
+    hvPaused = false; hvOver = false; hvMenu = null; hvDialog = null; hvMsg = ''; hvMsgFrames = 0;
+    hvFish = null; hvFest = null; hvFestDoneDay = '';
+    hvBuildMap();
+    hvSpawnForage(); hvSpawnRocks();
+    hvResetX();
+    hvCamX = 0; hvCamY = 0; hvTimeTick = 0;
+  }
+  function hvSave() {
+    try {
+      var soilArr = [];
+      for (var k in hvSoil) { var s = hvSoil[k]; soilArr.push([k, s.crop || '', s.growth, s.watered ? 1 : 0]); }
+      var saveObj = {
+        gold: hvGold, day: hvDay, season: hvSeason, year: hvYear, time: hvTimeMin, energy: hvEnergy,
+        px: hvPx, py: hvPy, dir: hvDir, tool: hvToolIdx,
+        steelHoe: hvHasSteelHoe, steelCan: hvHasSteelCan, boots: hvHasBoots,
+        inv: hvInv, soil: soilArr,
+        chickens: hvChickens, cows: hvCows, fedChick: hvFedChick, fedCow: hvFedCow, eggs: hvEggs, milk: hvMilk,
+        friend: hvFriend, talkDay: hvTalkDay, giftDay: hvGiftDay, married: hvMarried,
+        forage: hvForage, rocks: hvRocks, festDone: hvFestDoneDay
+      };
+      var extra = hvSaveX();
+      for (var ek in extra) saveObj[ek] = extra[ek];
+      localStorage.setItem(HV_KEY, JSON.stringify(saveObj));
+    } catch (e) {}
+  }
+  function hvLoad() {
+    var d = null;
+    try { var s = localStorage.getItem(HV_KEY); if (s) d = JSON.parse(s); } catch (e) { d = null; }
+    if (!d || typeof d.gold !== 'number') { hvResetFresh(); return; }
+    hvGold = d.gold; hvDay = d.day; hvSeason = d.season; hvYear = d.year || 1;
+    hvTimeMin = d.time; hvEnergy = d.energy;
+    hvPx = d.px; hvPy = d.py; hvDir = d.dir || 'down'; hvToolIdx = d.tool || 0;
+    hvHasSteelHoe = !!d.steelHoe; hvHasSteelCan = !!d.steelCan; hvHasBoots = !!d.boots;
+    hvInv = d.inv || {};
+    hvSoil = {};
+    if (d.soil) for (var i = 0; i < d.soil.length; i++) {
+      var r = d.soil[i];
+      hvSoil[r[0]] = { tilled: true, crop: r[1] || null, growth: r[2], watered: !!r[3] };
+    }
+    hvChickens = d.chickens || 0; hvCows = d.cows || 0;
+    hvFedChick = !!d.fedChick; hvFedCow = !!d.fedCow; hvEggs = d.eggs || 0; hvMilk = d.milk || 0;
+    hvFriend = d.friend || {}; hvTalkDay = d.talkDay || {}; hvGiftDay = d.giftDay || {};
+    hvMarried = d.married || null;
+    hvForage = d.forage || []; hvRocks = d.rocks || []; hvFestDoneDay = d.festDone || '';
+    hvLoadX(d);
+    hvBuildMap();
+    // Re-apply chopped trees: trees are static in the map, so a chopped tree
+    // would come back on load. Acceptable: trees regrow overnight in Maplewood.
+    if (!hvForage.length) hvSpawnForage();
+    if (!hvRocks.length) hvSpawnRocks();
+    hvPaused = false; hvOver = false; hvMenu = null; hvDialog = null; hvFish = null; hvFest = null;
+    hvCamX = 0; hvCamY = 0; hvTimeTick = 0;
+  }
+  function startFarm() {
+    hvLoad();
+    screen = 'play';
+    JMFGAMES.musicPlay('farm');
+    JMFGAMES.beep(660, 0.08);
+  }
+
+  /* ---------- Spawning ---------- */
+  function hvSpawnForage() {
+    hvForage = [];
+    var opts = hvForageForSeason(hvSeason);
+    if (!opts.length) return;
+    var spots = [];
+    for (var i = 0; i < 40; i++) {
+      var x = 2 + Math.floor(Math.random() * 52), y = 29 + Math.floor(Math.random() * 9);
+      if (hvTileAt(x, y) === 'g') spots.push([x, y]);
+      if (spots.length >= 6) break;
+    }
+    for (var j = 0; j < spots.length; j++) {
+      var f = opts[Math.floor(Math.random() * opts.length)];
+      hvForage.push({ x: spots[j][0], y: spots[j][1], id: f.id });
+    }
+  }
+  function hvSpawnRocks() {
+    hvRocks = [];
+    var spots = [];
+    for (var i = 0; i < 60; i++) {
+      var x = 21 + Math.floor(Math.random() * 15), y = 1 + Math.floor(Math.random() * 5);
+      if (hvTileAt(x, y) === 'm') spots.push([x, y]);
+      if (spots.length >= 8) break;
+    }
+    for (var j = 0; j < spots.length; j++) {
+      var r = Math.random() + hvMineFloor * 0.12;
+      var ore = r < 0.35 ? 'stone' : r < 0.6 ? 'copper' : r < 0.8 ? 'iron' : r < 0.93 ? 'goldore' : 'gem';
+      hvRocks.push({ x: spots[j][0], y: spots[j][1], ore: ore });
+    }
+  }
+
+  /* ---------- NPC position ---------- */
+  function hvNpcPos(npc) {
+    // Day (6:00-18:00): at their daytime spot. Evening/night: at home.
+    if (hvTimeMin < 1080) return { x: npc.dx, y: npc.dy };
+    return { x: npc.hx, y: npc.hy };
+  }
+  function hvNpcAt(tx, ty) {
+    for (var i = 0; i < HV_NPCS.length; i++) {
+      var p = hvNpcPos(HV_NPCS[i]);
+      if (p.x === tx && p.y === ty) return HV_NPCS[i];
+    }
+    if (hvMarried) {
+      var sp = hvNpcById(hvMarried);
+      if (sp && hvTimeMin >= 360 && hvTimeMin < 1080) {
+        if (tx === 7 && ty === 13) return sp; // spouse waits by the farmhouse in the day
+      }
+    }
+    return null;
+  }
+  function hvRockAt(tx, ty) {
+    for (var i = 0; i < hvRocks.length; i++) if (hvRocks[i].x === tx && hvRocks[i].y === ty) return i;
+    return -1;
+  }
+  function hvForageAt(tx, ty) {
+    for (var i = 0; i < hvForage.length; i++) if (hvForage[i].x === tx && hvForage[i].y === ty) return i;
+    return -1;
+  }
+
+  /* ---------- Time, sleep, day advance ---------- */
+  function hvTimeStr() {
+    var h = Math.floor(hvTimeMin / 60), m = hvTimeMin % 60;
+    var ap = h >= 12 ? 'PM' : 'AM';
+    var hh = h % 12; if (hh === 0) hh = 12;
+    return hh + ':' + (m < 10 ? '0' : '') + m + ap;
+  }
+  function hvSleep() {
+    // Advance the day: grow watered crops, animal produce, new forage/rocks.
+    hvMenu = null; hvDialog = null; hvFish = null; hvFest = null;
+    var died = [];
+    for (var k in hvSoil) {
+      var s = hvSoil[k];
+      if (!s.crop) { s.watered = false; continue; }
+      var c = hvCropById(s.crop);
+      if (!c) { delete hvSoil[k]; continue; }
+      if (c.season !== hvSeason) { died.push(k); continue; } // out of season at season change (handled below too)
+      if (s.watered) s.growth++;
+      s.watered = false;
+    }
+    if (hvFedChick && hvChickens > 0) hvEggs += hvChickens;
+    if (hvFedCow && hvCows > 0) hvMilk += hvCows;
+    if (hvFedPig && hvPigs > 0) hvTruffles += hvPigs;
+    if (hvFedSheep && hvSheep > 0) hvWool += hvSheep;
+    if (hvFedGoat && hvGoats > 0) hvGoatMilk += hvGoats;
+    if (hvFedDuck && hvDucks > 0) hvDuckEggs += hvDucks;
+    hvFedChick = false; hvFedCow = false;
+    hvFedPig = false; hvFedSheep = false; hvFedGoat = false; hvFedDuck = false;
+    hvDay++;
+    if (hvDay > HV_SEASON_DAYS) {
+      hvDay = 1; hvSeason++;
+      if (hvSeason > 3) { hvSeason = 0; hvYear++; }
+      // Out-of-season crops die at the season change; the tilled plot stays
+      // tilled so the player can replant (same as after a harvest).
+      for (var k2 in hvSoil) {
+        var s2 = hvSoil[k2];
+        if (s2.crop) { var c2 = hvCropById(s2.crop); if (c2 && c2.season !== hvSeason) { s2.crop = null; s2.growth = 0; s2.watered = false; } }
+      }
+      hvShowMsg('A NEW SEASON: ' + HV_SEASONS[hvSeason] + '!');
+    }
+    hvTimeMin = HV_DAY_START; hvEnergy = 100;
+    hvSpawnForage(); hvSpawnRocks();
+    hvDailyTick();
+    hvSave();
+  }
+  function hvForceSleep() {
+    hvShowMsg('YOU COLLAPSED! IT IS MORNING.');
+    hvSleep();
+  }
+
+  /* ---------- Movement ---------- */
+  function hvCanStand(px, py) {
+    // 6x6 box centered on the player; all 4 corners must be walkable.
+    var pts = [[px - 3, py - 3], [px + 3, py - 3], [px - 3, py + 3], [px + 3, py + 3]];
+    for (var i = 0; i < pts.length; i++) {
+      var tx = Math.floor(pts[i][0] / HV_T), ty = Math.floor(pts[i][1] / HV_T);
+      if (hvIsSolidAt(tx, ty)) return false;
+      if (hvNpcAt(tx, ty)) return false;
+      if (hvRockAt(tx, ty) >= 0) return false;
+    }
+    return true;
+  }
+  function hvMovePlayer() {
+    var sp = hvHasBoots ? 1.9 : 1.3;
+    var dx = 0, dy = 0;
+    if (JMFGAMES.isDown('left')) { dx = -sp; hvDir = 'left'; }
+    else if (JMFGAMES.isDown('right')) { dx = sp; hvDir = 'right'; }
+    if (JMFGAMES.isDown('up')) { dy = -sp; hvDir = 'up'; }
+    else if (JMFGAMES.isDown('down')) { dy = sp; hvDir = 'down'; }
+    if (dx !== 0 && hvCanStand(hvPx + dx, hvPy)) hvPx += dx;
+    if (dy !== 0 && hvCanStand(hvPx, hvPy + dy)) hvPy += dy;
+    // Clamp to the world.
+    if (hvPx < 8) hvPx = 8; if (hvPx > HV_MW * HV_T - 8) hvPx = HV_MW * HV_T - 8;
+    if (hvPy < 8) hvPy = 8; if (hvPy > HV_MH * HV_T - 8) hvPy = HV_MH * HV_T - 8;
+    // Auto-collect forage by walking over it.
+    var tx = Math.floor(hvPx / HV_T), ty = Math.floor(hvPy / HV_T);
+    var fi = hvForageAt(tx, ty);
+    if (fi >= 0) {
+      var f = hvForage[fi];
+      hvForage.splice(fi, 1);
+      hvAddItem(f.id, 1);
+      var fd = null;
+      for (var i = 0; i < HV_FORAGE.length; i++) if (HV_FORAGE[i].id === f.id) fd = HV_FORAGE[i];
+      hvShowMsg('PICKED UP ' + (fd ? fd.name : 'FORAGE') + '!');
+      JMFGAMES.beep(880, 0.06);
+    }
+  }
+  function hvFrontTile() {
+    var tx = Math.floor(hvPx / HV_T), ty = Math.floor(hvPy / HV_T);
+    if (hvDir === 'up') ty--;
+    else if (hvDir === 'down') ty++;
+    else if (hvDir === 'left') tx--;
+    else tx++;
+    return { x: tx, y: ty };
+  }
+
+  /* ---------- Update ---------- */
+  function hvUpdate() {
+    if (hvPaused) return;
+    if (hvMsgFrames > 0) hvMsgFrames--;
+    // Time ticks: 1 game-minute per 12 frames (~5 min/sec, ~4 min per day).
+    hvTimeTick++;
+    if (hvTimeTick >= 12) { hvTimeTick = 0; hvTimeMin++; if (hvTimeMin >= HV_DAY_END) hvForceSleep(); }
+    if (hvMenu || hvDialog) return; // menus pause the world (but time still ticks)
+    if (hvFish) { hvFishTick(); return; }
+    if (hvFest && hvFest.phase === 'play') { hvFestTick(); return; }
+    if (hvRoom) { hvRoomMove(); return; }
+    hvMovePlayer();
+    hvExpansionTick();
+    // Camera follows the player.
+    var viewW = 160, viewH = 144 - HV_HUD;
+    hvCamX = Math.max(0, Math.min(HV_MW * HV_T - viewW, hvPx - viewW / 2));
+    hvCamY = Math.max(0, Math.min(HV_MH * HV_T - viewH, hvPy - viewH / 2 - HV_HUD / 2));
+  }
+
+  /* ---------- Generic list menu ---------- */
+  function hvOpenMenu(title, sub, items, onBack) {
+    // Expansion menus call hvOpenMenu(title, items, onSelect): 2nd arg is the
+    // items array and 3rd is a selection callback. Adapt so both forms work.
+    if (Array.isArray(sub) && typeof items === 'function') {
+      hvMenu = { title: title, sub: '', items: sub, sel: 0, onBack: null, onSelect: items };
+      return;
+    }
+    hvMenu = { title: title, sub: sub || '', items: items, sel: 0, onBack: onBack || null };
+  }
+  function hvMenuMove(d) {
+    if (!hvMenu) return;
+    hvMenu.sel = (hvMenu.sel + d + hvMenu.items.length) % hvMenu.items.length;
+    JMFGAMES.beep(600, 0.04);
+  }
+  function hvMenuAction() {
+    if (!hvMenu) return;
+    var it = hvMenu.items[hvMenu.sel];
+    if (hvMenu.onSelect) { hvMenu.onSelect(it); return; }
+    if (it && it.act) it.act();
+  }
+  function hvMenuBack() {
+    if (!hvMenu) return;
+    var b = hvMenu.onBack;
+    hvMenu = null;
+    JMFGAMES.beep(440, 0.06);
+    if (b) b();
+  }
+
+  /* ---------- Item names / prices ---------- */
+  function hvItemName(id) {
+    for (var i = 0; i < HV_CROPS.length; i++) if (HV_CROPS[i].id === id) return HV_CROPS[i].name;
+    for (var j = 0; j < HV_FISH.length; j++) if (HV_FISH[j].id === id) return HV_FISH[j].name;
+    for (var k = 0; k < HV_FORAGE.length; k++) if (HV_FORAGE[k].id === id) return HV_FORAGE[k].name;
+    for (var m = 0; m < HV_ORES.length; m++) if (HV_ORES[m].id === id) return HV_ORES[m].name;
+    if (id === 'egg') return 'EGG';
+    if (id === 'milk') return 'MILK';
+    if (id === 'wood') return 'WOOD';
+    if (id === 'feed') return 'FEED';
+    if (id === 'ring') return 'SILVER RING';
+    if (id.indexOf('seed_') === 0) { var c = hvCropById(id.slice(5)) || hvTropicalCropById(id.slice(5)); return c ? c.name + ' SEEDS' : 'SEEDS'; }
+    if (id === 'wool') return 'WOOL';
+    if (id === 'truffle') return 'TRUFFLE';
+    if (id === 'goatmilk') return 'GOAT MILK';
+    if (id === 'duckegg') return 'DUCK EGG';
+    if (id === 'honey') return 'HONEY';
+    if (id === 'apple') return 'APPLE';
+    if (id === 'cherry') return 'CHERRY';
+    if (id === 'orange') return 'ORANGE';
+    if (id === 'plum') return 'PLUM';
+    if (id === 'fertilizer') return 'FERTILIZER';
+    if (id === 'sprinkler') return 'SPRINKLER';
+    if (id === 'beehive') return 'BEEHIVE';
+    if (id === 'sword') return 'SWORD';
+    for (var ai = 0; ai < HV_ARTISAN.length; ai++) if (HV_ARTISAN[ai].id === id) return HV_ARTISAN[ai].name;
+    for (var ri = 0; ri < HV_RECIPES.length; ri++) if (HV_RECIPES[ri].id === id) return HV_RECIPES[ri].name;
+    for (var oi = 0; oi < HV_OCEAN_FISH.length; oi++) if (HV_OCEAN_FISH[oi].id === id) return HV_OCEAN_FISH[oi].name;
+    for (var ti = 0; ti < HV_TROPICAL_CROPS.length; ti++) if (HV_TROPICAL_CROPS[ti].id === id) return HV_TROPICAL_CROPS[ti].name;
+    for (var tf = 0; tf < HV_TROPICAL_FISH.length; tf++) if (HV_TROPICAL_FISH[tf].id === id) return HV_TROPICAL_FISH[tf].name;
+    for (var ifg = 0; ifg < HV_ISLAND_FORAGE.length; ifg++) if (HV_ISLAND_FORAGE[ifg].id === id) return HV_ISLAND_FORAGE[ifg].name;
+    for (var af = 0; af < HV_ARTIFACTS.length; af++) if (HV_ARTIFACTS[af].id === id) return HV_ARTIFACTS[af].name;
+    for (var tr2 = 0; tr2 < HV_TREES.length; tr2++) if (HV_TREES[tr2].id === id) return HV_TREES[tr2].name + ' SAPLING';
+    if (/_s$/.test(id)) { var cb = hvCropById(id.slice(0, -2)); return cb ? cb.name + ' (SILVER)' : id.toUpperCase(); }
+    if (/_g$/.test(id)) { var cg = hvCropById(id.slice(0, -2)); return cg ? cg.name + ' (GOLD)' : id.toUpperCase(); }
+    return id.toUpperCase();
+  }
+  function hvItemSell(id) {
+    for (var i = 0; i < HV_CROPS.length; i++) if (HV_CROPS[i].id === id) return Math.round(HV_CROPS[i].sell * (1 + (hvSkillLevel('farming') - 1) * 0.05));
+    for (var j = 0; j < HV_FISH.length; j++) if (HV_FISH[j].id === id) return HV_FISH[j].sell;
+    for (var k = 0; k < HV_FORAGE.length; k++) if (HV_FORAGE[k].id === id) return HV_FORAGE[k].sell;
+    for (var m = 0; m < HV_ORES.length; m++) if (HV_ORES[m].id === id) return HV_ORES[m].sell;
+    if (id === 'egg') return 40;
+    if (id === 'milk') return 80;
+    if (id === 'wood') return 10;
+    if (id === 'wool') return 90;
+    if (id === 'truffle') return 150;
+    if (id === 'goatmilk') return 100;
+    if (id === 'duckegg') return 50;
+    if (id === 'honey') return 120;
+    if (id === 'apple') return 60;
+    if (id === 'cherry') return 80;
+    if (id === 'orange') return 70;
+    if (id === 'plum') return 65;
+    for (var ai2 = 0; ai2 < HV_ARTISAN.length; ai2++) if (HV_ARTISAN[ai2].id === id) return HV_ARTISAN[ai2].sell;
+    for (var ri2 = 0; ri2 < HV_RECIPES.length; ri2++) if (HV_RECIPES[ri2].id === id) return HV_RECIPES[ri2].sell;
+    for (var oi2 = 0; oi2 < HV_OCEAN_FISH.length; oi2++) if (HV_OCEAN_FISH[oi2].id === id) return HV_OCEAN_FISH[oi2].sell;
+    for (var ti2 = 0; ti2 < HV_TROPICAL_CROPS.length; ti2++) if (HV_TROPICAL_CROPS[ti2].id === id) return HV_TROPICAL_CROPS[ti2].sell;
+    for (var tf2 = 0; tf2 < HV_TROPICAL_FISH.length; tf2++) if (HV_TROPICAL_FISH[tf2].id === id) return HV_TROPICAL_FISH[tf2].sell;
+    for (var if2 = 0; if2 < HV_ISLAND_FORAGE.length; if2++) if (HV_ISLAND_FORAGE[if2].id === id) return HV_ISLAND_FORAGE[if2].sell;
+    for (var af2 = 0; af2 < HV_ARTIFACTS.length; af2++) if (HV_ARTIFACTS[af2].id === id) return HV_ARTIFACTS[af2].sell;
+    if (/_s$/.test(id)) { var cb2 = hvCropById(id.slice(0, -2)); return cb2 ? Math.round(cb2.sell * 1.5) : 0; }
+    if (/_g$/.test(id)) { var cg2 = hvCropById(id.slice(0, -2)); return cg2 ? cg2.sell * 2 : 0; }
+    return 0;
+  }
+
+  /* ---------- Tools ---------- */
+  function hvSpendEnergy(n) {
+    hvEnergy -= n;
+    if (hvEnergy < 0) hvEnergy = 0;
+    if (hvEnergy === 0) hvShowMsg('EXHAUSTED! SLEEP AT HOME.');
+  }
+  function hvTill(x, y) {
+    if (hvTileAt(x, y) !== 'x') return;
+    var key = x + ',' + y;
+    if (!hvSoil[key]) hvSoil[key] = { tilled: true, crop: null, growth: 0, watered: false };
+  }
+  function hvWater(x, y) {
+    var key = x + ',' + y;
+    var s = hvSoil[key];
+    if (s && s.crop && !s.watered) s.watered = true;
+  }
+  function hvUseTool(ft) {
+    // Harvest a mature crop first, whatever the tool.
+    var hk = ft.x + ',' + ft.y;
+    var hs = hvSoil[hk];
+    if (hs && hs.crop) {
+      var hc = hvCropById(hs.crop);
+      if (hc && hs.growth >= hc.days) {
+        hvSpendEnergy(1);
+        var harvestId = hs.crop;
+        if (hs.fert) {
+          var qr = Math.random();
+          if (qr < 0.10) harvestId = hs.crop + '_g';
+          else if (qr < 0.35) harvestId = hs.crop + '_s';
+        }
+        hvAddItem(harvestId, 1);
+        hs.crop = null; hs.growth = 0; hs.watered = false; hs.fert = false;
+        hvShowMsg('HARVESTED ' + hvItemName(harvestId) + '!');
+        hvGainXp('farming', 10);
+        hvStoryHarvested++;
+        hvStoryCheck();
+        JMFGAMES.beep(880, 0.08);
+        return;
+      }
+    }
+    var tool = HV_TOOLS[hvToolIdx].id;
+    var ch = hvTileAt(ft.x, ft.y);
+    if (tool === 'hoe') {
+      if (ch !== 'x') { hvShowMsg('HOE ONLY WORKS ON THE FIELD.'); return; }
+      if (hvSoil[hk]) { hvShowMsg('ALREADY TILLED.'); return; }
+      hvSpendEnergy(2);
+      hvTill(ft.x, ft.y);
+      var hoeN = hvHoeTiles();
+      if (hoeN > 1) {
+        var hdx = hvDir === 'left' ? -1 : hvDir === 'right' ? 1 : 0;
+        var hdy = hvDir === 'up' ? -1 : hvDir === 'down' ? 1 : 0;
+        for (var hi = 1; hi < hoeN; hi++) {
+          var hx2 = ft.x + hdx * hi, hy2 = ft.y + hdy * hi;
+          if (hvDir === 'up' || hvDir === 'down') { hvTill(hx2 - 1, hy2); hvTill(hx2, hy2); hvTill(hx2 + 1, hy2); }
+          else { hvTill(hx2, hy2 - 1); hvTill(hx2, hy2); hvTill(hx2, hy2 + 1); }
+        }
+        if (hvDir === 'up' || hvDir === 'down') { hvTill(ft.x - 1, ft.y); hvTill(ft.x + 1, ft.y); }
+        else { hvTill(ft.x, ft.y - 1); hvTill(ft.x, ft.y + 1); }
+      }
+      // Rare artifact dig-up (museum).
+      if (Math.random() < 0.05) {
+        var art = HV_ARTIFACTS[Math.floor(Math.random() * HV_ARTIFACTS.length)];
+        hvAddItem(art.id, 1);
+        hvShowMsg('YOU DUG UP AN ARTIFACT: ' + art.name + '! DONATE IT AT THE MUSEUM.');
+      }
+      JMFGAMES.beep(300, 0.06);
+    } else if (tool === 'can') {
+      if (!hs || !hs.crop) { hvShowMsg('NOTHING TO WATER HERE.'); return; }
+      if (hs.watered) { hvShowMsg('ALREADY WATERED.'); return; }
+      hvSpendEnergy(2);
+      hs.watered = true;
+      var canTier = hvToolTier.can;
+      if (canTier >= 1) { hvWater(ft.x - 1, ft.y); hvWater(ft.x + 1, ft.y); hvWater(ft.x, ft.y - 1); hvWater(ft.x, ft.y + 1); }
+      if (canTier >= 2) { hvWater(ft.x - 1, ft.y - 1); hvWater(ft.x + 1, ft.y - 1); hvWater(ft.x - 1, ft.y + 1); hvWater(ft.x + 1, ft.y + 1); }
+      if (canTier >= 3) { hvWater(ft.x - 2, ft.y); hvWater(ft.x + 2, ft.y); hvWater(ft.x, ft.y - 2); hvWater(ft.x, ft.y + 2); }
+      JMFGAMES.beep(700, 0.06);
+      hvShowMsg('WATERED!');
+    } else if (tool === 'seeds') {
+      if (!hs) { hvShowMsg('TILL THE SOIL FIRST.'); return; }
+      if (hs.crop) { hvShowMsg('ALREADY PLANTED.'); return; }
+      hvOpenSeedSelect(ft.x, ft.y);
+    } else if (tool === 'axe') {
+      if (ch !== 't') { hvShowMsg('NO TREE HERE.'); return; }
+      hvSpendEnergy(3);
+      hvMap[ft.y][ft.x] = 'g';
+      var woodN = 2 + hvToolTier.axe;
+      hvAddItem('wood', woodN);
+      hvShowMsg('GOT ' + woodN + ' WOOD!');
+      hvGainXp('foraging', 5);
+      JMFGAMES.beep(250, 0.08);
+    } else if (tool === 'pick') {
+      var ri = hvRockAt(ft.x, ft.y);
+      if (ri < 0) { hvShowMsg('NO ROCK HERE.'); return; }
+      hvSpendEnergy(3);
+      var rock = hvRocks[ri];
+      hvRocks.splice(ri, 1);
+      var oreN = 1 + (hvToolTier.pick >= 2 ? 1 : 0) + (hvToolTier.pick >= 3 ? 1 : 0);
+      hvAddItem(rock.ore, oreN);
+      hvOreTotal += oreN;
+      var ore = null;
+      for (var i = 0; i < HV_ORES.length; i++) if (HV_ORES[i].id === rock.ore) ore = HV_ORES[i];
+      hvShowMsg(oreN > 1 ? 'GOT ' + oreN + 'X ' + (ore ? ore.name : 'ORE') + '!' : 'GOT ' + (ore ? ore.name : 'ORE') + '!');
+      hvGainXp('mining', 10);
+      JMFGAMES.beep(200, 0.08);
+    } else if (tool === 'rod') {
+      if (ch === 'w') { hvFishPool = null; }
+      else if (ch === 'o') { hvFishPool = HV_OCEAN_FISH; }
+      else { hvShowMsg('FISH ONLY IN WATER.'); return; }
+      hvSpendEnergy(3);
+      hvFishStart();
+    } else if (tool === 'sword') {
+      hvSwordAttack();
+    } else if (tool === 'fert') {
+      if (!hs) { hvShowMsg('TILL THE SOIL FIRST.'); return; }
+      if (hs.fert) { hvShowMsg('ALREADY FERTILIZED.'); return; }
+      if ((hvInv['fertilizer'] || 0) < 1) { hvShowMsg('NO FERTILIZER! BUY SOME AT THE SHOP.'); return; }
+      hvInv['fertilizer']--;
+      hs.fert = true;
+      hvShowMsg('FERTILIZED! THIS CROP MAY GROW SILVER OR GOLD.');
+      JMFGAMES.beep(700, 0.06);
+    } else if (tool === 'sprinkler') {
+      if (ch !== 'g') { hvShowMsg('SPRINKLERS GO ON GRASS NEAR THE FIELD.'); return; }
+      if ((hvInv['sprinkler'] || 0) < 1) { hvShowMsg('NO SPRINKLER! BUY ONE AT THE SHOP.'); return; }
+      if (hvSprinklerAt(ft.x, ft.y)) { hvShowMsg('A SPRINKLER IS ALREADY HERE.'); return; }
+      hvInv['sprinkler']--;
+      hvSprinklers.push({ x: ft.x, y: ft.y });
+      hvShowMsg('SPRINKLER PLACED! IT WATERS NEARBY SOIL EACH MORNING.');
+      JMFGAMES.beep(700, 0.06);
+    }
+  }
+  function hvOpenSeedSelect(tx, ty) {
+    var items = [];
+    var crops = hvCropsForSeason(hvSeason);
+    for (var i = 0; i < crops.length; i++) {
+      var c = crops[i];
+      var n = hvCount('seed_' + c.id);
+      if (n > 0) {
+        (function (crop, x, y) {
+          items.push({
+            label: crop.name + ' x' + hvCount('seed_' + crop.id), sub: crop.days + ' DAYS', act: function () {
+              hvAddItem('seed_' + crop.id, -1);
+              hvSoil[x + ',' + y] = { tilled: true, crop: crop.id, growth: 0, watered: false };
+              hvSpendEnergy(2);
+              hvMenu = null;
+              hvShowMsg('PLANTED ' + crop.name + '!');
+              JMFGAMES.beep(500, 0.06);
+            }
+          });
+        })(c, tx, ty);
+      }
+    }
+    if (!items.length) { hvShowMsg('NO SEEDS! BUY SOME AT THE SHOP.'); return; }
+    items.push({ label: 'CANCEL', sub: '', act: function () { hvMenu = null; } });
+    hvOpenMenu('PLANT SEEDS', 'TILLED SOIL', items, null);
+  }
+  function hvCycleTool() {
+    if (hvPaused) return;
+    if (hvMenu || hvDialog) return;
+    hvToolIdx = (hvToolIdx + 1) % HV_TOOLS.length;
+    JMFGAMES.beep(600, 0.05);
+    hvShowMsg('TOOL: ' + HV_TOOLS[hvToolIdx].name);
+  }
+
+  /* ---------- NPC talk / gift / propose ---------- */
+  function hvTalk(npc) {
+    var hearts = hvHearts(npc.id);
+    var heartLine = hvHeartEvent(npc);
+    var line = heartLine || npc.lines[(hvDay + hvSeason) % npc.lines.length];
+    var key = hvDayKey();
+    if (hvTalkDay[npc.id] !== key) {
+      hvTalkDay[npc.id] = key;
+      hvFriend[npc.id] = Math.min(100, (hvFriend[npc.id] || 0) + 2);
+    }
+    hvStoryMet[npc.id] = true; hvStoryCheck();
+    // Show the line in the word-wrapped dialog box first; when the player
+    // closes it, open the talk options menu.
+    hvDialog = { npc: npc, line: npc.name + ' - ' + (npc.role || 'TOWNIE') + ' (' + hearts + '/10): ' + line, hearts: hearts, after: function () { hvTalkMenu(npc); } };
+    JMFGAMES.beep(660, 0.06);
+  }
+  function hvTalkMenu(npc) {
+    var hearts = hvHearts(npc.id);
+    var key = hvDayKey();
+    var items = [];
+    var services = hvRoleService(npc);
+    for (var si = 0; si < services.length; si++) {
+      (function (svc) {
+        items.push({ label: svc.label, sub: '', act: function () { hvRoleServiceDo(npc, svc.act); if (svc.act !== 'smith') hvMenu = null; } });
+      })(services[si]);
+    }
+    if (hvGiftDay[npc.id] !== key) {
+      items.push({ label: 'GIVE A GIFT', sub: '', act: function () { hvOpenGift(npc); } });
+    } else {
+      items.push({ label: 'GIFT GIVEN TODAY', sub: '', act: function () { hvMenu = null; } });
+    }
+    if (npc.marry && hearts >= 8 && hvCount('ring') > 0 && !hvMarried) {
+      items.push({ label: 'PROPOSE', sub: 'SILVER RING, 8 HEARTS', act: function () { hvPropose(npc); } });
+    }
+    items.push({ label: 'GOODBYE', sub: '', act: function () { hvMenu = null; } });
+    hvOpenMenu(npc.name + '  ' + hearts + '/10', '', items, null);
+  }
+  function hvOpenGift(npc) {
+    var items = [];
+    var giftable = ['turnip', 'potato', 'lettuce', 'strawberry', 'tomato', 'corn', 'melon', 'pepper', 'pumpkin', 'carrot', 'cabbage', 'grape', 'snowpea', 'wroot', 'iceberry', 'fcabbage', 'sunfish', 'bass', 'catfish', 'trout', 'icefish', 'goldfish', 'wberry', 'dandelion', 'sunflower', 'mushroom', 'acorn', 'snowberry', 'pinecone', 'egg', 'milk', 'wood', 'copper', 'iron', 'goldore', 'gem', 'stone'];
+    for (var i = 0; i < giftable.length; i++) {
+      var id = giftable[i];
+      var n = hvCount(id);
+      if (n > 0) {
+        (function (gid, isFav) {
+          items.push({
+            label: hvItemName(gid) + ' x' + hvCount(gid) + (isFav ? ' <3' : ''), sub: isFav ? 'FAVORITE!' : '', act: function () {
+              hvAddItem(gid, -1);
+              hvGiftDay[npc.id] = hvDayKey();
+              var gain = isFav ? 8 : 4;
+              hvFriend[npc.id] = Math.min(100, (hvFriend[npc.id] || 0) + gain);
+              hvMenu = null;
+              hvShowMsg(isFav ? npc.name + ' LOVES IT! +' + gain : npc.name + ' LIKES IT! +' + gain);
+              JMFGAMES.beep(990, 0.08);
+            }
+          });
+        })(id, id === npc.fav);
+      }
+    }
+    if (!items.length) { hvShowMsg('NOTHING TO GIVE!'); return; }
+    items.push({ label: 'CANCEL', sub: '', act: function () { hvMenu = null; } });
+    hvOpenMenu('GIVE A GIFT', 'TO ' + npc.name, items, null);
+  }
+  function hvPropose(npc) {
+    hvAddItem('ring', -1);
+    hvMarried = npc.id;
+    hvMenu = null;
+    hvDialog = { npc: npc, line: 'YES! I will marry you! I will move to the farm and help every day. We are married now!', hearts: 10 };
+    JMFGAMES.beep(880, 0.15);
+    hvSave();
+  }
+
+  /* ---------- Shop ---------- */
+  function hvOpenShop() {
+    hvOpenMenu('PIP\'S SHOP', 'GOLD: ' + hvGold, [
+      { label: 'BUY SEEDS', sub: '', act: function () { hvOpenBuySeeds(); } },
+      { label: 'BUY TROPICAL SEEDS', sub: 'FOR THE ISLAND', act: function () { hvOpenBuyTropical(); } },
+      { label: 'BUY ANIMALS & FEED', sub: '', act: function () { hvOpenBuyAnimals(); } },
+      { label: 'BUY FARM GOODS', sub: 'MACHINES & MORE', act: function () { hvOpenBuyGoods(); } },
+      { label: 'BUY TOOLS & MORE', sub: '', act: function () { hvOpenBuyTools(); } },
+      { label: 'SELL ITEMS', sub: '', act: function () { hvOpenSell(); } },
+      { label: 'LEAVE', sub: '', act: function () { hvMenu = null; } }
+    ], null);
+  }
+  function hvOpenBuySeeds() {
+    var items = [];
+    var crops = hvCropsForSeason(hvSeason);
+    for (var i = 0; i < crops.length; i++) {
+      (function (c) {
+        items.push({
+          label: c.name + '  ' + c.seed + 'G', sub: c.days + 'D, SELLS ' + c.sell + 'G', act: function () {
+            if (hvGold < c.seed) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+            hvGold -= c.seed;
+            hvAddItem('seed_' + c.id, 1);
+            hvShowMsg('BOUGHT ' + c.name + ' SEEDS!');
+            JMFGAMES.beep(880, 0.06);
+            hvOpenBuySeeds();
+          }
+        });
+      })(crops[i]);
+    }
+    items.push({ label: 'BACK', sub: '', act: function () { hvOpenShop(); } });
+    hvOpenMenu('BUY SEEDS', HV_SEASONS[hvSeason] + ' SEEDS', items, null);
+  }
+  function hvOpenBuyAnimals() {
+    var items = [];
+    items.push({
+      label: 'CHICKEN  300G', sub: hvChickens + ' OWNED', act: function () {
+        if (hvGold < 300) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+        hvGold -= 300; hvChickens++;
+        hvShowMsg('BOUGHT A CHICKEN!');
+        JMFGAMES.beep(880, 0.06);
+        hvOpenBuyAnimals();
+      }
+    });
+    items.push({
+      label: 'COW  800G', sub: hvCows + ' OWNED', act: function () {
+        if (hvGold < 800) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+        hvGold -= 800; hvCows++;
+        hvShowMsg('BOUGHT A COW!');
+        JMFGAMES.beep(880, 0.06);
+        hvOpenBuyAnimals();
+      }
+    });
+    items.push({
+      label: 'PIG  500G', sub: hvPigs + ' OWNED', act: function () {
+        if (hvGold < 500) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+        hvGold -= 500; hvPigs++;
+        hvShowMsg('BOUGHT A PIG! IT FINDS TRUFFLES.');
+        JMFGAMES.beep(880, 0.06);
+        hvOpenBuyAnimals();
+      }
+    });
+    items.push({
+      label: 'SHEEP  600G', sub: hvSheep + ' OWNED', act: function () {
+        if (hvGold < 600) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+        hvGold -= 600; hvSheep++;
+        hvShowMsg('BOUGHT A SHEEP! WOOL GOES TO THE LOOM.');
+        JMFGAMES.beep(880, 0.06);
+        hvOpenBuyAnimals();
+      }
+    });
+    items.push({
+      label: 'GOAT  700G', sub: hvGoats + ' OWNED', act: function () {
+        if (hvGold < 700) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+        hvGold -= 700; hvGoats++;
+        hvShowMsg('BOUGHT A GOAT! GOAT MILK MAKES FINE CHEESE.');
+        JMFGAMES.beep(880, 0.06);
+        hvOpenBuyAnimals();
+      }
+    });
+    items.push({
+      label: 'DUCK  250G', sub: hvDucks + ' OWNED', act: function () {
+        if (hvGold < 250) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+        hvGold -= 250; hvDucks++;
+        hvShowMsg('BOUGHT A DUCK! IT LAYS DUCK EGGS.');
+        JMFGAMES.beep(880, 0.06);
+        hvOpenBuyAnimals();
+      }
+    });
+    if (!hvPet) items.push({
+      label: 'ADOPT A DOG  200G', sub: 'A FAITHFUL FRIEND', act: function () {
+        if (hvGold < 200) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+        hvGold -= 200; hvAdoptPet('dog');
+        JMFGAMES.beep(880, 0.06);
+        hvOpenBuyAnimals();
+      }
+    });
+    if (!hvPet) items.push({
+      label: 'ADOPT A CAT  200G', sub: 'A FAITHFUL FRIEND', act: function () {
+        if (hvGold < 200) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+        hvGold -= 200; hvAdoptPet('cat');
+        JMFGAMES.beep(880, 0.06);
+        hvOpenBuyAnimals();
+      }
+    });
+    items.push({
+      label: 'FEED x5  45G', sub: hvCount('feed') + ' OWNED', act: function () {
+        if (hvGold < 45) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+        hvGold -= 45; hvAddItem('feed', 5);
+        hvShowMsg('BOUGHT 5 FEED!');
+        JMFGAMES.beep(880, 0.06);
+        hvOpenBuyAnimals();
+      }
+    });
+    items.push({ label: 'BACK', sub: '', act: function () { hvOpenShop(); } });
+    hvOpenMenu('BUY ANIMALS & FEED', 'GOLD: ' + hvGold, items, null);
+  }
+  function hvOpenBuyTools() {
+    var items = [];
+    if (!hvHasSteelHoe) items.push({
+      label: 'STEEL HOE  500G', sub: 'TILLS 3 TILES', act: function () {
+        if (hvGold < 500) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+        hvGold -= 500; hvHasSteelHoe = true; hvToolTier.hoe = Math.max(hvToolTier.hoe, 1);
+        hvShowMsg('STEEL HOE! TILLS 3 TILES.');
+        JMFGAMES.beep(990, 0.08);
+        hvOpenBuyTools();
+      }
+    });
+    if (!hvHasSteelCan) items.push({
+      label: 'STEEL CAN  600G', sub: 'WATERS 5 TILES', act: function () {
+        if (hvGold < 600) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+        hvGold -= 600; hvHasSteelCan = true; hvToolTier.can = Math.max(hvToolTier.can, 1);
+        hvShowMsg('STEEL CAN! WATERS 5 TILES.');
+        JMFGAMES.beep(990, 0.08);
+        hvOpenBuyTools();
+      }
+    });
+    if (!hvHasBoots) items.push({
+      label: 'STURDY BOOTS  300G', sub: 'WALK FASTER', act: function () {
+        if (hvGold < 300) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+        hvGold -= 300; hvHasBoots = true;
+        hvShowMsg('STURDY BOOTS! FASTER!');
+        JMFGAMES.beep(990, 0.08);
+        hvOpenBuyTools();
+      }
+    });
+    items.push({
+      label: 'SILVER RING  500G', sub: 'PROPOSE WHEN READY', act: function () {
+        if (hvGold < 500) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+        hvGold -= 500; hvAddItem('ring', 1);
+        hvShowMsg('BOUGHT A SILVER RING!');
+        JMFGAMES.beep(990, 0.08);
+        hvOpenBuyTools();
+      }
+    });
+    items.push({ label: 'BACK', sub: '', act: function () { hvOpenShop(); } });
+    hvOpenMenu('BUY TOOLS & MORE', 'GOLD: ' + hvGold, items, null);
+  }
+  function hvOpenBuyGoods() {
+    var items = [];
+    for (var i = 0; i < HV_MACHINES.length; i++) {
+      (function (m) {
+        if (hvMachOwned[m.id]) items.push({ label: m.name + ' - OWNED', sub: '', act: function () { hvMenu = null; } });
+        else items.push({
+          label: m.name + '  ' + m.cost + 'G', sub: 'ARTISAN MACHINE', act: function () {
+            if (hvGold < m.cost) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+            hvGold -= m.cost; hvMachOwned[m.id] = true;
+            hvShowMsg('BOUGHT A ' + m.name + '! USE IT FROM HOME.');
+            JMFGAMES.beep(990, 0.08);
+            hvOpenBuyGoods();
+          }
+        });
+      })(HV_MACHINES[i]);
+    }
+    for (var j = 0; j < HV_TREES.length; j++) {
+      (function (tr) {
+        items.push({
+          label: tr.name + ' SAPLING  ' + tr.cost + 'G', sub: 'BEARS ' + hvItemName(tr.fruit).toUpperCase(), act: function () {
+            if (hvGold < tr.cost) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+            hvGold -= tr.cost; hvAddItem(tr.id, 1);
+            hvShowMsg('BOUGHT A ' + tr.name + ' SAPLING! PLANT IT ON GRASS.');
+            JMFGAMES.beep(880, 0.06);
+            hvOpenBuyGoods();
+          }
+        });
+      })(HV_TREES[j]);
+    }
+    items.push({
+      label: 'BEEHIVE  250G', sub: 'BEES MAKE HONEY', act: function () {
+        if (hvGold < 250) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+        hvGold -= 250; hvAddItem('beehive', 1);
+        hvShowMsg('BOUGHT A BEEHIVE! PLACE IT ON GRASS.');
+        JMFGAMES.beep(880, 0.06);
+        hvOpenBuyGoods();
+      }
+    });
+    items.push({
+      label: 'SPRINKLER  250G', sub: 'WATERS SOIL EACH MORNING', act: function () {
+        if (hvGold < 250) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+        hvGold -= 250; hvAddItem('sprinkler', 1);
+        hvShowMsg('BOUGHT A SPRINKLER! PLACE IT ON GRASS NEAR THE FIELD.');
+        JMFGAMES.beep(880, 0.06);
+        hvOpenBuyGoods();
+      }
+    });
+    items.push({
+      label: 'FERTILIZER x5  120G', sub: 'BETTER CROPS', act: function () {
+        if (hvGold < 120) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+        hvGold -= 120; hvAddItem('fertilizer', 5);
+        hvShowMsg('BOUGHT 5 FERTILIZER!');
+        JMFGAMES.beep(880, 0.06);
+        hvOpenBuyGoods();
+      }
+    });
+    if (!hvBoat) items.push({
+      label: 'BOAT  2000G', sub: 'SAIL TO THE TROPICAL ISLAND', act: function () {
+        if (hvGold < 2000) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+        hvGold -= 2000; hvBoat = true;
+        hvShowMsg('BOUGHT A BOAT! SAIL FROM THE DOCK ON THE BEACH.');
+        JMFGAMES.beep(990, 0.08);
+        hvOpenBuyGoods();
+      }
+    });
+    if (!hvSword) items.push({
+      label: 'SWORD  300G', sub: 'FIGHT MINE MONSTERS', act: function () {
+        if (hvGold < 300) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+        hvGold -= 300; hvSword = true;
+        hvShowMsg('BOUGHT A SWORD! CYCLE TO IT WITH B, THEN A TO ATTACK.');
+        JMFGAMES.beep(990, 0.08);
+        hvOpenBuyGoods();
+      }
+    });
+    items.push({ label: 'BACK', sub: '', act: function () { hvOpenShop(); } });
+    hvOpenMenu('BUY FARM GOODS', 'GOLD: ' + hvGold, items, null);
+  }
+  function hvOpenBuyTropical() {
+    var items = [];
+    for (var i = 0; i < HV_TROPICAL_CROPS.length; i++) {
+      (function (c) {
+        items.push({
+          label: c.name + '  ' + c.seed + 'G', sub: c.days + 'D, SELLS ' + c.sell + 'G', act: function () {
+            if (hvGold < c.seed) { hvShowMsg('NOT ENOUGH GOLD!'); return; }
+            hvGold -= c.seed;
+            hvAddItem('seed_' + c.id, 1);
+            hvShowMsg('BOUGHT ' + c.name + ' SEEDS! PLANT ON THE ISLAND OR IN THE GREENHOUSE.');
+            JMFGAMES.beep(880, 0.06);
+            hvOpenBuyTropical();
+          }
+        });
+      })(HV_TROPICAL_CROPS[i]);
+    }
+    items.push({ label: 'BACK', sub: '', act: function () { hvOpenShop(); } });
+    hvOpenMenu('BUY TROPICAL SEEDS', 'FOR THE ISLAND', items, null);
+  }
+  function hvOpenSell() {
+    var items = [];
+    var ids = Object.keys(hvInv);
+    for (var i = 0; i < ids.length; i++) {
+      var id = ids[i];
+      var price = hvItemSell(id);
+      if (price <= 0) continue;
+      var n = hvInv[id];
+      (function (gid, gprice, gcount) {
+        items.push({
+          label: hvItemName(gid) + ' x' + gcount, sub: 'SELL ALL: ' + (gprice * gcount) + 'G', act: function () {
+            hvGold += gprice * gcount;
+            hvAddItem(gid, -gcount);
+            hvShowMsg('SOLD FOR ' + (gprice * gcount) + 'G!');
+            JMFGAMES.beep(880, 0.06);
+            hvOpenSell();
+          }
+        });
+      })(id, price, n);
+    }
+    if (!items.length) items.push({ label: '(NOTHING TO SELL)', sub: '', act: function () { hvMenu = null; } });
+    items.push({ label: 'BACK', sub: '', act: function () { hvOpenShop(); } });
+    hvOpenMenu('SELL ITEMS', 'GOLD: ' + hvGold, items, null);
+  }
+
+  /* ---------- Animals (coop / barn) ---------- */
+  function hvOpenAnimals() {
+    var items = [];
+    if (hvEggs > 0) items.push({
+      label: 'COLLECT EGGS x' + hvEggs, sub: '', act: function () {
+        hvAddItem('egg', hvEggs);
+        hvShowMsg('COLLECTED ' + hvEggs + ' EGGS!');
+        hvEggs = 0;
+        JMFGAMES.beep(880, 0.06);
+        hvOpenAnimals();
+      }
+    });
+    if (hvMilk > 0) items.push({
+      label: 'COLLECT MILK x' + hvMilk, sub: '', act: function () {
+        hvAddItem('milk', hvMilk);
+        hvShowMsg('COLLECTED ' + hvMilk + ' MILK!');
+        hvMilk = 0;
+        JMFGAMES.beep(880, 0.06);
+        hvOpenAnimals();
+      }
+    });
+    if (hvChickens > 0 && !hvFedChick) items.push({
+      label: 'FEED CHICKENS', sub: hvCount('feed') + ' FEED', act: function () {
+        if (hvCount('feed') < hvChickens) { hvShowMsg('NEED ' + hvChickens + ' FEED!'); return; }
+        hvAddItem('feed', -hvChickens);
+        hvFedChick = true;
+        hvShowMsg('CHICKENS FED!');
+        JMFGAMES.beep(700, 0.06);
+        hvOpenAnimals();
+      }
+    });
+    if (hvCows > 0 && !hvFedCow) items.push({
+      label: 'FEED COWS', sub: hvCount('feed') + ' FEED', act: function () {
+        if (hvCount('feed') < hvCows) { hvShowMsg('NEED ' + hvCows + ' FEED!'); return; }
+        hvAddItem('feed', -hvCows);
+        hvFedCow = true;
+        hvShowMsg('COWS FED!');
+        JMFGAMES.beep(700, 0.06);
+        hvOpenAnimals();
+      }
+    });
+    if (hvTruffles > 0) items.push({
+      label: 'COLLECT TRUFFLES x' + hvTruffles, sub: '', act: function () {
+        hvAddItem('truffle', hvTruffles);
+        hvShowMsg('COLLECTED ' + hvTruffles + ' TRUFFLES!');
+        hvTruffles = 0;
+        JMFGAMES.beep(880, 0.06);
+        hvOpenAnimals();
+      }
+    });
+    if (hvWool > 0) items.push({
+      label: 'COLLECT WOOL x' + hvWool, sub: '', act: function () {
+        hvAddItem('wool', hvWool);
+        hvShowMsg('COLLECTED ' + hvWool + ' WOOL!');
+        hvWool = 0;
+        JMFGAMES.beep(880, 0.06);
+        hvOpenAnimals();
+      }
+    });
+    if (hvGoatMilk > 0) items.push({
+      label: 'COLLECT GOAT MILK x' + hvGoatMilk, sub: '', act: function () {
+        hvAddItem('goatmilk', hvGoatMilk);
+        hvShowMsg('COLLECTED ' + hvGoatMilk + ' GOAT MILK!');
+        hvGoatMilk = 0;
+        JMFGAMES.beep(880, 0.06);
+        hvOpenAnimals();
+      }
+    });
+    if (hvDuckEggs > 0) items.push({
+      label: 'COLLECT DUCK EGGS x' + hvDuckEggs, sub: '', act: function () {
+        hvAddItem('duckegg', hvDuckEggs);
+        hvShowMsg('COLLECTED ' + hvDuckEggs + ' DUCK EGGS!');
+        hvDuckEggs = 0;
+        JMFGAMES.beep(880, 0.06);
+        hvOpenAnimals();
+      }
+    });
+    if (hvPigs > 0 && !hvFedPig) items.push({
+      label: 'FEED PIGS', sub: hvCount('feed') + ' FEED', act: function () {
+        if (hvCount('feed') < hvPigs) { hvShowMsg('NEED ' + hvPigs + ' FEED!'); return; }
+        hvAddItem('feed', -hvPigs);
+        hvFedPig = true;
+        hvShowMsg('PIGS FED!');
+        JMFGAMES.beep(700, 0.06);
+        hvOpenAnimals();
+      }
+    });
+    if (hvSheep > 0 && !hvFedSheep) items.push({
+      label: 'FEED SHEEP', sub: hvCount('feed') + ' FEED', act: function () {
+        if (hvCount('feed') < hvSheep) { hvShowMsg('NEED ' + hvSheep + ' FEED!'); return; }
+        hvAddItem('feed', -hvSheep);
+        hvFedSheep = true;
+        hvShowMsg('SHEEP FED!');
+        JMFGAMES.beep(700, 0.06);
+        hvOpenAnimals();
+      }
+    });
+    if (hvGoats > 0 && !hvFedGoat) items.push({
+      label: 'FEED GOATS', sub: hvCount('feed') + ' FEED', act: function () {
+        if (hvCount('feed') < hvGoats) { hvShowMsg('NEED ' + hvGoats + ' FEED!'); return; }
+        hvAddItem('feed', -hvGoats);
+        hvFedGoat = true;
+        hvShowMsg('GOATS FED!');
+        JMFGAMES.beep(700, 0.06);
+        hvOpenAnimals();
+      }
+    });
+    if (hvDucks > 0 && !hvFedDuck) items.push({
+      label: 'FEED DUCKS', sub: hvCount('feed') + ' FEED', act: function () {
+        if (hvCount('feed') < hvDucks) { hvShowMsg('NEED ' + hvDucks + ' FEED!'); return; }
+        hvAddItem('feed', -hvDucks);
+        hvFedDuck = true;
+        hvShowMsg('DUCKS FED!');
+        JMFGAMES.beep(700, 0.06);
+        hvOpenAnimals();
+      }
+    });
+    if (hvChickens === 0 && hvCows === 0 && hvPigs === 0 && hvSheep === 0 && hvGoats === 0 && hvDucks === 0) items.push({ label: '(NO ANIMALS YET)', sub: 'BUY AT THE SHOP', act: function () { hvMenu = null; } });
+    if (hvFedChick) items.push({ label: 'CHICKENS FED', sub: 'EGGS TOMORROW', act: function () { hvMenu = null; } });
+    if (hvFedCow) items.push({ label: 'COWS FED', sub: 'MILK TOMORROW', act: function () { hvMenu = null; } });
+    items.push({ label: 'LEAVE', sub: '', act: function () { hvMenu = null; } });
+    hvOpenMenu('COOP & BARN', hvChickens + ' CHICKENS, ' + hvCows + ' COWS', items, null);
+  }
+
+  /* ---------- Sleep ---------- */
+  function hvSleepPrompt() {
+    hvOpenMenu('SLEEP UNTIL MORNING?', 'DAY ' + hvDay + ' ENDS', [
+      { label: 'SLEEP', sub: '', act: function () { hvSleep(); hvShowMsg('DAY ' + hvDay + ' OF ' + HV_SEASONS[hvSeason] + '.'); } },
+      { label: 'KITCHEN', sub: 'COOK & EAT', act: function () { hvKitchenOpen(); } },
+      { label: 'ARTISAN MACHINES', sub: 'MAKE GOODS', act: function () { hvMachinesOpen(); } },
+      { label: 'SKILL LEVELS', sub: '', act: function () { hvSkillsOpen(); } },
+      { label: 'QUEST LOG', sub: '', act: function () { hvQuestLogOpen(); } },
+      { label: 'STAY UP', sub: '', act: function () { hvMenu = null; } }
+    ], null);
+  }
+
+  /* ---------- Fishing ---------- */
+  function hvFishStart() {
+    hvFish = { phase: 'wait', t: 0, biteAt: 60 + Math.floor(Math.random() * 120), meter: 0, meterDir: 1 };
+    hvShowMsg('CAST! WAIT FOR A BITE...');
+  }
+  function hvFishTick() {
+    if (!hvFish) return;
+    hvFish.t++;
+    if (hvFish.phase === 'wait') {
+      if (hvFish.t >= hvFish.biteAt) { hvFish.phase = 'bite'; hvFish.t = 0; JMFGAMES.beep(1200, 0.1); hvShowMsg('! BITE! PRESS A!'); }
+    } else if (hvFish.phase === 'bite') {
+      if (hvFish.t > 30) { hvFish = null; hvShowMsg('THE FISH GOT AWAY...'); }
+    } else if (hvFish.phase === 'meter') {
+      hvFish.meter += hvFish.meterDir * 3;
+      if (hvFish.meter >= 100) { hvFish.meter = 100; hvFish.meterDir = -1; }
+      if (hvFish.meter <= 0) { hvFish.meter = 0; hvFish.meterDir = 1; }
+      if (hvFish.t > 150) { hvFish = null; hvShowMsg('THE FISH GOT AWAY...'); }
+    }
+  }
+  function hvFishPress() {
+    if (!hvFish) return;
+    if (hvFish.phase === 'bite') {
+      hvFish.phase = 'meter'; hvFish.t = 0; hvFish.meter = 0; hvFish.meterDir = 1;
+      hvShowMsg('HOOKED! PRESS A IN THE GREEN!');
+      JMFGAMES.beep(990, 0.08);
+    } else if (hvFish.phase === 'meter') {
+      if (hvFish.meter >= 40 && hvFish.meter <= 60) {
+        var opts = hvFishPool || hvFishForSeason(hvSeason);
+        var f = opts[Math.floor(Math.random() * opts.length)];
+        if (f.id === 'goldfish' && Math.random() < 0.8) {
+          var common = [];
+          for (var i = 0; i < opts.length; i++) if (opts[i].id !== 'goldfish') common.push(opts[i]);
+          if (common.length) f = common[Math.floor(Math.random() * common.length)];
+        }
+        hvAddItem(f.id, 1);
+        hvFishTotal++;
+        hvFish = null;
+        hvShowMsg('CAUGHT A ' + f.name + '!');
+        hvGainXp('fishing', 10);
+        JMFGAMES.beep(880, 0.12);
+      } else {
+        hvFish = null;
+        hvShowMsg('THE FISH GOT AWAY...');
+        JMFGAMES.beep(220, 0.1);
+      }
+    }
+  }
+
+  /* ---------- Festivals ---------- */
+  function hvIsFestivalDay() {
+    for (var i = 0; i < HV_FESTS.length; i++) {
+      if (HV_FESTS[i].season === hvSeason && HV_FESTS[i].day === hvDay) return HV_FESTS[i];
+    }
+    return null;
+  }
+  function hvFestJoin() {
+    var fest = hvIsFestivalDay();
+    if (!fest) return;
+    if (hvFestDoneDay === hvDayKey()) { hvShowMsg('FESTIVAL DONE FOR TODAY!'); return; }
+    hvFest = { fest: fest, phase: 'join', round: 0, hits: 0, marker: 0, markerDir: 1, t: 0 };
+    var festItems = [
+      { label: 'JOIN THE FESTIVAL', sub: '3 ROUNDS, STOP IN THE GREEN', act: function () { hvMenu = null; hvFest.phase = 'play'; hvFest.t = 0; } }
+    ];
+    // Fall Harvest Festival: the crop contest runs from this menu.
+    if (hvSeason === 2) festItems.push({ label: 'CROP CONTEST', sub: 'SUBMIT YOUR BEST CROP', act: function () { hvMenu = null; hvFest = null; hvContestOpen(); } });
+    festItems.push({ label: 'NOT NOW', sub: '', act: function () { hvMenu = null; hvFest = null; } });
+    hvOpenMenu(fest.name, fest.desc, festItems, null);
+  }
+  function hvFestTick() {
+    hvFest.marker += hvFest.markerDir * 2;
+    if (hvFest.marker >= 100) { hvFest.marker = 100; hvFest.markerDir = -1; }
+    if (hvFest.marker <= 0) { hvFest.marker = 0; hvFest.markerDir = 1; }
+    hvFest.t++;
+    if (hvFest.t > 300) hvFestRound(false);
+  }
+  function hvFestPress() {
+    if (!hvFest || hvFest.phase !== 'play') return;
+    hvFestRound(hvFest.marker >= 40 && hvFest.marker <= 60);
+  }
+  function hvFestRound(hit) {
+    if (hit) { hvFest.hits++; JMFGAMES.beep(990, 0.08); } else JMFGAMES.beep(220, 0.1);
+    hvFest.round++;
+    hvFest.t = 0; hvFest.marker = 0; hvFest.markerDir = 1;
+    if (hvFest.round >= 3) {
+      var reward = [50, 100, 200, 300][hvFest.hits];
+      hvGold += reward;
+      for (var i = 0; i < HV_NPCS.length; i++) hvFriend[HV_NPCS[i].id] = Math.min(100, (hvFriend[HV_NPCS[i].id] || 0) + hvFest.hits * 2);
+      hvFestDoneDay = hvDayKey();
+      var fest = hvFest.fest;
+      hvFest = null;
+      hvDialog = { npc: null, line: fest.name + ' COMPLETE! YOU EARNED ' + reward + 'G AND EVERYONE LIKES YOU MORE!', hearts: 0 };
+      hvSave();
+    }
+  }
+
+/* ================================================================
+   HARVEST HAVEN EXPANSION (console) — full feature set + 200+ people.
+   All content is ORIGINAL. No third-party game names, art, dialogue,
+   or music. This block is spliced into farm-section.js before the
+   "A button" section. It adds: artisan goods, cooking, tool tiers,
+   sprinklers, fertilizer/quality, fruit trees, beehives, greenhouse,
+   more animals, heart events, bulletin board, children, pet, beach,
+   deeper mine + combat, weather, museum, Town Hall, island, skills,
+   story quest, NPC roles, 170 background townspeople, NPC farm plots,
+   Harvest Festival crop contest, rival farmer, NPC daily simulation,
+   Town Rankings, NPC-NPC marriage, NPC quests, NPC children.
+   ================================================================ */
+
+/* ---------- Seeded RNG (deterministic) ---------- */
+function hvMulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    var t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* ---------- Helpers (aliases for farm-section functions) ---------- */
+function hvCloseMenu() { hvMenu = null; }
+function hvAddFriend(id, n) { hvFriend[id] = Math.min(100, (hvFriend[id] || 0) + n); }
+var hvFishTotal = 0, hvOreTotal = 0;
+
+/* ---------- New data tables ---------- */
+/* Ocean fish (beach). */
+var HV_OCEAN_FISH = [
+  { id: 'seabass', name: 'SEA BASS', sell: 90 },
+  { id: 'tuna', name: 'TUNA', sell: 150 },
+  { id: 'shellfish', name: 'SHELLFISH', sell: 70 },
+  { id: 'squid', name: 'SQUID', sell: 120 }
+];
+/* Tropical crops (island, grow in any season on the island). */
+var HV_TROPICAL_CROPS = [
+  { id: 'pineapple', name: 'PINEAPPLE', days: 9, seed: 150, sell: 350 },
+  { id: 'coconut', name: 'COCONUT', days: 8, seed: 120, sell: 300 },
+  { id: 'banana', name: 'BANANA', days: 7, seed: 100, sell: 260 },
+  { id: 'mango', name: 'MANGO', days: 10, seed: 180, sell: 400 }
+];
+/* Tropical fish (island waters). */
+var HV_TROPICAL_FISH = [
+  { id: 'tropfish', name: 'TROPICAL FISH', sell: 140 },
+  { id: 'coralfish', name: 'CORAL FISH', sell: 200 }
+];
+/* Island forage. */
+var HV_ISLAND_FORAGE = [
+  { id: 'seashell', name: 'SEASHELL', sell: 40 },
+  { id: 'coral', name: 'CORAL', sell: 90 },
+  { id: 'islandberry', name: 'ISLAND BERRY', sell: 50 }
+];
+/* Artisan products: id, name, input item, machine, days to make, sell. */
+var HV_ARTISAN = [
+  { id: 'cheese', name: 'CHEESE', input: 'milk', machine: 'press', days: 1, sell: 150 },
+  { id: 'jam', name: 'JAM', input: 'strawberry', machine: 'jar', days: 1, sell: 180 },
+  { id: 'juice', name: 'JUICE', input: 'grape', machine: 'keg', days: 2, sell: 220 },
+  { id: 'mayo', name: 'MAYO', input: 'egg', machine: 'mayo', days: 1, sell: 100 },
+  { id: 'cloth', name: 'CLOTH', input: 'wool', machine: 'loom', days: 1, sell: 200 },
+  { id: 'goatcheese', name: 'GOAT CHEESE', input: 'goatmilk', machine: 'press', days: 1, sell: 190 }
+];
+function hvArtisanById(id) { for (var i = 0; i < HV_ARTISAN.length; i++) if (HV_ARTISAN[i].id === id) return HV_ARTISAN[i]; return null; }
+/* Machines: id, name, cost (gold). */
+var HV_MACHINES = [
+  { id: 'press', name: 'CHEESE PRESS', cost: 400 },
+  { id: 'jar', name: 'PRESERVES JAR', cost: 300 },
+  { id: 'keg', name: 'KEG', cost: 500 },
+  { id: 'mayo', name: 'MAYO MACHINE', cost: 350 },
+  { id: 'loom', name: 'LOOM', cost: 450 }
+];
+/* Recipes: id, name, ingredients {item:count}, energy restored, sell. */
+var HV_RECIPES = [
+  { id: 'vegsoup', name: 'VEGGIE SOUP', ing: { turnip: 1, carrot: 1 }, energy: 40, sell: 120 },
+  { id: 'berrytart', name: 'BERRY TART', ing: { strawberry: 2, egg: 1 }, energy: 45, sell: 200 },
+  { id: 'fishstew', name: 'FISH STEW', ing: { catfish: 1, potato: 1 }, energy: 50, sell: 220 },
+  { id: 'omelette', name: 'OMELETTE', ing: { egg: 1, milk: 1 }, energy: 35, sell: 150 },
+  { id: 'pumpkinpie', name: 'PUMPKIN PIE', ing: { pumpkin: 1, egg: 1 }, energy: 50, sell: 260 },
+  { id: 'fruitjam', name: 'FRUIT JAM', ing: { grape: 1, strawberry: 1 }, energy: 30, sell: 180 }
+];
+function hvRecipeById(id) { for (var i = 0; i < HV_RECIPES.length; i++) if (HV_RECIPES[i].id === id) return HV_RECIPES[i]; return null; }
+/* Fruit trees: sapling id, name, fruit, season it bears, sapling cost. */
+var HV_TREES = [
+  { id: 'appletree', name: 'APPLE TREE', fruit: 'apple', season: 2, cost: 300 },
+  { id: 'cherrytree', name: 'CHERRY TREE', fruit: 'cherry', season: 0, cost: 350 },
+  { id: 'orangetree', name: 'ORANGE TREE', fruit: 'orange', season: 1, cost: 350 },
+  { id: 'plumtree', name: 'PLUM TREE', fruit: 'plum', season: 3, cost: 300 }
+];
+function hvTreeById(id) { for (var i = 0; i < HV_TREES.length; i++) if (HV_TREES[i].id === id) return HV_TREES[i]; return null; }
+/* Tree fruit (sell prices). */
+var HV_TREE_FRUIT = { apple: 60, cherry: 80, orange: 70, plum: 65 };
+/* Artifacts (dug up with the Hoe, donated to the museum). */
+var HV_ARTIFACTS = [
+  { id: 'oldcoin', name: 'OLD COIN', sell: 100 },
+  { id: 'ancientpot', name: 'ANCIENT POT', sell: 150 },
+  { id: 'fossil', name: 'FOSSIL', sell: 200 },
+  { id: 'rustysword', name: 'RUSTY SWORD', sell: 120 },
+  { id: 'carvedstone', name: 'CARVED STONE', sell: 180 }
+];
+function hvArtifactById(id) { for (var i = 0; i < HV_ARTIFACTS.length; i++) if (HV_ARTIFACTS[i].id === id) return HV_ARTIFACTS[i]; return null; }
+/* Mine monsters: type, name, hp, loot. */
+var HV_MONSTERS = [
+  { type: 'slime', name: 'SLIME', hp: 2, loot: ['stone', 'copper'] },
+  { type: 'bat', name: 'BAT', hp: 1, loot: ['iron', 'gem'] },
+  { type: 'golem', name: 'ROCK GOLEM', hp: 4, loot: ['goldore', 'gem'] }
+];
+/* Weather: 0 Sunny, 1 Rainy, 2 Stormy, 3 Snowy. */
+var HV_WEATHER_NAMES = ['SUNNY', 'RAINY', 'STORMY', 'SNOWY'];
+/* Skills: id, name. */
+var HV_SKILLS = [
+  { id: 'farming', name: 'FARMING' },
+  { id: 'fishing', name: 'FISHING' },
+  { id: 'mining', name: 'MINING' },
+  { id: 'foraging', name: 'FORAGING' },
+  { id: 'combat', name: 'COMBAT' }
+];
+function hvSkillLevel(skillId) {
+  var s = hvSkills[skillId];
+  if (!s) return 0;
+  return Math.floor(s.xp / 100) + 1;
+}
+/* Story quest steps. */
+var HV_STORY = [
+  { id: 'clear', name: 'CLEAR THE FARM', desc: 'Till 5 soil tiles on your field.' },
+  { id: 'firstcrop', name: 'FIRST HARVEST', desc: 'Plant and harvest your first crop.' },
+  { id: 'meet5', name: 'MEET THE TOWN', desc: 'Talk to 5 different townspeople.' },
+  { id: 'gold1000', name: 'EARN 1000G', desc: 'Hold 1000 gold at once.' },
+  { id: 'hall1', name: 'FIX THE TOWN HALL', desc: 'Complete Town Hall restoration stage 1.' },
+  { id: 'contest', name: 'HARVEST CHAMPION', desc: 'Enter the Fall Harvest Festival crop contest.' },
+  { id: 'farm3', name: 'SKILLED FARMER', desc: 'Reach Farming level 3.' },
+  { id: 'finale', name: 'MAPLEWOOD REBORN', desc: 'The farm and town are thriving. Celebrate!' }
+];
+/* Town Hall restoration bundles (per stage). */
+var HV_HALL_BUNDLES = [
+  { items: { wood: 10, stone: 5 }, reward: 'The shop stocks new seeds.', unlock: 'seeds2' },
+  { items: { turnip: 5, catfish: 3, copper: 5 }, reward: 'The greenhouse is open!', unlock: 'greenhouse' },
+  { items: { cheese: 2, jam: 2, goldore: 3 }, reward: 'The town is fully restored! A festival gift.', unlock: 'finale' }
+];
+/* Role pool for background townspeople. Each role has a zone (day area)
+   and line templates (role-flavored). Zones: 'square','shop','north',
+   'south','farm','pond','mine','beach','forest','greenhouse'. */
+var HV_ROLE_POOL = [
+  { role: 'FARMER', zones: ['farm', 'square'], lines: ['The soil is good this year. My crops are coming along.', 'A farmer is only as good as the rain. Let us hope for rain.', 'I tilled my plot before breakfast. Best time of day.'] },
+  { role: 'FISHER', zones: ['pond', 'beach'], lines: ['The fish bite best when the water is calm.', 'I caught a big one yesterday. You should have seen it!', 'A quiet pond and a good rod. That is all a fisher needs.'] },
+  { role: 'MINER', zones: ['mine'], lines: ['The mine gives to those who dig deep and dig safe.', 'Found a nice vein of copper today. The hills provide.', 'Dust in my boots, ore in my pack. A good day.'] },
+  { role: 'BAKER', zones: ['shop', 'square'], lines: ['Fresh bread every morning! Nothing beats the smell.', 'My oven is warm and so is my kitchen. Come by!', 'A loaf of bread and a kind word go a long way.'] },
+  { role: 'GUARD', zones: ['square', 'north'], lines: ['The roads are safe, and I aim to keep them that way.', 'Quiet day today. That is how I like it.', 'If trouble comes to Maplewood, it will find me first.'] },
+  { role: 'MERCHANT', zones: ['shop'], lines: ['I have goods from all over! Take a look.', 'Buy low, sell high. That is the whole trade.', 'A fair price for a fair farmer. That is my motto.'] },
+  { role: 'TEACHER', zones: ['square', 'north'], lines: ['A question is just a seed. Water it and it grows.', 'The children learn fast when the sun is out.', 'Books are the best crop. They never wilt.'] },
+  { role: 'COOK', zones: ['shop', 'square'], lines: ['A full belly makes a happy farmer!', 'My stew could wake the whole town. In a good way.', 'Good food starts with good ingredients. Grow them well!'] },
+  { role: 'CARPENTER', zones: ['farm', 'south'], lines: ['A straight cut is a kind cut. Measure twice!', 'Wood is my trade. Bring me logs and I will build.', 'A sturdy fence and a straight beam. That is my pride.'] },
+  { role: 'SEAMSTRESS', zones: ['shop', 'south'], lines: ['Thread and needle, and a little patience.', 'I can mend anything — a shirt, a sail, or a bad day.', 'A new dress by morning, if the cloth is willing.'] },
+  { role: 'HERBALIST', zones: ['forest', 'pond'], lines: ['The forest provides every remedy, if you know where to look.', 'A pinecone tea for a cough. Trust me on this.', 'Herbs remember the rain. I remember everything else.'] },
+  { role: 'HUNTER', zones: ['forest', 'mine'], lines: ['A hunter walks soft and listens hard.', 'The forest tells all, if you know how to hear it.', 'Game in the hills, fish in the pond. The land provides.'] },
+  { role: 'SAILOR', zones: ['beach'], lines: ['The sea is calm today. A good day to sail.', 'I have seen storms that could swallow a boat whole.', 'Salt air and a steady wind. That is a sailor\'s home.'] },
+  { role: 'FLORIST', zones: ['square', 'farm'], lines: ['Flowers speak when words run out.', 'Dandelions are not weeds — they are sunshine that grows wild!', 'I can make a bouquet for any occasion, even a Tuesday.'] },
+  { role: 'LIBRARIAN', zones: ['north', 'square'], lines: ['My library has a book for every season.', 'A quiet reader is the richest person in town.', 'Every book is a door. Come borrow a key.'] },
+  { role: 'MUSICIAN', zones: ['square'], lines: ['A song keeps the town young. Hear my new tune?', 'I play for the square every evening.', 'Every festival needs a fiddle. Mine never leaves my side.'] },
+  { role: 'ELDER', zones: ['square', 'north'], lines: ['I have watched this town grow for many years.', 'Old stories keep best when shared. Sit a while.', 'The young run fast, but the old know the road.'] },
+  { role: 'CHILD', zones: ['square', 'farm'], lines: ['I am going to be a great explorer one day!', 'The forest has secret paths. I found one!', 'Can you teach me to fish? Please?'] },
+  { role: 'FARMHAND', zones: ['farm'], lines: ['I help where I am needed. Today it is the fields.', 'A strong back and a willing heart. That is a farmhand.', 'The boss says the harvest will be big this year!'] },
+  { role: 'STABLEHAND', zones: ['farm'], lines: ['The animals are fed and the barn is clean.', 'A horse knows a kind hand. So does a cow.', 'Hay in the morning, water at noon. That is the routine.'] },
+  { role: 'BLACKSMITH', zones: ['mine', 'north'], lines: ['The forge never cools, and neither do I.', 'Iron bends for the patient. Rush it and it snaps.', 'Bring me ore and I will make you something that lasts.'] },
+  { role: 'DOCTOR', zones: ['north', 'square'], lines: ['A healer listens first and prescribes second.', 'Rest is the best medicine, next to a good meal.', 'If you feel tired, come see me. Do not push yourself.'] },
+  { role: 'GARDENER', zones: ['farm', 'square'], lines: ['A garden is a promise you water every morning.', 'Water every morning, harvest before the season turns.', 'My garden grows what my hands remember.'] },
+  { role: 'BEEKEEPER', zones: ['farm', 'forest'], lines: ['My bees love sunflowers almost as much as I do!', 'Honey is just sunshine the bees saved for winter.', 'Mind the hives — the bees are friendly, but busy.'] },
+  { role: 'WOODCUTTER', zones: ['forest'], lines: ['The tall pines in the south forest. Best wood in Maplewood.', 'A sharp axe and a straight swing. That is the trade.', 'Chop the tall pines, but leave the young ones to grow.'] },
+  { role: 'POTTER', zones: ['shop', 'south'], lines: ['Clay and a wheel, and a steady hand.', 'A pot is just earth that learned to hold water.', 'My kiln is hot and my pots are honest.'] },
+  { role: 'TAILOR', zones: ['shop'], lines: ['A good fit is a kind of magic.', 'Measure twice, cut once. My mother taught me that.', 'I can make a coat from a bolt and a dream.'] },
+  { role: 'INNKEEPER', zones: ['square'], lines: ['A warm bed and a hot meal. That is what I offer.', 'Travelers tell the best stories. Come hear one.', 'The inn is quiet tonight. A rare thing.'] },
+  { role: 'SHEPHERD', zones: ['farm', 'forest'], lines: ['The sheep know my voice. I know theirs.', 'A shepherd walks, and the flock follows.', 'Wool in spring, lambs in summer. The cycle turns.'] },
+  { role: 'ORCHARD KEEPER', zones: ['farm'], lines: ['An orchard is a promise that takes years to keep.', 'Apples in fall, cherries in spring. Patience pays.', 'I prune in winter and dream of blossoms.'] }
+];
+function hvRoleDef(role) { for (var i = 0; i < HV_ROLE_POOL.length; i++) if (HV_ROLE_POOL[i].role === role) return HV_ROLE_POOL[i]; return null; }
+/* Role zones: tile lists (open, walkable, not on a forbidden path). */
+var HV_ROLE_ZONES = {
+  square: [[44, 18], [45, 19], [46, 18], [47, 20], [43, 19], [48, 19], [44, 20], [46, 20], [45, 18], [47, 18], [43, 20], [48, 20]],
+  shop: [[34, 12], [36, 12], [37, 12], [33, 12], [38, 12], [34, 13], [36, 13], [38, 13], [33, 13], [39, 13]],
+  north: [[42, 8], [44, 8], [46, 8], [48, 8], [50, 8], [52, 8], [54, 8], [41, 7], [45, 7], [49, 7], [53, 7], [37, 7]],
+  south: [[34, 26], [38, 26], [46, 26], [48, 26], [50, 26], [52, 26], [35, 27], [45, 27], [34, 27], [48, 27]],
+  farm: [[1, 17], [4, 18], [5, 16], [7, 18], [2, 20], [8, 15], [1, 18], [4, 21], [6, 13], [8, 20], [27, 11], [30, 10], [26, 19], [29, 20]],
+  pond: [[2, 23], [5, 23], [8, 23], [1, 25], [1, 27], [10, 24], [10, 27], [5, 29], [8, 29]],
+  mine: [[22, 3], [25, 2], [30, 4], [33, 3], [21, 5], [26, 6], [35, 5], [24, 1]],
+  beach: [[5, 41], [10, 41], [15, 41], [20, 41], [25, 41], [30, 41], [35, 41], [40, 41], [45, 41], [50, 41], [8, 42], [28, 42], [48, 42]],
+  forest: [[18, 36], [24, 36], [16, 33], [20, 33], [26, 33], [32, 33], [38, 33], [44, 33], [50, 33], [14, 31], [14, 36], [30, 36]]
+};
+/* ---------- Background townspeople (170, generated deterministically) ---------- */
+var HV_BG_FIRST = ['ALAN', 'ADA', 'ALEX', 'AMBER', 'ANDY', 'ANNA', 'ARCHIE', 'ARIA', 'ARNOLD', 'ASHLEY', 'AUBREY', 'AUSTIN', 'BARRY', 'BEATRICE', 'BELLA', 'BEN', 'BERNARD', 'BETH', 'BILL', 'BLAKE', 'BONNIE', 'BRAD', 'BRENDA', 'BRIAN', 'BRIDGET', 'BRUCE', 'CALEB', 'CALLIE', 'CAMERON', 'CARA', 'CARL', 'CARLA', 'CARLOS', 'CARMEN', 'CAROL', 'CARRIE', 'CASEY', 'CASSIE', 'CECIL', 'CEDRIC', 'CELIA', 'CHAD', 'CHARLES', 'CHARLIE', 'CHERYL', 'CHLOE', 'CHRIS', 'CHRISTY', 'CINDY', 'CLARENCE', 'CLARK', 'CLAUDE', 'CLAY', 'CLEMENTINE', 'CLIFF', 'CLINT', 'CODY', 'COLIN', 'CONNIE', 'CONRAD', 'COREY', 'CORY', 'CRAIG', 'CRYSTAL', 'CURTIS', 'CYNTHIA', 'DALE', 'DALLAS', 'DAMIAN', 'DANA', 'DANIEL', 'DANNY', 'DAPHNE', 'DARLA', 'DARREN', 'DARRYL', 'DAVE', 'DAVID', 'DAWN', 'DEAN', 'DEBBIE', 'DEBORAH', 'DELIA', 'DENISE', 'DENNIS', 'DEREK', 'DESIREE', 'DEXTER', 'DIANA', 'DOLORES', 'DOMINIC', 'DON', 'DONNA', 'DOREEN', 'DORIS', 'DOUG', 'DUSTIN', 'DWIGHT', 'DYLAN', 'EARL', 'EDDIE', 'EDGAR', 'EDITH', 'EDMOND', 'EDWARD', 'EDWIN', 'EILEEN', 'ELAINE', 'ELENA', 'ELIAS', 'ELIJAH', 'ELISA', 'ELLA', 'ELLEN', 'ELLIOT', 'ELMER', 'ELOISE', 'ELSIE', 'EMILY', 'EMMA', 'ERIC', 'ERIKA', 'ERNEST', 'ESTHER', 'ETHAN', 'ETHEL', 'EUGENE', 'EULA', 'EVA', 'EVAN', 'EVELYN', 'EVERETT', 'EZRA'];
+var HV_BG_LAST = ['ADAMS', 'BAKER', 'BARNES', 'BELL', 'BENNETT', 'BROOKS', 'BROWN', 'BURNS', 'BUTLER', 'CAMPBELL', 'CARTER', 'CLARK', 'COLE', 'COLEMAN', 'COOK', 'COOPER', 'COX', 'CRUZ', 'DAVIS', 'DIAZ', 'DUNCAN', 'EDWARDS', 'ELLIS', 'EVANS', 'FERNANDEZ', 'FISHER', 'FITZGERALD', 'FLORES', 'FOSTER', 'FOWLER', 'FOX', 'FREEMAN', 'FROST', 'GARCIA', 'GIBSON', 'GOMEZ', 'GONZALEZ', 'GRAHAM', 'GRANT', 'GRAY', 'GREEN', 'GRIFFIN', 'HALL', 'HAMILTON', 'HARRIS', 'HARRISON', 'HAYES', 'HENDERSON', 'HERNANDEZ', 'HILL'];
+var HV_BG_COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#fd79a8', '#00cec9', '#6c5ce7', '#d63031', '#0984e3', '#00b894', '#e17055', '#a29bfe', '#fab1a0', '#81ecec', '#74b9ff', '#55efc4', '#ffeaa7', '#dfe6e9', '#636e72', '#b2bec3', '#fdcb6e'];
+var HV_BG = [];
+(function hvGenBackground() {
+  var rng = hvMulberry32(20261110);
+  var used = {};
+  // Full NPC day/home tiles — background people must not stand on them (BFS treats them as blocked).
+  var fullTiles = {};
+  for (var n = 0; n < HV_NPCS.length; n++) { fullTiles[HV_NPCS[n].dx + ',' + HV_NPCS[n].dy] = 1; fullTiles[HV_NPCS[n].hx + ',' + HV_NPCS[n].hy] = 1; }
+  var roles = HV_ROLE_POOL.map(function (r) { return r.role; });
+  for (var i = 0; i < 170; i++) {
+    var name = '';
+    var tries = 0;
+    do {
+      var f = HV_BG_FIRST[Math.floor(rng() * HV_BG_FIRST.length)];
+      var l = HV_BG_LAST[Math.floor(rng() * HV_BG_LAST.length)];
+      name = f + ' ' + l;
+      tries++;
+    } while (used[name] && tries < 50);
+    used[name] = true;
+    var role = roles[Math.floor(rng() * roles.length)];
+    var def = hvRoleDef(role);
+    var zones = def ? def.zones : ['square'];
+    var zone = zones[Math.floor(rng() * zones.length)];
+    var spots = HV_ROLE_ZONES[zone] || HV_ROLE_ZONES.square;
+    var open = spots.filter(function (s) { return !fullTiles[s[0] + ',' + s[1]]; });
+    var pick = open.length ? open : spots;
+    var spot = pick[Math.floor(rng() * pick.length)];
+    var color = HV_BG_COLORS[Math.floor(rng() * HV_BG_COLORS.length)];
+    var lines = def ? def.lines : ['Hello there!'];
+    var line = lines[Math.floor(rng() * lines.length)];
+    var line2 = lines[(Math.floor(rng() * lines.length) + 1) % lines.length];
+    HV_BG.push({
+      id: 'bg' + i, name: name, role: role, color: color,
+      dx: spot[0], dy: spot[1], hx: 41, hy: 11,
+      lines: [line, line2]
+    });
+  }
+})();
+function hvBgById(id) { for (var i = 0; i < HV_BG.length; i++) if (HV_BG[i].id === id) return HV_BG[i]; return null; }
+/* Background NPC day position (wanders a little each day, seeded by day). */
+function hvBgPos(bg) {
+  var rng = hvMulberry32(1000 + hvDay * 31 + hvSeason * 7 + parseInt(bg.id.slice(2), 10) * 13);
+  var ox = Math.floor(rng() * 5) - 2, oy = Math.floor(rng() * 5) - 2;
+  var x = bg.dx + ox, y = bg.dy + oy;
+  if (x < 0) x = 0; if (x >= HV_MW) x = HV_MW - 1;
+  if (y < 0) y = 0; if (y >= HV_MH) y = HV_MH - 1;
+  if (hvIsSolidAt(x, y)) return { x: bg.dx, y: bg.dy };
+  return { x: x, y: y };
+}
+function hvBgAt(tx, ty) {
+  for (var i = 0; i < HV_BG.length; i++) {
+    var p = hvBgPos(HV_BG[i]);
+    if (p.x === tx && p.y === ty) return HV_BG[i];
+  }
+  return null;
+}
+function hvTotalPeople() { return HV_NPCS.length + HV_BG.length; }
+
+/* ---------- Expansion state ---------- */
+var hvMachOwned = {}; // machineId -> true
+var hvMachWork = {}; // machineId -> {product, daysLeft}
+var hvRecipesKnown = ['vegsoup', 'omelette'];
+var hvToolTier = { hoe: 0, can: 0, pick: 0, axe: 0 };
+var hvSprinklers = []; // [{x,y}]
+var hvTrees = []; // [{x,y,type,growth,fruit}]
+var hvHives = []; // [{x,y,honey}]
+var hvGhUnlocked = false;
+var hvGhMode = false;
+var hvGhSoil = {}; // "tx,ty" -> {crop, growth, watered}
+var hvPigs = 0, hvSheep = 0, hvGoats = 0, hvDucks = 0;
+var hvFedPig = false, hvFedSheep = false, hvFedGoat = false, hvFedDuck = false;
+var hvTruffles = 0, hvWool = 0, hvGoatMilk = 0, hvDuckEggs = 0;
+var hvHeartSeen = {}; // npcId -> {2:true,4:true,6:true,8:true}
+var hvBoard = []; // [{id,npcId,item,count,reward,deadline,taker}]
+var hvBoardDay = '';
+var hvChild = null; // {stage:'baby'|'toddler', days}
+var hvPet = null; // {type:'dog'|'cat', x, y, happy}
+var hvShells = []; // [{x,y,id}] beach shells
+var hvMineFloor = 0;
+var hvMonsters = []; // [{x,y,type,hp}]
+var hvSword = false;
+var hvWeather = 0; // 0 Sunny, 1 Rainy, 2 Stormy, 3 Snowy
+var hvMuseum = {}; // artifactId -> true
+var hvHallStage = 0;
+var hvHallDonated = {}; // "stage:item" -> count
+var hvBoat = false;
+var hvIslandMode = false;
+var hvIslandSoil = {}; // "tx,ty" -> {crop, growth, watered}
+var hvSkills = { farming: { xp: 0 }, fishing: { xp: 0 }, mining: { xp: 0 }, foraging: { xp: 0 }, combat: { xp: 0 } };
+var hvStoryStep = 0;
+var hvStoryMet = {}; // npcId -> true (met for story step 3)
+var hvStoryHarvested = 0;
+var hvNpcProg = {}; // npcId -> {gold, crops, fish, ore, goods}
+var hvChampion = false; // player is Harvest Champion
+var hvContestDone = ''; // "year-season" key of last contest
+var hvNpcPlots = {}; // plotId -> {owner, tiles:[{x,y}], crop, growth, watered}
+var hvNpcMarried = {}; // npcId -> partnerId
+var hvNpcAffinity = {}; // "id1|id2" -> points
+var hvNpcChildren = []; // [{parents:[id1,id2], stage, x, y, days}]
+var hvSageHealDay = '';
+var hvEdwinTipDay = '';
+var hvSableRare = null; // {item, price} today's rare item
+var hvRareDay = '';
+
+function hvSaveX() {
+  var ghSoilArr = [];
+  for (var k in hvGhSoil) { var g = hvGhSoil[k]; ghSoilArr.push([k, g.crop || '', g.growth, g.watered ? 1 : 0]); }
+  var islSoilArr = [];
+  for (var k2 in hvIslandSoil) { var s2 = hvIslandSoil[k2]; islSoilArr.push([k2, s2.crop || '', s2.growth, s2.watered ? 1 : 0]); }
+  var soilFert = [];
+  for (var k3 in hvSoil) { var s3 = hvSoil[k3]; if (s3.fert) soilFert.push(k3); }
+  return {
+    machOwned: hvMachOwned, machWork: hvMachWork, recipes: hvRecipesKnown, toolTier: hvToolTier,
+    sprinklers: hvSprinklers, trees: hvTrees, hives: hvHives, ghUnlocked: hvGhUnlocked, ghSoil: ghSoilArr,
+    pigs: hvPigs, sheep: hvSheep, goats: hvGoats, ducks: hvDucks,
+    fedPig: hvFedPig, fedSheep: hvFedSheep, fedGoat: hvFedGoat, fedDuck: hvFedDuck,
+    truffles: hvTruffles, wool: hvWool, goatMilk: hvGoatMilk, duckEggs: hvDuckEggs,
+    heartSeen: hvHeartSeen, board: hvBoard, boardDay: hvBoardDay,
+    child: hvChild, pet: hvPet, shells: hvShells,
+    mineFloor: hvMineFloor, monsters: hvMonsters, sword: hvSword, weather: hvWeather,
+    museum: hvMuseum, hallStage: hvHallStage, hallDonated: hvHallDonated,
+    boat: hvBoat, islandSoil: islSoilArr,
+    skills: hvSkills, storyStep: hvStoryStep, storyMet: hvStoryMet, storyHarvested: hvStoryHarvested,
+    npcProg: hvNpcProg, champion: hvChampion, contestDone: hvContestDone,
+    npcPlots: hvNpcPlots, npcMarried: hvNpcMarried, npcAffinity: hvNpcAffinity, npcChildren: hvNpcChildren,
+    sageHealDay: hvSageHealDay, edwinTipDay: hvEdwinTipDay, sableRare: hvSableRare, rareDay: hvRareDay,
+    soilFert: soilFert, fishTotal: hvFishTotal, oreTotal: hvOreTotal
+  };
+}
+function hvLoadX(d) {
+  hvMachOwned = d.machOwned || {}; hvMachWork = d.machWork || {};
+  hvRecipesKnown = d.recipes || ['vegsoup', 'omelette'];
+  hvToolTier = d.toolTier || { hoe: 0, can: 0, pick: 0, axe: 0 };
+  if (d.steelHoe && !hvToolTier.hoe) hvToolTier.hoe = 1;
+  if (d.steelCan && !hvToolTier.can) hvToolTier.can = 1;
+  hvSprinklers = d.sprinklers || []; hvTrees = d.trees || []; hvHives = d.hives || [];
+  hvGhUnlocked = !!d.ghUnlocked;
+  hvGhSoil = {};
+  if (d.ghSoil) for (var i = 0; i < d.ghSoil.length; i++) { var r = d.ghSoil[i]; hvGhSoil[r[0]] = { crop: r[1] || null, growth: r[2], watered: !!r[3] }; }
+  hvPigs = d.pigs || 0; hvSheep = d.sheep || 0; hvGoats = d.goats || 0; hvDucks = d.ducks || 0;
+  hvFedPig = !!d.fedPig; hvFedSheep = !!d.fedSheep; hvFedGoat = !!d.fedGoat; hvFedDuck = !!d.fedDuck;
+  hvTruffles = d.truffles || 0; hvWool = d.wool || 0; hvGoatMilk = d.goatMilk || 0; hvDuckEggs = d.duckEggs || 0;
+  hvHeartSeen = d.heartSeen || {}; hvBoard = d.board || []; hvBoardDay = d.boardDay || '';
+  hvChild = d.child || null; hvPet = d.pet || null; hvShells = d.shells || [];
+  hvMineFloor = d.mineFloor || 0; hvMonsters = d.monsters || []; hvSword = !!d.sword;
+  hvWeather = (typeof d.weather === 'number') ? d.weather : 0;
+  hvMuseum = d.museum || {}; hvHallStage = d.hallStage || 0; hvHallDonated = d.hallDonated || {};
+  hvBoat = !!d.boat;
+  hvIslandSoil = {};
+  if (d.islandSoil) for (var j = 0; j < d.islandSoil.length; j++) { var r2 = d.islandSoil[j]; hvIslandSoil[r2[0]] = { crop: r2[1] || null, growth: r2[2], watered: !!r2[3] }; }
+  hvSkills = d.skills || { farming: { xp: 0 }, fishing: { xp: 0 }, mining: { xp: 0 }, foraging: { xp: 0 }, combat: { xp: 0 } };
+  hvStoryStep = d.storyStep || 0; hvStoryMet = d.storyMet || {}; hvStoryHarvested = d.storyHarvested || 0;
+  hvNpcProg = d.npcProg || {}; hvChampion = !!d.champion; hvContestDone = d.contestDone || '';
+  hvNpcPlots = d.npcPlots || {}; hvNpcMarried = d.npcMarried || {}; hvNpcAffinity = d.npcAffinity || {}; hvNpcChildren = d.npcChildren || [];
+  hvSageHealDay = d.sageHealDay || ''; hvEdwinTipDay = d.edwinTipDay || '';
+  hvFishTotal = d.fishTotal || 0; hvOreTotal = d.oreTotal || 0;
+  hvSableRare = d.sableRare || null; hvRareDay = d.rareDay || '';
+  if (!hvSableRare) hvSableRareTick();
+  if (d.soilFert) for (var k = 0; k < d.soilFert.length; k++) { var key = d.soilFert[k]; if (hvSoil[key]) hvSoil[key].fert = true; }
+  if (!hvBoard.length) hvGenBoard();
+  if (!hvShells.length) hvSpawnShells();
+  if (!hvMonsters.length && hvMineFloor > 0) hvSpawnMonsters();
+}
+function hvResetX() {
+  hvMachOwned = {}; hvMachWork = {}; hvRecipesKnown = ['vegsoup', 'omelette'];
+  hvToolTier = { hoe: 0, can: 0, pick: 0, axe: 0 };
+  hvSprinklers = []; hvTrees = []; hvHives = [];
+  hvGhUnlocked = false; hvGhMode = false; hvGhSoil = {};
+  hvPigs = 0; hvSheep = 0; hvGoats = 0; hvDucks = 0;
+  hvFedPig = false; hvFedSheep = false; hvFedGoat = false; hvFedDuck = false;
+  hvTruffles = 0; hvWool = 0; hvGoatMilk = 0; hvDuckEggs = 0;
+  hvHeartSeen = {}; hvBoard = []; hvBoardDay = '';
+  hvChild = null; hvPet = null; hvShells = [];
+  hvMineFloor = 0; hvMonsters = []; hvSword = false; hvWeather = 0;
+  hvMuseum = {}; hvHallStage = 0; hvHallDonated = {};
+  hvBoat = false; hvIslandMode = false; hvIslandSoil = {};
+  hvSkills = { farming: { xp: 0 }, fishing: { xp: 0 }, mining: { xp: 0 }, foraging: { xp: 0 }, combat: { xp: 0 } };
+  hvStoryStep = 0; hvStoryMet = {}; hvStoryHarvested = 0;
+  hvNpcProg = {}; hvChampion = false; hvContestDone = '';
+  hvNpcPlots = {}; hvNpcMarried = {}; hvNpcAffinity = {}; hvNpcChildren = [];
+  hvSageHealDay = ''; hvEdwinTipDay = ''; hvSableRare = null; hvRareDay = '';
+  hvFishTotal = 0; hvOreTotal = 0;
+  hvSableRareTick();
+  hvInitNpcPlots();
+  hvGenBoard(); hvSpawnShells();
+}
+/* ---------- Skills ---------- */
+function hvGainXp(skillId, n) {
+  var s = hvSkills[skillId];
+  if (!s) return;
+  var before = hvSkillLevel(skillId);
+  s.xp += n;
+  var after = hvSkillLevel(skillId);
+  if (after > before) hvShowMsg(hvSkillName(skillId) + ' LEVEL UP! LV ' + after + '!');
+}
+function hvSkillName(id) {
+  for (var i = 0; i < HV_SKILLS.length; i++) if (HV_SKILLS[i].id === id) return HV_SKILLS[i].name;
+  return id.toUpperCase();
+}
+/* ---------- Story quest ---------- */
+function hvStoryStepDef() { return HV_STORY[hvStoryStep] || null; }
+function hvStoryAdvance() {
+  var step = hvStoryStepDef();
+  if (!step) return;
+  hvStoryStep++;
+  var rewards = [100, 150, 100, 200, 300, 250, 200, 500];
+  var rw = rewards[Math.min(hvStoryStep - 1, rewards.length - 1)] || 100;
+  hvGold += rw;
+  hvShowMsg('QUEST COMPLETE! +' + rw + 'G');
+  JMFGAMES.beep(990, 0.12);
+  hvSave();
+}
+function hvStoryCheck() {
+  var step = hvStoryStepDef();
+  if (!step) return;
+  if (step.id === 'clear') {
+    var tilled = 0;
+    for (var k in hvSoil) if (hvSoil[k]) tilled++;
+    if (tilled >= 5) hvStoryAdvance();
+  } else if (step.id === 'firstcrop') {
+    if (hvStoryHarvested >= 1) hvStoryAdvance();
+  } else if (step.id === 'meet5') {
+    var met = 0;
+    for (var k2 in hvStoryMet) if (hvStoryMet[k2]) met++;
+    if (met >= 5) hvStoryAdvance();
+  } else if (step.id === 'gold1000') {
+    if (hvGold >= 1000) hvStoryAdvance();
+  } else if (step.id === 'hall1') {
+    if (hvHallStage >= 1) hvStoryAdvance();
+  } else if (step.id === 'contest') {
+    if (hvContestDone) hvStoryAdvance();
+  } else if (step.id === 'farm3') {
+    if (hvSkillLevel('farming') >= 3) hvStoryAdvance();
+  } else if (step.id === 'finale') {
+    if (hvHallStage >= 3 && hvChampion) hvStoryAdvance();
+  }
+}
+/* ---------- NPC progress (simulation) ---------- */
+function hvNpcProgGet(id) {
+  if (!hvNpcProg[id]) hvNpcProg[id] = { gold: 0, crops: 0, fish: 0, ore: 0, goods: 0 };
+  return hvNpcProg[id];
+}
+function hvNpcSimDay() {
+  // Each full NPC does their role's activity once per day (light simulation).
+  for (var i = 0; i < HV_NPCS.length; i++) {
+    var npc = HV_NPCS[i];
+    var p = hvNpcProgGet(npc.id);
+    var role = npc.role || '';
+    if (role === 'FARMER' || role === 'GARDENER' || role === 'RIVAL FARMER') {
+      var cropVal = 40 + Math.floor(Math.random() * 80);
+      p.crops++; p.gold += cropVal;
+    } else if (role === 'FISHER') {
+      var fishVal = 50 + Math.floor(Math.random() * 60);
+      p.fish++; p.gold += fishVal;
+    } else if (role === 'MINER' || role === 'BLACKSMITH') {
+      var oreVal = 40 + Math.floor(Math.random() * 90);
+      p.ore++; p.gold += oreVal;
+    } else if (role === 'MERCHANT' || role === 'SHOPKEEPER') {
+      p.gold += 60 + Math.floor(Math.random() * 80); p.goods++;
+    } else if (role === 'COOK' || role === 'BAKER') {
+      p.goods++; p.gold += 50 + Math.floor(Math.random() * 50);
+    } else if (role === 'HUNTER' || role === 'HERBALIST' || role === 'DOCTOR') {
+      p.gold += 30 + Math.floor(Math.random() * 50);
+    } else {
+      p.gold += 20 + Math.floor(Math.random() * 40);
+    }
+  }
+  // Background NPCs: lighter, aggregate-style progress (a small bump).
+  for (var j = 0; j < HV_BG.length; j++) {
+    var bg = HV_BG[j];
+    var pb = hvNpcProgGet(bg.id);
+    pb.gold += 10 + Math.floor(Math.random() * 30);
+    if (bg.role === 'FARMER' || bg.role === 'GARDENER') pb.crops++;
+    else if (bg.role === 'FISHER' || bg.role === 'SAILOR') pb.fish++;
+    else if (bg.role === 'MINER' || bg.role === 'BLACKSMITH') pb.ore++;
+    else pb.goods++;
+  }
+  // NPC farm plots: their crops grow and get harvested by the NPC.
+  for (var pid in hvNpcPlots) {
+    var plot = hvNpcPlots[pid];
+    if (!plot.crop) {
+      // Replant a seasonal crop.
+      var crops = hvCropsForSeason(hvSeason);
+      var c = crops[Math.floor(Math.random() * crops.length)];
+      plot.crop = c.id; plot.growth = 0; plot.watered = true;
+    } else {
+      if (plot.watered) plot.growth++;
+      plot.watered = true; // NPCs water their own plots
+      var cc = hvCropById(plot.crop);
+      if (cc && plot.growth >= cc.days) {
+        // Harvest: the NPC's progress grows, and the produce goes to the shop.
+        var pp = hvNpcProgGet(plot.owner);
+        pp.crops++; pp.gold += cc.sell;
+        plot.crop = null; plot.growth = 0;
+        hvAddShopStock(cc.id, 1);
+      }
+    }
+  }
+}
+/* Shop stock from NPC produce (world effect, light). */
+var hvShopStock = {}; // itemId -> count (NPC-grown, sold at the shop)
+function hvAddShopStock(id, n) { hvShopStock[id] = (hvShopStock[id] || 0) + n; }
+/* ---------- NPC farm plots ---------- */
+function hvInitNpcPlots() {
+  hvNpcPlots = {
+    garth: { owner: 'garth', tiles: [{ x: 27, y: 23 }, { x: 28, y: 23 }, { x: 29, y: 23 }, { x: 27, y: 24 }, { x: 28, y: 24 }, { x: 29, y: 24 }], crop: 'pumpkin', growth: 0, watered: true },
+    june: { owner: 'june', tiles: [{ x: 27, y: 26 }, { x: 28, y: 26 }, { x: 29, y: 26 }, { x: 27, y: 27 }, { x: 28, y: 27 }, { x: 29, y: 27 }], crop: 'carrot', growth: 0, watered: true },
+    fern: { owner: 'fern', tiles: [{ x: 24, y: 23 }, { x: 25, y: 23 }, { x: 26, y: 23 }, { x: 24, y: 24 }, { x: 25, y: 24 }, { x: 26, y: 24 }], crop: 'lettuce', growth: 0, watered: true }
+  };
+}
+function hvNpcPlotAt(tx, ty) {
+  for (var pid in hvNpcPlots) {
+    var plot = hvNpcPlots[pid];
+    for (var i = 0; i < plot.tiles.length; i++) if (plot.tiles[i].x === tx && plot.tiles[i].y === ty) return plot;
+  }
+  return null;
+}
+
+/* ---------- Weather ---------- */
+function hvRollWeather() {
+  var r = Math.random();
+  if (hvSeason === 3) { // Winter: snow chance
+    if (r < 0.25) hvWeather = 3;
+    else if (r < 0.45) hvWeather = 1;
+    else if (r < 0.5) hvWeather = 2;
+    else hvWeather = 0;
+  } else {
+    if (r < 0.6) hvWeather = 0;
+    else if (r < 0.85) hvWeather = 1;
+    else if (r < 0.93) hvWeather = 2;
+    else hvWeather = 0;
+  }
+  if (hvWeather === 1 || hvWeather === 2) {
+    // Rain waters all crops (player + greenhouse + island + NPC plots).
+    for (var k in hvSoil) if (hvSoil[k] && hvSoil[k].crop) hvSoil[k].watered = true;
+    for (var k2 in hvGhSoil) if (hvGhSoil[k2] && hvGhSoil[k2].crop) hvGhSoil[k2].watered = true;
+    for (var k3 in hvIslandSoil) if (hvIslandSoil[k3] && hvIslandSoil[k3].crop) hvIslandSoil[k3].watered = true;
+  }
+}
+/* ---------- Bulletin board ---------- */
+function hvBoardItemPool() {
+  var items = [];
+  var crops = hvCropsForSeason(hvSeason);
+  for (var i = 0; i < crops.length; i++) items.push({ item: crops[i].id, kind: 'crop' });
+  for (var j = 0; j < HV_FISH.length; j++) items.push({ item: HV_FISH[j].id, kind: 'fish' });
+  for (var k = 0; k < HV_FORAGE.length; k++) items.push({ item: HV_FORAGE[k].id, kind: 'forage' });
+  return items;
+}
+function hvGenBoard() {
+  var dayKey = hvYear + '-' + hvSeason + '-' + hvDay;
+  if (hvBoardDay === dayKey) return;
+  hvBoardDay = dayKey;
+  hvBoard = [];
+  var pool = hvBoardItemPool();
+  var usedNpcs = {};
+  for (var i = 0; i < 3; i++) {
+    var pick = pool[Math.floor(Math.random() * pool.length)];
+    var npc = HV_NPCS[Math.floor(Math.random() * HV_NPCS.length)];
+    if (usedNpcs[npc.id]) npc = HV_NPCS[(HV_NPCS.indexOf(npc) + 3) % HV_NPCS.length];
+    usedNpcs[npc.id] = true;
+    var count = 1 + Math.floor(Math.random() * 4);
+    var sell = hvItemSell(pick.item) || 30;
+    var req = {
+      id: 'r' + dayKey + '-' + i, npcId: npc.id, item: pick.item, kind: pick.kind,
+      count: count, reward: Math.max(30, Math.round(sell * count * 1.5)),
+      deadline: hvDay + 2, taker: null, accepted: false, done: false
+    };
+    // An NPC whose role fits may take the request (competition for quests).
+    var fitRoles = { crop: ['FARMER', 'GARDENER', 'RIVAL FARMER', 'COOK', 'BAKER'], fish: ['FISHER', 'SAILOR', 'COOK'], forage: ['HERBALIST', 'HUNTER', 'GARDENER', 'FORAGER'] };
+    var fits = [];
+    for (var j = 0; j < HV_NPCS.length; j++) {
+      var cand = HV_NPCS[j];
+      if (cand.id === npc.id) continue;
+      if (fitRoles[pick.kind] && fitRoles[pick.kind].indexOf(cand.role) >= 0) fits.push(cand);
+    }
+    if (fits.length && Math.random() < 0.35) {
+      req.taker = fits[Math.floor(Math.random() * fits.length)].id;
+    }
+    hvBoard.push(req);
+  }
+  // Taken requests: the NPC completes them overnight (handled in hvDailyTick).
+}
+function hvBoardOpen() {
+  hvGenBoard();
+  var items = [];
+  for (var i = 0; i < hvBoard.length; i++) {
+    var r = hvBoard[i];
+    if (r.done) continue;
+    var npc = hvNpcById(r.npcId);
+    var label = (npc ? npc.name : 'TOWN') + ': ' + r.count + 'X ' + hvItemName(r.item) + ' +' + r.reward + 'G';
+    if (r.taker) label += ' (TAKEN BY ' + (hvNpcById(r.taker) ? hvNpcById(r.taker).name : r.taker) + ')';
+    else if (r.accepted) label += ' (ACCEPTED)';
+    items.push({ label: label, req: r });
+  }
+  items.push({ label: 'TOWN RANKINGS', act: 'rankings' });
+  items.push({ label: 'BACK', act: 'back' });
+  hvOpenMenu('BULLETIN BOARD', items, function (it) {
+    if (it.act === 'back') { hvCloseMenu(); return; }
+    if (it.act === 'rankings') { hvRankingsOpen(); return; }
+    var r2 = it.req;
+    if (!r2) return;
+    if (r2.taker) { hvShowMsg('THAT REQUEST IS TAKEN BY ' + (hvNpcById(r2.taker) ? hvNpcById(r2.taker).name : 'ANOTHER TOWNIE') + '!'); return; }
+    if (r2.accepted) {
+      // Deliver the item.
+      var have = hvInv[r2.item] || 0;
+      if (have >= r2.count) {
+        hvInv[r2.item] = have - r2.count;
+        hvGold += r2.reward;
+        hvAddFriend(r2.npcId, 10);
+        r2.done = true;
+        hvShowMsg('REQUEST DONE! +' + r2.reward + 'G');
+        JMFGAMES.beep(880, 0.1);
+        hvGainXp('farming', 10);
+      } else {
+        hvShowMsg('YOU NEED ' + r2.count + 'X ' + hvItemName(r2.item) + ' (HAVE ' + have + ')');
+      }
+      hvCloseMenu();
+      return;
+    }
+    r2.accepted = true;
+    hvShowMsg('REQUEST ACCEPTED! DELIVER ' + r2.count + 'X ' + hvItemName(r2.item));
+    hvCloseMenu();
+  });
+}
+/* ---------- Heart events ---------- */
+var HV_HEART_EVENTS = {
+  bram: { 4: 'You remind me of Maplewood when it was young. Keep going.', 8: 'I have seen many farmers come and go. You are the real thing.' },
+  rose: { 4: 'These sunflowers grew for you, you know. They like you.', 8: 'You are my favorite person in Maplewood. Do not tell the others.' },
+  finn: { 4: 'The pond is calm today. Good company makes it better.', 8: 'I would fish beside you any day, in any weather.' },
+  clara: { 4: 'I saved you a loaf. Warm bread, just for you.', 8: 'My kitchen is yours, always. You are family now.' },
+  gus: { 4: 'You have the makings of a fine miner. Strong hands, steady heart.', 8: 'I have mined these hills for forty years. You are the best partner I have had.' },
+  pip: { 4: 'You are my best customer and my best friend.', 8: 'I would give you my last seed, and you know it.' },
+  nora: { 4: 'You ask good questions. A curious mind is a treasure.', 8: 'You have learned more in a season than most do in a year.' },
+  sam: { 4: 'That fence you built? Straight as an arrow. Good work.', 8: 'I would build a house with you any day. You are solid.' },
+  june: { 4: 'My garden and yours, side by side. That is how it should be.', 8: 'You have a gardener\'s soul. I knew it the day we met.' },
+  tim: { 4: 'You are my favorite grown-up! Do not tell the others.', 8: 'When I grow up I want to farm just like you!' },
+  dunstan: { 4: 'Your tools are holding up well. You take care of them.', 8: 'I have forged for kings and farmers. You are the best of them.' },
+  marina: { 4: 'The sea gave me a good catch today, and you are here to see it.', 8: 'I have sailed far, but Maplewood is home. You are why.' },
+  hazel: { 4: 'Taste this. I made it just for you.', 8: 'My kitchen is full of secrets, and you know them all now.' },
+  edwin: { 4: 'You learn fast. That is rare, and I do not say that often.', 8: 'You are the student I always hoped for.' },
+  fern: { 4: 'My ferns are blooming early. They must like you.', 8: 'A garden is a promise. You keep yours.' },
+  jasper: { 4: 'I wrote a song about your farm. It is a good one.', 8: 'Play me a tune and I will play you one back, forever.' },
+  sable: { 4: 'For you, a special price. Do not tell anyone.', 8: 'I have traded in a hundred towns. None has a farmer like you.' },
+  agnes: { 4: 'You remind me of my late husband. Kind eyes, strong hands.', 8: 'I have lived a long life, and you are one of its best parts.' },
+  kit: { 4: 'You are my best friend in the whole town!', 8: 'I want to be just like you when I grow up!' },
+  poppy: { 4: 'Look! I picked a flower for you!', 8: 'You are the nicest grown-up I know!' },
+  cedar: { 4: 'I am learning to build. You would make a good teacher.', 8: 'Someday I will build you a house. A big one.' },
+  bea: { 4: 'My bees like you. They never sting a friend.', 8: 'Honey is sweet, but your friendship is sweeter.' },
+  mabel: { 4: 'I saved you a book. It is a good one, I promise.', 8: 'Every story I read, I think of you now.' },
+  roderick: { 4: 'The town is safe, and so are you. I make sure of it.', 8: 'I would guard your farm with my life, friend.' },
+  violet: { 4: 'I made you a bouquet. The colors match your smile.', 8: 'You are the brightest flower in Maplewood.' },
+  brock: { 4: 'You swing a pickaxe like you were born to it.', 8: 'I have dug beside many. None as steady as you.' },
+  ivy: { 4: 'I stitched you a patch. It is lucky, I promise.', 8: 'I would sew you a coat from my best cloth, any day.' },
+  sage: { 4: 'Your health is good. You take care of yourself, and others.', 8: 'A healer knows a good heart. Yours is the best.' },
+  rowan: { 4: 'The forest is quiet today. A good day for a friend.', 8: 'I would hunt beside you in any season.' },
+  wren: { 4: 'I have a new story for you. It is a good one.', 8: 'You are my favorite character in every story I tell.' },
+  garth: { 4: 'Hmph. Your crops are not terrible. For a beginner.', 8: 'Fine. You are a real farmer. Do not let it go to your head.' }
+};
+var HV_HEART_GENERIC = {
+  2: 'It is good to see you. Maplewood feels warmer when you are near.',
+  6: 'You are more than a neighbor now. You are a true friend.'
+};
+function hvHeartEvent(npc) {
+  var hearts = hvHearts(npc.id);
+  var seen = hvHeartSeen[npc.id] || {};
+  var ev = HV_HEART_EVENTS[npc.id];
+  if (hearts >= 8 && ev && ev[8] && !seen[8]) { seen[8] = true; hvHeartSeen[npc.id] = seen; return ev[8]; }
+  if (hearts >= 6 && !seen[6]) { seen[6] = true; hvHeartSeen[npc.id] = seen; return HV_HEART_GENERIC[6]; }
+  if (hearts >= 4 && ev && ev[4] && !seen[4]) { seen[4] = true; hvHeartSeen[npc.id] = seen; return ev[4]; }
+  if (hearts >= 2 && !seen[2]) { seen[2] = true; hvHeartSeen[npc.id] = seen; return HV_HEART_GENERIC[2]; }
+  return null;
+}
+/* ---------- Artisan machines ---------- */
+function hvMachinesOpen() {
+  var items = [];
+  for (var i = 0; i < HV_MACHINES.length; i++) {
+    var m = HV_MACHINES[i];
+    var owned = !!hvMachOwned[m.id];
+    var work = hvMachWork[m.id];
+    var label = m.name + (owned ? (work ? ' (' + work.product.toUpperCase() + ' ' + (work.daysLeft > 0 ? work.daysLeft + 'D LEFT' : 'READY!') + ')' : ' (EMPTY)') : ' (NOT OWNED)');
+    items.push({ label: label, machine: m });
+  }
+  items.push({ label: 'BACK', act: 'back' });
+  hvOpenMenu('ARTISAN MACHINES', items, function (it) {
+    if (it.act === 'back') { hvCloseMenu(); return; }
+    var m2 = it.machine;
+    if (!hvMachOwned[m2.id]) { hvShowMsg('BUY A ' + m2.name + ' FROM THE SHOP FIRST!'); hvCloseMenu(); return; }
+    var work2 = hvMachWork[m2.id];
+    if (work2 && work2.daysLeft <= 0) {
+      // Collect the product.
+      hvAddItem(work2.product, 1);
+      delete hvMachWork[m2.id];
+      hvShowMsg('COLLECTED 1 ' + hvItemName(work2.product).toUpperCase() + '!');
+      hvCloseMenu();
+      return;
+    }
+    if (work2) { hvShowMsg('STILL WORKING... ' + work2.daysLeft + ' DAY(S) LEFT'); hvCloseMenu(); return; }
+    // Choose an input for this machine.
+    var opts = [];
+    for (var j = 0; j < HV_ARTISAN.length; j++) {
+      var a = HV_ARTISAN[j];
+      if (a.machine !== m2.id) continue;
+      var have = hvInv[a.input] || 0;
+      opts.push({ label: a.name + ' (NEEDS ' + hvItemName(a.input).toUpperCase() + ' - HAVE ' + have + ')', artisan: a });
+    }
+    opts.push({ label: 'BACK', act: 'back' });
+    hvOpenMenu('USE ' + m2.name, opts, function (it2) {
+      if (it2.act === 'back') { hvCloseMenu(); return; }
+      var a2 = it2.artisan;
+      var have2 = hvInv[a2.input] || 0;
+      if (have2 < 1) { hvShowMsg('YOU NEED 1 ' + hvItemName(a2.input).toUpperCase() + '!'); hvCloseMenu(); return; }
+      hvInv[a2.input] = have2 - 1;
+      hvMachWork[m2.id] = { product: a2.id, daysLeft: a2.days };
+      hvShowMsg('MAKING ' + a2.name + '... READY IN ' + a2.days + ' DAY(S)');
+      hvCloseMenu();
+    });
+  });
+}
+/* ---------- Cooking ---------- */
+function hvKitchenOpen() {
+  var items = [];
+  for (var i = 0; i < HV_RECIPES.length; i++) {
+    var r = HV_RECIPES[i];
+    if (hvRecipesKnown.indexOf(r.id) < 0) continue;
+    var can = true, parts = [];
+    for (var ing in r.ing) {
+      var have = hvInv[ing] || 0;
+      parts.push(hvItemName(ing).toUpperCase() + ' ' + have + '/' + r.ing[ing]);
+      if (have < r.ing[ing]) can = false;
+    }
+    items.push({ label: r.name + ' (' + parts.join(', ') + ')' + (can ? '' : ' - MISSING'), recipe: r, can: can });
+  }
+  items.push({ label: 'EAT A DISH', act: 'eat' });
+  items.push({ label: 'BACK', act: 'back' });
+  hvOpenMenu('KITCHEN', items, function (it) {
+    if (it.act === 'back') { hvCloseMenu(); return; }
+    if (it.act === 'eat') { hvEatOpen(); return; }
+    if (!it.can) { hvShowMsg('MISSING INGREDIENTS!'); hvCloseMenu(); return; }
+    var r2 = it.recipe;
+    for (var ing2 in r2.ing) hvInv[ing2] -= r2.ing[ing2];
+    hvAddItem(r2.id, 1);
+    hvShowMsg('COOKED 1 ' + r2.name + '!');
+    hvGainXp('farming', 5);
+    hvCloseMenu();
+  });
+}
+function hvEatOpen() {
+  var items = [];
+  for (var i = 0; i < HV_RECIPES.length; i++) {
+    var r = HV_RECIPES[i];
+    var have = hvInv[r.id] || 0;
+    if (have > 0) items.push({ label: r.name + ' X' + have + ' (+' + r.energy + ' ENERGY)', recipe: r });
+  }
+  if (!items.length) items.push({ label: '(NO DISHES - COOK ONE FIRST)', act: 'none' });
+  items.push({ label: 'BACK', act: 'back' });
+  hvOpenMenu('EAT A DISH', items, function (it) {
+    if (it.act === 'back' || it.act === 'none') { hvCloseMenu(); return; }
+    var r2 = it.recipe;
+    hvInv[r2.id]--;
+    hvEnergy = Math.min(100, hvEnergy + r2.energy);
+    hvShowMsg('ATE ' + r2.name + '! +' + r2.energy + ' ENERGY');
+    hvCloseMenu();
+  });
+}
+function hvLearnRecipe(id) {
+  if (hvRecipesKnown.indexOf(id) < 0) {
+    hvRecipesKnown.push(id);
+    var r = hvRecipeById(id);
+    hvShowMsg('LEARNED RECIPE: ' + (r ? r.name : id) + '!');
+    return true;
+  }
+  return false;
+}
+
+/* ---------- Tool upgrades (blacksmith) ---------- */
+var HV_TOOL_TIERS = [
+  { name: 'BASIC', ore: null, oreN: 0, gold: 0 },
+  { name: 'COPPER', ore: 'copper', oreN: 3, gold: 200 },
+  { name: 'IRON', ore: 'iron', oreN: 5, gold: 500 },
+  { name: 'GOLD', ore: 'goldore', oreN: 5, gold: 1000 }
+];
+function hvHoeTiles() { return 1 + hvToolTier.hoe * 2; } // 1, 3, 5, 7
+function hvCanTiles() { return 1 + hvToolTier.can * 2; } // 1, 3, 5, 7
+function hvBlacksmithOpen() {
+  var tools = [
+    { key: 'hoe', name: 'HOE' }, { key: 'can', name: 'WATERING CAN' },
+    { key: 'pick', name: 'PICKAXE' }, { key: 'axe', name: 'AXE' }
+  ];
+  var items = [];
+  for (var i = 0; i < tools.length; i++) {
+    var t = tools[i];
+    var tier = hvToolTier[t.key];
+    if (tier >= 3) { items.push({ label: t.name + ' - GOLD (MAX)', act: 'none' }); continue; }
+    var next = HV_TOOL_TIERS[tier + 1];
+    items.push({
+      label: t.name + ' -> ' + next.name + ' (' + next.oreN + ' ' + next.ore.toUpperCase() + ' + ' + next.gold + 'G)',
+      tool: t, next: next
+    });
+  }
+  items.push({ label: 'BACK', act: 'back' });
+  hvOpenMenu('BLACKSMITH - UPGRADES', items, function (it) {
+    if (it.act === 'back' || it.act === 'none') { hvCloseMenu(); return; }
+    var ore = hvInv[it.next.ore] || 0;
+    if (ore < it.next.oreN) { hvShowMsg('NEED ' + it.next.oreN + ' ' + it.next.ore.toUpperCase() + ' (HAVE ' + ore + ')'); hvCloseMenu(); return; }
+    if (hvGold < it.next.gold) { hvShowMsg('NEED ' + it.next.gold + 'G!'); hvCloseMenu(); return; }
+    hvInv[it.next.ore] = ore - it.next.oreN;
+    hvGold -= it.next.gold;
+    hvToolTier[it.tool.key]++;
+    hvShowMsg(it.tool.name + ' UPGRADED TO ' + it.next.name + '!');
+    JMFGAMES.beep(990, 0.12);
+    hvCloseMenu();
+  });
+}
+/* ---------- Sprinklers / fertilizer / trees / beehives ---------- */
+function hvPlaceOpen(tx, ty) {
+  var items = [];
+  var sprink = hvInv['sprinkler'] || 0;
+  if (sprink > 0) items.push({ label: 'PLACE SPRINKLER (HAVE ' + sprink + ')', act: 'sprinkler', x: tx, y: ty });
+  var hive = hvInv['beehive'] || 0;
+  if (hive > 0) items.push({ label: 'PLACE BEEHIVE (HAVE ' + hive + ')', act: 'beehive', x: tx, y: ty });
+  var saplings = [];
+  for (var i = 0; i < HV_TREES.length; i++) {
+    var s = HV_TREES[i];
+    var have = hvInv[s.id] || 0;
+    if (have > 0) saplings.push({ label: 'PLANT ' + s.name + ' (HAVE ' + have + ')', act: 'tree', tree: s, x: tx, y: ty });
+  }
+  items = items.concat(saplings);
+  if (!items.length) { hvShowMsg('NOTHING TO PLACE HERE. BUY A SPRINKLER, BEEHIVE, OR SAPLING FROM THE SHOP.'); return; }
+  items.push({ label: 'BACK', act: 'back' });
+  hvOpenMenu('PLACE ON THIS TILE', items, function (it) {
+    if (it.act === 'back') { hvCloseMenu(); return; }
+    if (it.act === 'sprinkler') {
+      hvInv['sprinkler']--;
+      hvSprinklers.push({ x: it.x, y: it.y });
+      hvShowMsg('SPRINKLER PLACED! IT WATERS NEARBY SOIL EACH MORNING.');
+    } else if (it.act === 'beehive') {
+      hvInv['beehive']--;
+      hvHives.push({ x: it.x, y: it.y, honey: 0 });
+      hvShowMsg('BEEHIVE PLACED! BEES WILL MAKE HONEY.');
+    } else if (it.act === 'tree') {
+      hvInv[it.tree.id]--;
+      hvTrees.push({ x: it.x, y: it.y, type: it.tree.id, growth: 0, fruit: 0 });
+      hvShowMsg(it.tree.name + ' PLANTED! IT WILL BEAR FRUIT IN ITS SEASON.');
+    }
+    hvCloseMenu();
+  });
+}
+function hvTreeAt(tx, ty) {
+  for (var i = 0; i < hvTrees.length; i++) if (hvTrees[i].x === tx && hvTrees[i].y === ty) return hvTrees[i];
+  return null;
+}
+function hvHiveAt(tx, ty) {
+  for (var i = 0; i < hvHives.length; i++) if (hvHives[i].x === tx && hvHives[i].y === ty) return hvHives[i];
+  return null;
+}
+function hvSprinklerAt(tx, ty) {
+  for (var i = 0; i < hvSprinklers.length; i++) if (hvSprinklers[i].x === tx && hvSprinklers[i].y === ty) return hvSprinklers[i];
+  return null;
+}
+/* ---------- Greenhouse ---------- */
+function hvGhEnter() {
+  if (!hvGhUnlocked) { hvShowMsg('THE GREENHOUSE IS LOCKED. RESTORE THE TOWN HALL TO STAGE 2 TO OPEN IT.'); return; }
+  hvGhMode = true;
+  hvRoomEnter('gh');
+  hvShowMsg('INSIDE THE GREENHOUSE - ANY CROP GROWS HERE, ANY SEASON!');
+}
+function hvGhExit() {
+  hvGhMode = false;
+  hvPx = 2 * 8 + 4; hvPy = 17 * 8 + 4; // back in front of the greenhouse door
+  hvDir = 'up';
+  hvShowMsg('LEFT THE GREENHOUSE.');
+}
+/* ---------- Museum ---------- */
+function hvMuseumOpen() {
+  var items = [];
+  var donated = 0;
+  for (var k in hvMuseum) if (hvMuseum[k]) donated++;
+  items.push({ label: 'COLLECTION: ' + donated + ' / ' + HV_ARTIFACTS.length + ' ARTIFACTS', act: 'none' });
+  for (var i = 0; i < HV_ARTIFACTS.length; i++) {
+    var a = HV_ARTIFACTS[i];
+    var have = hvInv[a.id] || 0;
+    if (have > 0 && !hvMuseum[a.id]) items.push({ label: 'DONATE ' + a.name + ' (HAVE ' + have + ')', artifact: a });
+    else if (hvMuseum[a.id]) items.push({ label: a.name + ' - DONATED', act: 'none' });
+  }
+  // Donate minerals/gems too.
+  var gems = ['gem', 'goldore'];
+  for (var j = 0; j < gems.length; j++) {
+    var g = gems[j];
+    var have2 = hvInv[g] || 0;
+    if (have2 > 0 && !hvMuseum[g]) items.push({ label: 'DONATE ' + hvItemName(g).toUpperCase() + ' (HAVE ' + have2 + ')', artifact: { id: g, name: hvItemName(g).toUpperCase() } });
+  }
+  items.push({ label: 'BACK', act: 'back' });
+  hvOpenMenu('MAPLEWOOD MUSEUM', items, function (it) {
+    if (it.act === 'back' || it.act === 'none') { hvCloseMenu(); return; }
+    hvInv[it.artifact.id]--;
+    hvMuseum[it.artifact.id] = true;
+    hvGold += 50;
+    hvShowMsg('DONATED ' + it.artifact.name + '! +50G');
+    var count = 0;
+    for (var k2 in hvMuseum) if (hvMuseum[k2]) count++;
+    if (count === 3) { hvGold += 200; hvShowMsg('MILESTONE! 3 DONATIONS - BONUS +200G!'); }
+    if (count === 5) { hvGold += 400; hvAddItem('goldore', 3); hvShowMsg('MILESTONE! 5 DONATIONS - BONUS +400G + 3 GOLD ORE!'); }
+    if (count >= HV_ARTIFACTS.length) { hvGold += 1000; hvShowMsg('COLLECTION COMPLETE! +1000G! YOU ARE A MUSEUM HERO!'); }
+    hvCloseMenu();
+  });
+}
+/* ---------- Town Hall restoration ---------- */
+function hvHallOpen() {
+  var items = [];
+  if (hvHallStage >= HV_HALL_BUNDLES.length) {
+    items.push({ label: 'THE TOWN HALL IS FULLY RESTORED!', act: 'none' });
+    items.push({ label: 'BACK', act: 'back' });
+    hvOpenMenu('TOWN HALL', items, function (it) { hvCloseMenu(); });
+    return;
+  }
+  var bundle = HV_HALL_BUNDLES[hvHallStage];
+  items.push({ label: 'STAGE ' + (hvHallStage + 1) + ' OF ' + HV_HALL_BUNDLES.length + ' - ' + bundle.reward, act: 'none' });
+  for (var item in bundle.items) {
+    var need = bundle.items[item];
+    var have = (hvHallDonated[hvHallStage + ':' + item] || 0);
+    var inv = hvInv[item] || 0;
+    items.push({ label: 'DONATE ' + hvItemName(item).toUpperCase() + ' ' + have + '/' + need + ' (HAVE ' + inv + ')', donate: item, need: need });
+  }
+  items.push({ label: 'BACK', act: 'back' });
+  hvOpenMenu('TOWN HALL RESTORATION', items, function (it) {
+    if (it.act === 'back' || it.act === 'none') { hvCloseMenu(); return; }
+    var key = hvHallStage + ':' + it.donate;
+    var haveD = hvHallDonated[key] || 0;
+    var needD = it.need;
+    var invD = hvInv[it.donate] || 0;
+    if (haveD >= needD) { hvShowMsg('THAT PART IS DONE!'); hvCloseMenu(); return; }
+    if (invD < 1) { hvShowMsg('YOU HAVE NO ' + hvItemName(it.donate).toUpperCase() + '!'); hvCloseMenu(); return; }
+    var give = Math.min(invD, needD - haveD);
+    hvInv[it.donate] = invD - give;
+    hvHallDonated[key] = haveD + give;
+    hvShowMsg('DONATED ' + give + 'X ' + hvItemName(it.donate).toUpperCase() + '!');
+    // Check if the stage is complete.
+    var b = HV_HALL_BUNDLES[hvHallStage];
+    var done = true;
+    for (var it2 in b.items) if ((hvHallDonated[hvHallStage + ':' + it2] || 0) < b.items[it2]) done = false;
+    if (done) {
+      hvHallStage++;
+      hvGold += 300;
+      hvShowMsg('TOWN HALL STAGE COMPLETE! +300G - ' + b.reward);
+      if (b.unlock === 'greenhouse') { hvGhUnlocked = true; hvShowMsg('THE GREENHOUSE IS OPEN!'); }
+      if (b.unlock === 'seeds2') { hvAddItem('strawberryseed', 5); hvShowMsg('THE SHOP NOW STOCKS RARE SEEDS!'); }
+      if (b.unlock === 'finale') { hvShowMsg('MAPLEWOOD IS FULLY RESTORED!'); }
+      hvStoryCheck();
+    }
+    hvCloseMenu();
+  });
+}
+/* ---------- Tropical island ---------- */
+function hvIslandEnter() {
+  if (!hvBoat) { hvShowMsg('YOU NEED A BOAT! BUY ONE FROM THE SHOP (2000G).'); return; }
+  hvIslandMode = true;
+  hvRoomEnter('island');
+  hvShowMsg('SAILED TO THE TROPICAL ISLAND! NEW CROPS, FISH, AND FORAGE HERE.');
+}
+function hvIslandExit() {
+  hvIslandMode = false;
+  hvPx = 21 * 8 + 4; hvPy = 42 * 8 + 4; // back on the dock
+  hvDir = 'down';
+  hvShowMsg('SAILED BACK TO THE BEACH.');
+}
+/* ---------- Mine floors + combat ---------- */
+function hvSpawnMonsters() {
+  hvMonsters = [];
+  var count = 1 + hvMineFloor;
+  var rng = hvMulberry32(500 + hvMineFloor * 17 + hvDay);
+  for (var i = 0; i < count; i++) {
+    var type = hvMineFloor >= 3 ? 'golem' : (hvMineFloor >= 1 ? 'bat' : 'slime');
+    if (hvMineFloor >= 2 && rng() < 0.4) type = 'bat';
+    if (hvMineFloor >= 4 && rng() < 0.3) type = 'golem';
+    var def = null;
+    for (var j = 0; j < HV_MONSTERS.length; j++) if (HV_MONSTERS[j].type === type) def = HV_MONSTERS[j];
+    var mx = 22 + Math.floor(rng() * 12);
+    var my = 1 + Math.floor(rng() * 5);
+    hvMonsters.push({ x: mx, y: my, type: type, hp: def ? def.hp : 1 });
+  }
+}
+function hvMonsterAt(tx, ty) {
+  for (var i = 0; i < hvMonsters.length; i++) if (hvMonsters[i].x === tx && hvMonsters[i].y === ty) return hvMonsters[i];
+  return null;
+}
+function hvSwordAttack() {
+  if (!hvSword) { hvShowMsg('YOU NEED A SWORD! BUY ONE FROM THE BLACKSMITH.'); return; }
+  var ft = hvFrontTile();
+  var fx = ft.x, fy = ft.y;
+  var m = hvMonsterAt(fx, fy);
+  if (!m) { hvShowMsg('SWUNG YOUR SWORD AT THE AIR!'); return; }
+  var dmg = 1 + Math.floor(hvSkillLevel('combat') / 2);
+  m.hp -= dmg;
+  JMFGAMES.beep(300, 0.08);
+  if (m.hp <= 0) {
+    hvMonsters.splice(hvMonsters.indexOf(m), 1);
+    var def = null;
+    for (var j = 0; j < HV_MONSTERS.length; j++) if (HV_MONSTERS[j].type === m.type) def = HV_MONSTERS[j];
+    var loot = def ? def.loot[Math.floor(Math.random() * def.loot.length)] : 'stone';
+    hvAddItem(loot, 1);
+    hvGold += 20;
+    hvGainXp('combat', 15);
+    hvShowMsg('DEFEATED A ' + (def ? def.name : m.type).toUpperCase() + '! GOT 1 ' + hvItemName(loot).toUpperCase() + ' + 20G');
+  } else {
+    hvShowMsg('HIT THE ' + m.type.toUpperCase() + '! (' + m.hp + ' HP LEFT)');
+  }
+}
+function hvMonstersTick() {
+  // Monsters shuffle toward the player slowly.
+  for (var i = 0; i < hvMonsters.length; i++) {
+    var m = hvMonsters[i];
+    if (Math.random() < 0.3) continue;
+    var dx = Math.sign(hvPx - m.x), dy = Math.sign(hvPy - m.y);
+    var nx = m.x, ny = m.y;
+    if (Math.random() < 0.5) nx = m.x + dx; else ny = m.y + dy;
+    if (nx >= 20 && nx < 37 && ny >= 0 && ny < 7 && !hvMonsterAt(nx, ny) && !(nx === hvPx && ny === hvPy)) { m.x = nx; m.y = ny; }
+  }
+}
+/* ---------- Pet ---------- */
+function hvAdoptPet(type) {
+  hvPet = { type: type, x: Math.floor(hvPx / HV_T) + 1, y: Math.floor(hvPy / HV_T), happy: 50 };
+  hvShowMsg('YOU ADOPTED A ' + type.toUpperCase() + '! IT WILL FOLLOW YOU.');
+}
+function hvPetTick() {
+  if (!hvPet) return;
+  var dx = Math.floor(hvPx / HV_T) - hvPet.x, dy = Math.floor(hvPy / HV_T) - hvPet.y;
+  if (Math.abs(dx) + Math.abs(dy) > 2) {
+    if (Math.abs(dx) > Math.abs(dy)) hvPet.x += Math.sign(dx);
+    else hvPet.y += Math.sign(dy);
+  }
+}
+function hvPetGift() {
+  if (!hvPet) return;
+  if (Math.random() < 0.4) {
+    var forage = HV_FORAGE[Math.floor(Math.random() * HV_FORAGE.length)];
+    hvAddItem(forage.id, 1);
+    hvShowMsg('YOUR ' + hvPet.type.toUpperCase() + ' BROUGHT YOU A ' + forage.name + '!');
+  }
+}
+/* ---------- Harvest Festival crop contest ---------- */
+function hvContestOpen() {
+  if (hvContestDone === hvYear + '-' + hvSeason) { hvShowMsg('THE CONTEST IS OVER FOR THIS YEAR.'); return; }
+  var items = [];
+  var crops = [];
+  for (var id in hvInv) {
+    var c = hvCropById(id.replace(/_s$|_g$/, ''));
+    if (c && hvInv[id] > 0) crops.push({ id: id, crop: c });
+  }
+  for (var i = 0; i < crops.length; i++) {
+    var quality = 1;
+    if (/_g$/.test(crops[i].id)) quality = 2;
+    else if (/_s$/.test(crops[i].id)) quality = 1.5;
+    var value = Math.round(crops[i].crop.sell * quality);
+    items.push({ label: 'ENTER ' + hvItemName(crops[i].id).toUpperCase() + ' (VALUE ' + value + 'G)', entry: crops[i], value: value });
+  }
+  if (!items.length) items.push({ label: '(NO CROPS IN YOUR BAG - HARVEST ONE FIRST)', act: 'none' });
+  items.push({ label: 'BACK', act: 'back' });
+  hvOpenMenu('HARVEST CROP CONTEST', items, function (it) {
+    if (it.act === 'back' || it.act === 'none') { hvCloseMenu(); return; }
+    hvInv[it.entry.id]--;
+    hvContestDone = hvYear + '-' + hvSeason;
+    // NPC entries: from their ACTUALLY grown crops (their plot's crop / progress).
+    var entries = [{ name: 'YOU', value: it.value }];
+    var plotOwners = ['garth', 'june', 'fern'];
+    for (var i = 0; i < plotOwners.length; i++) {
+      var plot = hvNpcPlots[plotOwners[i]];
+      var npc = hvNpcById(plotOwners[i]);
+      var val = 0;
+      if (plot && plot.crop) { var cc = hvCropById(plot.crop); val = cc ? cc.sell : 0; }
+      if (!val) val = 40 + Math.floor(Math.random() * 60); // simulated from their progress
+      entries.push({ name: npc ? npc.name : plotOwners[i], value: val });
+    }
+    // A few background farmers enter too.
+    var bgFarmers = HV_BG.filter(function (b) { return b.role === 'FARMER' || b.role === 'GARDENER'; }).slice(0, 2);
+    for (var j = 0; j < bgFarmers.length; j++) entries.push({ name: bgFarmers[j].name, value: 30 + Math.floor(Math.random() * 50) });
+    entries.sort(function (a, b) { return b.value - a.value; });
+    var winner = entries[0];
+    var msg = 'CONTEST RESULTS: ';
+    for (var k = 0; k < entries.length; k++) msg += entries[k].name + ' ' + entries[k].value + 'G; ';
+    if (winner.name === 'YOU') {
+      hvChampion = true;
+      hvGold += 500;
+      for (var n = 0; n < HV_NPCS.length; n++) hvAddFriend(HV_NPCS[n].id, 5);
+      hvShowMsg('YOU WON THE HARVEST CONTEST! +500G - HARVEST CHAMPION!');
+    } else {
+      hvShowMsg(winner.name + ' WON THE CONTEST! ' + msg);
+    }
+    hvStoryCheck();
+    hvCloseMenu();
+  });
+}
+/* ---------- Town Rankings ---------- */
+function hvRankingsOpen() {
+  var cats = [
+    { key: 'gold', name: 'MOST GOLD' },
+    { key: 'crops', name: 'MOST CROPS GROWN' },
+    { key: 'fish', name: 'MOST FISH CAUGHT' },
+    { key: 'ore', name: 'MOST ORE MINED' }
+  ];
+  var lines = [];
+  for (var c = 0; c < cats.length; c++) {
+    var cat = cats[c];
+    var rows = [];
+    for (var i = 0; i < HV_NPCS.length; i++) {
+      var p = hvNpcProgGet(HV_NPCS[i].id);
+      rows.push({ name: HV_NPCS[i].name, val: p[cat.key] || 0 });
+    }
+    for (var j = 0; j < HV_BG.length; j++) {
+      var pb = hvNpcProgGet(HV_BG[j].id);
+      rows.push({ name: HV_BG[j].name, val: pb[cat.key] || 0 });
+    }
+    // Player row.
+    var pval = 0;
+    if (cat.key === 'gold') pval = hvGold;
+    else if (cat.key === 'crops') pval = hvStoryHarvested;
+    else if (cat.key === 'fish') pval = hvFishTotal || 0;
+    else if (cat.key === 'ore') pval = hvOreTotal || 0;
+    rows.push({ name: 'YOU', val: pval });
+    rows.sort(function (a, b) { return b.val - a.val; });
+    var rank = 1;
+    for (var k = 0; k < rows.length; k++) if (rows[k].name === 'YOU') { rank = k + 1; break; }
+    var top = rows.slice(0, 3).map(function (r) { return r.name + ' ' + r.val; }).join(', ');
+    lines.push({ label: cat.name + ': ' + top + ' | YOU RANK #' + rank, act: 'none' });
+  }
+  lines.push({ label: 'BACK', act: 'back' });
+  hvOpenMenu('TOWN RANKINGS', lines, function (it) { hvCloseMenu(); });
+}
+
+/* ---------- NPC-NPC relationships & marriage ---------- */
+function hvAffinityKey(a, b) { return a < b ? a + '|' + b : b + '|' + a; }
+function hvNpcAffinityTick() {
+  // Affinity grows between eligible full NPCs who share a zone/role.
+  var eligible = HV_NPCS.filter(function (n) { return n.marry && !hvNpcMarried[n.id] && n.id !== (hvMarried || ''); });
+  for (var i = 0; i < eligible.length; i++) {
+    for (var j = i + 1; j < eligible.length; j++) {
+      var a = eligible[i], b = eligible[j];
+      var key = hvAffinityKey(a.id, b.id);
+      var cur = hvNpcAffinity[key] || 0;
+      // Grow if they share a role or hang out in the same area (same day spot zone).
+      var sameRole = a.role === b.role;
+      var sameZone = Math.abs(a.dx - b.dx) + Math.abs(a.dy - b.dy) < 12;
+      if (sameRole || sameZone) {
+        cur += sameRole ? 4 : 2;
+        hvNpcAffinity[key] = cur;
+        if (cur >= 80) {
+          hvNpcMarry(a, b);
+        }
+      }
+    }
+  }
+}
+function hvNpcMarry(a, b) {
+  hvNpcMarried[a.id] = b.id;
+  hvNpcMarried[b.id] = a.id;
+  // They live together: b moves into a's home.
+  b.hx = a.hx; b.hy = a.hy;
+  hvShowMsg(a.name + ' AND ' + b.name + ' GOT MARRIED!');
+  JMFGAMES.beep(880, 0.15);
+  hvSave();
+}
+function hvNpcChildrenTick() {
+  // Married NPC couples can have a child over time (baby -> toddler).
+  for (var i = 0; i < HV_NPCS.length; i++) {
+    var npc = HV_NPCS[i];
+    var partner = hvNpcMarried[npc.id];
+    if (!partner) continue;
+    if (npc.id > partner) continue; // only handle each couple once
+    var existing = null;
+    for (var j = 0; j < hvNpcChildren.length; j++) {
+      if ((hvNpcChildren[j].parents[0] === npc.id && hvNpcChildren[j].parents[1] === partner) ||
+          (hvNpcChildren[j].parents[0] === partner && hvNpcChildren[j].parents[1] === npc.id)) existing = hvNpcChildren[j];
+    }
+    if (!existing) {
+      // After 14 days of marriage, a baby arrives.
+      var daysMarried = hvNpcAffinity[hvAffinityKey(npc.id, partner)] || 0;
+      if (daysMarried >= 80 && Math.random() < 0.1) {
+        hvNpcChildren.push({ parents: [npc.id, partner], stage: 'baby', x: npc.hx, y: npc.hy, days: 0 });
+        hvShowMsg(npc.name + ' AND ' + hvNpcById(partner).name + ' HAD A BABY!');
+      }
+    } else {
+      existing.days++;
+      if (existing.stage === 'baby' && existing.days >= 14) {
+        existing.stage = 'toddler';
+        hvShowMsg('THE BABY OF ' + npc.name + ' AND ' + hvNpcById(partner).name + ' IS NOW A TODDLER!');
+      }
+    }
+  }
+}
+/* ---------- NPC quest-taking (completion) ---------- */
+function hvNpcQuestTick() {
+  // Taken requests: the NPC completes them overnight (earns gold/friendship).
+  for (var i = hvBoard.length - 1; i >= 0; i--) {
+    var r = hvBoard[i];
+    if (r.taker && !r.done && !r.accepted) {
+      var p = hvNpcProgGet(r.taker);
+      p.gold += r.reward;
+      p.goods++;
+      r.done = true;
+      hvShowMsg(hvNpcById(r.taker).name + ' COMPLETED A REQUEST (+' + r.reward + 'G FOR THEM).');
+    }
+    if (r.done) hvBoard.splice(i, 1);
+  }
+}
+/* ---------- Player child (after marriage) ---------- */
+function hvChildTick() {
+  if (!hvMarried) return;
+  if (!hvChild) {
+    // After 7 days of marriage, a baby arrives.
+    if (hvDay >= 7 && Math.random() < 0.5) {
+      hvChild = { stage: 'baby', days: 0 };
+      hvShowMsg('A BABY IS BORN! WELCOME TO THE FARM, LITTLE ONE!');
+      JMFGAMES.beep(880, 0.15);
+    }
+  } else {
+    hvChild.days++;
+    if (hvChild.stage === 'baby' && hvChild.days >= 14) {
+      hvChild.stage = 'toddler';
+      hvShowMsg('YOUR BABY IS NOW A TODDLER! THEY WANDER THE FARM.');
+    }
+  }
+}
+/* ---------- Shells (beach) ---------- */
+function hvSpawnShells() {
+  hvShells = [];
+  var rng = hvMulberry32(77 + hvDay * 3 + hvSeason);
+  for (var i = 0; i < 6; i++) {
+    hvShells.push({ x: 2 + Math.floor(rng() * 52), y: 40 + Math.floor(rng() * 3), id: 'seashell' });
+  }
+}
+/* ---------- Sable's rotating rare item ---------- */
+function hvSableRareTick() {
+  var dayKey = hvYear + '-' + hvSeason + '-' + hvDay;
+  if (hvRareDay === dayKey && hvSableRare) return;
+  hvRareDay = dayKey;
+  var rares = [
+    { item: 'gem', price: 300 }, { item: 'goldore', price: 200 },
+    { item: 'strawberryseed', price: 150 }, { item: 'pumpkinseed', price: 180 },
+    { item: 'cheese', price: 250 }, { item: 'honey', price: 220 }
+  ];
+  hvSableRare = rares[Math.floor(Math.random() * rares.length)];
+}
+/* ---------- Daily tick (called from hvSleep after the day advances) ---------- */
+function hvDailyTick() {
+  hvRollWeather();
+  // Sprinklers water adjacent tilled soil each morning.
+  for (var i = 0; i < hvSprinklers.length; i++) {
+    var sp = hvSprinklers[i];
+    for (var dx = -1; dx <= 1; dx++) for (var dy = -1; dy <= 1; dy++) {
+      var key = (sp.x + dx) + ',' + (sp.y + dy);
+      if (hvSoil[key]) hvSoil[key].watered = true;
+    }
+  }
+  // Machines finish processing.
+  for (var m in hvMachWork) {
+    var w = hvMachWork[m];
+    if (w.daysLeft > 0) w.daysLeft--;
+  }
+  // Fruit trees grow and bear fruit in their season.
+  for (var t = 0; t < hvTrees.length; t++) {
+    var tr = hvTrees[t];
+    var def = hvTreeById(tr.type);
+    if (!def) continue;
+    if (tr.growth < 3) tr.growth++;
+    else if (def.season === hvSeason) tr.fruit = Math.min(3, tr.fruit + 1);
+  }
+  // Beehives produce honey (more if flowers are nearby).
+  for (var h = 0; h < hvHives.length; h++) {
+    var hv2 = hvHives[h];
+    var bonus = 0;
+    for (var fx = -2; fx <= 2; fx++) for (var fy = -2; fy <= 2; fy++) {
+      var fk = (hv2.x + fx) + ',' + (hv2.y + fy);
+      if (hvSoil[fk] && (hvSoil[fk].crop === 'sunflower' || hvSoil[fk].crop === 'dandelion')) bonus++;
+    }
+    hv2.honey = Math.min(5, hv2.honey + (bonus > 0 ? 2 : 1));
+  }
+  // NPC daily simulation (activity + progress).
+  hvNpcSimDay();
+  // NPC relationships (affinity + marriage) and NPC children.
+  hvNpcAffinityTick();
+  hvNpcChildrenTick();
+  // NPC quest-taking (complete taken requests).
+  hvNpcQuestTick();
+  // Bulletin board refreshes.
+  hvGenBoard();
+  // Pet gift.
+  hvPetGift();
+  // Player child.
+  hvChildTick();
+  // Shells respawn on the beach.
+  hvSpawnShells();
+  // Monsters respawn in the mine (if the player has been in the mine).
+  if (hvMineFloor > 0 && !hvMonsters.length) hvSpawnMonsters();
+  // Sable's rare item rotates.
+  hvSableRareTick();
+  // Story check.
+  hvStoryCheck();
+}
+/* ---------- Per-frame expansion tick (pet follow, monsters) ---------- */
+function hvExpansionTick() {
+  hvPetTick();
+  if (!hvIslandMode && !hvGhMode) hvMonstersTick();
+}
+/* ---------- Role services (talk-menu hooks) ---------- */
+function hvRoleService(npc) {
+  var role = npc.role || '';
+  var items = [];
+  if (role === 'DOCTOR') {
+    items.push({ label: 'RESTORE ENERGY (30G)', act: 'heal' });
+  }
+  if (role === 'MERCHANT') {
+    var rare = hvSableRare;
+    if (rare) items.push({ label: 'RARE GOODS: ' + hvItemName(rare.item).toUpperCase() + ' ' + rare.price + 'G', act: 'rare' });
+  }
+  if (role === 'TEACHER') {
+    items.push({ label: 'LEARN A TIP (+SKILL XP)', act: 'tip' });
+  }
+  if (role === 'COOK' || role === 'BAKER') {
+    items.push({ label: 'BUY A DISH (80G)', act: 'dish' });
+  }
+  if (role === 'BLACKSMITH') {
+    items.push({ label: 'UPGRADE TOOLS', act: 'smith' });
+    items.push({ label: 'BUY A SWORD (300G)', act: 'sword' });
+  }
+  if (role === 'FLORIST' || role === 'GARDENER') {
+    items.push({ label: 'LEARN A RECIPE', act: 'recipe' });
+  }
+  return items;
+}
+function hvRoleServiceDo(npc, act) {
+  if (act === 'heal') {
+    if (hvSageHealDay === hvYear + '-' + hvSeason + '-' + hvDay) { hvShowMsg('I ALREADY HEALED YOU TODAY. REST WELL!'); return; }
+    if (hvGold < 30) { hvShowMsg('HEALING COSTS 30G!'); return; }
+    hvGold -= 30;
+    hvEnergy = 100;
+    hvSageHealDay = hvYear + '-' + hvSeason + '-' + hvDay;
+    hvShowMsg('HEALED! ENERGY FULL. TAKE CARE OF YOURSELF.');
+  } else if (act === 'rare') {
+    var rare = hvSableRare;
+    if (!rare) { hvShowMsg('NO RARE GOODS TODAY.'); return; }
+    if (hvGold < rare.price) { hvShowMsg('NEED ' + rare.price + 'G!'); return; }
+    hvGold -= rare.price;
+    hvAddItem(rare.item, 1);
+    hvShowMsg('BOUGHT 1 ' + hvItemName(rare.item).toUpperCase() + '!');
+  } else if (act === 'tip') {
+    if (hvEdwinTipDay === hvYear + '-' + hvSeason + '-' + hvDay) { hvShowMsg('COME BACK TOMORROW FOR ANOTHER TIP.'); return; }
+    hvEdwinTipDay = hvYear + '-' + hvSeason + '-' + hvDay;
+    var skills = ['farming', 'fishing', 'mining', 'foraging'];
+    var s = skills[Math.floor(Math.random() * skills.length)];
+    hvGainXp(s, 20);
+    hvShowMsg('TIP: ' + hvSkillName(s) + ' +20 XP! KEEP PRACTICING.');
+  } else if (act === 'dish') {
+    if (hvGold < 80) { hvShowMsg('A DISH COSTS 80G!'); return; }
+    hvGold -= 80;
+    var r = HV_RECIPES[Math.floor(Math.random() * HV_RECIPES.length)];
+    hvAddItem(r.id, 1);
+    hvShowMsg('BOUGHT 1 ' + r.name + '!');
+  } else if (act === 'smith') {
+    hvBlacksmithOpen();
+  } else if (act === 'sword') {
+    if (hvSword) { hvShowMsg('YOU ALREADY HAVE A SWORD.'); return; }
+    if (hvGold < 300) { hvShowMsg('A SWORD COSTS 300G!'); return; }
+    hvGold -= 300;
+    hvSword = true;
+    hvShowMsg('BOUGHT A SWORD! PRESS B TO CYCLE TO IT, THEN A TO ATTACK.');
+  } else if (act === 'recipe') {
+    var unlearned = HV_RECIPES.filter(function (x) { return hvRecipesKnown.indexOf(x.id) < 0; });
+    if (!unlearned.length) { hvShowMsg('YOU KNOW ALL MY RECIPES!'); return; }
+    var rr = unlearned[0];
+    hvLearnRecipe(rr.id);
+  }
+}
+
+/* ---------- Skills / quest log views ---------- */
+function hvSkillsOpen() {
+  var items = [];
+  for (var i = 0; i < HV_SKILLS.length; i++) {
+    var s = HV_SKILLS[i];
+    var lv = hvSkillLevel(s.id);
+    var xp = hvSkills[s.id] ? hvSkills[s.id].xp : 0;
+    var perk = '';
+    if (s.id === 'farming') perk = 'CROPS WORTH +' + ((lv - 1) * 5) + '%';
+    else if (s.id === 'fishing') perk = 'BETTER CATCHES';
+    else if (s.id === 'mining') perk = 'MORE ORE';
+    else if (s.id === 'foraging') perk = 'MORE FORAGE';
+    else perk = 'STRONGER SWORD';
+    items.push({ label: s.name + ' LV ' + lv + ' (' + xp + ' XP) - ' + perk, act: 'none' });
+  }
+  items.push({ label: 'BACK', act: 'back' });
+  hvOpenMenu('SKILL LEVELS', 'EARN XP BY DOING', items, function (it) { hvCloseMenu(); });
+}
+function hvQuestLogOpen() {
+  var items = [];
+  for (var i = 0; i < HV_STORY.length; i++) {
+    var s = HV_STORY[i];
+    var mark = i < hvStoryStep ? 'DONE' : (i === hvStoryStep ? '>> NOW' : '... ');
+    items.push({ label: mark + ' ' + s.name + ' - ' + s.desc, act: 'none' });
+  }
+  items.push({ label: 'BACK', act: 'back' });
+  hvOpenMenu('QUEST LOG', 'THE FARM\'S STORY', items, function (it) { hvCloseMenu(); });
+}
+/* ---------- Room modes (greenhouse / island) ---------- */
+var hvRoom = null; // null | 'gh' | 'island'
+var hvRoomCx = 0, hvRoomCy = 0, hvRoomCd = 0;
+var hvFishPool = null; // null = pond fish; array = ocean/island fish
+function hvRoomSoil() { return hvRoom === 'gh' ? hvGhSoil : hvIslandSoil; }
+function hvRoomEnter(room) {
+  hvRoom = room;
+  hvRoomCx = 0; hvRoomCy = 0; hvRoomCd = 0;
+  if (room === 'gh') hvShowMsg('GREENHOUSE - ANY CROP, ANY SEASON. A ON A PLOT USES YOUR TOOL.');
+  else hvShowMsg('TROPICAL ISLAND - FARM, FISH, FORAGE. A ON THE DOCK SAILS HOME.');
+}
+function hvRoomExit() {
+  if (hvRoom === 'gh') hvGhExit();
+  else if (hvRoom === 'island') hvIslandExit();
+  hvRoom = null;
+}
+function hvRoomMove() {
+  if (hvRoomCd > 0) { hvRoomCd--; return; }
+  var nx = hvRoomCx, ny = hvRoomCy;
+  if (JMFGAMES.isDown('left')) nx--;
+  else if (JMFGAMES.isDown('right')) nx++;
+  else if (JMFGAMES.isDown('up')) ny--;
+  else if (JMFGAMES.isDown('down')) ny++;
+  else return;
+  var maxX = hvRoom === 'gh' ? 3 : 5, maxY = hvRoom === 'gh' ? 3 : 3;
+  if (nx < 0 || nx > maxX || ny < 0 || ny > maxY) return;
+  hvRoomCx = nx; hvRoomCy = ny; hvRoomCd = 8;
+  JMFGAMES.beep(600, 0.03);
+}
+function hvRoomAction() {
+  if (hvRoom === 'gh') {
+    if (hvRoomCx === 0 && hvRoomCy === 3) { hvRoomExit(); return; }
+    hvRoomUseTool(hvRoomCx, hvRoomCy);
+  } else if (hvRoom === 'island') {
+    if (hvRoomCx === 5 && hvRoomCy === 2) { hvRoomExit(); return; }
+    if (hvRoomCx === 4) { // water: fish (tropical)
+      if (hvEnergy <= 0) { hvShowMsg('TOO TIRED! SLEEP AT HOME.'); return; }
+      hvSpendEnergy(3);
+      hvFishPool = HV_TROPICAL_FISH;
+      hvFishStart();
+      return;
+    }
+    if (hvRoomCx === 5) { // forage
+      var forage = HV_ISLAND_FORAGE[Math.floor(Math.random() * HV_ISLAND_FORAGE.length)];
+      hvAddItem(forage.id, 1);
+      hvShowMsg('PICKED UP ' + forage.name + '!');
+      hvGainXp('foraging', 5);
+      return;
+    }
+    hvRoomUseTool(hvRoomCx, hvRoomCy);
+  }
+}
+function hvRoomUseTool(cx, cy) {
+  var soil = hvRoomSoil();
+  var key = cx + ',' + cy;
+  var s = soil[key];
+  // Harvest a mature crop first.
+  if (s && s.crop) {
+    var c = hvCropById(s.crop) || hvTropicalCropById(s.crop);
+    if (c && s.growth >= c.days) {
+      hvSpendEnergy(1);
+      hvAddItem(s.crop, 1);
+      soil[key] = { crop: null, growth: 0, watered: false };
+      hvShowMsg('HARVESTED ' + c.name + '!');
+      hvGainXp('farming', 10);
+      hvStoryHarvested++;
+      hvStoryCheck();
+      return;
+    }
+  }
+  var tool = HV_TOOLS[hvToolIdx].id;
+  if (tool === 'hoe') {
+    if (s) { hvShowMsg('ALREADY TILLED.'); return; }
+    hvSpendEnergy(2);
+    soil[key] = { crop: null, growth: 0, watered: false };
+    JMFGAMES.beep(300, 0.06);
+  } else if (tool === 'can') {
+    if (!s || !s.crop) { hvShowMsg('NOTHING TO WATER HERE.'); return; }
+    if (s.watered) { hvShowMsg('ALREADY WATERED.'); return; }
+    hvSpendEnergy(2);
+    s.watered = true;
+    hvShowMsg('WATERED!');
+  } else if (tool === 'seeds') {
+    if (!s) { hvShowMsg('TILL THE SOIL FIRST.'); return; }
+    if (s.crop) { hvShowMsg('ALREADY PLANTED.'); return; }
+    hvRoomSeedSelect(cx, cy);
+  } else {
+    hvShowMsg('USE HOE, CAN, OR SEEDS HERE.');
+  }
+}
+function hvTropicalCropById(id) { for (var i = 0; i < HV_TROPICAL_CROPS.length; i++) if (HV_TROPICAL_CROPS[i].id === id) return HV_TROPICAL_CROPS[i]; return null; }
+function hvRoomSeedSelect(cx, cy) {
+  var items = [];
+  var crops = [];
+  if (hvRoom === 'gh') {
+    crops = HV_CROPS.slice();
+  } else {
+    crops = HV_TROPICAL_CROPS.slice();
+    var seasonal = hvCropsForSeason(hvSeason);
+    for (var i = 0; i < seasonal.length; i++) crops.push(seasonal[i]);
+  }
+  for (var j = 0; j < crops.length; j++) {
+    var c = crops[j];
+    var seedId = 'seed_' + c.id;
+    var n = hvCount(seedId);
+    if (n > 0) {
+      (function (crop, x, y) {
+        items.push({
+          label: crop.name + ' x' + hvCount('seed_' + crop.id), sub: crop.days + ' DAYS', act: function () {
+            hvAddItem('seed_' + crop.id, -1);
+            hvRoomSoil()[x + ',' + y] = { crop: crop.id, growth: 0, watered: false };
+            hvSpendEnergy(2);
+            hvMenu = null;
+            hvShowMsg('PLANTED ' + crop.name + '!');
+            JMFGAMES.beep(500, 0.06);
+          }
+        });
+      })(c, cx, cy);
+    }
+  }
+  if (!items.length) { hvShowMsg('NO SEEDS! BUY SOME AT THE SHOP.'); return; }
+  items.push({ label: 'CANCEL', sub: '', act: function () { hvMenu = null; } });
+  hvOpenMenu('PLANT SEEDS', hvRoom === 'gh' ? 'GREENHOUSE' : 'ISLAND', items, null);
+}
+function hvDrawRoom() {
+  ctx.fillStyle = hvRoom === 'gh' ? '#3d8b37' : '#e8d8a0';
+  ctx.fillRect(0, 0, W, H);
+  var isGh = hvRoom === 'gh';
+  var cols = isGh ? 4 : 6, rows = 4;
+  var cellW = 28, cellH = 26, ox = 16, oy = 30;
+  ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+  ctx.fillText(isGh ? 'GREENHOUSE - ANY CROP, ANY SEASON' : 'TROPICAL ISLAND', 8, 26);
+  for (var y = 0; y < rows; y++) {
+    for (var x = 0; x < cols; x++) {
+      var sx = ox + x * cellW, sy = oy + y * cellH;
+      var isPlot = false, isWater = false, isForage = false, isExit = false;
+      if (isGh) {
+        isPlot = y < 3;
+        isExit = (x === 0 && y === 3);
+      } else {
+        isPlot = x < 4;
+        isWater = x === 4;
+        isForage = (x === 5 && y !== 2);
+        isExit = (x === 5 && y === 2);
+      }
+      if (isPlot) {
+        var key = x + ',' + y;
+        var s = hvRoomSoil()[key];
+        ctx.fillStyle = s ? (s.watered ? '#4a2f1a' : '#6b4a2b') : '#a0825a';
+        ctx.fillRect(sx, sy, cellW - 2, cellH - 2);
+        if (s && s.crop) {
+          var c = hvCropById(s.crop) || hvTropicalCropById(s.crop);
+          if (c) {
+            var mature = s.growth >= c.days;
+            ctx.fillStyle = mature ? '#ffd93b' : '#2f7a2e';
+            ctx.fillRect(sx + 8, sy + 8, 10, 8);
+            if (mature) { ctx.fillStyle = '#0f380f'; ctx.fillText('*', sx + 12, sy + 15); }
+          }
+        }
+      } else if (isWater) {
+        ctx.fillStyle = '#3a86c8'; ctx.fillRect(sx, sy, cellW - 2, cellH - 2);
+        ctx.fillStyle = '#6ab0e8'; ctx.fillRect(sx + 4, sy + 8, 18, 2);
+        ctx.fillStyle = '#0f380f'; ctx.fillText('FISH', sx + 4, sy + 20);
+      } else if (isForage) {
+        ctx.fillStyle = '#e8d8a0'; ctx.fillRect(sx, sy, cellW - 2, cellH - 2);
+        ctx.fillStyle = '#ff8fb1'; ctx.fillRect(sx + 10, sy + 8, 6, 6);
+        ctx.fillStyle = '#0f380f'; ctx.fillText('PICK', sx + 4, sy + 20);
+      } else if (isExit) {
+        ctx.fillStyle = '#6b4a2b'; ctx.fillRect(sx, sy, cellW - 2, cellH - 2);
+        ctx.fillStyle = '#ffd93b'; ctx.fillText(isGh ? 'EXIT' : 'DOCK', sx + 4, sy + 14);
+      } else {
+        ctx.fillStyle = isGh ? '#2f7a2e' : '#e8d8a0';
+        ctx.fillRect(sx, sy, cellW - 2, cellH - 2);
+      }
+      if (hvRoomCx === x && hvRoomCy === y) {
+        ctx.strokeStyle = '#ffd93b'; ctx.lineWidth = 2;
+        ctx.strokeRect(sx - 1, sy - 1, cellW, cellH);
+        ctx.lineWidth = 1;
+      }
+    }
+  }
+  ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('D-PAD: MOVE  A: USE  B: CYCLE TOOL', W / 2, 140);
+  ctx.textAlign = 'left';
+  hvDrawHud();
+  if (hvMsgFrames > 0) {
+    ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(hvMsg, W / 2, 138);
+    ctx.textAlign = 'left';
+  }
+  if (hvMenu) hvDrawMenu();
+  if (hvDialog) {
+    ctx.fillStyle = '#0f380f'; ctx.fillRect(10, 96, 140, 40);
+    ctx.fillStyle = '#9bac0f'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+    ctx.fillText(hvDialog.line, 14, 108);
+    ctx.fillText('A: OK', 14, 130);
+  }
+}
+
+/* ---------- Expansion drawing (called from drawFarm) ---------- */
+function hvDrawExpansion() {
+  var isFest = !!hvIsFestivalDay();
+  // Background townspeople (wander by day; crowd the square on festival days).
+  for (var i = 0; i < HV_BG.length; i++) {
+    var bg = HV_BG[i];
+    var p;
+    if (isFest && (i % 3 === 0)) {
+      var spots = HV_ROLE_ZONES.square;
+      var sp = spots[i % spots.length];
+      p = { x: sp[0], y: sp[1] };
+    } else {
+      p = hvBgPos(bg);
+    }
+    var bx = p.x * HV_T - hvCamX, by = p.y * HV_T - hvCamY + HV_HUD;
+    if (bx < -10 || bx > W + 10 || by < HV_HUD - 10 || by > H + 10) continue;
+    hvDrawPerson(bx, by - 2, bg.color, null);
+    var ptx = Math.floor(hvPx / HV_T), pty = Math.floor(hvPy / HV_T);
+    if (Math.abs(p.x - ptx) <= 1 && Math.abs(p.y - pty) <= 1) {
+      ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(bg.name, bx + 4, by - 4);
+      ctx.textAlign = 'left';
+    }
+  }
+  // NPC farm plots (tilled soil + growing crops).
+  for (var pid in hvNpcPlots) {
+    var plot = hvNpcPlots[pid];
+    for (var t = 0; t < plot.tiles.length; t++) {
+      var tl = plot.tiles[t];
+      var px = tl.x * HV_T - hvCamX, py = tl.y * HV_T - hvCamY + HV_HUD;
+      ctx.fillStyle = plot.watered ? '#4a2f1a' : '#6b4a2b';
+      ctx.fillRect(px, py, 8, 8);
+      if (plot.crop) {
+        var cc = hvCropById(plot.crop);
+        if (cc) {
+          var mature = plot.growth >= cc.days;
+          var col = HV_CROP_COLOR[cc.id] || '#7ec850';
+          ctx.fillStyle = '#2f7a2e';
+          if (mature) { ctx.fillRect(px + 3, py + 1, 2, 6); ctx.fillStyle = col; ctx.fillRect(px + 2, py + 2, 2, 2); ctx.fillRect(px + 5, py + 3, 2, 2); }
+          else { ctx.fillRect(px + 3, py + 3, 2, 4); ctx.fillRect(px + 2, py + 2, 4, 2); }
+        }
+      }
+    }
+  }
+  // Fruit trees.
+  for (var ti = 0; ti < hvTrees.length; ti++) {
+    var tr = hvTrees[ti];
+    var tx = tr.x * HV_T - hvCamX, ty = tr.y * HV_T - hvCamY + HV_HUD;
+    ctx.fillStyle = '#6b4a2b'; ctx.fillRect(tx + 3, ty + 4, 2, 4);
+    ctx.fillStyle = tr.growth < 3 ? '#7ec850' : '#2f7a2e';
+    ctx.beginPath(); ctx.arc(tx + 4, ty + 3, 4, 0, Math.PI * 2); ctx.fill();
+    if (tr.fruit > 0) { ctx.fillStyle = '#ff2e4d'; ctx.fillRect(tx + 2, ty + 2, 2, 2); ctx.fillRect(tx + 5, ty + 3, 2, 2); }
+  }
+  // Beehives.
+  for (var hi = 0; hi < hvHives.length; hi++) {
+    var hv2 = hvHives[hi];
+    var hx = hv2.x * HV_T - hvCamX, hy = hv2.y * HV_T - hvCamY + HV_HUD;
+    ctx.fillStyle = '#d4a017'; ctx.fillRect(hx + 1, hy + 2, 6, 5);
+    ctx.fillStyle = '#8b5a2b'; ctx.fillRect(hx + 2, hy + 4, 4, 1);
+    if (hv2.honey > 0) { ctx.fillStyle = '#ffd93b'; ctx.fillRect(hx + 3, hy, 2, 2); }
+  }
+  // Sprinklers.
+  for (var si = 0; si < hvSprinklers.length; si++) {
+    var sp = hvSprinklers[si];
+    var sx = sp.x * HV_T - hvCamX, sy = sp.y * HV_T - hvCamY + HV_HUD;
+    ctx.fillStyle = '#c0c0c0'; ctx.fillRect(sx + 3, sy + 2, 2, 5);
+    ctx.fillStyle = '#3a86c8'; ctx.fillRect(sx + 2, sy + 1, 4, 1);
+  }
+  // Beach shells.
+  for (var sh = 0; sh < hvShells.length; sh++) {
+    var shl = hvShells[sh];
+    var shx = shl.x * HV_T - hvCamX, shy = shl.y * HV_T - hvCamY + HV_HUD;
+    ctx.fillStyle = '#ff8fb1'; ctx.fillRect(shx + 2, shy + 3, 4, 3);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(shx + 3, shy + 4, 2, 1);
+  }
+  // Mine monsters.
+  for (var mi = 0; mi < hvMonsters.length; mi++) {
+    var m = hvMonsters[mi];
+    var mx = m.x * HV_T - hvCamX, my = m.y * HV_T - hvCamY + HV_HUD;
+    if (m.type === 'slime') { ctx.fillStyle = '#7ec850'; ctx.fillRect(mx + 1, my + 3, 6, 5); ctx.fillStyle = '#0f380f'; ctx.fillRect(mx + 2, my + 4, 1, 1); ctx.fillRect(mx + 5, my + 4, 1, 1); }
+    else if (m.type === 'bat') { ctx.fillStyle = '#4a4a6a'; ctx.fillRect(mx + 1, my + 3, 6, 3); ctx.fillRect(mx, my + 2, 2, 2); ctx.fillRect(mx + 6, my + 2, 2, 2); }
+    else { ctx.fillStyle = '#8a8a8a'; ctx.fillRect(mx + 1, my + 1, 6, 7); ctx.fillStyle = '#ff2e4d'; ctx.fillRect(mx + 2, my + 3, 1, 1); ctx.fillRect(mx + 5, my + 3, 1, 1); }
+  }
+  // Pet (follows the player).
+  if (hvPet) {
+    var petx = hvPet.x * HV_T - hvCamX, pety = hvPet.y * HV_T - hvCamY + HV_HUD;
+    if (hvPet.type === 'dog') { ctx.fillStyle = '#8b5a2b'; ctx.fillRect(petx + 1, pety + 4, 6, 3); ctx.fillRect(petx + 5, pety + 2, 3, 3); ctx.fillStyle = '#0f380f'; ctx.fillRect(petx + 6, pety + 3, 1, 1); }
+    else { ctx.fillStyle = '#808080'; ctx.fillRect(petx + 1, pety + 4, 6, 3); ctx.fillRect(petx + 5, pety + 2, 3, 3); ctx.fillStyle = '#ffd93b'; ctx.fillRect(petx + 6, pety + 3, 1, 1); }
+  }
+  // Player's child (baby at the farmhouse, toddler wanders the farm).
+  if (hvChild) {
+    var chx, chy;
+    if (hvChild.stage === 'baby') { chx = 4 * HV_T - hvCamX; chy = 13 * HV_T - hvCamY + HV_HUD; }
+    else { chx = (4 + (hvDay % 3)) * HV_T - hvCamX; chy = (14 + (hvDay % 2)) * HV_T - hvCamY + HV_HUD; }
+    if (hvChild.stage === 'baby') { ctx.fillStyle = '#ff8fb1'; ctx.fillRect(chx + 2, chy + 4, 4, 3); ctx.fillStyle = '#f2c89b'; ctx.fillRect(chx + 3, chy + 2, 2, 2); }
+    else { hvDrawPerson(chx, chy - 2, '#ff6b9d', null); }
+  }
+  // NPC children (baby/toddler at their home).
+  for (var ci2 = 0; ci2 < hvNpcChildren.length; ci2++) {
+    var nc = hvNpcChildren[ci2];
+    var ncx = nc.x * HV_T - hvCamX, ncy = nc.y * HV_T - hvCamY + HV_HUD;
+    if (nc.stage === 'baby') { ctx.fillStyle = '#ff8fb1'; ctx.fillRect(ncx + 2, ncy + 4, 4, 3); }
+    else { hvDrawPerson(ncx, ncy - 2, '#ffb6c1', null); }
+  }
+  // Weather effects (rain streaks / snowflakes).
+  if (hvWeather === 1 || hvWeather === 2) {
+    ctx.fillStyle = 'rgba(58,134,200,0.5)';
+    var woff = hvTimeMin % 8;
+    for (var wi = 0; wi < 12; wi++) {
+      var rx = ((wi * 37 + woff * 4) % 160);
+      var ry = ((wi * 53 + hvTimeMin * 2) % 120) + HV_HUD;
+      ctx.fillRect(rx, ry, 1, 5);
+    }
+  } else if (hvWeather === 3) {
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    for (var si2 = 0; si2 < 10; si2++) {
+      var sx2 = ((si2 * 41 + hvTimeMin) % 160);
+      var sy2 = ((si2 * 29 + hvTimeMin) % 120) + HV_HUD;
+      ctx.fillRect(sx2, sy2, 2, 2);
+    }
+  }
+}
+
+  /* ---------- Mine floors ---------- */
+  function hvMineDown() {
+    if (hvMineFloor >= 4) { hvShowMsg('THIS IS THE DEEPEST FLOOR!'); return; }
+    hvMineFloor++;
+    hvSpawnRocks(); hvSpawnMonsters();
+    hvShowMsg('MINE FLOOR ' + (hvMineFloor + 1) + ' - BETTER ORE AND MONSTERS DOWN HERE!');
+  }
+  function hvMineUp() {
+    if (hvMineFloor <= 0) { hvShowMsg('YOU ARE ALREADY AT THE TOP.'); return; }
+    hvMineFloor--;
+    hvSpawnRocks(); hvSpawnMonsters();
+    hvShowMsg('MINE FLOOR ' + (hvMineFloor + 1) + '.');
+  }
+
+  /* ---------- A button ---------- */
+  function hvAction() {
+    if (hvPaused) return;
+    if (hvDialog) { var da = hvDialog.after; hvDialog = null; JMFGAMES.beep(440, 0.06); if (da) da(); return; }
+    if (hvMenu) { hvMenuAction(); return; }
+    if (hvFish) { hvFishPress(); return; }
+    if (hvFest && hvFest.phase === 'play') { hvFestPress(); return; }
+    if (hvRoom) { hvRoomAction(); return; }
+    var ft = hvFrontTile();
+    var npc = hvNpcAt(ft.x, ft.y);
+    if (npc) { hvTalk(npc); return; }
+    var myTile = hvTileAt(Math.floor(hvPx / HV_T), Math.floor(hvPy / HV_T));
+    // Festival day: the square is for the festival — open it before talking to background townspeople.
+    if (hvIsFestivalDay() && (hvTileAt(ft.x, ft.y) === 'f' || myTile === 'f')) { hvFestJoin(); return; }
+    var bgNpc = hvBgAt(ft.x, ft.y);
+    if (bgNpc) {
+      var bline = bgNpc.lines[(hvDay + hvSeason + parseInt(bgNpc.id.slice(2), 10)) % bgNpc.lines.length];
+      hvDialog = { npc: null, line: bgNpc.name + ' - ' + bgNpc.role + ': ' + bline, hearts: 0 };
+      JMFGAMES.beep(660, 0.06);
+      return;
+    }
+    if (hvTileAt(ft.x, ft.y) === 's') { hvOpenShop(); return; }
+    if (hvTileAt(ft.x, ft.y) === 'c' || hvTileAt(ft.x, ft.y) === 'b') { hvOpenAnimals(); return; }
+    if (ft.x === 5 && ft.y === 12) { hvSleepPrompt(); return; }
+    // Greenhouse / museum / Town Hall doors.
+    if (ft.x === 2 && ft.y === 16) { hvGhEnter(); return; }
+    if (ft.x === 39 && ft.y === 9) { hvMuseumOpen(); return; }
+    if (ft.x === 53 && ft.y === 12) { hvHallOpen(); return; }
+    // Dock (boat to the island).
+    if (hvTileAt(ft.x, ft.y) === 'k') { hvIslandEnter(); return; }
+    // Bulletin board (northwest corner of the square).
+    if (ft.x === 42 && ft.y === 17 && !hvIsFestivalDay()) { hvBoardOpen(); return; }
+    // Fall Harvest Festival crop contest (talk to the Mayor at the square on Fall day 15).
+    if (hvIsFestivalDay() && hvSeason === 2 && hvTileAt(ft.x, ft.y) === 'f') { hvContestOpen(); return; }
+    // Mine stairs (down at 33,1 / up at 21,1).
+    if (ft.x === 33 && ft.y === 1) { hvMineDown(); return; }
+    if (ft.x === 21 && ft.y === 1) { hvMineUp(); return; }
+    // Fruit tree (collect fruit).
+    var tree = hvTreeAt(ft.x, ft.y);
+    if (tree && tree.fruit > 0) {
+      var tdef = hvTreeById(tree.type);
+      tree.fruit--;
+      hvAddItem(tdef.fruit, 1);
+      hvShowMsg('PICKED 1 ' + hvItemName(tdef.fruit).toUpperCase() + '!');
+      JMFGAMES.beep(880, 0.06);
+      return;
+    }
+    // Beehive (collect honey).
+    var hive = hvHiveAt(ft.x, ft.y);
+    if (hive && hive.honey > 0) {
+      hive.honey--;
+      hvAddItem('honey', 1);
+      hvShowMsg('COLLECTED 1 HONEY!');
+      JMFGAMES.beep(880, 0.06);
+      return;
+    }
+    // Pet (pet it).
+    if (hvPet && ft.x === hvPet.x && ft.y === hvPet.y) {
+      hvPet.happy = Math.min(100, hvPet.happy + 5);
+      hvShowMsg('YOU PET YOUR ' + hvPet.type.toUpperCase() + '! IT LOOKS HAPPY.');
+      JMFGAMES.beep(990, 0.08);
+      return;
+    }
+    // Beach shell (collect).
+    for (var shi = 0; shi < hvShells.length; shi++) {
+      if (hvShells[shi].x === ft.x && hvShells[shi].y === ft.y) {
+        hvShells.splice(shi, 1);
+        hvAddItem('seashell', 1);
+        hvShowMsg('PICKED UP A SEASHELL!');
+        JMFGAMES.beep(880, 0.06);
+        return;
+      }
+    }
+    // Place a sprinkler / beehive / tree sapling on empty grass.
+    if (hvTileAt(ft.x, ft.y) === 'g' && ((hvInv['sprinkler'] || 0) > 0 || (hvInv['beehive'] || 0) > 0)) { hvPlaceOpen(ft.x, ft.y); return; }
+    if (hvTileAt(ft.x, ft.y) === 'd') { hvShowMsg('SOMEONE LIVES HERE.'); return; }
+    // Energy only gates tool use: talking, shopping, festivals and sleeping
+    // at home must still work when exhausted (otherwise 0 energy is a trap).
+    if (hvEnergy <= 0) { hvShowMsg('TOO TIRED! SLEEP AT HOME.'); return; }
+    hvUseTool(ft);
+  }
+
+  /* ---------- Drawing ---------- */
+  var HV_CROP_COLOR = { turnip: '#e8d8f0', potato: '#b08954', lettuce: '#90ee90', strawberry: '#ff2e4d', tomato: '#e03a2a', corn: '#ffd93b', melon: '#3fae5a', pepper: '#ff7f2a', pumpkin: '#ff8c1a', carrot: '#ff7f2a', cabbage: '#a8d88a', grape: '#8e44ad', snowpea: '#7ec850', wroot: '#c9a06a', iceberry: '#7fb8ff', fcabbage: '#b8d8c8' };
+  function hvDrawTile(ch, sx, sy, tx, ty) {
+    if (ch === 'g' || ch === 'x') {
+      // Grass / soil plot base: soil plots are a softer brown.
+      if (ch === 'x') {
+        var s = hvSoil[tx + ',' + ty];
+        if (s) {
+          ctx.fillStyle = s.watered ? '#4a2f1a' : '#6b4a2b';
+          ctx.fillRect(sx, sy, 8, 8);
+          ctx.fillStyle = s.watered ? '#3a2412' : '#54371f';
+          ctx.fillRect(sx, sy + 3, 8, 1);
+          ctx.fillRect(sx, sy + 6, 8, 1);
+        } else {
+          ctx.fillStyle = '#a0825a';
+          ctx.fillRect(sx, sy, 8, 8);
+          ctx.fillStyle = '#8a6d45';
+          ctx.fillRect(sx + 1, sy + 2, 2, 2); ctx.fillRect(sx + 5, sy + 5, 2, 2);
+        }
+      }
+      return;
+    }
+    if (ch === 'p') { ctx.fillStyle = '#d9b98a'; ctx.fillRect(sx, sy, 8, 8); return; }
+    if (ch === 'f') { ctx.fillStyle = '#e8dcc0'; ctx.fillRect(sx, sy, 8, 8); ctx.fillStyle = '#d9c9a3'; ctx.fillRect(sx, sy, 8, 1); return; }
+    if (ch === 'm') { ctx.fillStyle = '#5a4a3a'; ctx.fillRect(sx, sy, 8, 8); ctx.fillStyle = '#4a3a2c'; ctx.fillRect(sx + 2, sy + 3, 2, 2); ctx.fillRect(sx + 5, sy + 6, 2, 2); return; }
+    if (ch === 'w') {
+      ctx.fillStyle = '#3a86c8'; ctx.fillRect(sx, sy, 8, 8);
+      ctx.fillStyle = '#6ab0e8';
+      var woff = (hvTimeMin % 4);
+      ctx.fillRect(sx + ((woff + 1) % 4), sy + 2, 3, 1);
+      ctx.fillRect(sx + ((woff + 3) % 5), sy + 5, 3, 1);
+      return;
+    }
+    if (ch === 't') {
+      ctx.fillStyle = '#6b4a2b'; ctx.fillRect(sx + 3, sy + 4, 2, 4);
+      ctx.fillStyle = HV_TREE_TOP[hvSeason];
+      ctx.beginPath(); ctx.arc(sx + 4, sy + 3, 4, 0, Math.PI * 2); ctx.fill();
+      return;
+    }
+    if (ch === 'h' || ch === 's' || ch === 'c' || ch === 'b') {
+      var top = hvTileAt(tx, ty - 1) !== ch;
+      if (ch === 'h') { ctx.fillStyle = top ? '#b04030' : '#d9b98a'; }
+      else if (ch === 's') { ctx.fillStyle = top ? '#7a2e6d' : '#e8dcc0'; }
+      else if (ch === 'c') { ctx.fillStyle = top ? '#e07a3f' : '#d9b98a'; }
+      else { ctx.fillStyle = top ? '#8b2020' : '#a0522d'; }
+      ctx.fillRect(sx, sy, 8, 8);
+      if (!top) { ctx.fillStyle = 'rgba(0,0,0,0.15)'; ctx.fillRect(sx, sy + 6, 8, 2); }
+      return;
+    }
+    if (ch === 'd') {
+      ctx.fillStyle = '#6b4a2b'; ctx.fillRect(sx, sy, 8, 8);
+      ctx.fillStyle = '#ffd93b'; ctx.fillRect(sx + 6, sy + 3, 1, 1);
+      return;
+    }
+    if (ch === 'e') {
+      ctx.fillStyle = '#8b6d45'; ctx.fillRect(sx, sy + 3, 8, 2);
+      ctx.fillRect(sx + 1, sy + 1, 1, 6); ctx.fillRect(sx + 6, sy + 1, 1, 6);
+      return;
+    }
+    if (ch === 'r') { ctx.fillStyle = '#8a8a8a'; ctx.fillRect(sx + 1, sy + 2, 6, 5); ctx.fillStyle = '#6a6a6a'; ctx.fillRect(sx + 2, sy + 3, 3, 2); return; }
+    if (ch === 'a') { ctx.fillStyle = '#e8d8a0'; ctx.fillRect(sx, sy, 8, 8); ctx.fillStyle = '#d9c98a'; ctx.fillRect(sx + 1, sy + 2, 2, 1); ctx.fillRect(sx + 5, sy + 5, 2, 1); return; }
+    if (ch === 'o') {
+      ctx.fillStyle = '#1a5a8a'; ctx.fillRect(sx, sy, 8, 8);
+      ctx.fillStyle = '#3a86c8';
+      var ooff = (hvTimeMin % 4);
+      ctx.fillRect(sx + ((ooff + 1) % 4), sy + 2, 3, 1);
+      ctx.fillRect(sx + ((ooff + 3) % 5), sy + 5, 3, 1);
+      return;
+    }
+    if (ch === 'G' || ch === 'U' || ch === 'T') {
+      var top2 = hvTileAt(tx, ty - 1) !== ch;
+      if (ch === 'G') { ctx.fillStyle = top2 ? '#2f7a2e' : '#a8d8a8'; }
+      else if (ch === 'U') { ctx.fillStyle = top2 ? '#5d6d7e' : '#d5d8dc'; }
+      else { ctx.fillStyle = top2 ? '#7e5109' : '#d9b98a'; }
+      ctx.fillRect(sx, sy, 8, 8);
+      if (!top2) { ctx.fillStyle = 'rgba(0,0,0,0.15)'; ctx.fillRect(sx, sy + 6, 8, 2); }
+      return;
+    }
+    if (ch === 'k') { ctx.fillStyle = '#8b6d45'; ctx.fillRect(sx, sy, 8, 8); ctx.fillStyle = '#6b4a2b'; ctx.fillRect(sx, sy + 3, 8, 1); return; }
+    if (ch === 'n') { ctx.fillStyle = '#6b4a2b'; ctx.fillRect(sx, sy, 8, 8); ctx.fillStyle = '#54371f'; ctx.fillRect(sx, sy + 3, 8, 1); return; }
+  }
+  function hvDrawCrop(tx, ty, sx, sy) {
+    var s = hvSoil[tx + ',' + ty];
+    if (!s || !s.crop) return;
+    var c = hvCropById(s.crop);
+    if (!c) return;
+    var col = HV_CROP_COLOR[c.id] || '#7ec850';
+    var mature = s.growth >= c.days;
+    var stage = mature ? 3 : Math.floor(s.growth / c.days * 3);
+    ctx.fillStyle = '#2f7a2e';
+    if (stage === 0) { ctx.fillRect(sx + 3, sy + 5, 2, 2); }
+    else if (stage === 1) { ctx.fillRect(sx + 3, sy + 3, 2, 4); ctx.fillRect(sx + 2, sy + 2, 4, 2); }
+    else if (stage === 2) { ctx.fillRect(sx + 3, sy + 1, 2, 6); ctx.fillRect(sx + 1, sy + 2, 6, 2); ctx.fillRect(sx + 2, sy + 4, 4, 2); }
+    else {
+      ctx.fillRect(sx + 3, sy + 1, 2, 6); ctx.fillRect(sx + 1, sy + 2, 6, 2);
+      ctx.fillStyle = col;
+      ctx.fillRect(sx + 2, sy + 2, 2, 2); ctx.fillRect(sx + 5, sy + 3, 2, 2); ctx.fillRect(sx + 3, sy + 5, 2, 2);
+    }
+  }
+  function hvDrawPerson(sx, sy, shirt, hat) {
+    // A small 8x10 character: legs, body, head, hat.
+    ctx.fillStyle = '#3a3a5a'; ctx.fillRect(sx + 2, sy + 7, 2, 3); ctx.fillRect(sx + 4, sy + 7, 2, 3);
+    ctx.fillStyle = shirt; ctx.fillRect(sx + 1, sy + 4, 6, 3);
+    ctx.fillStyle = '#f2c89b'; ctx.fillRect(sx + 2, sy + 1, 4, 3);
+    if (hat) { ctx.fillStyle = hat; ctx.fillRect(sx, sy, 8, 1); ctx.fillRect(sx + 2, sy - 1, 4, 1); }
+    else { ctx.fillStyle = '#3a2a1a'; ctx.fillRect(sx + 2, sy, 4, 1); }
+  }
+  function hvDrawHud() {
+    ctx.fillStyle = '#0f380f'; ctx.fillRect(0, 0, W, 18);
+    ctx.fillStyle = '#9bac0f'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+    var fest = hvIsFestivalDay();
+    ctx.fillText('G ' + hvGold + '  ' + HV_SEASON_SHORT[hvSeason] + ' D' + hvDay + '  ' + hvTimeStr(), 3, 8);
+    ctx.fillText('E ' + hvEnergy + '  ' + HV_TOOLS[hvToolIdx].name + ' ' + HV_WEATHER_NAMES[hvWeather] + (fest ? ' FEST!' : '') + (hvMarried ? ' <3' : '') + (hvChampion ? ' CHAMP' : ''), 3, 16);
+    ctx.textAlign = 'left';
+  }
+  function drawFarm() {
+    if (hvRoom) { hvDrawRoom(); return; }
+    // Base: season grass.
+    ctx.fillStyle = HV_GRASS[hvSeason]; ctx.fillRect(0, 0, W, H);
+    var x0 = Math.max(0, Math.floor(hvCamX / HV_T)), y0 = Math.max(0, Math.floor(hvCamY / HV_T));
+    var x1 = Math.min(HV_MW - 1, x0 + 21), y1 = Math.min(HV_MH - 1, y0 + 17);
+    for (var ty = y0; ty <= y1; ty++) {
+      for (var tx = x0; tx <= x1; tx++) {
+        var sx = tx * HV_T - hvCamX, sy = ty * HV_T - hvCamY + HV_HUD;
+        hvDrawTile(hvMap[ty][tx], sx, sy, tx, ty);
+        hvDrawCrop(tx, ty, sx, sy);
+      }
+    }
+    // Mine rocks.
+    for (var i = 0; i < hvRocks.length; i++) {
+      var rk = hvRocks[i];
+      var rx = rk.x * HV_T - hvCamX, ry = rk.y * HV_T - hvCamY + HV_HUD;
+      ctx.fillStyle = '#8a8a8a'; ctx.fillRect(rx + 1, ry + 2, 6, 5);
+      var oc = rk.ore === 'copper' ? '#e07a3f' : rk.ore === 'iron' ? '#c0c0c0' : rk.ore === 'goldore' ? '#ffd93b' : rk.ore === 'gem' ? '#7fb8ff' : '#6a6a6a';
+      ctx.fillStyle = oc; ctx.fillRect(rx + 3, ry + 3, 2, 2);
+    }
+    // Forage items.
+    for (var j = 0; j < hvForage.length; j++) {
+      var fg = hvForage[j];
+      var fx = fg.x * HV_T - hvCamX, fy = fg.y * HV_T - hvCamY + HV_HUD;
+      var fcol = fg.id === 'mushroom' ? '#ff6b6b' : fg.id === 'snowberry' || fg.id === 'iceberry' ? '#7fb8ff' : fg.id === 'sunflower' ? '#ffd93b' : fg.id === 'dandelion' ? '#fff176' : fg.id === 'pinecone' ? '#8b5a2b' : '#ff8fb1';
+      ctx.fillStyle = fcol; ctx.fillRect(fx + 2, fy + 3, 4, 3);
+      ctx.fillStyle = '#2f7a2e'; ctx.fillRect(fx + 3, fy + 2, 2, 1);
+    }
+    // Festival decorations on festival day.
+    if (hvIsFestivalDay()) {
+      var fest = hvIsFestivalDay();
+      ctx.fillStyle = fest.color;
+      for (var fx2 = 42; fx2 <= 49; fx2 += 2) {
+        var bx = fx2 * HV_T - hvCamX, by = 17 * HV_T - hvCamY + HV_HUD;
+        ctx.fillRect(bx, by, 6, 2);
+      }
+    }
+    // Animals (in the yard by the coop/barn).
+    for (var ci = 0; ci < Math.min(hvChickens, 3); ci++) {
+      var cxp = (23 + ci * 2) * HV_T - hvCamX, cyp = 13 * HV_T - hvCamY + HV_HUD;
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(cxp + 2, cyp + 3, 4, 3);
+      ctx.fillStyle = '#ff8c1a'; ctx.fillRect(cxp + 5, cyp + 4, 1, 1);
+    }
+    for (var co = 0; co < Math.min(hvCows, 2); co++) {
+      var cowx = (23 + co * 3) * HV_T - hvCamX, cowy = 19 * HV_T - hvCamY + HV_HUD;
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(cowx, cowy + 2, 8, 4);
+      ctx.fillStyle = '#222222'; ctx.fillRect(cowx + 2, cowy + 2, 2, 2); ctx.fillRect(cowx + 5, cowy + 4, 2, 2);
+      ctx.fillStyle = '#f2c89b'; ctx.fillRect(cowx + 6, cowy + 3, 2, 2);
+    }
+    // NPCs.
+    for (var ni = 0; ni < HV_NPCS.length; ni++) {
+      var npc = HV_NPCS[ni];
+      var np = hvNpcPos(npc);
+      var nx = np.x * HV_T - hvCamX, ny = np.y * HV_T - hvCamY + HV_HUD;
+      if (nx < -10 || nx > W + 10 || ny < HV_HUD - 10 || ny > H + 10) continue;
+      hvDrawPerson(nx, ny - 2, npc.color, null);
+      // Name tag when the player is close.
+      var ptx = Math.floor(hvPx / HV_T), pty = Math.floor(hvPy / HV_T);
+      if (Math.abs(np.x - ptx) <= 2 && Math.abs(np.y - pty) <= 2) {
+        ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+        ctx.fillText(npc.name, nx + 4, ny - 4);
+        ctx.textAlign = 'left';
+      }
+    }
+    // Spouse waits by the farmhouse in the day.
+    if (hvMarried) {
+      var sp = hvNpcById(hvMarried);
+      if (sp && hvTimeMin >= 360 && hvTimeMin < 1080) {
+        var spx = 7 * HV_T - hvCamX, spy = 13 * HV_T - hvCamY + HV_HUD;
+        hvDrawPerson(spx, spy - 2, sp.color, null);
+      }
+    }
+    // Expansion: background townspeople, NPC plots, trees, hives, monsters, pet, child, weather.
+    hvDrawExpansion();
+    // Mine stairs (down at 33,1 / up at 21,1).
+    var sdX = 33 * HV_T - hvCamX, sdY = 1 * HV_T - hvCamY + HV_HUD;
+    var suX = 21 * HV_T - hvCamX, suY = 1 * HV_T - hvCamY + HV_HUD;
+    ctx.fillStyle = '#ffd93b'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('v', sdX + 4, sdY + 7);
+    ctx.fillText('^', suX + 4, suY + 7);
+    ctx.textAlign = 'left';
+    // Player.
+    var psx = hvPx - hvCamX, psy = hvPy - hvCamY + HV_HUD;
+    hvDrawPerson(psx - 4, psy - 6, '#2e6fb0', '#e8c33d');
+    // HUD on top.
+    hvDrawHud();
+    // Toast message.
+    if (hvMsgFrames > 0) {
+      ctx.fillStyle = '#0f380f'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(hvMsg, W / 2, 138);
+      ctx.textAlign = 'left';
+    }
+    // Fishing overlay.
+    if (hvFish) {
+      ctx.fillStyle = '#0f380f'; ctx.fillRect(56, 40, 48, 60);
+      ctx.fillStyle = '#9bac0f'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+      if (hvFish.phase === 'wait') ctx.fillText('WAITING...', 80, 55);
+      else if (hvFish.phase === 'bite') { ctx.font = 'bold 16px monospace'; ctx.fillText('!', 80, 70); ctx.font = '8px monospace'; ctx.fillText('PRESS A!', 80, 85); }
+      else {
+        ctx.fillText('PRESS A IN GREEN', 80, 50);
+        ctx.fillStyle = '#3a86c8'; ctx.fillRect(76, 56, 8, 36);
+        ctx.fillStyle = '#7ec850'; ctx.fillRect(76, 68, 8, 12);
+        var my = 56 + Math.floor(hvFish.meter / 100 * 34);
+        ctx.fillStyle = '#ffd93b'; ctx.fillRect(74, my, 12, 2);
+      }
+      ctx.textAlign = 'left';
+    }
+    // Festival timing overlay.
+    if (hvFest && hvFest.phase === 'play') {
+      ctx.fillStyle = '#0f380f'; ctx.fillRect(20, 50, 120, 44);
+      ctx.fillStyle = '#9bac0f'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(hvFest.fest.name, 80, 60);
+      ctx.fillText('ROUND ' + (hvFest.round + 1) + '/3  HITS ' + hvFest.hits, 80, 70);
+      ctx.fillStyle = '#3a86c8'; ctx.fillRect(30, 76, 100, 8);
+      ctx.fillStyle = '#7ec850'; ctx.fillRect(70, 76, 20, 8);
+      var mx = 30 + Math.floor(hvFest.marker / 100 * 98);
+      ctx.fillStyle = '#ffd93b'; ctx.fillRect(mx, 74, 2, 12);
+      ctx.fillText('PRESS A IN THE GREEN', 80, 90);
+      ctx.textAlign = 'left';
+    }
+    // Dialog box.
+    if (hvDialog) {
+      ctx.fillStyle = '#0f380f'; ctx.fillRect(10, 96, 140, 40);
+      ctx.fillStyle = '#9bac0f'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+      var line = hvDialog.line;
+      // Simple word wrap.
+      var words = line.split(' '), cur = '', ly = 108;
+      for (var wi = 0; wi < words.length; wi++) {
+        if ((cur + ' ' + words[wi]).length > 22) { ctx.fillText(cur, 14, ly); ly += 9; cur = words[wi]; }
+        else cur = cur ? cur + ' ' + words[wi] : words[wi];
+      }
+      if (cur) ctx.fillText(cur, 14, ly);
+      ctx.fillText('A: OK', 14, 130);
+    }
+    // Menu overlay.
+    if (hvMenu) hvDrawMenu();
+    // Paused.
+    if (hvPaused) {
+      ctx.fillStyle = '#0f380f'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('PAUSED', W / 2, 60);
+      ctx.font = '8px monospace';
+      ctx.fillText('START: RESUME  MENU: EXIT', W / 2, 74);
+      ctx.textAlign = 'left';
+    }
+  }
+  function hvDrawMenu() {
+    var m = hvMenu;
+    var rows = Math.min(5, m.items.length);
+    var boxH = 46 + rows * 10;
+    var boxY = Math.max(18, Math.floor((144 - boxH) / 2));
+    ctx.fillStyle = '#0f380f'; ctx.fillRect(14, boxY, 132, boxH);
+    ctx.fillStyle = '#9bac0f'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(m.title, 80, boxY + 11);
+    if (m.sub) { ctx.font = '8px monospace'; ctx.fillText(m.sub, 80, boxY + 21); }
+    ctx.textAlign = 'left'; ctx.font = '8px monospace';
+    var top = 0;
+    if (m.sel >= top + rows) top = m.sel - rows + 1;
+    for (var i = top; i < Math.min(top + rows, m.items.length); i++) {
+      var y = boxY + 32 + (i - top) * 10;
+      if (i === m.sel) {
+        ctx.fillStyle = '#9bac0f'; ctx.fillRect(18, y - 8, 124, 10);
+        ctx.fillStyle = '#0f380f';
+        ctx.fillText('>', 22, y);
+        ctx.fillText(m.items[i].label, 30, y);
+      } else {
+        ctx.fillStyle = '#9bac0f';
+        ctx.fillText(m.items[i].label, 30, y);
+      }
+    }
+    // Selected item's detail line, then the controls hint.
+    var selSub = m.items[m.sel] && m.items[m.sel].sub ? m.items[m.sel].sub : '';
+    ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center';
+    if (selSub) ctx.fillText(selSub, 80, boxY + 34 + rows * 10);
+    ctx.fillText('A: SELECT  B: BACK', 80, boxY + 44 + rows * 10);
+    ctx.textAlign = 'left';
+  }
+
   /* ---------- Input (one handler per button, dispatched by screen) ---------- */
   JMFGAMES.on('press', 'up', function () {
     if (dsGame) return;
@@ -9740,6 +13157,7 @@ function chMoveStr(m) {
       else if (currentGame === 'park') tpMove(0, -1);
       else if (currentGame === 'dummy') duMoveAim(0, -1);
       else if (currentGame === 'shooter') { /* ship moves via isDown in shUpdate */ }
+      else if (currentGame === 'farm') hvMenuMove(-1);
       else flap();
     }
     listHoldArm('up');
@@ -9761,6 +13179,7 @@ function chMoveStr(m) {
       else if (currentGame === 'park') tpMove(0, 1);
       else if (currentGame === 'dummy') duMoveAim(0, 1);
       else if (currentGame === 'shooter') { /* ship moves via isDown in shUpdate */ }
+      else if (currentGame === 'farm') hvMenuMove(1);
     }
     listHoldArm('down');
   });
@@ -9803,6 +13222,7 @@ function chMoveStr(m) {
         else if (g.name === "TEXAS HOLD'EM") { currentGame = 'holdem'; startHoldem(); }
         else if (g.name === 'CHESS CLUB') { currentGame = 'chess'; startChess(); }
         else if (g.name === 'EMBERFALL BRAWL') { currentGame = 'beat'; startBeat(); }
+        else if (g.name === 'HARVEST HAVEN') { currentGame = 'farm'; startFarm(); }
         else if (g.name === "OVERLORD'S BASTION") { currentGame = 'overlord'; startOverlord(); }
         else if (g.name === 'SOLITAIRE') { currentGame = 'solitaire'; startSolitaire(); }
         else if (g.name === 'SUBWAY RUNNER') { currentGame = 'run'; startRunner(); }
@@ -9814,7 +13234,7 @@ function chMoveStr(m) {
       }
       else { comingName = g.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
-    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else if (currentGame === 'park') tpAction(); else if (currentGame === 'dummy') duAction(); else if (currentGame === 'shooter') shFire(); else flap(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else if (currentGame === 'park') tpAction(); else if (currentGame === 'dummy') duAction(); else if (currentGame === 'shooter') shFire(); else if (currentGame === 'farm') hvAction(); else flap(); }
     else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else if (currentGame === 'pool') poRematch(); else if (currentGame === 'shooter') startShooter(); else startGame(); }
   });
   JMFGAMES.on('press', 'b', function () {
@@ -9834,6 +13254,7 @@ function chMoveStr(m) {
     if (currentGame === 'park' && tpPaused) { dsAsk('park'); return; }
     if (currentGame === 'dummy' && duPaused) { dsAsk('dummy'); return; }
     if (currentGame === 'shooter' && shPaused) { dsAsk('shooter'); return; }
+    if (currentGame === 'farm' && hvPaused) { dsAsk('farm'); return; }
     if (currentGame === 'sky') skyDive();
     else if (currentGame === 'block') bqBack();
     else if (currentGame === 'bj') bjBack();
@@ -9848,6 +13269,7 @@ function chMoveStr(m) {
     else if (currentGame === 'park') tpBack();
     else if (currentGame === 'dummy') duCycleWeapon();
     else if (currentGame === 'shooter') shBomb();
+    else if (currentGame === 'farm') hvCycleTool();
   });
   JMFGAMES.on('press', 'start', function () {
     if (dsGame) return;
@@ -9865,13 +13287,14 @@ function chMoveStr(m) {
     else if (currentGame === 'park') { if (tpPhase !== 'report') { tpPaused = !tpPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'dummy') { duPaused = !duPaused; JMFGAMES.beep(330, 0.06); }
     else if (currentGame === 'shooter') { if (!shOver) { shPaused = !shPaused; JMFGAMES.beep(330, 0.06); } }
+    else if (currentGame === 'farm') { if (!hvOver) { hvPaused = !hvPaused; JMFGAMES.beep(330, 0.06); } }
     else if (!dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
   });
   JMFGAMES.on('press', 'menu', function () {
     // Menu is the ONLY way back to the main menu: from a game (even
     // mid-hand), level/color select, game-over, or pause.
     dsGame = null; // cancel any delete-save confirmation
-    if (screen === 'play' || screen === 'over' || screen === 'coming') { if (currentGame === 'park') tpSave(); if (currentGame === 'dummy') duSave(); if (currentGame === 'shooter') shSave(); toMenu(); }
+    if (screen === 'play' || screen === 'over' || screen === 'coming') { if (currentGame === 'park') tpSave(); if (currentGame === 'dummy') duSave(); if (currentGame === 'shooter') shSave(); if (currentGame === 'farm') hvSave(); toMenu(); }
   });
 
   /* ---------- Update (one fixed 1/60s step) ---------- */
@@ -9891,6 +13314,7 @@ function chMoveStr(m) {
     if (currentGame === 'park') { tpUpdate(); return; }
     if (currentGame === 'dummy') { duUpdate(); return; }
     if (currentGame === 'shooter') { shUpdate(); return; }
+    if (currentGame === 'farm') { hvUpdate(); return; }
     if (currentGame !== 'sky') return; // Hold'em has no per-frame update; without this, Sky Soar physics runs during Hold'em and the falling bird hits the ground -> gameOver() -> 'over' screen (BUSTED panel) on Hold'em launch after Sky was played
     if (paused || dead || !started) return;
     bird.vy = Math.min(bird.vy + GRAV, MAXFALL);
@@ -10084,7 +13508,7 @@ function chMoveStr(m) {
     if (screen !== 'play') JMFGAMES.musicStop();
     if (screen === 'menu') drawMenu();
     else if (screen === 'coming') drawComing();
-    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else if (currentGame === 'park') drawPark(); else if (currentGame === 'dummy') drawDummy(); else if (currentGame === 'shooter') drawShooter(); else drawGame(); }
+    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else if (currentGame === 'park') drawPark(); else if (currentGame === 'dummy') drawDummy(); else if (currentGame === 'shooter') drawShooter(); else if (currentGame === 'farm') drawFarm(); else drawGame(); }
     else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else if (currentGame === 'shooter') drawShooterOver(); else drawOver(); }
     // Delete-save confirmation overlay (on top of any screen), or the
     // pause-overlay hint for games whose delete option lives on pause.
@@ -10100,6 +13524,7 @@ function chMoveStr(m) {
       else if (currentGame === 'park' && tpPaused) dsHintY = 98;
       else if (currentGame === 'dummy' && duPaused) dsHintY = 98;
       else if (currentGame === 'shooter' && shPaused) dsHintY = 98;
+      else if (currentGame === 'farm' && hvPaused) dsHintY = 98;
       if (dsHintY) {
         ctx.fillStyle = '#9bac0f'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
         ctx.fillText('B: DELETE SAVE', W / 2, dsHintY);
