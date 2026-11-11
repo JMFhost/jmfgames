@@ -241,6 +241,7 @@
   var MUSIC_TUNES = {
     sky:      { bpm: 152, wave: 'square', notes: [[72,1],[76,1],[79,1],[84,1],[79,1],[76,1],[72,1],[76,1],[74,1],[79,1],[81,1],[79,1],[76,1],[74,1],[72,1],[0,1]] },
     block:    { bpm: 120, wave: 'square', notes: [[60,1],[64,1],[67,1],[72,1],[67,1],[64,1],[60,1],[64,1],[65,1],[69,1],[72,1],[69,1],[65,1],[64,1],[60,1],[0,1]] },
+    drop:     { bpm: 140, wave: 'square', notes: [[72,1],[69,1],[67,1],[64,1],[67,1],[69,1],[72,1],[76,1],[72,1],[69,1],[67,1],[64,1],[62,1],[64,1],[67,1],[0,1]] },
     bj:       { bpm: 112, wave: 'triangle', notes: [[57,1],[60,1],[64,1],[69,1],[67,1],[64,1],[60,1],[64,1],[65,1],[69,1],[72,1],[69,1],[67,1],[64,1],[60,1],[0,1]] },
     holdem:   { bpm: 120, wave: 'triangle', notes: [[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[0,1]] },
     chess:    { bpm: 96, wave: 'sine', notes: [[60,2],[67,2],[69,2],[67,2],[65,2],[64,2],[62,2],[60,2]] },
@@ -362,6 +363,7 @@
   var GAMES = [
     { name: '8 BALL POOL', playable: true },
     { name: 'BLACKJACK ROYALE', playable: true },
+    { name: 'BLOCK DROP', playable: true },
     { name: 'BLOCKQUEST', playable: true },
     { name: 'CHESS CLUB', playable: true },
     { name: 'EMBERFALL BRAWL', playable: true },
@@ -462,6 +464,7 @@
     dsGame = null;
     if (game === 'sky') { dsClearKeys(['jmf-games-sky-soar-best', 'jmf-games-sky-soar-bird']); best = 0; birdTier = 0; resetGame(); paused = false; }
     else if (game === 'block') { dsClearKeys(['jmf-games-blockquest-best']); bqBest = 0; startBlockQuest(); }
+    else if (game === 'drop') { dsClearKeys(['jmf-games-blockdrop-best']); bdBest = 0; startBlockDrop(); }
     else if (game === 'bj') { dsClearKeys([BJ_BAL_KEY, BJ_BEST_KEY]); bjBalance = 1000; bjBest = 1000; startBlackjack(); }
     else if (game === 'holdem') { dsClearKeys([HE_BAL_KEY, HE_AI_KEY, HE_BEST_KEY]); heBalance = 1000; heAiBalance = 1000; heBest = 1000; startHoldem(); }
     else if (game === 'chess') { dsClearKeys([CH_WINS_KEY, CH_LOSSES_KEY, CH_DRAWS_KEY]); chWins = 0; chLosses = 0; chDraws = 0; chState = 'level'; chLevelIdx = 0; chColorIdx = 0; }
@@ -1050,6 +1053,353 @@
     ctx.textAlign = 'left';
   }
 
+  /* ==================== drop (GBA) ==================== */
+/* ================================================================
+   BLOCK DROP (GBA) — falling-block stacking game on the 240x160
+   GBA screen. Seven piece shapes fall from the top of a 10-wide
+   well; move, rotate and drop them to fill rows. A completed row
+   clears and scores. Clearing 4 rows at once is a QUAD.
+   Controls: Left/Right move, Up or A rotate, Down soft drop,
+   B HARD DROP (slams the piece to the bottom), Start pauses,
+   Menu returns to the main menu.
+   Fair 7-bag randomiser: the seven shapes are dealt in a shuffled
+   bag, then reshuffled — no piece is ever starved.
+   Levels: every 10 lines cleared the fall gets faster.
+   Best score: localStorage 'jmf-games-blockdrop-best'.
+   ================================================================ */
+  var BD_COLS = 10, BD_ROWS = 20;
+  var BD_CELL = 7, BD_X = 10, BD_Y = 15;
+  var BD_PX = 88; // right panel x
+  // Pieces: rotation-0 cells in an n x n box, (row, col). Rotation is
+  // 90 degrees clockwise: (r, c) -> (c, n-1-r), applied rot times.
+  var BD_PIECES = [
+    { name: 'STRAIGHT', color: '#22D3EE', size: 4, cells: [[1,0],[1,1],[1,2],[1,3]] },
+    { name: 'SQUARE', color: '#FACC15', size: 2, cells: [[0,0],[0,1],[1,0],[1,1]] },
+    { name: 'T', color: '#C084FC', size: 3, cells: [[0,1],[1,0],[1,1],[1,2]] },
+    { name: 'S', color: '#4ADE80', size: 3, cells: [[0,1],[0,2],[1,0],[1,1]] },
+    { name: 'Z', color: '#F87171', size: 3, cells: [[0,0],[0,1],[1,1],[1,2]] },
+    { name: 'LEFT HOOK', color: '#60A5FA', size: 3, cells: [[0,0],[1,0],[1,1],[1,2]] },
+    { name: 'RIGHT HOOK', color: '#FB923C', size: 3, cells: [[0,2],[1,0],[1,1],[1,2]] }
+  ];
+  var BD_CLEAR_PTS = [0, 100, 300, 500, 800];
+  var BD_CLEAR_NAMES = ['', 'SINGLE', 'DOUBLE!', 'TRIPLE!', 'QUAD!'];
+  var BD_BEST_KEY = 'jmf-games-blockdrop-best';
+  var bdGrid, bdCur, bdNextIdx, bdBag, bdScore, bdBest, bdLines, bdLevel;
+  var bdPaused, bdOver, bdFallT, bdToast, bdToastT, bdBlink, bdClearing;
+  try { bdBest = parseInt(localStorage.getItem(BD_BEST_KEY) || '0', 10) || 0; } catch (e) { bdBest = 0; }
+  function bdSaveBest() { try { localStorage.setItem(BD_BEST_KEY, String(bdBest)); } catch (e) {} }
+  function bdAddScore(n) {
+    bdScore += n;
+    if (bdScore > bdBest) { bdBest = bdScore; bdSaveBest(); }
+  }
+  function bdEmptyGrid() {
+    var g = [];
+    for (var r = 0; r < BD_ROWS; r++) {
+      var row = [];
+      for (var c = 0; c < BD_COLS; c++) row.push(null);
+      g.push(row);
+    }
+    return g;
+  }
+  // Cells of piece idx in rotation rot (0..3), as [row, col] pairs.
+  function bdRotCells(idx, rot) {
+    var p = BD_PIECES[idx], n = p.size, cells = [];
+    var r = ((rot % 4) + 4) % 4, i;
+    for (i = 0; i < p.cells.length; i++) {
+      var cr = p.cells[i][0], cc = p.cells[i][1];
+      for (var k = 0; k < r; k++) { var nr = cc, nc = n - 1 - cr; cr = nr; cc = nc; }
+      cells.push([cr, cc]);
+    }
+    return cells;
+  }
+  function bdFits(idx, rot, x, y) {
+    var cells = bdRotCells(idx, rot);
+    for (var i = 0; i < cells.length; i++) {
+      var gr = y + cells[i][0], gc = x + cells[i][1];
+      if (gc < 0 || gc >= BD_COLS || gr >= BD_ROWS) return false;
+      if (gr >= 0 && bdGrid[gr][gc]) return false;
+    }
+    return true;
+  }
+  function bdRefillBag() {
+    bdBag = [0, 1, 2, 3, 4, 5, 6];
+    for (var i = bdBag.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = bdBag[i]; bdBag[i] = bdBag[j]; bdBag[j] = t;
+    }
+  }
+  function bdDeal() {
+    if (!bdBag || !bdBag.length) bdRefillBag();
+    return bdBag.shift();
+  }
+  function bdFallInterval() {
+    // Frames per row: 48 at level 1, 4 fewer per level, floor 6.
+    return Math.max(6, 48 - (bdLevel - 1) * 4);
+  }
+  function startBlockDrop() {
+    bdGrid = bdEmptyGrid();
+    bdBag = [];
+    bdScore = 0; bdLines = 0; bdLevel = 1;
+    bdPaused = false; bdOver = false;
+    bdFallT = 0; bdToast = ''; bdToastT = 0; bdBlink = 0; bdClearing = null;
+    bdCur = { idx: bdDeal(), rot: 0, x: 3, y: 0 };
+    bdNextIdx = bdDeal();
+    screen = 'play';
+    JMFGAMES.musicPlay('drop');
+    JMFGAMES.beep(660, 0.08);
+  }
+  function bdSpawnNext() {
+    bdCur = { idx: bdNextIdx, rot: 0, x: 3, y: 0 };
+    bdNextIdx = bdDeal();
+    bdFallT = 0;
+    if (!bdFits(bdCur.idx, bdCur.rot, bdCur.x, bdCur.y)) {
+      bdOver = true;
+      screen = 'over';
+      JMFGAMES.beep(220, 0.25);
+    }
+  }
+  function bdGhostY() {
+    var y = bdCur.y;
+    while (bdFits(bdCur.idx, bdCur.rot, bdCur.x, y + 1)) y++;
+    return y;
+  }
+  function bdMove(d) {
+    if (screen !== 'play' || bdPaused || bdOver || bdClearing) return;
+    if (bdFits(bdCur.idx, bdCur.rot, bdCur.x + d, bdCur.y)) {
+      bdCur.x += d;
+      JMFGAMES.beep(700, 0.02);
+    }
+  }
+  function bdRotate() {
+    if (screen !== 'play' || bdPaused || bdOver || bdClearing) return;
+    var kicks = [[0, 0], [-1, 0], [1, 0], [-2, 0], [2, 0], [0, -1]];
+    var nr = (bdCur.rot + 1) % 4;
+    for (var i = 0; i < kicks.length; i++) {
+      var nx = bdCur.x + kicks[i][0], ny = bdCur.y + kicks[i][1];
+      if (bdFits(bdCur.idx, nr, nx, ny)) {
+        bdCur.rot = nr; bdCur.x = nx; bdCur.y = ny;
+        JMFGAMES.beep(760, 0.04);
+        return;
+      }
+    }
+    JMFGAMES.beep(180, 0.08);
+  }
+  function bdAction() { bdRotate(); } // A rotates (same as Up).
+  function bdHardDrop() {
+    if (screen !== 'play' || bdPaused || bdOver || bdClearing) return;
+    var gy = bdGhostY();
+    bdAddScore((gy - bdCur.y) * 2);
+    bdCur.y = gy;
+    JMFGAMES.beep(520, 0.05);
+    bdLock();
+  }
+  function bdBack() { bdHardDrop(); } // B is the hard drop.
+  function bdLock() {
+    var cells = bdRotCells(bdCur.idx, bdCur.rot);
+    var color = BD_PIECES[bdCur.idx].color;
+    for (var i = 0; i < cells.length; i++) {
+      var gr = bdCur.y + cells[i][0], gc = bdCur.x + cells[i][1];
+      if (gr >= 0 && gr < BD_ROWS && gc >= 0 && gc < BD_COLS) bdGrid[gr][gc] = color;
+    }
+    // Find full rows.
+    var full = [];
+    for (var r = 0; r < BD_ROWS; r++) {
+      var ok = true;
+      for (var c = 0; c < BD_COLS; c++) if (!bdGrid[r][c]) { ok = false; break; }
+      if (ok) full.push(r);
+    }
+    if (full.length > 0) {
+      var gained = BD_CLEAR_PTS[full.length] * bdLevel;
+      bdAddScore(gained);
+      bdLines += full.length;
+      var newLevel = 1 + Math.floor(bdLines / 10);
+      if (newLevel > bdLevel) {
+        bdLevel = newLevel;
+        bdToast = BD_CLEAR_NAMES[full.length] + ' +' + gained + '  LEVEL ' + bdLevel + '!';
+        JMFGAMES.beep(1040, 0.16);
+      } else {
+        bdToast = BD_CLEAR_NAMES[full.length] + ' +' + gained;
+        JMFGAMES.beep(880, 0.1);
+      }
+      bdToastT = 80;
+      bdClearing = { rows: full, t: 12 };
+    } else {
+      bdSpawnNext();
+    }
+  }
+  function bdClearRows() {
+    var rows = bdClearing.rows;
+    // Splice all full rows first (bottom-up so indices stay valid),
+    // then push the same number of empty rows on top.
+    rows.sort(function (a, b) { return b - a; });
+    for (var i = 0; i < rows.length; i++) bdGrid.splice(rows[i], 1);
+    for (var j = 0; j < rows.length; j++) {
+      var empty = [];
+      for (var c = 0; c < BD_COLS; c++) empty.push(null);
+      bdGrid.unshift(empty);
+    }
+    bdClearing = null;
+    bdSpawnNext();
+  }
+  function bdUpdate() {
+    if (bdPaused || bdOver) return;
+    bdBlink = (bdBlink + 1) % 60;
+    if (bdToastT > 0) bdToastT--;
+    if (bdClearing) {
+      bdClearing.t--;
+      if (bdClearing.t <= 0) bdClearRows();
+      return;
+    }
+    if (!bdCur) return;
+    var soft = false;
+    try { soft = JMFGAMES.isDown('down'); } catch (e) { soft = false; }
+    var interval = soft ? 2 : bdFallInterval();
+    bdFallT++;
+    if (bdFallT >= interval) {
+      bdFallT = 0;
+      if (bdFits(bdCur.idx, bdCur.rot, bdCur.x, bdCur.y + 1)) {
+        bdCur.y++;
+        if (soft) bdAddScore(1);
+      } else {
+        bdLock();
+      }
+    }
+  }
+  function bdDrawCell(x, y, color) {
+    // GBA block: bright face, light top edge, dark bottom edge.
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, BD_CELL, BD_CELL);
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.fillRect(x, y, BD_CELL, 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(x, y + BD_CELL - 2, BD_CELL, 2);
+  }
+  function drawBlockDrop() {
+    ctx.fillStyle = '#1E1E5A'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#12123A'; ctx.fillRect(0, 0, W, 13);
+    ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'left'; ctx.font = 'bold 9px monospace';
+    ctx.fillText('SCORE ' + bdScore, 4, 10);
+    ctx.textAlign = 'right';
+    ctx.fillText('BEST ' + bdBest, W - 4, 10);
+    ctx.textAlign = 'left';
+    // Well background + faint grid.
+    ctx.fillStyle = '#0F0F2E';
+    ctx.fillRect(BD_X, BD_Y, BD_COLS * BD_CELL, BD_ROWS * BD_CELL);
+    ctx.fillStyle = '#23234A';
+    for (var gx = 1; gx < BD_COLS; gx++) ctx.fillRect(BD_X + gx * BD_CELL, BD_Y, 1, BD_ROWS * BD_CELL);
+    for (var gy = 1; gy < BD_ROWS; gy++) ctx.fillRect(BD_X, BD_Y + gy * BD_CELL, BD_COLS * BD_CELL, 1);
+    // Placed blocks (flash white while a clear is animating).
+    var flashing = {};
+    if (bdClearing) {
+      for (var fi = 0; fi < bdClearing.rows.length; fi++) flashing[bdClearing.rows[fi]] = true;
+    }
+    for (var r = 0; r < BD_ROWS; r++) {
+      for (var c = 0; c < BD_COLS; c++) {
+        if (!bdGrid[r][c]) continue;
+        var x = BD_X + c * BD_CELL, y = BD_Y + r * BD_CELL;
+        if (flashing[r]) {
+          ctx.fillStyle = (bdClearing.t % 4 < 2) ? '#FFFFFF' : bdGrid[r][c];
+          ctx.fillRect(x, y, BD_CELL, BD_CELL);
+        } else {
+          bdDrawCell(x, y, bdGrid[r][c]);
+        }
+      }
+    }
+    // Ghost piece (landing preview) + current piece.
+    if (!bdPaused && !bdOver && bdCur && !bdClearing) {
+      var gy2 = bdGhostY();
+      var gcells = bdRotCells(bdCur.idx, bdCur.rot);
+      var gcolor = BD_PIECES[bdCur.idx].color;
+      if (gy2 > bdCur.y) {
+        ctx.fillStyle = gcolor;
+        ctx.globalAlpha = 0.3;
+        for (var gi = 0; gi < gcells.length; gi++) {
+          ctx.fillRect(BD_X + (bdCur.x + gcells[gi][1]) * BD_CELL, BD_Y + (gy2 + gcells[gi][0]) * BD_CELL, BD_CELL, BD_CELL);
+        }
+        ctx.globalAlpha = 1;
+      }
+      for (var ci = 0; ci < gcells.length; ci++) {
+        bdDrawCell(BD_X + (bdCur.x + gcells[ci][1]) * BD_CELL, BD_Y + (bdCur.y + gcells[ci][0]) * BD_CELL, gcolor);
+      }
+    }
+    // Well frame.
+    ctx.fillStyle = '#FFD93D';
+    ctx.fillRect(BD_X - 1, BD_Y - 1, BD_COLS * BD_CELL + 2, 1);
+    ctx.fillRect(BD_X - 1, BD_Y + BD_ROWS * BD_CELL, BD_COLS * BD_CELL + 2, 1);
+    ctx.fillRect(BD_X - 1, BD_Y - 1, 1, BD_ROWS * BD_CELL + 2);
+    ctx.fillRect(BD_X + BD_COLS * BD_CELL, BD_Y - 1, 1, BD_ROWS * BD_CELL + 2);
+    // Right panel: NEXT preview box.
+    ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('NEXT', BD_PX, 24);
+    ctx.fillStyle = '#12123A';
+    ctx.fillRect(BD_PX, 28, 52, 34);
+    ctx.fillStyle = '#FFD93D';
+    ctx.fillRect(BD_PX, 28, 52, 1);
+    ctx.fillRect(BD_PX, 61, 52, 1);
+    ctx.fillRect(BD_PX, 28, 1, 34);
+    ctx.fillRect(BD_PX + 51, 28, 1, 34);
+    var np = BD_PIECES[bdNextIdx], ncell = 6;
+    var nw = np.size * ncell, nh = np.size * ncell;
+    var nx0 = BD_PX + Math.floor((52 - nw) / 2), ny0 = 28 + Math.floor((34 - nh) / 2);
+    for (var ni = 0; ni < np.cells.length; ni++) {
+      ctx.fillStyle = np.color;
+      ctx.fillRect(nx0 + np.cells[ni][1] * ncell, ny0 + np.cells[ni][0] * ncell, ncell - 1, ncell - 1);
+    }
+    // Stats.
+    ctx.fillStyle = '#F5E9C8'; ctx.font = '8px monospace';
+    ctx.fillText('LEVEL', BD_PX, 78);
+    ctx.textAlign = 'right';
+    ctx.fillText(String(bdLevel), W - 4, 78);
+    ctx.textAlign = 'left';
+    ctx.fillText('LINES', BD_PX, 90);
+    ctx.textAlign = 'right';
+    ctx.fillText(String(bdLines), W - 4, 90);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#A7F3D0';
+    ctx.fillText('A: ROTATE', BD_PX, 112);
+    ctx.fillText('B: HARD DROP', BD_PX, 122);
+    ctx.fillText('DOWN: SOFT DROP', BD_PX, 132);
+    ctx.fillText('START: PAUSE', BD_PX, 142);
+    // Toast (clear / level-up flash).
+    if (bdToastT > 0) {
+      ctx.font = 'bold 9px monospace';
+      var tw = bdToast.length * 6 + 12;
+      ctx.fillStyle = 'rgba(18,18,58,0.92)';
+      ctx.fillRect(W / 2 - tw / 2, 66, tw, 16);
+      ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center';
+      ctx.fillText(bdToast, W / 2, 77);
+      ctx.textAlign = 'left';
+    }
+    if (bdPaused) {
+      ctx.fillStyle = 'rgba(18,18,58,0.78)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center'; ctx.font = 'bold 12px monospace';
+      ctx.fillText('PAUSED', W / 2, 76);
+      ctx.font = '8px monospace';
+      ctx.fillText('START: RESUME', W / 2, 92);
+      ctx.textAlign = 'left';
+    }
+  }
+  function drawBlockDropOver() {
+    drawBlockDrop();
+    ctx.fillStyle = 'rgba(18,18,58,0.55)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#FFD93D';
+    ctx.fillRect(40, 40, 160, 84);
+    ctx.fillStyle = '#1E1E5A';
+    ctx.fillRect(40, 40, 160, 2);
+    ctx.fillRect(40, 122, 160, 2);
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText('GAME OVER', W / 2, 58);
+    ctx.font = '9px monospace';
+    ctx.fillText('SCORE ' + bdScore, W / 2, 74);
+    ctx.fillText('BEST ' + bdBest, W / 2, 86);
+    ctx.fillText('LEVEL ' + bdLevel + '  LINES ' + bdLines, W / 2, 98);
+    ctx.fillText('A: RETRY  MENU: EXIT', W / 2, 112);
+    ctx.textAlign = 'left';
+  }
+
   /* ==================== bj (GBA) ==================== */
   /* ================================================================
      BLACKJACK ROYALE (GBA) — 240x160, full colour.
@@ -1062,12 +1412,14 @@
      same value (a pair, or any two 10-value cards like 10+J or Q+K),
      first decision only, no re-split; a split A+10 is 21, pays 1:1
      (never 3:2); split Aces get exactly one card each and stand.
-     New in GBA: three AI table-mates (ROSA, MAX and RUBY) who play
-     visible hands with real basic strategy — sharp on the High Roller
-     table, believably sloppy on the Low table. RUBY is the aggressive
-     one: she doubles down more and hits the borderline stands the
-     others hold. Win-streak bonuses, a High Roller table that unlocks
-     at $2,500, and achievements.
+     New in GBA: two AI table-mates (ROSA and MAX) who play visible
+     hands with real basic strategy — sharp on the High Roller table,
+     believably sloppy on the Low table. Win-streak bonuses, a High
+     Roller table that unlocks at $2,500, and achievements.
+     Cards animate: the deal flies in one card at a time from the
+     shoe, the dealer's hole card flips over when revealed, and hits
+     slide in from the shoe — visual only, the cards and rules never
+     change.
      Balance: 'jmf-games-blackjack-balance',
      best: 'jmf-games-blackjack-best',
      achievements: 'jmf-games-blackjack-achievements' (new key;
@@ -1124,15 +1476,15 @@
   /* AI table-mates. Cosmetic balances only — their wins and losses
      never touch the player's money or the shoe's fairness. Balances
      reset to $500 each session (not persisted, same as before).
-     ROSA and MAX play basic strategy; RUBY is aggressive — she
-     doubles down more and hits the borderline stands. */
+     ROSA and MAX play basic strategy. Two seats in 120px columns,
+     so a name + balance + result never overlaps its neighbour. */
+  var bjAiCols = [2, 122]; // two 120px table-mate columns
   var bjAiSeats = [
-    { name: 'ROSA', bal: 500, hand: [], bet: 20, result: '', style: 'basic' },
-    { name: 'MAX', bal: 500, hand: [], bet: 50, result: '', style: 'basic' },
-    { name: 'RUBY', bal: 500, hand: [], bet: 30, result: '', style: 'aggro' }
+    { name: 'ROSA', bal: 500, hand: [], bet: 20, result: '' },
+    { name: 'MAX', bal: 500, hand: [], bet: 50, result: '' }
   ];
   function bjAiBetFor(seat, i) {
-    var bases = bjTable() === 'HIGH' ? [50, 100, 75] : [20, 50, 30];
+    var bases = bjTable() === 'HIGH' ? [50, 100] : [20, 50];
     var base = bases[i] || 20;
     if (seat.bal < 10) seat.bal = 500; // broke mate rebuys, like a real table
     return Math.min(base, seat.bal);
@@ -1221,11 +1573,8 @@
   /* AI mate decision: basic strategy, plus believable mistakes on the
      Low table — the classic ones: standing on 16 vs a 7, hitting 12
      vs a 4, standing on soft 18 vs a 9. `rand` is injected so tests
-     can drive it deterministically; live play passes Math.random().
-     `style` is the mate's personality: 'aggro' (RUBY) doubles down
-     more liberally and hits the borderline stands that basic
-     strategy would hold — a real decision change, not a label. */
-  function bjAiDecide(hand, upRank, canDouble, mistakeRate, rand, style) {
+     can drive it deterministically; live play passes Math.random(). */
+  function bjAiDecide(hand, upRank, canDouble, mistakeRate, rand) {
     var r = (typeof rand === 'number') ? rand : Math.random();
     var total = bjTotal(hand);
     var up = upRank === 1 ? 11 : upRank;
@@ -1234,38 +1583,30 @@
       if (!bjIsSoft(hand) && total === 12 && up >= 4 && up <= 6) return 'HIT'; // hits 12 vs 4-6
       if (bjIsSoft(hand) && total === 18 && up >= 9) return 'STAND'; // stands soft 18 vs 9+
     }
-    // RUBY (aggro): trusts the hit and the double. She doubles 11 vs
-    // any upcard (basic only doubles vs 2-10), doubles 10 vs a 10 or
-    // Ace and 9 vs a 7 (basic hits those), and hits hard 12 vs 4-6
-    // and hard 16 vs 2-6 (basic stands both).
-    if (style === 'aggro' && !bjIsSoft(hand)) {
-      if (canDouble && total === 11) return 'DBL';
-      if (canDouble && total === 10 && (up === 10 || up === 11)) return 'DBL';
-      if (canDouble && total === 9 && up === 7) return 'DBL';
-      if (total === 12 && up >= 4 && up <= 6) return 'HIT';
-      if (total === 16 && up >= 2 && up <= 6) return 'HIT';
-    }
     return bjBasicAction(hand, upRank, canDouble);
   }
-  function bjAiPlaySeat(seat) {
+  function bjAiPlaySeat(seat, si) {
     if (!seat.hand.length) return;
+    var cx = bjAiCols[si];
     var guard = 0;
     while (guard++ < 12) {
       var up = bjDealer.length ? bjDealer[0].r : 10;
-      var a = bjAiDecide(seat.hand, up, seat.hand.length === 2 && seat.bal >= seat.bet, bjMistakeRate(), Math.random(), seat.style);
+      var a = bjAiDecide(seat.hand, up, seat.hand.length === 2 && seat.bal >= seat.bet, bjMistakeRate(), Math.random());
       if (a === 'STAND') break;
       if (a === 'DBL') {
         seat.bal -= seat.bet; seat.bet *= 2;
         seat.hand.push(bjDrawCard());
+        bjFlyIn(seat.hand[seat.hand.length - 1], cx + 2 + (seat.hand.length - 1) * 16, 67, false, 0);
         break;
       }
       seat.hand.push(bjDrawCard());
+      bjFlyIn(seat.hand[seat.hand.length - 1], cx + 2 + (seat.hand.length - 1) * 16, 67, false, 0);
       if (bjIsBust(seat.hand)) break;
       if (bjTotal(seat.hand) === 21) break;
     }
   }
   function bjAiPlayAll() {
-    for (var i = 0; i < bjAiSeats.length; i++) bjAiPlaySeat(bjAiSeats[i]);
+    for (var i = 0; i < bjAiSeats.length; i++) bjAiPlaySeat(bjAiSeats[i], i);
   }
   function bjAiSettle() {
     var dt = bjTotal(bjDealer);
@@ -1294,6 +1635,29 @@
       var seat = bjAiSeats[i];
       if (seat.hand.length) { seat.bal += seat.bet; seat.hand = []; seat.result = ''; }
     }
+  }
+
+  /* ---------- Card animations (visual only) ----------
+     Cards fly from the shoe (top-right of the felt) to their slots
+     instead of appearing instantly. bjFly holds in-flight cards;
+     bjUpdate advances them; drawBlackjack skips settled cards that
+     are still flying and draws the flying ones at interpolated
+     positions. The deal runs one card at a time in deal order and
+     takes ~26 frames (~0.4s); action input waits until it lands.
+     The dealer's hole card flips edge-on, then shows its face
+     (bjFlipT counts the flip frames; bjHoleDown clears when it
+     lands). None of this touches the cards, the shoe, the RNG, or
+     any rule — the hands are fully dealt before the first frame. */
+  var BJ_DECK_X = 214, BJ_DECK_Y = 28; // the shoe, top-right of the felt
+  var bjFly = []; // {card, faceDown, x0,y0, x1,y1, t, dur, delay}
+  var bjFlipT = -1; // -1 = no flip in progress; else frames elapsed
+  var BJ_FLIP_DUR = 7;
+  function bjFlyIn(card, tx, ty, faceDown, delay) {
+    bjFly.push({ card: card, faceDown: !!faceDown, x0: BJ_DECK_X, y0: BJ_DECK_Y, x1: tx, y1: ty, t: 0, dur: 5, delay: delay || 0 });
+  }
+  function bjFlyFor(card) {
+    for (var i = 0; i < bjFly.length; i++) if (bjFly[i].card === card) return bjFly[i];
+    return null;
   }
 
   /* Streaks + achievements. net is the hand's net chip swing
@@ -1334,6 +1698,7 @@
     bjSplitHands = null; bjSplitIdx = 0;
     bjMsg = ''; bjBonusNote = ''; bjPaused = false; bjWon = false; bjActionIdx = 0;
     bjCeleb = 0; bjWasDouble = false;
+    bjFly = []; bjFlipT = -1; // any in-flight cards / flip from the last hand stop
     screen = 'play';
     JMFGAMES.musicPlay('bj');
     JMFGAMES.beep(660, 0.08);
@@ -1354,7 +1719,7 @@
     bjHoleDown = true;
     bjActionIdx = 0;
     if (bjIsBlackjack(bjPlayer)) {
-      bjHoleDown = false;
+      bjFlipT = 0; // hole card flips over on the reveal
       bjAiRefund();
       if (bjIsBlackjack(bjDealer)) {
         bjBalance += bjBet; bjSaveBalance();
@@ -1369,7 +1734,7 @@
       bjNoteBest();
       bjEndHand();
     } else if (bjIsBlackjack(bjDealer)) {
-      bjHoleDown = false;
+      bjFlipT = 0; // hole card flips over on the reveal
       bjAiRefund();
       bjMsg = 'DEALER BJ -$' + bjBet;
       bjRecordOutcome(-bjBet, {});
@@ -1378,6 +1743,24 @@
     } else {
       bjState = 'action';
       JMFGAMES.beep(700, 0.06);
+      // Deal animation: cards fly from the shoe one at a time in
+      // deal order (player, ROSA, MAX, dealer, second round) —
+      // 8 cards, 3 frames apart, 5 frames each: ~26 frames (~0.4s).
+      // The hands are already dealt; only the reveal is animated.
+      var bjDealOrder = [
+        [bjPlayer[0], 8, 107, false],
+        [bjAiSeats[0].hand[0], bjAiCols[0] + 2, 67, false],
+        [bjAiSeats[1].hand[0], bjAiCols[1] + 2, 67, false],
+        [bjDealer[0], 8, 28, false],
+        [bjPlayer[1], 30, 107, false],
+        [bjAiSeats[0].hand[1], bjAiCols[0] + 2 + 16, 67, false],
+        [bjAiSeats[1].hand[1], bjAiCols[1] + 2 + 16, 67, false],
+        [bjDealer[1], 30, 28, true]
+      ];
+      for (var di = 0; di < bjDealOrder.length; di++) {
+        var o = bjDealOrder[di];
+        bjFlyIn(o[0], o[1], o[2], o[3], di * 3);
+      }
     }
   }
   function bjEndHand() {
@@ -1387,6 +1770,7 @@
   }
   function bjHit() {
     bjPlayer.push(bjDrawCard());
+    bjFlyIn(bjPlayer[bjPlayer.length - 1], 8 + (bjPlayer.length - 1) * 22, 107, false, 0);
     JMFGAMES.beep(600, 0.05);
     if (bjIsBust(bjPlayer)) {
       if (bjSplitHands) { bjFinishHand(); return; }
@@ -1402,8 +1786,12 @@
     }
   }
   function bjDealerPlay() {
-    bjHoleDown = false;
-    while (bjTotal(bjDealer) < 17) bjDealer.push(bjDrawCard());
+    if (bjHoleDown) bjFlipT = 0; // hole card flips over; bjHoleDown clears when it lands
+    while (bjTotal(bjDealer) < 17) {
+      bjDealer.push(bjDrawCard());
+      var di = bjDealer.length - 1;
+      bjFlyIn(bjDealer[di], 8 + di * 22, 28, false, 0);
+    }
   }
   function bjStand() {
     if (bjSplitHands) { bjFinishHand(); return; }
@@ -1417,6 +1805,7 @@
     bjBet *= 2;
     bjSaveBalance();
     bjPlayer.push(bjDrawCard());
+    bjFlyIn(bjPlayer[bjPlayer.length - 1], 8 + (bjPlayer.length - 1) * 22, 107, false, 0);
     JMFGAMES.beep(600, 0.05);
     if (bjIsBust(bjPlayer)) {
       if (bjSplitHands) { bjFinishHand(); return; }
@@ -1440,6 +1829,8 @@
     ];
     bjSplitHands[0].cards.push(bjDrawCard());
     bjSplitHands[1].cards.push(bjDrawCard());
+    bjFlyIn(bjSplitHands[0].cards[1], 30, 107, false, 0);
+    bjFlyIn(bjSplitHands[1].cards[1], 152, 107, false, 0);
     JMFGAMES.beep(700, 0.06);
     if (isAces) {
       // Split Aces: each hand gets exactly one card and stands.
@@ -1461,6 +1852,9 @@
   function bjFinishHand() {
     // Sync the active split hand's bet, mark it done, advance or settle.
     var hand = bjSplitHands[bjSplitIdx];
+    // The finished hand's cards stop flying and appear in place —
+    // its slot moves to the other side of the table.
+    bjFly = bjFly.filter(function (f) { return hand.cards.indexOf(f.card) < 0; });
     hand.bet = bjBet; hand.done = true;
     bjSplitIdx++;
     if (bjSplitIdx < bjSplitHands.length) {
@@ -1527,12 +1921,14 @@
   }
   function bjCycleAction(d) {
     if (screen !== 'play' || bjPaused || bjState !== 'action') return;
+    if (bjFly.length) return; // deal still landing — wait for the cards
     var acts = bjAvailActions();
     bjActionIdx = (bjActionIdx + d + acts.length) % acts.length;
     JMFGAMES.beep(600, 0.03);
   }
   function bjAction() {
     if (screen !== 'play' || bjPaused) return;
+    if (bjState === 'action' && bjFly.length) return; // deal still landing
     if (bjState === 'bet') { bjDeal(); return; }
     if (bjState === 'result') { startBlackjack(); return; }
     if (bjState !== 'action') return;
@@ -1545,6 +1941,7 @@
   }
   function bjBack() {
     if (screen !== 'play' || bjPaused) return;
+    if (bjState === 'action' && bjFly.length) return; // deal still landing
     if (bjState === 'action') { bjStand(); return; } // quick stand
     if (bjState === 'bet') { bjBet = bjMinBet(); JMFGAMES.beep(440, 0.06); return; } // reset bet to minimum
     // 'result': B does nothing (A deals the next hand, Menu exits)
@@ -1552,6 +1949,14 @@
   function bjUpdate() {
     bjBlink = (bjBlink + 1) % 60;
     if (bjCeleb > 0) bjCeleb--;
+    for (var i = bjFly.length - 1; i >= 0; i--) {
+      bjFly[i].t++;
+      if (bjFly[i].t >= bjFly[i].delay + bjFly[i].dur) bjFly.splice(i, 1);
+    }
+    if (bjFlipT >= 0) {
+      bjFlipT++;
+      if (bjFlipT >= BJ_FLIP_DUR) { bjFlipT = -1; bjHoleDown = false; }
+    }
   }
   function bjRankStr(r) { return r === 1 ? 'A' : (r === 11 ? 'J' : (r === 12 ? 'Q' : (r === 13 ? 'K' : String(r)))); }
   function bjSuitGlyph(su) { return ['\u2660', '\u2665', '\u2666', '\u2663'][su]; }
@@ -1590,17 +1995,36 @@
     ctx.fillText(bjSuitGlyph(card.s), x + 10, y + 27);
     ctx.textAlign = 'left';
   }
-  function bjDrawHand(hand, x, y, holeDown) {
+  function bjDrawCardScaled(x, y, card, faceDown, sx) {
+    // Draw a card squashed horizontally about its centre (the
+    // dealer's hole-card flip). sx is 1 at full face, ~0 edge-on.
+    ctx.save();
+    ctx.translate(x + 10, y + 14);
+    ctx.scale(Math.max(0.08, sx), 1);
+    ctx.translate(-(x + 10), -(y + 14));
+    bjDrawCardAt(x, y, card, faceDown);
+    ctx.restore();
+  }
+  function bjDrawHand(hand, x, y, holeDown, flipT) {
     for (var i = 0; i < hand.length; i++) {
+      if (bjFlyFor(hand[i])) continue; // still flying in — drawn at its flight position
+      if (typeof flipT === 'number' && flipT >= 0 && i === 1) {
+        // Hole-card flip: edge-on at the midpoint, face-down before
+        // it, face-up after it.
+        var p = flipT / BJ_FLIP_DUR;
+        bjDrawCardScaled(x + i * 22, y, hand[i], p < 0.5, Math.abs(Math.cos(p * Math.PI)));
+        continue;
+      }
       bjDrawCardAt(x + i * 22, y, hand[i], holeDown && i === 1);
     }
   }
   function bjDrawAiHand(seat, x, y) {
-    // Tight 11px stride (cards 20 wide, 9px overlap): a 6-card hand
-    // is 75px, so it still fits inside one 80px table-mate column.
-    // Rank (top-left of each card) stays fully visible.
+    // 16px stride (cards 20 wide, 4px overlap): a 6-card hand is
+    // 100px, so it fits inside one 120px table-mate column with
+    // room to spare. Rank (top-left of each card) stays visible.
     for (var i = 0; i < seat.hand.length; i++) {
-      bjDrawCardAt(x + i * 11, y, seat.hand[i], false);
+      if (bjFlyFor(seat.hand[i])) continue; // still flying in
+      bjDrawCardAt(x + i * 16, y, seat.hand[i], false);
     }
   }
   function bjChipStack(cx, cy, n) {
@@ -1673,19 +2097,18 @@
     var dLabel = bjHoleDown ? ('DEALER ' + bjCardValue(bjDealer[0].r)) : ('DEALER ' + bjHandLabel(bjDealer));
     ctx.fillStyle = '#f5e9c8'; ctx.font = '8px monospace';
     ctx.fillText(dLabel, 6, 25);
-    bjDrawHand(bjDealer, 8, 28, bjHoleDown);
-    // AI table-mates row: three seats in 80px columns (x=2, 82, 162).
+    bjDrawHand(bjDealer, 8, 28, bjHoleDown, bjFlipT);
+    // AI table-mates row: two seats in 120px columns (x=2, 122).
     // Label + result share the y=64 line (result in gold, right after
     // the balance, so nothing runs past a column edge); cards at y=67.
-    var bjAiCols = [2, 82, 162];
     if (bjSplitHands && bjState !== 'result') {
       ctx.fillStyle = '#f5e9c8';
-      for (var mi = 0; mi < 3; mi++) {
+      for (var mi = 0; mi < 2; mi++) {
         var s0 = bjAiSeats[mi];
         ctx.fillText(s0.name + ' ' + (s0.hand.length ? bjTotal(s0.hand) + ' ' + s0.result : ''), bjAiCols[mi], 64);
       }
     } else {
-      for (var mj = 0; mj < 3; mj++) {
+      for (var mj = 0; mj < 2; mj++) {
         var seat = bjAiSeats[mj];
         var cx = bjAiCols[mj];
         ctx.fillStyle = '#f5e9c8';
@@ -1757,6 +2180,19 @@
       if (bjBonusNote) { ctx.fillStyle = '#e8c33c'; ctx.fillText(bjBonusNote, W / 2, 154); }
       else ctx.fillText('A: NEXT  MENU: EXIT', W / 2, 154);
       ctx.textAlign = 'left';
+    }
+    // Flying cards render on top, at their interpolated positions
+    // (smoothstep ease); the shoe shows as a face-down stack at
+    // the top-right while any card is in flight.
+    if (bjFly.length) {
+      bjDrawCardAt(BJ_DECK_X, BJ_DECK_Y, { r: 1, s: 0 }, true);
+      for (var fi = 0; fi < bjFly.length; fi++) {
+        var f = bjFly[fi];
+        if (f.t < f.delay) continue; // still in the shoe
+        var fp = Math.min(1, (f.t - f.delay) / f.dur);
+        fp = fp * fp * (3 - 2 * fp);
+        bjDrawCardAt(f.x0 + (f.x1 - f.x0) * fp, f.y0 + (f.y1 - f.y0) * fp, f.card, f.faceDown);
+      }
     }
     if (bjPaused) bjDrawPaused();
   }
@@ -2265,6 +2701,9 @@
         if (s === 0) hePlayer.push(c); else heAIs[s - 1].hand.push(c);
       }
     }
+    // The cards are assigned (logic) instantly as before; the draw
+    // flies them in from the table centre, one at a time.
+    heStartDealAnim(seats);
     heCommunity = [];
     hePot = 0; hePlayerInvested = 0;
     // Blinds: next seat after the button posts the small blind, the
@@ -2443,9 +2882,9 @@
     heStartTurn(next);
   }
   function heAdvanceStreet() {
-    if (heStreet === 'preflop') { heCommunity.push(heDrawCard(), heDrawCard(), heDrawCard()); heStreet = 'flop'; }
-    else if (heStreet === 'flop') { heCommunity.push(heDrawCard()); heStreet = 'turn'; }
-    else if (heStreet === 'turn') { heCommunity.push(heDrawCard()); heStreet = 'river'; }
+    if (heStreet === 'preflop') { var b0 = heCommunity.length; heCommunity.push(heDrawCard(), heDrawCard(), heDrawCard()); heStartCommAnim(b0, 3); heStreet = 'flop'; }
+    else if (heStreet === 'flop') { var b1 = heCommunity.length; heCommunity.push(heDrawCard()); heStartCommAnim(b1, 1); heStreet = 'turn'; }
+    else if (heStreet === 'turn') { var b2 = heCommunity.length; heCommunity.push(heDrawCard()); heStartCommAnim(b2, 1); heStreet = 'river'; }
     else { heShowdown(); return; }
     hePlayerBet = 0;
     for (var i = 0; i < 4; i++) heAIs[i].bet = 0;
@@ -2466,6 +2905,7 @@
   }
   function heShowdown() {
     heShowCards = true;
+    heStartFlipAnim(); // the AIs flip face-up one seat at a time
     heStreet = 'showdown';
     var alive = heAliveSeats();
     // No side pots: return the unmatched part of every alive
@@ -2558,6 +2998,122 @@
     else JMFGAMES.beep(660, 0.1);
   }
 
+  /* ---------- Card animations (visual only) ----------
+     The deck, deal order, betting, hand evaluation and outcomes
+     never change: hands are assigned instantly exactly as before,
+     but the DRAWING flies each card from the middle of the table
+     (the gold oval centre, 120,72) to its home slot over a few
+     frames. The animation never blocks input or logic — it is
+     advanced one frame per drawHoldem() call (the core draws every
+     frame; Hold'em has no per-frame update hook), and a card is
+     drawn at its home slot as soon as its flight finishes. An
+     entry is ignored if the hand was replaced after the deal, so
+     a stale animation can never hide a card. */
+  var heAnim = null; // {kind:'deal'|'comm'|'flip', t, total, cards:[...]}
+  var HE_DECK_X = 120, HE_DECK_Y = 72; // table centre: cards fly out from here
+  function heAnimEase(q) { return q * (2 - q); } // ease-out: fast start, soft landing
+  function heDealSlot(seat, idx) {
+    // Home slot of a hole card: player hand at (8,100) 22px stride;
+    // AI hands at (x0+2,26) 11px stride — the same spots the plain
+    // draw used, so nothing on the table moves.
+    if (seat === 0) return { x: 8 + idx * 22, y: 100 };
+    return { x: (seat - 1) * 60 + 2 + idx * 11, y: 26 };
+  }
+  function heStartDealAnim(seats) {
+    // Deal order is the real deal order: two rounds, each seat in
+    // turn (heInGameSeats order). One card every 3 frames, 7-frame
+    // flight: a full 5-handed deal takes 34 frames (~0.55s).
+    var cards = [], k = 0;
+    for (var r = 0; r < 2; r++) {
+      for (var si = 0; si < seats.length; si++) {
+        var s = seats[si];
+        var slot = heDealSlot(s, r);
+        cards.push({ seat: s, idx: r, card: heSeatHand(s)[r], fx: HE_DECK_X, fy: HE_DECK_Y, tx: slot.x, ty: slot.y, delay: k * 3, dur: 7 });
+        k++;
+      }
+    }
+    heAnim = { kind: 'deal', t: 0, total: (k - 1) * 3 + 7, cards: cards };
+  }
+  function heStartCommAnim(base, count) {
+    // Community cards slide in from the table centre one at a time
+    // (flop: 3 cards, 5 frames apart; turn/river: 1 card). Each
+    // flips face-up halfway through its 8-frame flight.
+    var cards = [];
+    for (var i = 0; i < count; i++) {
+      var idx = base + i;
+      cards.push({ idx: idx, card: heCommunity[idx], fx: HE_DECK_X, fy: HE_DECK_Y, tx: 65 + idx * 22, ty: 58, delay: i * 5, dur: 8 });
+    }
+    heAnim = { kind: 'comm', t: 0, total: (count - 1) * 5 + 8, cards: cards };
+  }
+  function heStartFlipAnim() {
+    // Showdown reveal: the AIs flip face-up one seat at a time,
+    // left to right (VIC, LUNA, DOC, COLE), 4 frames apart.
+    heAnim = { kind: 'flip', t: 0, total: 22 };
+  }
+  function heAnimTick() {
+    if (!heAnim) return;
+    heAnim.t++;
+    if (heAnim.t >= heAnim.total) heAnim = null;
+  }
+  function heDealEntry(seat, idx) {
+    if (!heAnim || heAnim.kind !== 'deal') return null;
+    for (var i = 0; i < heAnim.cards.length; i++) {
+      var e = heAnim.cards[i];
+      if (e.seat === seat && e.idx === idx) {
+        // Stale if the hand was replaced after the deal: draw normally.
+        if (heSeatHand(seat)[idx] !== e.card) return null;
+        return e;
+      }
+    }
+    return null;
+  }
+  function heCommEntry(idx) {
+    if (!heAnim || heAnim.kind !== 'comm') return null;
+    for (var i = 0; i < heAnim.cards.length; i++) {
+      var e = heAnim.cards[i];
+      if (e.idx === idx) {
+        if (heCommunity[idx] !== e.card) return null;
+        return e;
+      }
+    }
+    return null;
+  }
+  function heAiFaceUp(aiIdx) {
+    // During the showdown flip, an AI's cards turn face-up when its
+    // flip moment arrives; otherwise face-up means heShowCards.
+    if (!heShowCards) return false;
+    if (heAnim && heAnim.kind === 'flip') return heAnim.t >= 6 + aiIdx * 4;
+    return true;
+  }
+  function heDrawHoleCard(seat, idx, card) {
+    // Draw one hole card, honouring the deal/flip animations.
+    // The player's cards fly in face-up; the AIs' fly in as backs.
+    var slot = heDealSlot(seat, idx);
+    var e = heDealEntry(seat, idx);
+    if (e) {
+      if (heAnim.t < e.delay) return; // still in the deck: not drawn yet
+      var q = Math.min(1, (heAnim.t - e.delay) / e.dur);
+      var p = heAnimEase(q);
+      bjDrawCardAt(Math.round(e.fx + (e.tx - e.fx) * p), Math.round(e.fy + (e.ty - e.fy) * p), card, seat !== 0);
+      return;
+    }
+    bjDrawCardAt(slot.x, slot.y, card, seat !== 0 && !heAiFaceUp(seat - 1));
+  }
+  function heDrawCommCard(i, card) {
+    // Draw one community card: it slides in from the table centre
+    // and flips face-up halfway through its flight.
+    var tx = 65 + i * 22, ty = 58;
+    var e = heCommEntry(i);
+    if (e) {
+      if (heAnim.t < e.delay) return; // not arrived yet: leave the slot empty
+      var q = Math.min(1, (heAnim.t - e.delay) / e.dur);
+      var p = heAnimEase(q);
+      bjDrawCardAt(Math.round(e.fx + (tx - e.fx) * p), Math.round(e.fy + (ty - e.fy) * p), card, q < 0.5);
+      return;
+    }
+    bjDrawCardAt(tx, ty, card, false);
+  }
+
   /* ---------- Draw ---------- */
   function heAbbrName(nm) {
     var full = ['HIGH CARD', 'PAIR', 'TWO PAIR', 'TRIPS', 'STRAIGHT', 'FLUSH', 'FULL HOUSE', 'QUADS', 'STR FLUSH'];
@@ -2572,12 +3128,10 @@
     // 60px columns, 11px card stride (same tight overlap as the
     // Blackjack table-mates): two cards span x0+2..x0+33, leaving
     // room for the bet and the last-action verb at x0+34.
+    // heDrawHoleCard honours the deal/flip animations.
     for (var i = 0; i < 4; i++) {
       var ai = heAIs[i];
-      var x0 = i * 60;
-      for (var j = 0; j < ai.hand.length; j++) {
-        bjDrawCardAt(x0 + 2 + j * 11, 26, ai.hand[j], !heShowCards);
-      }
+      for (var j = 0; j < ai.hand.length; j++) heDrawHoleCard(i + 1, j, ai.hand[j]);
     }
   }
   function drawHoldem() {
@@ -2636,6 +3190,9 @@
       ctx.textAlign = 'left';
       return;
     }
+    // One animation frame per draw (Hold'em has no per-frame update
+    // hook in the core): the deal/flop/flip flights advance here.
+    heAnimTick();
     // AI strip: four 60px columns (VIC | LUNA | DOC | COLE). Each
     // shows the name + chips, the two hole cards (11px stride, so
     // they span x0+2..x0+33), the current bet in gold and the last
@@ -2653,22 +3210,20 @@
       else if (acting) ctx.fillStyle = '#e8c33c';
       else ctx.fillStyle = '#f5e9c8';
       ctx.fillText(opp.name + ' $' + opp.balance, x0 + 2, 22);
-      for (var cj = 0; cj < opp.hand.length; cj++) {
-        bjDrawCardAt(x0 + 2 + cj * 11, 26, opp.hand[cj], !heShowCards);
-      }
+      for (var cj = 0; cj < opp.hand.length; cj++) heDrawHoleCard(ai + 1, cj, opp.hand[cj]);
       if (opp.bet > 0) { ctx.fillStyle = '#e8c33c'; ctx.fillText('$' + opp.bet, x0 + 34, 32); }
       if (opp.lastAction) { ctx.fillStyle = '#f5e9c8'; ctx.fillText(opp.lastAction, x0 + 34, 44); }
     }
     // Community cards.
     for (var i = 0; i < 5; i++) {
       var cx = 65 + i * 22;
-      if (i < heCommunity.length) bjDrawCardAt(cx, 58, heCommunity[i], false);
+      if (i < heCommunity.length) heDrawCommCard(i, heCommunity[i]);
       else { ctx.strokeStyle = '#9fd6ae'; ctx.lineWidth = 1; ctx.strokeRect(cx + 0.5, 58.5, 19, 27); }
     }
     ctx.fillStyle = '#f5e9c8'; ctx.font = '8px monospace';
     ctx.fillText(heStreet.toUpperCase(), 4, 96);
     if (heStreak >= 2) { ctx.fillStyle = '#e8c33c'; ctx.textAlign = 'right'; ctx.fillText('STREAK ' + heStreak, W - 4, 96); ctx.textAlign = 'left'; ctx.fillStyle = '#f5e9c8'; }
-    bjDrawHand(hePlayer, 8, 100, false);
+    for (var pi = 0; pi < hePlayer.length; pi++) heDrawHoleCard(0, pi, hePlayer[pi]);
     ctx.fillText('YOU BET $' + hePlayerBet, 56, 106);
     if (hePlayerHandName && heState === 'result') ctx.fillText(hePlayerHandName, 56, 116);
     else if (heState === 'act' && heCommunity.length >= 3) {
@@ -5716,6 +6271,7 @@ function buHeroStat(kind) {
 function buMakeFighter(def, x, y, isSummon) {
   return {
     kind: def.kind, name: def.name, color: def.color,
+    ult: def.ult, ultShort: def.ultShort, /* copied so buFireUlt's float shows the real ult name, never "undefined!" */
     x: x, y: y, face: 1, vx: 0, vy: 0,
     maxHp: def.hp, hp: def.hp,
     dmg: def.dmg, spd: def.spd, rate: def.rate,
@@ -6881,10 +7437,6 @@ function buDrawCooldowns() {
   ctx.fillStyle = uReady ? '#22C55E' : '#F59E0B';
   ctx.fillRect(132, 26, Math.max(1, 34 * (uReady ? 1 : 1 - buHero.ultCd / 10)), 5);
   if (!uReady) { ctx.fillStyle = '#F8FAFC'; ctx.fillText(Math.ceil(buHero.ultCd) + 's', 168, 31); }
-  if (buSynergy) {
-    ctx.fillStyle = '#FDE68A';
-    ctx.fillText('SYNERGY: ' + buSynergy.name + ' ' + buSynergy.desc, 186, 31);
-  }
   ctx.textAlign = 'left';
 }
 function drawBeat() {
@@ -6899,6 +7451,14 @@ function drawBeat() {
   ctx.fillText('WAVE ' + buWave + (buWave % 5 === 0 ? '  BOSS!' : ''), 6, 10);
   ctx.textAlign = 'right';
   ctx.fillText('KILLS ' + buKills, W - 6, 10);
+  if (buSynergy) {
+    /* Synergy moved here from the cooldowns row: at x=186 it ran past
+       the 240px edge ("SYNERGY: EM…"). Centred at 132 on the top row,
+       "SYN: <name>" (longest 18 chars) spans ~89-175 — clear of WAVE
+       (ends ~81 worst case) and KILLS (starts ~186). */
+    ctx.fillStyle = '#FDE68A'; ctx.textAlign = 'center';
+    ctx.fillText('SYN: ' + buSynergy.name, 132, 10);
+  }
   ctx.textAlign = 'left';
   var lowHp = buHero && buHero.hp > 0 && buHero.hp <= buHero.maxHp * 0.3;
   ctx.fillStyle = '#7F1D1D'; ctx.fillRect(6, 13, 228, 5);
@@ -14497,6 +15057,9 @@ function drawShooterOver() {
   function hvUpdate() {
     if (hvNameMode) return; // name entry: the world waits
     if (hvPaused) return;
+    // The Story Log drops hvPaused so B reaches hvCycleTool (not DELETE
+    // SAVE); freeze the clock while it is open, as if still paused.
+    if (hvStoryLogOpen()) return;
     if (hvMsgFrames > 0) hvMsgFrames--;
     // Time ticks: 1 game-minute per 12 frames (~5 min/sec, ~4 min per day).
     hvTimeTick++;
@@ -14779,7 +15342,11 @@ function drawShooterOver() {
     // name mode, and the pause guard below would swallow the press.
     if (hvNameMode) { hvNameSelDelete(); return; } // B deletes on the name screen
     if (hvPaused) return;
-    if (hvMenu || hvDialog) return;
+    // B goes back in menus (the menu footer promises "B: BACK"). This is
+    // how the Story Log closes on B: hvQuestLogOpen drops hvPaused while
+    // the log is open, so the core routes B here instead of DELETE SAVE.
+    if (hvMenu) { hvMenuBack(); return; }
+    if (hvDialog) return;
     hvToolIdx = (hvToolIdx + 1) % HV_TOOLS.length;
     JMFGAMES.beep(600, 0.05);
     hvShowMsg('TOOL: ' + HV_TOOLS[hvToolIdx].name);
@@ -17076,7 +17643,20 @@ function hvWrapText(text, maxW) {
   if (cur) lines.push(cur);
   return lines;
 }
+/* True while the Story Log menu is open (title 'STORY LOG'). Used to keep
+   the game frozen and the PAUSED box hidden while the log is open, even
+   though hvPaused is dropped (see hvQuestLogOpen). */
+function hvStoryLogOpen() { return !!(hvMenu && hvMenu.title === 'STORY LOG'); }
 function hvQuestLogOpen() {
+  /* The Story Log opens from the pause menu (paused) or the sleep menu
+     (not paused). While it is open, drop the paused flag: the core asks
+     DELETE SAVE on B whenever the farm is paused, so a B press meant to
+     close the log would leak through to the delete prompt instead. With
+     hvPaused false the core routes B to hvCycleTool, which closes the
+     log. Remember where we came from so closing returns to the pause
+     menu (not the bare farm) when opened from pause. */
+  var fromPause = hvPaused;
+  hvPaused = false;
   var items = [];
   var curCh = 0;
   for (var i = 0; i < HV_STORY.length; i++) {
@@ -17110,7 +17690,7 @@ function hvQuestLogOpen() {
     items.push({ label: festNames[fk] + ' FESTIVAL: ' + (hvFestSeen[fk + '-' + hvYear] ? 'SEEN' : 'NOT YET'), act: 'none' });
   }
   items.push({ label: 'BACK', act: 'back' });
-  hvOpenMenu('STORY LOG', 'MAPLEWOOD\'S STORY', items, function (it) { if (hvPaused) hvPauseMenuOpen(); else hvCloseMenu(); });
+  hvOpenMenu('STORY LOG', 'MAPLEWOOD\'S STORY', items, function (it) { if (fromPause) { hvPaused = true; hvPauseMenuOpen(); } else hvCloseMenu(); });
 }
 /* ---------- Room modes (greenhouse / island) ---------- */
 var hvRoom = null; // null | 'gh' | 'island'
@@ -17933,8 +18513,12 @@ function hvDrawExpansion() {
     if (hvDialog) hvDrawDialog();
     // Menu overlay.
     if (hvMenu) hvDrawMenu();
-    // Paused.
-    if (hvPaused) {
+    // Paused. The PAUSED box is drawn after (on top of) the menu overlay,
+    // so it would hide whatever menu is open — the Story Log's top lines,
+    // and the pause menu's own title + RESUME row. Hide the box whenever
+    // any menu is open; the menu itself is the UI then. (The box still
+    // shows when paused with no menu open, with its START/MENU hint.)
+    if (hvPaused && !hvMenu) {
       ctx.fillStyle = '#1E1E5A'; ctx.fillRect(W / 2 - 72, 46, 144, 36);
       ctx.strokeStyle = '#e8c33c'; ctx.lineWidth = 1;
       ctx.strokeRect(W / 2 - 72, 46, 144, 36);
@@ -18002,6 +18586,7 @@ function hvDrawExpansion() {
     if (screen === 'menu') { menuIndex = (menuIndex + GAMES.length - 1) % GAMES.length; menuClamp(); JMFGAMES.beep(600, 0.04); menuHoldDir = 'up'; menuHoldFrames = 0; menuHoldLast = 0; }
     else if (screen === 'play') {
       if (currentGame === 'block') bqMove(-1, 0);
+      else if (currentGame === 'drop') bdRotate();
       else if (currentGame === 'bj') { bjAdjustBet(10); bjCycleAction(-1); }
       else if (currentGame === 'holdem') { heAdjustRaise(10); }
       else if (currentGame === 'chess') { chMove(-1, 0); }
@@ -18045,6 +18630,7 @@ function hvDrawExpansion() {
   JMFGAMES.on('press', 'left', function () {
     if (dsGame) return;
     if (screen === 'play' && currentGame === 'block') bqMove(0, -1);
+    else if (screen === 'play' && currentGame === 'drop') bdMove(-1);
     else if (screen === 'play' && currentGame === 'bj') { bjAdjustBet(-50); bjCycleAction(-1); }
     else if (screen === 'play' && currentGame === 'holdem') { heCycleAction(-1); }
     else if (screen === 'play' && currentGame === 'chess') chMove(0, -1);
@@ -18059,6 +18645,7 @@ function hvDrawExpansion() {
   JMFGAMES.on('press', 'right', function () {
     if (dsGame) return;
     if (screen === 'play' && currentGame === 'block') bqMove(0, 1);
+    else if (screen === 'play' && currentGame === 'drop') bdMove(1);
     else if (screen === 'play' && currentGame === 'bj') { bjAdjustBet(50); bjCycleAction(1); }
     else if (screen === 'play' && currentGame === 'holdem') { heCycleAction(1); }
     else if (screen === 'play' && currentGame === 'chess') chMove(0, 1);
@@ -18077,6 +18664,7 @@ function hvDrawExpansion() {
       if (g.playable) {
         if (g.name === '8 BALL POOL') { currentGame = 'pool'; startPool(); }
         else if (g.name === 'BLOCKQUEST') { currentGame = 'block'; startBlockQuest(); }
+        else if (g.name === 'BLOCK DROP') { currentGame = 'drop'; startBlockDrop(); }
         else if (g.name === 'BLACKJACK ROYALE') { currentGame = 'bj'; startBlackjack(); }
         else if (g.name === "TEXAS HOLD'EM") { currentGame = 'holdem'; startHoldem(); }
         else if (g.name === 'CHESS CLUB') { currentGame = 'chess'; startChess(); }
@@ -18093,8 +18681,8 @@ function hvDrawExpansion() {
       }
       else { comingName = g.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
-    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else if (currentGame === 'park') tpAction(); else if (currentGame === 'dummy') duAction(); else if (currentGame === 'shooter') shFire(); else if (currentGame === 'farm') hvAction(); else flap(); }
-    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else if (currentGame === 'pool') poRematch(); else if (currentGame === 'shooter') startShooter(); else startGame(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'drop') bdAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else if (currentGame === 'park') tpAction(); else if (currentGame === 'dummy') duAction(); else if (currentGame === 'shooter') shFire(); else if (currentGame === 'farm') hvAction(); else flap(); }
+    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'drop') startBlockDrop(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else if (currentGame === 'pool') poRematch(); else if (currentGame === 'shooter') startShooter(); else startGame(); }
   });
   JMFGAMES.on('press', 'b', function () {
     // B is a real in-game action in every game; it NEVER returns to the
@@ -18105,6 +18693,7 @@ function hvDrawExpansion() {
     // asks to delete that game's save.
     if (currentGame === 'sky' && paused) { dsAsk('sky'); return; }
     if (currentGame === 'block' && bqPaused) { dsAsk('block'); return; }
+    if (currentGame === 'drop' && bdPaused) { dsAsk('drop'); return; }
     if (currentGame === 'bj' && bjPaused) { dsAsk('bj'); return; }
     if (currentGame === 'holdem' && hePaused) { dsAsk('holdem'); return; }
     if (currentGame === 'overlord' && ovPaused) { dsAsk('overlord'); return; }
@@ -18121,6 +18710,7 @@ function hvDrawExpansion() {
     if (currentGame === 'farm' && hvPaused) { dsAsk('farm'); return; }
     if (currentGame === 'sky') skyDive();
     else if (currentGame === 'block') bqBack();
+    else if (currentGame === 'drop') bdBack();
     else if (currentGame === 'bj') bjBack();
     else if (currentGame === 'holdem') heBack();
     else if (currentGame === 'chess') chBack();
@@ -18139,6 +18729,7 @@ function hvDrawExpansion() {
     if (dsGame) return;
     if (screen !== 'play') return;
     if (currentGame === 'block') { if (!bqOver) { bqPaused = !bqPaused; JMFGAMES.beep(330, 0.06); } }
+    else if (currentGame === 'drop') { if (!bdOver) { bdPaused = !bdPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'bj') { bjPaused = !bjPaused; JMFGAMES.beep(330, 0.06); }
     else if (currentGame === 'holdem') { hePaused = !hePaused; JMFGAMES.beep(330, 0.06); }
     else if (currentGame === 'chess') { if (!chOver) { chPaused = !chPaused; JMFGAMES.beep(330, 0.06); } }
@@ -18170,6 +18761,7 @@ function hvDrawExpansion() {
     listHoldTick(); // in-game list screens: hold-to-fast-scroll (no-op elsewhere)
     if (screen !== 'play') return;
     if (currentGame === 'block') { bqUpdate(); return; }
+    if (currentGame === 'drop') { bdUpdate(); return; }
     if (currentGame === 'bj') { bjUpdate(); return; }
     if (currentGame === 'chess') { chUpdate(); return; }
     if (currentGame === 'overlord') { ovUpdate(); return; }
@@ -18491,9 +19083,11 @@ function hvDrawExpansion() {
     var tilt = Math.max(-0.45, Math.min(0.6, bird.vy * 0.09));
     var cosT = Math.cos(tilt), sinT = Math.sin(tilt);
     function rot(dx, dy) { return [dx * cosT - dy * sinT, dx * sinT + dy * cosT]; }
-    // Wing flap: a sweep right after a tap + a gentle idle flutter.
-    var wingFlap = Math.sin(skyFrame * 0.25) * 1.2;
-    if (skyFlapT > 0) wingFlap += Math.sin((14 - skyFlapT) / 14 * Math.PI) * -3.5;
+    // Wing flap: the wing ANGLE sweeps up on a tap (skyFlapT counts down
+    // from 14) and folds back down on the glide, plus a gentle idle flutter.
+    // +0.95 = tip up, -0.55 = tip down (relative to the body).
+    var wingAng = -0.55 + Math.sin(skyFrame * 0.25) * 0.15;
+    if (skyFlapT > 0) wingAng += (skyFlapT / 14) * 1.5;
     // Dark outline so the bird pops on every scenery.
     ctx.fillStyle = '#1a1a2e';
     ctx.beginPath(); ctx.arc(x, y, BIRD_R + 1, 0, Math.PI * 2); ctx.fill();
@@ -18512,14 +19106,26 @@ function hvDrawExpansion() {
     var b = rot(-1, 3);
     ctx.fillStyle = c.belly;
     ctx.beginPath(); ctx.arc(x + b[0], y + b[1], 4, 0, Math.PI); ctx.fill();
-    // Wing (flaps) + feather line.
-    var w = rot(-3, 1);
+    // Wing: a large, clearly drawn ellipse (not a small patch) that sticks
+    // out past the body's left side, with a dark outline so it reads on
+    // the yellow body and on every scenery sky. The ellipse rotation is
+    // the flap angle, so the tip sweeps up on a flap and down on the glide.
+    var wC = rot(-5, 1);
+    var wRot = wingAng + tilt;
     ctx.fillStyle = skyShade(c.body, -30);
-    ctx.beginPath(); ctx.arc(x + w[0], y + w[1] + wingFlap, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x + wC[0], y + wC[1], 6, 3.5, wRot, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(x + wC[0], y + wC[1], 6, 3.5, wRot, 0, Math.PI * 2);
+    ctx.stroke();
+    // Feather line along the wing, pointing at the tip.
+    var wDir = [-Math.cos(wRot), -Math.sin(wRot)];
     ctx.strokeStyle = skyShade(c.body, -55); ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(x + w[0] - 4, y + w[1] + wingFlap + 1);
-    ctx.lineTo(x + w[0] - 1, y + w[1] + wingFlap + 3);
+    ctx.moveTo(x + wC[0] + wDir[0] * 2, y + wC[1] + wDir[1] * 2);
+    ctx.lineTo(x + wC[0] + wDir[0] * 4.5, y + wC[1] + wDir[1] * 4.5);
     ctx.stroke();
     // Beak (front, angled by tilt).
     var k1 = rot(6, -2), k2 = rot(13, 1), k3 = rot(6, 3);
@@ -18727,8 +19333,8 @@ function hvDrawExpansion() {
     if (screen !== 'play') JMFGAMES.musicStop();
     if (screen === 'menu') drawMenu();
     else if (screen === 'coming') drawComing();
-    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else if (currentGame === 'park') drawPark(); else if (currentGame === 'dummy') drawDummy(); else if (currentGame === 'shooter') drawShooter(); else if (currentGame === 'farm') drawFarm(); else drawGame(); }
-    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else if (currentGame === 'shooter') drawShooterOver(); else drawOver(); }
+    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'drop') drawBlockDrop(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else if (currentGame === 'park') drawPark(); else if (currentGame === 'dummy') drawDummy(); else if (currentGame === 'shooter') drawShooter(); else if (currentGame === 'farm') drawFarm(); else drawGame(); }
+    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'drop') drawBlockDropOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else if (currentGame === 'shooter') drawShooterOver(); else drawOver(); }
     // Delete-save confirmation overlay (on top of any screen), or the
     // pause-overlay hint for games whose delete option lives on pause.
     if (dsGame) drawDsConfirm();
@@ -18736,6 +19342,7 @@ function hvDrawExpansion() {
       var dsHintY = 0;
       if (currentGame === 'sky' && paused) dsHintY = 152;
       else if (currentGame === 'block' && bqPaused) dsHintY = 152;
+      else if (currentGame === 'drop' && bdPaused) dsHintY = 152;
       else if (currentGame === 'bj' && bjPaused) dsHintY = 152;
       else if (currentGame === 'holdem' && hePaused) dsHintY = 152;
       else if (currentGame === 'overlord' && ovPaused) dsHintY = 152;
