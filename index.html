@@ -255,6 +255,7 @@
     park:    { bpm: 120, wave: 'triangle', notes: [[72,1],[76,1],[79,1],[76,1],[84,1],[79,1],[76,1],[72,1],[74,1],[77,1],[81,1],[77,1],[79,1],[76,1],[74,1],[0,1]] },
     dummy:   { bpm: 140, wave: 'square', notes: [[72,1],[0,1],[76,1],[79,1],[0,1],[76,1],[74,1],[0,1],[72,1],[0,1],[74,1],[76,1],[79,1],[76,1],[74,1],[72,1]] },
     shooter: { bpm: 148, wave: 'square', notes: [[57,1],[0,1],[57,1],[60,1],[64,1],[0,1],[62,1],[60,1],[57,1],[0,1],[55,1],[57,1],[60,1],[62,1],[64,1],[67,1]] },
+    artillery: { bpm: 120, wave: 'square', notes: [[57,1],[57,1],[60,1],[64,1],[62,1],[60,1],[57,1],[55,1],[57,1],[60,1],[64,1],[67,1],[64,1],[62,1],[60,1],[0,1]] },
   };
   var musicTimer = null, musicStep = 0, musicNext = 0, musicTune = null, musicActive = false;
   function midiFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
@@ -376,14 +377,15 @@
     { name: 'STAR STRIKE', playable: true },
     { name: 'SUBWAY RUNNER', playable: true },
     { name: "TEXAS HOLD'EM", playable: true },
-    { name: 'THRILL PARK', playable: true }
+    { name: 'THRILL PARK', playable: true },
+    { name: 'VOLLEY SQUAD', playable: true }
   ];
 
   var SCENERY = [{"name":"Golden Hour Meadow","top":"#FFE9A8","bot":"#FF8FA3","h1":"#E8A85C","h2":"#6FA85A"},{"name":"Peach Sunrise Over Hills","top":"#FFD9A0","bot":"#FF6B9D","h1":"#D98A5F","h2":"#7A8E5A"},{"name":"Misty Lavender Morning","top":"#E8D9FF","bot":"#F2C6E0","h1":"#A793D6","h2":"#7D7AA8"},{"name":"Rose Gold Horizon","top":"#FFD6A5","bot":"#C77DFF","h1":"#D17AA0","h2":"#8E5F7A"},{"name":"Amber Valley Dawn","top":"#FFE3A3","bot":"#E07A3F","h1":"#C9823A","h2":"#6F8A45"},{"name":"Soft Pink Sakura Morning","top":"#FFDCE8","bot":"#FF8FAB","h1":"#E89AB5","h2":"#E79BB0"},{"name":"Emerald Hills Day","top":"#A8E6A1","bot":"#2E8B57","h1":"#4EA35A","h2":"#2B7A3D"},{"name":"Azure Sky & White Clouds","top":"#7EC8FF","bot":"#FFFFFF","h1":"#7FB069","h2":"#4A7C59"},{"name":"Turquoise Lagoon Day","top":"#4DE3FF","bot":"#FFF6B7","h1":"#28B8A8","h2":"#F2C14E"},{"name":"Sunny Sunflower Fields","top":"#FFE66D","bot":"#FF9F1C","h1":"#E9A331","h2":"#5B8C3E"},{"name":"Crystal Lake Noon","top":"#AEEBFF","bot":"#9ADFFF","h1":"#7AB8D6","h2":"#3E7CB1"},{"name":"Tropical Palm Paradise","top":"#7FFFD4","bot":"#FFE66D","h1":"#1F9D7A","h2":"#F2A93B"},{"name":"Mediterranean Coast Day","top":"#8ED0FF","bot":"#7FB069","h1":"#D9B98A","h2":"#2E86AB"},{"name":"Alpine Meadow Summer","top":"#B8F1FF","bot":"#FFD166","h1":"#6BAF8A","h2":"#3F7A5A"},{"name":"Bamboo Forest Light","top":"#D6F5B0","bot":"#56AB2F","h1":"#5B9E4D","h2":"#2E6B2E"},{"name":"Rainbow After Rain","top":"#A8C0FF","bot":"#FFE29A","h1":"#7AA0C4","h2":"#5A8A5A"},{"name":"Lavender Fields Provence","top":"#D8B4FE","bot":"#F0ABFC","h1":"#8B5CF6","h2":"#5B3A8E"},{"name":"Desert Cactus Noon","top":"#FFD89B","bot":"#E76F51","h1":"#C77D4A","h2":"#A66A2E"},{"name":"Canyon Red Rocks","top":"#FF9A76","bot":"#9B2226","h1":"#A83A2E","h2":"#7A211E"},{"name":"Arctic Ice Day","top":"#D6F0FF","bot":"#FFFFFF","h1":"#A8D8EA","h2":"#EAF6FF"},{"name":"Tangerine Sunset Beach","top":"#FFB75E","bot":"#FF3D68","h1":"#F2844A","h2":"#E86A5A"},{"name":"Crimson Sunset Canyon","top":"#FF512F","bot":"#7A0C4A","h1":"#7A1C3A","h2":"#4A0F2A"},{"name":"Violet Dusk Harbor","top":"#7B5EA7","bot":"#FF8FAB","h1":"#4A3B6B","h2":"#2E2A4A"},{"name":"Golden Gate Sunset","top":"#FF9966","bot":"#FFD166","h1":"#B84A2E","h2":"#6B2E2E"},{"name":"Pink Lake Sunset","top":"#FFC0CB","bot":"#FF6A88","h1":"#E07A8A","h2":"#B85A6A"},{"name":"Fiery Volcano Sunset","top":"#FF4E50","bot":"#2B0A0A","h1":"#3A0A0A","h2":"#1A0505"},{"name":"Sunset Over Vineyards","top":"#FFAF7B","bot":"#6A4C93","h1":"#7A4A6B","h2":"#4A2E4A"},{"name":"Amber Desert Dusk","top":"#E8A87C","bot":"#5C3D2E","h1":"#9A6A3A","h2":"#6B4A2E"},{"name":"Sunset City Skyline","top":"#FF9A56","bot":"#4A235A","h1":"#3A1A3A","h2":"#241228"},{"name":"Rose Sunset Over Ocean","top":"#FF8C94","bot":"#C44569","h1":"#A83A5A","h2":"#6B2340"},{"name":"Starry Milky Way","top":"#0B1026","bot":"#3B2F63","h1":"#1B2440","h2":"#0F162E"},{"name":"Moonlit Ocean Night","top":"#0A1A3A","bot":"#2E86AB","h1":"#123A6B","h2":"#0A2547"},{"name":"Midnight City Lights","top":"#0F0C29","bot":"#FF6B35","h1":"#1A123A","h2":"#0F0A26"},{"name":"Northern Lights Aurora","top":"#0B2E4F","bot":"#A8E063","h1":"#123A3A","h2":"#0A2A2A"},{"name":"Purple Galaxy Night","top":"#1A0033","bot":"#FF00CC","h1":"#2A0A4A","h2":"#1A0033"},{"name":"Firefly Forest Night","top":"#0A1F14","bot":"#FFE66D","h1":"#0F2E1E","h2":"#081F14"},{"name":"Snowy Night Village","top":"#1B2A4A","bot":"#F8F9FA","h1":"#DDE8F0","h2":"#8FA8B8"},{"name":"Neon Tokyo Night","top":"#0D0221","bot":"#FF2E88","h1":"#1A0A3A","h2":"#0D0221"},{"name":"Full Moon Over Desert","top":"#1A1A40","bot":"#F2D492","h1":"#3A2E5A","h2":"#241E3A"},{"name":"Twilight Lavender Night","top":"#2B1055","bot":"#E0B0FF","h1":"#4A2E6B","h2":"#2E1A4A"},{"name":"Cherry Blossom Spring","top":"#FFD6E8","bot":"#A8E6CF","h1":"#F2A8C0","h2":"#D67AA0"},{"name":"Spring Tulip Fields","top":"#FF9A9E","bot":"#FFD194","h1":"#E07A8A","h2":"#B85A6A"},{"name":"Fresh Rain Spring Forest","top":"#B8D8BA","bot":"#7FB069","h1":"#5A8A5A","h2":"#3E6B3E"},{"name":"Summer Waterfall Valley","top":"#7ED6DF","bot":"#F6E27A","h1":"#4A9A8A","h2":"#2E6B5A"},{"name":"Sunflower Summer Sunset","top":"#FFC94D","bot":"#FF5E62","h1":"#B87A1E","h2":"#7A5210"},{"name":"Autumn Maple Forest","top":"#FF9A3D","bot":"#8B2E1B","h1":"#8B2E1B","h2":"#5A1A0F"},{"name":"Golden Autumn Park","top":"#FFE8A3","bot":"#FB8500","h1":"#C98A1E","h2":"#8A5A10"},{"name":"Harvest Pumpkin Fields","top":"#FFB35C","bot":"#6B4226","h1":"#A86A2E","h2":"#6B4226"},{"name":"Winter Wonderland Pines","top":"#EAF6FF","bot":"#8EC9EE","h1":"#DDEFFF","h2":"#8EC9EE"},{"name":"Snowy Mountain Christmas","top":"#BDE0FE","bot":"#FFFFFF","h1":"#A8C8E8","h2":"#E8F4FF"},{"name":"Bali Rice Terraces","top":"#A8E063","bot":"#FFE66D","h1":"#4A8A2E","h2":"#2E6B1E"},{"name":"Santorini White & Blue","top":"#A8D8EA","bot":"#3A86FF","h1":"#FFFFFF","h2":"#3A86FF"},{"name":"Kyoto Temple Autumn","top":"#FFD6A5","bot":"#B56576","h1":"#A83A3A","h2":"#6B2E2E"},{"name":"Swiss Alps Winter","top":"#DFF3FF","bot":"#FFFFFF","h1":"#EAF6FF","h2":"#8EC9EE"},{"name":"Iceland Waterfall & Rainbow","top":"#A8E6CF","bot":"#FFD166","h1":"#6BAF8A","h2":"#3F7A5A"},{"name":"Egyptian Desert Oasis","top":"#FFE8A3","bot":"#EE964B","h1":"#D9A83A","h2":"#A87A2E"},{"name":"Amazon Rainforest Mist","top":"#A8D5BA","bot":"#2D6A4F","h1":"#2D6A4F","h2":"#1B4332"},{"name":"Great Wall Sunset","top":"#FF9E5E","bot":"#6A040F","h1":"#7A3A1E","h2":"#4A2110"},{"name":"Venice Canal Dusk","top":"#6A4C93","bot":"#FFAFCC","h1":"#3A2A5A","h2":"#241A3A"},{"name":"Paris Eiffel Dusk","top":"#FFAFCC","bot":"#FFC8DD","h1":"#7A5A8A","h2":"#4A3A5A"},{"name":"Floating Islands Sky","top":"#A8C0FF","bot":"#FFD6FF","h1":"#8A7AC0","h2":"#5A4A8A"},{"name":"Crystal Cave Glow","top":"#0F2027","bot":"#2C5364","h1":"#1A3A4A","h2":"#0F2027"},{"name":"Enchanted Mushroom Forest","top":"#0B3D2E","bot":"#FFD166","h1":"#123B2A","h2":"#0A2A1E"},{"name":"Dragon Valley Mist","top":"#5B5F97","bot":"#B8C0D8","h1":"#4A4E7A","h2":"#2E315A"},{"name":"Candy Cloud Kingdom","top":"#FFAFCC","bot":"#BDE0FE","h1":"#FF8FAB","h2":"#FB6F92"},{"name":"Underwater Coral World","top":"#0077B6","bot":"#90E0EF","h1":"#0077B6","h2":"#023E8A"},{"name":"Lava Volcano World","top":"#1A0A00","bot":"#FF4500","h1":"#2A0A00","h2":"#1A0500"},{"name":"Sky Castle Clouds","top":"#B8E0FF","bot":"#FFE29A","h1":"#8EC9EE","h2":"#5A8AB8"},{"name":"Magic Aurora Forest","top":"#0A2A43","bot":"#C084FC","h1":"#0A3A2A","h2":"#061F16"},{"name":"Dreamy Pastel Clouds","top":"#FFD6FF","bot":"#C8B6FF","h1":"#C8B6FF","h2":"#A78BFA"},{"name":"Stormy Ocean Waves","top":"#2C3E50","bot":"#7FB3D5","h1":"#2C3E50","h2":"#1A2A3A"},{"name":"Thunderstorm Over City","top":"#232526","bot":"#F2C94C","h1":"#232526","h2":"#111111"},{"name":"Rainy Neon Street","top":"#1A1A2E","bot":"#E94560","h1":"#1A1A2E","h2":"#0F0F1A"},{"name":"Foggy Pine Forest","top":"#8E9EAB","bot":"#7A8B6F","h1":"#7A8B6F","h2":"#4A5A4A"},{"name":"Snowstorm Mountain Pass","top":"#D3D3D3","bot":"#FFFFFF","h1":"#E8E8E8","h2":"#9AA8B8"},{"name":"Cloudy Highlands","top":"#A8B8C8","bot":"#8FA8B8","h1":"#7A8A9A","h2":"#5A6A7A"},{"name":"Monsoon Green Valley","top":"#2F5233","bot":"#A8D5BA","h1":"#2F5233","h2":"#1B3A22"},{"name":"Rainbow Storm Clearing","top":"#4A4E69","bot":"#FFE29A","h1":"#6B5A6B","h2":"#4A3E4A"},{"name":"Windy Desert Dunes","top":"#E6C87A","bot":"#F4E4BC","h1":"#C9A86A","h2":"#A88A4A"},{"name":"Icy Blizzard Peaks","top":"#E0F7FA","bot":"#FFFFFF","h1":"#D0F0FF","h2":"#8EC9EE"},{"name":"Coral Pink Beach","top":"#FFB7B2","bot":"#FF9AA2","h1":"#FF8FA3","h2":"#E86A8A"},{"name":"Emerald Rice Paddies","top":"#B5E48C","bot":"#D9ED92","h1":"#2A9D8F","h2":"#1B6B5A"},{"name":"Bluebell Forest Spring","top":"#B8E0D2","bot":"#A8C3E8","h1":"#7AA8D6","h2":"#5A7AA8"},{"name":"Sunflower Desert Sunset","top":"#FF9E00","bot":"#7B2CBF","h1":"#7A3A1E","h2":"#4A2110"},{"name":"Glacier Bay Icebergs","top":"#A8D8EA","bot":"#FFFFFF","h1":"#D0F4FF","h2":"#8EC9EE"},{"name":"Savannah Sunset Safari","top":"#FFB703","bot":"#023047","h1":"#B87A1E","h2":"#6B4A10"},{"name":"Countryside Cottage Dawn","top":"#FFE5B4","bot":"#A8E6CF","h1":"#C9A87A","h2":"#7A8A5A"},{"name":"Lighthouse Storm Coast","top":"#2C3E50","bot":"#AEB6BF","h1":"#2C3E50","h2":"#1A2A3A"},{"name":"Ancient Ruins Jungle","top":"#2E7D32","bot":"#A5D6A7","h1":"#2E7D32","h2":"#1B5E20"},{"name":"Hot Air Balloons Valley","top":"#FFD166","bot":"#8ECAE6","h1":"#7AB8A8","h2":"#4A8A7A"},{"name":"Bioluminescent Beach Night","top":"#001233","bot":"#00F5D4","h1":"#001845","h2":"#000A24"},{"name":"Lavender Sunset Fields","top":"#C084FC","bot":"#FBBF24","h1":"#8B5CF6","h2":"#5B3A8E"},{"name":"Mountain Lake Reflection","top":"#89CFF0","bot":"#FFAFCC","h1":"#5A8AB8","h2":"#3A6A98"},{"name":"Sakura Night Festival","top":"#1E1B4B","bot":"#F472B6","h1":"#2E1A4A","h2":"#1E1B4B"},{"name":"Golden Bamboo Sunset","top":"#FFD700","bot":"#2E7D32","h1":"#B8860B","h2":"#6B5A10"},{"name":"Aurora Over Frozen Lake","top":"#0B1D3A","bot":"#4ADE80","h1":"#DDEFFF","h2":"#8EC9EE"},{"name":"Desert Starry Oasis","top":"#0A0A2A","bot":"#FFD700","h1":"#2A2340","h2":"#1A1430"},{"name":"Tropical Sunset Waterfall","top":"#FF6B35","bot":"#2EC4B6","h1":"#2E8A6B","h2":"#1B5A45"},{"name":"Cloud Sea Sunrise","top":"#FFE8D6","bot":"#FFFFFF","h1":"#F2C6A0","h2":"#D9A87A"},{"name":"Eternal Horizon Grand Finale","top":"#FF6EC4","bot":"#4ADede","h1":"#7873F5","h2":"#4A2E8A"}];
 
   /* ---------- State ---------- */
   var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
-  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'pinball' | 'solitaire' | 'beat' | 'pool' | 'run' | 'siege' | 'park' | 'dummy' | 'shooter' — which game is on the play/over screens
+  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'pinball' | 'solitaire' | 'beat' | 'pool' | 'run' | 'siege' | 'park' | 'dummy' | 'shooter' | 'artillery' — which game is on the play/over screens
   var menuIndex = 0;
   /* Scrollable menu: 6 visible rows at a 15px pitch, 12px names so the
      game list is big and easy to read. menuTop = first visible game;
@@ -451,7 +453,7 @@
 
   /* ---------- Delete-save (shared): one confirmation overlay for all
      games. dsGame = which game's save is being deleted ('sky' | 'block' |
-     'bj' | 'holdem' | 'chess' | 'overlord' | 'pinball' | 'solitaire' | 'beat' | 'pool' | 'siege' | 'park' | 'dummy' | 'shooter'),
+     'bj' | 'holdem' | 'chess' | 'overlord' | 'pinball' | 'solitaire' | 'beat' | 'pool' | 'siege' | 'park' | 'dummy' | 'shooter' | 'artillery'),
      or null. A confirms, B cancels. Confirming clears ONLY that game's
      localStorage keys and resets it to fresh defaults; pause-overlay games
      restart fresh immediately, select-screen games stay on their select
@@ -476,6 +478,7 @@
     else if (game === 'park') { dsClearKeys([TP_KEY]); tpResetFresh(); tpPaused = false; }
     else if (game === 'dummy') { dsClearKeys([DU_SAVE_KEY]); duCoins = 0; duUnlocked = 1; duTotalDmg = 0; duBestCombo = 0; duResetDummy(); duPaused = false; }
     else if (game === 'shooter') { dsClearKeys([SH_SAVE_KEY]); shBest = 0; shBestWave = 0; shTotalKills = 0; shResetRun(); shPaused = false; }
+    else if (game === 'artillery') { dsClearKeys([AR_WINS_KEY, AR_BEST_KEY]); arWins = 0; arBestDmg = 0; startArtillery(); }
     JMFGAMES.beep(880, 0.1);
   }
   function drawDsConfirm() {
@@ -7401,17 +7404,20 @@ function drawOverlordOver() {
 /* ================================================================
    EMBERFALL BRAWL — GBA rebuild (240x160, full colour).
    Auto-battler: pick a hero, they fight alone; A summons allies,
-   B fires the hero ultimate (manual only — ultimates never auto-fire).
+   the D-pad + B fire the hero's FIVE ultimates (manual only —
+   ultimates never auto-fire), and EVERY wave ends with a BOSS.
    New in GBA: 2 new heroes (NOVA the mage, ORIN the guardian),
-   hero SYNERGIES, a BOSS every 5 waves with telegraphed patterns,
-   enemies that focus the weakest fighter, real knockback /
-   stagger / momentum physics, and a run tracker (per-hero wins +
-   best wave) saved alongside the original best-waves key.
+   hero SYNERGIES, a BOSS at the end of every wave (3 rotating
+   types with telegraphed patterns), enemies that focus the
+   weakest fighter, real knockback / stagger / momentum physics,
+   and a run tracker (per-hero wins + best wave) saved alongside
+   the original best-waves key.
    HERO SYSTEMS: A summons ALL 4 other heroes for 5s; every hero
    self-heals (rate by class — NOVA the mage heals fastest);
    NOVA attacks at far range with ember bolts; every hero has
-   2 auto-cast skills and a super-strong ultimate that fires
-   only when you press B. Save key
+   2 auto-cast skills and 5 manual ultimates (Up/Down/Left/Right
+   + B, the signature). NOVA's signature summons an EMBER BEAST
+   that fights beside her for 5s. Save key
    unchanged: 'jmf-games-beatemup-best'. Wave-1 composition
    unchanged.
    ================================================================ */
@@ -7420,19 +7426,59 @@ var BU_STATS_KEY = 'jmf-games-beatemup-stats';
 var BU_ARENA = { x0: 12, x1: 228, y0: 38, y1: 148 };
 /* heal = passive self-heal HP/sec (class-based: the mage heals
    much faster). ranged = attacks from afar with ember bolts. */
+/* ULTIMATE KITS: every hero has 5 ultimates + 1 summon skill.
+   Slots: 0=Up, 1=Down, 2=Left, 3=Right, 4=B (the signature).
+   `ult`/`ultShort` stay as the signature for the select screen.
+   Each slot has its own cooldown (see `cd`); firing one never
+   blocks the others. Ultimates are MANUAL ONLY. */
 var BU_HEROES = [
-  { name: 'BRAM', tag: 'HEAVY FISTS', hp: 120, dmg: 14, spd: 55, rate: 0.50, color: '#E8590C', kind: 'bram', ult: 'GROUND SLAM', ultShort: 'SLAM', heal: 0.8 },
-  { name: 'KIRA', tag: 'FAST BLADE', hp: 90, dmg: 9, spd: 75, rate: 0.32, color: '#3B82F6', kind: 'kira', ult: 'WHIRLWIND', ultShort: 'WHIRL', heal: 1.2 },
-  { name: 'ASH', tag: 'SWIFT DAGGERS', hp: 70, dmg: 6, spd: 95, rate: 0.22, color: '#22C55E', kind: 'ash', ult: 'SHADOW DASH', ultShort: 'DASH', heal: 1.6 },
-  { name: 'NOVA', tag: 'EMBER MAGE', hp: 80, dmg: 11, spd: 70, rate: 0.42, color: '#EC4899', kind: 'nova', ult: 'FIRE ARMOR', ultShort: 'FIRE', heal: 3.0, ranged: true, range: 64 },
-  { name: 'ORIN', tag: 'STONE GUARDIAN', hp: 140, dmg: 10, spd: 45, rate: 0.60, color: '#14B8A6', kind: 'orin', ult: 'AEGIS WALL', ultShort: 'AEGIS', heal: 0.5 }
+  { name: 'BRAM', tag: 'HEAVY FISTS', hp: 120, dmg: 14, spd: 55, rate: 0.50, color: '#E8590C', kind: 'bram', ult: 'GROUND SLAM', ultShort: 'SLAM', heal: 0.8, ults: [
+    { name: 'QUAKE STOMP', short: 'STOMP', cd: 8 },
+    { name: 'BERSERK', short: 'RAGE', cd: 12 },
+    { name: 'IRON CHARGE', short: 'CHRG', cd: 8 },
+    { name: 'WAR CRY', short: 'ROAR', cd: 12 },
+    { name: 'GROUND SLAM', short: 'SLAM', cd: 10 } ] },
+  { name: 'KIRA', tag: 'FAST BLADE', hp: 90, dmg: 9, spd: 75, rate: 0.32, color: '#3B82F6', kind: 'kira', ult: 'WHIRLWIND', ultShort: 'WHIRL', heal: 1.2, ults: [
+    { name: 'BLADE STORM', short: 'STORM', cd: 8 },
+    { name: 'SWIFT BLADES', short: 'SWIFT', cd: 12 },
+    { name: 'PHANTOM DASH', short: 'PHAN', cd: 8 },
+    { name: 'VENOM CUT', short: 'VENOM', cd: 10 },
+    { name: 'WHIRLWIND', short: 'WHIRL', cd: 10 } ] },
+  { name: 'ASH', tag: 'SWIFT DAGGERS', hp: 70, dmg: 6, spd: 95, rate: 0.22, color: '#22C55E', kind: 'ash', ult: 'SHADOW DASH', ultShort: 'DASH', heal: 1.6, ults: [
+    { name: 'SHADOW BOMB', short: 'BOMB', cd: 9 },
+    { name: 'SMOKE VEIL', short: 'VEIL', cd: 12 },
+    { name: 'BACKSTAB', short: 'STAB', cd: 8 },
+    { name: 'DAGGER FAN', short: 'FAN', cd: 7 },
+    { name: 'SHADOW DASH', short: 'DASH', cd: 10 } ] },
+  { name: 'NOVA', tag: 'EMBER MAGE', hp: 80, dmg: 11, spd: 70, rate: 0.42, color: '#EC4899', kind: 'nova', ult: 'EMBER BEAST', ultShort: 'BEAST', heal: 3.0, ranged: true, range: 64, ults: [
+    { name: 'METEOR RAIN', short: 'METR', cd: 12 },
+    { name: 'EMBER NOVA', short: 'NOVA', cd: 9 },
+    { name: 'ARCANE CHAINS', short: 'CHAIN', cd: 10 },
+    { name: 'MANA SURGE', short: 'SURGE', cd: 14 },
+    { name: 'EMBER BEAST', short: 'BEAST', cd: 10 } ] },
+  { name: 'ORIN', tag: 'STONE GUARDIAN', hp: 140, dmg: 10, spd: 45, rate: 0.60, color: '#14B8A6', kind: 'orin', ult: 'AEGIS WALL', ultShort: 'AEGIS', heal: 0.5, ults: [
+    { name: 'STONE QUAKE', short: 'STONE', cd: 9 },
+    { name: 'FORTIFY', short: 'FORT', cd: 12 },
+    { name: 'GUARDIAN\'S ROAR', short: 'ROAR', cd: 12 },
+    { name: 'BOULDER TOSS', short: 'ROCK', cd: 9 },
+    { name: 'AEGIS WALL', short: 'AEGIS', cd: 10 } ] }
 ];
 var BU_ENEMIES = {
   grunt: { name: 'GRUNT', hp: 24, dmg: 5, spd: 28, color: '#9CA3AF', kind: 'grunt', ranged: false },
   imp: { name: 'IMP', hp: 12, dmg: 3, spd: 45, color: '#A855F7', kind: 'imp', ranged: false },
   cultist: { name: 'CULTIST', hp: 18, dmg: 4, spd: 20, color: '#DC2626', kind: 'cultist', ranged: true },
-  boss: { name: 'EMBER LORD', hp: 130, dmg: 8, spd: 22, color: '#7C2D12', kind: 'boss', ranged: false }
+  boss: { name: 'EMBER LORD', hp: 130, dmg: 8, spd: 22, color: '#7C2D12', kind: 'boss', ranged: false },
+  maw: { name: 'CINDER MAW', hp: 150, dmg: 10, spd: 30, color: '#991B1B', kind: 'maw', ranged: false },
+  spitter: { name: 'ASH SPITTER', hp: 110, dmg: 7, spd: 26, color: '#6D28D9', kind: 'spitter', ranged: false }
 };
+/* BOSS ROTATION: every wave ends with a boss — the type rotates
+   by wave (wave 1 LORD, 2 MAW, 3 SPITTER, 4 LORD, ...). Each has
+   its own attack patterns in buBossThink and its own sprite. */
+var BU_BOSSES = [
+  { name: 'EMBER LORD', kind: 'boss' },
+  { name: 'CINDER MAW', kind: 'maw' },
+  { name: 'ASH SPITTER', kind: 'spitter' }
+];
 var BU_UPGRADES = [
   { id: 'power', name: 'POWER', desc: '+4 DAMAGE' },
   { id: 'vigor', name: 'VIGOR', desc: '+25 HP, HEAL 25' },
@@ -7462,6 +7508,10 @@ var buWave = 0, buCleared = 0, buKills = 0, buBest = 0;
 var buEnemies = [], buProjs = [], buSpawnQ = [], buSpawnT = 0, buBannerT = 0;
 var buPaused = false, buOver = false, buUpSel = 0, buUpChoices = [];
 var buSummonCd = 0, buSummonDur = 5, buSummonCdMax = 20;
+var buBeast = null; /* NOVA's EMBER BEAST: {x, y, t, atkCd, face} or null */
+var buBossSpawned = false; /* this wave's boss has spawned */
+var buBannerBoss = null; /* boss name for the banner, while it shows */
+var buDirPrev = { up: false, down: false, left: false, right: false }; /* D-pad ult edge detection */
 var buUpCounts = {};
 var buFloats = [], buParts = [], buDeaths = [];
 /* Add a floating label, staggering it upward when it would land on top of
@@ -7504,6 +7554,7 @@ function buMakeFighter(def, x, y, isSummon) {
   return {
     kind: def.kind, name: def.name, color: def.color,
     ult: def.ult, ultShort: def.ultShort, /* copied so buFireUlt's float shows the real ult name, never "undefined!" */
+    ults: def.ults, /* the 5-ult kit: 0=Up 1=Down 2=Left 3=Right 4=B */
     x: x, y: y, face: 1, vx: 0, vy: 0,
     maxHp: def.hp, hp: def.hp,
     dmg: def.dmg, spd: def.spd, rate: def.rate,
@@ -7513,7 +7564,9 @@ function buMakeFighter(def, x, y, isSummon) {
     walkPh: Math.random() * 6, moving: false,
     thinkT: Math.random() * 0.2, tx: x, ty: y, mode: 'idle', target: null, kiteT: 0, flank: 0,
     isSummon: !!isSummon, summonT: 0, fadeT: 0,
-    ultCd: 0, dashT: 0, dashX: 1, dashY: 0, aegisT: 0, fireArmorT: 0,
+    ultCd: 0, ultCds: [0, 0, 0, 0], /* ultCd = slot 4 (B, signature); ultCds = slots 0-3 (D-pad) */
+    berserkT: 0, swiftT: 0, fortifyT: 0, /* ult buff timers */
+    dashT: 0, dashX: 1, dashY: 0, aegisT: 0,
     sk1Cd: 0, sk2Cd: 0, healAcc: 0
   };
 }
@@ -7525,7 +7578,8 @@ function startBeat() {
   buFloats = []; buParts = []; buDeaths = [];
   buSummonCd = 0; buSummonDur = 5; buSummonCdMax = 20; buUpCounts = {};
   buPaused = false; buOver = false; buShakeT = 0;
-  buSynergy = null;
+  buSynergy = null; buBeast = null; buBossSpawned = false; buBannerBoss = null;
+  buDirPrev = { up: false, down: false, left: false, right: false };
   buEmbers = [];
   for (var i = 0; i < 14; i++) buEmbers.push({ x: Math.random() * W, y: Math.random() * H, s: 0.2 + Math.random() * 0.4 });
   screen = 'play';
@@ -7546,45 +7600,56 @@ function buPickHero() {
 function buStartWave(n) {
   buWave = n;
   buPhase = 'fight';
+  buBossSpawned = false;
+  buBannerBoss = null;
+  /* Regular enemies only — the wave's BOSS spawns after they are
+     cleared (see the wave-clear check in buUpdate). */
   var total = Math.min(16, 3 + n);
   var q = [];
-  if (n % 5 === 0) {
-    /* Boss wave: the Ember Lord plus a small escort. */
-    q.push('boss');
-    var esc = Math.min(4, 1 + Math.floor(n / 5));
-    for (var e = 0; e < esc; e++) q.push(n >= 3 ? 'cultist' : 'grunt');
-  } else {
-    var imps = n >= 2 ? Math.floor(total / 3) : 0;
-    var cults = n >= 3 ? Math.floor(total / 4) : 0;
-    var grunts = total - imps - cults;
-    for (var i = 0; i < grunts; i++) q.push('grunt');
-    for (var j = 0; j < imps; j++) q.push('imp');
-    for (var k = 0; k < cults; k++) q.push('cultist');
-  }
+  var imps = n >= 2 ? Math.floor(total / 3) : 0;
+  var cults = n >= 3 ? Math.floor(total / 4) : 0;
+  var grunts = total - imps - cults;
+  for (var i = 0; i < grunts; i++) q.push('grunt');
+  for (var j = 0; j < imps; j++) q.push('imp');
+  for (var k = 0; k < cults; k++) q.push('cultist');
   for (var s = q.length - 1; s > 0; s--) { var r = Math.floor(Math.random() * (s + 1)); var t = q[s]; q[s] = q[r]; q[r] = t; }
-  /* Boss always spawns first so the player sees the threat. */
-  if (n % 5 === 0) { var bi = q.indexOf('boss'); if (bi > 0) { q.splice(bi, 1); q.unshift('boss'); } }
   buSpawnQ = q;
   buSpawnT = 0.5;
   buBannerT = 70;
 }
+/* Spawn this wave's boss (rotation by wave number). Called once per
+   wave, after the regular enemies are cleared. */
+function buSpawnBoss() {
+  var b = BU_BOSSES[(buWave - 1) % BU_BOSSES.length];
+  buBossSpawned = true;
+  buBannerBoss = b.name;
+  buBannerT = 70;
+  buShakeT = 10;
+  buSpawnEnemy(b.kind);
+  buAddFloat(W / 2, 60, 'BOSS: ' + b.name + '!', 70, '#F97316');
+  JMFGAMES.beep(180, 0.25);
+}
 function buSpawnEnemy(type) {
   var base = BU_ENEMIES[type];
-  var scale = Math.min(3.5, 1 + 0.10 * (buWave - 1));
-  var dmgScale = 1 + 0.04 * (buWave - 1);
+  var isBoss = (type === 'boss' || type === 'maw' || type === 'spitter');
+  /* Bosses scale harder with the wave than regular enemies — every
+     wave ends with one, so later bosses must stay threatening. */
+  var scale = isBoss ? Math.min(4.5, 1 + 0.18 * (buWave - 1)) : Math.min(3.5, 1 + 0.10 * (buWave - 1));
+  var dmgScale = isBoss ? 1 + 0.06 * (buWave - 1) : 1 + 0.04 * (buWave - 1);
   var spdScale = Math.min(1.6, 1 + 0.04 * (buWave - 1));
   var left = Math.random() < 0.5;
   var hp = Math.round(base.hp * scale);
   buEnemies.push({
-    type: type, x: left ? 16 : W - 16, y: 55 + Math.random() * 85,
+    type: type, name: base.name, x: left ? 16 : W - 16, y: 55 + Math.random() * 85,
     hp: hp, maxHp: hp, dmg: Math.max(1, Math.round(base.dmg * dmgScale)), spd: Math.round(base.spd * spdScale),
     color: base.color, kind: base.kind, ranged: base.ranged,
     cd: 0.5 + Math.random() * 0.5, throwT: 1 + Math.random(), hitT: 0, face: left ? 1 : -1,
     flank: (Math.random() * 1.6 - 0.8), mode: 'stalk', modeT: 0,
     strafeDir: Math.random() < 0.5 ? -1 : 1, strafeT: 1 + Math.random(), dashHit: false,
     vx: 0, vy: 0, staggerT: 0, targetF: null, focusWeak: false,
-    tauntT: 0, tauntF: null,
-    boss: type === 'boss', pat: 0, patT: 2.0, windupT: 0, summoned: false, chargeVx: 0, chargeVy: 0
+    tauntT: 0, tauntF: null, poisonT: 0, poisonDps: 0, poisonAcc: 0,
+    boss: isBoss, bossType: isBoss ? type : null,
+    pat: 0, patT: 2.0, windupT: 0, summoned: false, chargeVx: 0, chargeVy: 0
   });
 }
 function buDist(ax, ay, bx, by) { var dx = bx - ax, dy = by - ay; return Math.sqrt(dx * dx + dy * dy); }
@@ -7704,13 +7769,13 @@ function buSynergyFor(a, b) {
   return null;
 }
 function buFighterAttack(f, e) {
-  f.atkCd = f.rate;
+  f.atkCd = f.rate * (f.swiftT > 0 ? 0.6 : 1);
   f.swingT = 6;
   f.face = e.x >= f.x ? 1 : -1;
   JMFGAMES.beep(f.kind === 'bram' ? 420 : 520, 0.04);
   var critCh = f.crit + (buSynergy && buSynergy.desc.indexOf('CRIT') >= 0 ? 0.15 : 0);
   var crit = Math.random() < critCh;
-  var dmgMul = (buSynergy && buSynergy.desc.indexOf('DMG') >= 0) ? 1.2 : 1;
+  var dmgMul = (buSynergy && buSynergy.desc.indexOf('DMG') >= 0 ? 1.2 : 1) * (f.berserkT > 0 ? 1.5 : 1);
   var dmg = Math.round(f.dmg * dmgMul * (crit ? 2 : 1));
   buDamageEnemy(e, dmg, f, crit);
 }
@@ -7738,14 +7803,8 @@ function buDamageEnemy(e, dmg, src, crit) {
   }
 }
 function buHurtFighter(f, dmg, attacker) {
-  if (f.fireArmorT > 0) {
-    /* FIRE ARMOR: no damage taken — the attacker burns instead. */
-    if (attacker && attacker.hp > 0) buDamageEnemy(attacker, 12, f, false);
-    for (var fb = 0; fb < 4; fb++) buParts.push({ x: f.x + (Math.random() - 0.5) * 14, y: f.y - 4 - Math.random() * 8, vx: 0, vy: -30, t: 12, col: fb % 2 ? '#F97316' : '#EF4444' });
-    return;
-  }
   if (f.invulnT > 0 || f.aegisT > 0 || buOver || f.hp <= 0) return;
-  var armor = f.armor + (buSynergy && buSynergy.desc.indexOf('ARMOR') >= 0 ? 0.15 : 0);
+  var armor = f.armor + (f.fortifyT > 0 ? 0.4 : 0) + (buSynergy && buSynergy.desc.indexOf('ARMOR') >= 0 ? 0.15 : 0);
   var taken = Math.max(1, Math.round(dmg * (1 - armor)));
   f.hp -= taken;
   f.hitT = 8; f.invulnT = 0.5;
@@ -7789,84 +7848,338 @@ function buSummon() {
   }
   JMFGAMES.beep(990, 0.12);
 }
-/* Fire a hero's ultimate. Works for the player hero AND for summoned
-   allies — every hero activates their own super-strong ultimate. */
-function buFireUlt(f) {
-  if (!f || f.hp <= 0) return;
-  f.ultCd = 10;
-  var h = f;
-  if (h.kind === 'bram') {
-    for (var i = 0; i < buEnemies.length; i++) {
-      var e = buEnemies[i];
-      if (e.hp <= 0) continue;
-      if (buDist(h.x, h.y, e.x, e.y) <= 34) {
-        buDamageEnemy(e, Math.round(h.dmg * 2.5), h, false);
-        buApplyKnockback(e, h, 9);
-      }
-    }
-    buShakeT = 8;
-    for (var p = 0; p < 16; p++) {
-      var a = p / 16 * Math.PI * 2;
-      buParts.push({ x: h.x, y: h.y + 2, vx: Math.cos(a) * 70, vy: Math.sin(a) * 40, t: 16, col: '#F59E0B' });
-    }
-    JMFGAMES.beep(140, 0.2);
-  } else if (h.kind === 'kira') {
-    h.spinT = 14;
-    for (var j = 0; j < buEnemies.length; j++) {
-      var w = buEnemies[j];
-      if (w.hp <= 0) continue;
-      if (buDist(h.x, h.y, w.x, w.y) <= 28) { buDamageEnemy(w, Math.round(h.dmg * 2.2), h, false); buApplyKnockback(w, h, 5); }
-    }
-    for (var q = 0; q < 12; q++) {
-      var b = Math.random() * Math.PI * 2;
-      buParts.push({ x: h.x, y: h.y - 4, vx: Math.cos(b) * 60, vy: Math.sin(b) * 60, t: 14, col: '#93C5FD' });
-    }
-    JMFGAMES.beep(700, 0.12);
-  } else if (h.kind === 'nova') {
-    /* FIRE ARMOR: 3s of flame armour — she takes NO damage while it
-       is up, and any enemy that attacks her burns for 12 (see
-       buHurtFighter). No taunt, no heal — protection + burn-back. */
-    h.fireArmorT = 3;
-    for (var fa = 0; fa < 14; fa++) {
-      var a3 = fa / 14 * Math.PI * 2;
-      buParts.push({ x: h.x, y: h.y - 4, vx: Math.cos(a3) * 60, vy: Math.sin(a3) * 60, t: 16, col: fa % 2 ? '#F97316' : '#EF4444' });
-    }
-    JMFGAMES.beep(520, 0.15);
-  } else if (h.kind === 'orin') {
-    /* AEGIS WALL: 3s invulnerable, taunts every enemy to him, heals 20. */
-    h.aegisT = 3; h.invulnT = 3;
-    h.hp = Math.min(h.maxHp, h.hp + 20);
-    for (var m = 0; m < buEnemies.length; m++) { buEnemies[m].targetF = h; buEnemies[m].focusWeak = false; buEnemies[m].tauntT = 3; buEnemies[m].tauntF = h; }
-    for (var r2 = 0; r2 < 12; r2++) {
-      var a2 = r2 / 12 * Math.PI * 2;
-      buParts.push({ x: h.x, y: h.y - 4, vx: Math.cos(a2) * 50, vy: Math.sin(a2) * 50, t: 16, col: '#5EEAD4' });
-    }
-    JMFGAMES.beep(440, 0.15);
-  } else {
-    var tgt = null, ts = -1e9;
-    for (var k2 = 0; k2 < buEnemies.length; k2++) {
-      var c2 = buEnemies[k2];
-      if (c2.hp <= 0) continue;
-      var sc = (c2.type === 'cultist' ? 100 : 0) - buDist(h.x, h.y, c2.x, c2.y);
-      if (sc > ts) { ts = sc; tgt = c2; }
-    }
-    if (tgt) {
-      var ddx = tgt.x - h.x, ddy = tgt.y - h.y;
-      var ddl = Math.sqrt(ddx * ddx + ddy * ddy) || 1;
-      h.dashX = ddx / ddl; h.dashY = ddy / ddl;
-      h.face = h.dashX >= 0 ? 1 : -1;
-    } else { h.dashX = h.face; h.dashY = 0; }
-    h.dashT = 0.22; h.invulnT = 0.3;
-    JMFGAMES.beep(880, 0.1);
-  }
-  buAddFloat(h.x, h.y - 22, h.ult + '!', 50, '#FDE68A');
+/* ULTIMATE KITS: every hero has 5 ultimates + 1 summon skill.
+   Slots: 0=Up, 1=Down, 2=Left, 3=Right, 4=B (the signature).
+   Each slot has its OWN cooldown (firing one never blocks the
+   others); an ult with no valid target does not fire and does
+   not consume its cooldown. Ultimates are MANUAL ONLY — nothing
+   ever auto-fires them. */
+function buUltCdGet(f, i) { return i === 4 ? f.ultCd : f.ultCds[i]; }
+function buUltCdSet(f, i, v) { if (i === 4) f.ultCd = v; else f.ultCds[i] = v; }
+function buFireUltSlot(f, slot) {
+  if (!f || f.hp <= 0 || buPhase !== 'fight' || buPaused || buOver) return false;
+  var u = f.ults && f.ults[slot];
+  if (!u) return false;
+  if (buUltCdGet(f, slot) > 0) return false;
+  if (!buUltEffect(f, slot)) return false;
+  buUltCdSet(f, slot, u.cd);
+  buAddFloat(f.x, f.y - 22, u.name + '!', 50, '#FDE68A');
+  return true;
 }
-/* B button: manual ultimate — the ONLY way to fire an ultimate.
-   Fires immediately if ready. Ultimates never auto-fire. */
+/* Backwards-compatible wrapper: the signature ultimate (slot 4). */
+function buFireUlt(f) { return buFireUltSlot(f, 4); }
+/* B button: the signature ultimate (slot 4) — the ONLY way B fires.
+   Ultimates never auto-fire. */
 function buUltimate() {
   if (buPhase !== 'fight' || buPaused || buOver || !buHero || buHero.hp <= 0) return;
-  if (buHero.ultCd > 0) return;
-  buFireUlt(buHero);
+  buFireUltSlot(buHero, 4);
+}
+/* D-pad ultimates (slots 0-3): the core routes D-pad presses to
+   select/upgrade navigation only, so the directions are free in
+   combat. Polled every frame from buUpdate with edge detection
+   (a held direction fires once, on the press) — the same
+   JMFGAMES.isDown polling the shooter uses for its ship. */
+function buDirUltPoll() {
+  var dirs = [['up', 0], ['down', 1], ['left', 2], ['right', 3]];
+  var inFight = (buPhase === 'fight' && !buPaused && !buOver && buHero && buHero.hp > 0);
+  for (var i = 0; i < dirs.length; i++) {
+    var held = false;
+    try { held = JMFGAMES.isDown(dirs[i][0]); } catch (e) { held = false; }
+    if (inFight && held && !buDirPrev[dirs[i][0]]) buFireUltSlot(buHero, dirs[i][1]);
+    buDirPrev[dirs[i][0]] = held;
+  }
+}
+function buDashToward(f, tgt, dur) {
+  var dx = tgt.x - f.x, dy = tgt.y - f.y;
+  var dl = Math.sqrt(dx * dx + dy * dy) || 1;
+  f.dashX = dx / dl; f.dashY = dy / dl;
+  f.face = f.dashX >= 0 ? 1 : -1;
+  f.dashT = dur; f.invulnT = Math.max(f.invulnT, dur + 0.08);
+}
+/* NOVA's signature: summon an EMBER BEAST — a fire wolf that
+   fights beside her for 5s. It cannot be killed; it simply
+   expires (recasting refreshes it). It is NOT a fighter, so
+   enemies never target it. */
+function buSummonBeast(f) {
+  buBeast = {
+    x: Math.max(BU_ARENA.x0, Math.min(BU_ARENA.x1, f.x + f.face * 16)),
+    y: Math.max(BU_ARENA.y0, Math.min(BU_ARENA.y1, f.y)),
+    t: 5, atkCd: 0, face: f.face
+  };
+  for (var i = 0; i < 14; i++) {
+    var a = i / 14 * Math.PI * 2;
+    buParts.push({ x: buBeast.x, y: buBeast.y - 4, vx: Math.cos(a) * 60, vy: Math.sin(a) * 60, t: 16, col: i % 2 ? '#F97316' : '#EF4444' });
+  }
+  JMFGAMES.beep(520, 0.15);
+}
+/* The effect of one ultimate. Returns false when the ult cannot
+   fire (no valid target) — the cooldown is then not consumed. */
+function buUltEffect(f, slot) {
+  var h = f;
+  if (h.kind === 'bram') {
+    if (slot === 0) { /* QUAKE STOMP: AoE 40, dmg x2, big knockback */
+      if (buEnemiesNear(h, 40) < 1) return false;
+      for (var i = 0; i < buEnemies.length; i++) {
+        var e = buEnemies[i];
+        if (e.hp <= 0) continue;
+        if (buDist(h.x, h.y, e.x, e.y) <= 40) { buDamageEnemy(e, Math.round(h.dmg * 2), h, false); buApplyKnockback(e, h, 9); }
+      }
+      buShakeT = 8;
+      for (var p = 0; p < 16; p++) {
+        var a = p / 16 * Math.PI * 2;
+        buParts.push({ x: h.x, y: h.y + 2, vx: Math.cos(a) * 70, vy: Math.sin(a) * 40, t: 16, col: '#F59E0B' });
+      }
+      JMFGAMES.beep(140, 0.2);
+    } else if (slot === 1) { /* BERSERK: +50% damage for 6s */
+      h.berserkT = 6;
+      for (var b1 = 0; b1 < 10; b1++) buParts.push({ x: h.x + (Math.random() - 0.5) * 14, y: h.y - 4 - Math.random() * 10, vx: 0, vy: -30, t: 14, col: '#EF4444' });
+      JMFGAMES.beep(200, 0.15);
+    } else if (slot === 2) { /* IRON CHARGE: dash through the nearest enemy */
+      var ct = buNearestEnemy(h, 70);
+      if (!ct) return false;
+      buDashToward(h, ct, 0.3);
+      JMFGAMES.beep(300, 0.12);
+    } else if (slot === 3) { /* WAR CRY: taunt all 3s + heal 15 */
+      for (var m = 0; m < buEnemies.length; m++) { if (buEnemies[m].hp > 0) { buEnemies[m].tauntT = 3; buEnemies[m].tauntF = h; } }
+      h.hp = Math.min(h.maxHp, h.hp + 15);
+      buAddFloat(h.x, h.y - 20, '+15', 30, '#22C55E');
+      JMFGAMES.beep(180, 0.15);
+    } else { /* GROUND SLAM (signature): AoE 34, dmg x2.5, knockback */
+      for (var s = 0; s < buEnemies.length; s++) {
+        var se = buEnemies[s];
+        if (se.hp <= 0) continue;
+        if (buDist(h.x, h.y, se.x, se.y) <= 34) {
+          buDamageEnemy(se, Math.round(h.dmg * 2.5), h, false);
+          buApplyKnockback(se, h, 9);
+        }
+      }
+      buShakeT = 8;
+      for (var p2 = 0; p2 < 16; p2++) {
+        var a2 = p2 / 16 * Math.PI * 2;
+        buParts.push({ x: h.x, y: h.y + 2, vx: Math.cos(a2) * 70, vy: Math.sin(a2) * 40, t: 16, col: '#F59E0B' });
+      }
+      JMFGAMES.beep(140, 0.2);
+    }
+  } else if (h.kind === 'kira') {
+    if (slot === 0) { /* BLADE STORM: spin, AoE 34, dmg x2 */
+      if (buEnemiesNear(h, 34) < 1) return false;
+      h.spinT = 14;
+      for (var j = 0; j < buEnemies.length; j++) {
+        var w = buEnemies[j];
+        if (w.hp <= 0) continue;
+        if (buDist(h.x, h.y, w.x, w.y) <= 34) { buDamageEnemy(w, Math.round(h.dmg * 2), h, false); buApplyKnockback(w, h, 5); }
+      }
+      for (var q = 0; q < 12; q++) {
+        var b = Math.random() * Math.PI * 2;
+        buParts.push({ x: h.x, y: h.y - 4, vx: Math.cos(b) * 60, vy: Math.sin(b) * 60, t: 14, col: '#93C5FD' });
+      }
+      JMFGAMES.beep(700, 0.12);
+    } else if (slot === 1) { /* SWIFT BLADES: +67% attack speed for 6s */
+      h.swiftT = 6;
+      for (var s1 = 0; s1 < 10; s1++) buParts.push({ x: h.x + (Math.random() - 0.5) * 14, y: h.y - 4 - Math.random() * 10, vx: 0, vy: -30, t: 14, col: '#93C5FD' });
+      JMFGAMES.beep(880, 0.1);
+    } else if (slot === 2) { /* PHANTOM DASH: dash to the farthest enemy */
+      var far = null, fd = -1;
+      for (var k2 = 0; k2 < buEnemies.length; k2++) {
+        var c2 = buEnemies[k2];
+        if (c2.hp <= 0) continue;
+        var d2 = buDist(h.x, h.y, c2.x, c2.y);
+        if (d2 <= 90 && d2 > fd) { fd = d2; far = c2; }
+      }
+      if (!far) return false;
+      buDashToward(h, far, 0.28);
+      JMFGAMES.beep(880, 0.1);
+    } else if (slot === 3) { /* VENOM CUT: poison the nearest enemy, 3/s for 4s */
+      var vt = buNearestEnemy(h, 40);
+      if (!vt) return false;
+      vt.poisonT = 4; vt.poisonDps = 3; vt.poisonAcc = 0;
+      for (var v1 = 0; v1 < 8; v1++) buParts.push({ x: vt.x + (Math.random() - 0.5) * 12, y: vt.y - 4 - Math.random() * 8, vx: 0, vy: -20, t: 12, col: '#A855F7' });
+      JMFGAMES.beep(700, 0.1);
+    } else { /* WHIRLWIND (signature): spin, AoE 28, dmg x2.2 */
+      h.spinT = 14;
+      for (var j2 = 0; j2 < buEnemies.length; j2++) {
+        var w2 = buEnemies[j2];
+        if (w2.hp <= 0) continue;
+        if (buDist(h.x, h.y, w2.x, w2.y) <= 28) { buDamageEnemy(w2, Math.round(h.dmg * 2.2), h, false); buApplyKnockback(w2, h, 5); }
+      }
+      for (var q2 = 0; q2 < 12; q2++) {
+        var b2 = Math.random() * Math.PI * 2;
+        buParts.push({ x: h.x, y: h.y - 4, vx: Math.cos(b2) * 60, vy: Math.sin(b2) * 60, t: 14, col: '#93C5FD' });
+      }
+      JMFGAMES.beep(700, 0.12);
+    }
+  } else if (h.kind === 'ash') {
+    if (slot === 0) { /* SHADOW BOMB: bomb at the densest cluster, AoE 26, dmg x3 */
+      var best = null, bn = -1;
+      for (var bi = 0; bi < buEnemies.length; bi++) {
+        var be = buEnemies[bi];
+        if (be.hp <= 0) continue;
+        var n = 0;
+        for (var bj = 0; bj < buEnemies.length; bj++) {
+          var bo = buEnemies[bj];
+          if (bo.hp > 0 && buDist(be.x, be.y, bo.x, bo.y) <= 26) n++;
+        }
+        if (n > bn) { bn = n; best = be; }
+      }
+      if (!best) return false;
+      var bdx = best.x - h.x, bdy = best.y - h.y;
+      var bdl = Math.sqrt(bdx * bdx + bdy * bdy) || 1;
+      buProjs.push({ x: h.x, y: h.y - 4, vx: bdx / bdl * 130, vy: bdy / bdl * 130, dmg: Math.round(h.dmg * 3), life: 2, fromHero: true, src: h, col: '#22C55E', r: 3, aoe: 26, crit: false });
+      JMFGAMES.beep(600, 0.1);
+    } else if (slot === 1) { /* SMOKE VEIL: 2.5s invulnerable, stagger nearby */
+      h.invulnT = 2.5;
+      for (var sv = 0; sv < buEnemies.length; sv++) {
+        var sve = buEnemies[sv];
+        if (sve.hp > 0 && buDist(h.x, h.y, sve.x, sve.y) <= 30) sve.staggerT = Math.max(sve.staggerT, 30);
+      }
+      for (var s2 = 0; s2 < 10; s2++) buParts.push({ x: h.x + (Math.random() - 0.5) * 14, y: h.y - 4 - Math.random() * 10, vx: 0, vy: -20, t: 14, col: '#22C55E' });
+      JMFGAMES.beep(980, 0.08);
+    } else if (slot === 2) { /* BACKSTAB: teleport behind the weakest enemy, dmg x3 */
+      var wt = null, ws = 1e9;
+      for (var m2 = 0; m2 < buEnemies.length; m2++) {
+        var e4 = buEnemies[m2];
+        if (e4.hp <= 0) continue;
+        if (e4.hp / e4.maxHp < ws) { ws = e4.hp / e4.maxHp; wt = e4; }
+      }
+      if (!wt) return false;
+      h.x = Math.max(BU_ARENA.x0, Math.min(BU_ARENA.x1, wt.x - (wt.face || 1) * 10));
+      h.y = Math.max(BU_ARENA.y0, Math.min(BU_ARENA.y1, wt.y));
+      buDamageEnemy(wt, Math.round(h.dmg * 3), h, false);
+      for (var q3 = 0; q3 < 8; q3++) buParts.push({ x: h.x, y: h.y - 4, vx: (Math.random() - 0.5) * 60, vy: -Math.random() * 30, t: 12, col: '#22C55E' });
+      JMFGAMES.beep(980, 0.08);
+    } else if (slot === 3) { /* DAGGER FAN: 5 nearest enemies in 50, dmg x1 each */
+      var hits = [];
+      for (var df = 0; df < buEnemies.length; df++) {
+        var dfe = buEnemies[df];
+        if (dfe.hp <= 0) continue;
+        var dd = buDist(h.x, h.y, dfe.x, dfe.y);
+        if (dd <= 50) hits.push({ e: dfe, d: dd });
+      }
+      if (!hits.length) return false;
+      hits.sort(function (a, b) { return a.d - b.d; });
+      for (var hi = 0; hi < Math.min(5, hits.length); hi++) {
+        buDamageEnemy(hits[hi].e, Math.round(h.dmg), h, false);
+        buParts.push({ x: (h.x + hits[hi].e.x) / 2, y: (h.y + hits[hi].e.y) / 2 - 4, vx: 0, vy: 0, t: 8, col: '#E5E7EB' });
+      }
+      JMFGAMES.beep(980, 0.06);
+    } else { /* SHADOW DASH (signature): dash through the best target, dmg x2 */
+      var tgt = null, ts = -1e9;
+      for (var k3 = 0; k3 < buEnemies.length; k3++) {
+        var c3 = buEnemies[k3];
+        if (c3.hp <= 0) continue;
+        var sc = (c3.type === 'cultist' ? 100 : 0) - buDist(h.x, h.y, c3.x, c3.y);
+        if (sc > ts) { ts = sc; tgt = c3; }
+      }
+      if (tgt) {
+        var ddx = tgt.x - h.x, ddy = tgt.y - h.y;
+        var ddl = Math.sqrt(ddx * ddx + ddy * ddy) || 1;
+        h.dashX = ddx / ddl; h.dashY = ddy / ddl;
+        h.face = h.dashX >= 0 ? 1 : -1;
+      } else { h.dashX = h.face; h.dashY = 0; }
+      h.dashT = 0.22; h.invulnT = 0.3;
+      JMFGAMES.beep(880, 0.1);
+    }
+  } else if (h.kind === 'nova') {
+    if (slot === 0) { /* METEOR RAIN: 5 meteor strikes on random enemies */
+      var alive = [];
+      for (var al = 0; al < buEnemies.length; al++) if (buEnemies[al].hp > 0) alive.push(buEnemies[al]);
+      if (!alive.length) return false;
+      for (var mi = 0; mi < 5; mi++) {
+        var mt = alive[Math.floor(Math.random() * alive.length)];
+        for (var ae = 0; ae < buEnemies.length; ae++) {
+          var ae2 = buEnemies[ae];
+          if (ae2.hp > 0 && buDist(mt.x, mt.y, ae2.x, ae2.y) <= 18) buDamageEnemy(ae2, Math.round(h.dmg * 1.5), h, false);
+        }
+        for (var mp = 0; mp < 8; mp++) {
+          var ma = Math.random() * Math.PI * 2;
+          buParts.push({ x: mt.x, y: mt.y - 4, vx: Math.cos(ma) * 60, vy: Math.sin(ma) * 40, t: 14, col: '#F97316' });
+        }
+      }
+      buShakeT = 4;
+      JMFGAMES.beep(520, 0.15);
+    } else if (slot === 1) { /* EMBER NOVA: AoE 46, dmg x2 */
+      if (buEnemiesNear(h, 46) < 1) return false;
+      for (var en = 0; en < buEnemies.length; en++) {
+        var ene = buEnemies[en];
+        if (ene.hp <= 0) continue;
+        if (buDist(h.x, h.y, ene.x, ene.y) <= 46) { buDamageEnemy(ene, Math.round(h.dmg * 2), h, false); buApplyKnockback(ene, h, 6); }
+      }
+      for (var ep = 0; ep < 14; ep++) {
+        var ea = ep / 14 * Math.PI * 2;
+        buParts.push({ x: h.x, y: h.y - 4, vx: Math.cos(ea) * 70, vy: Math.sin(ea) * 50, t: 16, col: '#F97316' });
+      }
+      buShakeT = 6;
+      JMFGAMES.beep(520, 0.15);
+    } else if (slot === 2) { /* ARCANE CHAINS: stagger all in 50 for 1.5s */
+      if (buEnemiesNear(h, 50) < 1) return false;
+      for (var ac = 0; ac < buEnemies.length; ac++) {
+        var ace = buEnemies[ac];
+        if (ace.hp > 0 && buDist(h.x, h.y, ace.x, ace.y) <= 50) ace.staggerT = Math.max(ace.staggerT, 90);
+      }
+      for (var ap = 0; ap < 10; ap++) {
+        var aa = ap / 10 * Math.PI * 2;
+        buParts.push({ x: h.x, y: h.y - 4, vx: Math.cos(aa) * 50, vy: Math.sin(aa) * 50, t: 14, col: '#A855F7' });
+      }
+      JMFGAMES.beep(660, 0.1);
+    } else if (slot === 3) { /* MANA SURGE: heal 30 + +50% damage 4s */
+      h.hp = Math.min(h.maxHp, h.hp + 30);
+      h.berserkT = 4;
+      buAddFloat(h.x, h.y - 20, '+30', 30, '#22C55E');
+      for (var ms = 0; ms < 10; ms++) buParts.push({ x: h.x + (Math.random() - 0.5) * 14, y: h.y - 4 - Math.random() * 10, vx: 0, vy: -30, t: 14, col: '#EC4899' });
+      JMFGAMES.beep(660, 0.1);
+    } else { /* EMBER BEAST (signature): summon the beast for 5s */
+      buSummonBeast(h);
+    }
+  } else if (h.kind === 'orin') {
+    if (slot === 0) { /* STONE QUAKE: AoE 36, dmg x2, stagger */
+      if (buEnemiesNear(h, 36) < 1) return false;
+      for (var sq = 0; sq < buEnemies.length; sq++) {
+        var sqe = buEnemies[sq];
+        if (sqe.hp <= 0) continue;
+        if (buDist(h.x, h.y, sqe.x, sqe.y) <= 36) { buDamageEnemy(sqe, Math.round(h.dmg * 2), h, false); sqe.staggerT = Math.max(sqe.staggerT, 12); }
+      }
+      buShakeT = 6;
+      for (var sp = 0; sp < 12; sp++) {
+        var sa = sp / 12 * Math.PI * 2;
+        buParts.push({ x: h.x, y: h.y + 2, vx: Math.cos(sa) * 60, vy: Math.sin(sa) * 40, t: 14, col: '#94A3B8' });
+      }
+      JMFGAMES.beep(300, 0.12);
+    } else if (slot === 1) { /* FORTIFY: +40% armor 6s + heal 10 */
+      h.fortifyT = 6;
+      h.hp = Math.min(h.maxHp, h.hp + 10);
+      for (var f1 = 0; f1 < 10; f1++) buParts.push({ x: h.x + (Math.random() - 0.5) * 14, y: h.y - 4 - Math.random() * 10, vx: 0, vy: -30, t: 14, col: '#5EEAD4' });
+      JMFGAMES.beep(440, 0.12);
+    } else if (slot === 2) { /* GUARDIAN'S ROAR: taunt all 3s + shield allies 2s */
+      for (var gr = 0; gr < buEnemies.length; gr++) { if (buEnemies[gr].hp > 0) { buEnemies[gr].tauntT = 3; buEnemies[gr].tauntF = h; } }
+      for (var ga = 0; ga < buFighters.length; ga++) { if (buFighters[ga].hp > 0) buFighters[ga].aegisT = Math.max(buFighters[ga].aegisT, 2); }
+      JMFGAMES.beep(440, 0.12);
+    } else if (slot === 3) { /* BOULDER TOSS: farthest enemy in 100, dmg x3 */
+      var far = null, fd = -1;
+      for (var bt = 0; bt < buEnemies.length; bt++) {
+        var bte = buEnemies[bt];
+        if (bte.hp <= 0) continue;
+        var bd = buDist(h.x, h.y, bte.x, bte.y);
+        if (bd <= 100 && bd > fd) { fd = bd; far = bte; }
+      }
+      if (!far) return false;
+      var bdx2 = far.x - h.x, bdy2 = far.y - h.y;
+      var bdl2 = Math.sqrt(bdx2 * bdx2 + bdy2 * bdy2) || 1;
+      buProjs.push({ x: h.x, y: h.y - 4, vx: bdx2 / bdl2 * 140, vy: bdy2 / bdl2 * 140, dmg: Math.round(h.dmg * 3), life: 2, fromHero: true, src: h, col: '#94A3B8', r: 4, crit: false });
+      JMFGAMES.beep(300, 0.12);
+    } else { /* AEGIS WALL (signature): 3s invulnerable, taunts every enemy, heals 20 */
+      h.aegisT = 3; h.invulnT = 3;
+      h.hp = Math.min(h.maxHp, h.hp + 20);
+      for (var m2 = 0; m2 < buEnemies.length; m2++) { buEnemies[m2].targetF = h; buEnemies[m2].focusWeak = false; buEnemies[m2].tauntT = 3; buEnemies[m2].tauntF = h; }
+      for (var r2 = 0; r2 < 12; r2++) {
+        var a3 = r2 / 12 * Math.PI * 2;
+        buParts.push({ x: h.x, y: h.y - 4, vx: Math.cos(a3) * 50, vy: Math.sin(a3) * 50, t: 16, col: '#5EEAD4' });
+      }
+      JMFGAMES.beep(440, 0.15);
+    }
+  } else {
+    return false;
+  }
+  return true;
 }
 /* Passive self-heal: every hero regens HP over time, at a rate set
    by their class (the mage heals much faster). Small green +numbers
@@ -7884,13 +8197,13 @@ function buHealTick(f, dt) {
 /* NOVA the mage attacks at far range: she fires ember bolts from a
    distance instead of walking up to enemies. */
 function buFighterRangedAttack(f, e) {
-  f.atkCd = f.rate;
+  f.atkCd = f.rate * (f.swiftT > 0 ? 0.6 : 1);
   f.swingT = 6;
   f.face = e.x >= f.x ? 1 : -1;
   JMFGAMES.beep(760, 0.04);
   var critCh = f.crit + (buSynergy && buSynergy.desc.indexOf('CRIT') >= 0 ? 0.15 : 0);
   var crit = Math.random() < critCh;
-  var dmgMul = (buSynergy && buSynergy.desc.indexOf('DMG') >= 0) ? 1.2 : 1;
+  var dmgMul = (buSynergy && buSynergy.desc.indexOf('DMG') >= 0 ? 1.2 : 1) * (f.berserkT > 0 ? 1.5 : 1);
   var dmg = Math.round(f.dmg * dmgMul * (crit ? 2 : 1));
   var dx = e.x - f.x, dy = (e.y - 4) - (f.y - 4);
   var dl = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -8118,45 +8431,72 @@ function buEnd() {
   JMFGAMES.beep(220, 0.25);
 }
 function buBossThink(e, dt) {
-  /* Boss attack patterns, all telegraphed and dodgeable:
-     0 SLAM — 40-frame windup (boss flashes, ground ring grows),
-       then AoE damage within 30px. 1 CHARGE — telegraphs a line,
-       then dashes at the weakest fighter. 2 SUMMON — at half HP
-       once, calls 2 imps. Patterns cycle; the player can learn them. */
+  /* Boss attack patterns, all telegraphed and dodgeable.
+     EMBER LORD: 0 SLAM — 40-frame windup (boss flashes, ground
+       ring grows), then AoE damage within 30px. 1 CHARGE —
+       telegraphs a line, then dashes at the weakest fighter.
+       2 SUMMON — at half HP once, calls 2 imps.
+     CINDER MAW: same slam (bigger, harder) but charges twice
+       as often and faster — a relentless brute.
+     ASH SPITTER: 0/2 VOLLEY — 3 ember bolts spread at the
+       target. 1 SUMMON — calls 1 imp (capped by live enemies).
+     Patterns cycle; the player can learn them. */
   e.patT -= dt;
   if (e.windupT > 0) {
     e.windupT -= dt;
     if (e.windupT <= 0) {
-      if (e.pat === 0) {
+      var tgt = buPickTarget(e);
+      if (e.bossType === 'spitter') {
+        /* VOLLEY: 3 ember bolts spread at the target. */
+        for (var vi = -1; vi <= 1; vi++) {
+          var vdx = tgt.x - e.x, vdy = tgt.y - e.y;
+          var vdl = Math.sqrt(vdx * vdx + vdy * vdy) || 1;
+          var ang = Math.atan2(vdy, vdx) + vi * 0.18;
+          buProjs.push({ x: e.x, y: e.y - 2, vx: Math.cos(ang) * 90, vy: Math.sin(ang) * 90, dmg: e.dmg, life: 3, src: e });
+        }
+        JMFGAMES.beep(500, 0.1);
+      } else if (e.pat === 0) {
+        /* SLAM: lord 30px/dmg+4, maw 34px/dmg+6. */
+        var sr = e.bossType === 'maw' ? 34 : 30;
+        var sd = e.dmg + (e.bossType === 'maw' ? 6 : 4);
         buShakeT = 10;
         JMFGAMES.beep(140, 0.25);
         for (var i = 0; i < buFighters.length; i++) {
           var f = buFighters[i];
-          if (f.hp > 0 && buDist(e.x, e.y, f.x, f.y) <= 30) buHurtFighter(f, e.dmg + 4, e);
+          if (f.hp > 0 && buDist(e.x, e.y, f.x, f.y) <= sr) buHurtFighter(f, sd, e);
         }
         for (var p = 0; p < 14; p++) {
           var a = p / 14 * Math.PI * 2;
           buParts.push({ x: e.x, y: e.y + 2, vx: Math.cos(a) * 80, vy: Math.sin(a) * 50, t: 16, col: '#F97316' });
         }
-      } else if (e.pat === 1) {
-        var tgt = buPickTarget(e);
+      } else {
+        /* CHARGE: maw is faster (300) than the lord (260). */
         var dx = tgt.x - e.x, dy = tgt.y - e.y;
         var dl = Math.sqrt(dx * dx + dy * dy) || 1;
-        e.chargeVx = dx / dl * 260; e.chargeVy = dy / dl * 260;
+        var cs = e.bossType === 'maw' ? 300 : 260;
+        e.chargeVx = dx / dl * cs; e.chargeVy = dy / dl * cs;
         e.mode = 'charge'; e.modeT = 0.45;
         JMFGAMES.beep(300, 0.12);
       }
       e.pat = (e.pat + 1) % 3;
-      e.patT = 2.2;
+      e.patT = e.bossType === 'maw' ? 1.8 : 2.2;
     }
     return true; /* winding up: no normal movement */
   }
   if (e.patT <= 0) {
-    if (e.pat === 2 && !e.summoned && e.hp < e.maxHp * 0.5) {
+    if (e.bossType === 'boss' && e.pat === 2 && !e.summoned && e.hp < e.maxHp * 0.5) {
       e.summoned = true;
       buSpawnEnemy('imp'); buSpawnEnemy('imp');
       buAddFloat(e.x, e.y - 20, 'EMBER LORD CALLS IMPS!', 50, '#F97316');
       e.pat = 0; e.patT = 2.2;
+      return false;
+    }
+    if (e.bossType === 'spitter' && e.pat === 1) {
+      if (buEnemies.length < 6) {
+        buSpawnEnemy('imp');
+        buAddFloat(e.x, e.y - 20, 'ASH SPITTER CALLS AN IMP!', 50, '#A855F7');
+      }
+      e.pat = 2; e.patT = 2.2;
       return false;
     }
     e.windupT = 0.66; /* ~40 frames of telegraph */
@@ -8166,6 +8506,10 @@ function buBossThink(e, dt) {
   return false;
 }
 function buUpdate() {
+  /* D-pad ultimates poll first: edge detection must stay in sync
+     even while paused, so a direction held through a pause does
+     not fire the moment play resumes. */
+  buDirUltPoll();
   if (screen !== 'play' || buPaused || buOver) return;
   buFrame++;
   var dt = 1 / 60;
@@ -8190,12 +8534,11 @@ function buUpdate() {
     if (f.hitT > 0) f.hitT--;
     if (f.invulnT > 0) f.invulnT -= dt;
     if (f.ultCd > 0) f.ultCd -= dt;
+    for (var ui = 0; ui < 4; ui++) if (f.ultCds[ui] > 0) f.ultCds[ui] -= dt;
+    if (f.berserkT > 0) f.berserkT -= dt;
+    if (f.swiftT > 0) f.swiftT -= dt;
+    if (f.fortifyT > 0) f.fortifyT -= dt;
     if (f.aegisT > 0) f.aegisT -= dt;
-    if (f.fireArmorT > 0) {
-      f.fireArmorT -= dt;
-      /* Flame particles rise off the armor while it burns. */
-      if (Math.random() < 0.5) buParts.push({ x: f.x + (Math.random() - 0.5) * 16, y: f.y - 2 - Math.random() * 10, vx: 0, vy: -20 - Math.random() * 20, t: 12, col: Math.random() < 0.5 ? '#F97316' : '#EF4444' });
-    }
     if (f.isSummon && f.summonT > 0) {
       f.summonT -= dt;
       if (f.summonT <= 0 && f.fadeT <= 0) f.fadeT = 0.3;
@@ -8252,6 +8595,31 @@ function buUpdate() {
       else f.thinkT = 0;
     }
   }
+  /* NOVA's EMBER BEAST: chases the nearest enemy and mauls it.
+     It cannot be killed — it just expires after 5s. */
+  if (buBeast) {
+    buBeast.t -= dt;
+    if (buBeast.t <= 0) {
+      for (var bp = 0; bp < 10; bp++) buParts.push({ x: buBeast.x, y: buBeast.y - 4, vx: (Math.random() - 0.5) * 60, vy: -Math.random() * 40, t: 14, col: '#F97316' });
+      buBeast = null;
+    } else {
+      buBeast.atkCd -= dt;
+      var bt = buNearestEnemy(buBeast, 999);
+      if (bt) {
+        var bd = buDist(buBeast.x, buBeast.y, bt.x, bt.y);
+        buBeast.face = bt.x >= buBeast.x ? 1 : -1;
+        if (bd > 12) {
+          var bx = (bt.x - buBeast.x) / bd, by = (bt.y - buBeast.y) / bd;
+          buBeast.x = Math.max(BU_ARENA.x0, Math.min(BU_ARENA.x1, buBeast.x + bx * 70 * dt));
+          buBeast.y = Math.max(BU_ARENA.y0, Math.min(BU_ARENA.y1, buBeast.y + by * 70 * dt));
+        } else if (buBeast.atkCd <= 0) {
+          buBeast.atkCd = 0.45;
+          buDamageEnemy(bt, 8, buHero, false);
+          buParts.push({ x: bt.x, y: bt.y - 4, vx: 0, vy: -20, t: 10, col: '#F97316' });
+        }
+      }
+    }
+  }
   for (var a = 0; a < buFighters.length; a++) {
     for (var b = a + 1; b < buFighters.length; b++) {
       var fa = buFighters[a], fb = buFighters[b];
@@ -8279,6 +8647,17 @@ function buUpdate() {
   for (var i = 0; i < buEnemies.length; i++) {
     var e = buEnemies[i];
     if (e.hp <= 0) continue;
+    if (e.poisonT > 0) {
+      /* VENOM CUT poison: ticks damage over time, then wears off. */
+      e.poisonT -= dt;
+      e.poisonAcc += e.poisonDps * dt;
+      if (e.poisonAcc >= 1) {
+        var pd = Math.floor(e.poisonAcc);
+        e.poisonAcc -= pd;
+        buDamageEnemy(e, pd, buHero, false);
+      }
+      if (e.hp <= 0) continue;
+    }
     if (e.hitT > 0) e.hitT--;
     if (e.cd > 0) e.cd -= dt;
     if (e.tauntT > 0) e.tauntT -= dt;
@@ -8308,7 +8687,30 @@ function buUpdate() {
     var dx = tgt.x - e.x, dy = tgt.y - e.y;
     var dist = Math.sqrt(dx * dx + dy * dy) || 1;
     e.face = dx >= 0 ? 1 : -1;
-    if (e.ranged) {
+    if (e.boss) {
+      /* Boss movement by type: the lord and the maw walk at the
+         weakest fighter and hit hard up close; the spitter keeps
+         its distance and lets its volleys do the work. */
+      if (e.bossType === 'spitter') {
+        if (dist < 50) {
+          e.x -= dx / dist * e.spd * dt;
+          e.y -= dy / dist * e.spd * 0.5 * dt;
+        } else if (dist > 80) {
+          e.x += dx / dist * e.spd * dt;
+          e.y += dy / dist * e.spd * 0.6 * dt;
+        } else {
+          e.strafeT -= dt;
+          if (e.strafeT <= 0) { e.strafeDir *= -1; e.strafeT = 1 + Math.random() * 1.5; }
+          e.x += -dy / dist * e.strafeDir * e.spd * 0.5 * dt;
+          e.y += dx / dist * e.strafeDir * e.spd * 0.5 * dt;
+        }
+      } else if (dist <= 16) {
+        if (e.cd <= 0) { e.cd = 1.1; buHurtFighter(tgt, e.dmg, e); buShakeT = 4; }
+      } else {
+        e.x += dx / dist * e.spd * dt;
+        e.y += dy / dist * e.spd * 0.7 * dt;
+      }
+    } else if (e.ranged) {
       if (dist < 46) {
         e.x -= dx / dist * e.spd * dt;
         e.y -= dy / dist * e.spd * 0.5 * dt;
@@ -8340,14 +8742,6 @@ function buUpdate() {
           e.x += dx / dist * e.spd * dt;
           e.y += dy / dist * e.spd * 0.7 * dt;
         }
-      }
-    } else if (e.type === 'boss') {
-      /* Ember Lord: walks at the weakest fighter, heavy hits. */
-      if (dist <= 16) {
-        if (e.cd <= 0) { e.cd = 1.1; buHurtFighter(tgt, e.dmg, e); buShakeT = 4; }
-      } else {
-        e.x += dx / dist * e.spd * dt;
-        e.y += dy / dist * e.spd * 0.7 * dt;
       }
     } else {
       var fx = dx / dist, fy = dy / dist;
@@ -8414,14 +8808,17 @@ function buUpdate() {
     if (p.life <= 0 || p.x < 0 || p.x > W || p.y < 0 || p.y > H) buProjs.splice(pi2, 1);
   }
   buEnemies = buEnemies.filter(function (e) { return e.hp > 0; });
-  if (buSpawnQ.length === 0 && buEnemies.length === 0) {
+  if (buSpawnQ.length === 0 && buEnemies.length === 0 && !buOver && buHero && buHero.hp > 0) {
+    /* Every wave ends with a BOSS: the wave is NOT clear until the
+       boss spawns and dies. */
+    if (!buBossSpawned) { buSpawnBoss(); return; }
     buCleared = buWave;
     buPhase = 'upgrade';
     if (buHero) {
       buHero.hp = Math.min(buHero.maxHp, buHero.hp + Math.round(buHero.maxHp * 0.15));
       var st2 = buHeroStat(buHero.kind);
       if (buCleared > st2.best) { st2.best = buCleared; buSaveStats(); }
-      if (buWave % 5 === 0) { st2.wins++; buSaveStats(); }
+      st2.wins++; buSaveStats(); /* a boss kill is a win */
     }
     buRollUpgrades();
     JMFGAMES.beep(990, 0.12);
@@ -8525,6 +8922,49 @@ function buDrawFigure(x, y, color, dir, kind, flash, bob, swing, spin) {
     ctx.fillRect(-5, -11, 10, 2);
     ctx.fillStyle = '#EF4444';
     ctx.fillRect(-3, -6, 2, 1); ctx.fillRect(1, -6, 2, 1);
+  } else if (kind === 'maw') {
+    /* CINDER MAW: huge brute — broad shoulders, horns, war club. */
+    ctx.fillStyle = C;
+    ctx.beginPath(); ctx.arc(0, -5, 4.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(-7, -2, 14, 9);
+    ctx.fillStyle = '#FDE68A';
+    ctx.beginPath(); ctx.moveTo(-4, -8); ctx.lineTo(-7, -13); ctx.lineTo(-2, -9); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(4, -8); ctx.lineTo(7, -13); ctx.lineTo(2, -9); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#78350F';
+    ctx.fillRect(6, -8, 3, 12);
+    ctx.fillStyle = '#D1D5DB';
+    ctx.fillRect(5, -11, 5, 3);
+    ctx.fillStyle = '#EF4444';
+    ctx.fillRect(-3, -6, 2, 1); ctx.fillRect(1, -6, 2, 1);
+    ctx.fillStyle = '#F97316';
+    ctx.beginPath(); ctx.arc(0, 1, 2, 0, Math.PI * 2); ctx.fill();
+  } else if (kind === 'spitter') {
+    /* ASH SPITTER: hooded spitter — purple robe, glowing sac, staff. */
+    ctx.fillStyle = C;
+    ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(-5, 5); ctx.lineTo(5, 5); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#A855F7';
+    ctx.beginPath(); ctx.arc(0, -6, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#4ADE80';
+    ctx.beginPath(); ctx.arc(4, -3, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#7C3AED';
+    ctx.fillRect(-6, -9, 1, 13);
+    ctx.fillStyle = D;
+    ctx.fillRect(1, -6, 1, 1);
+  } else if (kind === 'beast') {
+    /* EMBER BEAST: fire wolf — long body, ears, tail, flame mane. */
+    ctx.fillStyle = C;
+    ctx.fillRect(-8, -3, 14, 6);
+    ctx.beginPath(); ctx.arc(6, -4, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(-11, -6, 4, 2);
+    ctx.fillStyle = '#FDE68A';
+    ctx.beginPath(); ctx.moveTo(4, -7); ctx.lineTo(5, -10); ctx.lineTo(7, -7); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(7, -7); ctx.lineTo(8, -10); ctx.lineTo(10, -7); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#EF4444';
+    ctx.fillRect(-4, -6, 8, 2);
+    ctx.fillStyle = D;
+    ctx.fillRect(7, -5, 1, 1);
+    ctx.fillStyle = C;
+    ctx.fillRect(-6, 3, 2, 2); ctx.fillRect(3, 3, 2, 2);
   } else if (kind === 'grunt') {
     ctx.fillStyle = C;
     ctx.beginPath(); ctx.arc(0, -5, 3, 0, Math.PI * 2); ctx.fill();
@@ -8566,14 +9006,14 @@ function buDrawSelect() {
   ctx.font = 'bold 10px monospace';
   ctx.fillText('CHOOSE YOUR FIGHTER', W / 2, 18);
   ctx.font = '8px monospace';
-  ctx.fillText('A: SUMMON 4 ALLIES ' + buSummonDur + 'S  B: ULT', W / 2, 30);
+  ctx.fillText('A: SUMMON 4 ALLIES 5S  B: ULT  D-PAD: ULTS', W / 2, 30);
   for (var i = 0; i < BU_HEROES.length; i++) {
     var h = BU_HEROES[i];
     var y = 46 + i * 19;
     var st = buHeroStat(h.kind);
     if (i === buHeroIdx) {
       ctx.fillStyle = '#F8FAFC';
-      ctx.fillRect(10, y - 11, 220, 26);
+      ctx.fillRect(10, y - 11, 220, 21);
       ctx.fillStyle = '#26263A';
       ctx.fillText('>', 18, y);
     } else {
@@ -8626,22 +9066,32 @@ function buDrawUpgrade() {
   ctx.textAlign = 'left';
 }
 function buDrawCooldowns() {
+  /* Cooldown row: the summon (A) plus all 5 ultimates, each in its
+     own box with its input letter + short label. A box is green
+     when ready, amber while cooling (fill = time left). Layout:
+     summon at x 6-38, ult boxes at x 42+i*38 (36 wide, y 25-32). */
   ctx.font = '8px monospace'; ctx.textAlign = 'left';
   var sReady = buSummonCd <= 0;
-  var uReady = buHero && buHero.ultCd <= 0;
-  var ultName = buHero ? BU_HEROES[buHeroIdx].ultShort : 'ULT';
   ctx.fillStyle = sReady ? '#22C55E' : '#F8FAFC';
-  ctx.fillText('A SUM', 6, 31);
-  ctx.fillStyle = '#111827'; ctx.fillRect(36, 26, 34, 5);
+  ctx.fillText('A', 6, 31);
+  ctx.fillStyle = '#111827'; ctx.fillRect(12, 26, 26, 5);
   ctx.fillStyle = sReady ? '#22C55E' : '#F59E0B';
-  ctx.fillRect(36, 26, Math.max(1, 34 * (sReady ? 1 : 1 - buSummonCd / buSummonCdMax)), 5);
-  if (!sReady) { ctx.fillStyle = '#F8FAFC'; ctx.fillText(Math.ceil(buSummonCd) + 's', 72, 31); }
-  ctx.fillStyle = uReady ? '#22C55E' : '#F8FAFC';
-  ctx.fillText('B ' + ultName, 92, 31);
-  ctx.fillStyle = '#111827'; ctx.fillRect(132, 26, 34, 5);
-  ctx.fillStyle = uReady ? '#22C55E' : '#F59E0B';
-  ctx.fillRect(132, 26, Math.max(1, 34 * (uReady ? 1 : 1 - buHero.ultCd / 10)), 5);
-  if (!uReady) { ctx.fillStyle = '#F8FAFC'; ctx.fillText(Math.ceil(buHero.ultCd) + 's', 168, 31); }
+  ctx.fillRect(12, 26, Math.max(1, 26 * (sReady ? 1 : 1 - buSummonCd / buSummonCdMax)), 5);
+  if (buHero) {
+    var dirs = ['U', 'D', 'L', 'R', 'B'];
+    for (var i = 0; i < 5; i++) {
+      var u = buHero.ults[i];
+      var cd = buUltCdGet(buHero, i);
+      var ready = cd <= 0;
+      var bx = 42 + i * 38;
+      ctx.fillStyle = '#111827'; ctx.fillRect(bx, 25, 36, 7);
+      ctx.fillStyle = ready ? '#22C55E' : '#F59E0B';
+      ctx.fillRect(bx, 25, Math.max(1, 36 * (ready ? 1 : 1 - cd / u.cd)), 7);
+      ctx.fillStyle = '#FDE68A'; ctx.textAlign = 'center';
+      ctx.fillText(dirs[i] + ' ' + u.short, bx + 18, 31);
+      ctx.textAlign = 'left';
+    }
+  }
   ctx.textAlign = 'left';
 }
 function drawBeat() {
@@ -8653,7 +9103,7 @@ function drawBeat() {
   for (var i = 0; i < buEmbers.length; i++) ctx.fillRect(buEmbers[i].x, buEmbers[i].y, 1, 1);
   if (buPhase === 'select') { buDrawSelect(); return; }
   ctx.fillStyle = '#F8FAFC'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
-  ctx.fillText('WAVE ' + buWave + (buWave % 5 === 0 ? '  BOSS!' : ''), 6, 10);
+  ctx.fillText('WAVE ' + buWave, 6, 10);
   ctx.textAlign = 'right';
   ctx.fillText('KILLS ' + buKills, W - 6, 10);
   if (buSynergy) {
@@ -8670,6 +9120,20 @@ function drawBeat() {
   ctx.fillStyle = lowHp ? ((buFrame % 30 < 15) ? '#EF4444' : '#F59E0B') : (buHero.hp > buHero.maxHp * 0.3 ? '#22C55E' : '#EF4444');
   ctx.fillRect(6, 13, Math.max(0, 228 * buHero.hp / buHero.maxHp), 5);
   if (buPhase !== 'upgrade') buDrawCooldowns();
+  /* BOSS BAR: while a boss lives, its name + a large HP bar sit
+     between the hero HP bar and the cooldowns row. */
+  if (buPhase === 'fight') {
+    var bossE = null;
+    for (var bi = 0; bi < buEnemies.length; bi++) if (buEnemies[bi].boss && buEnemies[bi].hp > 0) { bossE = buEnemies[bi]; break; }
+    if (bossE) {
+      ctx.font = '8px monospace'; ctx.textAlign = 'left';
+      ctx.fillStyle = '#F97316';
+      ctx.fillText(bossE.name, 6, 24);
+      ctx.fillStyle = '#111827'; ctx.fillRect(76, 19, 158, 4);
+      ctx.fillStyle = '#EF4444'; ctx.fillRect(76, 19, Math.max(0, 158 * bossE.hp / bossE.maxHp), 4);
+      ctx.textAlign = 'left';
+    }
+  }
   if (buPhase === 'upgrade') { buDrawUpgrade(); return; }
   ctx.save();
   if (buShakeT > 0) ctx.translate((Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4);
@@ -8713,12 +9177,6 @@ function drawBeat() {
         ctx.beginPath(); ctx.arc(f.x, f.y - 2, 12, 0, Math.PI * 2); ctx.stroke();
         ctx.lineWidth = 1;
       }
-      if (f.fireArmorT > 0) {
-        ctx.strokeStyle = '#F97316'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(f.x, f.y - 2, 12, 0, Math.PI * 2); ctx.stroke();
-        ctx.strokeStyle = '#EF4444'; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.arc(f.x, f.y - 2, 9, 0, Math.PI * 2); ctx.stroke();
-      }
       if (!f.isSummon && lowHp && buFrame % 30 < 15) {
         ctx.strokeStyle = '#EF4444'; ctx.lineWidth = 1;
         ctx.strokeRect(f.x - 8, f.y - 13, 16, 22);
@@ -8728,6 +9186,16 @@ function drawBeat() {
         ctx.beginPath(); ctx.arc(f.x, f.y + 5, 8, 0, Math.PI * 2); ctx.stroke();
       }
     }
+  }
+  /* NOVA's EMBER BEAST: drawn above the fighters, blinking in its
+     last second, with a small timer bar over its head. */
+  if (buBeast) {
+    ctx.save();
+    if (buBeast.t < 1) ctx.globalAlpha = (buBeast.t % 0.3 < 0.15) ? 0.35 : 1;
+    buDrawFigure(buBeast.x, buBeast.y, '#F97316', buBeast.face, 'beast', false, 0, 0, 0);
+    ctx.restore();
+    ctx.fillStyle = '#111827'; ctx.fillRect(buBeast.x - 10, buBeast.y - 20, 20, 2);
+    ctx.fillStyle = '#F97316'; ctx.fillRect(buBeast.x - 10, buBeast.y - 20, Math.max(0, 20 * buBeast.t / 5), 2);
   }
   for (var dd = 0; dd < buDeaths.length; dd++) {
     var dead = buDeaths[dd];
@@ -8759,9 +9227,9 @@ function drawBeat() {
   ctx.restore();
   if (buBannerT > 0) {
     ctx.fillStyle = '#F8FAFC'; ctx.textAlign = 'center'; ctx.font = 'bold 12px monospace';
-    ctx.fillText(buWave % 5 === 0 ? 'BOSS WAVE!' : 'WAVE ' + buWave, W / 2, 78);
+    ctx.fillText(buBannerBoss ? 'BOSS: ' + buBannerBoss : 'WAVE ' + buWave, W / 2, 78);
     ctx.font = '8px monospace';
-    ctx.fillText(buWave % 5 === 0 ? 'THE EMBER LORD COMES!' : 'DEFEAT THEM ALL!', W / 2, 92);
+    ctx.fillText(buBannerBoss ? 'DEFEAT THE BOSS!' : 'DEFEAT THEM ALL!', W / 2, 92);
     ctx.textAlign = 'left';
   }
   if (buPaused) {
@@ -8771,7 +9239,15 @@ function drawBeat() {
     ctx.fillText('PAUSED', W / 2, 70);
     ctx.font = '8px monospace'; ctx.fillStyle = '#f5e9c8';
     ctx.fillText('START: RESUME', W / 2, 86);
-    ctx.fillText('B: DELETE SAVE', W / 2, 98);
+    if (buHero) {
+      /* The full kit, so the player can learn it mid-run. */
+      var uk = buHero.ults;
+      ctx.fillText('A: SUMMON 4 ALLIES ' + buSummonDur + 'S', W / 2, 98);
+      ctx.fillText('UP ' + uk[0].name + '  DOWN ' + uk[1].name, W / 2, 110);
+      ctx.fillText('LEFT ' + uk[2].name + '  RIGHT ' + uk[3].name, W / 2, 122);
+      ctx.fillText('B: ' + uk[4].name, W / 2, 134);
+    }
+    ctx.fillText('B: DELETE SAVE', W / 2, 146);
     ctx.textAlign = 'left';
   }
 }
@@ -15493,6 +15969,1753 @@ function drawShooterOver() {
   ctx.fillText('A: NEW RUN  MENU: EXIT', W / 2, 126);
   ctx.textAlign = 'left';
 }
+
+  /* ==================== artillery (GBA) ==================== */
+/* ================================================================
+   VOLLEY SQUAD (GBA) — "VOLLEY SQUAD", an original 3v4 turn-based
+   artillery game on the 240x160 GBA screen. You + 2 AI teammates
+   you pick vs 4 enemy AI players (they outnumber you on purpose).
+   Aim with angle + power, read the wind, and lob shells in arcs
+   under gravity across destructible hills on 4 different maps.
+   16 original vehicles, each with its own play style, power,
+   ultimate, passive ability and design — and 16 AI pilots, one per
+   vehicle, each with a personality (AGGRESSIVE, GUARDIAN, SNIPER,
+   OPPORTUNIST, BALANCED) that really changes how they play.
+   Match flow: enemy reveal (counter-pick) -> map pick -> vehicle
+   pick -> pick 2 teammates -> battle. Terrain is a weapon: blasts
+   carve craters, and a vehicle that drops off a ledge takes fall
+   damage. Ultimates charge by dealing/taking damage (100 = ready,
+   B fires). AI solves real firing solutions from the same physics
+   (gravity + wind), corrects after its own misses, focus-fires the
+   biggest threat, and never wastes an ultimate. Same physics, same
+   damage, no hidden bonuses — fair on both sides, even 3v4.
+   Controls: Up/Down pick (select screens) or power (battle),
+   Left/Right aim angle, A fire / confirm, B ultimate (or back on
+   pick screens), Start pause, Menu quit. Shells hurt friends too.
+   Records: match wins 'jmf-games-artillery-wins', best damage in a
+   match 'jmf-games-artillery-best'. No licensed content anywhere.
+   ================================================================ */
+  var AR_WINS_KEY = 'jmf-games-artillery-wins';
+  var AR_BEST_KEY = 'jmf-games-artillery-best';
+
+  /* ---------- Physics constants ---------- */
+  var AR_GRAV = 0.15;     // gravity, px/frame^2
+  var AR_WIND_K = 0.004;  // wind accel per wind point, px/frame^2 (wind 4
+                         // drifts a cross-map shot ~15px — felt, never dominant)
+  var AR_VEL_K = 0.065;   // muzzle velocity per power point, px/frame
+  var AR_SUB = 2;         // physics substeps per frame (no tunnelling)
+  var AR_FALL_MIN = 10;   // drops of 10px or less never hurt
+  var AR_FALL_K = 0.6;    // fall damage per px beyond the threshold
+  var AR_FALL_CAP = 25;   // fall damage never one-shots a full-HP vehicle
+
+  /* ---------- Vehicle roster: 16 original types ----------
+     Balance: HP 75-140, per-shell damage 12-45, ults 55-96 total.
+     Every vehicle has a weakness (low HP, low damage, small radius,
+     slow shell, high gravity). Fields that are not listed default to
+     0/false. passive: the always-on trait (see the hooks in the
+     damage / fire / turn code); passiveShort is the select-screen
+     label, passiveInfo the full description. */
+  var AR_DEFS = [
+    { id: 'titan', name: 'TITAN', role: 'SIEGE TANK', tag: 'HEAVY',
+      hp: 130, dmg: 34, radius: 16, shots: 1, speedF: 0.85, gravF: 1.1, bounce: 0,
+      col: '#7A9A3B', dark: '#4A5D23', lite: '#A8C66C', barrel: '#3A3A3A',
+      ult: 'QUAKE BOMB', ultDmg: 80, ultRadius: 30, ultShots: 1, ultInfo: 'MEGA SHELL 80 DMG',
+      passive: 'plate', passiveName: 'IRON PLATE', passiveShort: 'PLATED',
+      passiveInfo: 'TAKES 15% LESS DAMAGE', dmgTakenMul: 0.85 },
+    { id: 'wasp', name: 'WASP', role: 'SWARM BUGGY', tag: 'SWARMER',
+      hp: 80, dmg: 12, radius: 9, shots: 3, spread: 6, speedF: 1.05, gravF: 1.0, bounce: 0,
+      col: '#FACC15', dark: '#B8860B', lite: '#FEF08A', barrel: '#3A3A3A',
+      ult: 'SWARM', ultDmg: 12, ultRadius: 9, ultShots: 8, ultSpread: 4, ultInfo: '8-SHELL FAN',
+      passive: 'charge', passiveName: 'LIGHT FRAME', passiveShort: 'SWIFT CHG',
+      passiveInfo: 'ULT CHARGES 25% FASTER', chargeMul: 1.25 },
+    { id: 'lance', name: 'LANCE', role: 'RAIL SNIPER', tag: 'LONG-RANGE',
+      hp: 90, dmg: 45, radius: 7, shots: 1, speedF: 1.5, gravF: 0.5, bounce: 0,
+      col: '#60A5FA', dark: '#1E40AF', lite: '#BFDBFE', barrel: '#1E293B',
+      ult: 'PIERCE RAIL', ultDmg: 60, ultRadius: 7, ultShots: 1, ultPierce: true, ultInfo: 'SHOOTS THRU HILLS',
+      passive: 'wind', passiveName: 'STEADY SCOPE', passiveShort: 'CALM WIND',
+      passiveInfo: 'WIND PUSHES 50% LESS', windMul: 0.5 },
+    { id: 'ricochet', name: 'RICOCHET', role: 'BOUNCE BOMBER', tag: 'TRICKY',
+      hp: 100, dmg: 26, radius: 12, shots: 1, speedF: 1.0, gravF: 1.0, bounce: 1,
+      col: '#FB923C', dark: '#C2410C', lite: '#FED7AA', barrel: '#3A3A3A',
+      ult: 'CLUSTER', ultDmg: 14, ultRadius: 8, ultShots: 1, ultSplit: true, ultSplitN: 5, ultSplitDmg: 14, ultSplitRadius: 8, ultInfo: 'SPLITS INTO 5',
+      passive: 'fall', passiveName: 'SURE FOOTING', passiveShort: 'NO FALL DMG',
+      passiveInfo: 'TAKES NO FALL DAMAGE', fallImmune: true },
+    { id: 'havoc', name: 'HAVOC', role: 'HEAVY MORTAR', tag: 'LOBBER',
+      hp: 110, dmg: 40, radius: 14, shots: 1, speedF: 0.8, gravF: 1.3, bounce: 0,
+      col: '#6B7C4A', dark: '#3D4A26', lite: '#9AA86B', barrel: '#3A3A3A',
+      ult: 'SKYFALL', ultDmg: 30, ultRadius: 12, ultShots: 3, ultSpread: 8, ultInfo: '3 LOBBED SHELLS',
+      passive: 'carve', passiveName: 'HEAVY ROUNDS', passiveShort: 'DEEP CRATERS',
+      passiveInfo: 'EXPLOSIONS CARVE 50% DEEPER', carveMul: 1.5 },
+    { id: 'viper', name: 'VIPER', role: 'ACID STRIKER', tag: 'VENOM',
+      hp: 85, dmg: 30, radius: 8, shots: 1, speedF: 1.2, gravF: 0.9, bounce: 0,
+      col: '#84CC16', dark: '#3F6212', lite: '#BEF264', barrel: '#3A3A3A',
+      ult: 'ACID RAIN', ultDmg: 16, ultRadius: 8, ultShots: 5, ultSpread: 6, ultInfo: '5-SHELL SHOWER',
+      passive: 'venom', passiveName: 'VENOM', passiveShort: 'VENOM',
+      passiveInfo: 'DIRECT HITS DEAL +8 DAMAGE' },
+    { id: 'falcon', name: 'FALCON', role: 'SCOUT WING', tag: 'SWIFT',
+      hp: 75, dmg: 22, radius: 9, shots: 2, spread: 8, speedF: 1.4, gravF: 0.8, bounce: 0,
+      col: '#E2E8F0', dark: '#64748B', lite: '#FFFFFF', barrel: '#334155',
+      ult: 'DIVE BOMB', ultDmg: 55, ultRadius: 10, ultShots: 1, ultInfo: 'FAST HEAVY SHELL',
+      passive: 'splash', passiveName: 'NIMBLE', passiveShort: 'NIMBLE',
+      passiveInfo: '10% LESS SPLASH DAMAGE' },
+    { id: 'bastion', name: 'BASTION', role: 'IRON FORTRESS', tag: 'WALL',
+      hp: 140, dmg: 28, radius: 15, shots: 1, speedF: 0.75, gravF: 1.2, bounce: 0,
+      col: '#94A3B8', dark: '#475569', lite: '#CBD5E1', barrel: '#1F2937',
+      ult: 'IRON RAIN', ultDmg: 20, ultRadius: 12, ultShots: 4, ultSpread: 6, ultInfo: '4-SHELL BARRAGE',
+      passive: 'regen', passiveName: 'REGEN', passiveShort: 'REGEN',
+      passiveInfo: 'HEALS 2 HP EACH TURN' },
+    { id: 'spark', name: 'SPARK', role: 'STORM COIL', tag: 'VOLTAGE',
+      hp: 82, dmg: 24, radius: 11, shots: 1, speedF: 1.3, gravF: 0.7, bounce: 0,
+      col: '#22D3EE', dark: '#0E7490', lite: '#A5F3FC', barrel: '#164E63',
+      ult: 'THUNDERHEAD', ultDmg: 14, ultRadius: 9, ultShots: 6, ultSpread: 5, ultInfo: '6-SHELL STORM',
+      passive: 'surge', passiveName: 'SURGE', passiveShort: 'SURGE',
+      passiveInfo: '+15% DAMAGE AT FULL HP' },
+    { id: 'mira', name: 'MIRA', role: 'SEEKER POD', tag: 'HUNTER',
+      hp: 88, dmg: 32, radius: 10, shots: 1, speedF: 1.1, gravF: 0.9, bounce: 0, homing: 0.008,
+      col: '#F472B6', dark: '#9D174D', lite: '#FBCFE8', barrel: '#3A3A3A',
+      ult: 'HUNTER PACK', ultDmg: 26, ultRadius: 10, ultShots: 3, ultSpread: 6, ultInfo: '3 HOMING SHELLS',
+      passive: 'predator', passiveName: 'PREDATOR', passiveShort: 'PREDATOR',
+      passiveInfo: '+15% DAMAGE VS HALF-HP FOES' },
+    { id: 'dread', name: 'DREAD', role: 'DOOM BRINGER', tag: 'CURSED',
+      hp: 95, dmg: 36, radius: 12, shots: 1, speedF: 0.9, gravF: 1.1, bounce: 0,
+      col: '#7C3AED', dark: '#4C1D95', lite: '#C4B5FD', barrel: '#1F2937',
+      ult: 'DOOMFALL', ultDmg: 70, ultRadius: 16, ultShots: 1, ultInfo: 'DOOM SHELL 70 DMG',
+      passive: 'doom', passiveName: 'DOOM', passiveShort: 'DOOM',
+      passiveInfo: 'FOES IT HITS CHARGE 25% SLOWER' },
+    { id: 'tempest', name: 'TEMPEST', role: 'STORM CALLER', tag: 'GALE',
+      hp: 92, dmg: 20, radius: 10, shots: 1, speedF: 1.0, gravF: 1.0, bounce: 0,
+      col: '#2DD4BF', dark: '#0F766E', lite: '#99F6E4', barrel: '#134E4A',
+      ult: 'CYCLONE', ultDmg: 18, ultRadius: 11, ultShots: 4, ultSpread: 6, ultInfo: '4-SHELL CYCLONE',
+      passive: 'stagger', passiveName: 'STAGGER', passiveShort: 'STAGGER',
+      passiveInfo: 'DIRECT HITS STUN 1 TURN' },
+    { id: 'cobalt', name: 'COBALT', role: 'FROST CANNON', tag: 'FROZEN',
+      hp: 98, dmg: 38, radius: 11, shots: 1, speedF: 1.05, gravF: 0.95, bounce: 0,
+      col: '#38BDF8', dark: '#075985', lite: '#BAE6FD', barrel: '#0C4A6E',
+      ult: 'GLACIER', ultDmg: 35, ultRadius: 12, ultShots: 2, ultSpread: 5, ultInfo: '2 FROST SHELLS',
+      passive: 'chill', passiveName: 'CHILL', passiveShort: 'CHILL',
+      passiveInfo: 'HITS DRAIN 10 ULT CHARGE' },
+    { id: 'ember', name: 'EMBER', role: 'FIRE BATTERY', tag: 'BLAZE',
+      hp: 86, dmg: 16, radius: 13, shots: 1, speedF: 1.0, gravF: 1.0, bounce: 0,
+      col: '#EF4444', dark: '#991B1B', lite: '#FCA5A5', barrel: '#450A0A',
+      ult: 'INFERNO', ultDmg: 65, ultRadius: 18, ultShots: 1, ultInfo: 'FIREBALL 65 DMG',
+      passive: 'scorch', passiveName: 'SCORCH', passiveShort: 'SCORCH',
+      passiveInfo: '+6 DMG ON SCORCHED GROUND' },
+    { id: 'orbit', name: 'ORBIT', role: 'SATELLITE DISH', tag: 'ORBITAL',
+      hp: 78, dmg: 14, radius: 8, shots: 1, speedF: 1.35, gravF: 0.6, bounce: 0, pierce: 1,
+      col: '#F59E0B', dark: '#92400E', lite: '#FDE68A', barrel: '#78350F',
+      ult: 'STARFALL', ultDmg: 30, ultRadius: 8, ultShots: 3, ultSpread: 5, ultPierce: true, ultInfo: '3 PIERCING SHELLS',
+      passive: 'range', passiveName: 'FAR SIGHT', passiveShort: 'FAR SIGHT',
+      passiveInfo: '+10% DAMAGE BEYOND 100PX' },
+    { id: 'splinter', name: 'SPLINTER', role: 'CLUSTER CANNON', tag: 'FRAG',
+      hp: 105, dmg: 18, radius: 8, shots: 1, speedF: 1.0, gravF: 1.0, bounce: 0,
+      splitN: 3, splitDmg: 12, splitRadius: 7,
+      col: '#A16207', dark: '#713F12', lite: '#FDE68A', barrel: '#451A03',
+      ult: 'SHRAPNEL STORM', ultDmg: 12, ultRadius: 7, ultShots: 1, ultSplit: true, ultSplitN: 7, ultSplitDmg: 12, ultSplitRadius: 7, ultInfo: 'SPLITS INTO 7',
+      passive: 'radius', passiveName: 'WIDE BLAST', passiveShort: 'WIDE BLAST',
+      passiveInfo: '+20% EXPLOSION RADIUS', radiusMul: 1.2 }
+  ];
+  var AR_DEF_BY_ID = {};
+  for (var _di = 0; _di < AR_DEFS.length; _di++) AR_DEF_BY_ID[AR_DEFS[_di].id] = AR_DEFS[_di];
+
+  /* ---------- AI pilots: 16, one per vehicle (1:1) ----------
+     A pilot's personality changes its DECISIONS only — target weights
+     and ultimate gating in arAiPickTarget / arAiShouldUlt. Aim error
+     and damage are identical for everyone: fair on both sides. */
+  var AR_PILOTS = [
+    { name: 'BRICK', pers: 'GUARDIAN', def: 'titan' },
+    { name: 'ZING', pers: 'AGGRESSIVE', def: 'wasp' },
+    { name: 'VEX', pers: 'SNIPER', def: 'lance' },
+    { name: 'RICO', pers: 'OPPORTUNIST', def: 'ricochet' },
+    { name: 'MORT', pers: 'BALANCED', def: 'havoc' },
+    { name: 'FANG', pers: 'AGGRESSIVE', def: 'viper' },
+    { name: 'SWIFT', pers: 'SNIPER', def: 'falcon' },
+    { name: 'WALL', pers: 'GUARDIAN', def: 'bastion' },
+    { name: 'VOLT', pers: 'AGGRESSIVE', def: 'spark' },
+    { name: 'SIGHT', pers: 'SNIPER', def: 'mira' },
+    { name: 'GRIM', pers: 'OPPORTUNIST', def: 'dread' },
+    { name: 'GALE', pers: 'BALANCED', def: 'tempest' },
+    { name: 'FROST', pers: 'GUARDIAN', def: 'cobalt' },
+    { name: 'CINDER', pers: 'AGGRESSIVE', def: 'ember' },
+    { name: 'COMET', pers: 'BALANCED', def: 'orbit' },
+    { name: 'SHARD', pers: 'OPPORTUNIST', def: 'splinter' }
+  ];
+
+  /* ---------- Maps: 4 distinct layouts ----------
+     Each plays differently for real (sightlines, cover, lob angles),
+     not just different colours. HIGH GROUND is the only asymmetric
+     map: which team gets the high side is a coin flip every match,
+     so nobody is handed the advantage. */
+  var AR_MAPS = [
+    { id: 'field', name: 'OPEN FIELD', favor: 'FAVORS: SNIPERS', weak: 'WEAK: BRAWLERS',
+      info: 'FLAT + OPEN — LONG SHOTS RULE',
+      sky: ['#7EC8FF', '#A8D8FF', '#D6EBFF'], ground: '#8B5A2B', dark: '#6B4423', grass: '#4EA35A', grassLite: '#7BC87A' },
+    { id: 'peaks', name: 'TWIN PEAKS', favor: 'FAVORS: LOBS', weak: 'WEAK: FLAT SHOTS',
+      info: 'TWO HILLS — LOB OVER THEM',
+      sky: ['#B8A8E8', '#CFC4F0', '#E8E0F8'], ground: '#6B5B4A', dark: '#4A3F33', grass: '#7A8B5A', grassLite: '#9AA86B' },
+    { id: 'canyon', name: 'CANYON', favor: 'FAVORS: SPREAD', weak: 'WEAK: LONG SHOTS',
+      info: 'STEEP WALLS — CLOSE BRAWL',
+      sky: ['#F2A65A', '#F7C08A', '#FAD9B0'], ground: '#9A5A3A', dark: '#6B3A22', grass: '#B07840', grassLite: '#D8A86A' },
+    { id: 'high', name: 'HIGH GROUND', favor: 'FAVORS: HIGH', weak: 'WEAK: LOW SIDE',
+      info: 'ONE SIDE HIGH — SIDE IS RANDOM',
+      sky: ['#7EC8B8', '#A8D8C8', '#D6EBE0'], ground: '#5A6B3A', dark: '#3D4A26', grass: '#6FA85A', grassLite: '#8AC87A' }
+  ];
+
+  /* ---------- State ---------- */
+  var arPhase = 'select'; // 'select' | 'aim' | 'fly' | 'ai' | 'over'
+  var arPickPhase = 'reveal'; // 'reveal' | 'map' | 'vehicle' | 'mates'
+  var arSelIdx = 0, arSelWin = 0;     // vehicle pick cursor + scroll window
+  var arMapIdx = 0;                   // picked map (0..3)
+  var arMapFlip = false;              // HIGH GROUND mirrored this match
+  var arTmIdx = 0, arTmWin = 0;       // teammate pick cursor + scroll window
+  var arEnemyPilots = [];             // 4 pilot indices (revealed first)
+  var arTeammatePilots = [];          // 2 pilot indices (picked by the player)
+  var arAvailMates = [];              // pilot indices available for teammate pick
+  var arVehicles = [];    // {def, team, x, y, hp, maxHp, alive, charge, recoil, bob, isPlayer, barrelAng, pilot, pers, stun, fallV, fallFrom}
+  var arOrder = [];       // turn order (vehicle refs, interleaved teams)
+  var arTurnIdx = 0;
+  var arWind = 0;         // -4..+4, re-rolled every turn
+  var arRound = 1;
+  var arAngle = 45, arPower = 60;
+  var arProjs = [];       // {x,y,vx,vy,def,owner,gravF,speedF,windF,homing,bounces,split,splitN,splitDmg,splitRadius,pierce,trail,spin,dmg,radius,direct}
+  var arParts = [];       // particles {x,y,vx,vy,life,max,col,r,grav}
+  var arPops = [];        // floating text {x,y,txt,t,col}
+  var arRings = [];       // shockwave rings {x,y,r,life}
+  var arScorch = [];      // scorch marks {x,r,t}
+  var arDeaths = [];      // wreck animations {x,y,t}
+  var arClouds = [], arBirds = [], arStreaks = [];
+  var arTerrain = [];     // heightmap: ground y per x column (240)
+  var arRocks = [];       // terrain texture speckles {x,y}
+  var arPaused = false, arOver = false, arWinner = -1; // winner: 0 = you, 1 = foe
+  var arWins = 0, arBestDmg = 0, arMyDmg = 0, arMyShots = 0, arMyHits = 0;
+  var arFrame = 0, arAiT = 0;
+  var arFlash = 0, arShakeMag = 0, arShakeT = 0;
+  var arBanner = '', arBannerT = 0, arBannerSub = '';
+  var arMuzzle = null;    // {x,y,t}
+  var arPlayerTarget = null; // last vehicle the player hit (teammates focus it)
+  var arLastShooterTeam = 0; // team that fired the last shot (decides a simultaneous wipe)
+  var arAiMem = {};       // per-vehicle miss memory: {lastErr, lastTx} keyed by vehicle index
+  var arRandSeed = 987654321;
+  try { arWins = parseInt(localStorage.getItem(AR_WINS_KEY) || '0', 10) || 0; } catch (e) { arWins = 0; }
+  try { arBestDmg = parseInt(localStorage.getItem(AR_BEST_KEY) || '0', 10) || 0; } catch (e) { arBestDmg = 0; }
+
+  /* ---------- Deterministic RNG (no Math.random: tests stay stable) ---------- */
+  function arSeedRand(s) { arRandSeed = (s >>> 0) || 1; }
+  function arRand() {
+    arRandSeed = (arRandSeed * 1103515245 + 12345) & 0x7fffffff;
+    return arRandSeed / 0x7fffffff;
+  }
+  function arSaveRecords() {
+    try { localStorage.setItem(AR_WINS_KEY, String(arWins)); } catch (e) {}
+    try { localStorage.setItem(AR_BEST_KEY, String(arBestDmg)); } catch (e) {}
+  }
+
+  /* ---------- Terrain: 4 maps, one heightmap builder ----------
+     arBuildHeights(mapIdx, rnd) is pure in the map shape: the same
+     formula drives the live terrain (arRand) and the pick-screen
+     preview (a fixed seed), so the preview shows the real layout. */
+  function arBuildHeights(mapIdx, rnd) {
+    var h = [], x, y;
+    if (mapIdx === 0) { // OPEN FIELD: gentle rolling hills, long sightlines
+      var p1 = rnd() * 6.28, p2 = rnd() * 6.28, a1 = 4 + rnd() * 3, a2 = 2 + rnd() * 2;
+      for (x = 0; x < 240; x++) {
+        y = 122 + Math.sin(x * 0.021 + p1) * a1 + Math.sin(x * 0.052 + p2) * a2;
+        if (y < 106) y = 106; if (y > 140) y = 140;
+        h.push(Math.round(y));
+      }
+    } else if (mapIdx === 1) { // TWIN PEAKS: two big hills, valley between
+      var r1 = rnd() * 6.28;
+      for (x = 0; x < 240; x++) {
+        var g1 = Math.exp(-Math.pow((x - 60) / 26, 2));
+        var g2 = Math.exp(-Math.pow((x - 180) / 26, 2));
+        y = 132 - g1 * 36 - g2 * 36 + Math.sin(x * 0.09 + r1) * 3;
+        if (y < 94) y = 94; if (y > 146) y = 146;
+        h.push(Math.round(y));
+      }
+    } else if (mapIdx === 2) { // CANYON: steep walls, deep central dip
+      var r2 = rnd() * 6.28;
+      for (x = 0; x < 240; x++) {
+        y = 146;
+        if (x < 45) { var t = (45 - x) / 45; y = 146 - 50 * Math.pow(t, 1.5); }
+        else if (x > 195) { var t2 = (x - 195) / 45; y = 146 - 50 * Math.pow(t2, 1.5); }
+        y += Math.sin(x * 0.11 + r2) * 2;
+        if (y < 96) y = 96; if (y > 148) y = 148;
+        h.push(Math.round(y));
+      }
+    } else { // HIGH GROUND: left side high, right side low (flippable)
+      var r3 = rnd() * 6.28;
+      for (x = 0; x < 240; x++) {
+        y = 102 + (x / 240) * 38 + Math.sin(x * 0.07 + r3) * 3;
+        if (y < 100) y = 100; if (y > 144) y = 144;
+        h.push(Math.round(y));
+      }
+    }
+    // Smooth once so hills are gentle (no spikes).
+    for (var i = 1; i < 239; i++) h[i] = Math.round((h[i - 1] + h[i] * 2 + h[i + 1]) / 4);
+    return h;
+  }
+  function arGenTerrain(mapIdx) {
+    arTerrain = arBuildHeights(mapIdx, arRand);
+    // HIGH GROUND flips half the time: which team gets the high side
+    // is a coin flip every match, so the map never hands a match to
+    // whoever spawns on one side.
+    if (mapIdx === 3 && arMapFlip) arTerrain = arTerrain.slice().reverse();
+    arRocks = [];
+    for (var r = 0; r < 46; r++) {
+      var rx = Math.floor(arRand() * 240);
+      arRocks.push({ x: rx, y: arTerrain[rx] + 4 + Math.floor(arRand() * 14) });
+    }
+    arScorch = [];
+  }
+  function arMapPreviewHeights(mapIdx) {
+    // Fixed-seed heights for the pick-screen miniature: same shape as
+    // the live map, including the flip when HIGH GROUND is flipped.
+    var s = 1234 + mapIdx * 777;
+    function frnd() { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; }
+    var h = arBuildHeights(mapIdx, frnd);
+    if (mapIdx === 3 && arMapFlip) h = h.slice().reverse();
+    return h;
+  }
+  function arTerrainAt(x) {
+    var ix = Math.floor(x);
+    if (ix < 0) ix = 0; if (ix > 239) ix = 239;
+    return arTerrain[ix];
+  }
+  function arCarve(x, r, mul) {
+    var m = mul || 1;
+    for (var cx = Math.max(0, Math.floor(x - r)); cx <= Math.min(239, Math.ceil(x + r)); cx++) {
+      var d = (cx - x) / r;
+      var depth = (1 - d * d) * r * 0.55 * m;
+      if (depth > 0) arTerrain[cx] = Math.min(152, arTerrain[cx] + depth);
+    }
+  }
+  function arOnScorch(x) {
+    for (var i = 0; i < arScorch.length; i++) {
+      if (Math.abs(x - arScorch[i].x) < arScorch[i].r) return true;
+    }
+    return false;
+  }
+
+  /* ---------- Vehicles ---------- */
+  function arMakeVehicle(def, team, x, isPlayer, pilot) {
+    return { def: def, team: team, x: x, y: arTerrainAt(x), hp: def.hp, maxHp: def.hp,
+      alive: true, charge: 0, recoil: 0, bob: arRand() * 6.28, isPlayer: !!isPlayer,
+      barrelAng: team === 0 ? 45 : 135, fallV: 0, fallFrom: arTerrainAt(x),
+      pilot: pilot || null, pers: (pilot && pilot.pers) || 'BALANCED', stun: 0 };
+  }
+  function arGenEnemies() {
+    // 4 distinct enemy pilots, shuffled — revealed before the player
+    // picks anything, so the whole match is a counter-pick.
+    var pool = [];
+    for (var i = 0; i < AR_PILOTS.length; i++) pool.push(i);
+    for (var s = pool.length - 1; s > 0; s--) { var j = Math.floor(arRand() * (s + 1)); var t = pool[s]; pool[s] = pool[j]; pool[j] = t; }
+    arEnemyPilots = pool.slice(0, 4);
+  }
+  function arPlaceVehicles() {
+    arVehicles = [];
+    var pDef = AR_DEFS[arSelIdx];
+    var mateDefs = arTeammatePilots.map(function (pi) { return AR_DEF_BY_ID[AR_PILOTS[pi].def]; });
+    var foeDefs = arEnemyPilots.map(function (pi) { return AR_DEF_BY_ID[AR_PILOTS[pi].def]; });
+    var fx = [24, 54, 84], ex = [216, 186, 156, 126];
+    arVehicles.push(arMakeVehicle(pDef, 0, fx[0], true, null));
+    arVehicles.push(arMakeVehicle(foeDefs[0], 1, ex[0], false, AR_PILOTS[arEnemyPilots[0]]));
+    arVehicles.push(arMakeVehicle(mateDefs[0], 0, fx[1], false, AR_PILOTS[arTeammatePilots[0]]));
+    arVehicles.push(arMakeVehicle(foeDefs[1], 1, ex[1], false, AR_PILOTS[arEnemyPilots[1]]));
+    arVehicles.push(arMakeVehicle(mateDefs[1], 0, fx[2], false, AR_PILOTS[arTeammatePilots[1]]));
+    arVehicles.push(arMakeVehicle(foeDefs[2], 1, ex[2], false, AR_PILOTS[arEnemyPilots[2]]));
+    arVehicles.push(arMakeVehicle(foeDefs[3], 1, ex[3], false, AR_PILOTS[arEnemyPilots[3]]));
+    // Turn order: strictly alternating for the first 6 turns, the extra
+    // enemy turn placed LAST in the round. Rounds alternate which team
+    // opens (see arNextTurn). 7 is odd, so a double-turn lands at the
+    // round boundary and flips teams each round — never mid-round, and
+    // no single vehicle ever fires twice in one round.
+    arOrder = [arVehicles[0], arVehicles[1], arVehicles[2], arVehicles[3], arVehicles[4], arVehicles[5], arVehicles[6]];
+  }
+  function arCur() { return arOrder[arTurnIdx % arOrder.length]; }
+  function arTeamAlive(team) {
+    var n = 0;
+    for (var i = 0; i < arVehicles.length; i++) if (arVehicles[i].team === team && arVehicles[i].alive) n++;
+    return n;
+  }
+  function arTeamHp(team) {
+    var n = 0;
+    for (var i = 0; i < arVehicles.length; i++) if (arVehicles[i].team === team && arVehicles[i].alive) n += arVehicles[i].hp;
+    return n;
+  }
+  function arUltTotal(def) {
+    // Total damage of one ultimate (what the AI gates on).
+    if (def.ultSplit) return def.ultSplitDmg * def.ultSplitN;
+    return def.ultDmg * (def.ultShots || 1);
+  }
+
+  /* ---------- Start / pick flow ----------
+     Match flow: enemy reveal -> map pick -> vehicle pick -> pick 2
+     teammates -> battle. A confirms / advances, B goes back a step
+     (arUltimate routes B here while in the select phase), Up/Down
+     move the cursor of the current step. */
+  function startArtillery() {
+    arGenTerrain(0); // placeholder background until the map is picked
+    arGenEnemies();
+    arMapFlip = arRand() < 0.5;
+    arSelIdx = 0; arSelWin = 0;
+    arMapIdx = 0;
+    arTmIdx = 0; arTmWin = 0;
+    arTeammatePilots = []; arAvailMates = [];
+    arPickPhase = 'reveal';
+    arPhase = 'select';
+    arPaused = false; arOver = false; arWinner = -1;
+    arVehicles = []; arOrder = []; arTurnIdx = 0;
+    arWind = 0; arRound = 1; arAngle = 45; arPower = 60;
+    arProjs = []; arParts = []; arPops = []; arRings = []; arDeaths = [];
+    arMyDmg = 0; arMyShots = 0; arMyHits = 0;
+    arPlayerTarget = null; arAiMem = {};
+    arFlash = 0; arShakeMag = 0; arShakeT = 0; arBanner = ''; arBannerT = 0; arMuzzle = null;
+    arClouds = [];
+    for (var c = 0; c < 4; c++) arClouds.push({ x: arRand() * 240, y: 12 + arRand() * 30, s: 0.6 + arRand() * 0.9, spd: 0.08 + arRand() * 0.12 });
+    arBirds = [];
+    for (var b = 0; b < 2; b++) arBirds.push({ x: arRand() * 240, y: 20 + arRand() * 26, vx: 0.25 + arRand() * 0.2, t: 0 });
+    arStreaks = [];
+    screen = 'play';
+    JMFGAMES.musicPlay('artillery');
+    JMFGAMES.beep(660, 0.08);
+  }
+  function arSelMove(d) {
+    if (arPhase !== 'select') return;
+    if (arPickPhase === 'map') {
+      arMapIdx = (arMapIdx + d + AR_MAPS.length) % AR_MAPS.length;
+    } else if (arPickPhase === 'vehicle') {
+      arSelIdx = (arSelIdx + d + AR_DEFS.length) % AR_DEFS.length;
+      if (arSelIdx < arSelWin) arSelWin = arSelIdx;
+      if (arSelIdx >= arSelWin + 4) arSelWin = arSelIdx - 3;
+    } else if (arPickPhase === 'mates') {
+      if (arAvailMates.length === 0) return;
+      arTmIdx = (arTmIdx + d + arAvailMates.length) % arAvailMates.length;
+      if (arTmIdx < arTmWin) arTmWin = arTmIdx;
+      if (arTmIdx >= arTmWin + 4) arTmWin = arTmIdx - 3;
+    } else {
+      return; // reveal phase: nothing to move
+    }
+    JMFGAMES.beep(600, 0.04);
+  }
+  function arAction() {
+    if (arPhase === 'select') {
+      if (arPickPhase === 'reveal') { arPickPhase = 'map'; JMFGAMES.beep(700, 0.05); return; }
+      if (arPickPhase === 'map') { arPickPhase = 'vehicle'; JMFGAMES.beep(700, 0.05); return; }
+      if (arPickPhase === 'vehicle') {
+        // Teammate pool: all 16 pilots minus the 4 revealed enemies.
+        arAvailMates = [];
+        for (var i = 0; i < AR_PILOTS.length; i++) if (arEnemyPilots.indexOf(i) < 0) arAvailMates.push(i);
+        arTeammatePilots = [];
+        arTmIdx = 0; arTmWin = 0;
+        arPickPhase = 'mates';
+        JMFGAMES.beep(700, 0.05);
+        return;
+      }
+      if (arPickPhase === 'mates') {
+        if (arAvailMates.length === 0) return;
+        var pi = arAvailMates[arTmIdx];
+        arTeammatePilots.push(pi);
+        arAvailMates.splice(arTmIdx, 1);
+        if (arTmIdx >= arAvailMates.length) arTmIdx = Math.max(0, arAvailMates.length - 1);
+        if (arTmIdx < arTmWin) arTmWin = arTmIdx;
+        JMFGAMES.beep(760, 0.06);
+        if (arTeammatePilots.length >= 2) arStartMatch();
+        return;
+      }
+      return;
+    }
+    if (arPhase !== 'aim' || arPaused) return;
+    arFireShot(arCur(), arAngle, arPower, false);
+  }
+  function arPickBack() {
+    // B on a pick screen: undo the last step (never leaves the flow).
+    if (arPhase !== 'select') return;
+    if (arPickPhase === 'mates') {
+      if (arTeammatePilots.length > 0) {
+        var last = arTeammatePilots.pop();
+        arAvailMates.push(last);
+        arAvailMates.sort(function (a, b) { return a - b; });
+        arTmIdx = arAvailMates.indexOf(last);
+        arTmWin = 0;
+        if (arTmIdx >= arTmWin + 4) arTmWin = arTmIdx - 3;
+      } else {
+        arPickPhase = 'vehicle';
+      }
+    } else if (arPickPhase === 'vehicle') {
+      arPickPhase = 'map';
+    } else if (arPickPhase === 'map') {
+      arPickPhase = 'reveal';
+    }
+    JMFGAMES.beep(500, 0.04);
+  }
+  function arStartMatch() {
+    arGenTerrain(arMapIdx);
+    arPlaceVehicles();
+    arTurnIdx = 0; arRound = 1;
+    arAngle = 45; arPower = 60;
+    arBeginTurn();
+  }
+  function arBeginTurn() {
+    var v = arCur();
+    if (!v.alive) { arNextTurn(); return; }
+    // A stunned vehicle loses its turn (TEMPEST passive), then recovers.
+    if (v.stun > 0) {
+      v.stun--;
+      arPops.push({ x: v.x, y: v.y - 20, txt: 'STUNNED', t: 30, col: '#2DD4BF' });
+      arNextTurn();
+      return;
+    }
+    // BASTION passive: heal 2 HP at the start of its turn.
+    if (v.def.passive === 'regen' && v.hp < v.maxHp) {
+      v.hp = Math.min(v.maxHp, v.hp + 2);
+      arPops.push({ x: v.x, y: v.y - 26, txt: '+2', t: 26, col: '#22C55E' });
+    }
+    arWind = Math.floor(arRand() * 9) - 4; // -4..+4, fresh every turn
+    if (v.isPlayer) {
+      arPhase = 'aim';
+      arAngle = 45; arPower = 60;
+      arShowBanner('YOUR TURN', v.def.name + ' — AIM AND FIRE', 70);
+    } else {
+      arPhase = 'ai';
+      arAiT = 42; // think delay so the player can read the turn
+      arShowBanner(v.team === 0 ? 'ALLY — ' + (v.pilot ? v.pilot.name : v.def.name) : 'FOE — ' + (v.pilot ? v.pilot.name : v.def.name),
+        v.team === 0 ? 'YOUR TEAMMATE IS AIMING' : 'ENEMY IS AIMING', 60);
+    }
+  }
+  function arNextTurn() {
+    for (var i = 0; i < arOrder.length; i++) {
+      arTurnIdx = (arTurnIdx + 1) % arOrder.length;
+      if (arTurnIdx === 0) {
+        arRound++;
+        // Alternate which team starts each round. The first-mover edge
+        // is large in a focus-fire game (measured: the team that always
+        // starts wins ~90% of AI-vs-AI matches; alternating starts
+        // brings it to ~50%), so rounds take turns going first.
+        var startTeam = (arRound % 2 === 1) ? 0 : 1;
+        for (var j = 0; j < arOrder.length; j++) {
+          if (arOrder[j].team === startTeam && arOrder[j].alive) { arTurnIdx = j; break; }
+        }
+      }
+      if (arOrder[arTurnIdx].alive) { arBeginTurn(); return; }
+    }
+  }
+  function arCheckEnd() {
+    var f0 = arTeamAlive(0), f1 = arTeamAlive(1);
+    if (f0 === 0 && f1 === 0) { arFinish(arLastShooterTeam); return true; } // simultaneous wipe: the shooter wins it
+    if (f0 === 0) { arFinish(1); return true; }
+    if (f1 === 0) { arFinish(0); return true; }
+    return false;
+  }
+  function arFinish(winner) {
+    arWinner = winner;
+    arOver = true;
+    arPhase = 'over';
+    screen = 'over';
+    // Best damage is a personal record: it updates on any match end,
+    // win or loss (the over screen shows NEW BEST DAMAGE either way).
+    if (arMyDmg > arBestDmg) arBestDmg = arMyDmg;
+    if (winner === 0) {
+      arWins++;
+      arSaveRecords();
+      JMFGAMES.beep(880, 0.25);
+    } else {
+      arSaveRecords();
+      JMFGAMES.beep(220, 0.3);
+    }
+  }
+  function arShowBanner(txt, sub, t) { arBanner = txt; arBannerSub = sub || ''; arBannerT = t || 80; }
+
+  /* ---------- Aiming / firing ---------- */
+  function arAimAdjust(dAng, dPow) {
+    if (arPhase !== 'aim' || arPaused) return;
+    arAngle += dAng; if (arAngle < 10) arAngle = 10; if (arAngle > 170) arAngle = 170;
+    arPower += dPow; if (arPower < 20) arPower = 20; if (arPower > 100) arPower = 100;
+    JMFGAMES.beep(700, 0.02);
+  }
+  function arUltimate() {
+    if (arPhase === 'select') { arPickBack(); return; }
+    if (arPhase !== 'aim' || arPaused) return;
+    var v = arCur();
+    if (!v.isPlayer || v.charge < 100) { JMFGAMES.beep(160, 0.08); return; }
+    v.charge = 0;
+    arFireShot(v, arAngle, arPower, true);
+  }
+  function arMuzzlePos(v, angDeg) {
+    var rad = angDeg * Math.PI / 180;
+    var dir = v.team === 0 ? 1 : -1;
+    return { x: v.x + Math.cos(rad) * 13 * dir, y: v.y - 6 - Math.sin(rad) * 13 };
+  }
+  function arFireShot(v, angDeg, power, isUlt) {
+    var def = v.def;
+    // Multi-shell ultimates use ultShots + ultSpread; single-shell
+    // ultimates fire one shell. Normal multi-shots use def.spread.
+    var shots = isUlt ? (def.ultShots || 1) : def.shots;
+    var spread = isUlt ? (def.ultSpread || 0) : (def.spread || (def.shots > 1 ? 6 : 0));
+    var mid = (shots - 1) / 2;
+    for (var i = 0; i < shots; i++) {
+      var a = angDeg + (i - mid) * spread;
+      var rad = a * Math.PI / 180;
+      var dir = v.team === 0 ? 1 : -1;
+      var sp = power * AR_VEL_K * def.speedF;
+      var m = arMuzzlePos(v, a);
+      var baseRadius = isUlt ? (def.ultRadius || def.radius) : def.radius;
+      arProjs.push({
+        x: m.x, y: m.y, vx: Math.cos(rad) * sp * dir, vy: -Math.sin(rad) * sp,
+        def: def, owner: v, gravF: def.gravF, speedF: def.speedF,
+        windF: def.windMul || 1, homing: def.homing || 0,
+        bounces: def.bounce,
+        split: (isUlt && def.ultSplit) || (!isUlt && (def.splitN || 0) > 0),
+        splitN: isUlt ? (def.ultSplitN || 0) : (def.splitN || 0),
+        splitDmg: isUlt ? (def.ultSplitDmg || 0) : (def.splitDmg || 0),
+        splitRadius: isUlt ? (def.ultSplitRadius || 0) : (def.splitRadius || 0),
+        pierce: (isUlt && def.ultPierce) || !!def.pierce,
+        dmg: isUlt ? def.ultDmg : def.dmg, radius: baseRadius * (def.radiusMul || 1),
+        trail: [], spin: 0, life: 0, direct: false
+      });
+    }
+    if (isUlt) {
+      arShowBanner(def.ult + '!', v.def.name + ' UNLEASHES THE ULTIMATE', 80);
+      arFlash = Math.max(arFlash, 8);
+      JMFGAMES.beep(990, 0.2);
+    }
+    arLastShooterTeam = v.team;
+    v.recoil = 5;
+    arMuzzle = { x: arMuzzlePos(v, angDeg).x, y: arMuzzlePos(v, angDeg).y, t: 6 };
+    if (v.isPlayer) arMyShots++;
+    arPhase = 'fly';
+    JMFGAMES.beep(isUlt ? 520 : 300, 0.12);
+  }
+
+  /* ---------- Projectile physics (ONE step = half a frame; live and
+     the AI solver use this exact function, so solutions are honest) ---------- */
+  function arNearestFoe(p) {
+    // Nearest living enemy of the projectile's owner (for MIRA homing).
+    var best = null, bd = 1e9;
+    for (var i = 0; i < arVehicles.length; i++) {
+      var f = arVehicles[i];
+      if (!f.alive || !p.owner || f.team === p.owner.team) continue;
+      var d = Math.abs(f.x - p.x) + Math.abs(f.y - p.y);
+      if (d < bd) { bd = d; best = f; }
+    }
+    return best;
+  }
+  function arProjStep(p) {
+    p.vy += AR_GRAV * p.gravF * 0.5;
+    p.vx += arWind * AR_WIND_K * (p.windF || 1) * 0.5;
+    if (p.homing) {
+      var tgt = arNearestFoe(p);
+      if (tgt) p.vx += (tgt.x > p.x ? 1 : -1) * p.homing;
+    }
+    p.x += p.vx * 0.5;
+    p.y += p.vy * 0.5;
+    p.spin += 0.35;
+    p.life++;
+  }
+  function arSimLand(v, angDeg, power) {
+    // Simulate a shot from v with (angDeg, power) against the CURRENT
+    // terrain + wind. Returns {x, y} where it first hits terrain/ground.
+    var def = v.def;
+    var rad = angDeg * Math.PI / 180;
+    var dir = v.team === 0 ? 1 : -1;
+    var sp = power * AR_VEL_K * def.speedF;
+    var m = arMuzzlePos(v, angDeg);
+    var p = { x: m.x, y: m.y, vx: Math.cos(rad) * sp * dir, vy: -Math.sin(rad) * sp,
+      gravF: def.gravF, windF: def.windMul || 1, homing: def.homing || 0, owner: v, spin: 0, life: 0 };
+    for (var i = 0; i < 300; i++) {
+      arProjStep(p);
+      if (p.y >= arTerrainAt(p.x)) return { x: p.x, y: p.y };
+      if (p.x < -12 || p.x > 252 || p.y > 158) return { x: p.x, y: p.y };
+    }
+    return { x: p.x, y: p.y };
+  }
+  function arSolveShot(v, target) {
+    // Real firing solution: try several lob angles, binary-search power
+    // so the shell lands on the target, using the live step function
+    // (gravity + current wind + current terrain). Returns the best
+    // {ang, pw, score} (score = landing error in px).
+    var dir = target.x >= v.x ? 1 : -1;
+    var want = (target.x - v.x) * dir; // distance toward the target
+    var blocked = arLineBlocked(v, target);
+    // When the line is blocked, try the FLATTEST angles first: a steep
+    // lob is fragile — at 78deg a +/-2deg aim error moves the landing
+    // ~22px, so the AI would miss most lob shots and endgames behind
+    // hills would stall. A flat angle that clears the hill is far more
+    // robust (+/-2deg moves it ~2px). The score penalty below rejects
+    // any angle whose shell clips a hill short of the target, so the
+    // solver only goes steeper when the flat angles genuinely cannot
+    // clear. (Measured: this fixed a 16-round WASP-vs-LANCE endgame
+    // that never ended.)
+    var angles = blocked ? [48, 58, 68, 78, 85] : [62, 48, 34, 75, 55];
+    var best = null;
+    for (var a = 0; a < angles.length; a++) {
+      var ang = angles[a];
+      var lo = 20, hi = 100, pw = 60;
+      for (var it = 0; it < 9; it++) {
+        var land = arSimLand(v, ang, pw);
+        var got = (land.x - v.x) * dir;
+        if (Math.abs(got - want) < 1.5) break;
+        if (got < want) lo = pw; else hi = pw;
+        pw = (lo + hi) / 2;
+      }
+      var land2 = arSimLand(v, ang, pw);
+      var score = Math.abs((land2.x - v.x) * dir - want);
+      // Penalise shots that land on a hill short of the target.
+      if (land2.y < arTerrainAt(target.x) - 4) score += 30;
+      if (!best || score < best.score) best = { ang: ang, pw: pw, score: score };
+      if (score < 2.5) break;
+    }
+    return best;
+  }
+  function arLineBlocked(v, target) {
+    // Is there a hill between v and the target (above the straight line)?
+    for (var i = 1; i < 8; i++) {
+      var t = i / 8;
+      var x = v.x + (target.x - v.x) * t;
+      var y = (v.y - 6) + ((target.y - 6) - (v.y - 6)) * t;
+      if (arTerrainAt(x) < y - 2) return true;
+    }
+    return false;
+  }
+
+  /* ---------- Explosion / damage ---------- */
+  function arExplode(x, y, radius, dmg, owner, direct) {
+    arCarve(x, radius, owner && owner.def.carveMul ? owner.def.carveMul : 1);
+    // Fireball + smoke + debris.
+    for (var i = 0; i < 14; i++) {
+      var a = arRand() * 6.28, s = 0.5 + arRand() * 2.2;
+      arParts.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 0.8,
+        life: 14 + Math.floor(arRand() * 12), max: 26, col: i % 3 === 0 ? '#FDE68A' : (i % 3 === 1 ? '#F97316' : '#EF4444'), r: 1 + arRand() * 2, grav: 0.02 });
+    }
+    for (var j = 0; j < 7; j++) {
+      arParts.push({ x: x + (arRand() - 0.5) * radius, y: y - arRand() * 6,
+        vx: (arRand() - 0.5) * 0.4, vy: -0.4 - arRand() * 0.5,
+        life: 30 + Math.floor(arRand() * 20), max: 50, col: '#9CA3AF', r: 2 + arRand() * 2, grav: -0.01 });
+    }
+    for (var k = 0; k < 6; k++) {
+      arParts.push({ x: x, y: y, vx: (arRand() - 0.5) * 4, vy: -1 - arRand() * 2.5,
+        life: 22 + Math.floor(arRand() * 10), max: 32, col: '#3F3F46', r: 1, grav: 0.12 });
+    }
+    arRings.push({ x: x, y: y, r: 3, life: 16 });
+    arShakeIt(Math.min(6, 2 + radius / 7), 10 + Math.floor(radius / 4));
+    arFlash = Math.max(arFlash, 6);
+    JMFGAMES.beep(140, 0.15);
+    if (direct) arPops.push({ x: x, y: y - 16, txt: 'DIRECT HIT!', t: 40, col: '#FFD93D' });
+    var hitAny = false;
+    for (var v = 0; v < arVehicles.length; v++) {
+      var f = arVehicles[v];
+      if (!f.alive) continue;
+      var dx = f.x - x, dy = (f.y - 5) - y;
+      var d = Math.sqrt(dx * dx + dy * dy);
+      if (d < radius + 10) {
+        var dealt = Math.max(1, Math.round(dmg * (1 - d / (radius + 16)) * (direct ? 1.25 : 1)));
+        if (d < 6) dealt = Math.max(dealt, Math.round(dmg * 1.25));
+        // Attacker passives (owner = the shooter).
+        if (owner) {
+          if (owner.def.passive === 'surge' && owner.hp >= owner.maxHp) dealt = Math.round(dealt * 1.15);
+          if (owner.def.passive === 'predator' && f.hp < f.maxHp / 2) dealt = Math.round(dealt * 1.15);
+          if (owner.def.passive === 'range' && Math.abs(f.x - owner.x) > 100) dealt = Math.round(dealt * 1.1);
+          if (owner.def.passive === 'venom' && direct && d < 6) dealt += 8;
+          if (owner.def.passive === 'scorch' && arOnScorch(f.x)) dealt += 6;
+        }
+        // Victim passives.
+        if (f.def.dmgTakenMul) dealt = Math.max(1, Math.round(dealt * f.def.dmgTakenMul));
+        if (f.def.passive === 'splash' && !direct) dealt = Math.max(1, Math.round(dealt * 0.9));
+        arDamageVehicle(f, dealt, owner);
+        hitAny = true;
+        // TEMPEST passive: a direct hit stuns the target for 1 turn.
+        if (direct && owner && owner.def.passive === 'stagger' && d < 8) {
+          f.stun = 1;
+          arPops.push({ x: f.x, y: f.y - 26, txt: 'STUNNED!', t: 34, col: '#2DD4BF' });
+        }
+        if (owner && owner.isPlayer && f.team !== owner.team) { arMyHits++; }
+      }
+    }
+    // Scorch mark AFTER the damage loop: EMBER's SCORCH passive checks
+    // whether the victim was ALREADY on scorched ground — if the mark
+    // went down first, every explosion would count as scorched ground
+    // (the victim stands at the blast centre).
+    arScorch.push({ x: x, r: radius * 0.7, t: 600 });
+    if (arScorch.length > 14) arScorch.shift();
+    return hitAny;
+  }
+  function arDamageVehicle(f, dmg, src) {
+    if (!f.alive) return;
+    f.hp -= dmg;
+    arPops.push({ x: f.x, y: f.y - 18, txt: '-' + dmg, t: 34, col: f.team === 0 ? '#F87171' : '#FDE68A' });
+    // Ult charge: dealing damage charges the attacker, taking damage
+    // charges the victim a little (same rule for AI and player).
+    // WASP passive (LIGHT FRAME) charges 25% faster, both ways; DREAD
+    // passive (DOOM) makes its victims charge 25% slower.
+    if (src && src.alive && src !== f) src.charge = Math.min(100, src.charge + Math.round(dmg * (src.def.chargeMul || 1)));
+    var victimGain = Math.round(dmg * 0.5 * (f.def.chargeMul || 1));
+    if (src && src.def.passive === 'doom') victimGain = Math.round(victimGain * 0.75);
+    f.charge = Math.min(100, f.charge + victimGain);
+    // COBALT passive (CHILL): a hit drains 10 ultimate charge.
+    if (src && src.def.passive === 'chill') f.charge = Math.max(0, f.charge - 10);
+    if (src && src.isPlayer) arMyDmg += dmg;
+    if (f.hp <= 0) {
+      f.hp = 0; f.alive = false;
+      arDeaths.push({ x: f.x, y: f.y, t: 40 });
+      for (var i = 0; i < 10; i++) {
+        arParts.push({ x: f.x, y: f.y - 4, vx: (arRand() - 0.5) * 3, vy: -0.5 - arRand() * 2,
+          life: 24 + Math.floor(arRand() * 12), max: 36, col: i % 2 ? '#6B7280' : f.def.col, r: 1 + arRand(), grav: 0.06 });
+      }
+      arShakeIt(4, 12);
+      JMFGAMES.beep(180, 0.2);
+    }
+  }
+  function arShakeIt(mag, t) { if (mag > arShakeMag) arShakeMag = mag; if (t > arShakeT) arShakeT = t; }
+
+  /* ---------- AI: real solutions, smart targets, no waste, adapts ----------
+     Personalities change DECISIONS only (target weights + ult gating),
+     never aim error or damage. */
+  var AR_AI_ERR_DEG = 3.5;   // aim error (degrees) — tuned for 3v4:
+  var AR_AI_ERR_POW = 6.0;   // aim error (power). A larger error dilutes
+  // the enemy's 4v3 numbers edge (more shots, more misses) without
+  // buffing the player side: same physics, same damage, no hidden
+  // bonuses for anyone.
+  function arPers(v) { return (v && v.pers) || 'BALANCED'; }
+  function arAiPickTarget(v, exclude) {
+    var foes = [];
+    for (var i = 0; i < arVehicles.length; i++) {
+      var f = arVehicles[i];
+      if (f.alive && f.team !== v.team && (!exclude || exclude.indexOf(f) < 0)) foes.push(f);
+    }
+    if (foes.length === 0) return null;
+    var pers = arPers(v);
+    // Teammate coordination: focus the player's target when reasonable.
+    var focusRoll = pers === 'GUARDIAN' ? 0.3 : 0.6;
+    if (v.team === 0 && !v.isPlayer && arPlayerTarget && arPlayerTarget.alive && arPlayerTarget.team !== 0 && (!exclude || exclude.indexOf(arPlayerTarget) < 0)) {
+      if (arRand() < focusRoll) return arPlayerTarget;
+    }
+    // Protect a weak teammate: attack the enemy closest to them.
+    // GUARDIAN watches over teammates at 50 HP and almost always
+    // answers; AGGRESSIVE rarely bothers.
+    var protectHp = pers === 'GUARDIAN' ? 50 : 35;
+    var protectRoll = pers === 'GUARDIAN' ? 0.9 : (pers === 'AGGRESSIVE' ? 0.4 : (pers === 'BALANCED' ? 0.7 : 0.5));
+    if (v.team === 0 && !v.isPlayer) {
+      var weak = null;
+      for (var w = 0; w < arVehicles.length; w++) {
+        var m = arVehicles[w];
+        if (m.alive && m.team === 0 && m.hp <= protectHp && (!weak || m.hp < weak.hp)) weak = m;
+      }
+      if (weak) {
+        var near = null, nd = 1e9;
+        for (var n = 0; n < foes.length; n++) {
+          var d = Math.abs(foes[n].x - weak.x);
+          if (d < nd) { nd = d; near = foes[n]; }
+        }
+        if (near && arRand() < protectRoll) return near;
+      }
+    }
+    // Score: most dangerous first, finish off low-HP vehicles, gang up
+    // on the player. Personalities shift the weights.
+    // Gang-up is deliberately small: it only ever benefits the enemy
+    // (it bonuses focusing the player's vehicle — no enemy is isPlayer,
+    // so the player side never gets it). Keeping it low is what lets a
+    // good player win ~25-40% despite being outnumbered 4v3.
+    var dmgW = 1.2, finBonus = 45, oneShot = 25, gangUp = 5;
+    if (pers === 'AGGRESSIVE') { dmgW = 1.6; finBonus = 80; oneShot = 25; gangUp = 10; }
+    else if (pers === 'GUARDIAN') { dmgW = 1.2; finBonus = 20; oneShot = 15; gangUp = 8; }
+    else if (pers === 'SNIPER') { dmgW = 1.5; finBonus = 25; oneShot = 20; gangUp = 0; }
+    else if (pers === 'OPPORTUNIST') { dmgW = 1.0; finBonus = 70; oneShot = 30; gangUp = 8; }
+    var best = null, bestScore = -1e9;
+    for (var k = 0; k < foes.length; k++) {
+      var t = foes[k];
+      var s = t.def.dmg * dmgW;                   // dangerous = high damage
+      if (t.hp <= 30) s += finBonus;              // finish off the weak
+      else if (t.hp <= t.def.dmg) s += oneShot;   // one-shot range
+      if (t.isPlayer) s += gangUp;                // gang up on the player
+      if (pers === 'SNIPER' && Math.abs(t.x - v.x) > 100) s += 20; // far targets
+      s += (t.maxHp - t.hp) * 0.15;               // already hurt = press on
+      if (s > bestScore) { bestScore = s; best = t; }
+    }
+    return best;
+  }
+  function arAiShouldUlt(v, target) {
+    if (v.charge < 100 || !target) return false;
+    var pers = arPers(v);
+    var ultDmg = arUltTotal(v.def);
+    // OPPORTUNIST holds its ultimate strictly for killing blows.
+    if (pers === 'OPPORTUNIST') return target.hp <= ultDmg;
+    // Killing blow: the ultimate finishes the target.
+    if (target.hp <= ultDmg) return true;
+    // GUARDIAN spends it to save a weak teammate under threat.
+    if (pers === 'GUARDIAN') {
+      var weak = null;
+      for (var w = 0; w < arVehicles.length; w++) {
+        var m = arVehicles[w];
+        if (m.alive && m.team === v.team && m.hp <= 50 && (!weak || m.hp < weak.hp)) weak = m;
+      }
+      if (weak) {
+        var near = null, nd = 1e9;
+        for (var n = 0; n < arVehicles.length; n++) {
+          var f = arVehicles[n];
+          if (f.alive && f.team !== v.team && Math.abs(f.x - weak.x) < nd) { nd = Math.abs(f.x - weak.x); near = f; }
+        }
+        if (near === target) return true;
+      }
+      return false;
+    }
+    // SNIPER spends it on a far target it can nearly finish.
+    if (pers === 'SNIPER' && Math.abs(target.x - v.x) > 120 && target.hp <= ultDmg * 1.5) return true;
+    // AGGRESSIVE spends it on a near-kill too.
+    if (pers === 'AGGRESSIVE' && target.hp <= ultDmg * 1.25) return true;
+    // Clump: two or more enemies near the target.
+    var clump = 0;
+    for (var i = 0; i < arVehicles.length; i++) {
+      var f = arVehicles[i];
+      if (f.alive && f.team !== v.team && Math.abs(f.x - target.x) < (v.def.ultRadius || v.def.radius) + 14) clump++;
+    }
+    if (clump >= 2) return true;
+    // Match swing: down to one vehicle while the enemy has two or more.
+    if (arTeamAlive(v.team) === 1 && arTeamAlive(1 - v.team) >= 2 && target.def.dmg >= 26) return true;
+    return false;
+  }
+  function arAiTakeTurn(v) {
+    if (!v.alive || arPhase === 'over') return;
+    // Pick a target the vehicle can actually REACH: the preferred target
+    // (most dangerous / lowest HP) may be out of range (max power falls
+    // short), and shooting at it forever stalls the match — so if the
+    // solver cannot reach it, try the next-best foe before falling back
+    // to a blind lob.
+    var tried = [];
+    var target = null, sol = null;
+    for (var att = 0; att < 3; att++) {
+      target = arAiPickTarget(v, tried);
+      if (!target) break;
+      sol = arSolveShot(v, target);
+      if (sol && sol.score <= 40) break;
+      tried.push(target);
+      target = null; sol = null;
+    }
+    if (!target) {
+      target = arAiPickTarget(v);
+      if (!target) { arNextTurn(); return; }
+      sol = { ang: 78, pw: 85, score: 99 }; // no foe reachable: lob and hope
+    }
+    var useUlt = arAiShouldUlt(v, target);
+    // Miss correction: learn from the last shot at this target. Range
+    // grows with power SQUARED (R ~ pw^2), so a fixed linear factor
+    // (the old "-err * 0.45") overcorrects wildly at low power — the
+    // LANCE at pw 29 would swing +13 power for a -30px miss and fly
+    // off-screen, then swing back, and never converge. The correct
+    // step is err / (dR/dpw), with dR/dpw = 2 * dist / pw, clamped so
+    // one bad read can never throw the aim off a cliff.
+    var mem = arAiMem[v.def.id + v.team + v.x];
+    if (mem && mem.tx === target.x) {
+      var dist = Math.abs(target.x - v.x);
+      var sens = 2 * dist / Math.max(20, sol.pw); // px of range per power point
+      var corr = -mem.err / sens;
+      if (corr > 8) corr = 8; if (corr < -8) corr = -8;
+      sol.pw += corr;
+    }
+    // Small error only: the AI hits a solid majority of its shots.
+    var ang = sol.ang + (arRand() * 2 - 1) * AR_AI_ERR_DEG;
+    var pw = sol.pw + (arRand() * 2 - 1) * AR_AI_ERR_POW;
+    if (ang < 10) ang = 10; if (ang > 170) ang = 170;
+    if (pw < 20) pw = 20; if (pw > 100) pw = 100;
+    v.arLastTarget = target; v.arLastSol = sol;
+    if (useUlt) v.charge = 0;
+    arFireShot(v, ang, pw, useUlt);
+  }
+  function arRecordMiss(owner, landX) {
+    // Called when an AI owner's shell explodes: remember the landing
+    // error against its target so the next shot corrects.
+    if (!owner || owner.isPlayer || !owner.arLastTarget) return;
+    var t = owner.arLastTarget;
+    arAiMem[owner.def.id + owner.team + owner.x] = { tx: t.x, err: landX - t.x };
+  }
+
+  /* ---------- Update (one fixed 1/60s step) ---------- */
+  function arUpdate() {
+    if (screen !== 'play') return;
+    arFrame++;
+    // Ambient motion: clouds drift, birds fly, wind streaks blow.
+    for (var c = 0; c < arClouds.length; c++) {
+      var cl = arClouds[c];
+      cl.x += cl.spd + arWind * 0.008;
+      if (cl.x > 250) cl.x = -30;
+      if (cl.x < -30) cl.x = 250;
+    }
+    for (var b = 0; b < arBirds.length; b++) {
+      var bd = arBirds[b];
+      bd.x += bd.vx; bd.t++;
+      if (bd.x > 248) { bd.x = -8; bd.y = 16 + arRand() * 30; }
+    }
+    if (arFrame % 9 === 0 && arWind !== 0) {
+      arStreaks.push({ x: arWind > 0 ? -10 : 250, y: 14 + arRand() * 70, len: 8 + arRand() * 10 });
+    }
+    for (var s = 0; s < arStreaks.length; s++) arStreaks[s].x += arWind * 0.55;
+    arStreaks = arStreaks.filter(function (st) { return st.x > -20 && st.x < 260; });
+    // Timers / effects decay.
+    if (arBannerT > 0) arBannerT--;
+    if (arFlash > 0) arFlash -= 0.5;
+    if (arShakeT > 0) { arShakeT--; if (arShakeT === 0) arShakeMag = 0; }
+    if (arMuzzle && --arMuzzle.t <= 0) arMuzzle = null;
+    for (var i = arParts.length - 1; i >= 0; i--) {
+      var p = arParts[i];
+      p.vy += (p.grav || 0); p.x += p.vx; p.y += p.vy; p.life--;
+      if (p.life <= 0) arParts.splice(i, 1);
+    }
+    for (var j = arPops.length - 1; j >= 0; j--) {
+      arPops[j].y -= 0.5; arPops[j].t--;
+      if (arPops[j].t <= 0) arPops.splice(j, 1);
+    }
+    for (var k = arRings.length - 1; k >= 0; k--) {
+      arRings[k].r += 1.6; arRings[k].life--;
+      if (arRings[k].life <= 0) arRings.splice(k, 1);
+    }
+    for (var sc = arScorch.length - 1; sc >= 0; sc--) {
+      arScorch[sc].t--;
+      if (arScorch[sc].t <= 0) arScorch.splice(sc, 1);
+    }
+    for (var d = arDeaths.length - 1; d >= 0; d--) {
+      arDeaths[d].t--;
+      if (arDeaths[d].t <= 0) arDeaths.splice(d, 1);
+    }
+    // Vehicles: idle bob, recoil decay, barrel eases to aim, fall to ground.
+    for (var v = 0; v < arVehicles.length; v++) {
+      var f = arVehicles[v];
+      f.bob += 0.06;
+      if (f.recoil > 0) f.recoil *= 0.86;
+      var wantAng = (arPhase === 'aim' && f.isPlayer) ? arAngle : (f.team === 0 ? 45 : 135);
+      var da = wantAng - f.barrelAng;
+      if (da > 180) da -= 360; if (da < -180) da += 360;
+      f.barrelAng += da * 0.18; // smooth rotation, no snapping
+      // Gravity: a vehicle whose ground was blasted away drops, and a
+      // real drop hurts (fall damage). Small settles (<=10px) never
+      // hurt, and RICOCHET's SURE FOOTING never takes fall damage.
+      if (f.alive) {
+        var gy = arTerrainAt(f.x);
+        if (f.y < gy) {
+          if (f.fallV === 0) f.fallFrom = f.y; // fall just started
+          f.fallV += 0.25;
+          f.y += f.fallV;
+          if (f.y >= gy) {
+            f.y = gy;
+            var drop = gy - f.fallFrom;
+            f.fallV = 0;
+            if (drop > AR_FALL_MIN && !f.def.fallImmune) {
+              var fd = Math.min(AR_FALL_CAP, Math.round((drop - AR_FALL_MIN) * AR_FALL_K));
+              if (fd > 0) {
+                arDamageVehicle(f, fd, null);
+                arPops.push({ x: f.x, y: f.y - 26, txt: 'FALL -' + fd, t: 34, col: '#D1D5DB' });
+                // A fall can finish a team mid-flight: end the match
+                // now instead of letting a dead team take turns.
+                if (!f.alive && arVehicles.length > 0 && arPhase !== 'select' && arPhase !== 'over') arCheckEnd();
+              }
+            }
+          }
+        } else { f.fallV = 0; f.y = gy; }
+      }
+    }
+    if (arPaused || arPhase === 'select' || arPhase === 'over') return;
+    if (arPhase === 'ai') {
+      if (--arAiT <= 0) arAiTakeTurn(arCur());
+      return;
+    }
+    if (arPhase === 'fly') {
+      arStepProjectiles();
+      if (arProjs.length === 0) {
+        if (!arCheckEnd()) arNextTurn();
+      }
+    }
+  }
+  function arStepProjectiles() {
+    for (var i = arProjs.length - 1; i >= 0; i--) {
+      var p = arProjs[i];
+      var dead = false;
+      for (var s = 0; s < AR_SUB; s++) {
+        arProjStep(p);
+        p.trail.push({ x: p.x, y: p.y });
+        if (p.trail.length > 10) p.trail.shift();
+        // Vehicle hit (any vehicle, including teammates — shells hurt friends).
+        for (var v = 0; v < arVehicles.length; v++) {
+          var f = arVehicles[v];
+          if (!f.alive) continue;
+          if (Math.abs(p.x - f.x) < 8 && Math.abs(p.y - (f.y - 5)) < 8) {
+            if (p.pierce) {
+              // PIERCING shots pass THROUGH — damage each vehicle once
+              // and keep flying (no explosion, no stop).
+              if (!p.hitList) p.hitList = [];
+              if (p.hitList.indexOf(f) < 0) {
+                p.hitList.push(f);
+                arDamageVehicle(f, p.dmg, p.owner);
+                for (var sp = 0; sp < 5; sp++) arParts.push({ x: p.x, y: p.y, vx: (arRand() - 0.5) * 2, vy: (arRand() - 0.5) * 2, life: 10, max: 10, col: '#BFDBFE', r: 1, grav: 0 });
+              }
+              continue;
+            }
+            p.direct = true;
+            if (p.split) { arSplitCluster(p); }
+            else { arExplode(p.x, p.y, p.radius, p.dmg, p.owner, true); arRecordMiss(p.owner, p.x); }
+            dead = true;
+            break;
+          }
+        }
+        if (dead) break;
+        if (!p.pierce && p.y >= arTerrainAt(p.x)) {
+          if (p.bounces > 0) {
+            p.bounces--; p.vy = -Math.abs(p.vy) * 0.55; p.vx *= 0.8; p.y = arTerrainAt(p.x) - 1;
+            for (var du = 0; du < 4; du++) arParts.push({ x: p.x, y: p.y, vx: (arRand() - 0.5) * 1.5, vy: -arRand() * 1, life: 12, max: 12, col: '#A8A29E', r: 1, grav: 0.05 });
+          } else if (p.split) { arSplitCluster(p); dead = true; }
+          else { arExplode(p.x, p.y, p.radius, p.dmg, p.owner, false); arRecordMiss(p.owner, p.x); dead = true; }
+          if (dead) break;
+        }
+        if (p.pierce && (p.x < -10 || p.x > 250)) { dead = true; break; }
+        if (!p.pierce && (p.x < -12 || p.x > 252 || p.y > 158)) { dead = true; break; }
+        if (p.life > 260) { dead = true; break; }
+      }
+      if (dead) arProjs.splice(i, 1);
+    }
+  }
+  function arSplitCluster(p) {
+    // A splitting shell bursts into bomblets that fan out around its
+    // incoming direction and explode where they land.
+    var base = Math.atan2(p.vy, p.vx);
+    for (var i = 0; i < p.splitN; i++) {
+      var a = base + (i - (p.splitN - 1) / 2) * 0.45;
+      var sp = 2.0 + arRand() * 1.4;
+      arProjs.push({ x: p.x, y: p.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+        def: p.def, owner: p.owner, gravF: 1.0, speedF: 1.0, windF: 1, homing: 0, bounces: 0, split: false, pierce: false,
+        dmg: p.splitDmg, radius: p.splitRadius, trail: [], spin: 0, life: 0, direct: false });
+    }
+    arPops.push({ x: p.x, y: p.y - 14, txt: p.def.id === 'splinter' ? 'SHRAPNEL!' : 'CLUSTER!', t: 36, col: p.def.col });
+    JMFGAMES.beep(700, 0.1);
+  }
+
+  /* ---------- Drawing ---------- */
+  function arDrawSky() {
+    // Layered sky in the picked map's palette, sun with rays, drifting
+    // clouds, distant hills, birds — something alive in the background.
+    var mp = AR_MAPS[arMapIdx];
+    ctx.fillStyle = mp.sky[0]; ctx.fillRect(0, 0, 240, 55);
+    ctx.fillStyle = mp.sky[1]; ctx.fillRect(0, 55, 240, 40);
+    ctx.fillStyle = mp.sky[2]; ctx.fillRect(0, 95, 240, 65);
+    // Sun with rays, top right.
+    var sx = 208, sy = 22;
+    ctx.fillStyle = '#FFD93D';
+    for (var r = 0; r < 8; r++) {
+      var ra = r * 0.785 + arFrame * 0.002;
+      ctx.fillRect(sx + Math.cos(ra) * 14 - 1, sy + Math.sin(ra) * 14 - 1, 2, 2);
+    }
+    ctx.beginPath(); ctx.arc(sx, sy, 9, 0, 6.29); ctx.fill();
+    ctx.fillStyle = '#FFF3B0';
+    ctx.beginPath(); ctx.arc(sx, sy, 6, 0, 6.29); ctx.fill();
+    // Distant hills (two layers, darker behind).
+    ctx.fillStyle = '#8FB8D8';
+    ctx.beginPath(); ctx.moveTo(0, 108);
+    for (var x = 0; x <= 240; x += 12) ctx.lineTo(x, 100 + Math.sin(x * 0.03 + 1.2) * 7);
+    ctx.lineTo(240, 160); ctx.lineTo(0, 160); ctx.fill();
+    ctx.fillStyle = '#6FA85A';
+    ctx.beginPath(); ctx.moveTo(0, 118);
+    for (var x2 = 0; x2 <= 240; x2 += 12) ctx.lineTo(x2, 112 + Math.sin(x2 * 0.045 + 4.0) * 6);
+    ctx.lineTo(240, 160); ctx.lineTo(0, 160); ctx.fill();
+    // Clouds (two depths, drifting).
+    for (var c = 0; c < arClouds.length; c++) {
+      var cl = arClouds[c];
+      ctx.fillStyle = c % 2 ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.6)';
+      var s = cl.s;
+      ctx.beginPath(); ctx.arc(cl.x, cl.y, 7 * s, 0, 6.29); ctx.fill();
+      ctx.beginPath(); ctx.arc(cl.x + 8 * s, cl.y + 1, 5 * s, 0, 6.29); ctx.fill();
+      ctx.beginPath(); ctx.arc(cl.x - 8 * s, cl.y + 2, 5 * s, 0, 6.29); ctx.fill();
+    }
+    // Birds.
+    ctx.fillStyle = '#334155';
+    for (var b = 0; b < arBirds.length; b++) {
+      var bd = arBirds[b];
+      var flap = Math.sin(arFrame * 0.25 + b * 2) * 2;
+      ctx.fillRect(bd.x - 3, bd.y + flap * 0.4, 3, 1);
+      ctx.fillRect(bd.x + 1, bd.y - flap * 0.4, 3, 1);
+    }
+    // Wind streaks (clipped to the screen — they blow in from off-screen).
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    for (var s2 = 0; s2 < arStreaks.length; s2++) {
+      var st = arStreaks[s2];
+      var sx2 = Math.max(0, st.x), sw2 = Math.min(st.len, 240 - sx2);
+      if (sw2 > 0) ctx.fillRect(sx2, st.y, sw2, 1);
+    }
+  }
+  function arDrawTerrain() {
+    // Shake is frame-based (never consumes the RNG in the draw path,
+    // so AI outcomes do not depend on how often the screen is drawn).
+    var mp = AR_MAPS[arMapIdx];
+    var shX = arShakeMag > 0 ? Math.sin(arFrame * 1.9) * arShakeMag * 0.5 : 0;
+    var shY = arShakeMag > 0 ? Math.cos(arFrame * 2.3) * arShakeMag * 0.5 : 0;
+    ctx.save();
+    ctx.translate(shX, shY);
+    // Dirt body in the map's palette.
+    ctx.fillStyle = mp.ground;
+    ctx.beginPath(); ctx.moveTo(0, 160);
+    for (var x = 0; x < 240; x++) ctx.lineTo(x, arTerrain[x]);
+    ctx.lineTo(239, 160); ctx.fill();
+    // Dirt shading + texture speckles.
+    ctx.fillStyle = mp.dark;
+    for (var r = 0; r < arRocks.length; r++) {
+      var rk = arRocks[r];
+      ctx.fillRect(rk.x, rk.y, 2, 1);
+    }
+    ctx.fillStyle = mp.dark;
+    ctx.beginPath(); ctx.moveTo(0, 160);
+    for (var x3 = 0; x3 < 240; x3++) ctx.lineTo(x3, arTerrain[x3] + 9);
+    ctx.lineTo(239, 160); ctx.fill();
+    // Grass top with tufts.
+    ctx.fillStyle = mp.grass;
+    for (var gx = 0; gx < 240; gx += 2) ctx.fillRect(gx, arTerrain[gx], 2, 3);
+    ctx.fillStyle = mp.grassLite;
+    for (var tx = 3; tx < 240; tx += 17) ctx.fillRect(tx, arTerrain[tx] - 2, 1, 2);
+    // Scorch marks left by explosions.
+    for (var s = 0; s < arScorch.length; s++) {
+      var sc = arScorch[s];
+      ctx.globalAlpha = Math.min(0.55, sc.t / 600 * 0.55);
+      ctx.fillStyle = '#1F2937';
+      ctx.beginPath(); ctx.arc(sc.x, arTerrainAt(sc.x) + 1, sc.r * 0.6, 0, 6.29); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+    return { x: shX, y: shY };
+  }
+  function arDrawVehicle(f) {
+    var bobY = Math.sin(f.bob) * 1;
+    var rx = f.recoil * (f.team === 0 ? -1 : 1);
+    var x = f.x + rx, y = f.y + bobY;
+    var def = f.def;
+    ctx.save();
+    ctx.translate(x, y);
+    // Ground shadow.
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath(); ctx.arc(0, 1, 9, 0, 6.29); ctx.fill();
+    if (!f.alive) { ctx.restore(); return; }
+    var dir = f.team === 0 ? 1 : -1;
+    // Tracks / wheels.
+    ctx.fillStyle = '#1F2937';
+    ctx.fillRect(-8, -3, 16, 4);
+    ctx.fillStyle = '#4B5563';
+    ctx.fillRect(-7, -2, 3, 2); ctx.fillRect(-1, -2, 3, 2); ctx.fillRect(5, -2, 3, 2);
+    // Body with shading: dark base, main colour, light top.
+    ctx.fillStyle = def.dark;
+    ctx.fillRect(-7, -9, 14, 7);
+    ctx.fillStyle = def.col;
+    ctx.fillRect(-7, -9, 14, 5);
+    ctx.fillStyle = def.lite;
+    ctx.fillRect(-7, -9, 14, 2);
+    // Vehicle-specific silhouette details.
+    if (def.id === 'titan') {
+      ctx.fillStyle = def.dark; ctx.fillRect(-4, -13, 8, 5); // turret
+      ctx.fillStyle = def.lite; ctx.fillRect(-4, -13, 8, 2);
+      ctx.fillStyle = '#F59E0B'; ctx.fillRect(-2, -12, 2, 2); // hatch light
+    } else if (def.id === 'wasp') {
+      ctx.fillStyle = '#111827'; ctx.fillRect(-7, -7, 3, 3); ctx.fillRect(4, -7, 3, 3); // stripes
+      ctx.fillStyle = def.dark; ctx.fillRect(-3, -12, 6, 4); // twin mount
+      ctx.fillStyle = def.lite; ctx.fillRect(-3, -12, 6, 1);
+    } else if (def.id === 'lance') {
+      ctx.fillStyle = def.dark; ctx.fillRect(-5, -12, 10, 4); // slim cabin
+      ctx.fillStyle = '#E0F2FE'; ctx.fillRect(1, -11, 3, 2); // scope glass
+      ctx.fillStyle = def.lite; ctx.fillRect(-5, -12, 10, 1);
+    } else if (def.id === 'ricochet') {
+      ctx.fillStyle = def.dark;
+      ctx.beginPath(); ctx.arc(0, -7, 6, 0, 6.29); ctx.fill(); // round dome
+      ctx.fillStyle = def.col;
+      ctx.beginPath(); ctx.arc(0, -8, 6, 0, 6.29); ctx.fill();
+      ctx.fillStyle = def.lite;
+      ctx.beginPath(); ctx.arc(-2, -10, 2, 0, 6.29); ctx.fill();
+    } else if (def.id === 'havoc') {
+      ctx.fillStyle = def.dark; ctx.fillRect(-2, -15, 4, 7); // mortar tube
+      ctx.fillStyle = def.lite; ctx.fillRect(-2, -15, 4, 2);
+    } else if (def.id === 'viper') {
+      ctx.fillStyle = def.lite; ctx.fillRect(-6, -8, 2, 3); ctx.fillRect(4, -8, 2, 3); // fangs
+      ctx.fillStyle = def.dark; ctx.fillRect(-2, -11, 4, 2);
+    } else if (def.id === 'falcon') {
+      ctx.fillStyle = def.lite; ctx.fillRect(-11, -7, 4, 2); ctx.fillRect(7, -7, 4, 2); // wings
+      ctx.fillStyle = def.dark; ctx.fillRect(-3, -12, 6, 4);
+    } else if (def.id === 'bastion') {
+      ctx.fillStyle = def.dark; // battlements
+      ctx.fillRect(-7, -12, 3, 3); ctx.fillRect(-1, -12, 3, 3); ctx.fillRect(5, -12, 3, 3);
+    } else if (def.id === 'spark') {
+      ctx.fillStyle = def.lite; // coil zigzag
+      ctx.fillRect(-4, -13, 2, 2); ctx.fillRect(0, -11, 2, 2); ctx.fillRect(3, -13, 2, 2);
+    } else if (def.id === 'mira') {
+      ctx.fillStyle = def.lite; // seeker dish
+      ctx.beginPath(); ctx.arc(0, -10, 3, 0, 6.29); ctx.fill();
+      ctx.fillStyle = def.dark; ctx.fillRect(0, -11, 2, 2);
+    } else if (def.id === 'dread') {
+      ctx.fillStyle = def.dark; ctx.fillRect(-6, -13, 2, 4); ctx.fillRect(4, -13, 2, 4); // horns
+      ctx.fillStyle = def.lite; ctx.fillRect(-3, -12, 6, 2);
+    } else if (def.id === 'tempest') {
+      ctx.fillStyle = def.lite; ctx.fillRect(-3, -11, 6, 2); ctx.fillRect(-1, -13, 2, 2); // swirl
+    } else if (def.id === 'cobalt') {
+      ctx.fillStyle = def.lite; ctx.fillRect(-2, -14, 4, 5); // crystal
+      ctx.fillStyle = '#FFFFFF'; ctx.fillRect(-1, -14, 2, 2);
+    } else if (def.id === 'ember') {
+      ctx.fillStyle = def.lite; // flame
+      ctx.beginPath(); ctx.arc(0, -11, 3, 0, 6.29); ctx.fill();
+      ctx.fillStyle = def.col;
+      ctx.beginPath(); ctx.arc(-1, -9, 2, 0, 6.29); ctx.fill();
+    } else if (def.id === 'orbit') {
+      ctx.fillStyle = def.lite; // satellite dish
+      ctx.beginPath(); ctx.arc(0, -10, 4, 0, 6.29); ctx.fill();
+      ctx.fillStyle = def.dark; ctx.fillRect(-1, -12, 2, 2);
+    } else { // splinter: three frag pods
+      ctx.fillStyle = def.dark;
+      ctx.fillRect(-7, -11, 3, 3); ctx.fillRect(-1, -11, 3, 3); ctx.fillRect(5, -11, 3, 3);
+    }
+    // Barrel: rotates smoothly with the aim angle (never snaps).
+    var bx = Math.cos(f.barrelAng * Math.PI / 180) * (f.team === 0 ? 1 : -1);
+    var by = -Math.sin(f.barrelAng * Math.PI / 180);
+    ctx.strokeStyle = def.barrel; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, -8);
+    ctx.lineTo(bx * 12, -8 + by * 12); ctx.stroke();
+    ctx.lineWidth = 1;
+    // Team ring + current-turn marker.
+    ctx.strokeStyle = f.team === 0 ? '#22C55E' : '#EF4444';
+    ctx.beginPath(); ctx.arc(0, -6, 10, 0, 6.29); ctx.stroke();
+    if (arPhase !== 'select' && arCur() === f) {
+      var ay = -22 + Math.sin(arFrame * 0.15) * 2;
+      ctx.fillStyle = '#FFD93D';
+      ctx.fillRect(-1, ay, 2, 4);
+      ctx.beginPath(); ctx.moveTo(-3, ay + 4); ctx.lineTo(3, ay + 4); ctx.lineTo(0, ay + 8); ctx.fill();
+    }
+    // HP bar above the vehicle.
+    var hw = 16;
+    ctx.fillStyle = '#1F2937'; ctx.fillRect(-hw / 2, -18, hw, 3);
+    ctx.fillStyle = f.hp > f.maxHp * 0.35 ? '#22C55E' : '#EF4444';
+    ctx.fillRect(-hw / 2, -18, Math.max(0, hw * f.hp / f.maxHp), 3);
+    // Stun marker (TEMPEST passive): teal ring + Z.
+    if (f.stun > 0) {
+      ctx.strokeStyle = '#2DD4BF';
+      ctx.beginPath(); ctx.arc(0, -6, 12, 0, 6.29); ctx.stroke();
+      ctx.fillStyle = '#2DD4BF'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('Z', 12, -14);
+      ctx.textAlign = 'left';
+    }
+    // Ultimate ready glow.
+    if (f.charge >= 100) {
+      ctx.fillStyle = '#FFD93D';
+      ctx.beginPath(); ctx.arc(8, -16, 2 + Math.sin(arFrame * 0.2), 0, 6.29); ctx.fill();
+    }
+    ctx.restore();
+  }
+  function arDrawHUD() {
+    // Team HP totals + alive counts (top corners) + wind gauge (top centre).
+    var fh = arTeamHp(0), eh = arTeamHp(1);
+    var fMax = 0, eMax = 0;
+    for (var i = 0; i < arVehicles.length; i++) {
+      if (arVehicles[i].team === 0) fMax += arVehicles[i].maxHp;
+      else eMax += arVehicles[i].maxHp;
+    }
+    ctx.textAlign = 'left'; ctx.font = '8px monospace';
+    ctx.fillStyle = '#22C55E'; ctx.fillText('YOU ' + fh + ' (' + arTeamAlive(0) + ')', 4, 10);
+    ctx.fillStyle = '#1F2937'; ctx.fillRect(4, 12, 60, 4);
+    ctx.fillStyle = '#22C55E'; ctx.fillRect(4, 12, Math.max(0, 60 * fh / Math.max(1, fMax)), 4);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#EF4444'; ctx.fillText('FOE ' + eh + ' (' + arTeamAlive(1) + ')', 236, 10);
+    ctx.fillStyle = '#1F2937'; ctx.fillRect(176, 12, 60, 4);
+    ctx.fillStyle = '#EF4444'; ctx.fillRect(176 + 60 - Math.max(0, 60 * eh / Math.max(1, eMax)), 12, Math.max(0, 60 * eh / Math.max(1, eMax)), 4);
+    // Wind gauge: a proper instrument — box, arrow, speed, fill bar.
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(18,18,54,0.75)'; ctx.fillRect(96, 2, 48, 16);
+    ctx.strokeStyle = '#F8FAFC'; ctx.strokeRect(96, 2, 48, 16);
+    ctx.fillStyle = '#F8FAFC'; ctx.font = 'bold 8px monospace';
+    var wArrow = arWind === 0 ? '-' : (arWind > 0 ? '>>' : '<<');
+    ctx.fillText('WIND ' + wArrow + ' ' + Math.abs(arWind), 120, 9);
+    ctx.fillStyle = arWind === 0 ? '#6B7280' : '#7DD3FC';
+    var wBar = Math.abs(arWind) / 4 * 20;
+    ctx.fillRect(arWind >= 0 ? 120 : 120 - wBar, 12, wBar, 3);
+    ctx.font = '8px monospace';
+    ctx.fillStyle = '#F8FAFC';
+    ctx.fillText('ROUND ' + arRound, 120, 26);
+    ctx.textAlign = 'left';
+  }
+  function arDrawDials() {
+    // Angle + power dials as instruments, bottom corners.
+    var cx = 26, cy = 148;
+    ctx.strokeStyle = '#F8FAFC'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx, cy, 12, Math.PI, 2 * Math.PI); ctx.stroke();
+    var arad = arAngle * Math.PI / 180;
+    ctx.strokeStyle = '#FFD93D'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(arad) * 11, cy - Math.sin(arad) * 11); ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.fillStyle = '#F8FAFC'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
+    ctx.fillText('ANG ' + arAngle, cx, cy + 9);
+    var px = 214;
+    ctx.strokeStyle = '#F8FAFC';
+    ctx.beginPath(); ctx.arc(px, cy, 12, Math.PI, 2 * Math.PI); ctx.stroke();
+    var prad = Math.PI + (arPower / 100) * Math.PI;
+    ctx.strokeStyle = '#22C55E'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(px, cy);
+    ctx.lineTo(px + Math.cos(prad) * 11, cy + Math.sin(prad) * 11); ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.fillStyle = '#F8FAFC';
+    ctx.fillText('PWR ' + arPower, px, cy + 9);
+    // Ult charge bar + hints, bottom centre.
+    var v = arCur();
+    ctx.fillStyle = '#1F2937'; ctx.fillRect(84, 138, 72, 6);
+    ctx.fillStyle = v && v.charge >= 100 ? '#FFD93D' : '#F59E0B';
+    ctx.fillRect(84, 138, Math.max(0, 72 * (v ? v.charge : 0) / 100), 6);
+    ctx.fillStyle = '#F8FAFC';
+    ctx.fillText(v && v.charge >= 100 ? 'ULT READY — B!' : 'ULT ' + (v ? Math.floor(v.charge) : 0) + '%', 120, 153);
+    ctx.fillStyle = '#C7D2FE';
+    ctx.fillText('A: FIRE', 120, 134);
+    ctx.textAlign = 'left';
+  }
+  function arDrawBanner() {
+    if (arBannerT <= 0 || !arBanner) return;
+    var a = arBannerT > 60 ? 1 : arBannerT / 60;
+    ctx.globalAlpha = a;
+    ctx.fillStyle = 'rgba(18,18,54,0.9)';
+    ctx.fillRect(52, 34, 136, 30);
+    ctx.strokeStyle = '#FFD93D'; ctx.lineWidth = 2;
+    ctx.strokeRect(52, 34, 136, 30);
+    ctx.lineWidth = 1;
+    ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center'; ctx.font = 'bold 12px monospace';
+    ctx.fillText(arBanner, 120, 49);
+    ctx.fillStyle = '#F8FAFC'; ctx.font = '8px monospace';
+    ctx.fillText(arBannerSub, 120, 60);
+    ctx.textAlign = 'left';
+    ctx.globalAlpha = 1;
+  }
+
+  function drawArtillery() {
+    if (arPhase === 'select') { arDrawSelect(); return; }
+    arDrawSky();
+    var sh = arDrawTerrain();
+    ctx.save();
+    ctx.translate(sh.x, sh.y);
+    for (var i = 0; i < arVehicles.length; i++) arDrawVehicle(arVehicles[i]);
+    // Projectiles: spinning marker + fading tracer, per-vehicle look.
+    for (var p = 0; p < arProjs.length; p++) {
+      var pr = arProjs[p];
+      ctx.save();
+      ctx.translate(pr.x, pr.y);
+      ctx.fillStyle = pr.def.col;
+      ctx.globalAlpha = 0.25;
+      for (var t = 0; t < pr.trail.length; t++) {
+        var tp = pr.trail[t];
+        ctx.fillRect(tp.x - pr.x - 1, tp.y - pr.y - 1, 2, 2);
+      }
+      ctx.globalAlpha = 1;
+      ctx.rotate(pr.spin);
+      if (pr.def.id === 'titan') {
+        ctx.fillStyle = '#1F2937'; ctx.fillRect(-3, -3, 6, 6);
+        ctx.fillStyle = '#F59E0B'; ctx.fillRect(-1, -1, 2, 2);
+      } else if (pr.def.id === 'wasp') {
+        ctx.fillStyle = '#7C3AED'; ctx.fillRect(-2, -2, 4, 4);
+        ctx.fillStyle = '#DDD6FE'; ctx.fillRect(-1, -1, 2, 2);
+      } else if (pr.def.id === 'lance') {
+        ctx.fillStyle = '#E0F2FE'; ctx.fillRect(-5, -1, 10, 2);
+        ctx.fillStyle = '#0369A1'; ctx.fillRect(3, -1, 2, 2);
+      } else if (pr.def.id === 'ricochet') {
+        ctx.fillStyle = '#F59E0B';
+        ctx.beginPath(); ctx.arc(0, 0, 3, 0, 6.29); ctx.fill();
+        ctx.fillStyle = '#FDE68A';
+        ctx.beginPath(); ctx.arc(0, 0, 1.5, 0, 6.29); ctx.fill();
+      } else if (pr.def.id === 'havoc') {
+        ctx.fillStyle = '#1F2937'; ctx.fillRect(-3, -3, 6, 6);
+        ctx.fillStyle = '#F59E0B'; ctx.fillRect(-1, -1, 2, 2);
+      } else if (pr.def.id === 'mira') {
+        ctx.fillStyle = '#F472B6';
+        ctx.beginPath(); ctx.arc(0, 0, 3, 0, 6.29); ctx.fill();
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath(); ctx.arc(0, 0, 1, 0, 6.29); ctx.fill();
+      } else if (pr.def.id === 'orbit') {
+        ctx.fillStyle = '#FDE68A'; ctx.fillRect(-5, -1, 10, 2);
+        ctx.fillStyle = '#FFFFFF'; ctx.fillRect(3, -1, 2, 2);
+      } else if (pr.def.id === 'splinter') {
+        ctx.fillStyle = '#A16207';
+        ctx.beginPath(); ctx.arc(0, 0, 3, 0, 6.29); ctx.fill();
+        ctx.fillStyle = '#FDE68A';
+        ctx.beginPath(); ctx.arc(-1, -1, 1, 0, 6.29); ctx.fill();
+      } else {
+        ctx.fillStyle = pr.def.col; ctx.fillRect(-2, -2, 4, 4);
+        ctx.fillStyle = pr.def.lite; ctx.fillRect(-1, -1, 2, 2);
+      }
+      ctx.restore();
+    }
+    // Muzzle flash.
+    if (arMuzzle) {
+      ctx.fillStyle = '#FFD93D';
+      ctx.beginPath(); ctx.arc(arMuzzle.x, arMuzzle.y, 3, 0, 6.29); ctx.fill();
+      ctx.fillStyle = '#FFF3B0';
+      ctx.beginPath(); ctx.arc(arMuzzle.x, arMuzzle.y, 1.5, 0, 6.29); ctx.fill();
+    }
+    // Particles / rings / floats / wreck icons.
+    for (var q = 0; q < arParts.length; q++) {
+      var pa = arParts[q];
+      ctx.globalAlpha = Math.max(0, pa.life / pa.max);
+      ctx.fillStyle = pa.col;
+      ctx.fillRect(pa.x - pa.r / 2, pa.y - pa.r / 2, pa.r, pa.r);
+    }
+    ctx.globalAlpha = 1;
+    for (var rg = 0; rg < arRings.length; rg++) {
+      var rn = arRings[rg];
+      ctx.globalAlpha = rn.life / 16;
+      ctx.strokeStyle = '#FDE68A'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(rn.x, rn.y, rn.r, 0, 6.29); ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+    ctx.globalAlpha = 1;
+    ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+    for (var pf = 0; pf < arPops.length; pf++) {
+      var pp = arPops[pf];
+      ctx.globalAlpha = Math.min(1, pp.t / 20);
+      ctx.fillStyle = pp.col;
+      ctx.fillText(pp.txt, pp.x, pp.y);
+    }
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'left';
+    ctx.font = '8px monospace';
+    for (var dn = 0; dn < arDeaths.length; dn++) {
+      var dd = arDeaths[dn];
+      ctx.globalAlpha = Math.min(0.9, dd.t / 20);
+      ctx.fillStyle = '#374151';
+      ctx.fillRect(dd.x - 5, dd.y - 2, 10, 3);
+      ctx.fillStyle = '#9CA3AF';
+      ctx.fillRect(dd.x - 3, dd.y - 5, 6, 3);
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+    arDrawHUD();
+    if (arPhase === 'aim' && !arPaused) arDrawDials();
+    arDrawBanner();
+    if (arPaused) arDrawPause();
+    if (arFlash > 0) {
+      ctx.fillStyle = 'rgba(255,255,255,' + Math.min(0.5, arFlash / 20) + ')';
+      ctx.fillRect(0, 0, 240, 160);
+    }
+  }
+
+  /* ---------- Select screens (pick flow: reveal -> map -> vehicle -> mates) ---------- */
+  function arDrawSelect() {
+    if (arPickPhase === 'reveal') arDrawReveal();
+    else if (arPickPhase === 'map') arDrawMapPick();
+    else if (arPickPhase === 'vehicle') arDrawVehiclePick();
+    else arDrawMatePick();
+  }
+  function arDrawReveal() {
+    // Phase 1 — ENEMY REVEAL: the 4 enemy AI players are shown BEFORE
+    // the player picks anything (counter-pick: the player sees the
+    // enemy vehicles, names and personalities first).
+    ctx.fillStyle = 'rgba(18,18,54,0.82)'; ctx.fillRect(0, 0, 240, 160);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#F8FAFC'; ctx.font = 'bold 12px monospace';
+    ctx.fillText('ENEMY SQUAD', 120, 16);
+    ctx.font = '8px monospace'; ctx.fillStyle = '#F87171';
+    ctx.fillText('4 FOES — THEY OUTNUMBER YOU 4 TO 3', 120, 27);
+    for (var i = 0; i < 4; i++) {
+      var pilot = AR_PILOTS[arEnemyPilots[i]];
+      var def = AR_DEF_BY_ID[pilot.def];
+      var y = 44 + i * 28;
+      ctx.fillStyle = def.dark; ctx.fillRect(26, y - 2, 14, 6);
+      ctx.fillStyle = def.col; ctx.fillRect(26, y - 2, 14, 4);
+      ctx.fillStyle = def.lite; ctx.fillRect(26, y - 2, 14, 2);
+      ctx.fillStyle = def.barrel; ctx.fillRect(38, y - 5, 6, 2);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#F8FAFC';
+      ctx.fillText(pilot.name + ' — ' + pilot.pers + ' — ' + def.name, 48, y);
+      ctx.fillText('HP ' + def.hp + '  DMG ' + arDmgTxt(def) + '  R' + def.radius + '  ULT ' + def.ult, 48, y + 10);
+    }
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#FDE68A';
+    ctx.fillText('WINS ' + arWins + '   BEST DAMAGE ' + arBestDmg, 120, 148);
+    ctx.fillStyle = '#C7D2FE';
+    ctx.fillText('A: CONTINUE   MENU: QUIT', 120, 158);
+    ctx.textAlign = 'left';
+  }
+  function arDrawMapPreview(mapIdx, x, y, w, h) {
+    // Miniature of the map's heightmap (same fixed-seed heights as the
+    // live terrain, so the preview is what the match plays on).
+    var hs = arMapPreviewHeights(mapIdx);
+    var mp = AR_MAPS[mapIdx];
+    ctx.fillStyle = mp.sky[0]; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = mp.ground;
+    ctx.beginPath(); ctx.moveTo(x, y + h);
+    for (var i = 0; i <= w; i += 2) {
+      var hx = hs[Math.floor(i / w * 239)];
+      var py = y + ((hx - 94) / (152 - 94)) * h;
+      ctx.lineTo(x + i, py);
+    }
+    ctx.lineTo(x + w, y + h); ctx.fill();
+  }
+  function arDrawMapPick() {
+    // Phase 2 — MAP PICK: name, miniature layout preview, and the
+    // favour/weakness line for each of the 4 maps.
+    ctx.fillStyle = 'rgba(18,18,54,0.82)'; ctx.fillRect(0, 0, 240, 160);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#F8FAFC'; ctx.font = 'bold 12px monospace';
+    ctx.fillText('PICK YOUR MAP', 120, 13);
+    ctx.font = '8px monospace'; ctx.fillStyle = '#C7D2FE';
+    ctx.fillText('EACH MAP PLAYS DIFFERENTLY', 120, 24);
+    for (var i = 0; i < 4; i++) {
+      var map = AR_MAPS[i];
+      var y = 40 + i * 28;
+      var sel = i === arMapIdx;
+      if (sel) {
+        ctx.fillStyle = '#F8FAFC'; ctx.fillRect(8, y - 11, 224, 26);
+      }
+      arDrawMapPreview(i, 204, y - 8, 30, 16);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = sel ? '#1F2937' : '#F8FAFC';
+      ctx.fillText(map.name, 48, y);
+      ctx.fillText(map.favor + '  ' + map.weak, 48, y + 10);
+    }
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#FDE68A';
+    ctx.fillText(AR_MAPS[arMapIdx].info, 120, 149);
+    ctx.fillStyle = '#C7D2FE';
+    ctx.fillText('UP/DOWN PICK   A: CONFIRM   B: BACK', 120, 158);
+    ctx.textAlign = 'left';
+  }
+  function arDrawPickRows(rows, selIdx, winIdx, title, subtitle, detail, hints) {
+    // Shared scrollable pick list: 4 rows visible, highlight bar 26px
+    // covers the name line AND the stats line (Emberfall lesson).
+    ctx.fillStyle = 'rgba(18,18,54,0.82)'; ctx.fillRect(0, 0, 240, 160);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#F8FAFC'; ctx.font = 'bold 12px monospace';
+    ctx.fillText(title, 120, 13);
+    ctx.font = '8px monospace'; ctx.fillStyle = '#C7D2FE';
+    ctx.fillText(subtitle, 120, 24);
+    for (var i = 0; i < 4; i++) {
+      var idx = winIdx + i;
+      if (idx >= rows.length) break;
+      var row = rows[idx];
+      var y = 40 + i * 28;
+      var sel = idx === selIdx;
+      if (sel) {
+        ctx.fillStyle = '#F8FAFC'; ctx.fillRect(8, y - 11, 224, 26);
+        ctx.fillStyle = '#1F2937'; ctx.fillText('>', 13, y + 2);
+      }
+      ctx.fillStyle = row.def.dark; ctx.fillRect(26, y - 2, 14, 6);
+      ctx.fillStyle = row.def.col; ctx.fillRect(26, y - 2, 14, 4);
+      ctx.fillStyle = row.def.lite; ctx.fillRect(26, y - 2, 14, 2);
+      ctx.fillStyle = row.def.barrel; ctx.fillRect(38, y - 5, 6, 2);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = sel ? '#1F2937' : '#F8FAFC';
+      ctx.fillText(row.line1, 48, y);
+      ctx.fillText(row.line2, 48, y + 10);
+    }
+    ctx.textAlign = 'right';
+    if (winIdx > 0) { ctx.fillStyle = '#C7D2FE'; ctx.fillText('^ MORE ABOVE', 232, 36); }
+    if (winIdx + 4 < rows.length) { ctx.fillStyle = '#C7D2FE'; ctx.fillText('v MORE BELOW', 232, 144); }
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#FDE68A'; ctx.font = '8px monospace';
+    ctx.fillText(detail, 120, 149);
+    ctx.fillStyle = '#C7D2FE';
+    ctx.fillText(hints, 120, 158);
+    ctx.textAlign = 'left';
+  }
+  function arDrawVehiclePick() {
+    // Phase 3 — VEHICLE PICK: 16 vehicles, scrollable, with the enemy
+    // vehicles named in the subtitle for counter-picking.
+    var rows = [];
+    for (var i = 0; i < AR_DEFS.length; i++) {
+      var def = AR_DEFS[i];
+      rows.push({
+        def: def,
+        line1: def.name + ' — ' + def.role + ' [' + def.passiveShort + ']',
+        line2: 'HP ' + def.hp + '  DMG ' + arDmgTxt(def) + '  R' + def.radius + '  ULT ' + def.ult
+      });
+    }
+    var foes = '';
+    for (var k = 0; k < arEnemyPilots.length; k++) {
+      if (k) foes += ' ';
+      foes += AR_DEF_BY_ID[AR_PILOTS[arEnemyPilots[k]].def].name;
+    }
+    var sd = AR_DEFS[arSelIdx];
+    arDrawPickRows(rows, arSelIdx, arSelWin, 'VOLLEY SQUAD', 'FOES: ' + foes,
+      'PASSIVE: ' + sd.passiveName + ' — ' + sd.passiveInfo,
+      'UP/DOWN PICK   A: CONFIRM   B: BACK');
+  }
+  function arDrawMatePick() {
+    // Phase 4 — TEAMMATE PICK: pick 2 AI teammates from the 12 who are
+    // not enemies (no duplicates); slots fill as they are picked.
+    var rows = [];
+    for (var i = 0; i < arAvailMates.length; i++) {
+      var pilot = AR_PILOTS[arAvailMates[i]];
+      var def = AR_DEF_BY_ID[pilot.def];
+      rows.push({
+        def: def,
+        line1: pilot.name + ' — ' + pilot.pers + ' — ' + def.name,
+        line2: 'HP ' + def.hp + '  DMG ' + arDmgTxt(def) + '  R' + def.radius + '  ULT ' + def.ult
+      });
+    }
+    function slotName(n) {
+      if (arTeammatePilots[n] == null) return '—';
+      var pl = AR_PILOTS[arTeammatePilots[n]];
+      return pl.name + '/' + AR_DEF_BY_ID[pl.def].name;
+    }
+    var sub = 'S1: ' + slotName(0) + '  S2: ' + slotName(1);
+    var selPilot = AR_PILOTS[arAvailMates[arTmIdx]];
+    var selDef = AR_DEF_BY_ID[selPilot.def];
+    arDrawPickRows(rows, arTmIdx, arTmWin, 'PICK YOUR TEAMMATES', sub,
+      'PASSIVE: ' + selDef.passiveName + ' — ' + selDef.passiveInfo,
+      'UP/DOWN PICK   A: CONFIRM   B: BACK');
+  }
+  function arDrawPause() {
+    // Pause screen: controls, both rosters (3 vs 4) with names,
+    // personalities and vehicles, round/wind/HP summary.
+    ctx.fillStyle = 'rgba(18,18,54,0.88)'; ctx.fillRect(0, 0, 240, 160);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#F8FAFC'; ctx.font = 'bold 12px monospace';
+    ctx.fillText('PAUSED', 120, 24);
+    ctx.font = '8px monospace'; ctx.fillStyle = '#C7D2FE';
+    ctx.fillText('LEFT/RIGHT AIM   UP/DOWN POWER', 120, 38);
+    ctx.fillText('A FIRE   B ULTIMATE (WHEN READY)', 120, 48);
+    ctx.fillStyle = '#22C55E';
+    ctx.fillText('YOUR SQUAD (3)', 120, 60);
+    ctx.fillStyle = '#F8FAFC';
+    var y = 68;
+    for (var i = 0; i < arVehicles.length; i++) {
+      var f = arVehicles[i];
+      if (f.team !== 0) continue;
+      var who = f.isPlayer ? 'YOU' : f.pilot;
+      ctx.fillText(who + ' — ' + f.pers + ' — ' + f.def.name + '  ' + f.hp + 'HP', 120, y);
+      y += 9;
+    }
+    ctx.fillStyle = '#EF4444';
+    ctx.fillText('ENEMIES (4)', 120, y + 3);
+    y += 12;
+    ctx.fillStyle = '#F8FAFC';
+    for (var j = 0; j < arVehicles.length; j++) {
+      var e = arVehicles[j];
+      if (e.team !== 1) continue;
+      ctx.fillText(e.pilot + ' — ' + e.pers + ' — ' + e.def.name + '  ' + e.hp + 'HP', 120, y);
+      y += 9;
+    }
+    ctx.fillStyle = '#FDE68A';
+    ctx.fillText('ROUND ' + arRound + '  WIND ' + (arWind > 0 ? '>>' : (arWind < 0 ? '<<' : '-')) + ' ' + Math.abs(arWind) + '  YOU ' + arTeamHp(0) + '  FOE ' + arTeamHp(1), 120, y + 4);
+    ctx.fillStyle = '#C7D2FE';
+    ctx.fillText('START: RESUME   MENU: QUIT   B: DELETE SAVE', 120, y + 13);
+    ctx.textAlign = 'left';
+  }
+  function drawArtilleryOver() {
+    ctx.fillStyle = 'rgba(18,18,54,0.82)'; ctx.fillRect(0, 0, 240, 160);
+    ctx.textAlign = 'center';
+    var won = arWinner === 0;
+    ctx.fillStyle = won ? '#22C55E' : '#EF4444';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText(won ? 'VICTORY!' : 'DEFEAT', 120, 48);
+    ctx.fillStyle = '#F8FAFC'; ctx.font = '8px monospace';
+    ctx.fillText(won ? 'YOUR SQUAD WINS THE MATCH' : 'THE ENEMY SQUAD WINS', 120, 62);
+    ctx.fillStyle = '#C7D2FE';
+    ctx.fillText('MAP: ' + AR_MAPS[arMapIdx].name, 120, 74);
+    ctx.fillStyle = '#F8FAFC';
+    ctx.fillText('YOUR DAMAGE: ' + arMyDmg + '   SHOTS: ' + arMyShots + '   HITS: ' + arMyHits, 120, 86);
+    ctx.fillText('TOTAL WINS: ' + arWins + '   BEST DAMAGE: ' + arBestDmg, 120, 98);
+    if (arMyDmg > arBestDmg) {
+      ctx.fillStyle = '#FFD93D';
+      ctx.fillText('NEW BEST DAMAGE!', 120, 110);
+    }
+    ctx.fillStyle = '#F8FAFC';
+    ctx.fillText('A: REMATCH   MENU: QUIT', 120, 124);
+    ctx.textAlign = 'left';
+  }
+
+  /* ---------- Small helpers ---------- */
+  function arDmgTxt(def) {
+    // Damage as shown on pick screens: '12X3' for a 3-shell shot,
+    // otherwise the plain per-shell damage.
+    return def.shots > 1 ? def.dmg + 'X' + def.shots : String(def.dmg);
+  }
   JMFGAMES.on('press', 'up', function () {
     if (dsGame) return;
     if (screen === 'menu') { menuIndex = (menuIndex + GAMES.length - 1) % GAMES.length; menuClamp(); JMFGAMES.beep(600, 0.04); menuHoldDir = 'up'; menuHoldFrames = 0; menuHoldLast = 0; }
@@ -15511,6 +17734,7 @@ function drawShooterOver() {
       else if (currentGame === 'park') tpMove(0, -1);
       else if (currentGame === 'dummy') duMoveAim(0, -1);
       else if (currentGame === 'shooter') { /* ship moves via isDown in shUpdate */ }
+      else if (currentGame === 'artillery') { if (arPhase === 'select') arSelMove(-1); else arAimAdjust(0, 5); }
       else flap();
     }
     listHoldArm('up');
@@ -15532,6 +17756,7 @@ function drawShooterOver() {
       else if (currentGame === 'park') tpMove(0, 1);
       else if (currentGame === 'dummy') duMoveAim(0, 1);
       else if (currentGame === 'shooter') { /* ship moves via isDown in shUpdate */ }
+      else if (currentGame === 'artillery') { if (arPhase === 'select') arSelMove(1); else arAimAdjust(0, -5); }
     }
     listHoldArm('down');
   });
@@ -15550,6 +17775,7 @@ function drawShooterOver() {
     else if (screen === 'play' && currentGame === 'park') tpMove(-1, 0);
     else if (screen === 'play' && currentGame === 'dummy') duMoveAim(-1, 0);
     else if (screen === 'play' && currentGame === 'shooter') { /* ship moves via isDown in shUpdate */ }
+    else if (screen === 'play' && currentGame === 'artillery') arAimAdjust(-5, 0);
   });
   JMFGAMES.on('press', 'right', function () {
     if (dsGame) return;
@@ -15564,6 +17790,7 @@ function drawShooterOver() {
     else if (screen === 'play' && currentGame === 'park') tpMove(1, 0);
     else if (screen === 'play' && currentGame === 'dummy') duMoveAim(1, 0);
     else if (screen === 'play' && currentGame === 'shooter') { /* ship moves via isDown in shUpdate */ }
+    else if (screen === 'play' && currentGame === 'artillery') arAimAdjust(5, 0);
   });
   JMFGAMES.on('press', 'a', function () {
     if (dsGame) { dsDoDelete(dsGame); return; } // confirm delete-save
@@ -15585,12 +17812,13 @@ function drawShooterOver() {
         else if (g.name === 'THRILL PARK') { currentGame = 'park'; startPark(); }
         else if (g.name === 'RAGDOLL RUCKUS') { currentGame = 'dummy'; startDummy(); }
         else if (g.name === 'STAR STRIKE') { currentGame = 'shooter'; startShooter(); }
+        else if (g.name === 'VOLLEY SQUAD') { currentGame = 'artillery'; startArtillery(); }
         else { currentGame = 'sky'; startGame(); }
       }
       else { comingName = g.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
-    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'drop') bdAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'pinball') pbAction(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else if (currentGame === 'park') tpAction(); else if (currentGame === 'dummy') duAction(); else if (currentGame === 'shooter') shFire(); else flap(); }
-    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'drop') startBlockDrop(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'pinball') startPinball(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else if (currentGame === 'pool') poRematch(); else if (currentGame === 'shooter') startShooter(); else startGame(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'drop') bdAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'pinball') pbAction(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else if (currentGame === 'park') tpAction(); else if (currentGame === 'dummy') duAction(); else if (currentGame === 'shooter') shFire(); else if (currentGame === 'artillery') arAction(); else flap(); }
+    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'drop') startBlockDrop(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'pinball') startPinball(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else if (currentGame === 'pool') poRematch(); else if (currentGame === 'shooter') startShooter(); else if (currentGame === 'artillery') startArtillery(); else startGame(); }
   });
   JMFGAMES.on('press', 'b', function () {
     // B is a real in-game action in every game; it NEVER returns to the
@@ -15611,6 +17839,7 @@ function drawShooterOver() {
     if (currentGame === 'park' && tpPaused) { dsAsk('park'); return; }
     if (currentGame === 'dummy' && duPaused) { dsAsk('dummy'); return; }
     if (currentGame === 'shooter' && shPaused) { dsAsk('shooter'); return; }
+    if (currentGame === 'artillery' && arPaused) { dsAsk('artillery'); return; }
     if (currentGame === 'sky') skyDive();
     else if (currentGame === 'block') bqBack();
     else if (currentGame === 'drop') bdBack();
@@ -15627,6 +17856,7 @@ function drawShooterOver() {
     else if (currentGame === 'park') tpBack();
     else if (currentGame === 'dummy') duCycleWeapon();
     else if (currentGame === 'shooter') shBomb();
+    else if (currentGame === 'artillery') arUltimate();
   });
   JMFGAMES.on('press', 'start', function () {
     if (dsGame) return;
@@ -15646,6 +17876,7 @@ function drawShooterOver() {
     else if (currentGame === 'park') { if (tpPhase !== 'report') { tpPaused = !tpPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'dummy') { duPaused = !duPaused; JMFGAMES.beep(330, 0.06); }
     else if (currentGame === 'shooter') { if (!shOver) { shPaused = !shPaused; JMFGAMES.beep(330, 0.06); } }
+    else if (currentGame === 'artillery') { if (!arOver) { arPaused = !arPaused; JMFGAMES.beep(330, 0.06); } }
     else if (!dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
   });
   JMFGAMES.on('press', 'menu', function () {
@@ -15676,6 +17907,7 @@ function drawShooterOver() {
     if (currentGame === 'park') { tpUpdate(); return; }
     if (currentGame === 'dummy') { duUpdate(); return; }
     if (currentGame === 'shooter') { shUpdate(); return; }
+    if (currentGame === 'artillery') { arUpdate(); return; }
     if (currentGame !== 'sky') return; // Hold'em has no per-frame update; without this, Sky Soar physics runs during Hold'em and the falling bird hits the ground -> gameOver() -> 'over' screen (BUSTED panel) on Hold'em launch after Sky was played
     if (!paused) skyTick(); // clouds / particles / pops keep animating (frozen on pause)
     if (paused || dead || !started) return;
@@ -16236,8 +18468,8 @@ function drawShooterOver() {
     if (screen !== 'play') JMFGAMES.musicStop();
     if (screen === 'menu') drawMenu();
     else if (screen === 'coming') drawComing();
-    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'drop') drawBlockDrop(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'pinball') drawPinball(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else if (currentGame === 'park') drawPark(); else if (currentGame === 'dummy') drawDummy(); else if (currentGame === 'shooter') drawShooter(); else drawGame(); }
-    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'drop') drawBlockDropOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'pinball') drawPinballOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else if (currentGame === 'shooter') drawShooterOver(); else drawOver(); }
+    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'drop') drawBlockDrop(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'pinball') drawPinball(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else if (currentGame === 'park') drawPark(); else if (currentGame === 'dummy') drawDummy(); else if (currentGame === 'shooter') drawShooter(); else if (currentGame === 'artillery') drawArtillery(); else drawGame(); }
+    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'drop') drawBlockDropOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'pinball') drawPinballOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else if (currentGame === 'shooter') drawShooterOver(); else if (currentGame === 'artillery') drawArtilleryOver(); else drawOver(); }
     // Delete-save confirmation overlay (on top of any screen), or the
     // pause-overlay hint for games whose delete option lives on pause.
     if (dsGame) drawDsConfirm();
@@ -16254,6 +18486,7 @@ function drawShooterOver() {
       else if (currentGame === 'park' && tpPaused) dsHintY = 152;
       else if (currentGame === 'dummy' && duPaused) dsHintY = 152;
       else if (currentGame === 'shooter' && shPaused) dsHintY = 152;
+      else if (currentGame === 'artillery' && arPaused) dsHintY = 152;
       if (dsHintY) {
         ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
         ctx.fillText('B: DELETE SAVE', W / 2, dsHintY);
