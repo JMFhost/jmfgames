@@ -383,10 +383,11 @@
   var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
   var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'solitaire' | 'beat' | 'pool' | 'run' | 'siege' | 'park' | 'dummy' | 'shooter' | 'farm' — which game is on the play/over screens
   var menuIndex = 0;
-  /* Scrollable menu: 11 visible rows at a 9px pitch. menuTop = first
-     visible game; the window follows the selection and wraps jump to
-     the ends. Works for any game count. */
-  var MENU_PITCH = 9, MENU_ROWS = 11, MENU_TOP_Y = 46, menuTop = 0;
+  /* Scrollable menu: 6 visible rows at a 15px pitch, 12px names so the
+     game list is big and easy to read. menuTop = first visible game;
+     the window follows the selection and wraps jump to the ends.
+     Works for any game count. */
+  var MENU_PITCH = 15, MENU_ROWS = 6, MENU_TOP_Y = 48, menuTop = 0;
   function menuClamp() {
     if (menuIndex < menuTop) menuTop = menuIndex;
     else if (menuIndex >= menuTop + MENU_ROWS) menuTop = menuIndex - MENU_ROWS + 1;
@@ -500,6 +501,9 @@
 
   var bird, pipes, score, sceneryIdx, toastFrames, toastName, paused, dead, started;
   var gustFrames = 0, gustV = 0, gustWait = 0, perfects = 0;
+  // Sky Soar animation state (visual only — never affects physics/collision).
+  var skyFrame = 0, skyFlapT = 0, skyShake = 0, skyFlash = 0, overT = 0, skyNewBest = false;
+  var skyParts = [], skyPops = [];
   // Unlockable birds: [name, body, belly, beak]. Tier = highest unlocked.
   var BIRDS = [
     { name: 'SUNNY', body: '#FFD93D', belly: '#E8B93C', beak: '#FF8C42' },
@@ -528,6 +532,7 @@
     started = false;
     gustFrames = 0; gustV = 0; gustWait = 420 + Math.floor(Math.random() * 300); perfects = 0;
     PIPE_SPEED = 1.5;
+    skyFrame = 0; skyFlapT = 0; skyShake = 0; skyFlash = 0; overT = 0; skyNewBest = false; skyParts = []; skyPops = [];
     spawnPipe(W + 12);
   }
   function spawnPipe(x) {
@@ -538,6 +543,7 @@
     if (screen !== 'play' || paused || dead) return;
     if (!started) started = true;
     bird.vy = FLAP;
+    skyFlapT = 14; // wing flap burst (visual only)
     JMFGAMES.beep(520, 0.06);
   }
   function skyDive() {
@@ -558,7 +564,16 @@
   function gameOver() {
     dead = true;
     screen = 'over';
+    skyNewBest = score > 0 && score > best;
     if (score > best) { best = score; saveBest(); }
+    // Feather burst + screen shake + flash (visual only).
+    var bc = birdColors();
+    var cols = [bc.body, bc.belly, bc.beak, '#FFFFFF'];
+    skyParts = [];
+    for (var i = 0; i < 12; i++) {
+      skyParts.push({ x: BIRD_X, y: bird.y, vx: (Math.random() - 0.5) * 2.6, vy: -1.2 - Math.random() * 1.6, life: 26 + Math.floor(Math.random() * 16), col: cols[i % cols.length], r: 1.5 + Math.random() * 1.5 });
+    }
+    skyShake = 7; skyFlash = 9; overT = 0;
     JMFGAMES.beep(220, 0.25);
   }
 
@@ -1767,15 +1782,15 @@
 
   /* ==================== holdem (GBA) ==================== */
 /* ================================================================
-   TEXAS HOLD'EM (GBA) — 4-handed no-limit Hold'em: the player vs
-   three named AI opponents (VIC, LUNA, DOC) on the 240x160 screen.
+   TEXAS HOLD'EM (GBA) — 5-handed no-limit Hold'em: the player vs
+   four named AI opponents (VIC, LUNA, DOC, COLE) on the 240x160 screen.
    Controls: Left/Right picks an action, A confirms, Up/Down
    adjusts the bet/raise amount (+/-$10), B folds mid-hand, Start
    pauses, Menu returns to the main menu.
    Rules: blinds 10/20 in a cash game (first to $10,000 wins,
    under $10 is busted), tournament mode with climbing blinds
-   (won by busting all three AIs). The button rotates among all
-   four seats; the small blind is the next seat after the button,
+   (won by busting all four AIs). The button rotates among all
+   five seats; the small blind is the next seat after the button,
    the big blind the next after that (heads-up rules apply when
    only two seats remain in a tournament); pre-flop the player
    after the big blind acts first, post-flop the first active
@@ -1783,10 +1798,12 @@
    FAIR PLAY: every AI sees ONLY its own two cards, the board, the
    pot and the bets — exactly what a human across the table would
    see. Nothing reads the player's cards or another AI's cards.
-   The three AIs play differently: VIC is aggressive (bluffs and
+   The four AIs play differently: VIC is aggressive (bluffs and
    raises light), LUNA is tight and solid (rarely bluffs, only
    raises very strong hands), DOC is balanced and adapts to how
-   the player plays. Difficulty comes from smart play, not cheating.
+   the player plays, COLE is a loose-passive calling station
+   (calls wide, almost never raises or bluffs). Difficulty comes
+   from smart play, not cheating.
    All-in is handled simply (no side pots): a player with $0 is
    skipped in later betting but still shows down, and can win the
    whole pot — the unmatched part of larger bets is returned to
@@ -1796,7 +1813,7 @@
    'jmf-games-holdem-best', achievements:
    'jmf-games-holdem-achievements'. The old single-AI balance key
    'jmf-games-holdem-ai-balance' is kept for save compatibility
-   and now holds the SUM of the three AI balances (AI balances
+   and now holds the SUM of the four AI balances (AI balances
    reset to $1,000 each on a new match).
    Cards are drawn with the shared bjDrawCardAt (20x28 GBA cards).
    ================================================================ */
@@ -1812,17 +1829,19 @@
   if (heBest < heBalance) heBest = heBalance;
   function heSaveBalance() { try { localStorage.setItem(HE_BAL_KEY, String(heBalance)); } catch (e) {} }
   function heSaveAi() {
-    // Legacy key: now stores the sum of the three AI balances.
-    heAiBalance = heAIs[0].balance + heAIs[1].balance + heAIs[2].balance;
+    // Legacy key: now stores the sum of the four AI balances.
+    heAiBalance = heAIs[0].balance + heAIs[1].balance + heAIs[2].balance + heAIs[3].balance;
     try { localStorage.setItem(HE_AI_KEY, String(heAiBalance)); } catch (e) {}
   }
-  function heSyncAiBalance() { heAiBalance = heAIs[0].balance + heAIs[1].balance + heAIs[2].balance; }
+  function heSyncAiBalance() { heAiBalance = heAIs[0].balance + heAIs[1].balance + heAIs[2].balance + heAIs[3].balance; }
   function heSaveBest() { try { localStorage.setItem(HE_BEST_KEY, String(heBest)); } catch (e) {} }
   function heNoteBest() { if (heBalance > heBest) { heBest = heBalance; heSaveBest(); } }
 
-  /* ---------- The three AI opponents ----------
+  /* ---------- The four AI opponents ----------
      Seat 1 = VIC (aggressive), seat 2 = LUNA (tight),
-     seat 3 = DOC (balanced, adapts to the player). Each AI has
+     seat 3 = DOC (balanced, adapts to the player),
+     seat 4 = COLE (loose-passive calling station: calls wide,
+     almost never raises or bluffs). Each AI has
      its own hand, balance, bet, folded/in-hand flags, last-action
      label and hand name. `persona` drives the decision logic:
      bluff = base bluff frequency, callBonus = equity bonus when
@@ -1830,16 +1849,17 @@
      needed to semi-bluff raise, adaptive = use heAiAdapt()
      (reads the player's observed tendencies) instead of the
      fixed numbers. */
-  var HE_AI_NAMES = ['VIC', 'LUNA', 'DOC'];
+  var HE_AI_NAMES = ['VIC', 'LUNA', 'DOC', 'COLE'];
   var HE_AI_PERSONAS = [
     { bluff: 0.22, callBonus: 0.04, betMult: 1.15, raiseEq: 0.55, adaptive: false }, // VIC: aggressive
     { bluff: 0.05, callBonus: -0.04, betMult: 1.0, raiseEq: 0.80, adaptive: false }, // LUNA: tight
-    { bluff: 0.12, callBonus: 0, betMult: 1.0, raiseEq: 0.62, adaptive: true }      // DOC: balanced/adaptive
+    { bluff: 0.12, callBonus: 0, betMult: 1.0, raiseEq: 0.62, adaptive: true },      // DOC: balanced/adaptive
+    { bluff: 0.02, callBonus: 0.10, betMult: 0.8, raiseEq: 0.95, adaptive: false }   // COLE: loose-passive caller
   ];
   function heNewAi(i) {
     return { name: HE_AI_NAMES[i], hand: [], balance: 1000, bet: 0, folded: false, inHand: true, lastAction: '', handName: '', persona: HE_AI_PERSONAS[i] };
   }
-  var heAIs = [heNewAi(0), heNewAi(1), heNewAi(2)];
+  var heAIs = [heNewAi(0), heNewAi(1), heNewAi(2), heNewAi(3)];
 
   /* Streak + achievements, persisted. */
   var heStreak = 0;
@@ -1857,7 +1877,7 @@
   function heSaveAch() {
     try { localStorage.setItem(HE_ACH_KEY, JSON.stringify({ ach: heAch, streak: heStreak })); } catch (e) {}
   }
-  function heAllAiBusted() { return heAIs[0].balance <= 0 && heAIs[1].balance <= 0 && heAIs[2].balance <= 0; }
+  function heAllAiBusted() { return heAIs[0].balance <= 0 && heAIs[1].balance <= 0 && heAIs[2].balance <= 0 && heAIs[3].balance <= 0; }
   function heRecordWin(outcome, playerCat) {
     // outcome: 'win' | 'lose' | 'split'. Bonuses paid into the balance.
     if (outcome === 'win') {
@@ -1881,8 +1901,8 @@
   var heStreet = 'preflop'; // 'preflop' | 'flop' | 'turn' | 'river' | 'showdown'
   var heTurn = 'player'; // whose action is pending: 'player' | 'ai'
   var hePot = 0, hePlayerBet = 0, hePlayerInvested = 0, hePlayerFolded = false;
-  var heActSeat = 0; // seat index whose turn it is: 0 = player, 1-3 = VIC/LUNA/DOC
-  var heActed = [false, false, false, false]; // per-seat: has acted this street
+  var heActSeat = 0; // seat index whose turn it is: 0 = player, 1-4 = VIC/LUNA/DOC/COLE
+  var heActed = [false, false, false, false, false]; // per-seat: has acted this street
   var heButton = 0; // seat index holding the button
   var heLastRaise = 20;
   var heRaiseAmt = 40, heActionIdx = 0;
@@ -2132,7 +2152,7 @@
   }
 
   /* ---------- Seats ----------
-     Seat 0 = the player, seats 1-3 = VIC, LUNA, DOC. */
+     Seat 0 = the player, seats 1-4 = VIC, LUNA, DOC, COLE. */
   function heSeatName(s) { return s === 0 ? 'YOU' : heAIs[s - 1].name; }
   function heSeatInHand(s) { return s === 0 || heAIs[s - 1].inHand; }
   function heSeatFolded(s) { return s === 0 ? hePlayerFolded : heAIs[s - 1].folded; }
@@ -2145,19 +2165,19 @@
   }
   function heMaxBet() {
     var m = 0;
-    for (var s = 0; s < 4; s++) if (heSeatInHand(s)) { var b = heSeatBet(s); if (b > m) m = b; }
+    for (var s = 0; s < 5; s++) if (heSeatInHand(s)) { var b = heSeatBet(s); if (b > m) m = b; }
     return m;
   }
   function heAliveSeats() {
     var out = [];
-    for (var s = 0; s < 4; s++) if (heSeatInHand(s) && !heSeatFolded(s)) out.push(s);
+    for (var s = 0; s < 5; s++) if (heSeatInHand(s) && !heSeatFolded(s)) out.push(s);
     return out;
   }
   function heInGameSeats() {
-    // Seats dealt into this hand. Cash: all four (busted AIs rebuy).
+    // Seats dealt into this hand. Cash: all five (busted AIs rebuy).
     // Tournament: an AI at $0 is eliminated and sits out.
     var out = [0];
-    for (var i = 0; i < 3; i++) if (heMode === 'cash' || heAIs[i].balance > 0) out.push(i + 1);
+    for (var i = 0; i < 4; i++) if (heMode === 'cash' || heAIs[i].balance > 0) out.push(i + 1);
     return out;
   }
   function heNextInGameSeat(from) {
@@ -2167,15 +2187,15 @@
     return seats[(idx + 1) % seats.length];
   }
   function heNextCanActSeat(from) {
-    for (var k = 1; k <= 4; k++) {
-      var s = (from + k) % 4;
+    for (var k = 1; k <= 5; k++) {
+      var s = (from + k) % 5;
       if (heSeatCanAct(s)) return s;
     }
     return -1;
   }
   function heFirstToActSeat(startSeat) {
-    for (var k = 0; k < 4; k++) {
-      var s = (startSeat + k) % 4;
+    for (var k = 0; k < 5; k++) {
+      var s = (startSeat + k) % 5;
       if (heSeatCanAct(s)) return s;
     }
     return -1;
@@ -2185,7 +2205,7 @@
     // (everyone else is all-in), or every player who can act has
     // acted and matched the current bet.
     var maxB = heMaxBet();
-    for (var s = 0; s < 4; s++) {
+    for (var s = 0; s < 5; s++) {
       if (!heSeatCanAct(s)) continue;
       if (!heActed[s]) return false;
       if (heSeatBet(s) < maxB) return false;
@@ -2196,7 +2216,7 @@
   /* ---------- Hand flow ---------- */
   function startHoldem() {
     // Fresh match: every AI rebuys to $1,000, button back to the player.
-    for (var i = 0; i < 3; i++) { heAIs[i].balance = 1000; heAIs[i].bet = 0; heAIs[i].folded = false; heAIs[i].inHand = true; heAIs[i].lastAction = ''; heAIs[i].handName = ''; heAIs[i].hand = []; }
+    for (var i = 0; i < 4; i++) { heAIs[i].balance = 1000; heAIs[i].bet = 0; heAIs[i].folded = false; heAIs[i].inHand = true; heAIs[i].lastAction = ''; heAIs[i].handName = ''; heAIs[i].hand = []; }
     heSyncAiBalance();
     heButton = 0;
     heState = 'lobby';
@@ -2222,7 +2242,7 @@
   }
   function heDealHand() {
     // Cash: a busted AI rebuys to $1,000. Tournament: a $0 AI is out.
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 4; i++) {
       if (heMode === 'cash' && heAIs[i].balance < 20) { heAIs[i].balance = 1000; heLobbyNote = heAIs[i].name + ' REBUYS $1000'; }
     }
     heSyncAiBalance();
@@ -2232,7 +2252,7 @@
     heDeck = heNewDeck();
     var seats = heInGameSeats();
     hePlayer = []; hePlayerFolded = false; hePlayerBet = 0;
-    for (var j = 0; j < 3; j++) {
+    for (var j = 0; j < 4; j++) {
       heAIs[j].hand = []; heAIs[j].folded = false; heAIs[j].bet = 0;
       heAIs[j].lastAction = ''; heAIs[j].handName = '';
       heAIs[j].inHand = (heMode === 'cash' || heAIs[j].balance > 0);
@@ -2256,7 +2276,7 @@
     else { sbSeat = seats[(btnIdx + 1) % seats.length]; bbSeat = seats[(btnIdx + 2) % seats.length]; }
     hePostBlind(sbSeat, heSmallBlind);
     hePostBlind(bbSeat, heBigBlind);
-    heActed = [false, false, false, false];
+    heActed = [false, false, false, false, false];
     heLastRaise = heBigBlind;
     heStreet = 'preflop'; heShowCards = false; heHandOver = false;
     heMsg = ''; hePlayerHandName = '';
@@ -2281,7 +2301,7 @@
     var toCall = maxB - hePlayerBet;
     if (toCall < 0) toCall = 0;
     var anyAiCanAct = false;
-    for (var i = 0; i < 3; i++) if (heSeatCanAct(i + 1)) { anyAiCanAct = true; break; }
+    for (var i = 0; i < 4; i++) if (heSeatCanAct(i + 1)) { anyAiCanAct = true; break; }
     if (heBalance <= 0) return ['CHECK']; // all-in: no action (turn logic skips; fallback only)
     if (toCall <= 0) {
       var a = ['CHECK'];
@@ -2358,7 +2378,7 @@
     heLastRaise = Math.max(20, heRaiseAmt - maxB);
     heBalance -= cost; hePlayerBet += cost; hePot += cost; hePlayerInvested += cost;
     // A bet/raise reopens the action for everyone else.
-    for (var t = 0; t < 4; t++) if (t !== 0 && heSeatCanAct(t)) heActed[t] = false;
+    for (var t = 0; t < 5; t++) if (t !== 0 && heSeatCanAct(t)) heActed[t] = false;
     heActed[0] = true;
     JMFGAMES.beep(700, 0.06); heNextTurn();
   }
@@ -2388,7 +2408,7 @@
     } else if (d.act === 'call') {
       var amt = Math.min(d.amount, ai.balance);
       if (amt > 0) { ai.balance -= amt; ai.bet += amt; hePot += amt; }
-      ai.lastAction = 'CALL $' + amt;
+      ai.lastAction = 'CALL';
       heActed[seat] = true;
       JMFGAMES.beep(600, 0.05);
     } else if (d.act === 'bet' || d.act === 'raise') {
@@ -2399,9 +2419,9 @@
         heLastRaise = Math.max(20, (ai.bet + amt2) - wasMax);
         ai.balance -= amt2; ai.bet += amt2; hePot += amt2;
         // A bet/raise reopens the action for everyone else.
-        for (var t = 0; t < 4; t++) if (t !== seat && heSeatCanAct(t)) heActed[t] = false;
+        for (var t = 0; t < 5; t++) if (t !== seat && heSeatCanAct(t)) heActed[t] = false;
         heActed[seat] = true;
-        ai.lastAction = (wasMax > 0 ? 'RAISE $' : 'BET $') + ai.bet;
+        ai.lastAction = (wasMax > 0 ? 'RAISE' : 'BET');
         JMFGAMES.beep(700, 0.06);
       }
     } else {
@@ -2428,8 +2448,8 @@
     else if (heStreet === 'turn') { heCommunity.push(heDrawCard()); heStreet = 'river'; }
     else { heShowdown(); return; }
     hePlayerBet = 0;
-    for (var i = 0; i < 3; i++) heAIs[i].bet = 0;
-    heActed = [false, false, false, false];
+    for (var i = 0; i < 4; i++) heAIs[i].bet = 0;
+    heActed = [false, false, false, false, false];
     heLastRaise = heBigBlind;
     JMFGAMES.beep(700, 0.06);
     // First to act post-flop: the first player who can act after the button.
@@ -2548,12 +2568,15 @@
   function heDrawAiCards() {
     // FAIR PLAY: every AI's hole cards are face-down until showdown.
     // bjDrawHand hides only the SECOND card (the dealer hole card),
-    // so each AI hand is drawn card by card here instead.
-    for (var i = 0; i < 3; i++) {
+    // so each AI hand is drawn card by card here instead. Four
+    // 60px columns, 11px card stride (same tight overlap as the
+    // Blackjack table-mates): two cards span x0+2..x0+33, leaving
+    // room for the bet and the last-action verb at x0+34.
+    for (var i = 0; i < 4; i++) {
       var ai = heAIs[i];
-      var x0 = i * 80;
+      var x0 = i * 60;
       for (var j = 0; j < ai.hand.length; j++) {
-        bjDrawCardAt(x0 + 4 + j * 22, 26, ai.hand[j], !heShowCards);
+        bjDrawCardAt(x0 + 2 + j * 11, 26, ai.hand[j], !heShowCards);
       }
     }
   }
@@ -2589,7 +2612,7 @@
       ctx.fillStyle = '#f5e9c8';
       ctx.fillText("TEXAS HOLD'EM", W / 2, 32);
       ctx.font = '8px monospace'; ctx.fillStyle = '#e8c33c';
-      ctx.fillText('4-HANDED  -  FIRST TO $10000 WINS', W / 2, 46);
+      ctx.fillText('5-HANDED  -  FIRST TO $10000 WINS', W / 2, 46);
       // Mode select: L/R toggles.
       var modes = ['CASH GAME', 'TOURNAMENT'];
       for (var mi = 0; mi < 2; mi++) {
@@ -2604,7 +2627,7 @@
       }
       ctx.fillStyle = '#f5e9c8';
       ctx.fillText('L/R: PICK MODE', W / 2, 96);
-      ctx.fillText('VS  VIC   LUNA   DOC', W / 2, 108);
+      ctx.fillText('VS  VIC   LUNA   DOC   COLE', W / 2, 108);
       ctx.fillText('YOU $' + heBalance + '   BEST $' + heBest, W / 2, 120);
       if (heStreak >= 2) { ctx.fillStyle = '#e8c33c'; ctx.fillText('WIN STREAK ' + heStreak, W / 2, 132); }
       if (heLobbyNote) { ctx.fillStyle = '#9fd6ae'; ctx.fillText(heLobbyNote, W / 2, 144); }
@@ -2613,25 +2636,28 @@
       ctx.textAlign = 'left';
       return;
     }
-    // AI strip: three columns (VIC | LUNA | DOC). Each shows the
-    // name + chips, the two hole cards, the current bet and the
-    // last action. The acting AI's name is gold; folded or
-    // eliminated AIs are dimmed.
-    for (var ai = 0; ai < 3; ai++) {
+    // AI strip: four 60px columns (VIC | LUNA | DOC | COLE). Each
+    // shows the name + chips, the two hole cards (11px stride, so
+    // they span x0+2..x0+33), the current bet in gold and the last
+    // action verb at x0+34. The acting AI's name is gold; folded
+    // or eliminated AIs are dimmed. Every column's text stays
+    // inside its 60px: "COLE $1000" is 50px, "$1000" is 25px,
+    // "RAISE"/"CHECK" are 25px — all fit with room to spare.
+    for (var ai = 0; ai < 4; ai++) {
       var opp = heAIs[ai];
-      var x0 = ai * 80;
+      var x0 = ai * 60;
       var acting = (heState === 'act' && heActSeat === ai + 1);
       ctx.font = '8px monospace';
       if (!opp.inHand) ctx.fillStyle = '#5a6b5a';
       else if (opp.folded) ctx.fillStyle = '#8a93a5';
       else if (acting) ctx.fillStyle = '#e8c33c';
       else ctx.fillStyle = '#f5e9c8';
-      ctx.fillText(opp.name + ' $' + opp.balance, x0 + 4, 22);
+      ctx.fillText(opp.name + ' $' + opp.balance, x0 + 2, 22);
       for (var cj = 0; cj < opp.hand.length; cj++) {
-        bjDrawCardAt(x0 + 4 + cj * 22, 26, opp.hand[cj], !heShowCards);
+        bjDrawCardAt(x0 + 2 + cj * 11, 26, opp.hand[cj], !heShowCards);
       }
-      if (opp.bet > 0) { ctx.fillStyle = '#e8c33c'; ctx.fillText('$' + opp.bet, x0 + 50, 32); }
-      if (opp.lastAction) { ctx.fillStyle = '#f5e9c8'; ctx.fillText(opp.lastAction, x0 + 50, 44); }
+      if (opp.bet > 0) { ctx.fillStyle = '#e8c33c'; ctx.fillText('$' + opp.bet, x0 + 34, 32); }
+      if (opp.lastAction) { ctx.fillStyle = '#f5e9c8'; ctx.fillText(opp.lastAction, x0 + 34, 44); }
     }
     // Community cards.
     for (var i = 0; i < 5; i++) {
@@ -2685,7 +2711,7 @@
       // Showdown summary: every hand that showed down, abbreviated.
       var parts = [];
       if (hePlayerHandName) parts.push('YOU:' + heAbbrName(hePlayerHandName));
-      for (var pi = 0; pi < 3; pi++) if (heAIs[pi].handName) parts.push(heAIs[pi].name + ':' + heAbbrName(heAIs[pi].handName));
+      for (var pi = 0; pi < 4; pi++) if (heAIs[pi].handName) parts.push(heAIs[pi].name + ':' + heAbbrName(heAIs[pi].handName));
       if (parts.length) {
         ctx.font = '8px monospace'; ctx.fillStyle = '#f5e9c8';
         ctx.fillText(parts.join(' '), W / 2, 152);
@@ -2721,6 +2747,9 @@
    path (chEval3) for GRANDMASTER. New in GBA:
    - Bigger 18px board (144x144), centred, no side panel — a single
      status line on top (level, move, rating), controls on the bottom.
+     Real WOOD board: warm maple light squares, rich walnut dark
+     squares, a darker walnut frame, and larger outlined pieces that
+     read clearly on both wood tones.
    - REAL strength ladder: EASY plays like a human beginner
      (1-ply greedy, ~30% plausible mistakes, never random blunders
      into hanging its queen for nothing... it still drops pieces
@@ -3370,6 +3399,54 @@ function chMoveStr(m) {
   if (m.promo) s += m.promo.toLowerCase();
   return s;
 }
+// Standard Algebraic Notation for a move m in position s (pre-move).
+// Piece letter, disambiguation, x for captures, destination, =Q for
+// promotion, O-O / O-O-O for castling, + for check, # for checkmate.
+function chSAN(s, m) {
+  if (m.castle === 'K' || m.castle === 'k') return 'O-O' + chSANCheckSuffix(s, m);
+  if (m.castle === 'Q' || m.castle === 'q') return 'O-O-O' + chSANCheckSuffix(s, m);
+  var piece = m.piece.toUpperCase();
+  var isPawn = piece === 'P';
+  var isCap = m.captured !== '';
+  var san = '';
+  if (!isPawn) {
+    san += piece;
+    var legal = chLegalMoves(s), others = [];
+    for (var i = 0; i < legal.length; i++) {
+      var o = legal[i];
+      if (o.piece === m.piece && o.to === m.to && o.from !== m.from) others.push(o);
+    }
+    if (others.length > 0) {
+      var sameFile = false, sameRank = false;
+      for (var j = 0; j < others.length; j++) {
+        if (chCol(others[j].from) === chCol(m.from)) sameFile = true;
+        if (chRow(others[j].from) === chRow(m.from)) sameRank = true;
+      }
+      if (!sameFile) san += 'abcdefgh'[chCol(m.from)];
+      else if (!sameRank) san += String(8 - chRow(m.from));
+      else san += chAlg(m.from);
+    }
+  } else if (isCap) {
+    san += 'abcdefgh'[chCol(m.from)];
+  }
+  if (isCap) san += 'x';
+  san += chAlg(m.to);
+  if (m.promo) san += '=' + m.promo;
+  san += chSANCheckSuffix(s, m);
+  return san;
+}
+function chSANCheckSuffix(s, m) {
+  var ns = chApply(s, m);
+  if (!chInCheck(ns, ns.turn)) return '';
+  return chLegalMoves(ns).length === 0 ? '#' : '+';
+}
+// Record one played move in the history panel. Must be called BEFORE
+// chApply (it needs the pre-move position for SAN). White's move gets
+// its number ('1. e4'); Black's gets '...' ('... e5').
+function chRecordHist(m) {
+  var san = chSAN(chS, m);
+  chHist.push((chColor(m.piece) === 'w') ? (chMoveNo + '. ' + san) : ('... ' + san));
+}
 
 
 var CH_LEVELS = [
@@ -3430,10 +3507,33 @@ var chSel = -1, chSelMoves = [];
 var chMoveNo = 1, chPaused = false, chOver = false;
 var chResult = '', chResultSub = '';
 var chLastMove = null;
+var chHist = []; // move history: one SAN line per half-move, e.g. '1. e4', '... e5'
 var chBlink = 0;
-// GBA board geometry: 18px squares, 144x144 board, centred, no side panel.
-// Top status line at y=7, board y 8..152, bottom controls line at y=159.
-var CH_X0 = 48, CH_Y0 = 8, CH_SQ = 18;
+// GBA board geometry: 18px squares, 144x144 board, shifted 8px left
+// (CH_X0=40) to make room for the move history panel in the right
+// margin. Top status line at y=7, board y 8..152, bottom controls line
+// at y=159. 18px is the largest square that fits cleanly: the 160px
+// height minus the two 8px text lines leaves ~144px, so 19px (152px)
+// would overlap the status/controls text. The board is made to feel
+// larger with a wooden frame that extends into the side margins
+// (board+frame 152px wide) and larger 14px outlined pieces.
+// The 44px right margin alone cannot fit a readable move list: at 7px
+// it only holds 9-char lines, but real games produce 10-11 char lines
+// once the move number hits double digits (e.g. '10. Qxf7#',
+// '25. exd8=Q+'). Shifting the board 8px left gives a 51px panel that
+// fits those lines, while the board stays 18px and the left margin is
+// still a clean 36px indigo gap.
+// Wood board: warm maple light squares, rich walnut dark squares,
+// darker walnut frame. Pieces are outlined glyphs (no circles) so they
+// read on both wood tones: ivory fill + dark outline for White,
+// near-black fill + ivory outline for Black.
+var CH_X0 = 40, CH_Y0 = 8, CH_SQ = 18;
+var CH_WOOD_LIGHT = '#E8C88A'; // maple
+var CH_WOOD_DARK = '#8B5A2B';  // walnut
+var CH_WOOD_FRAME = '#6B4423'; // darker walnut frame
+var CH_WOOD_OUTLINE = '#3B2416'; // dark brown outline (highlights/pieces)
+var CH_PIECE_W_FILL = '#FFF8DC'; // ivory
+var CH_PIECE_B_FILL = '#1A0F0A'; // near-black brown
 function chDispR(sq) { return chFlip ? 7 - chRow(sq) : chRow(sq); }
 function chDispC(sq) { return chFlip ? 7 - chCol(sq) : chCol(sq); }
 function chSqAt(r, c) { return chFlip ? (7 - r) * 8 + (7 - c) : r * 8 + c; }
@@ -3469,7 +3569,7 @@ function chStartPuzzle(idx) {
   chCur = 52; chSel = -1; chSelMoves = [];
   chMoveNo = 1; chPaused = false; chOver = false;
   chResult = ''; chResultSub = '';
-  chLastMove = null;
+  chLastMove = null; chHist = [];
   chPuzzleSolved = false; chPuzzleMsg = chPuzzle.tip;
   chState = 'puzzle';
   screen = 'play';
@@ -3501,7 +3601,7 @@ function chNewGame(level) {
   chMoveNo = 1;
   chPaused = false; chOver = false;
   chResult = ''; chResultSub = '';
-  chLastMove = null;
+  chLastMove = null; chHist = [];
   chState = 'play';
   screen = 'play';
   JMFGAMES.beep(660, 0.08);
@@ -3622,6 +3722,7 @@ function chDoPuzzleMove(m) {
     JMFGAMES.beep(180, 0.15);
     return;
   }
+  chRecordHist(m);
   chS = chApply(chS, m);
   chLastMove = { from: m.from, to: m.to };
   chPuzzleSolved = true;
@@ -3635,6 +3736,7 @@ function chDoPuzzleMove(m) {
 }
 function chDoPlayerMove(m) {
   var captured = m.captured !== '';
+  chRecordHist(m);
   chS = chApply(chS, m);
   chLastMove = { from: m.from, to: m.to };
   chSel = -1; chSelMoves = [];
@@ -3647,6 +3749,7 @@ function chAiReply() {
   var ai = chAiMove(chS, chLevel);
   if (ai) {
     var aiCap = ai.captured !== '';
+    chRecordHist(ai);
     chS = chApply(chS, ai);
     chLastMove = { from: ai.from, to: ai.to };
     if (chPlayerColor === 'w') chMoveNo++;
@@ -3830,53 +3933,96 @@ function drawChess() {
     ctx.fillText('CHECK!', W - 4 - chTopRight.length * 5 - 6, 7);
   }
   ctx.textAlign = 'left';
-  // Board: alternating cream/indigo squares, file/rank labels.
+  // Wood board: maple light squares, walnut dark squares, darker walnut
+  // frame (4px sides into the margins, 4px top/bottom strips over the
+  // edge squares' rim). Pieces are drawn after the frame so they sit
+  // on top. Board+frame footprint is 152px wide (x 44..195).
+  ctx.fillStyle = CH_WOOD_FRAME;
+  ctx.fillRect(CH_X0 - 4, CH_Y0, 8 * CH_SQ + 8, 8 * CH_SQ);
   for (var r = 0; r < 8; r++) {
     for (var c = 0; c < 8; c++) {
       var x = CH_X0 + c * CH_SQ, y = CH_Y0 + r * CH_SQ;
-      ctx.fillStyle = ((r + c) % 2 === 0) ? '#F5E9C8' : '#3B3B8F';
+      ctx.fillStyle = ((r + c) % 2 === 0) ? CH_WOOD_LIGHT : CH_WOOD_DARK;
       ctx.fillRect(x, y, CH_SQ, CH_SQ);
-      var p = chS.b[chSqAt(r, c)];
-      if (p !== '') {
-        var white = chColor(p) === 'w';
-        ctx.fillStyle = white ? '#ffffff' : '#1a1a1a';
-        ctx.beginPath(); ctx.arc(x + CH_SQ / 2, y + CH_SQ / 2, 7, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = white ? '#1A1A2E' : '#fde047';
-        ctx.font = '13px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(CH_GLYPH[p], x + CH_SQ / 2, y + CH_SQ / 2 + 1);
-        ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
-      }
     }
   }
-  // Last-move highlight.
+  // Frame top/bottom strips (4px, over the edge squares' rim).
+  ctx.fillStyle = CH_WOOD_FRAME;
+  ctx.fillRect(CH_X0 - 4, CH_Y0, 8 * CH_SQ + 8, 4);
+  ctx.fillRect(CH_X0 - 4, CH_Y0 + 8 * CH_SQ - 4, 8 * CH_SQ + 8, 4);
+  // Pieces: outlined 14px glyphs (no circles). Ivory fill + dark outline
+  // for White, near-black fill + ivory outline for Black — one of the
+  // fill/outline always contrasts with either wood tone.
+  for (var r2 = 0; r2 < 8; r2++) {
+    for (var c2 = 0; c2 < 8; c2++) {
+      var p = chS.b[chSqAt(r2, c2)];
+      if (p === '') continue;
+      var white = chColor(p) === 'w';
+      var px = CH_X0 + c2 * CH_SQ, py = CH_Y0 + r2 * CH_SQ;
+      ctx.font = '14px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = white ? CH_WOOD_OUTLINE : CH_PIECE_W_FILL;
+      ctx.strokeText(CH_GLYPH[p], px + CH_SQ / 2, py + CH_SQ / 2 + 1);
+      ctx.fillStyle = white ? CH_PIECE_W_FILL : CH_PIECE_B_FILL;
+      ctx.fillText(CH_GLYPH[p], px + CH_SQ / 2, py + CH_SQ / 2 + 1);
+      ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+    }
+  }
+  // Last-move highlight: dark outline + gold, visible on both woods.
   if (chLastMove) {
-    ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2;
     [chLastMove.from, chLastMove.to].forEach(function (sq) {
-      ctx.strokeRect(CH_X0 + chDispC(sq) * CH_SQ + 1, CH_Y0 + chDispR(sq) * CH_SQ + 1, CH_SQ - 2, CH_SQ - 2);
+      var lx = CH_X0 + chDispC(sq) * CH_SQ + 1, ly = CH_Y0 + chDispR(sq) * CH_SQ + 1;
+      ctx.strokeStyle = CH_WOOD_OUTLINE; ctx.lineWidth = 4;
+      ctx.strokeRect(lx, ly, CH_SQ - 2, CH_SQ - 2);
+      ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2;
+      ctx.strokeRect(lx, ly, CH_SQ - 2, CH_SQ - 2);
     });
     ctx.lineWidth = 1;
   }
   // Selected square + legal-move targets.
   if (chSel >= 0) {
+    var sx = CH_X0 + chDispC(chSel) * CH_SQ + 1, sy = CH_Y0 + chDispR(chSel) * CH_SQ + 1;
+    ctx.strokeStyle = CH_WOOD_OUTLINE; ctx.lineWidth = 4;
+    ctx.strokeRect(sx, sy, CH_SQ - 2, CH_SQ - 2);
     ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
-    ctx.strokeRect(CH_X0 + chDispC(chSel) * CH_SQ + 1, CH_Y0 + chDispR(chSel) * CH_SQ + 1, CH_SQ - 2, CH_SQ - 2);
+    ctx.strokeRect(sx, sy, CH_SQ - 2, CH_SQ - 2);
     ctx.lineWidth = 1;
     for (var i = 0; i < chSelMoves.length; i++) {
       var t = chSelMoves[i].to;
       var tx = CH_X0 + chDispC(t) * CH_SQ, ty = CH_Y0 + chDispR(t) * CH_SQ;
       if (chSelMoves[i].captured !== '') {
-        ctx.strokeStyle = '#dc2626';
+        ctx.strokeStyle = CH_WOOD_OUTLINE; ctx.lineWidth = 3;
         ctx.strokeRect(tx + 2, ty + 2, CH_SQ - 4, CH_SQ - 4);
+        ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 2;
+        ctx.strokeRect(tx + 2, ty + 2, CH_SQ - 4, CH_SQ - 4);
+        ctx.lineWidth = 1;
       } else {
+        ctx.fillStyle = CH_WOOD_OUTLINE;
+        ctx.beginPath(); ctx.arc(tx + CH_SQ / 2, ty + CH_SQ / 2, 3, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = '#FFD93D';
         ctx.beginPath(); ctx.arc(tx + CH_SQ / 2, ty + CH_SQ / 2, 2, 0, Math.PI * 2); ctx.fill();
       }
     }
   }
-  // Blinking cursor.
+  // Blinking cursor: dark outline + white, visible on both woods.
   if (!chPaused && chBlink < 40) {
+    var cx = CH_X0 + chDispC(chCur) * CH_SQ + 0.5, cy = CH_Y0 + chDispR(chCur) * CH_SQ + 0.5;
+    ctx.strokeStyle = CH_WOOD_OUTLINE; ctx.lineWidth = 2;
+    ctx.strokeRect(cx, cy, CH_SQ - 1, CH_SQ - 1);
     ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
-    ctx.strokeRect(CH_X0 + chDispC(chCur) * CH_SQ + 0.5, CH_Y0 + chDispR(chCur) * CH_SQ + 0.5, CH_SQ - 1, CH_SQ - 1);
+    ctx.strokeRect(cx, cy, CH_SQ - 1, CH_SQ - 1);
+  }
+  // Move history panel (right margin, x 189..239): one SAN move per
+  // line, scrolling to the latest. Title + up to 16 lines at 7px / 8px
+  // pitch. Shown during a game (play/puzzle/over) only — the level,
+  // colour and puzzle-list screens return before this point.
+  ctx.fillStyle = '#1E1E5A'; ctx.fillRect(189, 8, 51, 144);
+  ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 7px monospace'; ctx.textAlign = 'left';
+  ctx.fillText('MOVES', 191, 16);
+  ctx.font = '7px monospace'; ctx.fillStyle = '#F5E9C8';
+  var histStart = Math.max(0, chHist.length - 16);
+  for (var hi = histStart; hi < chHist.length; hi++) {
+    ctx.fillText(chHist[hi], 191, 26 + (hi - histStart) * 8);
   }
   // Bottom controls line (baseline 159; the board ends at y=152, so the
   // text sits fully below it with a clear gap).
@@ -5483,23 +5629,31 @@ function drawOverlordOver() {
 /* ================================================================
    EMBERFALL BRAWL — GBA rebuild (240x160, full colour).
    Auto-battler: pick a hero, they fight alone; A summons allies,
-   B fires the hero ultimate. New in GBA: 2 new heroes (NOVA the
-   mage, ORIN the guardian), hero SYNERGIES, a BOSS every 5 waves
-   with telegraphed patterns, enemies that focus the weakest
-   fighter, real knockback / stagger / momentum physics, and a
-   run tracker (per-hero wins + best wave) saved alongside the
-   original best-waves key. Save key unchanged:
-   'jmf-games-beatemup-best'. Wave-1 composition unchanged.
+   B fires the hero ultimate (ultimates also auto-fire on cooldown).
+   New in GBA: 2 new heroes (NOVA the mage, ORIN the guardian),
+   hero SYNERGIES, a BOSS every 5 waves with telegraphed patterns,
+   enemies that focus the weakest fighter, real knockback /
+   stagger / momentum physics, and a run tracker (per-hero wins +
+   best wave) saved alongside the original best-waves key.
+   HERO SYSTEMS: A summons ALL 4 other heroes for 20s; every hero
+   self-heals (rate by class — NOVA the mage heals fastest);
+   NOVA attacks at far range with ember bolts; every hero has
+   2 auto-cast skills and a super-strong ultimate that fires
+   on its own cooldown (B is a manual override). Save key
+   unchanged: 'jmf-games-beatemup-best'. Wave-1 composition
+   unchanged.
    ================================================================ */
 var BU_BEST_KEY = 'jmf-games-beatemup-best';
 var BU_STATS_KEY = 'jmf-games-beatemup-stats';
 var BU_ARENA = { x0: 12, x1: 228, y0: 38, y1: 148 };
+/* heal = passive self-heal HP/sec (class-based: the mage heals
+   much faster). ranged = attacks from afar with ember bolts. */
 var BU_HEROES = [
-  { name: 'BRAM', tag: 'HEAVY FISTS', hp: 120, dmg: 14, spd: 55, rate: 0.50, color: '#E8590C', kind: 'bram', ult: 'GROUND SLAM', ultShort: 'SLAM' },
-  { name: 'KIRA', tag: 'FAST BLADE', hp: 90, dmg: 9, spd: 75, rate: 0.32, color: '#3B82F6', kind: 'kira', ult: 'WHIRLWIND', ultShort: 'WHIRL' },
-  { name: 'ASH', tag: 'SWIFT DAGGERS', hp: 70, dmg: 6, spd: 95, rate: 0.22, color: '#22C55E', kind: 'ash', ult: 'SHADOW DASH', ultShort: 'DASH' },
-  { name: 'NOVA', tag: 'EMBER MAGE', hp: 80, dmg: 11, spd: 70, rate: 0.42, color: '#EC4899', kind: 'nova', ult: 'METEOR FALL', ultShort: 'METEOR' },
-  { name: 'ORIN', tag: 'STONE GUARDIAN', hp: 140, dmg: 10, spd: 45, rate: 0.60, color: '#14B8A6', kind: 'orin', ult: 'AEGIS WALL', ultShort: 'AEGIS' }
+  { name: 'BRAM', tag: 'HEAVY FISTS', hp: 120, dmg: 14, spd: 55, rate: 0.50, color: '#E8590C', kind: 'bram', ult: 'GROUND SLAM', ultShort: 'SLAM', heal: 0.8 },
+  { name: 'KIRA', tag: 'FAST BLADE', hp: 90, dmg: 9, spd: 75, rate: 0.32, color: '#3B82F6', kind: 'kira', ult: 'WHIRLWIND', ultShort: 'WHIRL', heal: 1.2 },
+  { name: 'ASH', tag: 'SWIFT DAGGERS', hp: 70, dmg: 6, spd: 95, rate: 0.22, color: '#22C55E', kind: 'ash', ult: 'SHADOW DASH', ultShort: 'DASH', heal: 1.6 },
+  { name: 'NOVA', tag: 'EMBER MAGE', hp: 80, dmg: 11, spd: 70, rate: 0.42, color: '#EC4899', kind: 'nova', ult: 'METEOR FALL', ultShort: 'METEOR', heal: 3.0, ranged: true, range: 64 },
+  { name: 'ORIN', tag: 'STONE GUARDIAN', hp: 140, dmg: 10, spd: 45, rate: 0.60, color: '#14B8A6', kind: 'orin', ult: 'AEGIS WALL', ultShort: 'AEGIS', heal: 0.5 }
 ];
 var BU_ENEMIES = {
   grunt: { name: 'GRUNT', hp: 24, dmg: 5, spd: 28, color: '#9CA3AF', kind: 'grunt', ranged: false },
@@ -5535,7 +5689,7 @@ var buPhase = 'select';
 var buWave = 0, buCleared = 0, buKills = 0, buBest = 0;
 var buEnemies = [], buProjs = [], buSpawnQ = [], buSpawnT = 0, buBannerT = 0;
 var buPaused = false, buOver = false, buUpSel = 0, buUpChoices = [];
-var buSummonCd = 0, buSummonDur = 3, buSummonCdMax = 20;
+var buSummonCd = 0, buSummonDur = 20, buSummonCdMax = 20;
 var buUpCounts = {};
 var buFloats = [], buParts = [], buDeaths = [];
 var buEmbers = [], buShakeT = 0, buFrame = 0;
@@ -5565,12 +5719,14 @@ function buMakeFighter(def, x, y, isSummon) {
     x: x, y: y, face: 1, vx: 0, vy: 0,
     maxHp: def.hp, hp: def.hp,
     dmg: def.dmg, spd: def.spd, rate: def.rate,
-    range: 14, crit: 0, lifesteal: 0, armor: 0,
+    heal: def.heal || 0, ranged: !!def.ranged,
+    range: def.ranged ? (def.range || 64) : 14, crit: 0, lifesteal: 0, armor: 0,
     atkCd: 0, swingT: 0, spinT: 0, hitT: 0, invulnT: 0,
     walkPh: Math.random() * 6, moving: false,
     thinkT: Math.random() * 0.2, tx: x, ty: y, mode: 'idle', target: null, kiteT: 0, flank: 0,
     isSummon: !!isSummon, summonT: 0, fadeT: 0,
-    ultCd: 0, dashT: 0, dashX: 1, dashY: 0, aegisT: 0
+    ultCd: 0, dashT: 0, dashX: 1, dashY: 0, aegisT: 0,
+    sk1Cd: 0, sk2Cd: 0, healAcc: 0
   };
 }
 function startBeat() {
@@ -5579,7 +5735,7 @@ function startBeat() {
   buWave = 0; buCleared = 0; buKills = 0;
   buEnemies = []; buProjs = []; buSpawnQ = [];
   buFloats = []; buParts = []; buDeaths = [];
-  buSummonCd = 0; buSummonDur = 3; buSummonCdMax = 20; buUpCounts = {};
+  buSummonCd = 0; buSummonDur = 20; buSummonCdMax = 20; buUpCounts = {};
   buPaused = false; buOver = false; buShakeT = 0;
   buSynergy = null; buMeteor = null;
   buEmbers = [];
@@ -5594,7 +5750,7 @@ function buPickHero() {
   buHero = buMakeFighter(def, 60, 110, false);
   buFighters = [buHero];
   buWave = 0; buCleared = 0; buKills = 0;
-  buSummonCd = 0; buSummonDur = 3; buSummonCdMax = 20;
+  buSummonCd = 0; buSummonDur = 20; buSummonCdMax = 20;
   buStats.runs++; buHeroStat(def.kind).runs++; buSaveStats();
   buStartWave(1);
   JMFGAMES.beep(880, 0.1);
@@ -5639,6 +5795,7 @@ function buSpawnEnemy(type) {
     flank: (Math.random() * 1.6 - 0.8), mode: 'stalk', modeT: 0,
     strafeDir: Math.random() < 0.5 ? -1 : 1, strafeT: 1 + Math.random(), dashHit: false,
     vx: 0, vy: 0, staggerT: 0, targetF: null, focusWeak: false,
+    tauntT: 0, tauntF: null,
     boss: type === 'boss', pat: 0, patT: 2.0, windupT: 0, summoned: false, chargeVx: 0, chargeVy: 0
   });
 }
@@ -5648,6 +5805,11 @@ function buDist(ax, ay, bx, by) { var dx = bx - ax, dy = by - ay; return Math.sq
    fighter is stored on e.targetF so it is observable and fair —
    the player can see who is being hunted. */
 function buPickTarget(e) {
+  /* Taunted enemies are forced onto the taunter while it lasts. */
+  if (e.tauntT > 0 && e.tauntF && e.tauntF.hp > 0) {
+    e.focusWeak = false;
+    return e.tauntF;
+  }
   var best = null, bestScore = 1e9, weak = null, weakScore = 1e9;
   for (var i = 0; i < buFighters.length; i++) {
     var f = buFighters[i];
@@ -5723,6 +5885,15 @@ function buThink(f) {
       f.mode = 'kite'; f.kiteT = 0.45;
       return;
     }
+  }
+  if (f.ranged && d < 26) {
+    /* Ranged fighter: keep distance — back away from the target. */
+    var rx = f.x - best.x, ry = f.y - best.y;
+    var rl = Math.sqrt(rx * rx + ry * ry) || 1;
+    f.tx = Math.max(BU_ARENA.x0, Math.min(BU_ARENA.x1, f.x + rx / rl * 18));
+    f.ty = Math.max(BU_ARENA.y0, Math.min(BU_ARENA.y1, f.y + ry / rl * 18));
+    f.mode = 'kite'; f.kiteT = 0.3;
+    return;
   }
   if (d <= f.range) {
     f.mode = 'attack';
@@ -5800,21 +5971,16 @@ function buSummon() {
   buSummonCd = buSummonCdMax;
   var others = [];
   for (var i = 0; i < BU_HEROES.length; i++) if (BU_HEROES[i].kind !== buHero.kind) others.push(BU_HEROES[i]);
-  /* Summon the two allies that best synergise with the hero first. */
-  others.sort(function (a, b) {
-    var sa = buSynergyFor(buHero.kind, a.kind) ? 0 : 1;
-    var sb = buSynergyFor(buHero.kind, b.kind) ? 0 : 1;
-    return sa - sb;
-  });
-  others = others.slice(0, 2);
+  /* Summon ALL FOUR other heroes — the whole roster joins the fight. */
   var syn = null;
+  var offs = [-24, -8, 8, 24], flanks = [-16, -6, 6, 16];
   for (var j = 0; j < others.length; j++) {
     var s = buSynergyFor(buHero.kind, others[j].kind);
     if (s && !syn) syn = s;
     var dur = buSummonDur + (s && s.desc.indexOf('SUMMONS') >= 0 ? 2 : 0);
-    var f = buMakeFighter(others[j], Math.max(BU_ARENA.x0, Math.min(BU_ARENA.x1, buHero.x + (j === 0 ? -16 : 16))), buHero.y + 4, true);
+    var f = buMakeFighter(others[j], Math.max(BU_ARENA.x0, Math.min(BU_ARENA.x1, buHero.x + offs[j % offs.length])), buHero.y + 4, true);
     f.summonT = dur;
-    f.flank = j === 0 ? -12 : 12;
+    f.flank = flanks[j % flanks.length];
     f.thinkT = 0;
     buFighters.push(f);
     for (var p = 0; p < 10; p++) {
@@ -5822,17 +5988,19 @@ function buSummon() {
       buParts.push({ x: f.x, y: f.y - 4, vx: Math.cos(a) * 50, vy: Math.sin(a) * 50 - 10, t: 18, col: '#FFFFFF' });
     }
   }
+  buFloats.push({ x: buHero.x, y: buHero.y - 34, txt: 'SUMMON! 4 ALLIES ' + buSummonDur + 'S!', t: 60, col: '#FDE68A' });
   if (syn) {
     buSynergy = { name: syn.name, desc: syn.desc, t: buSummonDur };
     buFloats.push({ x: buHero.x, y: buHero.y - 22, txt: 'SYNERGY: ' + syn.name + '!', t: 60, col: '#FDE68A' });
   }
   JMFGAMES.beep(990, 0.12);
 }
-function buUltimate() {
-  if (buPhase !== 'fight' || buPaused || buOver || !buHero || buHero.hp <= 0) return;
-  if (buHero.ultCd > 0) return;
-  buHero.ultCd = 10;
-  var h = buHero;
+/* Fire a hero's ultimate. Works for the player hero AND for summoned
+   allies — every hero activates their own super-strong ultimate. */
+function buFireUlt(f) {
+  if (!f || f.hp <= 0) return;
+  f.ultCd = 10;
+  var h = f;
   if (h.kind === 'bram') {
     for (var i = 0; i < buEnemies.length; i++) {
       var e = buEnemies[i];
@@ -5868,15 +6036,14 @@ function buUltimate() {
       var c = buEnemies[k];
       if (c.hp > 0) { cx += c.x; cy += c.y; n++; }
     }
-    if (n > 0) { buMeteor = { x: cx / n, y: cy / n, t: 45 }; }
-    else buMeteor = { x: h.x + 30 * h.face, y: h.y, t: 45 };
+    if (n > 0) { buMeteor = { x: cx / n, y: cy / n, t: 45, src: h }; }
+    else buMeteor = { x: h.x + 30 * h.face, y: h.y, t: 45, src: h };
     JMFGAMES.beep(520, 0.15);
   } else if (h.kind === 'orin') {
     /* AEGIS WALL: 3s invulnerable, taunts every enemy to him, heals 20. */
     h.aegisT = 3; h.invulnT = 3;
     h.hp = Math.min(h.maxHp, h.hp + 20);
-    for (var m = 0; m < buEnemies.length; m++) { buEnemies[m].targetF = h; buEnemies[m].focusWeak = false; }
-    buFloats.push({ x: h.x, y: h.y - 22, txt: 'AEGIS WALL!', t: 50, col: '#5EEAD4' });
+    for (var m = 0; m < buEnemies.length; m++) { buEnemies[m].targetF = h; buEnemies[m].focusWeak = false; buEnemies[m].tauntT = 3; buEnemies[m].tauntF = h; }
     for (var r2 = 0; r2 < 12; r2++) {
       var a2 = r2 / 12 * Math.PI * 2;
       buParts.push({ x: h.x, y: h.y - 4, vx: Math.cos(a2) * 50, vy: Math.sin(a2) * 50, t: 16, col: '#5EEAD4' });
@@ -5898,6 +6065,213 @@ function buUltimate() {
     } else { h.dashX = h.face; h.dashY = 0; }
     h.dashT = 0.22; h.invulnT = 0.3;
     JMFGAMES.beep(880, 0.1);
+  }
+  buFloats.push({ x: h.x, y: h.y - 22, txt: h.ult + '!', t: 50, col: '#FDE68A' });
+}
+/* B button: manual ultimate override — fires immediately if ready. */
+function buUltimate() {
+  if (buPhase !== 'fight' || buPaused || buOver || !buHero || buHero.hp <= 0) return;
+  if (buHero.ultCd > 0) return;
+  buFireUlt(buHero);
+}
+/* Auto-ultimate: the hero fires their own ultimate when its cooldown
+   is ready and there is a good moment — enemies nearby, a boss
+   present, or the hero in danger. No button press needed. */
+function buUltAuto(f) {
+  if (buPhase !== 'fight' || buPaused || buOver || !f || f.hp <= 0) return;
+  if (f.ultCd > 0) return;
+  if (buEnemies.length === 0) return;
+  var near = false, bossHere = false;
+  for (var i = 0; i < buEnemies.length; i++) {
+    var e = buEnemies[i];
+    if (e.hp <= 0) continue;
+    if (e.boss) bossHere = true;
+    if (buDist(f.x, f.y, e.x, e.y) <= 70) near = true;
+  }
+  if (!near && !bossHere && f.hp > f.maxHp * 0.5) return;
+  buFireUlt(f);
+}
+/* Passive self-heal: every hero regens HP over time, at a rate set
+   by their class (the mage heals much faster). Small green +numbers
+   float up as the healing ticks in. */
+function buHealTick(f, dt) {
+  if (f.hp <= 0 || f.hp >= f.maxHp || !f.heal) return;
+  var amt = f.heal * dt;
+  f.hp = Math.min(f.maxHp, f.hp + amt);
+  f.healAcc += amt;
+  if (f.healAcc >= 2) {
+    buFloats.push({ x: f.x, y: f.y - 16, txt: '+' + Math.round(f.healAcc), t: 30, col: '#22C55E' });
+    f.healAcc = 0;
+  }
+}
+/* NOVA the mage attacks at far range: she fires ember bolts from a
+   distance instead of walking up to enemies. */
+function buFighterRangedAttack(f, e) {
+  f.atkCd = f.rate;
+  f.swingT = 6;
+  f.face = e.x >= f.x ? 1 : -1;
+  JMFGAMES.beep(760, 0.04);
+  var critCh = f.crit + (buSynergy && buSynergy.desc.indexOf('CRIT') >= 0 ? 0.15 : 0);
+  var crit = Math.random() < critCh;
+  var dmgMul = (buSynergy && buSynergy.desc.indexOf('DMG') >= 0) ? 1.2 : 1;
+  var dmg = Math.round(f.dmg * dmgMul * (crit ? 2 : 1));
+  var dx = e.x - f.x, dy = (e.y - 4) - (f.y - 4);
+  var dl = Math.sqrt(dx * dx + dy * dy) || 1;
+  buProjs.push({ x: f.x + f.face * 6, y: f.y - 4, vx: dx / dl * 150, vy: dy / dl * 150, dmg: dmg, life: 1.5, fromHero: true, src: f, col: f.color, r: 2, crit: crit });
+}
+function buNearestEnemy(f, maxD) {
+  var best = null, bd = 1e9;
+  for (var i = 0; i < buEnemies.length; i++) {
+    var e = buEnemies[i];
+    if (e.hp <= 0) continue;
+    var d = buDist(f.x, f.y, e.x, e.y);
+    if (d <= maxD && d < bd) { bd = d; best = e; }
+  }
+  return best;
+}
+/* AUTO-SKILLS: each hero casts 2 skills on their own in combat —
+   no button press. Each has its own cooldown and fires when its
+   condition is met. A floating label shows every cast. */
+function buAutoSkills(f, dt) {
+  if (f.sk1Cd > 0) f.sk1Cd -= dt;
+  if (f.sk2Cd > 0) f.sk2Cd -= dt;
+  if (f.kind === 'bram') {
+    if (f.sk1Cd <= 0 && buEnemiesNear(f, 30) >= 2) {
+      /* SHOCKWAVE: AoE slam around him. */
+      for (var i = 0; i < buEnemies.length; i++) {
+        var e = buEnemies[i];
+        if (e.hp > 0 && buDist(f.x, f.y, e.x, e.y) <= 30) {
+          buDamageEnemy(e, Math.round(f.dmg * 1.5), f, false);
+          buApplyKnockback(e, f, 6);
+        }
+      }
+      buShakeT = 4;
+      for (var p = 0; p < 10; p++) {
+        var a = p / 10 * Math.PI * 2;
+        buParts.push({ x: f.x, y: f.y + 2, vx: Math.cos(a) * 60, vy: Math.sin(a) * 30, t: 14, col: '#F59E0B' });
+      }
+      buFloats.push({ x: f.x, y: f.y - 20, txt: 'SHOCKWAVE!', t: 50, col: '#F59E0B' });
+      JMFGAMES.beep(140, 0.15);
+      f.sk1Cd = 6;
+    }
+    if (f.sk2Cd <= 0 && buEnemiesNear(f, 60) >= 1) {
+      /* ROAR: taunts every enemy onto him for 2s. */
+      for (var j = 0; j < buEnemies.length; j++) {
+        var e2 = buEnemies[j];
+        if (e2.hp > 0) { e2.tauntT = 2; e2.tauntF = f; }
+      }
+      buFloats.push({ x: f.x, y: f.y - 20, txt: 'ROAR!', t: 50, col: '#F59E0B' });
+      JMFGAMES.beep(180, 0.15);
+      f.sk2Cd = 10;
+    }
+  } else if (f.kind === 'kira') {
+    if (f.sk1Cd <= 0 && buEnemiesNear(f, 26) >= 1) {
+      /* BLADE SPIN: hits every enemy around her. */
+      f.spinT = 10;
+      for (var k = 0; k < buEnemies.length; k++) {
+        var e3 = buEnemies[k];
+        if (e3.hp > 0 && buDist(f.x, f.y, e3.x, e3.y) <= 26) buDamageEnemy(e3, Math.round(f.dmg * 1.8), f, false);
+      }
+      buFloats.push({ x: f.x, y: f.y - 20, txt: 'BLADE SPIN!', t: 50, col: '#93C5FD' });
+      JMFGAMES.beep(700, 0.1);
+      f.sk1Cd = 5;
+    }
+    if (f.sk2Cd <= 0) {
+      /* DASH STRIKE: dashes through a nearby enemy. */
+      var dt2 = buNearestEnemy(f, 50);
+      if (dt2) {
+        var dx = dt2.x - f.x, dy = dt2.y - f.y;
+        var dl = Math.sqrt(dx * dx + dy * dy) || 1;
+        f.dashX = dx / dl; f.dashY = dy / dl;
+        f.face = f.dashX >= 0 ? 1 : -1;
+        f.dashT = 0.18; f.invulnT = 0.25;
+        buFloats.push({ x: f.x, y: f.y - 20, txt: 'DASH STRIKE!', t: 50, col: '#93C5FD' });
+        JMFGAMES.beep(880, 0.08);
+        f.sk2Cd = 8;
+      }
+    }
+  } else if (f.kind === 'ash') {
+    if (f.sk1Cd <= 0) {
+      /* SHADOW STEP: teleports behind the weakest enemy and strikes. */
+      var wt = null, ws = 1e9;
+      for (var m = 0; m < buEnemies.length; m++) {
+        var e4 = buEnemies[m];
+        if (e4.hp <= 0) continue;
+        var d4 = buDist(f.x, f.y, e4.x, e4.y);
+        if (d4 > 40 && e4.hp / e4.maxHp < ws) { ws = e4.hp / e4.maxHp; wt = e4; }
+      }
+      if (wt) {
+        f.x = Math.max(BU_ARENA.x0, Math.min(BU_ARENA.x1, wt.x - (wt.face || 1) * 10));
+        f.y = Math.max(BU_ARENA.y0, Math.min(BU_ARENA.y1, wt.y));
+        buDamageEnemy(wt, Math.round(f.dmg * 2), f, false);
+        for (var q = 0; q < 8; q++) buParts.push({ x: f.x, y: f.y - 4, vx: (Math.random() - 0.5) * 60, vy: -Math.random() * 30, t: 12, col: '#22C55E' });
+        buFloats.push({ x: f.x, y: f.y - 20, txt: 'SHADOW STEP!', t: 50, col: '#22C55E' });
+        JMFGAMES.beep(980, 0.08);
+        f.sk1Cd = 7;
+      }
+    }
+    if (f.sk2Cd <= 0) {
+      /* SWIFT CUT: two quick strikes on the nearest enemy. */
+      var st = buNearestEnemy(f, 14);
+      if (st) {
+        buDamageEnemy(st, Math.round(f.dmg * 1.2), f, false);
+        buDamageEnemy(st, Math.round(f.dmg * 1.2), f, false);
+        buFloats.push({ x: f.x, y: f.y - 20, txt: 'SWIFT CUT!', t: 50, col: '#22C55E' });
+        JMFGAMES.beep(980, 0.06);
+        f.sk2Cd = 6;
+      }
+    }
+  } else if (f.kind === 'nova') {
+    if (f.sk1Cd <= 0) {
+      /* FIREBALL: a burst bolt that explodes on impact. */
+      var ft = buNearestEnemy(f, 64);
+      if (ft) {
+        var fx = ft.x - f.x, fy = ft.y - f.y;
+        var fl = Math.sqrt(fx * fx + fy * fy) || 1;
+        buProjs.push({ x: f.x, y: f.y - 4, vx: fx / fl * 130, vy: fy / fl * 130, dmg: Math.round(f.dmg * 2), life: 2, fromHero: true, src: f, col: '#F97316', r: 3, aoe: 24, crit: false });
+        buFloats.push({ x: f.x, y: f.y - 20, txt: 'FIREBALL!', t: 50, col: '#F97316' });
+        JMFGAMES.beep(520, 0.1);
+        f.sk1Cd = 4;
+      }
+    }
+    if (f.sk2Cd <= 0 && f.hp < f.maxHp * 0.5) {
+      /* EMBER SHIELD: 2s of invulnerability when hurt. */
+      f.invulnT = 2;
+      for (var r = 0; r < 10; r++) {
+        var a2 = r / 10 * Math.PI * 2;
+        buParts.push({ x: f.x, y: f.y - 4, vx: Math.cos(a2) * 40, vy: Math.sin(a2) * 40, t: 14, col: '#EC4899' });
+      }
+      buFloats.push({ x: f.x, y: f.y - 20, txt: 'EMBER SHIELD!', t: 50, col: '#EC4899' });
+      JMFGAMES.beep(660, 0.1);
+      f.sk2Cd = 15;
+    }
+  } else if (f.kind === 'orin') {
+    if (f.sk1Cd <= 0) {
+      /* SHIELD BASH: heavy hit that staggers the nearest enemy. */
+      var bt = buNearestEnemy(f, 16);
+      if (bt) {
+        buDamageEnemy(bt, Math.round(f.dmg * 1.5), f, false);
+        bt.staggerT = Math.max(bt.staggerT, 12);
+        buFloats.push({ x: f.x, y: f.y - 20, txt: 'SHIELD BASH!', t: 50, col: '#5EEAD4' });
+        JMFGAMES.beep(300, 0.12);
+        f.sk1Cd = 6;
+      }
+    }
+    if (f.sk2Cd <= 0) {
+      /* BULWARK: shields every ally while one is hurt. */
+      var needy = false;
+      for (var b = 0; b < buFighters.length; b++) {
+        if (buFighters[b].hp > 0 && buFighters[b].hp < buFighters[b].maxHp * 0.6) needy = true;
+      }
+      if (needy) {
+        for (var c = 0; c < buFighters.length; c++) {
+          if (buFighters[c].hp > 0) buFighters[c].aegisT = Math.max(buFighters[c].aegisT, 1.5);
+        }
+        buFloats.push({ x: f.x, y: f.y - 20, txt: 'BULWARK!', t: 50, col: '#5EEAD4' });
+        JMFGAMES.beep(440, 0.12);
+        f.sk2Cd = 14;
+      }
+    }
   }
 }
 function buAction() {
@@ -5923,12 +6297,12 @@ function buRollUpgrades() {
     var u = BU_UPGRADES[i];
     if ((buUpCounts[u.id] || 0) >= cap[u.id]) continue;
     if (u.id === 'armor' && h.armor >= 0.45) continue;
-    if (u.id === 'rally' && buSummonDur >= 5) continue;
+    if (u.id === 'rally' && buSummonDur >= 22) continue;
     if (u.id === 'focus' && buSummonCdMax <= 12) continue;
     if (u.id === 'crit' && h.crit >= 0.5) continue;
     if (u.id === 'vamp' && h.lifesteal >= 0.15) continue;
     if (u.id === 'fury' && h.rate <= 0.13) continue;
-    if (u.id === 'reach' && h.range >= 35) continue;
+    if (u.id === 'reach' && (h.ranged || h.range >= 38)) continue;
     avail.push(u);
   }
   for (var s = avail.length - 1; s > 0; s--) { var r = Math.floor(Math.random() * (s + 1)); var t = avail[s]; avail[s] = avail[r]; avail[r] = t; }
@@ -5945,11 +6319,11 @@ function buApplyUpgrade() {
   else if (u.id === 'vigor') { h.maxHp += 25; h.hp = Math.min(h.maxHp, h.hp + 25); }
   else if (u.id === 'swift') h.spd += 12;
   else if (u.id === 'fury') h.rate = Math.max(0.12, h.rate * 0.8);
-  else if (u.id === 'reach') h.range = Math.min(35, h.range + 6);
+  else if (u.id === 'reach') h.range = Math.min(38, h.range + 6);
   else if (u.id === 'crit') h.crit = Math.min(0.5, h.crit + 0.1);
   else if (u.id === 'vamp') h.lifesteal = Math.min(0.15, h.lifesteal + 0.05);
   else if (u.id === 'armor') h.armor = Math.min(0.45, h.armor + 0.15);
-  else if (u.id === 'rally') buSummonDur = Math.min(5, buSummonDur + 1);
+  else if (u.id === 'rally') buSummonDur = Math.min(22, buSummonDur + 1);
   else if (u.id === 'focus') buSummonCdMax = Math.max(12, buSummonCdMax - 4);
   else if (u.id === 'heal') h.hp = Math.min(h.maxHp, h.hp + 30);
   JMFGAMES.beep(990, 0.1);
@@ -6037,7 +6411,7 @@ function buUpdate() {
       for (var mi = 0; mi < buEnemies.length; mi++) {
         var me = buEnemies[mi];
         if (me.hp > 0 && buDist(buMeteor.x, buMeteor.y, me.x, me.y) <= 30) {
-          buDamageEnemy(me, Math.round(buHero.dmg * 3), buHero, false);
+          buDamageEnemy(me, Math.round((buMeteor.src ? buMeteor.src.dmg : buHero.dmg) * 3), buMeteor.src || buHero, false);
           buApplyKnockback(me, { x: buMeteor.x, y: buMeteor.y }, 10);
         }
       }
@@ -6066,6 +6440,11 @@ function buUpdate() {
     }
     if (f.fadeT > 0) { f.fadeT -= dt; continue; }
     if (f.hp <= 0) continue;
+    /* Hero systems: passive self-heal, auto-cast skills, and the
+       hero firing their own ultimate when its cooldown is ready. */
+    buHealTick(f, dt);
+    buAutoSkills(f, dt);
+    buUltAuto(f);
     if (f.dashT > 0) {
       f.dashT -= dt;
       f.x += f.dashX * 320 * dt;
@@ -6105,7 +6484,10 @@ function buUpdate() {
     f.y = Math.max(BU_ARENA.y0, Math.min(BU_ARENA.y1, f.y));
     if (f.mode === 'attack' && f.target && f.target.hp > 0 && f.atkCd <= 0) {
       var td = buDist(f.x, f.y, f.target.x, f.target.y);
-      if (td <= f.range) buFighterAttack(f, f.target);
+      if (td <= f.range) {
+        if (f.ranged) buFighterRangedAttack(f, f.target);
+        else buFighterAttack(f, f.target);
+      }
       else f.thinkT = 0;
     }
   }
@@ -6138,6 +6520,7 @@ function buUpdate() {
     if (e.hp <= 0) continue;
     if (e.hitT > 0) e.hitT--;
     if (e.cd > 0) e.cd -= dt;
+    if (e.tauntT > 0) e.tauntT -= dt;
     if (e.staggerT > 0) {
       /* Staggered: knocked back, cannot act while it recovers. */
       e.staggerT--;
@@ -6239,9 +6622,32 @@ function buUpdate() {
     var p = buProjs[pi2];
     p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
     var hit = false;
-    for (var pf = 0; pf < buFighters.length; pf++) {
-      var ff = buFighters[pf];
-      if (ff.hp > 0 && Math.abs(ff.x - p.x) < 7 && Math.abs(ff.y - p.y) < 8) { buHurtFighter(ff, p.dmg); hit = true; break; }
+    if (p.fromHero) {
+      /* Hero projectile (NOVA ember bolt / fireball): hits enemies. */
+      for (var pe = 0; pe < buEnemies.length; pe++) {
+        var ee = buEnemies[pe];
+        if (ee.hp > 0 && Math.abs(ee.x - p.x) < 8 && Math.abs(ee.y - p.y) < 8) {
+          if (p.aoe) {
+            for (var ae = 0; ae < buEnemies.length; ae++) {
+              var ae2 = buEnemies[ae];
+              if (ae2.hp > 0 && buDist(p.x, p.y, ae2.x, ae2.y) <= p.aoe) buDamageEnemy(ae2, p.dmg, p.src || buHero, p.crit);
+            }
+            for (var pp = 0; pp < 10; pp++) {
+              var pa3 = pp / 10 * Math.PI * 2;
+              buParts.push({ x: p.x, y: p.y, vx: Math.cos(pa3) * 60, vy: Math.sin(pa3) * 40, t: 14, col: '#F97316' });
+            }
+          } else {
+            buDamageEnemy(ee, p.dmg, p.src || buHero, p.crit);
+          }
+          hit = true;
+          break;
+        }
+      }
+    } else {
+      for (var pf = 0; pf < buFighters.length; pf++) {
+        var ff = buFighters[pf];
+        if (ff.hp > 0 && Math.abs(ff.x - p.x) < 7 && Math.abs(ff.y - p.y) < 8) { buHurtFighter(ff, p.dmg); hit = true; break; }
+      }
     }
     if (hit) { buProjs.splice(pi2, 1); continue; }
     if (p.life <= 0 || p.x < 0 || p.x > W || p.y < 0 || p.y > H) buProjs.splice(pi2, 1);
@@ -6399,7 +6805,7 @@ function buDrawSelect() {
   ctx.font = 'bold 10px monospace';
   ctx.fillText('CHOOSE YOUR FIGHTER', W / 2, 18);
   ctx.font = '8px monospace';
-  ctx.fillText('HERO FIGHTS ALONE - YOU COMMAND', W / 2, 30);
+  ctx.fillText('A: SUMMON 4 ALLIES 20S  B: ULT (AUTO)', W / 2, 30);
   for (var i = 0; i < BU_HEROES.length; i++) {
     var h = BU_HEROES[i];
     var y = 46 + i * 19;
@@ -6414,8 +6820,8 @@ function buDrawSelect() {
     }
     buDrawFigure(30, y + 2, h.color, 1, h.kind, false, 0, 0, 0);
     ctx.textAlign = 'left';
-    ctx.fillText(h.name + ' - ' + h.tag, 44, y - 2);
-    ctx.fillText('HP ' + h.hp + '  DMG ' + h.dmg + '  ULT ' + h.ultShort + '   BEST ' + st.best + 'W', 44, y + 8);
+    ctx.fillText(h.name + ' - ' + h.tag + '  BEST ' + st.best + 'W', 44, y - 2);
+    ctx.fillText('HP ' + h.hp + ' DMG ' + h.dmg + ' HEAL ' + h.heal.toFixed(1) + '/S ULT ' + h.ultShort, 44, y + 8);
     ctx.textAlign = 'center';
   }
   var dsRowY = 146;
@@ -6558,9 +6964,10 @@ function drawBeat() {
     buDrawFigure(dead.x, dead.y + (20 - dead.t) * 0.3, dead.color, 1, dead.kind, false, 0, 0, 0);
     ctx.globalAlpha = 1;
   }
-  ctx.fillStyle = '#FB923C';
   for (var pi3 = 0; pi3 < buProjs.length; pi3++) {
-    ctx.beginPath(); ctx.arc(buProjs[pi3].x, buProjs[pi3].y, 2, 0, Math.PI * 2); ctx.fill();
+    var pr = buProjs[pi3];
+    ctx.fillStyle = pr.col || '#FB923C';
+    ctx.beginPath(); ctx.arc(pr.x, pr.y, pr.r || 2, 0, Math.PI * 2); ctx.fill();
   }
   if (buMeteor) {
     var mp2 = 1 - buMeteor.t / 45;
@@ -8333,10 +8740,13 @@ function drawRuPlayer() {
   /* ==================== siege (GBA) ==================== */
 /* ================================================================
    SLINGSHOT SIEGE — GBA rebuild (240x160, full colour).
-   Same 100 stages: hand-built stages 1-16 are BYTE-IDENTICAL to
-   the original (never edited), stages 17-100 come from the same
-   seeded siGenStage, and Jesse's shots formula still rules
-   generated stages (1 target->2 shots, 2->3, 3->4, 4->6, 5->8).
+   Same 100 stages, now laid out across the FULL screen width
+   (Nov 10 redesign, Jesse: the right side sat empty): hand-built
+   stages 1-16 were re-laid-out with the same names, target counts
+   and shot counts, and stages 17-100 come from the same seeded
+   siGenStage, now spreading every template from just right of the
+   slingshot to the right edge. Jesse's shots formula still rules
+   (1 target->2 shots, 2->3, 3->4, 4->6, 5->8).
    New in the GBA version:
    - WIND: a visible per-stage wind (seeded for generated stages,
      calm on hand-built stages) bends every shot; the aim preview
@@ -8394,23 +8804,28 @@ function siApplyAdapt(blocks, adapt) {
   }
   return blocks;
 }
+  /* Hand-built stages 1-16, re-laid-out Nov 10 to use the full width
+     (Jesse: the right side sat empty). Names, target counts and shot
+     counts are EXACTLY as before; only block/target positions spread
+     wide (structures now run to x~235 instead of bunching at x~96-160).
+     The shots formula still rules generated stages. */
   var SI_BASE_STAGES = [
-    { name: 'FIRST SHOT', shots: 3, blocks: [[118,116,6,12,'W']], targets: [[136,128]] },
-    { name: 'TWIN POSTS', shots: 3, blocks: [[110,116,6,12,'W'],[134,116,6,12,'W']], targets: [[122,128],[146,128]] },
-    { name: 'WOOD TOWER', shots: 4, blocks: [[118,116,6,12,'W'],[132,116,6,12,'W'],[116,110,24,6,'W']], targets: [[128,110],[150,128]] },
-    { name: 'STONE WALL', shots: 4, blocks: [[110,104,12,24,'S']], targets: [[140,128]] },
-    { name: 'THE BRIDGE', shots: 4, blocks: [[104,116,6,12,'S'],[140,116,6,12,'S'],[102,110,46,6,'W']], targets: [[115,110],[133,110]] },
-    { name: 'PYRAMID', shots: 4, blocks: [[104,122,18,6,'W'],[122,122,18,6,'W'],[113,116,18,6,'W']], targets: [[122,116],[150,128]] },
-    { name: 'DOUBLE TOWER', shots: 5, blocks: [[98,116,6,12,'W'],[110,116,6,12,'W'],[96,110,22,6,'W'],[126,116,6,12,'W'],[138,116,6,12,'W'],[124,110,22,6,'W']], targets: [[107,110],[135,110],[152,128]] },
-    { name: 'STONE FORT', shots: 5, blocks: [[104,104,6,24,'S'],[130,104,6,24,'S'],[102,98,36,6,'S']], targets: [[121,98],[117,128]] },
-    { name: 'THE STAIRS', shots: 4, blocks: [[100,122,12,6,'W'],[112,116,12,12,'W'],[124,110,12,18,'W']], targets: [[106,122],[118,116],[130,110]] },
-    { name: 'HIGH PLATFORM', shots: 5, blocks: [[100,98,6,30,'S'],[124,98,6,30,'S'],[98,92,34,6,'S']], targets: [[108,92],[122,92],[150,128]] },
-    { name: 'MIXED FORT', shots: 5, blocks: [[100,116,40,12,'S'],[108,104,6,12,'W'],[124,104,6,12,'W'],[106,98,26,6,'W']], targets: [[119,98],[148,128]] },
-    { name: 'THE GATE', shots: 5, blocks: [[96,104,8,24,'S'],[144,104,8,24,'S'],[96,98,56,6,'W']], targets: [[110,98],[124,98],[138,98],[124,128]] },
-    { name: 'ICE HOUSE', shots: 5, blocks: [[104,104,6,24,'I'],[134,104,6,24,'I'],[102,98,40,6,'I']], targets: [[112,128],[128,128],[122,98]] },
-    { name: 'TRIPLE TOWER', shots: 5, blocks: [[96,116,6,12,'W'],[106,116,6,12,'W'],[94,110,18,6,'W'],[118,116,6,12,'W'],[128,116,6,12,'W'],[116,110,18,6,'W'],[140,116,6,12,'W'],[150,116,6,12,'W'],[138,110,18,6,'W']], targets: [[105,110],[127,110],[149,110]] },
-    { name: 'THE CASTLE', shots: 6, blocks: [[96,116,28,12,'S'],[124,116,28,12,'S'],[104,104,6,12,'W'],[120,104,6,12,'W'],[102,98,26,6,'W'],[136,104,6,12,'W'],[134,98,10,6,'W']], targets: [[115,98],[110,116],[145,116]] },
-    { name: 'FINAL SIEGE', shots: 6, blocks: [[96,104,6,24,'S'],[150,104,6,24,'S'],[94,98,64,6,'W'],[110,116,6,12,'W'],[140,116,6,12,'W'],[108,110,36,6,'I']], targets: [[126,98],[140,98],[119,110],[135,110]] }
+    { name: 'FIRST SHOT', shots: 3, blocks: [[140,116,6,12,'W'],[200,116,6,12,'W']], targets: [[218,128]] },
+    { name: 'TWIN POSTS', shots: 3, blocks: [[100,116,6,12,'W'],[206,116,6,12,'W']], targets: [[112,128],[218,128]] },
+    { name: 'WOOD TOWER', shots: 4, blocks: [[130,116,6,12,'W'],[170,116,6,12,'W'],[210,116,6,12,'W'],[128,110,84,6,'W']], targets: [[150,110],[218,128]] },
+    { name: 'STONE WALL', shots: 4, blocks: [[130,104,80,24,'S']], targets: [[218,128]] },
+    { name: 'THE BRIDGE', shots: 4, blocks: [[110,116,6,12,'S'],[160,116,6,12,'S'],[210,116,6,12,'S'],[108,110,54,6,'W'],[158,110,54,6,'W']], targets: [[135,110],[185,110]] },
+    { name: 'PYRAMID', shots: 4, blocks: [[110,122,110,6,'W'],[140,116,50,6,'W'],[155,110,20,6,'W']], targets: [[165,110],[220,128]] },
+    { name: 'DOUBLE TOWER', shots: 5, blocks: [[80,116,6,12,'W'],[100,116,6,12,'W'],[78,110,28,6,'W'],[180,116,6,12,'W'],[200,116,6,12,'W'],[178,110,28,6,'W']], targets: [[94,110],[194,110],[218,128]] },
+    { name: 'STONE FORT', shots: 5, blocks: [[120,104,6,24,'S'],[200,104,6,24,'S'],[118,98,88,6,'S']], targets: [[160,98],[200,128]] },
+    { name: 'THE STAIRS', shots: 4, blocks: [[70,122,24,6,'W'],[120,116,24,12,'W'],[170,110,24,18,'W'],[210,116,24,12,'W']], targets: [[82,122],[132,116],[182,110]] },
+    { name: 'HIGH PLATFORM', shots: 5, blocks: [[110,98,6,30,'S'],[160,98,6,30,'S'],[210,98,6,30,'S'],[108,92,54,6,'S'],[158,92,54,6,'S']], targets: [[135,92],[185,92],[220,128]] },
+    { name: 'MIXED FORT', shots: 5, blocks: [[90,116,140,12,'S'],[110,104,6,12,'W'],[200,104,6,12,'W'],[108,98,98,6,'W']], targets: [[155,98],[220,128]] },
+    { name: 'THE GATE', shots: 5, blocks: [[90,104,8,24,'S'],[210,104,8,24,'S'],[88,98,130,6,'W']], targets: [[110,98],[150,98],[210,98],[160,128]] },
+    { name: 'ICE HOUSE', shots: 5, blocks: [[120,104,6,24,'I'],[200,104,6,24,'I'],[118,98,88,6,'I']], targets: [[140,128],[180,128],[160,98]] },
+    { name: 'TRIPLE TOWER', shots: 5, blocks: [[70,116,6,12,'W'],[88,116,6,12,'W'],[68,110,26,6,'W'],[130,116,6,12,'W'],[148,116,6,12,'W'],[128,110,26,6,'W'],[195,116,6,12,'W'],[213,116,6,12,'W'],[193,110,26,6,'W']], targets: [[81,110],[141,110],[206,110]] },
+    { name: 'THE CASTLE', shots: 6, blocks: [[90,116,140,12,'S'],[94,104,6,12,'W'],[220,104,6,12,'W'],[92,98,132,6,'W']], targets: [[115,98],[200,98],[160,116]] },
+    { name: 'FINAL SIEGE', shots: 6, blocks: [[80,104,6,24,'S'],[200,104,6,24,'S'],[78,98,128,6,'W'],[110,116,6,12,'W'],[170,116,6,12,'W'],[108,110,68,6,'I']], targets: [[120,98],[180,98],[140,110],[170,110]] }
   ];
   // ---- generated stages 17-100 (seeded mulberry32: identical every load) ----
   function siRng(seed) {
@@ -8435,44 +8850,88 @@ function siApplyAdapt(blocks, adapt) {
     function post(x, h, m) { blocks.push([x, 128 - h, 6, h, m]); }
     function beam(x, topY, w, m) { blocks.push([x, topY, w, 6, m]); }
     function tgt(x, y) { targets.push([x, y]); }
-    if (tpl === 0) { // TOWER: 2-4 posts + a beam
+    /* FULL-WIDTH LAYOUT (Nov 10 redesign, Jesse: the right side sat
+       empty): every generated stage now spans from just right of the
+       slingshot to the right edge, ox ~56-72 to ex ~214-231, with
+       targets spread across the whole span instead of bunching at
+       x~96-160. Boss stages cap ex ~200 so the boss keep (posts
+       214/230, added at runtime in siStartStage) never overlaps the
+       main structure. Reachability rules (measured by trajectory
+       simulation, STONE power 95, no wind): ground targets (y=128)
+       x<=222, elevated targets (y 95-120) x<=232, high targets
+       (y<95) x<=205 or on a beam that collapses when its posts are
+       smashed. Wide beams are split into segments between posts so
+       each segment drops when its own posts go, keeping far targets
+       killable. Template choice is still the first rng() call, so
+       stage names are identical to before; only layouts change. */
+    var isBoss = (n >= 20 && n % 10 === 0);
+    var ox = 56 + Math.floor(rng() * 17); // 56..72
+    var ex = isBoss ? 196 + Math.floor(rng() * 6) // 196..201
+                    : 214 + Math.floor(rng() * 18); // 214..231
+    var span = ex - ox;
+    if (tpl === 0) { // TOWER: posts spread across the whole span + segmented beam
       var cols = 2 + (n >= 45 ? 1 : 0) + (n >= 75 ? 1 : 0);
       var ph = 12 + (n >= 35 ? 12 : 0) + (n >= 65 ? 6 : 0);
-      var gap = 8 + Math.floor(rng() * 4);
-      var bx = 96;
-      for (var c = 0; c < cols; c++) post(bx + c * (6 + gap), ph, mat());
+      var pxs = [];
+      for (var c = 0; c < cols; c++) {
+        var px = ox + Math.round(c * (ex - 6 - ox) / (cols - 1));
+        pxs.push(px);
+        post(px, ph, mat());
+      }
       var bTop = 128 - ph - 6;
-      beam(bx - 2, bTop, (cols - 1) * (6 + gap) + 10, mat());
-      tgt(bx + 8, bTop);
-      if (cols >= 3) tgt(bx + (cols - 1) * (6 + gap) - 2, bTop);
-      tgt(bx + (cols - 1) * (6 + gap) + 8, 128);
-      if (rng() < 0.4 + tier * 0.4) tgt(bx - 8, 128);
-    } else if (tpl === 1) { // FORT: stone walls + roof, inside target
+      for (var s = 0; s < cols - 1; s++) beam(pxs[s] - 2, bTop, pxs[s + 1] - pxs[s] + 10, mat());
+      tgt(pxs[0] + 8, bTop);
+      /* mid-beam target instead of a ground target left of the tower:
+         x<70 ground is a solver dead zone in wind, while a target on
+         the beam is reachable everywhere. */
+      tgt(ox + Math.round(span / 2), bTop);
+      if (cols >= 3) tgt(Math.min(pxs[cols - 1] - 2, 200), bTop);
+      tgt(Math.min(ex, 222), 128);
+    } else if (tpl === 1) { // FORT: stone walls spread wide + segmented roof
       var wh = 24 + (n >= 50 ? 6 : 0);
       var walls = 2 + (n >= 60 ? 1 : 0);
-      var fx = 96, fg = 20 + Math.floor(rng() * 5);
-      for (var w = 0; w < walls; w++) post(fx + w * (6 + fg), wh, 'S');
+      var fxs = [];
+      for (var w = 0; w < walls; w++) {
+        var fx = ox + Math.round(w * (ex - 6 - ox) / (walls - 1));
+        fxs.push(fx);
+        post(fx, wh, 'S');
+      }
       var rTop = 128 - wh - 6;
-      beam(fx - 2, rTop, (walls - 1) * (6 + fg) + 10, 'S');
-      tgt(fx + 8, rTop);
-      if (walls >= 3) tgt(fx + 6 + fg + 8, rTop);
-      tgt(fx + 12 + Math.floor(fg / 2), 128);
-      if (rng() < 0.5) tgt(fx - 8, 128);
-    } else if (tpl === 2) { // BRIDGE: posts + long beam
-      var span = 34 + Math.floor(rng() * 6) + (n >= 55 ? 8 : 0);
-      post(100, 12, mat()); post(100 + span, 12, mat());
-      if (n >= 55) post(100 + Math.floor(span / 2), 12, 'S');
-      beam(98, 110, span + 10, mat());
-      tgt(100 + Math.floor(span / 3), 110);
-      tgt(100 + Math.floor(span * 2 / 3), 110);
-      tgt(100 + Math.floor(span / 2), 128); // under the beam, between the posts
-    } else if (tpl === 3) { // PYRAMID: stepped layers, collapse kills
+      for (var s2 = 0; s2 < walls - 1; s2++) beam(fxs[s2] - 2, rTop, fxs[s2 + 1] - fxs[s2] + 10, 'S');
+      tgt(fxs[0] + 8, rTop);
+      /* the far roof target caps at x=200: on a high roof (rTop=92)
+         a target past 200 is out of direct reach, so keep it where
+         a 35-degree shot can still clip it. The roof itself still
+         runs to the right edge. */
+      tgt(Math.min(fxs[walls - 1] - 2, 200), rTop);
+      tgt(fxs[0] + Math.round((fxs[walls - 1] - fxs[0]) / 2), 128);
+      /* mid-roof target instead of a ground target left of the fort:
+         x<70 ground is a solver dead zone in wind. */
+      if (rng() < 0.5) tgt(ox + Math.round(span / 2), rTop);
+    } else if (tpl === 2) { // BRIDGE: posts at both ends of the span + long segmented beam
+      var posts = n >= 55 ? 3 : 2;
+      var bxs = [];
+      for (var b = 0; b < posts; b++) {
+        var bx = ox + Math.round(b * (ex - 6 - ox) / (posts - 1));
+        bxs.push(bx);
+        post(bx, 12, b === 1 ? 'S' : mat());
+      }
+      for (var s3 = 0; s3 < posts - 1; s3++) beam(bxs[s3] - 2, 110, bxs[s3 + 1] - bxs[s3] + 10, mat());
+      tgt(ox + Math.round(span / 3), 110);
+      tgt(ox + Math.round(span * 2 / 3), 110);
+      /* third beam target at the far right instead of a ground target
+         under the beam: the under-beam target needs the beam broken
+         first, which costs a shot the 4-shot budget cannot spare once
+         adapt turns the beam to stone. All three targets ride the
+         beam, spread across the whole span. */
+      tgt(Math.min(ex - 8, 222), 110);
+    } else if (tpl === 3) { // PYRAMID: stepped layers spanning the full width, collapse kills
       var layers = 3 + (n >= 40 ? 1 : 0);
-      var pw = 54 - (n >= 40 ? 6 : 0);
+      var cx = ox + Math.round(span / 2);
       var py = 128;
       for (var l = 0; l < layers; l++) {
-        var w = pw - l * 14;
-        var x = 100 + l * 7;
+        var w = span - l * 28;
+        var x = cx - Math.round(w / 2);
         if (l === 0) {
           beam(x, py - 6, Math.floor(w / 2), mat());
           beam(x + Math.floor(w / 2), py - 6, w - Math.floor(w / 2), mat());
@@ -8481,49 +8940,63 @@ function siApplyAdapt(blocks, adapt) {
         }
         py -= 6;
       }
-      tgt(100 + Math.floor(pw / 2), 128 - layers * 6);
-      tgt(110, 116);
-      tgt(94, 128);
-    } else if (tpl === 4) { // STAIRS: ascending steps
+      tgt(cx, 128 - layers * 6);
+      tgt(ox + Math.round(span * 0.75), 116);
+      /* third target on layer 1's left edge (just inside it, left of
+         layer 2's footprint) instead of on the ground left of the
+         pyramid: x<70 ground is a solver dead zone in wind, while a
+         target on the layer is reachable and unshielded from the left. */
+      tgt(ox + 17, 116);
+    } else if (tpl === 4) { // STAIRS: ascending steps across the whole span
       var steps = 3 + (n >= 45 ? 1 : 0) + (n >= 80 ? 1 : 0);
-      var sx = 96;
-      for (var s = 0; s < steps; s++) {
-        blocks.push([sx + s * 12, 128 - (s + 1) * 6, 12, (s + 1) * 6, mat()]);
-        tgt(sx + s * 12 + 6, 128 - (s + 1) * 6);
+      var sw = span / steps;
+      for (var s4 = 0; s4 < steps; s4++) {
+        var sh = Math.min((s4 + 1) * 6, 24); // top step caps at 24 so its target stays reachable
+        blocks.push([ox + Math.round(s4 * sw), 128 - sh, Math.ceil(sw), sh, mat()]);
+        tgt(ox + Math.round(s4 * sw + sw / 2), 128 - sh);
       }
-      tgt(90, 128); // left of the stairs, clear ground
-    } else if (tpl === 5) { // GATE: tall posts + top beam, target underneath
+      /* 5 steps already means 5 targets; the extra target goes on the
+         first step instead of on the ground left of the stairs (x<70
+         ground is a solver dead zone in wind) so the count stays exact. */
+      if (steps < 5) tgt(ox + Math.round(sw * 0.85), 122);
+    } else if (tpl === 5) { // GATE: tall posts at both ends + top beam across the span
       var gh = 24 + (n >= 55 ? 6 : 0);
-      var ggap = 36 + Math.floor(rng() * 6) + (n >= 70 ? 8 : 0);
-      post(96, gh, 'S'); post(96 + ggap, gh, 'S');
-      if (n >= 70) post(96 + Math.floor(ggap / 2), gh, 'S');
-      beam(94, 128 - gh - 6, ggap + 10, mat());
-      tgt(96 + 12, 128 - gh - 6);
-      tgt(96 + ggap - 6, 128 - gh - 6);
-      if (n >= 70) tgt(96 + Math.floor(ggap / 2) + 3, 128 - gh - 6);
-      tgt(96 + Math.floor(ggap / 2) + (n >= 70 ? 12 : 0), 128);
-    } else if (tpl === 6) { // CASTLE: stone base + towers + roof
-      var cx = 96;
-      blocks.push([cx, 116, 28, 12, 'S']);
-      blocks.push([cx + 28, 116, 28, 12, 'S']);
+      var gxs = [ox];
+      if (n >= 70) gxs.push(ox + Math.round(span / 2));
+      gxs.push(ex - 6);
+      for (var g = 0; g < gxs.length; g++) post(gxs[g], gh, 'S');
+      var gTop = 128 - gh - 6;
+      for (var s5 = 0; s5 < gxs.length - 1; s5++) beam(gxs[s5] - 2, gTop, gxs[s5 + 1] - gxs[s5] + 10, mat());
+      tgt(ox + Math.round(span / 3), gTop);
+      tgt(ox + Math.round(span * 2 / 3), gTop);
+      if (n >= 70) tgt(ox + Math.round(span / 2) + 3, gTop);
+      tgt(ox + Math.round(span / 2), 128);
+    } else if (tpl === 6) { // CASTLE: stone base across the span + towers + segmented roof
       var th6 = 12 + (n >= 60 ? 12 : 0);
-      blocks.push([cx + 4, 116 - th6, 6, th6, mat()]);
-      blocks.push([cx + 46, 116 - th6, 6, th6, mat()]);
-      beam(cx + 2, 116 - th6 - 6, 52, mat());
-      tgt(cx + 14, 116 - th6 - 6);
-      tgt(cx + 42, 116 - th6 - 6);
-      tgt(cx + 28, 116);
-      tgt(cx - 8, 128);
-    } else { // TRIO: three small towers
-      var tx = 96, tops = [];
+      for (var cb = ox; cb < ex; cb += 28) blocks.push([cb, 116, Math.min(28, ex - cb), 12, 'S']);
+      blocks.push([ox + 4, 116 - th6, 6, th6, mat()]);
+      blocks.push([ex - 10, 116 - th6, 6, th6, mat()]);
+      var cTop = 116 - th6 - 6;
+      var ccx = ox + Math.round(span / 2);
+      beam(ox + 2, cTop, ccx - ox - 2 + 4, mat());
+      beam(ccx - 4, cTop, ex - 2 - (ccx - 4), mat());
+      tgt(ox + 14, cTop);
+      tgt(ex - 14, cTop);
+      tgt(ox + Math.round(span / 2), 116);
+      /* roof-centre target instead of a ground target left of the
+         castle: x<70 ground is a solver dead zone in wind, while a
+         target on the roof is reachable and unshielded from above. */
+      tgt(ox + Math.round(span / 2), cTop);
+    } else { // TRIO: three small towers spread across the span
+      var tops = [];
       for (var tt = 0; tt < 3; tt++) {
+        var tx = ox + Math.round(tt * (ex - 20 - ox) / 2);
         var th = 12 + (rng() < 0.3 + tier * 0.3 ? 12 : 0);
         var m7 = rng() < 0.25 ? 'I' : mat();
         post(tx, th, m7); post(tx + 12, th, m7);
         beam(tx - 1, 128 - th - 6, 20, m7);
         tgt(tx + 8, 128 - th - 6);
         tops.push({ x: tx + 8, y: 128 - th - 6 });
-        tx += 20;
       }
       if (n >= 75) { // 4th target beside the first on the tallest beam
         var ti = 0;
@@ -8531,14 +9004,15 @@ function siApplyAdapt(blocks, adapt) {
         tgt(tops[ti].x + 8, tops[ti].y);
       }
     }
-    // clamp the whole structure into the play zone (x 60..158, clear of the
-    // slingshot and on-screen). Two-step so both ends fit (span <= 70 < 98).
+    // clamp the whole structure into the play zone (x 45..238, clear of
+    // the slingshot and on-screen). Normally a no-op: layouts are built
+    // inside [ox, ex] already; this only guards against overflow.
     var minX = 999, maxX = -999;
     for (var i = 0; i < blocks.length; i++) { minX = Math.min(minX, blocks[i][0]); maxX = Math.max(maxX, blocks[i][0] + blocks[i][2]); }
     for (var j = 0; j < targets.length; j++) { minX = Math.min(minX, targets[j][0] - 3); maxX = Math.max(maxX, targets[j][0] + 3); }
     var shift = 0;
-    if (maxX > 158) shift = 158 - maxX;
-    if (minX + shift < 60) shift = 60 - minX;
+    if (maxX > 238) shift = 238 - maxX;
+    if (minX + shift < 45) shift = 45 - minX;
     if (shift !== 0) {
       for (var k = 0; k < blocks.length; k++) blocks[k][0] += shift;
       for (var m2 = 0; m2 < targets.length; m2++) targets[m2][0] += shift;
@@ -8604,14 +9078,16 @@ function siStartStage(idx) {
   });
   /* Adaptive difficulty touches generated stages only. */
   if (idx >= 16) siApplyAdapt(siBlocks, siSave.adapt || 0);
-  /* Boss stage: a fortified brute (3 HP) on its own stone keep,
-     plus 2 bonus shots. Collapse the keep or land 3 hits. */
+  /* Boss stage: a fortified brute (3 HP) on its own stone keep at
+     the far right edge, plus 2 bonus shots. Collapse the keep or
+     land 3 hits. Generated stages cap their span ~200 on boss
+     stages so the keep never overlaps the main structure. */
   siBoss = null;
   if (siIsBoss(idx)) {
-    siBlocks.push({ x: 172, y: 104, w: 8, h: 24, mat: 'S', hp: 2, maxHp: 2, vy: 0 });
-    siBlocks.push({ x: 200, y: 104, w: 8, h: 24, mat: 'S', hp: 2, maxHp: 2, vy: 0 });
-    siBlocks.push({ x: 170, y: 98, w: 40, h: 6, mat: 'S', hp: 2, maxHp: 2, vy: 0 });
-    siBoss = { x: 190, y: 98, alive: true, falling: false, fallFrom: 0, vy: 0, hp: 3, maxHp: 3, boss: true };
+    siBlocks.push({ x: 214, y: 104, w: 8, h: 24, mat: 'S', hp: 2, maxHp: 2, vy: 0 });
+    siBlocks.push({ x: 230, y: 104, w: 8, h: 24, mat: 'S', hp: 2, maxHp: 2, vy: 0 });
+    siBlocks.push({ x: 212, y: 98, w: 26, h: 6, mat: 'S', hp: 2, maxHp: 2, vy: 0 });
+    siBoss = { x: 225, y: 98, alive: true, falling: false, fallFrom: 0, vy: 0, hp: 3, maxHp: 3, boss: true };
     siTargets.push(siBoss);
     siShotsLeft += 2;
   }
@@ -10529,35 +11005,99 @@ function drawSiege() {
   }
 
   /* ---------- Drawing ---------- */
+  /* REALISTIC PARK RENDERING. The park is drawn with layered flat
+     tones (light top-left, dark bottom-right) so rides, buildings
+     and trees read as 3D at 12px tiles, plus soft ground shadows,
+     textured grass and paths, and animated water. Every texture is
+     deterministic (a hash of the tile) so nothing is re-randomised
+     per frame, and only the visible viewport is drawn, so a big park
+     costs the same as a small one. The UI chrome (HUD, menus,
+     minimap) stays in the indigo/gold GBA style. */
+  function tpHash(c, r) {
+    var h = ((c * 73856093) ^ (r * 19349663) ^ 0x9e3779b9) >>> 0;
+    h = (h ^ (h >> 13)) >>> 0;
+    h = (h * 0x5bd1e995) >>> 0;
+    return (h ^ (h >> 15)) >>> 0;
+  }
+  function tpShadow(cx, cy, rx, ry) {
+    // Soft ground shadow: a pale outer ellipse + a darker core, so the
+    // object looks planted on the ground instead of floating.
+    ctx.fillStyle = 'rgba(12,30,10,0.16)';
+    ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(12,30,10,0.22)';
+    ctx.beginPath(); ctx.ellipse(cx, cy, rx * 0.65, ry * 0.65, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  function tpDrawGrass(x, y, c, r) {
+    // Textured lawn: mottled green tones, grass blades, the odd dirt
+    // patch or wildflower — deterministic per tile, so the lawn is
+    // stable as the camera scrolls.
+    var h = tpHash(c, r);
+    var tone = h % 3;
+    ctx.fillStyle = tone === 0 ? '#5cab3e' : tone === 1 ? '#55a237' : '#62b345';
+    ctx.fillRect(x, y, 12, 12);
+    ctx.fillStyle = '#3f8c2a'; // dark blades
+    ctx.fillRect(x + 1 + (h % 4), y + 2 + ((h >> 3) % 8), 1, 2);
+    ctx.fillRect(x + 6 + ((h >> 5) % 4), y + 7 + ((h >> 7) % 4), 1, 2);
+    ctx.fillRect(x + 9 + ((h >> 17) % 2), y + 3 + ((h >> 19) % 6), 1, 1);
+    ctx.fillStyle = '#7cc45a'; // sunlit blades
+    ctx.fillRect(x + 3 + ((h >> 9) % 6), y + 1 + ((h >> 11) % 5), 1, 1);
+    ctx.fillRect(x + 8 + ((h >> 13) % 3), y + 9 + ((h >> 15) % 2), 1, 1);
+    ctx.fillRect(x + 2 + ((h >> 21) % 5), y + 10, 1, 1);
+    if (h % 11 === 0) { // worn dirt patch
+      ctx.fillStyle = '#8a6a42';
+      ctx.fillRect(x + 4, y + 5, 4, 3);
+      ctx.fillStyle = '#a08050';
+      ctx.fillRect(x + 5, y + 6, 2, 1);
+    }
+    if (h % 17 === 0) { // tiny wildflower
+      ctx.fillStyle = '#f0f0f0';
+      ctx.fillRect(x + 6, y + 4, 1, 1);
+      ctx.fillStyle = '#ec0';
+      ctx.fillRect(x + 5, y + 5, 1, 1);
+    }
+  }
   function tpDrawPath(x, y, inst) {
     var pid = (inst && inst.id) || 'path';
+    // Every path gets a darker edge where it meets the grass, so the
+    // walkways read as laid surfaces, not paint.
+    ctx.fillStyle = '#3a2e1a';
+    ctx.fillRect(x, y, 12, 1); ctx.fillRect(x, y + 11, 12, 1);
+    ctx.fillRect(x, y, 1, 12); ctx.fillRect(x + 11, y, 1, 12);
     if (pid === 'gravel') {
-      // Cheap dirt: dusty brown, speckled.
-      ctx.fillStyle = '#b8a080'; ctx.fillRect(x, y, 12, 12);
+      // Packed dirt: dusty tan, heavy speckle, a few edge stones.
+      ctx.fillStyle = '#b8a080'; ctx.fillRect(x + 1, y + 1, 10, 10);
       ctx.fillStyle = '#8a7a5a';
       ctx.fillRect(x + 2, y + 3, 1, 1); ctx.fillRect(x + 7, y + 2, 1, 1);
       ctx.fillRect(x + 4, y + 8, 1, 1); ctx.fillRect(x + 9, y + 7, 1, 1);
+      ctx.fillRect(x + 5, y + 5, 1, 1); ctx.fillRect(x + 3, y + 10, 1, 1);
       ctx.fillStyle = '#d0c0a0';
       ctx.fillRect(x + 3, y + 6, 1, 1); ctx.fillRect(x + 8, y + 10, 1, 1);
+      ctx.fillRect(x + 6, y + 4, 2, 1);
+      ctx.fillStyle = '#7a6a4a';
+      ctx.fillRect(x + 1, y + 1, 1, 1); ctx.fillRect(x + 10, y + 10, 1, 1);
     } else if (pid === 'brick') {
-      // Red brick: brick courses with dark mortar.
-      ctx.fillStyle = '#a04030'; ctx.fillRect(x, y, 12, 12);
+      // Red brick: offset courses, dark mortar, a sunlit top edge.
+      ctx.fillStyle = '#a04030'; ctx.fillRect(x + 1, y + 1, 10, 10);
       ctx.fillStyle = '#7a3a28';
-      ctx.fillRect(x, y + 3, 12, 1); ctx.fillRect(x, y + 7, 12, 1);
-      ctx.fillRect(x + 5, y, 1, 3); ctx.fillRect(x + 2, y + 4, 1, 3); ctx.fillRect(x + 8, y + 4, 1, 3);
-      ctx.fillRect(x + 5, y + 8, 1, 3);
+      ctx.fillRect(x + 1, y + 4, 10, 1); ctx.fillRect(x + 1, y + 8, 10, 1);
+      ctx.fillRect(x + 6, y + 1, 1, 3); ctx.fillRect(x + 3, y + 5, 1, 3); ctx.fillRect(x + 9, y + 5, 1, 3);
+      ctx.fillRect(x + 6, y + 9, 1, 2);
       ctx.fillStyle = '#c06048';
-      ctx.fillRect(x + 1, y + 1, 4, 2); ctx.fillRect(x + 7, y + 5, 4, 2);
+      ctx.fillRect(x + 2, y + 2, 3, 2); ctx.fillRect(x + 8, y + 6, 2, 2);
+      ctx.fillStyle = '#e07058';
+      ctx.fillRect(x + 2, y + 2, 3, 1); ctx.fillRect(x + 8, y + 6, 2, 1);
     } else if (pid === 'boardwalk') {
-      // Wooden planks: horizontal boards with dark gaps.
-      ctx.fillStyle = '#a08050'; ctx.fillRect(x, y, 12, 12);
+      // Wooden planks: warm boards, dark gaps, grain lines, nail heads.
+      ctx.fillStyle = '#a08050'; ctx.fillRect(x + 1, y + 1, 10, 10);
       ctx.fillStyle = '#6a4a2a';
-      ctx.fillRect(x, y + 3, 12, 1); ctx.fillRect(x, y + 7, 12, 1);
-      ctx.fillRect(x, y + 11, 12, 1);
+      ctx.fillRect(x + 1, y + 4, 10, 1); ctx.fillRect(x + 1, y + 8, 10, 1);
+      ctx.fillRect(x + 2, y + 2, 3, 1); ctx.fillRect(x + 7, y + 6, 3, 1);
       ctx.fillStyle = '#c0a070';
-      ctx.fillRect(x + 1, y + 1, 10, 2); ctx.fillRect(x + 1, y + 5, 10, 2); ctx.fillRect(x + 1, y + 9, 10, 2);
+      ctx.fillRect(x + 2, y + 2, 8, 2); ctx.fillRect(x + 2, y + 6, 8, 1); ctx.fillRect(x + 2, y + 10, 8, 1);
+      ctx.fillStyle = '#4a3418';
+      ctx.fillRect(x + 2, y + 2, 1, 1); ctx.fillRect(x + 9, y + 6, 1, 1);
     } else if (pid === 'tiled') {
-      // Fancy tiles: blue/white checker.
+      // Fancy tiles: blue/white checker, grout lines, a gloss shine.
       var ti, tj;
       for (ti = 0; ti < 4; ti++) for (tj = 0; tj < 4; tj++) {
         ctx.fillStyle = (ti + tj) % 2 === 0 ? '#3a8fd8' : '#f0f0f0';
@@ -10565,111 +11105,215 @@ function drawSiege() {
       }
       ctx.fillStyle = '#2a6fa8';
       ctx.fillRect(x + 1, y + 1, 1, 1); ctx.fillRect(x + 10, y + 10, 1, 1);
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.fillRect(x + 1, y + 1, 10, 1); ctx.fillRect(x + 1, y + 1, 1, 10);
     } else if (pid === 'queue') {
-      // Queue lane: tan base, metal rails on both sides, yellow centre dashes.
-      ctx.fillStyle = '#c8b088'; ctx.fillRect(x, y, 12, 12);
+      // Queue lane: tan mat, metal rails + posts, yellow centre dashes.
+      ctx.fillStyle = '#c8b088'; ctx.fillRect(x + 1, y + 1, 10, 10);
+      ctx.fillStyle = '#8a7a5a';
+      ctx.fillRect(x + 3, y + 3, 1, 1); ctx.fillRect(x + 8, y + 8, 1, 1);
       ctx.fillStyle = '#5a5a5a';
-      ctx.fillRect(x + 1, y, 1, 12); ctx.fillRect(x + 10, y, 1, 12);
+      ctx.fillRect(x + 1, y + 1, 1, 10); ctx.fillRect(x + 10, y + 1, 1, 10);
+      ctx.fillStyle = '#8a8a8a';
+      ctx.fillRect(x + 1, y + 1, 1, 1); ctx.fillRect(x + 10, y + 1, 1, 1);
+      ctx.fillRect(x + 1, y + 5, 1, 1); ctx.fillRect(x + 10, y + 5, 1, 1);
       ctx.fillStyle = '#ffd94a';
       ctx.fillRect(x + 5, y + 2, 2, 2); ctx.fillRect(x + 5, y + 6, 2, 2); ctx.fillRect(x + 5, y + 10, 2, 1);
     } else {
-      // Standard concrete path.
-      ctx.fillStyle = '#d9b77c'; ctx.fillRect(x, y, 12, 12);
+      // Standard concrete path: warm sand, pale centre, joints, stains.
+      ctx.fillStyle = '#d9b77c'; ctx.fillRect(x + 1, y + 1, 10, 10);
       ctx.fillStyle = '#e8cc96'; ctx.fillRect(x + 2, y + 2, 8, 8);
+      ctx.fillStyle = '#b89a5e';
+      ctx.fillRect(x + 1, y + 6, 10, 1); ctx.fillRect(x + 6, y + 1, 1, 10);
       ctx.fillStyle = '#c8a668'; ctx.fillRect(x + 5, y + 5, 2, 2);
+      ctx.fillStyle = '#a8884e';
+      ctx.fillRect(x + 3, y + 9, 1, 1); ctx.fillRect(x + 9, y + 3, 1, 1);
     }
   }
   function tpDrawGate(x, y) {
-    ctx.fillStyle = '#b8b8b8'; ctx.fillRect(x, y, 12, 12);
-    ctx.fillStyle = '#8a8a8a'; ctx.fillRect(x, y, 12, 2);
-    ctx.fillStyle = '#d83a2e'; ctx.fillRect(x + 2, y + 3, 3, 3); ctx.fillRect(x + 7, y + 3, 3, 3);
-    ctx.fillStyle = '#f0f0f0'; ctx.fillRect(x + 5, y + 3, 2, 3);
-    ctx.fillStyle = '#333333'; ctx.fillRect(x + 3, y + 8, 6, 2);
+    // Entrance arch: stone pillars, a red-and-white striped sign band,
+    // and a turnstile — the front door of the park.
+    tpShadow(x + 6, y + 11, 6, 2);
+    ctx.fillStyle = '#9a9a9a'; ctx.fillRect(x + 1, y + 2, 2, 10); ctx.fillRect(x + 9, y + 2, 2, 10);
+    ctx.fillStyle = '#c8c8c8'; ctx.fillRect(x + 1, y + 2, 1, 10); ctx.fillRect(x + 9, y + 2, 1, 10);
+    ctx.fillStyle = '#6a6a6a'; ctx.fillRect(x + 1, y + 11, 2, 1); ctx.fillRect(x + 9, y + 11, 2, 1);
+    ctx.fillStyle = '#d83a2e'; ctx.fillRect(x + 1, y, 10, 2);
+    ctx.fillStyle = '#f0f0f0'; ctx.fillRect(x + 4, y, 4, 2);
+    ctx.fillStyle = '#ffd94a'; ctx.fillRect(x + 5, y, 2, 2);
+    ctx.fillStyle = '#8a8a8a'; ctx.fillRect(x + 5, y + 3, 2, 1);
+    ctx.fillStyle = '#333333'; ctx.fillRect(x + 4, y + 6, 4, 2);
+    ctx.fillStyle = '#e8e8e8'; ctx.fillRect(x + 4, y + 6, 4, 1);
   }
   function tpDrawRide(x, y, inst) {
     var cx = x + (inst.w * TP_TILE) / 2, cy = y + (inst.h * TP_TILE) / 2;
     var i, a;
+    // Every ride sits on a soft ground shadow + a paved pad, so it
+    // looks planted in the park instead of pasted on the grass.
+    tpShadow(cx, y + inst.h * TP_TILE - 1, (inst.w * TP_TILE) / 2 + 1, 3);
+    if (inst.w >= 2 && inst.h >= 2) {
+      ctx.fillStyle = '#b8a888'; ctx.fillRect(x + 1, y + inst.h * TP_TILE - 3, inst.w * TP_TILE - 2, 2);
+      ctx.fillStyle = '#d8c8a8'; ctx.fillRect(x + 1, y + inst.h * TP_TILE - 3, inst.w * TP_TILE - 2, 1);
+    }
     if (inst.id === 'cups') {
+      // Tea cups: stone saucer, central column, three coloured cups
+      // spinning round it, each with a pale highlight.
+      ctx.fillStyle = '#8a8a8a';
+      ctx.beginPath(); ctx.arc(cx, cy + 1, 5.5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#e8e8e8';
       ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#c8c8c8';
+      ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#888888';
       ctx.beginPath(); ctx.arc(cx, cy, 1.5, 0, Math.PI * 2); ctx.fill();
       var cupCols = ['#e33', '#33e', '#ec0'];
       for (i = 0; i < 3; i++) {
         a = tpFrame * 0.03 + i * 2.1;
+        var ccx = cx + Math.cos(a) * 3, ccy = cy + Math.sin(a) * 3;
         ctx.fillStyle = cupCols[i];
-        ctx.beginPath(); ctx.arc(cx + Math.cos(a) * 3, cy + Math.sin(a) * 3, 1.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(ccx, ccy, 1.8, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(ccx - 0.5, ccy - 0.5, 0.6, 0, Math.PI * 2); ctx.fill();
       }
     } else if (inst.id === 'carousel') {
+      // Carousel: round platform with a brass rim, a striped cone roof
+      // with a finial, poles, and little horses between them.
+      ctx.fillStyle = '#8a6a3a';
+      ctx.beginPath(); ctx.arc(cx, cy + 2, 5.5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#f0d080';
-      ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, cy + 1, 5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#d83a2e';
-      ctx.beginPath(); ctx.moveTo(cx - 5, cy - 1); ctx.lineTo(cx, cy - 8); ctx.lineTo(cx + 5, cy - 1); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(cx - 5, cy); ctx.lineTo(cx, cy - 8); ctx.lineTo(cx + 5, cy); ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#f0f0f0';
-      ctx.beginPath(); ctx.moveTo(cx - 2, cy - 1); ctx.lineTo(cx, cy - 8); ctx.lineTo(cx + 2, cy - 1); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#7a4a22'; ctx.fillRect(cx - 1, cy - 1, 2, 5);
+      ctx.beginPath(); ctx.moveTo(cx - 2, cy); ctx.lineTo(cx, cy - 8); ctx.lineTo(cx + 2, cy); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ffd94a';
+      ctx.beginPath(); ctx.arc(cx, cy - 8, 1.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#7a4a22'; ctx.fillRect(cx - 1, cy, 2, 4);
+      ctx.fillStyle = '#f0f0f0';
+      ctx.fillRect(cx - 4, cy - 3, 1, 4); ctx.fillRect(cx + 3, cy - 3, 1, 4);
+      ctx.fillStyle = '#e33'; ctx.fillRect(cx - 3, cy + 1, 2, 2);
+      ctx.fillStyle = '#33e'; ctx.fillRect(cx + 1, cy + 1, 2, 2);
     } else if (inst.id === 'bumper') {
-      ctx.fillStyle = '#9aa0a8'; ctx.fillRect(x, y, 24, 12);
+      // Bumper cars: walled arena, glossy floor with lane marks, two
+      // cars with headlights sliding around inside.
+      ctx.fillStyle = '#6a6a72'; ctx.fillRect(x, y + 1, 24, 11);
+      ctx.fillStyle = '#9aa0a8'; ctx.fillRect(x + 1, y + 2, 22, 9);
+      ctx.fillStyle = '#c8ccd0'; ctx.fillRect(x + 2, y + 3, 20, 1);
       ctx.fillStyle = '#e8c832';
-      ctx.fillRect(x, y, 24, 1); ctx.fillRect(x, y + 11, 24, 1);
-      ctx.fillRect(x, y, 1, 12); ctx.fillRect(x + 23, y, 1, 12);
+      ctx.fillRect(x, y + 1, 24, 1); ctx.fillRect(x, y + 11, 24, 1);
+      ctx.fillRect(x, y + 1, 1, 11); ctx.fillRect(x + 23, y + 1, 1, 11);
       var carCols = ['#e33', '#33e'];
       for (i = 0; i < 2; i++) {
         var bx = x + 4 + i * 11 + Math.sin(tpFrame * 0.05 + i * 2) * 2;
         var by = y + 4 + Math.cos(tpFrame * 0.04 + i) * 1.5;
+        ctx.fillStyle = 'rgba(12,30,10,0.3)'; ctx.fillRect(bx, by + 3, 4, 1);
         ctx.fillStyle = carCols[i]; ctx.fillRect(bx, by, 4, 3);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(bx + 1, by, 1, 1);
+        ctx.fillStyle = '#ffd94a'; ctx.fillRect(bx + 3, by + 1, 1, 1);
       }
     } else if (inst.id === 'haunted') {
-      ctx.fillStyle = '#4a3a6a'; ctx.fillRect(x + 2, y + 4, 20, 8);
-      ctx.fillStyle = '#2e2140';
-      ctx.beginPath(); ctx.moveTo(x + 1, y + 4); ctx.lineTo(x + 12, y - 1); ctx.lineTo(x + 23, y + 4); ctx.closePath(); ctx.fill();
+      // Haunted house: dark mansion with twin gables, glowing windows,
+      // a door, and a little ghost drifting past the porch.
+      ctx.fillStyle = '#2e2140'; ctx.fillRect(x + 2, y + 5, 20, 7);
+      ctx.fillStyle = '#4a3a6a'; ctx.fillRect(x + 2, y + 5, 20, 2);
+      ctx.fillStyle = '#1e142e';
+      ctx.beginPath(); ctx.moveTo(x + 1, y + 5); ctx.lineTo(x + 8, y); ctx.lineTo(x + 15, y + 5); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x + 9, y + 5); ctx.lineTo(x + 16, y + 1); ctx.lineTo(x + 23, y + 5); ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#ffd94a';
-      ctx.fillRect(x + 5, y + 6, 2, 2); ctx.fillRect(x + 17, y + 6, 2, 2);
-      ctx.fillStyle = '#7a5aa0'; ctx.fillRect(x + 10, y + 7, 4, 5);
+      ctx.fillRect(x + 5, y + 7, 2, 2); ctx.fillRect(x + 17, y + 7, 2, 2);
+      ctx.fillStyle = '#fff2a8'; ctx.fillRect(x + 5, y + 7, 2, 1); ctx.fillRect(x + 17, y + 7, 2, 1);
+      ctx.fillStyle = '#7a5aa0'; ctx.fillRect(x + 10, y + 8, 4, 4);
+      ctx.fillStyle = '#3a2a5a'; ctx.fillRect(x + 11, y + 9, 2, 3);
       ctx.fillStyle = '#f0f0f0';
-      ctx.fillRect(x + 15, y + Math.sin(tpFrame * 0.08) * 1.5, 3, 3);
+      var gy = y + 2 + Math.sin(tpFrame * 0.08) * 1.5;
+      ctx.fillRect(x + 19, gy, 2, 3);
+      ctx.fillRect(x + 19, gy + 3, 1, 1); ctx.fillRect(x + 20, gy + 3, 1, 1);
+      ctx.fillStyle = '#222222'; ctx.fillRect(x + 19, gy + 1, 1, 1);
     } else if (inst.id === 'ferris') {
-      ctx.fillStyle = '#8a8a8a';
+      // Ferris wheel: A-frame legs, a double rim with spokes, four
+      // coloured gondolas with little roofs, a hub, and a beacon.
+      ctx.fillStyle = '#6a6a72';
       ctx.fillRect(cx - 7, cy + 2, 2, 8); ctx.fillRect(cx + 5, cy + 2, 2, 8);
+      ctx.fillStyle = '#9aa0a8';
+      ctx.fillRect(cx - 7, cy + 2, 1, 8); ctx.fillRect(cx + 5, cy + 2, 1, 8);
       ctx.fillStyle = '#f0f0f0';
       ctx.beginPath(); ctx.arc(cx, cy - 1, 9, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#79b34a';
       ctx.beginPath(); ctx.arc(cx, cy - 1, 7.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#5a9a3a';
+      ctx.beginPath(); ctx.arc(cx, cy - 1, 5.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#e8e8e8';
+      for (i = 0; i < 4; i++) {
+        a = i * Math.PI / 2 + Math.PI / 4;
+        ctx.fillRect(cx + Math.cos(a) * 3 - 1, cy - 1 + Math.sin(a) * 3, 2, 1);
+      }
       var gonCols = ['#e33', '#33e', '#ec0', '#f68'];
       for (i = 0; i < 4; i++) {
         a = (inst.wheelA || tpFrame * 0.02) + i * Math.PI / 2;
+        var gxx = cx + Math.cos(a) * 8, gyy = cy - 1 + Math.sin(a) * 8;
         ctx.fillStyle = gonCols[i];
-        ctx.beginPath();
-        ctx.arc(cx + Math.cos(a) * 8, cy - 1 + Math.sin(a) * 8, 1.8, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(gxx, gyy, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(gxx - 0.6, gyy - 0.6, 0.7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#333333';
+        ctx.fillRect(gxx - 1, gyy - 3, 2, 1);
       }
       ctx.fillStyle = '#333333';
-      ctx.beginPath(); ctx.arc(cx, cy - 1, 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, cy - 1, 1.8, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffd94a';
+      ctx.beginPath(); ctx.arc(cx, cy - 11, 1.2, 0, Math.PI * 2); ctx.fill();
     } else if (inst.id === 'flume') {
+      // Log flume: a water channel with banks and a splash pool, a
+      // wooden log boat riding it, and white water at the drop.
+      ctx.fillStyle = '#8a6a42'; ctx.fillRect(x + 1, y + 5, 22, 14);
       ctx.fillStyle = '#3a8fd8';
-      ctx.fillRect(x + 2, y + 16, 20, 5); // bottom channel
-      ctx.fillRect(x + 2, y + 6, 5, 11); // left channel
+      ctx.fillRect(x + 2, y + 16, 20, 5);
+      ctx.fillRect(x + 2, y + 6, 5, 11);
       ctx.fillStyle = '#7ab8e8';
       ctx.fillRect(x + 3, y + 17, 18, 2);
+      ctx.fillRect(x + 3, y + 7, 3, 9);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 6 + ((tpFrame >> 2) % 10), y + 18, 2, 1);
+      ctx.fillRect(x + 14 - ((tpFrame >> 2) % 8), y + 7, 1, 1);
       var p = Math.floor(inst.trainP || tpFrame % 160), lx, ly;
       if (p < 80) { lx = x + 3 + p * 0.2; ly = y + 17; }
       else { lx = x + 3; ly = y + 17 - (p - 80) * 0.14; }
+      ctx.fillStyle = 'rgba(12,30,10,0.3)'; ctx.fillRect(lx, ly + 3, 5, 1);
       ctx.fillStyle = '#7a4a22'; ctx.fillRect(lx, ly, 5, 3);
-      ctx.fillStyle = '#f0f0f0'; ctx.fillRect(lx + 6, ly + 1, 2, 1);
+      ctx.fillStyle = '#a08050'; ctx.fillRect(lx, ly, 5, 1);
+      ctx.fillStyle = '#f0c080'; ctx.fillRect(lx + 1, ly - 1, 2, 1);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(lx + 6, ly + 1, 2, 1);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 19, y + 19, 1, 1); ctx.fillRect(x + 21, y + 20, 1, 1);
     } else if (inst.id === 'tower') {
-      ctx.fillStyle = '#8a8a8a'; ctx.fillRect(cx - 5, cy + 9, 10, 3);
-      ctx.fillStyle = '#b8b8b8'; ctx.fillRect(cx - 2, cy - 10, 4, 20);
-      var ty = cy - 8 + (Math.sin(tpFrame * 0.05) * 0.5 + 0.5) * 12;
-      ctx.fillStyle = '#e33'; ctx.fillRect(cx - 4, ty, 8, 3);
+      // Drop tower: concrete base, a tall steel column with segment
+      // lights, a red car sliding up and down, and a beacon on top.
+      ctx.fillStyle = '#9aa0a8'; ctx.fillRect(cx - 6, cy + 8, 12, 3);
+      ctx.fillStyle = '#c8ccd0'; ctx.fillRect(cx - 6, cy + 8, 12, 1);
+      ctx.fillStyle = '#8a8a8a'; ctx.fillRect(cx - 2, cy - 10, 4, 19);
+      ctx.fillStyle = '#b8b8b8'; ctx.fillRect(cx - 2, cy - 10, 1, 19);
       ctx.fillStyle = '#ffd94a';
+      ctx.fillRect(cx - 2, cy - 6, 1, 1); ctx.fillRect(cx + 1, cy - 2, 1, 1); ctx.fillRect(cx - 2, cy + 2, 1, 1);
+      var ty = cy - 8 + (Math.sin(tpFrame * 0.05) * 0.5 + 0.5) * 12;
+      ctx.fillStyle = 'rgba(12,30,10,0.3)'; ctx.fillRect(cx - 4, ty + 3, 8, 1);
+      ctx.fillStyle = '#e33'; ctx.fillRect(cx - 4, ty, 8, 3);
+      ctx.fillStyle = '#ff6a5e'; ctx.fillRect(cx - 4, ty, 8, 1);
+      ctx.fillStyle = '#333333'; ctx.fillRect(cx - 3, ty + 1, 2, 1); ctx.fillRect(cx + 1, ty + 1, 2, 1);
+      ctx.fillStyle = (tpFrame >> 4) % 2 === 0 ? '#ff4444' : '#ffd94a';
       ctx.beginPath(); ctx.arc(cx, cy - 11, 1.5, 0, Math.PI * 2); ctx.fill();
     } else if (inst.id === 'coaster') {
-      // Track loop (rounded look via 4 rails) + train running the loop.
+      // Coaster: a wooden/steel loop with rails, ties and supports, a
+      // three-car train with riders running the circuit.
+      ctx.fillStyle = '#6a4a2a';
+      ctx.fillRect(x + 4, y + 11, 2, 9); ctx.fillRect(x + 18, y + 11, 2, 9);
       ctx.fillStyle = '#8a5a2e';
       ctx.fillRect(x + 2, y + 2, 20, 2); ctx.fillRect(x + 2, y + 20, 20, 2);
       ctx.fillRect(x + 2, y + 2, 2, 20); ctx.fillRect(x + 20, y + 2, 2, 20);
+      ctx.fillStyle = '#c8956a';
+      ctx.fillRect(x + 2, y + 2, 20, 1); ctx.fillRect(x + 2, y + 2, 1, 20);
       ctx.fillStyle = '#5a3a1a';
       ctx.fillRect(x + 4, y + 10, 2, 10); ctx.fillRect(x + 18, y + 10, 2, 10);
+      ctx.fillStyle = '#e8e8e8';
+      ctx.fillRect(x + 11, y + 2, 2, 1); ctx.fillRect(x + 2, y + 11, 1, 2);
       var per = 80, trainCols = ['#e33', '#ec0', '#33e'];
       for (i = 0; i < 3; i++) {
         var pos = (((inst.trainP || 0) + i * 27) % per), px, py;
@@ -10679,101 +11323,157 @@ function drawSiege() {
         else { px = x + 3; py = y + 21 - (pos - 60); }
         ctx.fillStyle = trainCols[i];
         ctx.fillRect(px - 1, py - 1, 3, 3);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(px, py - 1, 1, 1);
+        ctx.fillStyle = '#f0c080'; ctx.fillRect(px, py - 2, 1, 1);
       }
     } else if (inst.id === 'tiny') {
-      // Kiddie cars on a little oval road: grey ring, green middle, 2 cars orbiting.
+      // Kiddie cars on a little oval road: kerb, green middle, two cars.
       ctx.fillStyle = '#8a8a8a';
+      ctx.beginPath(); ctx.arc(cx, cy, 5.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#c8c8c8';
       ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#4a8a4a';
       ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#3f8c2a';
+      ctx.beginPath(); ctx.arc(cx - 1, cy - 1, 1, 0, Math.PI * 2); ctx.fill();
       var ta = tpFrame * 0.04;
       ctx.fillStyle = '#e33';
-      ctx.beginPath(); ctx.arc(cx + Math.cos(ta) * 4, cy + Math.sin(ta) * 4, 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + Math.cos(ta) * 4, cy + Math.sin(ta) * 4, 1.8, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#33e';
-      ctx.beginPath(); ctx.arc(cx + Math.cos(ta + Math.PI) * 4, cy + Math.sin(ta + Math.PI) * 4, 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + Math.cos(ta + Math.PI) * 4, cy + Math.sin(ta + Math.PI) * 4, 1.8, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(cx + Math.cos(ta) * 4 - 0.5, cy + Math.sin(ta) * 4 - 0.5, 0.6, 0, Math.PI * 2); ctx.fill();
     } else if (inst.id === 'dipper') {
-      // Mini coaster: one gentle hill, tiny train rolling over it.
+      // Mini coaster: one gentle timber hill, a two-car train over it.
       ctx.fillStyle = '#8a5a2e';
       ctx.fillRect(x + 2, y + 9, 2, 3); ctx.fillRect(x + 11, y + 6, 2, 6); ctx.fillRect(x + 20, y + 9, 2, 3);
       ctx.fillStyle = '#c8956a';
       ctx.fillRect(x + 2, y + 8, 9, 1); ctx.fillRect(x + 11, y + 5, 2, 1); ctx.fillRect(x + 13, y + 6, 9, 1);
+      ctx.fillStyle = '#e8d0a8';
+      ctx.fillRect(x + 2, y + 8, 9, 1);
       var dp = ((inst.trainP || 0) % 36), dpx, dpy;
       if (dp < 18) { dpx = x + 2 + dp; dpy = y + 7 - Math.max(0, 3 - Math.abs(dp - 9) * 0.33); }
       else { dpx = x + 20 - (dp - 18); dpy = y + 7 - Math.max(0, 3 - Math.abs(27 - dp) * 0.33); }
       ctx.fillStyle = '#e33'; ctx.fillRect(dpx, dpy, 3, 2);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(dpx + 1, dpy, 1, 1);
       ctx.fillStyle = '#ec0'; ctx.fillRect(dpx + (dp < 18 ? -4 : 4), dpy, 3, 2);
     } else if (inst.id === 'whirl') {
-      // Scrambler: central hub, 4 arms spinning, a car at each arm end.
+      // Scrambler: a walled platform, a central hub, four arms spinning
+      // with a coloured car at each end.
+      ctx.fillStyle = '#6a6a72'; ctx.fillRect(x + 1, y + 3, 22, 6);
       ctx.fillStyle = '#9aa0a8'; ctx.fillRect(x + 1, y + 3, 22, 6);
+      ctx.fillStyle = '#c8ccd0'; ctx.fillRect(x + 1, y + 3, 22, 1);
       ctx.fillStyle = '#e8c832'; ctx.fillRect(x + 1, y + 3, 22, 1); ctx.fillRect(x + 1, y + 8, 22, 1);
       var wa = tpFrame * 0.05, wCols = ['#e33', '#33e', '#ec0', '#f68'];
       ctx.fillStyle = '#555555';
-      ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, cy, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#8a8a8a';
+      ctx.beginPath(); ctx.arc(cx, cy, 1.5, 0, Math.PI * 2); ctx.fill();
       for (i = 0; i < 4; i++) {
         var ang = wa + i * Math.PI / 2;
         var ex = cx + Math.cos(ang) * 7, ey = cy + Math.sin(ang) * 3.5;
+        ctx.fillStyle = '#777777';
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ex, ey); ctx.lineWidth = 1; ctx.strokeStyle = '#777777'; ctx.stroke();
         ctx.fillStyle = wCols[i];
-        ctx.beginPath(); ctx.arc(ex, ey, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(ex, ey, 2.2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(ex - 0.6, ey - 0.6, 0.7, 0, Math.PI * 2); ctx.fill();
       }
     } else if (inst.id === 'splash') {
-      // Water slide: tall blue chute, rider slides down into a splash pool.
+      // Water slide: a tall blue chute with a water line, a splash pool
+      // with ripples, and a rider sliding down it.
+      ctx.fillStyle = '#2a6fa8'; ctx.fillRect(x + 3, y + 1, 6, 16);
+      ctx.fillStyle = '#3a8fd8'; ctx.fillRect(x + 4, y + 1, 4, 16);
+      ctx.fillStyle = '#7ab8e8'; ctx.fillRect(x + 5, y + 2, 2, 14);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 5, y + 2 + ((tpFrame >> 1) % 12), 1, 2);
+      ctx.fillStyle = '#8a8a8a'; ctx.fillRect(x + 2, y + 1, 2, 16); ctx.fillRect(x + 8, y + 1, 2, 16);
       ctx.fillStyle = '#3a8fd8';
-      ctx.fillRect(x + 4, y + 1, 4, 16);
+      ctx.beginPath(); ctx.arc(x + 6, y + 19, 4.5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#7ab8e8';
-      ctx.fillRect(x + 5, y + 2, 2, 14);
-      ctx.fillStyle = '#3a8fd8';
-      ctx.beginPath(); ctx.arc(x + 6, y + 19, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 6, y + 19, 3, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(x + 4, y + 18, 1, 1); ctx.fillRect(x + 8, y + 20, 1, 1);
+      ctx.fillRect(x + 5 + ((tpFrame >> 3) % 2), y + 19, 1, 1);
       var sp = (tpFrame * 0.35) % 18, sy = y + 1 + sp;
       ctx.fillStyle = '#e33'; ctx.fillRect(x + 5, sy, 2, 2);
+      ctx.fillStyle = '#f0c080'; ctx.fillRect(x + 5, sy - 1, 2, 1);
     } else if (inst.id === 'rogue') {
-      // Pirate ship: hull swinging from a top pivot.
+      // Pirate ship: an A-frame, a swinging hull with a mast and a red
+      // flag, and little seats along the deck.
       var ra = Math.sin(tpFrame * 0.04) * 0.5;
       ctx.fillStyle = '#8a8a8a';
       ctx.fillRect(x + 3, y + 1, 2, 3); ctx.fillRect(x + 19, y + 1, 2, 3);
+      ctx.fillStyle = '#b8b8b8';
+      ctx.fillRect(x + 3, y + 1, 1, 3); ctx.fillRect(x + 19, y + 1, 1, 3);
       ctx.fillStyle = '#7a4a22'; ctx.fillRect(x + 3, y + 1, 18, 1);
       var rx = cx + Math.sin(ra) * 6, ry = cy + 2 + Math.cos(ra) * 2;
+      ctx.fillStyle = '#555555';
+      ctx.beginPath(); ctx.moveTo(cx, cy - 2); ctx.lineTo(rx, ry); ctx.lineWidth = 1; ctx.strokeStyle = '#555555'; ctx.stroke();
       ctx.fillStyle = '#8a5a2e';
       ctx.beginPath(); ctx.moveTo(rx - 6, ry); ctx.lineTo(rx + 6, ry); ctx.lineTo(rx + 4, ry + 3); ctx.lineTo(rx - 4, ry + 3); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#a86a3a';
+      ctx.beginPath(); ctx.moveTo(rx - 6, ry); ctx.lineTo(rx + 6, ry); ctx.lineTo(rx + 5, ry + 1); ctx.lineTo(rx - 5, ry + 1); ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#7a4a22'; ctx.fillRect(rx - 1, ry - 4, 2, 4);
       ctx.fillStyle = '#e33';
       ctx.beginPath(); ctx.moveTo(rx + 1, ry - 4); ctx.lineTo(rx + 5, ry - 3); ctx.lineTo(rx + 1, ry - 2); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#f0c080'; ctx.fillRect(rx - 4, ry - 1, 1, 1); ctx.fillRect(rx + 1, ry - 1, 1, 1);
     } else if (inst.id === 'express') {
-      // Train: straight track, loco + 2 cars rolling back and forth.
+      // Park train: ballast and ties, a red loco with a chimney and a
+      // puff of smoke, and two cars trailing behind it.
+      ctx.fillStyle = '#6a5a42'; ctx.fillRect(x + 1, y + 7, 22, 4);
       ctx.fillStyle = '#9aa0a8'; ctx.fillRect(x + 1, y + 8, 22, 2);
       ctx.fillStyle = '#5a3a1a';
       ctx.fillRect(x + 3, y + 10, 2, 1); ctx.fillRect(x + 11, y + 10, 2, 1); ctx.fillRect(x + 19, y + 10, 2, 1);
       var ep = (tpFrame * 0.3) % 36, ex2 = ep < 18 ? x + 2 + ep : x + 20 - (ep - 18);
-      var eoff = ep < 18 ? -1 : 1; // cars trail behind the loco in either direction
+      var eoff = ep < 18 ? -1 : 1;
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fillRect(ex2 + 2, y + 1 - ((tpFrame >> 3) % 2), 1, 1);
+      ctx.fillRect(ex2 + 3, y - ((tpFrame >> 3) % 2), 1, 1);
       ctx.fillStyle = '#e33'; ctx.fillRect(ex2, y + 4, 5, 4);
+      ctx.fillStyle = '#ff6a5e'; ctx.fillRect(ex2, y + 4, 5, 1);
       ctx.fillStyle = '#333333'; ctx.fillRect(ex2 + 2, y + 2, 2, 2);
+      ctx.fillStyle = '#ffd94a'; ctx.fillRect(ex2 + 1, y + 5, 1, 1);
       ctx.fillStyle = '#33e'; ctx.fillRect(ex2 + eoff * 6, y + 5, 5, 3);
       ctx.fillStyle = '#ec0'; ctx.fillRect(ex2 + eoff * 12, y + 5, 5, 3);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(ex2 + eoff * 6 + 1, y + 5, 1, 1); ctx.fillRect(ex2 + eoff * 12 + 1, y + 5, 1, 1);
     } else if (inst.id === 'swing') {
-      // Pendulum: tall A-frame, long arm swinging a round gondola wide.
+      // Sky swing: a tall A-frame, a long arm, and a round purple
+      // gondola swinging wide with a white centre.
       var sa = Math.sin(tpFrame * 0.05) * 0.9;
       ctx.fillStyle = '#8a8a8a';
       ctx.fillRect(x + 2, y + 8, 2, 4); ctx.fillRect(x + 20, y + 8, 2, 4);
       ctx.fillStyle = '#b8b8b8';
       ctx.fillRect(x + 3, y + 2, 2, 6); ctx.fillRect(x + 19, y + 2, 2, 6);
+      ctx.fillStyle = '#e8e8e8';
+      ctx.fillRect(x + 3, y + 2, 1, 6); ctx.fillRect(x + 19, y + 2, 1, 6);
       var sx = cx + Math.sin(sa) * 9, sy2 = cy - 4 + Math.cos(sa) * 9;
       ctx.fillStyle = '#555555';
       ctx.beginPath(); ctx.moveTo(cx, cy - 4); ctx.lineTo(sx, sy2); ctx.lineWidth = 1; ctx.strokeStyle = '#555555'; ctx.stroke();
       ctx.fillStyle = '#c04ad8';
       ctx.beginPath(); ctx.arc(sx, sy2, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#e08ae8';
+      ctx.beginPath(); ctx.arc(sx - 1, sy2 - 1, 1.5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#f0f0f0';
       ctx.beginPath(); ctx.arc(sx, sy2, 1.5, 0, Math.PI * 2); ctx.fill();
     } else if (inst.id === 'rapid') {
-      // River rapids: winding blue channel, white water, round raft floating it.
+      // River rapids: a winding blue channel with rocky banks, white
+      // water, and a round raft with riders floating it.
+      ctx.fillStyle = '#8a6a42';
+      ctx.fillRect(x + 1, y + 2, 22, 16);
       ctx.fillStyle = '#3a8fd8';
       ctx.fillRect(x + 2, y + 3, 20, 4);
       ctx.fillRect(x + 2, y + 13, 20, 4);
       ctx.fillRect(x + 2, y + 3, 4, 14);
       ctx.fillRect(x + 18, y + 3, 4, 14);
+      ctx.fillStyle = '#7ab8e8';
+      ctx.fillRect(x + 3, y + 4, 18, 1);
+      ctx.fillRect(x + 3, y + 14, 18, 1);
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(x + 6 + (tpFrame % 12), y + 4, 1, 1);
       ctx.fillRect(x + 14 - (tpFrame % 12), y + 14, 1, 1);
+      ctx.fillRect(x + 4, y + 8 + ((tpFrame >> 2) % 3), 1, 1);
       var rp = (tpFrame * 0.25) % 48, rpx, rpy;
       if (rp < 16) { rpx = x + 4 + rp; rpy = y + 4; }
       else if (rp < 24) { rpx = x + 19; rpy = y + 4 + (rp - 16); }
@@ -10781,39 +11481,60 @@ function drawSiege() {
       else { rpx = x + 4; rpy = y + 14 - (rp - 40); }
       ctx.fillStyle = '#c8956a';
       ctx.beginPath(); ctx.arc(rpx, rpy, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#a86a3a';
+      ctx.beginPath(); ctx.arc(rpx, rpy, 2, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#e33';
-      ctx.beginPath(); ctx.arc(rpx, rpy, 1.2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(rpx - 1, rpy - 1, 1, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f0c080';
+      ctx.beginPath(); ctx.arc(rpx + 1, rpy - 1, 1, 0, Math.PI * 2); ctx.fill();
     } else if (inst.id === 'timber') {
-      // Wooden coaster: timber supports, big hill, train cresting it.
-      ctx.fillStyle = '#8a5a2e';
+      // Wooden coaster: chunky timber supports, a big hill, and a
+      // two-car train cresting it.
+      ctx.fillStyle = '#6a4a2a';
       ctx.fillRect(x + 3, y + 14, 2, 8); ctx.fillRect(x + 11, y + 8, 2, 14); ctx.fillRect(x + 19, y + 14, 2, 8);
+      ctx.fillStyle = '#8a5a2e';
+      ctx.fillRect(x + 3, y + 14, 1, 8); ctx.fillRect(x + 11, y + 8, 1, 14); ctx.fillRect(x + 19, y + 14, 1, 8);
       ctx.fillStyle = '#c8956a';
       ctx.fillRect(x + 2, y + 13, 9, 2); ctx.fillRect(x + 11, y + 7, 2, 2); ctx.fillRect(x + 13, y + 9, 9, 2);
+      ctx.fillStyle = '#e8d0a8';
+      ctx.fillRect(x + 2, y + 13, 9, 1); ctx.fillRect(x + 13, y + 9, 9, 1);
       var tp2 = ((inst.trainP || 0) % 40), tx2, ty2;
       if (tp2 < 20) { tx2 = x + 2 + tp2; ty2 = y + 12 - Math.max(0, 5 - Math.abs(tp2 - 10) * 0.5); }
       else { tx2 = x + 22 - (tp2 - 20); ty2 = y + 12 - Math.max(0, 5 - Math.abs(30 - tp2) * 0.5); }
       ctx.fillStyle = '#7a4a22'; ctx.fillRect(tx2, ty2, 3, 2);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(tx2 + 1, ty2, 1, 1);
       ctx.fillStyle = '#e8c832'; ctx.fillRect(tx2 + (tp2 < 20 ? -4 : 4), ty2, 3, 2);
     } else if (inst.id === 'launch') {
-      // Launched coaster: steep launch straight + loop, train shooting through fast.
-      ctx.fillStyle = '#8a5a2e';
+      // Launched coaster: a steep launch straight, a vertical loop,
+      // and a fast yellow train shooting through it.
+      ctx.fillStyle = '#6a4a2a';
       ctx.fillRect(x + 3, y + 16, 2, 6); ctx.fillRect(x + 11, y + 10, 2, 12); ctx.fillRect(x + 19, y + 16, 2, 6);
-      ctx.fillStyle = '#e33';
+      ctx.fillStyle = '#8a5a2e';
+      ctx.fillRect(x + 3, y + 16, 1, 6); ctx.fillRect(x + 11, y + 10, 1, 12); ctx.fillRect(x + 19, y + 16, 1, 6);
+      ctx.fillStyle = '#c8956a';
       ctx.beginPath(); ctx.arc(cx + 5, cy - 2, 6, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#79b34a';
       ctx.beginPath(); ctx.arc(cx + 5, cy - 2, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#5a9a3a';
+      ctx.beginPath(); ctx.arc(cx + 5, cy - 2, 2.5, 0, Math.PI * 2); ctx.fill();
       var lp = (((inst.trainP || 0) * 1.4) % 56), lx2, ly2;
       if (lp < 14) { lx2 = x + 3 + lp; ly2 = y + 16 - lp * 0.7; }
       else if (lp < 28) { lx2 = cx + 5 + Math.cos((lp - 14) / 14 * Math.PI * 2) * 5; ly2 = cy - 2 + Math.sin((lp - 14) / 14 * Math.PI * 2) * 5; }
       else if (lp < 42) { lx2 = x + 19 - (lp - 28); ly2 = y + 16 - (42 - lp) * 0.7; }
       else { lx2 = x + 3 + (lp - 42); ly2 = y + 16; }
       ctx.fillStyle = '#ec0'; ctx.fillRect(lx2 - 1, ly2 - 1, 3, 3);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(lx2, ly2 - 1, 1, 1);
+      ctx.fillStyle = '#e33'; ctx.fillRect(lx2 - 1, ly2 + 1, 1, 1);
     }
-    // Riders aboard: tiny dots on the ride while it runs.
+    // Riders aboard: tiny seated figures on the ride while it runs.
     if (inst.riders && inst.riders.length) {
+      var ry = cy + (inst.h * TP_TILE) / 2 - 2;
+      ctx.fillStyle = '#f0c080';
+      ctx.fillRect(cx - 4, ry - 2, 2, 2);
+      ctx.fillRect(cx + 2, ry - 2, 2, 2);
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(cx - 4, cy + (inst.h * TP_TILE) / 2 - 2, 2, 2);
-      ctx.fillRect(cx + 2, cy + (inst.h * TP_TILE) / 2 - 2, 2, 2);
+      ctx.fillRect(cx - 4, ry, 2, 2);
+      ctx.fillRect(cx + 2, ry, 2, 2);
     }
     if (inst.broken) {
       // Blinking red warning so a breakdown is unmissable.
@@ -10825,70 +11546,91 @@ function drawSiege() {
     }
   }
   function tpDrawFacility(x, y, inst) {
+    tpShadow(x + 6, y + 11, 6, 2);
     if (inst.id === 'restroom') {
-      // Blue-and-white restroom hut: pitched roof, door, window.
-      ctx.fillStyle = '#e8f0f8'; ctx.fillRect(x + 1, y + 4, 10, 8); // pale walls
-      ctx.fillStyle = '#3a8fd8'; // pitched roof
+      // Restroom hut: shingled pitched roof, pale siding, a door with a
+      // handle, a shining window, and a little sign.
+      ctx.fillStyle = '#e8f0f8'; ctx.fillRect(x + 1, y + 4, 10, 8);
+      ctx.fillStyle = '#c8d8e8'; ctx.fillRect(x + 1, y + 10, 10, 2);
+      ctx.fillStyle = '#d8e4f0';
+      ctx.fillRect(x + 1, y + 6, 10, 1); ctx.fillRect(x + 1, y + 8, 10, 1);
+      ctx.fillStyle = '#3a8fd8';
       ctx.beginPath(); ctx.moveTo(x, y + 4); ctx.lineTo(x + 6, y); ctx.lineTo(x + 12, y + 4); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#2e6fb0'; ctx.fillRect(x + 1, y + 4, 10, 1); // roof edge
-      ctx.fillStyle = '#3a8fd8'; ctx.fillRect(x + 5, y + 7, 3, 5); // door
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 6, y + 9, 1, 1); // handle
-      ctx.fillStyle = '#7ab8e8'; ctx.fillRect(x + 2, y + 5, 2, 2); // window
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 2, y + 5, 2, 1); // window shine
+      ctx.fillStyle = '#2e6fb0';
+      ctx.beginPath(); ctx.moveTo(x + 2, y + 3); ctx.lineTo(x + 6, y + 1); ctx.lineTo(x + 10, y + 3); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#7ab8e8';
+      ctx.beginPath(); ctx.moveTo(x, y + 4); ctx.lineTo(x + 6, y); ctx.lineTo(x + 6, y + 1); ctx.lineTo(x + 1, y + 4); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#2e6fb0'; ctx.fillRect(x + 1, y + 4, 10, 1);
+      ctx.fillStyle = '#3a8fd8'; ctx.fillRect(x + 5, y + 7, 3, 5);
+      ctx.fillStyle = '#2e6fb0'; ctx.fillRect(x + 5, y + 7, 3, 1);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 6, y + 9, 1, 1);
+      ctx.fillStyle = '#7ab8e8'; ctx.fillRect(x + 2, y + 5, 2, 2);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 2, y + 5, 2, 1);
+      ctx.fillStyle = '#ffd94a'; ctx.fillRect(x + 9, y + 5, 1, 1);
     } else if (inst.id === 'firstaid') {
-      // Little clinic: white walls, red roof stripe, big red cross.
-      ctx.fillStyle = '#f0f0f0'; ctx.fillRect(x + 1, y + 3, 10, 9); // walls
-      ctx.fillStyle = '#d83a2e'; ctx.fillRect(x + 1, y + 1, 10, 2); // roof stripe
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 1, y + 3, 10, 1); // trim
-      ctx.fillStyle = '#d83a2e'; // red cross
+      // Little clinic: white walls, a red roof stripe, a big red cross
+      // with a bright centre, and a door.
+      ctx.fillStyle = '#f0f0f0'; ctx.fillRect(x + 1, y + 3, 10, 9);
+      ctx.fillStyle = '#d8d8d8'; ctx.fillRect(x + 1, y + 10, 10, 2);
+      ctx.fillStyle = '#d83a2e'; ctx.fillRect(x + 1, y + 1, 10, 2);
+      ctx.fillStyle = '#ff6a5e'; ctx.fillRect(x + 1, y + 1, 10, 1);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 1, y + 3, 10, 1);
+      ctx.fillStyle = '#d83a2e';
       ctx.fillRect(x + 5, y + 4, 2, 5); ctx.fillRect(x + 3, y + 5, 6, 2);
-      ctx.fillStyle = '#ff6a5e'; ctx.fillRect(x + 5, y + 5, 2, 2); // bright centre
+      ctx.fillStyle = '#ff6a5e'; ctx.fillRect(x + 5, y + 5, 2, 2);
+      ctx.fillStyle = '#8a8a8a'; ctx.fillRect(x + 2, y + 10, 2, 2);
     }
   }
   function tpDrawCan(x, y, inst) {
-    // Body colour shows how full it is: green -> yellow -> orange (full).
+    // Trash can: a rim and lid, a body whose colour shows how full it
+    // is (green -> yellow -> orange), a shine, and overflow when full.
+    tpShadow(x + 6, y + 11, 4, 1.5);
     var f = inst.fill || 0;
     var body = f >= 8 ? '#ff8800' : f >= 4 ? '#e8c832' : '#4a8a4a';
-    ctx.fillStyle = '#2e4a2e'; ctx.fillRect(x + 3, y + 2, 6, 2); // rim / lid
-    ctx.fillStyle = body; ctx.fillRect(x + 4, y + 4, 4, 7); // body
-    ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(x + 4, y + 4, 1, 7); // shine
-    if (f >= 10) { // full: overflowing, needs a cleaner
-      ctx.fillStyle = '#e8e8e8'; ctx.fillRect(x + 4, y + 0, 2, 1); // overflow
-      ctx.fillStyle = '#ffdd00'; ctx.fillRect(x + 5, y + 1, 2, 2); // warning dot
+    ctx.fillStyle = '#2e4a2e'; ctx.fillRect(x + 3, y + 2, 6, 2);
+    ctx.fillStyle = '#4a6a4a'; ctx.fillRect(x + 3, y + 2, 6, 1);
+    ctx.fillStyle = body; ctx.fillRect(x + 4, y + 4, 4, 7);
+    ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(x + 4, y + 4, 1, 7);
+    ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(x + 7, y + 4, 1, 7);
+    if (f >= 10) {
+      ctx.fillStyle = '#e8e8e8'; ctx.fillRect(x + 4, y + 0, 2, 1);
+      ctx.fillStyle = '#ffdd00'; ctx.fillRect(x + 5, y + 1, 2, 2);
     }
   }
   function tpDrawStaff(s) {
     var gx = Math.round(s.x), gy = Math.round(s.y);
     var col = s.type === 'cleaner' ? '#3a6fd8' : s.type === 'engineer' ? '#e87a1e' :
               s.type === 'entertainer' ? '#c04ad8' : '#2e3a6a';
+    tpShadow(gx, gy + 3, 3, 1.5);
     // Uniformed figure, bigger than a guest and white-outlined so staff
     // stand out from guests at a glance.
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(gx - 2, gy - 5, 4, 6); // white outline
-    ctx.fillStyle = '#f0c080'; ctx.fillRect(gx - 1, gy - 4, 2, 2); // head
-    ctx.fillStyle = col; ctx.fillRect(gx - 1, gy - 2, 3, 4); // uniform body
+    ctx.fillRect(gx - 2, gy - 5, 4, 6);
+    ctx.fillStyle = '#f0c080'; ctx.fillRect(gx - 1, gy - 4, 2, 2);
+    ctx.fillStyle = col; ctx.fillRect(gx - 1, gy - 2, 3, 4);
+    ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(gx + 1, gy - 2, 1, 4);
+    ctx.fillStyle = '#333366'; ctx.fillRect(gx - 1, gy + 2, 1, 1); ctx.fillRect(gx + 1, gy + 2, 1, 1);
     if (s.type === 'cleaner') {
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(gx - 1, gy - 5, 2, 1); // cap
-      ctx.fillStyle = '#8a6a3a'; // broom: diagonal stick + bristles
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(gx - 1, gy - 5, 2, 1);
+      ctx.fillStyle = '#8a6a3a';
       ctx.fillRect(gx + 2, gy - 4, 1, 2); ctx.fillRect(gx + 3, gy - 2, 1, 2);
       ctx.fillStyle = '#d8b25a'; ctx.fillRect(gx + 3, gy, 2, 1);
       var ck = tpColOf(s.x) + ',' + tpRowOf(s.y);
-      if (tpLitter[ck]) { // actively sweeping: dust puffs at the broom tip
+      if (tpLitter[ck]) {
         ctx.fillStyle = '#d8d8d8';
         var puff = (tpFrame >> 3) % 2;
         ctx.fillRect(gx + 3 + puff, gy + 1, 1, 1);
         ctx.fillRect(gx + 4 - puff, gy + 2, 1, 1);
       }
     } else if (s.type === 'engineer') {
-      ctx.fillStyle = '#ffd94a'; // hard hat: brim + dome
+      ctx.fillStyle = '#ffd94a';
       ctx.fillRect(gx - 1, gy - 5, 3, 1); ctx.fillRect(gx, gy - 6, 1, 1);
-      ctx.fillStyle = '#cccccc'; // wrench
+      ctx.fillStyle = '#cccccc';
       ctx.fillRect(gx + 2, gy - 3, 1, 3); ctx.fillRect(gx + 2, gy - 4, 2, 1);
     } else if (s.type === 'entertainer') {
-      ctx.fillStyle = '#ff9ad8'; // party hat (triangle)
+      ctx.fillStyle = '#ff9ad8';
       ctx.beginPath(); ctx.moveTo(gx - 1, gy - 4); ctx.lineTo(gx, gy - 7); ctx.lineTo(gx + 1, gy - 4); ctx.closePath(); ctx.fill();
       if (s.state === 'perform') {
-        // Performing: bobbing sparkle + floating confetti around them.
         var bob = (tpFrame >> 4) % 2;
         ctx.fillStyle = '#ffd94a';
         ctx.fillRect(gx - 1, gy - 11 + bob, 3, 1);
@@ -10897,13 +11639,13 @@ function drawSiege() {
         ctx.fillStyle = '#3a8fd8'; ctx.fillRect(gx + 3, gy - 7 - bob, 1, 1);
       } else {
         ctx.fillStyle = '#ffd94a';
-        ctx.fillRect(gx - 1, gy - 8 + ((tpFrame >> 4) % 2), 2, 2); // star
+        ctx.fillRect(gx - 1, gy - 8 + ((tpFrame >> 4) % 2), 2, 2);
       }
     } else if (s.type === 'security') {
-      ctx.fillStyle = '#1a2440'; ctx.fillRect(gx - 1, gy - 5, 3, 1); // cap
-      ctx.fillStyle = '#202020'; ctx.fillRect(gx - 1, gy - 4, 2, 1); // sunglasses
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(gx, gy - 2, 1, 3); // shirt stripe
-      ctx.fillStyle = '#ffd94a'; ctx.fillRect(gx + 1, gy - 1, 1, 1); // badge
+      ctx.fillStyle = '#1a2440'; ctx.fillRect(gx - 1, gy - 5, 3, 1);
+      ctx.fillStyle = '#202020'; ctx.fillRect(gx - 1, gy - 4, 2, 1);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(gx, gy - 2, 1, 3);
+      ctx.fillStyle = '#ffd94a'; ctx.fillRect(gx + 1, gy - 1, 1, 1);
     }
     if (s.state === 'fixing') {
       ctx.fillStyle = '#ffdd00'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
@@ -10912,104 +11654,178 @@ function drawSiege() {
     }
   }
   function tpDrawStall(x, y, inst) {
-    ctx.fillStyle = '#e8c890'; ctx.fillRect(x + 1, y + 4, 10, 8);
+    // Food stall: a wooden counter with goods on it, a striped awning
+    // with a scalloped edge, a sign, and a wisp of steam.
+    tpShadow(x + 6, y + 11, 6, 2);
+    ctx.fillStyle = '#8a5a2e'; ctx.fillRect(x + 1, y + 4, 10, 8);
+    ctx.fillStyle = '#a86a3a'; ctx.fillRect(x + 1, y + 4, 10, 2);
+    ctx.fillStyle = '#5a3a1a'; ctx.fillRect(x + 1, y + 10, 10, 2);
     var awn = inst.id === 'snack' ? '#d83a2e' : inst.id === 'drink' ? '#3a8fd8' : '#e88ab0';
     for (var i = 0; i < 4; i++) {
       ctx.fillStyle = i % 2 === 0 ? awn : '#f0f0f0';
       ctx.fillRect(x + 1 + i * 3, y + 2, 3, 3);
+      ctx.fillStyle = i % 2 === 0 ? awn : '#e8e8e8';
+      ctx.fillRect(x + 1 + i * 3, y + 5, 2, 1);
     }
+    ctx.fillStyle = '#7a4a22'; ctx.fillRect(x + 1, y + 2, 1, 2); ctx.fillRect(x + 10, y + 2, 1, 2);
     ctx.fillStyle = inst.id === 'snack' ? '#8a5a2e' : inst.id === 'drink' ? '#3a8fd8' : '#e88ab0';
     ctx.fillRect(x + 5, y + 7, 2, 2);
-    ctx.fillStyle = '#7a4a22'; ctx.fillRect(x + 2, y + 10, 8, 1);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 5, y + 7, 1, 1);
+    ctx.fillStyle = '#ffd94a'; ctx.fillRect(x + 2, y + 7, 1, 1); ctx.fillRect(x + 8, y + 8, 1, 1);
+    if (inst.id === 'snack' || inst.id === 'drink') {
+      // Steam curling off the hot food / cold drink.
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      var st = (tpFrame >> 3) % 3;
+      ctx.fillRect(x + 6, y - 1 - st, 1, 1);
+      ctx.fillRect(x + 5 + (st % 2), y - 2 - st, 1, 1);
+    }
   }
   function tpDrawDecor(x, y, inst) {
     if (inst.id === 'tree') {
-      var sway = Math.round(Math.sin(tpFrame * 0.03 + x * 0.7) * 1); // breeze
+      var sway = Math.round(Math.sin(tpFrame * 0.03 + x * 0.7) * 1);
+      tpShadow(x + 6, y + 11, 5, 2);
       ctx.fillStyle = '#7a4a22'; ctx.fillRect(x + 5, y + 7, 2, 5);
+      ctx.fillStyle = '#5a3a1a'; ctx.fillRect(x + 5, y + 7, 1, 5);
+      ctx.fillStyle = '#1e6b2a';
+      ctx.beginPath(); ctx.arc(x + 6 + sway, y + 5, 5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#2e8b3a';
-      ctx.beginPath(); ctx.arc(x + 6 + sway, y + 5, 4.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 6 + sway, y + 4, 4, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#5ac85a';
-      ctx.beginPath(); ctx.arc(x + 4 + sway, y + 3, 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 4 + sway, y + 3, 1.8, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 8 + sway, y + 5, 1.2, 0, Math.PI * 2); ctx.fill();
     } else if (inst.id === 'flowers') {
-      ctx.fillStyle = '#3f8c2a'; ctx.fillRect(x + 3, y + 6, 6, 1);
-      ctx.fillStyle = '#e33'; ctx.fillRect(x + 3, y + 4, 2, 2);
-      ctx.fillStyle = '#ec0'; ctx.fillRect(x + 6, y + 3, 2, 2);
-      ctx.fillStyle = '#f0f0f0'; ctx.fillRect(x + 8, y + 5, 2, 2);
+      ctx.fillStyle = '#2e7a22'; ctx.fillRect(x + 2, y + 8, 8, 1);
+      ctx.fillStyle = '#3f8c2a';
+      ctx.fillRect(x + 3, y + 6, 1, 2); ctx.fillRect(x + 6, y + 5, 1, 3); ctx.fillRect(x + 8, y + 6, 1, 2);
+      ctx.fillStyle = '#e33';
+      ctx.beginPath(); ctx.arc(x + 3, y + 4, 1.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ec0';
+      ctx.beginPath(); ctx.arc(x + 6, y + 3, 1.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f0f0f0';
+      ctx.beginPath(); ctx.arc(x + 8, y + 5, 1.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#c04ad8';
+      ctx.beginPath(); ctx.arc(x + 5, y + 5, 1, 0, Math.PI * 2); ctx.fill();
     } else if (inst.id === 'fountain') {
-      ctx.fillStyle = '#7ab8e8';
+      // Stone-rimmed fountain: pale rim, deep blue water, a jet in the
+      // middle and shimmering highlights that drift.
+      tpShadow(x + 6, y + 11, 5, 2);
+      ctx.fillStyle = '#8a8a8a';
+      ctx.beginPath(); ctx.arc(x + 6, y + 6, 5.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#c8ccd0';
       ctx.beginPath(); ctx.arc(x + 6, y + 6, 5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#3a8fd8';
       ctx.beginPath(); ctx.arc(x + 6, y + 6, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#7ab8e8';
+      ctx.beginPath(); ctx.arc(x + 5, y + 5, 2, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#ffffff';
       var fx = (tpFrame % 2 === 0) ? 0 : 2;
       ctx.fillRect(x + 4 + fx, y + 4, 1, 1);
       ctx.fillRect(x + 7 - fx, y + 7, 1, 1);
+      ctx.fillRect(x + 5 + ((tpFrame >> 2) % 2), y + 8, 1, 1);
+      ctx.fillStyle = '#e8e8e8';
+      ctx.fillRect(x + 5, y + 3, 2, 3);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 5, y + 2, 2, 1);
     } else if (inst.id === 'bush') {
+      tpShadow(x + 6, y + 11, 4, 1.5);
+      ctx.fillStyle = '#1e6b2a';
+      ctx.beginPath(); ctx.arc(x + 6, y + 8, 4, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#2e8b3a';
-      ctx.beginPath(); ctx.arc(x + 6, y + 8, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 6, y + 7, 3.5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#5ac85a';
       ctx.beginPath(); ctx.arc(x + 4, y + 6, 1.5, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.arc(x + 8, y + 7, 1.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#e33';
+      ctx.beginPath(); ctx.arc(x + 7, y + 8, 0.8, 0, Math.PI * 2); ctx.fill();
     } else if (inst.id === 'oak') {
-      // Broad dark canopy, thick trunk, acorns.
       var osw = Math.round(Math.sin(tpFrame * 0.03 + x * 0.7) * 1);
+      tpShadow(x + 6, y + 11, 5.5, 2);
       ctx.fillStyle = '#5a3a1a'; ctx.fillRect(x + 5, y + 7, 3, 5);
+      ctx.fillStyle = '#3a2a12'; ctx.fillRect(x + 5, y + 7, 1, 5);
       ctx.fillStyle = '#1e6b2a';
-      ctx.beginPath(); ctx.arc(x + 6 + osw, y + 4, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 6 + osw, y + 4, 5.5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#2e8b3a';
       ctx.beginPath(); ctx.arc(x + 3 + osw, y + 5, 2.5, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.arc(x + 9 + osw, y + 5, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#5ac85a';
+      ctx.beginPath(); ctx.arc(x + 5 + osw, y + 2, 1.8, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#8a5a2e';
       ctx.fillRect(x + 4 + osw, y + 7, 1, 1); ctx.fillRect(x + 8 + osw, y + 8, 1, 1);
     } else if (inst.id === 'lamp') {
+      tpShadow(x + 6, y + 11, 3, 1.5);
       ctx.fillStyle = '#333333'; ctx.fillRect(x + 5, y + 3, 2, 9);
+      ctx.fillStyle = '#555555'; ctx.fillRect(x + 5, y + 3, 1, 9);
+      ctx.fillStyle = '#222222'; ctx.fillRect(x + 4, y + 10, 4, 2);
       ctx.fillStyle = '#ffd94a';
       ctx.beginPath(); ctx.arc(x + 6, y + 2, 2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff2a8';
+      ctx.beginPath(); ctx.arc(x + 6, y + 2, 1, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = 'rgba(255,217,74,0.25)';
       ctx.beginPath(); ctx.arc(x + 6, y + 3, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,217,74,0.12)';
+      ctx.beginPath(); ctx.arc(x + 6, y + 3, 5.5, 0, Math.PI * 2); ctx.fill();
     } else if (inst.id === 'pine') {
-      // Tall triangle conifer, dark green, tiered.
+      tpShadow(x + 6, y + 11, 4, 1.5);
       ctx.fillStyle = '#5a3a1a'; ctx.fillRect(x + 5, y + 9, 2, 3);
       ctx.fillStyle = '#1e5b2a';
       ctx.beginPath(); ctx.moveTo(x + 6, y); ctx.lineTo(x + 2, y + 6); ctx.lineTo(x + 10, y + 6); ctx.closePath(); ctx.fill();
       ctx.beginPath(); ctx.moveTo(x + 6, y + 3); ctx.lineTo(x + 1, y + 10); ctx.lineTo(x + 11, y + 10); ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#2e8b3a';
       ctx.beginPath(); ctx.moveTo(x + 6, y + 1); ctx.lineTo(x + 3, y + 6); ctx.lineTo(x + 9, y + 6); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x + 6, y + 4); ctx.lineTo(x + 2, y + 10); ctx.lineTo(x + 10, y + 10); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#5ac85a';
+      ctx.beginPath(); ctx.moveTo(x + 6, y + 1); ctx.lineTo(x + 4, y + 5); ctx.lineTo(x + 6, y + 5); ctx.closePath(); ctx.fill();
     } else if (inst.id === 'palm') {
-      // Curved trunk, radiating fronds, coconuts.
+      tpShadow(x + 6, y + 11, 4, 1.5);
       ctx.fillStyle = '#8a6a3a';
       ctx.fillRect(x + 5, y + 6, 2, 6);
       ctx.fillRect(x + 4, y + 4, 2, 2);
-      ctx.fillStyle = '#3f9c3a';
+      ctx.fillStyle = '#a08050'; ctx.fillRect(x + 5, y + 6, 1, 6);
+      ctx.fillStyle = '#2e7a2a';
       ctx.beginPath(); ctx.moveTo(x + 5, y + 4); ctx.lineTo(x + 1, y + 1); ctx.lineTo(x + 2, y + 4); ctx.closePath(); ctx.fill();
       ctx.beginPath(); ctx.moveTo(x + 5, y + 4); ctx.lineTo(x + 11, y + 1); ctx.lineTo(x + 10, y + 4); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#3f9c3a';
       ctx.beginPath(); ctx.moveTo(x + 5, y + 4); ctx.lineTo(x + 6, y); ctx.lineTo(x + 8, y + 4); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x + 5, y + 4); ctx.lineTo(x + 2, y + 3); ctx.lineTo(x + 5, y + 5); ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#8a5a2e';
       ctx.fillRect(x + 5, y + 5, 1, 1); ctx.fillRect(x + 7, y + 5, 1, 1);
     } else if (inst.id === 'bench') {
+      tpShadow(x + 6, y + 11, 5, 1.5);
+      ctx.fillStyle = '#5a3a1a';
+      ctx.fillRect(x + 3, y + 8, 1, 3); ctx.fillRect(x + 8, y + 8, 1, 3);
       ctx.fillStyle = '#8a5a2e';
       ctx.fillRect(x + 2, y + 6, 8, 2);
       ctx.fillRect(x + 2, y + 3, 8, 1);
+      ctx.fillStyle = '#a86a3a';
+      ctx.fillRect(x + 2, y + 6, 8, 1);
+      ctx.fillStyle = '#6a4a22';
       ctx.fillRect(x + 3, y + 4, 1, 2); ctx.fillRect(x + 8, y + 4, 1, 2);
-      ctx.fillStyle = '#5a3a1a';
-      ctx.fillRect(x + 3, y + 8, 1, 3); ctx.fillRect(x + 8, y + 8, 1, 3);
+      ctx.fillStyle = '#333333';
+      ctx.fillRect(x + 2, y + 8, 1, 1); ctx.fillRect(x + 9, y + 8, 1, 1);
     } else if (inst.id === 'willow') {
-      // Drooping branches hanging from a high canopy.
       var wsw = Math.round(Math.sin(tpFrame * 0.03 + x * 0.7) * 1);
+      tpShadow(x + 6, y + 11, 5, 2);
       ctx.fillStyle = '#5a3a1a'; ctx.fillRect(x + 5, y + 6, 2, 6);
+      ctx.fillStyle = '#3a2a12'; ctx.fillRect(x + 5, y + 6, 1, 6);
+      ctx.fillStyle = '#5a9a4a';
+      ctx.beginPath(); ctx.arc(x + 6 + wsw, y + 4, 4.5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#7ac87a';
-      ctx.beginPath(); ctx.arc(x + 6 + wsw, y + 4, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 6 + wsw, y + 3, 3.5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#5ac85a';
       ctx.fillRect(x + 2 + wsw, y + 5, 1, 5);
       ctx.fillRect(x + 4 + wsw, y + 6, 1, 4);
       ctx.fillRect(x + 7 + wsw, y + 6, 1, 4);
       ctx.fillRect(x + 9 + wsw, y + 5, 1, 5);
+      ctx.fillStyle = '#a8e8a8';
+      ctx.fillRect(x + 2 + wsw, y + 5, 1, 2);
     } else if (inst.id === 'cherry') {
-      // Pink blossom canopy, dark trunk, drifting petals.
       var csw = Math.round(Math.sin(tpFrame * 0.03 + x * 0.7) * 1);
+      tpShadow(x + 6, y + 11, 5, 2);
       ctx.fillStyle = '#4a2a2a'; ctx.fillRect(x + 5, y + 7, 2, 5);
-      ctx.fillStyle = '#f0a0c0';
+      ctx.fillStyle = '#2e1a1a'; ctx.fillRect(x + 5, y + 7, 1, 5);
+      ctx.fillStyle = '#e88ab0';
       ctx.beginPath(); ctx.arc(x + 6 + csw, y + 4, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f0a0c0';
+      ctx.beginPath(); ctx.arc(x + 6 + csw, y + 4, 4, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#f8c0d8';
       ctx.beginPath(); ctx.arc(x + 4 + csw, y + 3, 2, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.arc(x + 8 + csw, y + 5, 2, 0, Math.PI * 2); ctx.fill();
@@ -11017,21 +11833,31 @@ function drawSiege() {
       ctx.fillRect(x + 3 + ((tpFrame >> 3) % 6), y + 9, 1, 1);
       ctx.fillRect(x + 8 - ((tpFrame >> 3) % 6), y + 10, 1, 1);
     } else if (inst.id === 'pond') {
+      tpShadow(x + 6, y + 11, 5, 2);
+      ctx.fillStyle = '#7a6a4a';
+      ctx.beginPath(); ctx.arc(x + 6, y + 6, 5.5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#3a8fd8';
       ctx.beginPath(); ctx.arc(x + 6, y + 6, 5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#7ab8e8';
-      ctx.beginPath(); ctx.arc(x + 6, y + 6, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 5, y + 5, 3, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#2e8b3a';
-      ctx.beginPath(); ctx.arc(x + 4, y + 5, 1.2, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(x + 8, y + 8, 1.2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 3, y + 4, 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 9, y + 8, 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#5ac85a';
+      ctx.beginPath(); ctx.arc(x + 3, y + 4, 0.8, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(x + 5 + ((tpFrame >> 4) % 2), y + 7, 1, 1);
+      ctx.fillRect(x + 4, y + 6 + ((tpFrame >> 4) % 2), 1, 1);
     } else if (inst.id === 'statue') {
-      ctx.fillStyle = '#9aa0a8'; ctx.fillRect(x + 3, y + 9, 6, 3);
+      tpShadow(x + 6, y + 11, 5, 2);
+      ctx.fillStyle = '#7a7a7a'; ctx.fillRect(x + 3, y + 9, 6, 3);
+      ctx.fillStyle = '#9aa0a8'; ctx.fillRect(x + 3, y + 9, 6, 1);
       ctx.fillStyle = '#c8ccd0'; ctx.fillRect(x + 4, y + 8, 4, 1);
       ctx.fillStyle = '#b8bcc0';
       ctx.fillRect(x + 5, y + 3, 2, 5);
       ctx.beginPath(); ctx.arc(x + 6, y + 2, 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#e8e8e8';
+      ctx.fillRect(x + 5, y + 3, 1, 5);
       ctx.fillStyle = '#8a8a8a';
       ctx.fillRect(x + 4, y + 4, 1, 1); ctx.fillRect(x + 7, y + 4, 1, 1);
     }
@@ -11039,29 +11865,41 @@ function drawSiege() {
   function tpDrawGuest(g) {
     if (g.state === 'ride') return; // aboard — hidden inside the ride
     var gx = Math.round(g.x), gy = Math.round(g.y);
-    // GBA figures are bigger and readable: legs, shirt by guest type
-    // (thrill red, family blue, kid yellow, VIP gold), skin head, hair.
+    // Realistic little people: a soft shadow, legs that step as they
+    // walk (alternating by frame + position), a shirt in the guest's
+    // colour, arms, a skin head with hair, and a bob while walking.
     var small = g.type === 'kid';
     var bodyH = small ? 2 : 3, legH = 2;
+    var bob = (g.state === 'walk' || g.state === 'exit') ? ((tpFrame + Math.round(g.x)) % 8 < 4 ? 0 : -1) : 0;
+    var step = (g.state === 'walk' || g.state === 'exit') ? ((tpFrame + Math.round(g.x)) % 8 < 4 ? 1 : -1) : 0;
+    tpShadow(gx, gy + 3, 3, 1.5);
     if (g.state === 'sit') {
-      // Seated on the bench: head above the backrest, body on the seat.
+      // Seated on the bench: head above the backrest, body on the seat,
+      // legs stretched forward.
       ctx.fillStyle = '#f0c080'; ctx.fillRect(gx - 1, gy - 5, 3, 3);
+      ctx.fillStyle = g.type === 'kid' ? '#6a4a2a' : g.type === 'thrill' ? '#222222' : '#8a5a2e';
+      ctx.fillRect(gx - 1, gy - 5, 3, 1);
       ctx.fillStyle = g.color; ctx.fillRect(gx - 2, gy - 2, 4, 2);
       ctx.fillStyle = '#333366'; ctx.fillRect(gx - 2, gy, 4, 1);
       return;
     }
-    ctx.fillStyle = '#333366'; // legs
-    ctx.fillRect(gx - 2, gy + 1, 1, legH); ctx.fillRect(gx + 1, gy + 1, 1, legH);
-    ctx.fillStyle = g.color; // shirt (type colour)
-    ctx.fillRect(gx - 2, gy - 2, 4, bodyH);
+    ctx.fillStyle = '#333366'; // legs, stepping
+    ctx.fillRect(gx - 2, gy + 1 + (step > 0 ? 0 : 1), 1, legH);
+    ctx.fillRect(gx + 1, gy + 1 + (step > 0 ? 1 : 0), 1, legH);
+    ctx.fillStyle = g.color; // shirt (type colour) with a light edge
+    ctx.fillRect(gx - 2, gy - 2 + bob, 4, bodyH);
+    ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(gx - 2, gy - 2 + bob, 1, bodyH);
+    ctx.fillStyle = g.color; // arms
+    ctx.fillRect(gx - 3, gy - 2 + bob - (step > 0 ? 0 : 1), 1, 2);
+    ctx.fillRect(gx + 2, gy - 2 + bob - (step > 0 ? 1 : 0), 1, 2);
     ctx.fillStyle = '#f0c080'; // head
-    ctx.fillRect(gx - 1, gy - 5, 3, 3);
+    ctx.fillRect(gx - 1, gy - 5 + bob, 3, 3);
     ctx.fillStyle = g.type === 'kid' ? '#6a4a2a' : g.type === 'thrill' ? '#222222' : '#8a5a2e';
-    ctx.fillRect(gx - 1, gy - 5, 3, 1); // hair
+    ctx.fillRect(gx - 1, gy - 5 + bob, 3, 1); // hair
     if (g.vip) { // gold crown so the VIP is unmissable
       ctx.fillStyle = '#ffd94a';
-      ctx.fillRect(gx - 1, gy - 8, 3, 2);
-      ctx.fillRect(gx - 1, gy - 9, 1, 1); ctx.fillRect(gx + 1, gy - 9, 1, 1);
+      ctx.fillRect(gx - 1, gy - 8 + bob, 3, 2);
+      ctx.fillRect(gx - 1, gy - 9 + bob, 1, 1); ctx.fillRect(gx + 1, gy - 9 + bob, 1, 1);
     }
     if (g.happy <= 20) { // unhappy guests show a red mark — the park is failing them
       ctx.fillStyle = '#ff4444'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
@@ -11170,7 +12008,7 @@ function drawSiege() {
     ctx.fillText('D' + tpDay, 144, 9);
     ctx.fillText('R' + Math.round(tpRep), 164, 9); // reputation from word of mouth
     if (tpVip) { ctx.fillStyle = '#ffd94a'; ctx.fillText('VIP!', 186, 9); ctx.fillStyle = '#ffe9a8'; }
-    ctx.fillText(tpScenarioShort(), 212, 9);
+    ctx.textAlign = 'right'; ctx.fillText(tpScenarioShort(), 237, 9); ctx.textAlign = 'left'; // right-aligned so CLASSIC (7 chars) no longer runs past the 240px edge
     ctx.fillText(tpGoalLine(), 3, 18);
     if (tpScenario && tpScenario !== 'classic' && !tpScenarioDone) ctx.fillText(tpScenarioGoalLine(), 148, 18);
     // Park band: the camera translates world coords to the screen. Only
@@ -11188,15 +12026,10 @@ function drawSiege() {
       for (c = c0; c <= c1; c++) {
         var x = TP_X0 + c * TP_TILE, y = TP_Y0 + r * TP_TILE;
         var cell = tpGrid[r][c];
-        ctx.fillStyle = ((c + r) % 2 === 0) ? '#58a83c' : '#4f9c34';
-        ctx.fillRect(x, y, TP_TILE, TP_TILE);
+        // Textured lawn instead of a flat checkerboard.
+        tpDrawGrass(x, y, c, r);
         if (cell === 'gate') { tpDrawGate(x, y); continue; }
-        if (!cell) {
-          if ((c * 7 + r * 13) % 5 === 0) {
-            ctx.fillStyle = '#3f8c2a';
-            ctx.fillRect(x + 3, y + 5, 2, 2); ctx.fillRect(x + 8, y + 8, 2, 2);
-          }
-        } else if (cell.kind === 'path') { tpDrawPath(x, y, cell); }
+        else if (cell && cell.kind === 'path') { tpDrawPath(x, y, cell); }
         var lit = tpLitter[c + ',' + r];
         if (lit) {
           // Crumpled paper: pale ball with a brown edge — visible on grass or path.
@@ -11277,7 +12110,6 @@ function drawSiege() {
       ctx.textAlign = 'left';
     }
   }
-
 
   /* ==================== dummy (GBA) ==================== */
 /* ================================================================
@@ -13043,6 +13875,12 @@ function drawShooterOver() {
     for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++)
       if (x >= 0 && x < HV_MW && y >= 0 && y < HV_MH) hvMap[y][x] = ch;
   }
+  /* Paint a decoration ONLY on plain grass: the town fill can never
+     clobber a path, door, building, soil field, NPC plot, water tile or
+     festival-square tile — any list entry that lands on one is skipped. */
+  function hvDeco(x, y, ch) {
+    if (x >= 0 && x < HV_MW && y >= 0 && y < HV_MH && hvMap[y][x] === 'g') hvMap[y][x] = ch;
+  }
   function hvBuildMap() {
     hvMap = [];
     for (var y = 0; y < HV_MH; y++) { hvMap.push([]); for (var x = 0; x < HV_MW; x++) hvMap[y][x] = 'g'; }
@@ -13103,13 +13941,101 @@ function drawShooterOver() {
     hvPaint(50, 48, 52, 49, 'n'); // Garth's plot
     hvPaint(50, 51, 52, 52, 'n'); // June's plot
     hvPaint(54, 48, 56, 49, 'n'); // Fern's plot
+    hvFillTown(); // additive decoration: trees, fences, lamps, paths, square furniture
+  }
+  /* ---------- Town fill: Maplewood feels lived-in, not empty grass ----------
+     Additive only. Every placement goes through hvDeco (grass-only), so no
+     path, door, building, soil field, NPC plot, water tile or square tile
+     is ever overwritten. The only exceptions are explicit paints: the well
+     + benches on square-edge 'f' tiles, the dock extension into the ocean,
+     and the walkable path spurs (which hvDeco also guards to grass).
+     Solid decor never seals an area: fences have gaps at every door, and
+     every cluster leaves open grass around it. New tiles:
+     'L' lamp, 'W' well, 'B' bench, 'C' crate, 'V' barrel, 'S' notice
+     board (all SOLID); 'F' flower, 'u' grass tuft, 'z' mushroom,
+     'q' reeds (walkable); 'y' bush, 'j' stump (SOLID). */
+  function hvFillTown() {
+    function paintAll(list, ch) { for (var i = 0; i < list.length; i++) hvDeco(list[i][0], list[i][1], ch); }
+    function spur(x0, y0, x1, y1) { for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) hvDeco(x, y, 'p'); }
+    /* Trees: farm borders, the open middle ground, town edges, mine
+       surroundings and the forest edge (never on a path or door). */
+    paintAll([[21, 26], [24, 26], [40, 26], [43, 26], [17, 30], [17, 38], [17, 42], [46, 26], [45, 26], [46, 40], [47, 42], [53, 26], [54, 28],
+      [60, 15], [68, 20], [74, 30], [62, 40], [70, 45], [74, 15], [60, 26],
+      [84, 10], [93, 10], [76, 18], [84, 18], [122, 20], [122, 30], [122, 45], [122, 55], [89, 57], [109, 57], [121, 57], [90, 40], [100, 30], [110, 30], [92, 48], [108, 48], [98, 56],
+      [54, 12], [78, 12], [8, 61], [48, 61], [68, 60], [84, 60], [116, 61]], 't');
+    /* Bushes: farm corners, town gaps, mine edge, south of the forest. */
+    paintAll([[3, 33], [15, 33], [57, 27], [58, 40], [2, 55], [18, 58], [46, 47],
+      [83, 26], [92, 30], [108, 32], [80, 40], [89, 48], [117, 48], [76, 40],
+      [56, 10], [76, 10], [25, 77], [65, 77], [105, 77]], 'y');
+    /* Flowers: house yard, flower beds around the square + Town Hall,
+       scattered town beds, mine edge, south of the forest. */
+    paintAll([[3, 25], [15, 27], [17, 47], [26, 48], [33, 50], [44, 53], [57, 47], [59, 52], [61, 28], [63, 33], [8, 23], [12, 23], [7, 25], [13, 25], [6, 21], [14, 21],
+      [94, 39], [94, 41], [94, 43], [94, 45], [113, 39], [113, 41], [113, 43], [113, 45], [96, 47], [98, 47], [104, 47], [106, 47], [108, 47], [111, 47],
+      [113, 20], [118, 20], [114, 21], [116, 21],
+      [82, 32], [94, 30], [102, 32], [116, 30], [84, 46], [90, 56], [109, 56], [120, 50], [78, 44], [89, 56], [118, 56],
+      [54, 10], [15, 77], [35, 77], [55, 77], [75, 77], [95, 77]], 'F');
+    /* Grass tufts: scattered singles in the farm grass, town grass, mine
+       edge and the strip south of the forest. */
+    paintAll([[2, 26], [14, 26], [3, 40], [15, 45], [2, 47], [18, 48], [20, 50], [25, 55], [35, 55], [45, 55], [58, 50], [60, 45], [58, 25], [60, 30], [62, 45], [63, 50],
+      [82, 30], [86, 32], [92, 34], [98, 34], [104, 34], [112, 34], [118, 34], [80, 44], [88, 44], [114, 44], [120, 44], [84, 56], [92, 56], [108, 56], [120, 56], [78, 50], [84, 58],
+      [60, 12], [70, 12], [10, 76], [20, 76], [40, 76], [60, 76], [80, 76], [110, 76]], 'u');
+    /* Rocks: forest edge, mine surroundings, north-east corner, south. */
+    paintAll([[8, 60], [20, 58], [36, 58], [64, 58], [82, 58], [108, 58], [120, 58], [52, 10], [80, 10], [58, 11], [74, 11], [120, 12], [110, 8], [45, 77], [85, 77]], 'r');
+    /* Stumps + mushrooms along the forest edge (y60-61, clear of paths). */
+    paintAll([[12, 60], [24, 61], [40, 60], [56, 61], [72, 60], [88, 61], [104, 60], [120, 61]], 'j');
+    paintAll([[14, 61], [26, 60], [42, 61], [58, 60], [74, 61], [90, 60], [106, 61], [118, 60]], 'z');
+    /* Reeds around the pond edges (west, east and south banks; the north
+       bank is the pond path). */
+    paintAll([[4, 51], [4, 54], [4, 57], [17, 51], [17, 54], [17, 57], [6, 59], [10, 59], [14, 59], [3, 52], [18, 53]], 'q');
+    /* Lamps: two tiles off the main path and the square approach (the
+       12px player box clips 6px into a neighboring tile, so a lamp
+       directly beside a path stalls an off-center walker), and two
+       tiles out from the square corners. */
+    paintAll([[15, 34], [47, 38], [50, 38], [70, 38], [85, 34], [100, 34], [110, 34], [122, 38], [93, 39], [114, 39], [93, 49], [114, 49]], 'L');
+    /* Fences: player-house yard (north/west/east; the front stays open
+       and the east wall has a gap at y24, the row the player walks
+       home-to-coop on, so the yard is never sealed), house-row backs
+       (north row, starting east of the museum path so the direct
+       home-coop-shop-museum line stays clear) and fronts (south row,
+       one row south of the walkway so the street stays clear, gap at
+       every door), House I east side, and yards around the shop,
+       museum and Town Hall (fronts always open). */
+    paintAll([[7, 19], [8, 19], [9, 19], [10, 19], [11, 19], [12, 19], [13, 19], [7, 20], [7, 21], [7, 22], [7, 23], [7, 24], [13, 20], [13, 21], [13, 22],
+      [91, 25], [92, 25], [93, 25], [94, 25], [95, 25], [96, 25], [97, 25], [103, 25], [104, 25], [105, 25], [106, 25], [107, 25], [117, 25], [118, 25], [119, 25], [120, 25], [121, 25],
+      [85, 56], [86, 56], [88, 56], [93, 56], [94, 56], [96, 56], [97, 56], [103, 56], [104, 56], [106, 56], [107, 56], [113, 56], [114, 56], [116, 56], [117, 56],
+      [121, 38], [121, 39], [121, 40],
+      [77, 19], [78, 19], [79, 19], [80, 19], [81, 19], [82, 19], [83, 19], [77, 20], [77, 21], [77, 22], [83, 20], [83, 21], [83, 22],
+      [87, 11], [88, 11], [89, 11], [90, 11], [91, 11], [92, 11], [87, 12], [87, 13], [87, 14], [92, 12], [92, 13], [92, 14],
+      [113, 15], [114, 15], [115, 15], [116, 15], [117, 15], [118, 15], [113, 16], [113, 17], [113, 18], [113, 19], [118, 16], [118, 17], [118, 18], [118, 19]], 'e');
+    /* Crates + barrels: market stall by the shop, coop/barn supplies,
+       house-row clutter, Town Hall side. */
+    paintAll([[75, 22], [76, 22], [84, 22], [85, 22], [91, 29], [98, 48], [113, 21], [46, 22], [52, 22], [53, 22]], 'C');
+    paintAll([[74, 22], [84, 26], [110, 29], [112, 48], [118, 21], [46, 33], [53, 33], [46, 34]], 'V');
+    /* Notice board just east of the square (two tiles out, so it never
+       clips a walker leaving the square eastward). */
+    hvDeco(114, 38, 'S');
+    /* Path spurs (walkable): house fronts to the main path, museum and
+       Town Hall to the main path, the residential gap, the south walkway
+       linking all four south-house fronts to the beach path, and House
+       I's front down to the walkway. */
+    spur(87, 29, 87, 35); spur(95, 29, 95, 35); spur(105, 29, 105, 35); spur(119, 29, 119, 35);
+    spur(87, 37, 87, 49); spur(84, 47, 84, 54); spur(86, 54, 120, 54); spur(119, 42, 119, 53);
+    spur(89, 26, 89, 35); spur(115, 26, 115, 35);
+    /* Festival square furniture (on 'f' floor, edges only): well at the
+       top-edge center, benches at the two bottom corners. */
+    hvMap[38][103] = 'W';
+    hvMap[46][95] = 'B'; hvMap[46][112] = 'B';
+    /* Dock detail: the pier runs one tile further into the ocean. */
+    hvPaint(55, 85, 57, 85, 'k');
   }
   function hvTileAt(tx, ty) {
     if (tx < 0 || tx >= HV_MW || ty < 0 || ty >= HV_MH) return 'e';
     return hvMap[ty][tx];
   }
   function hvSolid(ch) {
-    return ch === 'w' || ch === 't' || ch === 'r' || ch === 'h' || ch === 's' || ch === 'c' || ch === 'b' || ch === 'e' || ch === 'd' || ch === 'o' || ch === 'G' || ch === 'U' || ch === 'T';
+    return ch === 'w' || ch === 't' || ch === 'r' || ch === 'h' || ch === 's' || ch === 'c' || ch === 'b' || ch === 'e' || ch === 'd' || ch === 'o' || ch === 'G' || ch === 'U' || ch === 'T'
+      || ch === 'L' || ch === 'W' || ch === 'B' || ch === 'C' || ch === 'V' || ch === 'S' || ch === 'y' || ch === 'j';
+    // Walkable decor (NOT solid): 'F' flower, 'u' grass tuft, 'z' mushroom, 'q' reeds.
   }
   function hvIsSolidAt(tx, ty) { return hvSolid(hvTileAt(tx, ty)); }
   // The player's crop field (fenced, x20-44 y28-44): NPCs never stand or
@@ -16135,6 +17061,21 @@ function hvSkillsOpen() {
   items.push({ label: 'BACK', act: 'back' });
   hvOpenMenu('SKILL LEVELS', 'EARN XP BY DOING', items, function (it) { hvCloseMenu(); });
 }
+/* Wrap text onto lines of at most maxW chars, breaking on word boundaries,
+   so every Story Log row fits the 200px menu box (8px monospace is about
+   4.8px per char; box text starts at x=36, box right edge is x=220). */
+function hvWrapText(text, maxW) {
+  var words = String(text).split(' ');
+  var lines = [], cur = '';
+  for (var i = 0; i < words.length; i++) {
+    var w = words[i];
+    if (!cur) { cur = w; continue; }
+    if (cur.length + 1 + w.length <= maxW) cur += ' ' + w;
+    else { lines.push(cur); cur = w; }
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
 function hvQuestLogOpen() {
   var items = [];
   var curCh = 0;
@@ -16146,7 +17087,11 @@ function hvQuestLogOpen() {
       items.push({ label: '== CH ' + curCh + ': ' + ch.name + ' ==', act: 'none' });
     }
     var mark = i < hvStoryStep ? 'DONE' : (i === hvStoryStep ? '>> NOW' : '... ');
-    items.push({ label: mark + ' ' + s.name + ' - ' + s.desc, act: 'none' });
+    /* Quest name on its own line, description wrapped underneath (indented),
+       so no row runs off the right edge of the menu box. */
+    items.push({ label: mark + ' ' + s.name, act: 'none' });
+    var descLines = hvWrapText(s.desc, 34);
+    for (var d = 0; d < descLines.length; d++) items.push({ label: '  ' + descLines[d], act: 'none' });
   }
   items.push({ label: '== HEART STORIES ==', act: 'none' });
   var elig = ['rose', 'finn', 'clara', 'nora', 'marina', 'fern', 'jasper', 'sable', 'wren'];
@@ -16668,6 +17613,78 @@ function hvDrawExpansion() {
     }
     if (ch === 'k') { ctx.fillStyle = '#8b6d45'; ctx.fillRect(sx, sy, T, T); ctx.fillStyle = '#6b4a2b'; ctx.fillRect(sx, sy + T * 3 / 8, T, T / 8); return; }
     if (ch === 'n') { ctx.fillStyle = '#6b4a2b'; ctx.fillRect(sx, sy, T, T); ctx.fillStyle = '#54371f'; ctx.fillRect(sx, sy + T * 3 / 8, T, T / 8); return; }
+    /* Town-fill decor (see hvFillTown): lamps, well, benches, crates,
+       barrels and the notice board are solid; flowers, tufts, mushrooms
+       and reeds are walkable; bushes and stumps are solid. */
+    if (ch === 'L') {
+      ctx.fillStyle = '#3a2a1a'; ctx.fillRect(sx + T * 7 / 16, sy + T * 3 / 8, T / 8, T * 5 / 8);
+      ctx.fillStyle = '#ffd93b'; ctx.fillRect(sx + T * 3 / 8, sy + T / 8, T / 4, T / 4);
+      ctx.fillStyle = '#fff3b0'; ctx.fillRect(sx + T * 7 / 16, sy + T * 3 / 16, T / 8, T / 8);
+      return;
+    }
+    if (ch === 'W') {
+      ctx.fillStyle = '#b04030'; ctx.fillRect(sx + T / 8, sy + T / 8, T * 6 / 8, T / 4);
+      ctx.fillStyle = '#6b4a2b'; ctx.fillRect(sx + T / 8, sy + T * 3 / 8, T / 8, T / 8); ctx.fillRect(sx + T * 6 / 8, sy + T * 3 / 8, T / 8, T / 8);
+      ctx.fillStyle = '#8a8a8a'; ctx.fillRect(sx + T / 8, sy + T * 3 / 8, T * 6 / 8, T * 5 / 8);
+      ctx.fillStyle = '#2a2a2a'; ctx.fillRect(sx + T * 3 / 8, sy + T / 2, T / 4, T / 4);
+      return;
+    }
+    if (ch === 'B') {
+      ctx.fillStyle = '#8b6d45'; ctx.fillRect(sx + T / 8, sy + T * 3 / 8, T * 6 / 8, T / 8); ctx.fillRect(sx + T / 8, sy + T * 5 / 8, T * 6 / 8, T / 8);
+      ctx.fillStyle = '#6b4a2b'; ctx.fillRect(sx + T / 8, sy + T * 6 / 8, T / 8, T / 4); ctx.fillRect(sx + T * 6 / 8, sy + T * 6 / 8, T / 8, T / 4);
+      return;
+    }
+    if (ch === 'C') {
+      ctx.fillStyle = '#a0825a'; ctx.fillRect(sx + T / 8, sy + T / 8, T * 6 / 8, T * 6 / 8);
+      ctx.fillStyle = '#8b6d45'; ctx.fillRect(sx + T / 8, sy + T / 8, T * 6 / 8, T / 8); ctx.fillRect(sx + T / 8, sy + T * 6 / 8, T * 6 / 8, T / 8);
+      ctx.fillStyle = '#6b4a2b'; ctx.fillRect(sx + T / 8, sy + T / 8, T / 8, T * 6 / 8); ctx.fillRect(sx + T * 6 / 8, sy + T / 8, T / 8, T * 6 / 8);
+      return;
+    }
+    if (ch === 'V') {
+      ctx.fillStyle = '#8b6d45'; ctx.fillRect(sx + T / 4, sy + T / 8, T / 2, T * 6 / 8);
+      ctx.fillStyle = '#6b4a2b'; ctx.fillRect(sx + T / 4, sy + T / 4, T / 2, T / 8); ctx.fillRect(sx + T / 4, sy + T * 5 / 8, T / 2, T / 8);
+      return;
+    }
+    if (ch === 'S') {
+      ctx.fillStyle = '#6b4a2b'; ctx.fillRect(sx + T / 8, sy + T * 3 / 8, T / 8, T * 5 / 8); ctx.fillRect(sx + T * 6 / 8, sy + T * 3 / 8, T / 8, T * 5 / 8);
+      ctx.fillStyle = '#d9b98a'; ctx.fillRect(sx + T / 8, sy + T / 8, T * 6 / 8, T * 3 / 8);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(sx + T * 3 / 8, sy + T * 3 / 16, T / 4, T / 8);
+      return;
+    }
+    if (ch === 'F') {
+      var fc = ['#ff8fb1', '#ffd93b', '#c58bff', '#ff6b6b'][(tx + ty) % 4];
+      ctx.fillStyle = '#2f7a2e'; ctx.fillRect(sx + T * 7 / 16, sy + T / 2, T / 8, T / 2);
+      ctx.fillStyle = fc; ctx.fillRect(sx + T * 3 / 8, sy + T / 4, T / 4, T / 4);
+      ctx.fillStyle = '#ffd93b'; ctx.fillRect(sx + T * 7 / 16, sy + T * 5 / 16, T / 8, T / 8);
+      return;
+    }
+    if (ch === 'u') {
+      ctx.fillStyle = '#2f7a2e';
+      ctx.fillRect(sx + T / 4, sy + T / 2, T / 8, T / 2); ctx.fillRect(sx + T * 7 / 16, sy + T * 3 / 8, T / 8, T * 5 / 8); ctx.fillRect(sx + T * 5 / 8, sy + T / 2, T / 8, T / 2);
+      return;
+    }
+    if (ch === 'y') {
+      ctx.fillStyle = '#2f7a2e'; ctx.beginPath(); ctx.arc(sx + T / 2, sy + T / 2, T * 3 / 8, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#3f9a3e'; ctx.beginPath(); ctx.arc(sx + T * 3 / 8, sy + T * 3 / 8, T / 4, 0, Math.PI * 2); ctx.fill();
+      return;
+    }
+    if (ch === 'z') {
+      ctx.fillStyle = '#f0ead8'; ctx.fillRect(sx + T * 7 / 16, sy + T * 5 / 8, T / 8, T / 4);
+      ctx.fillStyle = '#e74c3c'; ctx.fillRect(sx + T / 4, sy + T * 3 / 8, T / 2, T / 4);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(sx + T * 3 / 8, sy + T * 7 / 16, T / 8, T / 8);
+      return;
+    }
+    if (ch === 'j') {
+      ctx.fillStyle = '#6b4a2b'; ctx.fillRect(sx + T / 4, sy + T * 3 / 8, T / 2, T / 2);
+      ctx.fillStyle = '#a0825a'; ctx.fillRect(sx + T / 4, sy + T * 3 / 8, T / 2, T / 8);
+      return;
+    }
+    if (ch === 'q') {
+      ctx.fillStyle = '#3f9a3e';
+      ctx.fillRect(sx + T / 4, sy + T / 4, T / 8, T * 6 / 8); ctx.fillRect(sx + T * 7 / 16, sy + T / 8, T / 8, T * 7 / 8); ctx.fillRect(sx + T * 5 / 8, sy + T * 3 / 8, T / 8, T * 5 / 8);
+      ctx.fillStyle = '#8a6d45'; ctx.fillRect(sx + T / 4, sy + T / 8, T / 8, T / 8); ctx.fillRect(sx + T * 5 / 8, sy + T / 4, T / 8, T / 8);
+      return;
+    }
   }
   function hvDrawCrop(tx, ty, sx, sy) {
     var T = HV_T;
@@ -17165,6 +18182,7 @@ function hvDrawExpansion() {
     if (currentGame === 'shooter') { shUpdate(); return; }
     if (currentGame === 'farm') { hvUpdate(); return; }
     if (currentGame !== 'sky') return; // Hold'em has no per-frame update; without this, Sky Soar physics runs during Hold'em and the falling bird hits the ground -> gameOver() -> 'over' screen (BUSTED panel) on Hold'em launch after Sky was played
+    if (!paused) skyTick(); // clouds / particles / pops keep animating (frozen on pause)
     if (paused || dead || !started) return;
     // Wind gusts: occasional vertical push (GBA physics feel).
     if (gustWait > 0) gustWait--;
@@ -17184,6 +18202,8 @@ function hvDrawExpansion() {
         // PERFECT gap bonus: threading the gap centre scores +1.
         if (Math.abs(bird.y - p.gapY) <= 6) { score++; perfects++; perfectFrames = 70; JMFGAMES.beep(1320, 0.09); }
         else JMFGAMES.beep(880, 0.07);
+        // Score pop: a floating +1 (+2 on a perfect) by the bird.
+        skyPops.push({ x: BIRD_X + 18, y: bird.y - 14, txt: (Math.abs(bird.y - p.gapY) <= 6) ? '+2' : '+1', t: 0 });
         // Ramping speed: pipes get faster as the score rises.
         PIPE_SPEED = Math.min(2.6, 1.5 + score * 0.02);
         // Unlockable birds: a milestone unlocks the next bird.
@@ -17215,47 +18235,223 @@ function hvDrawExpansion() {
   }
 
   /* ---------- Draw ---------- */
+  /* ---------- Sky Soar visuals: helpers (visual only) ---------- */
+  function skyHexRgb(hex) { var n = parseInt(hex.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+  function skyLum(hex) { var c = skyHexRgb(hex); return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255; }
+  function skyShade(hex, amt) { var c = skyHexRgb(hex); function cl(v) { return Math.max(0, Math.min(255, Math.round(v + amt))); } return 'rgb(' + cl(c[0]) + ',' + cl(c[1]) + ',' + cl(c[2]) + ')'; }
+  function skyHash(n) { var x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+  // Scenery mood from the (fixed) scenery name + sky brightness. Drives the
+  // ambient details: stars at night, petals in sakura, snow in winter,
+  // leaves in autumn, rain in storms. Never changes the palette.
+  function skyMood(sc) {
+    var nm = sc.name.toLowerCase();
+    var dark = skyLum(sc.top) < 0.32;
+    if (/night|moon|star|galaxy|aurora|midnight|twilight|neon|firefly|bioluminescent/.test(nm) || dark) return 'night';
+    if (/snow|winter|arctic|ice|glacier|blizzard|frozen|christmas|alps/.test(nm)) return 'snow';
+    if (/sakura|cherry blossom/.test(nm)) return 'sakura';
+    if (/autumn|maple/.test(nm)) return 'autumn';
+    if (/rain|storm|thunder|monsoon|rainy/.test(nm)) return 'rain';
+    if (/ocean|beach|lagoon|lake|coral|underwater|waterfall|sea/.test(nm)) return 'water';
+    if (/desert|cactus|dune|oasis/.test(nm)) return 'desert';
+    return 'day';
+  }
+  // Advance Sky Soar animation state one frame (visual only). Called from
+  // update() while playing and from drawOver() on the game-over screen.
+  function skyTick() {
+    skyFrame++;
+    if (skyFlapT > 0) skyFlapT--;
+    if (skyShake > 0) skyShake = Math.max(0, skyShake - 0.8);
+    if (skyFlash > 0) skyFlash--;
+    if (screen === 'over' && overT < 60) overT++;
+    for (var i = skyParts.length - 1; i >= 0; i--) {
+      var pt = skyParts[i];
+      pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.09; pt.vx *= 0.98; pt.life--;
+      if (pt.life <= 0 || pt.y > H + 6) skyParts.splice(i, 1);
+    }
+    for (var j = skyPops.length - 1; j >= 0; j--) {
+      skyPops[j].t++;
+      if (skyPops[j].t > 28) skyPops.splice(j, 1);
+    }
+  }
   function drawSky(sc) {
+    var mood = skyMood(sc);
+    var dark = (mood === 'night');
     var g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, sc.top);
     g.addColorStop(1, sc.bot);
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
-    // Sun + drifting clouds (GBA color).
-    ctx.fillStyle = '#FFF7AD';
-    ctx.beginPath(); ctx.arc(206, 22, 11, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.beginPath(); ctx.arc(52, 26, 8, 0, Math.PI * 2); ctx.arc(64, 24, 10, 0, Math.PI * 2); ctx.arc(76, 27, 7, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(150, 44, 7, 0, Math.PI * 2); ctx.arc(160, 42, 9, 0, Math.PI * 2); ctx.arc(170, 45, 6, 0, Math.PI * 2); ctx.fill();
-    // Rolling hills (parallax).
+    // Sun (day) or moon (night) with a soft glow.
+    if (dark) {
+      ctx.fillStyle = 'rgba(245,243,206,0.25)';
+      ctx.beginPath(); ctx.arc(206, 22, 15, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#F5F3CE';
+      ctx.beginPath(); ctx.arc(206, 22, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#D8D5A8';
+      ctx.beginPath(); ctx.arc(202, 19, 2, 0, Math.PI * 2); ctx.arc(209, 25, 1.6, 0, Math.PI * 2); ctx.arc(204, 26, 1.2, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.fillStyle = 'rgba(255,247,173,0.35)';
+      ctx.beginPath(); ctx.arc(206, 22, 16, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#FFF7AD';
+      ctx.beginPath(); ctx.arc(206, 22, 11, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#FFE66D';
+      ctx.beginPath(); ctx.arc(206, 22, 6, 0, Math.PI * 2); ctx.fill();
+    }
+    // Drifting clouds (parallax: slower than the pipes). Three clouds of
+    // three puffs each; they wrap around the screen. Puff radii avoid 7
+    // so the flight-test bird detector (arc x=56 r=7) can never match one.
+    var cloudA = dark ? 0.4 : 0.85;
+    ctx.fillStyle = 'rgba(255,255,255,' + cloudA + ')';
+    var clouds = [[40, 26, 0.25, 1], [140, 46, 0.4, 0.8], [210, 64, 0.3, 1.1]];
+    for (var ci = 0; ci < 3; ci++) {
+      var cc = clouds[ci];
+      var cx = cc[0] - skyFrame * cc[2];
+      cx = ((cx % 300) + 300) % 300 - 30;
+      var cy = cc[1], cs = cc[3];
+      ctx.beginPath();
+      ctx.arc(cx, cy, 8 * cs, 0, Math.PI * 2);
+      ctx.arc(cx + 11 * cs, cy - 2, 10 * cs, 0, Math.PI * 2);
+      ctx.arc(cx + 22 * cs, cy + 1, 6 * cs, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Distant birds drifting across the sky (tiny chevrons).
+    ctx.strokeStyle = dark ? '#E8E8FF' : '#1a1a2e';
+    ctx.lineWidth = 1;
+    for (var bi = 0; bi < 3; bi++) {
+      var bx = ((skyHash(bi * 7 + 3) * 300 - skyFrame * (0.35 + bi * 0.08)) % 300 + 300) % 300 - 20;
+      var by = 28 + skyHash(bi * 13 + 5) * 46 + Math.sin((skyFrame + bi * 40) * 0.05) * 2;
+      ctx.beginPath();
+      ctx.moveTo(bx - 3, by); ctx.lineTo(bx, by - 2); ctx.lineTo(bx + 3, by);
+      ctx.stroke();
+    }
+    // Ambient life for the scenery's mood (deterministic, from skyFrame).
+    if (mood === 'night') {
+      for (var si = 0; si < 24; si++) {
+        var sx = Math.floor(skyHash(si * 3 + 1) * 236) + 2;
+        var sy = Math.floor(skyHash(si * 5 + 2) * 70) + 4;
+        var tw = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(skyFrame * 0.08 + si * 1.7));
+        ctx.fillStyle = 'rgba(255,255,255,' + tw.toFixed(2) + ')';
+        ctx.fillRect(sx, sy, 1, 1);
+        if (si % 5 === 0) ctx.fillRect(sx + 1, sy, 1, 1);
+      }
+      if (sc.name.toLowerCase().indexOf('firefly') >= 0) {
+        for (var fi = 0; fi < 8; fi++) {
+          var fx = (skyHash(fi * 11 + 4) * 240 + Math.sin(skyFrame * 0.03 + fi * 2) * 12 + 240) % 240;
+          var fy = 90 + skyHash(fi * 17 + 6) * 50 + Math.cos(skyFrame * 0.04 + fi) * 4;
+          ctx.fillStyle = 'rgba(255,230,109,' + (0.5 + 0.5 * Math.sin(skyFrame * 0.12 + fi * 2.4)).toFixed(2) + ')';
+          ctx.fillRect(Math.floor(fx), Math.floor(fy), 2, 2);
+        }
+      }
+    } else if (mood === 'snow') {
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      for (var ni = 0; ni < 14; ni++) {
+        var nx = (skyHash(ni * 7 + 9) * 240 + Math.sin(skyFrame * 0.02 + ni) * 6 + 240) % 240;
+        var ny = (skyHash(ni * 13 + 11) * 160 + skyFrame * 0.6) % 160;
+        ctx.fillRect(Math.floor(nx), Math.floor(ny), 2, 2);
+      }
+    } else if (mood === 'sakura') {
+      ctx.fillStyle = '#FFB7C9';
+      for (var pi = 0; pi < 10; pi++) {
+        var px = (skyHash(pi * 7 + 21) * 240 + Math.sin(skyFrame * 0.03 + pi * 1.3) * 10 + 240) % 240;
+        var py = (skyHash(pi * 11 + 23) * 160 + skyFrame * 0.45) % 160;
+        ctx.fillRect(Math.floor(px), Math.floor(py), 2, 2);
+      }
+    } else if (mood === 'autumn') {
+      for (var ai = 0; ai < 10; ai++) {
+        ctx.fillStyle = (ai % 2 === 0) ? '#E86A1E' : '#D9A62E';
+        var ax = (skyHash(ai * 7 + 31) * 240 + Math.sin(skyFrame * 0.025 + ai) * 8 + 240) % 240;
+        var ay = (skyHash(ai * 11 + 33) * 160 + skyFrame * 0.5) % 160;
+        ctx.fillRect(Math.floor(ax), Math.floor(ay), 2, 2);
+      }
+    } else if (mood === 'rain') {
+      ctx.fillStyle = 'rgba(200,220,255,0.7)';
+      for (var ri = 0; ri < 16; ri++) {
+        var rx = Math.floor(skyHash(ri * 7 + 41) * 240);
+        var ry = (skyHash(ri * 13 + 43) * 160 + skyFrame * 3) % 160;
+        ctx.fillRect(rx, Math.floor(ry), 1, 5);
+      }
+    }
+    // Layered hills: a far ridge, the mid hill, the near hill — each with
+    // a lighter crest highlight so the layers read.
+    ctx.fillStyle = skyShade(sc.h1, 38);
+    ctx.beginPath();
+    ctx.moveTo(0, 118);
+    ctx.quadraticCurveTo(80, 100, 160, 114);
+    ctx.quadraticCurveTo(200, 122, 240, 110);
+    ctx.lineTo(240, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
     ctx.fillStyle = sc.h1;
     ctx.beginPath();
     ctx.moveTo(0, 128);
     ctx.quadraticCurveTo(60, 108, 120, 124);
     ctx.quadraticCurveTo(180, 138, 240, 118);
     ctx.lineTo(240, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = skyShade(sc.h1, 30); ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 128);
+    ctx.quadraticCurveTo(60, 108, 120, 124);
+    ctx.quadraticCurveTo(180, 138, 240, 118);
+    ctx.stroke();
+    // Tiny trees on the back hill (deterministic; bases sit on the crest).
+    ctx.fillStyle = skyShade(sc.h2, -18);
+    for (var ti = 0; ti < 6; ti++) {
+      var tx = 14 + Math.floor(skyHash(ti * 7 + 51) * 212);
+      var ty = 128 + Math.floor(skyHash(ti * 11 + 53) * 10);
+      ctx.beginPath();
+      ctx.moveTo(tx, ty - 5); ctx.lineTo(tx - 3, ty + 2); ctx.lineTo(tx + 3, ty + 2); ctx.closePath(); ctx.fill();
+    }
     ctx.fillStyle = sc.h2;
     ctx.beginPath();
     ctx.moveTo(0, 138);
     ctx.quadraticCurveTo(70, 122, 140, 134);
     ctx.quadraticCurveTo(200, 142, 240, 130);
     ctx.lineTo(240, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
-    // Ground.
-    ctx.fillStyle = '#5A7A3A';
+    ctx.strokeStyle = skyShade(sc.h2, 30); ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 138);
+    ctx.quadraticCurveTo(70, 122, 140, 134);
+    ctx.quadraticCurveTo(200, 142, 240, 130);
+    ctx.stroke();
+    // Wildflowers on the front hill.
+    for (var wi = 0; wi < 8; wi++) {
+      ctx.fillStyle = (wi % 3 === 0) ? '#FFD93D' : (wi % 3 === 1 ? '#FF8FAB' : '#FFFFFF');
+      var wx = 8 + Math.floor(skyHash(wi * 7 + 61) * 224);
+      var wy = 140 + Math.floor(skyHash(wi * 11 + 63) * 8);
+      ctx.fillRect(wx, wy, 2, 2);
+    }
+    // Ground (tinted by mood: water, snow, desert, night, or grass).
+    var gCol = '#5A7A3A', gTop = '#3E5A28', gTuft = '#7EC850';
+    if (mood === 'water') { gCol = '#2E86AB'; gTop = '#1B5A7A'; gTuft = '#90E0EF'; }
+    else if (mood === 'snow') { gCol = '#EAF6FF'; gTop = '#B8D8EA'; gTuft = '#FFFFFF'; }
+    else if (mood === 'desert') { gCol = '#D9A83A'; gTop = '#A87A2E'; gTuft = '#F2D492'; }
+    else if (mood === 'night') { gCol = '#2A2A4A'; gTop = '#1A1A2E'; gTuft = '#4A4A6B'; }
+    ctx.fillStyle = gCol;
     ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
-    ctx.fillStyle = '#3E5A28';
+    ctx.fillStyle = gTop;
     ctx.fillRect(0, GROUND_Y, W, 3);
-    ctx.fillStyle = '#7EC850';
+    ctx.fillStyle = gTuft;
     for (var gx = 6; gx < W; gx += 22) { ctx.fillRect(gx, GROUND_Y - 3, 2, 3); ctx.fillRect(gx + 4, GROUND_Y - 2, 2, 2); }
   }
   function drawPipes() {
     for (var i = 0; i < pipes.length; i++) {
       var p = pipes[i];
       var gapTop = p.gapY - PIPE_GAP / 2, gapBot = p.gapY + PIPE_GAP / 2;
+      // Dark outline so the pipe pops on every one of the 100 sceneries.
+      ctx.fillStyle = '#0B3D1E';
+      ctx.fillRect(p.x - 1, 0, PIPE_W + 2, gapTop);
+      ctx.fillRect(p.x - 1, gapBot, PIPE_W + 2, GROUND_Y - gapBot);
+      ctx.fillRect(p.x - 4, gapTop - 9, PIPE_W + 8, 9);
+      ctx.fillRect(p.x - 4, gapBot, PIPE_W + 8, 9);
+      // Body (kept exactly fillRect(p.x, 0, PIPE_W, gapTop): the flight
+      // tests read the gap from this call).
       ctx.fillStyle = '#2E9E4F';
       ctx.fillRect(p.x, 0, PIPE_W, gapTop);
       ctx.fillRect(p.x, gapBot, PIPE_W, GROUND_Y - gapBot);
-      // Shading + highlight for a rounded GBA look.
+      // Ribbed segments.
+      ctx.fillStyle = '#1E7A38';
+      if (gapTop > 30) { ctx.fillRect(p.x, Math.floor(gapTop / 3), PIPE_W, 1); ctx.fillRect(p.x, Math.floor(gapTop * 2 / 3), PIPE_W, 1); }
+      var botH = GROUND_Y - gapBot;
+      if (botH > 30) { ctx.fillRect(p.x, gapBot + Math.floor(botH / 3), PIPE_W, 1); ctx.fillRect(p.x, gapBot + Math.floor(botH * 2 / 3), PIPE_W, 1); }
+      // Shading: dark edges + bright highlight stripes.
       ctx.fillStyle = '#1E7A38';
       ctx.fillRect(p.x, 0, 3, gapTop);
       ctx.fillRect(p.x, gapBot, 3, GROUND_Y - gapBot);
@@ -17264,46 +18460,112 @@ function hvDrawExpansion() {
       ctx.fillStyle = '#7ED491';
       ctx.fillRect(p.x + 4, 0, 4, gapTop);
       ctx.fillRect(p.x + 4, gapBot, 4, GROUND_Y - gapBot);
-      // Caps.
+      ctx.fillStyle = '#A8E6B8';
+      ctx.fillRect(p.x + 9, 0, 2, gapTop);
+      ctx.fillRect(p.x + 9, gapBot, 2, GROUND_Y - gapBot);
+      // Caps (the rim at the opening) with shading + a bright lip right
+      // at the gap edge, so the gap reads clearly.
       ctx.fillStyle = '#2E9E4F';
       ctx.fillRect(p.x - 3, gapTop - 8, PIPE_W + 6, 8);
       ctx.fillRect(p.x - 3, gapBot, PIPE_W + 6, 8);
       ctx.fillStyle = '#1E7A38';
       ctx.fillRect(p.x - 3, gapTop - 8, PIPE_W + 6, 3);
       ctx.fillRect(p.x - 3, gapBot, PIPE_W + 6, 3);
+      ctx.fillRect(p.x - 3, gapTop - 3, PIPE_W + 6, 3);
+      ctx.fillRect(p.x - 3, gapBot + 5, PIPE_W + 6, 3);
       ctx.fillStyle = '#7ED491';
       ctx.fillRect(p.x + 2, gapTop - 8, 5, 8);
       ctx.fillRect(p.x + 2, gapBot, 5, 8);
+      ctx.fillStyle = '#D8F5DF';
+      ctx.fillRect(p.x - 3, gapTop - 2, PIPE_W + 6, 2);
+      ctx.fillRect(p.x - 3, gapBot, PIPE_W + 6, 2);
     }
   }
   function drawBird() {
     var x = BIRD_X, y = bird.y;
+    if (!started) y = bird.y + Math.sin(skyFrame * 0.08) * 1.5; // gentle idle bob
     var c = birdColors();
-    var flap = Math.sin((started ? bird.vy : 0) * 2.2);
-    // Wing (flaps with velocity).
-    ctx.fillStyle = c.belly;
-    ctx.beginPath(); ctx.arc(x - 2, y + 2 + flap, 4, 0, Math.PI); ctx.fill();
-    // Body.
+    // Tilt follows velocity: nose up when flapping, nose down when falling.
+    // Parts are rotated by hand (no ctx transform) so the body arc stays
+    // exactly arc(56, bird.y, 7) for the flight tests.
+    var tilt = Math.max(-0.45, Math.min(0.6, bird.vy * 0.09));
+    var cosT = Math.cos(tilt), sinT = Math.sin(tilt);
+    function rot(dx, dy) { return [dx * cosT - dy * sinT, dx * sinT + dy * cosT]; }
+    // Wing flap: a sweep right after a tap + a gentle idle flutter.
+    var wingFlap = Math.sin(skyFrame * 0.25) * 1.2;
+    if (skyFlapT > 0) wingFlap += Math.sin((14 - skyFlapT) / 14 * Math.PI) * -3.5;
+    // Dark outline so the bird pops on every scenery.
+    ctx.fillStyle = '#1a1a2e';
+    ctx.beginPath(); ctx.arc(x, y, BIRD_R + 1, 0, Math.PI * 2); ctx.fill();
+    // Tail feather (back, angled by tilt).
+    var t1 = rot(-6, -1), t2 = rot(-12, -4), t3 = rot(-11, 2);
+    ctx.fillStyle = skyShade(c.body, -40);
+    ctx.beginPath();
+    ctx.moveTo(x + t1[0], y + t1[1]);
+    ctx.lineTo(x + t2[0], y + t2[1]);
+    ctx.lineTo(x + t3[0], y + t3[1]);
+    ctx.closePath(); ctx.fill();
+    // Body (kept exactly arc(56, bird.y, 7): the flight tests read it).
     ctx.fillStyle = c.body;
     ctx.beginPath(); ctx.arc(x, y, BIRD_R, 0, Math.PI * 2); ctx.fill();
     // Belly.
+    var b = rot(-1, 3);
     ctx.fillStyle = c.belly;
-    ctx.beginPath(); ctx.arc(x - 1, y + 3, 4, 0, Math.PI); ctx.fill();
-    // Beak.
+    ctx.beginPath(); ctx.arc(x + b[0], y + b[1], 4, 0, Math.PI); ctx.fill();
+    // Wing (flaps) + feather line.
+    var w = rot(-3, 1);
+    ctx.fillStyle = skyShade(c.body, -30);
+    ctx.beginPath(); ctx.arc(x + w[0], y + w[1] + wingFlap, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = skyShade(c.body, -55); ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x + w[0] - 4, y + w[1] + wingFlap + 1);
+    ctx.lineTo(x + w[0] - 1, y + w[1] + wingFlap + 3);
+    ctx.stroke();
+    // Beak (front, angled by tilt).
+    var k1 = rot(6, -2), k2 = rot(13, 1), k3 = rot(6, 3);
     ctx.fillStyle = c.beak;
     ctx.beginPath();
-    ctx.moveTo(x + BIRD_R - 1, y - 1);
-    ctx.lineTo(x + BIRD_R + 6, y + 1);
-    ctx.lineTo(x + BIRD_R - 1, y + 4);
+    ctx.moveTo(x + k1[0], y + k1[1]);
+    ctx.lineTo(x + k2[0], y + k2[1]);
+    ctx.lineTo(x + k3[0], y + k3[1]);
     ctx.closePath(); ctx.fill();
-    // Eye.
+    // Eye (looks forward) + sparkle.
+    var e = rot(2, -2);
     ctx.fillStyle = '#1C1C1C';
-    ctx.beginPath(); ctx.arc(x + 2, y - 2, 1.6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + e[0], y + e[1], 1.6, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#FFFFFF';
-    ctx.beginPath(); ctx.arc(x + 2.6, y - 2.6, 0.7, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + e[0] + 0.6, y + e[1] - 0.6, 0.7, 0, Math.PI * 2); ctx.fill();
+    // Head tuft.
+    ctx.strokeStyle = skyShade(c.body, -30); ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x - 1, y - 6); ctx.lineTo(x - 2, y - 9);
+    ctx.moveTo(x + 1, y - 6); ctx.lineTo(x + 2, y - 9);
+    ctx.stroke();
+  }
+  // Feather-burst particles (spawned in gameOver) + floating score pops.
+  function drawSkyParticles() {
+    for (var i = 0; i < skyParts.length; i++) {
+      var pt = skyParts[i];
+      ctx.fillStyle = pt.col;
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  function drawSkyPops() {
+    for (var i = 0; i < skyPops.length; i++) {
+      var pp = skyPops[i];
+      var a = 1 - pp.t / 28;
+      var py = pp.y - pp.t * 0.7;
+      ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillText(pp.txt, pp.x + 1, py + 1);
+      ctx.fillStyle = 'rgba(255,217,61,' + a.toFixed(2) + ')';
+      ctx.fillText(pp.txt, pp.x, py);
+      ctx.textAlign = 'left';
+    }
   }
   function drawMenu() {
-    // GBA menu: rich indigo background, big title, 11 visible rows.
+    // GBA menu: rich indigo background, big title, 6 visible rows at
+    // 12px so the game names are big and easy to read on a phone.
     var g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, '#3B3B8F');
     g.addColorStop(1, '#1E1E5A');
@@ -17313,7 +18575,7 @@ function hvDrawExpansion() {
     ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
     ctx.fillText('JMF GAMES', W / 2, 20);
     ctx.fillStyle = '#C9C9F2';
-    ctx.font = '8px monospace';
+    ctx.font = '10px monospace';
     ctx.fillText('SELECT A GAME', W / 2, 34);
     ctx.textAlign = 'left';
     var menuEnd = Math.min(menuTop + MENU_ROWS, GAMES.length);
@@ -17321,20 +18583,22 @@ function hvDrawExpansion() {
       var y = MENU_TOP_Y + (i - menuTop) * MENU_PITCH;
       if (i === menuIndex) {
         ctx.fillStyle = '#FFD93D';
-        ctx.fillRect(10, y - 8, 220, 11);
+        ctx.fillRect(10, y - 11, 220, 15);
         ctx.fillStyle = '#1E1E5A';
+        ctx.font = 'bold 12px monospace';
         ctx.fillText('>', 16, y);
         ctx.fillText(GAMES[i].name, 30, y);
       } else {
         ctx.fillStyle = '#E8E8FF';
+        ctx.font = '12px monospace';
         ctx.fillText(GAMES[i].name, 30, y);
       }
     }
     // Scroll indicators (top-right / bottom-right): more games above / below
-    ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace'; ctx.textAlign = 'right';
+    ctx.fillStyle = '#C9C9F2'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
     if (menuTop > 0) ctx.fillText('▲', 234, 36);
     if (menuEnd < GAMES.length) ctx.fillText('▼', 234, 140);
-    ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
+    ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center'; ctx.font = '10px monospace';
     ctx.fillText((menuIndex + 1) + ' OF ' + GAMES.length + '  ·  UP/DOWN MOVE - A PLAY', W / 2, 152);
     ctx.textAlign = 'left';
   }
@@ -17353,6 +18617,8 @@ function hvDrawExpansion() {
     drawSky(sc);
     drawPipes();
     drawBird();
+    drawSkyParticles();
+    drawSkyPops();
     // HUD: score big, bird name + best, wind indicator.
     // White text with a dark shadow so it reads on any scenery (light or dark sky).
     ctx.textAlign = 'center'; ctx.font = 'bold 14px monospace';
@@ -17406,23 +18672,54 @@ function hvDrawExpansion() {
     }
   }
   function drawOver() {
+    skyTick(); // keep the death feathers / shake / flash / panel slide animating
     var sc = sceneryFor(score);
+    // Screen shake on death (decays in skyTick). The panel stays steady
+    // while the world shakes behind it.
+    var shX = 0, shY = 0;
+    if (skyShake > 0) {
+      shX = Math.round((skyHash(skyFrame * 3 + 1) - 0.5) * skyShake);
+      shY = Math.round((skyHash(skyFrame * 5 + 2) - 0.5) * skyShake);
+    }
+    ctx.save();
+    if (skyShake > 0) ctx.translate(shX, shY);
     drawSky(sc);
     drawPipes();
+    drawSkyParticles();
+    ctx.restore();
+    // Death flash (fades in skyTick).
+    if (skyFlash > 0) {
+      ctx.fillStyle = 'rgba(255,255,255,' + (skyFlash / 9 * 0.55).toFixed(2) + ')';
+      ctx.fillRect(0, 0, W, H);
+    }
+    // Game-over panel slides up into place.
+    var oy = Math.max(0, 14 - overT) * 1.5;
+    var py = 40 + oy;
     ctx.fillStyle = '#1E1E5A';
-    ctx.fillRect(48, 46, 144, 78);
+    ctx.fillRect(48, py, 144, 88);
     ctx.fillStyle = '#e8c33c';
-    ctx.fillRect(48, 46, 144, 2);
-    ctx.fillRect(48, 122, 144, 2);
+    ctx.fillRect(48, py, 144, 2);
+    ctx.fillRect(48, py + 86, 144, 2);
+    ctx.fillRect(48, py, 2, 88);
+    ctx.fillRect(190, py, 2, 88);
     ctx.textAlign = 'center';
     ctx.font = 'bold 12px monospace';
     ctx.fillStyle = '#FFD93D';
-    ctx.fillText('GAME OVER', W / 2, 64);
+    ctx.fillText('GAME OVER', W / 2, py + 15);
     ctx.font = '8px monospace'; ctx.fillStyle = '#f5e9c8';
-    ctx.fillText('SCORE ' + score, W / 2, 80);
-    ctx.fillText('PERFECT ' + perfects, W / 2, 92);
-    ctx.fillText('BEST ' + best, W / 2, 104);
-    ctx.fillText('A: RETRY  MENU: EXIT', W / 2, 116);
+    ctx.fillText('SCORE', W / 2, py + 25);
+    ctx.font = 'bold 16px monospace';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(String(score), W / 2, py + 40);
+    ctx.font = '8px monospace'; ctx.fillStyle = '#f5e9c8';
+    ctx.fillText('BEST ' + best + '   PERFECT ' + perfects, W / 2, py + 52);
+    ctx.fillText('BIRD ' + birdColors().name, W / 2, py + 62);
+    if (skyNewBest) {
+      ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 8px monospace';
+      ctx.fillText('NEW BEST!', W / 2, py + 72);
+    }
+    ctx.fillStyle = '#f5e9c8'; ctx.font = '8px monospace';
+    ctx.fillText('A: RETRY  MENU: EXIT', W / 2, py + 80);
     ctx.textAlign = 'left';
   }
   function draw() {
