@@ -256,6 +256,7 @@
     dummy:   { bpm: 140, wave: 'square', notes: [[72,1],[0,1],[76,1],[79,1],[0,1],[76,1],[74,1],[0,1],[72,1],[0,1],[74,1],[76,1],[79,1],[76,1],[74,1],[72,1]] },
     shooter: { bpm: 148, wave: 'square', notes: [[57,1],[0,1],[57,1],[60,1],[64,1],[0,1],[62,1],[60,1],[57,1],[0,1],[55,1],[57,1],[60,1],[62,1],[64,1],[67,1]] },
     artillery: { bpm: 120, wave: 'square', notes: [[57,1],[57,1],[60,1],[64,1],[62,1],[60,1],[57,1],[55,1],[57,1],[60,1],[64,1],[67,1],[64,1],[62,1],[60,1],[0,1]] },
+    cards: { bpm: 112, wave: 'triangle', notes: [[60,1],[64,1],[67,1],[64,1],[69,1],[67,1],[64,1],[60,1],[62,1],[65,1],[69,1],[65,1],[62,1],[60,1],[57,1],[0,1]] },
   };
   var musicTimer = null, musicStep = 0, musicNext = 0, musicTune = null, musicActive = false;
   function midiFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
@@ -366,6 +367,7 @@
     { name: 'BLACKJACK ROYALE', playable: true },
     { name: 'BLOCK DROP', playable: true },
     { name: 'BLOCK QUEST', playable: true },
+    { name: 'CARD QUEST', playable: true },
     { name: 'CHESS CLUB', playable: true },
     { name: 'EMBERFALL BRAWL', playable: true },
     { name: "OVERLORD'S BASTION", playable: true },
@@ -385,7 +387,7 @@
 
   /* ---------- State ---------- */
   var screen = 'menu'; // 'menu' | 'coming' | 'play' | 'over'
-  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'pinball' | 'solitaire' | 'beat' | 'pool' | 'run' | 'siege' | 'park' | 'dummy' | 'shooter' | 'artillery' — which game is on the play/over screens
+  var currentGame = 'sky'; // 'sky' | 'block' | 'bj' | 'holdem' | 'chess' | 'overlord' | 'pinball' | 'solitaire' | 'beat' | 'pool' | 'run' | 'siege' | 'park' | 'dummy' | 'shooter' | 'artillery' | 'cards' — which game is on the play/over screens
   var menuIndex = 0;
   /* Scrollable menu: 6 visible rows at a 15px pitch, 12px names so the
      game list is big and easy to read. menuTop = first visible game;
@@ -453,7 +455,7 @@
 
   /* ---------- Delete-save (shared): one confirmation overlay for all
      games. dsGame = which game's save is being deleted ('sky' | 'block' |
-     'bj' | 'holdem' | 'chess' | 'overlord' | 'pinball' | 'solitaire' | 'beat' | 'pool' | 'siege' | 'park' | 'dummy' | 'shooter' | 'artillery'),
+     'bj' | 'holdem' | 'chess' | 'overlord' | 'pinball' | 'solitaire' | 'beat' | 'pool' | 'siege' | 'park' | 'dummy' | 'shooter' | 'artillery' | 'cards'),
      or null. A confirms, B cancels. Confirming clears ONLY that game's
      localStorage keys and resets it to fresh defaults; pause-overlay games
      restart fresh immediately, select-screen games stay on their select
@@ -479,6 +481,7 @@
     else if (game === 'dummy') { dsClearKeys([DU_SAVE_KEY]); duCoins = 0; duUnlocked = 1; duTotalDmg = 0; duBestCombo = 0; duResetDummy(); duPaused = false; }
     else if (game === 'shooter') { dsClearKeys([SH_SAVE_KEY]); shBest = 0; shBestWave = 0; shTotalKills = 0; shResetRun(); shPaused = false; }
     else if (game === 'artillery') { dsClearKeys([AR_WINS_KEY, AR_BEST_KEY]); arWins = 0; arBestDmg = 0; startArtillery(); }
+    else if (game === 'cards') { dsClearKeys([CQ_WINS_KEY, CQ_BEST_KEY]); CQ_WINS = 0; CQ_BEST = 0; startCardQuest(); }
     JMFGAMES.beep(880, 0.1);
   }
   function drawDsConfirm() {
@@ -1053,6 +1056,1533 @@
     ctx.fillText('LEVEL ' + bqLevel + '  LINES ' + bqLinesCleared, W / 2, 98);
     ctx.fillText('A: RETRY  MENU: EXIT', W / 2, 112);
     ctx.textAlign = 'left';
+  }
+
+  /* ==================== cards (GBA) ==================== */
+/* ================================================================
+   CARD QUEST (GBA) — an original deckbuilder card battler on the
+   240x160 screen. Pick BRYN the Ironward, build a deck of 60
+   original cards, and fight practice battles against a training
+   dummy, a scrap rat, an ash hound, a stone brute, or a pack of
+   three. Draw 5 a turn, 3 energy, block resets each turn, every
+   card upgrades (name+). Enemies show intents; statuses are
+   Strength, Vulnerable, Weak, Frail, Poison, Thorns. Damage and
+   block math is shared by player and enemies — fair, no rigged
+   odds. M2 adds 5 fighters, 315 cards, a 3-act map, 40 relics,
+   20 events, shops, rest sites, and unlocks paid in points.
+   Controls: Left/Right pick a card, Up/Down pick a target,
+   A play / confirm, B end turn (or go back), Start pause,
+   Menu quit. B on pause asks to delete the save.
+   Records: wins 'jmf-games-cards-wins', best fight damage
+   'jmf-games-cards-best'. No licensed content anywhere.
+   ================================================================ */
+  var CQ_WINS_KEY = 'jmf-games-cards-wins';
+  var CQ_BEST_KEY = 'jmf-games-cards-best';
+  var CQ_WINS = 0, CQ_BEST = 0;
+  try { CQ_WINS = parseInt(localStorage.getItem(CQ_WINS_KEY) || '0', 10) || 0; } catch (e) { CQ_WINS = 0; }
+  try { CQ_BEST = parseInt(localStorage.getItem(CQ_BEST_KEY) || '0', 10) || 0; } catch (e) { CQ_BEST = 0; }
+  function cqSave() {
+    try { localStorage.setItem(CQ_WINS_KEY, String(CQ_WINS)); } catch (e) {}
+    try { localStorage.setItem(CQ_BEST_KEY, String(CQ_BEST)); } catch (e) {}
+  }
+
+  /* ---------- Seeded RNG (deterministic shuffles for tests) ---------- */
+  var cqRandSeed = 13579;
+  function cqSeedRand(s) { cqRandSeed = (s >>> 0) || 1; }
+  function cqRand() {
+    cqRandSeed = (cqRandSeed * 1103515245 + 12345) & 0x7fffffff;
+    return cqRandSeed / 0x7fffffff;
+  }
+
+  /* ---------- Card library: 60 original cards ----------
+     Row: [name, cost, type, rarity, fx, up]
+     type: A attack, S skill, P power. fx tokens: dmgN, dmgNxH (hits),
+     blockN, strN, vulnN, weakN, frailN, poisonN, thornsN, drawN,
+     energyN, healN, all (damage hits every enemy), pierce (ignores
+     block), weakallN / vulnallN (debuff every enemy), exhaust.
+     up tokens: dmg+N, block+N, hits+1, draw+1, str+N, cost-1, etc. */
+  var CQ_CARDS = [
+    ['CLEAVE', 1, 'A', 'C', 'dmg6', 'dmg+3'],
+    ['HEAVY SWING', 2, 'A', 'C', 'dmg11', 'dmg+4'],
+    ['DOUBLE CUT', 1, 'A', 'C', 'dmg4x2', 'dmg+2'],
+    ['POMMEL STRIKE', 1, 'A', 'C', 'dmg5,weak1', 'dmg+3'],
+    ['THRUST', 1, 'A', 'C', 'dmg7', 'dmg+3'],
+    ['SLAM', 2, 'A', 'C', 'dmg13', 'dmg+4'],
+    ['AXE CHOP', 1, 'A', 'C', 'dmg8', 'dmg+3'],
+    ['QUICK JAB', 0, 'A', 'C', 'dmg3', 'dmg+2'],
+    ['WIDE SWEEP', 1, 'A', 'C', 'dmg5,all', 'dmg+3'],
+    ['CRUSHING BLOW', 2, 'A', 'C', 'dmg9,vuln1', 'dmg+4'],
+    ['LUNGE', 1, 'A', 'C', 'dmg6,draw1', 'dmg+3'],
+    ['VENOM EDGE', 1, 'A', 'C', 'dmg4,poison3', 'dmg+2,poison+2'],
+    ['SHIELD BASH', 1, 'A', 'C', 'dmg4,block4', 'dmg+2,block+2'],
+    ['HEADBUTT', 1, 'A', 'C', 'dmg6,frail1', 'dmg+3'],
+    ['FLURRY', 1, 'A', 'C', 'dmg3x3', 'dmg+1'],
+    ['EXECUTE', 2, 'A', 'C', 'dmg16', 'dmg+5'],
+    ['GUARD', 1, 'S', 'C', 'block6', 'block+3'],
+    ['IRON WALL', 2, 'S', 'C', 'block11', 'block+4'],
+    ['BRACE', 0, 'S', 'C', 'block3', 'block+2'],
+    ['RALLY', 1, 'S', 'C', 'block4,draw1', 'block+2,draw+1'],
+    ['SECOND WIND', 1, 'S', 'C', 'block5,heal3', 'block+3,heal+2'],
+    ['TAUNT', 1, 'S', 'C', 'block3,weakall1', 'block+3,weakall+1'],
+    ['WAR CRY', 1, 'S', 'C', 'str2', 'str+1'],
+    ['FOCUS', 0, 'S', 'C', 'draw2,exhaust', 'draw+1'],
+    ['ADRENALINE', 0, 'S', 'C', 'energy2,exhaust', 'energy+1'],
+    ['BANDAGE', 1, 'S', 'C', 'heal6', 'heal+3'],
+    ['STONE STANCE', 1, 'S', 'C', 'block8,thorns2', 'block+3,thorns+1'],
+    ['DODGE STEP', 1, 'S', 'C', 'block5,draw1', 'block+2'],
+    ['HONE BLADE', 1, 'S', 'C', 'str1', 'str+1'],
+    ['BATTLE ROAR', 2, 'S', 'C', 'vulnall2', 'vulnall+1'],
+    ['WHIRLWIND', 2, 'A', 'U', 'dmg7,all', 'dmg+3'],
+    ['BLOODTHIRST', 2, 'A', 'U', 'dmg9,heal4', 'dmg+3,heal+2'],
+    ['PIERCE LANCE', 2, 'A', 'U', 'dmg12,pierce', 'dmg+4'],
+    ['TRIPLE THRUST', 1, 'A', 'U', 'dmg4x3', 'dmg+1'],
+    ['MIGHTY CLEAVE', 2, 'A', 'U', 'dmg10,str1', 'dmg+3'],
+    ['HAMMERFALL', 3, 'A', 'U', 'dmg20', 'dmg+6'],
+    ['COUNTER', 1, 'A', 'U', 'dmg8,thorns3', 'dmg+3,thorns+1'],
+    ['SUNDER', 2, 'A', 'U', 'dmg8,vuln2', 'dmg+3'],
+    ['FRENZY', 1, 'A', 'U', 'dmg3x2,draw1', 'dmg+1,draw+1'],
+    ['GIANT SLAYER', 2, 'A', 'U', 'dmg14', 'dmg+5'],
+    ['BLADE STORM', 2, 'A', 'U', 'dmg5x2,all', 'dmg+2'],
+    ['VENGEANCE', 1, 'A', 'U', 'dmg9,draw1', 'dmg+3'],
+    ['FORTIFY', 1, 'S', 'U', 'block9,thorns2', 'block+3'],
+    ['BATTLE PLAN', 0, 'S', 'U', 'draw3,exhaust', 'draw+1'],
+    ['IRON SKIN', 1, 'S', 'U', 'block7,thorns1', 'block+3'],
+    ['RALLYING CRY', 2, 'S', 'U', 'str2,draw1', 'str+1'],
+    ['SMOKE BOMB', 1, 'S', 'U', 'weakall2', 'weakall+1'],
+    ['MEDITATE', 1, 'S', 'U', 'heal5,draw1', 'heal+2'],
+    ['BERSERK RAGE', 2, 'S', 'U', 'str3', 'str+1'],
+    ['PHALANX', 2, 'S', 'U', 'block14', 'block+5'],
+    ['SWIFT BOOTS', 0, 'S', 'U', 'block2,draw2', 'draw+1'],
+    ['WAR BANNER', 2, 'S', 'U', 'str1,draw2', 'draw+1'],
+    ['DEMOLISH', 3, 'A', 'R', 'dmg24', 'dmg+7'],
+    ['SKYFALL BLADE', 3, 'A', 'R', 'dmg18,all', 'dmg+6'],
+    ['TITAN SMASH', 3, 'A', 'R', 'dmg22,vuln2', 'dmg+6'],
+    ['INFINITE EDGE', 2, 'A', 'R', 'dmg6x4', 'dmg+2'],
+    ['WARLORD MIGHT', 3, 'P', 'R', 'str4', 'str+2'],
+    ['THORNMAIL', 2, 'P', 'R', 'thorns6', 'thorns+3'],
+    ['UNBREAKABLE', 3, 'S', 'R', 'block20', 'block+7'],
+    ['LAST STAND', 1, 'S', 'R', 'heal10,str2,exhaust', 'heal+4'],
+    ['DUSK CUT', 1, 'A', 'C', 'dmg5,shadow1', 'dmg+3', 'SABLE'],
+    ['DUSK STAB', 1, 'A', 'C', 'dmg6,shadow2', 'dmg+3', 'SABLE'],
+    ['DUSK BITE', 1, 'A', 'C', 'dmg7,shadow3', 'dmg+3', 'SABLE'],
+    ['DUSK EDGE', 1, 'A', 'C', 'dmg8,shadow1', 'dmg+3', 'SABLE'],
+    ['DUSK STEP', 1, 'A', 'C', 'dmg9,shadow2', 'dmg+3', 'SABLE'],
+    ['DUSK BLADE', 1, 'A', 'C', 'dmg10,shadow3', 'dmg+3', 'SABLE'],
+    ['DUSK COIL', 1, 'A', 'C', 'dmg11,shadow1', 'dmg+3', 'SABLE'],
+    ['DUSK SNARE', 1, 'A', 'C', 'dmg12,shadow2', 'dmg+3', 'SABLE'],
+    ['DUSK KISS', 1, 'A', 'C', 'dmg13,shadow3', 'dmg+3', 'SABLE'],
+    ['DUSK DANCE', 1, 'A', 'C', 'dmg14,shadow1', 'dmg+3', 'SABLE'],
+    ['DUSK HUNT', 1, 'A', 'U', 'dmg3x2,shadow2', 'dmg+3', 'SABLE'],
+    ['DUSK VEIL', 1, 'A', 'U', 'dmg4x2,shadow2', 'dmg+3', 'SABLE'],
+    ['VEIL CUT', 1, 'A', 'U', 'dmg5x2,shadow2', 'dmg+3', 'SABLE'],
+    ['VEIL STAB', 1, 'A', 'U', 'dmg6x2,shadow2', 'dmg+3', 'SABLE'],
+    ['VEIL BITE', 2, 'A', 'U', 'dmg7,all,shadow1', 'dmg+3', 'SABLE'],
+    ['VEIL EDGE', 2, 'A', 'U', 'dmg9,all,shadow1', 'dmg+3', 'SABLE'],
+    ['VEIL STEP', 2, 'A', 'U', 'dmg11,all,shadow1', 'dmg+3', 'SABLE'],
+    ['VEIL BLADE', 3, 'A', 'R', 'dmg24,shadow4', 'dmg+3', 'SABLE'],
+    ['VEIL COIL', 1, 'S', 'C', 'block5,shadow1', 'block+3', 'SABLE'],
+    ['VEIL SNARE', 1, 'S', 'C', 'block6,shadow2', 'block+3', 'SABLE'],
+    ['VEIL KISS', 1, 'S', 'C', 'block7,shadow1', 'block+3', 'SABLE'],
+    ['VEIL DANCE', 1, 'S', 'C', 'block8,shadow2', 'block+3', 'SABLE'],
+    ['VEIL HUNT', 1, 'S', 'C', 'block9,shadow1', 'block+3', 'SABLE'],
+    ['VEIL VEIL', 1, 'S', 'C', 'block10,shadow2', 'block+3', 'SABLE'],
+    ['NIGHT CUT', 1, 'S', 'C', 'block11,shadow1', 'block+3', 'SABLE'],
+    ['NIGHT STAB', 1, 'S', 'C', 'block12,shadow2', 'block+3', 'SABLE'],
+    ['NIGHT BITE', 0, 'S', 'U', 'draw2,exhaust,shadow2', 'draw+1', 'SABLE'],
+    ['NIGHT EDGE', 0, 'S', 'U', 'draw3,exhaust,shadow3', 'draw+1', 'SABLE'],
+    ['NIGHT STEP', 0, 'S', 'U', 'energy2,exhaust,shadow2', 'energy+1', 'SABLE'],
+    ['NIGHT BLADE', 1, 'S', 'C', 'shadow3', 'shadow+2', 'SABLE'],
+    ['NIGHT COIL', 1, 'S', 'C', 'shadow4', 'shadow+2', 'SABLE'],
+    ['NIGHT SNARE', 1, 'S', 'U', 'shadow5', 'shadow+2', 'SABLE'],
+    ['NIGHT KISS', 1, 'S', 'U', 'shadow6', 'shadow+2', 'SABLE'],
+    ['NIGHT DANCE', 1, 'S', 'U', 'weakall1,shadow2', 'shadow+2', 'SABLE'],
+    ['NIGHT HUNT', 1, 'S', 'U', 'vulnall1,shadow2', 'shadow+2', 'SABLE'],
+    ['NIGHT VEIL', 1, 'S', 'U', 'heal6,shadow2', 'heal+3', 'SABLE'],
+    ['SHADE CUT', 2, 'P', 'U', 'str2,shadow2', 'str+1', 'SABLE'],
+    ['SHADE STAB', 3, 'P', 'R', 'str3,shadow3', 'str+1', 'SABLE'],
+    ['SHADE BITE', 2, 'P', 'U', 'thorns4,shadow2', 'thorns+2', 'SABLE'],
+    ['SHADE EDGE', 1, 'P', 'C', 'shadow6', 'shadow+2', 'SABLE'],
+    ['SHADE STEP', 2, 'P', 'U', 'shadow4,draw1', 'shadow+2', 'SABLE'],
+    ['SHADE BLADE', 2, 'S', 'U', 'heal8,shadow2', 'heal+3', 'SABLE'],
+    ['SHADE COIL', 2, 'S', 'R', 'energy1,shadow2', 'energy+1', 'SABLE'],
+    ['SHADE SNARE', 2, 'S', 'U', 'weakall2,shadow2', 'shadow+2', 'SABLE'],
+    ['SHADE KISS', 1, 'S', 'U', 'vuln2,shadow2', 'vuln+1', 'SABLE'],
+    ['RUNE MARK', 1, 'A', 'C', 'dmg5,rune1', 'dmg+3', 'ORIN'],
+    ['RUNE SIGN', 1, 'A', 'C', 'dmg6,rune2', 'dmg+3', 'ORIN'],
+    ['RUNE BOND', 1, 'A', 'C', 'dmg7,rune3', 'dmg+3', 'ORIN'],
+    ['RUNE WARD', 1, 'A', 'C', 'dmg8,rune1', 'dmg+3', 'ORIN'],
+    ['RUNE SEAL', 1, 'A', 'C', 'dmg9,rune2', 'dmg+3', 'ORIN'],
+    ['RUNE HAMMER', 1, 'A', 'C', 'dmg10,rune3', 'dmg+3', 'ORIN'],
+    ['RUNE CORE', 1, 'A', 'C', 'dmg11,rune1', 'dmg+3', 'ORIN'],
+    ['RUNE SHARD', 1, 'A', 'C', 'dmg12,rune2', 'dmg+3', 'ORIN'],
+    ['RUNE RING', 1, 'A', 'C', 'dmg13,rune3', 'dmg+3', 'ORIN'],
+    ['RUNE BRAND', 1, 'A', 'C', 'dmg14,rune1', 'dmg+3', 'ORIN'],
+    ['RUNE OATH', 1, 'A', 'U', 'dmg3x2,rune2', 'dmg+3', 'ORIN'],
+    ['RUNE MIGHT', 1, 'A', 'U', 'dmg4x2,rune2', 'dmg+3', 'ORIN'],
+    ['STONE MARK', 1, 'A', 'U', 'dmg5x2,rune2', 'dmg+3', 'ORIN'],
+    ['STONE SIGN', 1, 'A', 'U', 'dmg6x2,rune2', 'dmg+3', 'ORIN'],
+    ['STONE BOND', 2, 'A', 'U', 'dmg7,all,rune1', 'dmg+3', 'ORIN'],
+    ['STONE WARD', 2, 'A', 'U', 'dmg9,all,rune1', 'dmg+3', 'ORIN'],
+    ['STONE SEAL', 2, 'A', 'U', 'dmg11,all,rune1', 'dmg+3', 'ORIN'],
+    ['STONE HAMMER', 3, 'A', 'R', 'dmg24,rune4', 'dmg+3', 'ORIN'],
+    ['STONE CORE', 1, 'S', 'C', 'block5,rune1', 'block+3', 'ORIN'],
+    ['STONE SHARD', 1, 'S', 'C', 'block6,rune2', 'block+3', 'ORIN'],
+    ['STONE RING', 1, 'S', 'C', 'block7,rune1', 'block+3', 'ORIN'],
+    ['STONE BRAND', 1, 'S', 'C', 'block8,rune2', 'block+3', 'ORIN'],
+    ['STONE OATH', 1, 'S', 'C', 'block9,rune1', 'block+3', 'ORIN'],
+    ['STONE MIGHT', 1, 'S', 'C', 'block10,rune2', 'block+3', 'ORIN'],
+    ['IRON MARK', 1, 'S', 'C', 'block11,rune1', 'block+3', 'ORIN'],
+    ['IRON SIGN', 1, 'S', 'C', 'block12,rune2', 'block+3', 'ORIN'],
+    ['IRON BOND', 0, 'S', 'U', 'draw2,exhaust,rune2', 'draw+1', 'ORIN'],
+    ['IRON WARD', 0, 'S', 'U', 'draw3,exhaust,rune3', 'draw+1', 'ORIN'],
+    ['IRON SEAL', 0, 'S', 'U', 'energy2,exhaust,rune2', 'energy+1', 'ORIN'],
+    ['IRON HAMMER', 1, 'S', 'C', 'rune3', 'rune+2', 'ORIN'],
+    ['IRON CORE', 1, 'S', 'C', 'rune4', 'rune+2', 'ORIN'],
+    ['IRON SHARD', 1, 'S', 'U', 'rune5', 'rune+2', 'ORIN'],
+    ['IRON RING', 1, 'S', 'U', 'rune6', 'rune+2', 'ORIN'],
+    ['IRON BRAND', 1, 'S', 'U', 'weakall1,rune2', 'rune+2', 'ORIN'],
+    ['IRON OATH', 1, 'S', 'U', 'vulnall1,rune2', 'rune+2', 'ORIN'],
+    ['IRON MIGHT', 1, 'S', 'U', 'heal6,rune2', 'heal+3', 'ORIN'],
+    ['GOLD MARK', 2, 'P', 'U', 'str2,rune2', 'str+1', 'ORIN'],
+    ['GOLD SIGN', 3, 'P', 'R', 'str3,rune3', 'str+1', 'ORIN'],
+    ['GOLD BOND', 2, 'P', 'U', 'thorns4,rune2', 'thorns+2', 'ORIN'],
+    ['GOLD WARD', 1, 'P', 'C', 'rune6', 'rune+2', 'ORIN'],
+    ['GOLD SEAL', 2, 'P', 'U', 'rune4,draw1', 'rune+2', 'ORIN'],
+    ['GOLD HAMMER', 2, 'S', 'U', 'heal8,rune2', 'heal+3', 'ORIN'],
+    ['GOLD CORE', 2, 'S', 'R', 'energy1,rune2', 'energy+1', 'ORIN'],
+    ['GOLD SHARD', 2, 'S', 'U', 'weakall2,rune2', 'rune+2', 'ORIN'],
+    ['GOLD RING', 1, 'S', 'U', 'vuln2,rune2', 'vuln+1', 'ORIN'],
+    ['EMBER BURST', 1, 'A', 'C', 'dmg5,burn1', 'dmg+3', 'LYRA'],
+    ['EMBER WAVE', 1, 'A', 'C', 'dmg6,burn2', 'dmg+3', 'LYRA'],
+    ['EMBER BOLT', 1, 'A', 'C', 'dmg7,burn3', 'dmg+3', 'LYRA'],
+    ['EMBER RAIN', 1, 'A', 'C', 'dmg8,burn1', 'dmg+3', 'LYRA'],
+    ['EMBER KISS', 1, 'A', 'C', 'dmg9,burn2', 'dmg+3', 'LYRA'],
+    ['EMBER DANCE', 1, 'A', 'C', 'dmg10,burn3', 'dmg+3', 'LYRA'],
+    ['EMBER HEART', 1, 'A', 'C', 'dmg11,burn1', 'dmg+3', 'LYRA'],
+    ['EMBER SONG', 1, 'A', 'C', 'dmg12,burn2', 'dmg+3', 'LYRA'],
+    ['EMBER FLARE', 1, 'A', 'C', 'dmg13,burn3', 'dmg+3', 'LYRA'],
+    ['EMBER STORM', 1, 'A', 'C', 'dmg14,burn1', 'dmg+3', 'LYRA'],
+    ['EMBER TOUCH', 1, 'A', 'U', 'dmg3x2,burn2', 'dmg+3', 'LYRA'],
+    ['EMBER GLOW', 1, 'A', 'U', 'dmg4x2,burn2', 'dmg+3', 'LYRA'],
+    ['FLAME BURST', 1, 'A', 'U', 'dmg5x2,burn2', 'dmg+3', 'LYRA'],
+    ['FLAME WAVE', 1, 'A', 'U', 'dmg6x2,burn2', 'dmg+3', 'LYRA'],
+    ['FLAME BOLT', 2, 'A', 'U', 'dmg7,all,burn1', 'dmg+3', 'LYRA'],
+    ['FLAME RAIN', 2, 'A', 'U', 'dmg9,all,burn1', 'dmg+3', 'LYRA'],
+    ['FLAME KISS', 2, 'A', 'U', 'dmg11,all,burn1', 'dmg+3', 'LYRA'],
+    ['FLAME DANCE', 3, 'A', 'R', 'dmg24,burn4', 'dmg+3', 'LYRA'],
+    ['FLAME HEART', 1, 'S', 'C', 'block5,burn1', 'block+3', 'LYRA'],
+    ['FLAME SONG', 1, 'S', 'C', 'block6,burn2', 'block+3', 'LYRA'],
+    ['FLAME FLARE', 1, 'S', 'C', 'block7,burn1', 'block+3', 'LYRA'],
+    ['FLAME STORM', 1, 'S', 'C', 'block8,burn2', 'block+3', 'LYRA'],
+    ['FLAME TOUCH', 1, 'S', 'C', 'block9,burn1', 'block+3', 'LYRA'],
+    ['FLAME GLOW', 1, 'S', 'C', 'block10,burn2', 'block+3', 'LYRA'],
+    ['ASH BURST', 1, 'S', 'C', 'block11,burn1', 'block+3', 'LYRA'],
+    ['ASH WAVE', 1, 'S', 'C', 'block12,burn2', 'block+3', 'LYRA'],
+    ['ASH BOLT', 0, 'S', 'U', 'draw2,exhaust,burn2', 'draw+1', 'LYRA'],
+    ['ASH RAIN', 0, 'S', 'U', 'draw3,exhaust,burn3', 'draw+1', 'LYRA'],
+    ['ASH KISS', 0, 'S', 'U', 'energy2,exhaust,burn2', 'energy+1', 'LYRA'],
+    ['ASH DANCE', 1, 'S', 'C', 'burn3', 'burn+2', 'LYRA'],
+    ['ASH HEART', 1, 'S', 'C', 'burn4', 'burn+2', 'LYRA'],
+    ['ASH SONG', 1, 'S', 'U', 'burn5', 'burn+2', 'LYRA'],
+    ['ASH FLARE', 1, 'S', 'U', 'burn6', 'burn+2', 'LYRA'],
+    ['ASH STORM', 1, 'S', 'U', 'weakall1,burn2', 'burn+2', 'LYRA'],
+    ['ASH TOUCH', 1, 'S', 'U', 'vulnall1,burn2', 'burn+2', 'LYRA'],
+    ['ASH GLOW', 1, 'S', 'U', 'heal6,burn2', 'heal+3', 'LYRA'],
+    ['FIRE BURST', 2, 'P', 'U', 'str2,burn2', 'str+1', 'LYRA'],
+    ['FIRE WAVE', 3, 'P', 'R', 'str3,burn3', 'str+1', 'LYRA'],
+    ['FIRE BOLT', 2, 'P', 'U', 'thorns4,burn2', 'thorns+2', 'LYRA'],
+    ['FIRE RAIN', 1, 'P', 'C', 'burn6', 'burn+2', 'LYRA'],
+    ['FIRE KISS', 2, 'P', 'U', 'burn4,draw1', 'burn+2', 'LYRA'],
+    ['FIRE DANCE', 2, 'S', 'U', 'heal8,burn2', 'heal+3', 'LYRA'],
+    ['FIRE HEART', 2, 'S', 'R', 'energy1,burn2', 'energy+1', 'LYRA'],
+    ['FIRE SONG', 2, 'S', 'U', 'weakall2,burn2', 'burn+2', 'LYRA'],
+    ['FIRE FLARE', 1, 'S', 'U', 'vuln2,burn2', 'vuln+1', 'LYRA'],
+    ['WILD GROWTH', 1, 'A', 'C', 'dmg5,growth1', 'dmg+3', 'FENN'],
+    ['WILD BITE', 1, 'A', 'C', 'dmg6,growth2', 'dmg+3', 'FENN'],
+    ['WILD CLAW', 1, 'A', 'C', 'dmg7,growth3', 'dmg+3', 'FENN'],
+    ['WILD ROAR', 1, 'A', 'C', 'dmg8,growth1', 'dmg+3', 'FENN'],
+    ['WILD CALL', 1, 'A', 'C', 'dmg9,growth2', 'dmg+3', 'FENN'],
+    ['WILD BOND', 1, 'A', 'C', 'dmg10,growth3', 'dmg+3', 'FENN'],
+    ['WILD SHIELD', 1, 'A', 'C', 'dmg11,growth1', 'dmg+3', 'FENN'],
+    ['WILD WARD', 1, 'A', 'C', 'dmg12,growth2', 'dmg+3', 'FENN'],
+    ['WILD SONG', 1, 'A', 'C', 'dmg13,growth3', 'dmg+3', 'FENN'],
+    ['WILD HUNT', 1, 'A', 'C', 'dmg14,growth1', 'dmg+3', 'FENN'],
+    ['WILD ROOT', 1, 'A', 'U', 'dmg3x2,growth2', 'dmg+3', 'FENN'],
+    ['WILD SPIRIT', 1, 'A', 'U', 'dmg4x2,growth2', 'dmg+3', 'FENN'],
+    ['THORN GROWTH', 1, 'A', 'U', 'dmg5x2,growth2', 'dmg+3', 'FENN'],
+    ['THORN BITE', 1, 'A', 'U', 'dmg6x2,growth2', 'dmg+3', 'FENN'],
+    ['THORN CLAW', 2, 'A', 'U', 'dmg7,all,growth1', 'dmg+3', 'FENN'],
+    ['THORN ROAR', 2, 'A', 'U', 'dmg9,all,growth1', 'dmg+3', 'FENN'],
+    ['THORN CALL', 2, 'A', 'U', 'dmg11,all,growth1', 'dmg+3', 'FENN'],
+    ['THORN BOND', 3, 'A', 'R', 'dmg24,growth4', 'dmg+3', 'FENN'],
+    ['THORN SHIELD', 1, 'S', 'C', 'block5,growth1', 'block+3', 'FENN'],
+    ['THORN WARD', 1, 'S', 'C', 'block6,growth2', 'block+3', 'FENN'],
+    ['THORN SONG', 1, 'S', 'C', 'block7,growth1', 'block+3', 'FENN'],
+    ['THORN HUNT', 1, 'S', 'C', 'block8,growth2', 'block+3', 'FENN'],
+    ['THORN ROOT', 1, 'S', 'C', 'block9,growth1', 'block+3', 'FENN'],
+    ['THORN SPIRIT', 1, 'S', 'C', 'block10,growth2', 'block+3', 'FENN'],
+    ['ROOT GROWTH', 1, 'S', 'C', 'block11,growth1', 'block+3', 'FENN'],
+    ['ROOT BITE', 1, 'S', 'C', 'block12,growth2', 'block+3', 'FENN'],
+    ['ROOT CLAW', 0, 'S', 'U', 'draw2,exhaust,growth2', 'draw+1', 'FENN'],
+    ['ROOT ROAR', 0, 'S', 'U', 'draw3,exhaust,growth3', 'draw+1', 'FENN'],
+    ['ROOT CALL', 0, 'S', 'U', 'energy2,exhaust,growth2', 'energy+1', 'FENN'],
+    ['ROOT BOND', 1, 'S', 'C', 'growth3', 'growth+2', 'FENN'],
+    ['ROOT SHIELD', 1, 'S', 'C', 'growth4', 'growth+2', 'FENN'],
+    ['ROOT WARD', 1, 'S', 'U', 'growth5', 'growth+2', 'FENN'],
+    ['ROOT SONG', 1, 'S', 'U', 'growth6', 'growth+2', 'FENN'],
+    ['ROOT HUNT', 1, 'S', 'U', 'weakall1,growth2', 'growth+2', 'FENN'],
+    ['ROOT ROOT', 1, 'S', 'U', 'vulnall1,growth2', 'growth+2', 'FENN'],
+    ['ROOT SPIRIT', 1, 'S', 'U', 'heal6,growth2', 'heal+3', 'FENN'],
+    ['LEAF GROWTH', 2, 'P', 'U', 'str2,growth2', 'str+1', 'FENN'],
+    ['LEAF BITE', 3, 'P', 'R', 'str3,growth3', 'str+1', 'FENN'],
+    ['LEAF CLAW', 2, 'P', 'U', 'thorns4,growth2', 'thorns+2', 'FENN'],
+    ['LEAF ROAR', 1, 'P', 'C', 'growth6', 'growth+2', 'FENN'],
+    ['LEAF CALL', 2, 'P', 'U', 'growth4,draw1', 'growth+2', 'FENN'],
+    ['LEAF BOND', 2, 'S', 'U', 'heal8,growth2', 'heal+3', 'FENN'],
+    ['LEAF SHIELD', 2, 'S', 'R', 'energy1,growth2', 'energy+1', 'FENN'],
+    ['LEAF WARD', 2, 'S', 'U', 'weakall2,growth2', 'growth+2', 'FENN'],
+    ['LEAF SONG', 1, 'S', 'U', 'vuln2,growth2', 'vuln+1', 'FENN'],
+    ['STORM BOLT', 1, 'A', 'C', 'dmg5,spark1', 'dmg+3', 'VESK'],
+    ['STORM SURGE', 1, 'A', 'C', 'dmg6,spark2', 'dmg+3', 'VESK'],
+    ['STORM CRACK', 1, 'A', 'C', 'dmg7,spark3', 'dmg+3', 'VESK'],
+    ['STORM ARC', 1, 'A', 'C', 'dmg8,spark1', 'dmg+3', 'VESK'],
+    ['STORM FLASH', 1, 'A', 'C', 'dmg9,spark2', 'dmg+3', 'VESK'],
+    ['STORM CALL', 1, 'A', 'C', 'dmg10,spark3', 'dmg+3', 'VESK'],
+    ['STORM ROAR', 1, 'A', 'C', 'dmg11,spark1', 'dmg+3', 'VESK'],
+    ['STORM DANCE', 1, 'A', 'C', 'dmg12,spark2', 'dmg+3', 'VESK'],
+    ['STORM BITE', 1, 'A', 'C', 'dmg13,spark3', 'dmg+3', 'VESK'],
+    ['STORM SONG', 1, 'A', 'C', 'dmg14,spark1', 'dmg+3', 'VESK'],
+    ['STORM STRIKE', 1, 'A', 'U', 'dmg3x2,spark2', 'dmg+3', 'VESK'],
+    ['STORM PEAL', 1, 'A', 'U', 'dmg4x2,spark2', 'dmg+3', 'VESK'],
+    ['VOLT BOLT', 1, 'A', 'U', 'dmg5x2,spark2', 'dmg+3', 'VESK'],
+    ['VOLT SURGE', 1, 'A', 'U', 'dmg6x2,spark2', 'dmg+3', 'VESK'],
+    ['VOLT CRACK', 2, 'A', 'U', 'dmg7,all,spark1', 'dmg+3', 'VESK'],
+    ['VOLT ARC', 2, 'A', 'U', 'dmg9,all,spark1', 'dmg+3', 'VESK'],
+    ['VOLT FLASH', 2, 'A', 'U', 'dmg11,all,spark1', 'dmg+3', 'VESK'],
+    ['VOLT CALL', 3, 'A', 'R', 'dmg24,spark4', 'dmg+3', 'VESK'],
+    ['VOLT ROAR', 1, 'S', 'C', 'block5,spark1', 'block+3', 'VESK'],
+    ['VOLT DANCE', 1, 'S', 'C', 'block6,spark2', 'block+3', 'VESK'],
+    ['VOLT BITE', 1, 'S', 'C', 'block7,spark1', 'block+3', 'VESK'],
+    ['VOLT SONG', 1, 'S', 'C', 'block8,spark2', 'block+3', 'VESK'],
+    ['VOLT STRIKE', 1, 'S', 'C', 'block9,spark1', 'block+3', 'VESK'],
+    ['VOLT PEAL', 1, 'S', 'C', 'block10,spark2', 'block+3', 'VESK'],
+    ['THUNDER BOLT', 1, 'S', 'C', 'block11,spark1', 'block+3', 'VESK'],
+    ['THUNDER SURGE', 1, 'S', 'C', 'block12,spark2', 'block+3', 'VESK'],
+    ['THUNDER CRACK', 0, 'S', 'U', 'draw2,exhaust,spark2', 'draw+1', 'VESK'],
+    ['THUNDER ARC', 0, 'S', 'U', 'draw3,exhaust,spark3', 'draw+1', 'VESK'],
+    ['THUNDER FLASH', 0, 'S', 'U', 'energy2,exhaust,spark2', 'energy+1', 'VESK'],
+    ['THUNDER CALL', 1, 'S', 'C', 'spark3', 'spark+2', 'VESK'],
+    ['THUNDER ROAR', 1, 'S', 'C', 'spark4', 'spark+2', 'VESK'],
+    ['THUNDER DANCE', 1, 'S', 'U', 'spark5', 'spark+2', 'VESK'],
+    ['THUNDER BITE', 1, 'S', 'U', 'spark6', 'spark+2', 'VESK'],
+    ['THUNDER SONG', 1, 'S', 'U', 'weakall1,spark2', 'spark+2', 'VESK'],
+    ['THUNDER PEAL', 1, 'S', 'U', 'vulnall1,spark2', 'spark+2', 'VESK'],
+    ['LIGHT BOLT', 1, 'S', 'U', 'heal6,spark2', 'heal+3', 'VESK'],
+    ['LIGHT SURGE', 2, 'P', 'U', 'str2,spark2', 'str+1', 'VESK'],
+    ['LIGHT CRACK', 3, 'P', 'R', 'str3,spark3', 'str+1', 'VESK'],
+    ['LIGHT ARC', 2, 'P', 'U', 'thorns4,spark2', 'thorns+2', 'VESK'],
+    ['LIGHT FLASH', 1, 'P', 'C', 'spark6', 'spark+2', 'VESK'],
+    ['LIGHT CALL', 2, 'P', 'U', 'spark4,draw1', 'spark+2', 'VESK'],
+    ['LIGHT ROAR', 2, 'S', 'U', 'heal8,spark2', 'heal+3', 'VESK'],
+    ['LIGHT DANCE', 2, 'S', 'R', 'energy1,spark2', 'energy+1', 'VESK'],
+    ['LIGHT BITE', 2, 'S', 'U', 'weakall2,spark2', 'spark+2', 'VESK'],
+    ['LIGHT SONG', 1, 'S', 'U', 'vuln2,spark2', 'vuln+1', 'VESK'],
+    ['IRON EDGE', 1, 'A', 'C', 'dmg4,poison2', 'dmg+3', 'ANY'],
+    ['IRON GUARD', 1, 'A', 'C', 'dmg5,weak2', 'dmg+3', 'ANY'],
+    ['IRON STEP', 1, 'A', 'C', 'dmg6,vuln1', 'dmg+3', 'ANY'],
+    ['IRON BLOW', 1, 'A', 'C', 'dmg7,draw1', 'dmg+3', 'ANY'],
+    ['IRON PLOY', 1, 'A', 'C', 'dmg8,block3', 'dmg+3', 'ANY'],
+    ['IRON FEINT', 1, 'A', 'C', 'dmg9,heal2', 'dmg+3', 'ANY'],
+    ['IRON THRUST', 1, 'A', 'C', 'dmg10,thorns1', 'dmg+3', 'ANY'],
+    ['IRON PARRY', 1, 'A', 'C', 'dmg11,frail1', 'dmg+3', 'ANY'],
+    ['IRON CHARM', 1, 'A', 'U', 'dmg12,poison3', 'dmg+3', 'ANY'],
+    ['IRON TRICK', 1, 'A', 'U', 'dmg13,weak1', 'dmg+3', 'ANY'],
+    ['IRON GRIP', 1, 'A', 'U', 'dmg14,vuln2', 'dmg+3', 'ANY'],
+    ['GOLD EDGE', 1, 'A', 'U', 'dmg15,draw1', 'dmg+3', 'ANY'],
+    ['GOLD GUARD', 1, 'S', 'C', 'block4,heal2', 'block+3', 'ANY'],
+    ['GOLD STEP', 1, 'S', 'C', 'block5,draw2', 'block+3', 'ANY'],
+    ['GOLD BLOW', 1, 'S', 'C', 'block6,heal2', 'block+3', 'ANY'],
+    ['GOLD PLOY', 1, 'S', 'C', 'block7,draw1', 'block+3', 'ANY'],
+    ['GOLD FEINT', 1, 'S', 'C', 'block8,heal2', 'block+3', 'ANY'],
+    ['GOLD THRUST', 1, 'S', 'C', 'block9,draw1', 'block+3', 'ANY'],
+    ['GOLD PARRY', 1, 'S', 'C', 'block10,heal2', 'block+3', 'ANY'],
+    ['GOLD CHARM', 1, 'S', 'C', 'block11,draw1', 'block+3', 'ANY'],
+    ['GOLD TRICK', 0, 'S', 'U', 'draw4,exhaust', 'draw+1', 'ANY'],
+    ['GOLD GRIP', 1, 'S', 'U', 'heal7,draw1', 'heal+3', 'ANY'],
+    ['SWIFT EDGE', 2, 'P', 'U', 'str2', 'str+1', 'ANY'],
+    ['SWIFT GUARD', 2, 'P', 'U', 'thorns4', 'thorns+2', 'ANY'],
+    ['SWIFT STEP', 1, 'P', 'C', 'str1,draw1', 'str+1', 'ANY'],
+    ['SWIFT BLOW', 3, 'P', 'R', 'str5', 'str+1', 'ANY'],
+    ['SWIFT WARD', 2, 'P', 'R', 'thorns7', 'thorns+2', 'ANY'],
+    ['SWIFT PLOY', 1, 'S', 'U', 'energy1,draw1', 'energy+1', 'ANY'],
+    ['SWIFT FEINT', 2, 'S', 'U', 'weakall1,vulnall1', 'dmg+3', 'ANY'],
+    ['SWIFT THRUST', 2, 'S', 'R', 'heal10,str1', 'heal+3', 'ANY']
+  ];
+  function cqCardByName(n) {
+    for (var i = 0; i < CQ_CARDS.length; i++) if (CQ_CARDS[i][0] === n) return i;
+    return -1;
+  }
+  function cqParseFx(s) {
+    var f = { dmg: 0, hits: 1, block: 0, str: 0, vuln: 0, weak: 0, frail: 0, poison: 0, thorns: 0, draw: 0, energy: 0, heal: 0, shadow: 0, rune: 0, burn: 0, spark: 0, growth: 0, all: false, pierce: false, weakAll: 0, vulnAll: 0, exhaust: false };
+    var toks = String(s).split(',');
+    for (var i = 0; i < toks.length; i++) {
+      var t = toks[i];
+      if (t === 'all') { f.all = true; continue; }
+      if (t === 'pierce') { f.pierce = true; continue; }
+      if (t === 'exhaust') { f.exhaust = true; continue; }
+      var m = /^([a-z]+)(\d+)(?:x(\d+))?$/.exec(t);
+      if (!m) continue;
+      var k = m[1], v = parseInt(m[2], 10);
+      if (k === 'dmg') { f.dmg = v; if (m[3]) f.hits = parseInt(m[3], 10); }
+      else if (k === 'weakall') f.weakAll = v;
+      else if (k === 'vulnall') f.vulnAll = v;
+      else if (f[k] !== undefined) f[k] = v;
+    }
+    return f;
+  }
+  /* Effective values of a card instance {ci, up}: base fx + upgrade. */
+  function cqEff(card) {
+    var row = CQ_CARDS[card.ci];
+    var f = cqParseFx(row[4]);
+    var cost = row[1];
+    if (card.up) {
+      var toks = String(row[5]).split(',');
+      for (var i = 0; i < toks.length; i++) {
+        var m = /^([a-z]+)([+-])(\d+)$/.exec(toks[i]);
+        if (!m) continue;
+        var k = m[1], d = (m[2] === '+' ? 1 : -1) * parseInt(m[3], 10);
+        if (k === 'cost') cost = Math.max(0, cost + d);
+        else if (k === 'hits') f.hits = Math.max(1, f.hits + d);
+        else if (f[k] !== undefined) f[k] = Math.max(0, f[k] + d);
+      }
+    }
+    f.cost = cost;
+    f.name = row[0] + (card.up ? '+' : '');
+    f.type = row[2]; f.rarity = row[3];
+    return f;
+  }
+  function cqFxText(f) {
+    var parts = [];
+    if (f.dmg > 0) parts.push('DEAL ' + f.dmg + (f.hits > 1 ? ' X' + f.hits : '') + (f.all ? ' ALL' : ''));
+    if (f.block > 0) parts.push('BLOCK ' + f.block);
+    if (f.str > 0) parts.push('STR +' + f.str);
+    if (f.vuln > 0) parts.push('VULN ' + f.vuln);
+    if (f.vulnAll > 0) parts.push('VULN ' + f.vulnAll + ' ALL');
+    if (f.weak > 0) parts.push('WEAK ' + f.weak);
+    if (f.weakAll > 0) parts.push('WEAK ' + f.weakAll + ' ALL');
+    if (f.frail > 0) parts.push('FRAIL ' + f.frail);
+    if (f.poison > 0) parts.push('POISON ' + f.poison);
+    if (f.shadow > 0) parts.push('SHADOW +' + f.shadow);
+    if (f.rune > 0) parts.push('RUNE +' + f.rune);
+    if (f.burn > 0) parts.push('BURN ' + f.burn);
+    if (f.spark > 0) parts.push('SPARK +' + f.spark);
+    if (f.growth > 0) parts.push('GROW +' + f.growth);
+    if (f.thorns > 0) parts.push('THORNS ' + f.thorns);
+    if (f.draw > 0) parts.push('DRAW ' + f.draw);
+    if (f.energy > 0) parts.push('ENERGY +' + f.energy);
+    if (f.heal > 0) parts.push('HEAL ' + f.heal);
+    if (f.pierce) parts.push('PIERCE');
+    if (f.exhaust) parts.push('EXHAUST');
+    return parts.join(', ');
+  }
+
+  /* ---------- Characters (only the first is unlocked in M1) ---------- */
+  var CQ_CHARS = [
+    { name: 'BRYN', title: 'IRONWARD', hp: 80, cost: 0, info: 'STRENGTH + BLOCK WARRIOR' },
+    { name: 'SABLE', title: 'NIGHTBLADE', hp: 66, cost: 400, info: 'VENOM + SHADOW BLOCK' },
+    { name: 'ORIN', title: 'RUNESMITH', hp: 72, cost: 800, info: 'RUNES STRIKE EACH TURN' },
+    { name: 'LYRA', title: 'EMBERCALLER', hp: 70, cost: 1500, info: 'BURN THAT NEVER FADES' },
+    { name: 'FENN', title: 'BEASTWARDEN', hp: 74, cost: 2500, info: 'GROWTH + THORN WALL' },
+    { name: 'VESK', title: 'STORMCALLER', hp: 68, cost: 4000, info: 'SPARKS ZAP RANDOM FOES' }
+  ];
+  /* ---------- M2: points, unlocks, relics, events, map, run ---------- */
+  var CQ_POINTS_KEY = 'jmf-games-cards-points';
+  var CQ_UNLOCK_KEY = 'jmf-games-cards-unlocked';
+  var CQ_POINTS = 0, CQ_UNLOCKED = ['BRYN'];
+  try { CQ_POINTS = parseInt(localStorage.getItem(CQ_POINTS_KEY) || '0', 10) || 0; } catch (e) { CQ_POINTS = 0; }
+  try { var _cqU = JSON.parse(localStorage.getItem(CQ_UNLOCK_KEY) || '["BRYN"]'); if (Array.isArray(_cqU) && _cqU.length) CQ_UNLOCKED = _cqU; } catch (e) {}
+  function cqSaveMeta() {
+    try { localStorage.setItem(CQ_POINTS_KEY, String(CQ_POINTS)); } catch (e) {}
+    try { localStorage.setItem(CQ_UNLOCK_KEY, JSON.stringify(CQ_UNLOCKED)); } catch (e) {}
+  }
+  function cqIsUnlocked(i) { return CQ_UNLOCKED.indexOf(CQ_CHARS[i].name) >= 0; }
+  function cqTryUnlock(i) {
+    if (cqIsUnlocked(i)) return true;
+    var c = CQ_CHARS[i].cost || 0;
+    if (CQ_POINTS < c) return false;
+    CQ_POINTS -= c; CQ_UNLOCKED.push(CQ_CHARS[i].name); cqSaveMeta(); return true;
+  }
+  var cqRun = null, cqRunNodeType = null;
+  /* Relics: 40 originals. h = hook, a = amount. Hooks: energy/draw/block
+     (each turn), str/thorns (fight start), maxhp, winheal, goldwin,
+     healstart, killheal, shop (% off), rest (extra rest heal). */
+  var CQ_RELICS = [
+    { n: 'EMBER COIN', h: 'goldwin', a: 10, d: '+10 GOLD EACH WIN' },
+    { n: 'WARM STONE', h: 'winheal', a: 6, d: 'HEAL 6 AFTER A WIN' },
+    { n: 'SPARK CHARM', h: 'energy', a: 1, d: '+1 ENERGY EACH TURN' },
+    { n: 'SWIFT QUILL', h: 'draw', a: 1, d: 'DRAW 1 EXTRA CARD' },
+    { n: 'IRON PLATE', h: 'block', a: 4, d: '+4 BLOCK EACH TURN' },
+    { n: 'WAR HORN', h: 'str', a: 1, d: '+1 STR AT FIGHT START' },
+    { n: 'THORN VEST', h: 'thorns', a: 2, d: '+2 THORNS AT START' },
+    { n: 'GIANT HEART', h: 'maxhp', a: 10, d: '+10 MAX HP' },
+    { n: 'GOLDEN IDOL', h: 'goldwin', a: 15, d: '+15 GOLD EACH WIN' },
+    { n: 'MEND SALVE', h: 'winheal', a: 10, d: 'HEAL 10 AFTER A WIN' },
+    { n: 'FOCUS LENS', h: 'draw', a: 1, d: 'DRAW 1 EXTRA CARD' },
+    { n: 'STORM CELL', h: 'energy', a: 1, d: '+1 ENERGY EACH TURN' },
+    { n: 'OAK SHIELD', h: 'block', a: 6, d: '+6 BLOCK EACH TURN' },
+    { n: 'BLOOD VIAL', h: 'killheal', a: 3, d: 'HEAL 3 PER KILL' },
+    { n: 'MERCHANT SEAL', h: 'shop', a: 20, d: 'SHOP PRICES -20%' },
+    { n: 'SOFT BEDROLL', h: 'rest', a: 10, d: 'REST HEALS +10' },
+    { n: 'FIRST AID KIT', h: 'healstart', a: 8, d: 'HEAL 8 AT FIGHT START' },
+    { n: 'BRASS KNUCKLES', h: 'str', a: 2, d: '+2 STR AT FIGHT START' },
+    { n: 'SPIKE MAIL', h: 'thorns', a: 4, d: '+4 THORNS AT START' },
+    { n: 'RED APPLE', h: 'maxhp', a: 6, d: '+6 MAX HP' },
+    { n: 'LUCKY COIN', h: 'goldwin', a: 8, d: '+8 GOLD EACH WIN' },
+    { n: 'BANDAGE ROLL', h: 'winheal', a: 5, d: 'HEAL 5 AFTER A WIN' },
+    { n: 'EAGLE EYE', h: 'draw', a: 2, d: 'DRAW 2 EXTRA CARDS' },
+    { n: 'LEATHER GLOVES', h: 'block', a: 3, d: '+3 BLOCK EACH TURN' },
+    { n: 'HERO MEDAL', h: 'str', a: 1, d: '+1 STR AT FIGHT START' },
+    { n: 'ROSE THORN', h: 'thorns', a: 3, d: '+3 THORNS AT START' },
+    { n: 'FULL PLATE', h: 'maxhp', a: 14, d: '+14 MAX HP' },
+    { n: 'SILVER CUP', h: 'goldwin', a: 12, d: '+12 GOLD EACH WIN' },
+    { n: 'HOT SOUP', h: 'healstart', a: 12, d: 'HEAL 12 AT FIGHT START' },
+    { n: 'HUNTER TROPHY', h: 'killheal', a: 5, d: 'HEAL 5 PER KILL' },
+    { n: 'TRADER BADGE', h: 'shop', a: 20, d: 'SHOP PRICES -20%' },
+    { n: 'WARM BLANKET', h: 'rest', a: 15, d: 'REST HEALS +15' },
+    { n: 'IRON RATION', h: 'winheal', a: 8, d: 'HEAL 8 AFTER A WIN' },
+    { n: 'CROW FEATHER', h: 'draw', a: 1, d: 'DRAW 1 EXTRA CARD' },
+    { n: 'STONE FIST', h: 'str', a: 1, d: '+1 STR AT FIGHT START' },
+    { n: 'WOLF PELT', h: 'maxhp', a: 8, d: '+8 MAX HP' },
+    { n: 'PIGGY BANK', h: 'goldwin', a: 20, d: '+20 GOLD EACH WIN' },
+    { n: 'SAGE SCROLL', h: 'energy', a: 1, d: '+1 ENERGY EACH TURN' },
+    { n: 'GUARD BADGE', h: 'block', a: 5, d: '+5 BLOCK EACH TURN' },
+    { n: 'VAMPIRE FANG', h: 'killheal', a: 4, d: 'HEAL 4 PER KILL' }
+  ];
+  function cqRelicAmt(h) {
+    var t = 0;
+    if (!cqRun) return 0;
+    for (var i = 0; i < cqRun.relics.length; i++) {
+      var r = CQ_RELICS[cqRun.relics[i]];
+      if (r && r.h === h) t += r.a;
+    }
+    return t;
+  }
+  function cqGainRelic() {
+    if (!cqRun) return -1;
+    var avail = [];
+    for (var i = 0; i < CQ_RELICS.length; i++) if (cqRun.relics.indexOf(i) < 0) avail.push(i);
+    if (avail.length === 0) return -1;
+    var ri = avail[Math.floor(cqRand() * avail.length)];
+    cqRun.relics.push(ri); cqLog.push('relic:' + CQ_RELICS[ri].n); return ri;
+  }
+  /* Events: 20 originals. fx verbs: healN, goldN (neg = pay), hp-N,
+     card (random pool card), relic, maxhpN, none. */
+  var CQ_EVENTS = [
+    { t: 'OLD SHRINE', o: [{ l: 'PRAY: HEAL 8', fx: 'heal8' }, { l: 'TAKE 40 GOLD', fx: 'gold40' }, { l: 'WALK AWAY', fx: 'none' }] },
+    { t: 'ROADSIDE TRADER', o: [{ l: 'BUY A CHARM', fx: 'relic' }, { l: 'SELL SCRAP +30G', fx: 'gold30' }, { l: 'MOVE ON', fx: 'none' }] },
+    { t: 'ABANDONED CART', o: [{ l: 'SEARCH: +50 GOLD', fx: 'gold50' }, { l: 'TAKE A CARD', fx: 'card' }, { l: 'LEAVE IT', fx: 'none' }] },
+    { t: 'WOUNDED TRAVELER', o: [{ l: 'HELP: HEAL 10', fx: 'heal10' }, { l: 'ROB HIM +40G', fx: 'gold40' }, { l: 'WALK PAST', fx: 'none' }] },
+    { t: 'MYSTIC FOUNTAIN', o: [{ l: 'DRINK: HEAL 12', fx: 'heal12' }, { l: 'BATHE: +6 MAX HP', fx: 'maxhp6' }, { l: 'LEAVE', fx: 'none' }] },
+    { t: 'GAMBLING DEN', o: [{ l: 'BET 20G', fx: 'gold-20' }, { l: 'CHEAT +50G', fx: 'gold50' }, { l: 'WALK OUT', fx: 'none' }] },
+    { t: 'HAUNTED TOMB', o: [{ l: 'OPEN FOR GOLD', fx: 'gold70' }, { l: 'OPEN FOR A CARD', fx: 'card' }, { l: 'SEAL IT', fx: 'none' }] },
+    { t: 'LOST CHILD', o: [{ l: 'GUIDE HOME: HEAL 8', fx: 'heal8' }, { l: 'REWARD +30G', fx: 'gold30' }, { l: 'IGNORE', fx: 'none' }] },
+    { t: 'BLACKSMITH', o: [{ l: 'FORGE: +6 MAX HP', fx: 'maxhp6' }, { l: 'BUY A CHARM', fx: 'relic' }, { l: 'MOVE ON', fx: 'none' }] },
+    { t: 'BEGGAR', o: [{ l: 'GIVE 20G', fx: 'gold-20' }, { l: 'GIVE FOOD: HEAL 6', fx: 'heal6' }, { l: 'IGNORE', fx: 'none' }] },
+    { t: 'ANCIENT TREE', o: [{ l: 'REST: HEAL 10', fx: 'heal10' }, { l: 'PICK FRUIT +25G', fx: 'gold25' }, { l: 'CHOP IT +40G', fx: 'gold40' }] },
+    { t: 'RIVER CROSSING', o: [{ l: 'PAY FERRY 15G', fx: 'gold-15' }, { l: 'SWIM: LOSE 6 HP', fx: 'hp-6' }, { l: 'FIND A BRIDGE', fx: 'none' }] },
+    { t: 'MERCHANT CARAVAN', o: [{ l: 'BUY A CHARM', fx: 'relic' }, { l: 'BUY A CARD', fx: 'card' }, { l: 'BROWSE', fx: 'none' }] },
+    { t: 'WOLF DEN', o: [{ l: 'FIGHT: LOSE 8 HP', fx: 'hp-8' }, { l: 'TAKE MEAT +30G', fx: 'gold30' }, { l: 'SNEAK PAST', fx: 'none' }] },
+    { t: 'GOLDEN STATUE', o: [{ l: 'PRY GEM +60G', fx: 'gold60' }, { l: 'PRAY: HEAL 8', fx: 'heal8' }, { l: 'LEAVE IT', fx: 'none' }] },
+    { t: 'CURSED MIRROR', o: [{ l: 'GAZE: LOSE 5 HP', fx: 'hp-5' }, { l: 'SMASH: +45G', fx: 'gold45' }, { l: 'COVER IT', fx: 'none' }] },
+    { t: 'HERBALIST', o: [{ l: 'BUY TEA: HEAL 9', fx: 'heal9' }, { l: 'BUY A CHARM', fx: 'relic' }, { l: 'CHAT', fx: 'none' }] },
+    { t: 'COLLAPSED MINE', o: [{ l: 'DIG: +55 GOLD', fx: 'gold55' }, { l: 'DIG: FIND A CARD', fx: 'card' }, { l: 'PASS BY', fx: 'none' }] },
+    { t: 'STORM SHELTER', o: [{ l: 'WAIT: HEAL 7', fx: 'heal7' }, { l: 'BRAVE IT: LOSE 4 HP', fx: 'hp-4' }, { l: 'HIDE', fx: 'none' }] },
+    { t: 'TRAVELING BARD', o: [{ l: 'TIP 10G', fx: 'gold-10' }, { l: 'LISTEN: HEAL 5', fx: 'heal5' }, { l: 'JOIN IN +20G', fx: 'gold20' }] }
+  ];
+  function cqCardsFor(charName) {
+    var out = [];
+    for (var i = 0; i < CQ_CARDS.length; i++) {
+      var tag = CQ_CARDS[i][6] || 'BRYN';
+      if (tag === charName || tag === 'ANY') out.push(i);
+    }
+    return out;
+  }
+  function cqRandomPoolCard() {
+    var pool = cqCardsFor(CQ_CHARS[cqCharIdx].name);
+    return pool[Math.floor(cqRand() * pool.length)];
+  }
+  function cqRunMaxHp() { return CQ_CHARS[cqCharIdx].hp + cqRelicAmt('maxhp'); }
+  function cqGenActMap(act) {
+    var rows = [];
+    for (var r = 0; r < 5; r++) {
+      var n = 2 + ((r + act) % 2);
+      var row = [];
+      for (var i = 0; i < n; i++) {
+        var t = 'combat', roll = cqRand();
+        if (r === 0) t = 'combat';
+        else if (r === 1) t = roll < 0.6 ? 'combat' : 'event';
+        else if (r === 2) t = roll < 0.4 ? 'combat' : (roll < 0.6 ? 'elite' : (roll < 0.8 ? 'shop' : 'treasure'));
+        else if (r === 3) t = roll < 0.5 ? 'combat' : (roll < 0.75 ? 'event' : 'rest');
+        else t = roll < 0.5 ? 'combat' : (roll < 0.75 ? 'shop' : 'rest');
+        row.push({ type: t, done: false });
+      }
+      rows.push(row);
+    }
+    rows.push([{ type: 'boss', done: false }]);
+    return rows;
+  }
+  function cqStartRun() {
+    cqRun = { act: 1, row: 0, gold: 50, relics: [], map: cqGenActMap(1), sel: 0, shopSel: 0, shopItems: null, eventIdx: -1, eventSel: 0, restSel: 0, node: null, treasureGold: 0, finalDone: false };
+    cqDeck = cqStarterDeck();
+    cqPlayer = cqNewUnit(cqRunMaxHp());
+    cqPhase = 'map'; cqPaused = false; cqOver = false; cqWon = false;
+    cqLog = [];
+    JMFGAMES.beep(700, 0.05);
+  }
+  function cqStartRunCombat(type, act) {
+    var foes = [];
+    var pool = { 1: [4, 5, 6], 2: [6, 7, 8], 3: [7, 8, 9] }[act] || [4, 5, 6];
+    var elites = { 1: [10, 11], 2: [12, 13], 3: [14, 15] }[act] || [10, 11];
+    var bosses = { 1: [16], 2: [17], 3: [18] }[act] || [16];
+    if (type === 'combat') {
+      foes = [pool[Math.floor(cqRand() * pool.length)]];
+      if (cqRand() < 0.4) foes.push(pool[Math.floor(cqRand() * pool.length)]);
+    } else if (type === 'elite') {
+      foes = [elites[Math.floor(cqRand() * elites.length)]];
+      if (cqRand() < 0.5) foes.push(pool[Math.floor(cqRand() * pool.length)]);
+    } else if (type === 'boss') { foes = bosses.slice(); }
+    else if (type === 'final') { foes = [19, 7]; }
+    cqStartCombat(-1, foes, type);
+  }
+  function cqEnterNode() {
+    var row = cqRun.map[cqRun.row];
+    var node = row[cqRun.sel];
+    cqRun.node = node; node.done = true;
+    if (node.type === 'combat' || node.type === 'elite' || node.type === 'boss') cqStartRunCombat(node.type, cqRun.act);
+    else if (node.type === 'shop') { cqGenShop(); cqPhase = 'shop'; }
+    else if (node.type === 'rest') { cqRun.restSel = 0; cqPhase = 'rest'; }
+    else if (node.type === 'treasure') {
+      var g = 50 + Math.floor(cqRand() * 51);
+      cqRun.gold += g; cqRun.treasureGold = g; cqGainRelic(); cqPhase = 'treasure';
+    } else if (node.type === 'event') {
+      cqRun.eventIdx = Math.floor(cqRand() * CQ_EVENTS.length); cqRun.eventSel = 0; cqPhase = 'event';
+    }
+  }
+  function cqAdvanceRow() { cqRun.row++; cqRun.sel = 0; cqPhase = 'map'; }
+  function cqGenShop() {
+    var pool = cqCardsFor(CQ_CHARS[cqCharIdx].name);
+    var items = [];
+    var disc = Math.min(50, cqRelicAmt('shop'));
+    for (var i = 0; i < 3; i++) {
+      var ci = pool[Math.floor(cqRand() * pool.length)];
+      var r = CQ_CARDS[ci][3];
+      var price = (r === 'C' ? 45 : (r === 'U' ? 68 : 95)) + Math.floor(cqRand() * 10);
+      items.push({ kind: 'card', ci: ci, price: Math.max(5, Math.floor(price * (100 - disc) / 100)), sold: false });
+    }
+    items.push({ kind: 'relic', ri: Math.floor(cqRand() * CQ_RELICS.length), price: Math.max(5, Math.floor(150 * (100 - disc) / 100)), sold: false });
+    items.push({ kind: 'remove', price: Math.max(5, Math.floor(75 * (100 - disc) / 100)), sold: false });
+    cqRun.shopItems = items; cqRun.shopSel = 0;
+  }
+  function cqShopBuy(sel) {
+    var it = cqRun.shopItems[sel];
+    if (!it || it.sold) return false;
+    if (it.kind === 'remove' && cqDeck.length <= 1) return false;
+    if (cqRun.gold < it.price) return false;
+    if (it.kind === 'card') cqDeck.push({ ci: it.ci, up: false });
+    else if (it.kind === 'relic') cqRun.relics.push(it.ri);
+    else if (it.kind === 'remove') cqDeck.splice(Math.floor(cqRand() * cqDeck.length), 1);
+    cqRun.gold -= it.price; it.sold = true; cqLog.push('shop:' + it.kind); return true;
+  }
+  function cqRestChoice(sel) {
+    if (sel === 0) {
+      var h = Math.floor(cqPlayer.maxHp * 0.3) + cqRelicAmt('rest');
+      cqPlayer.hp = Math.min(cqPlayer.maxHp, cqPlayer.hp + h);
+    } else {
+      for (var i = 0; i < cqDeck.length; i++) {
+        if (!cqDeck[i].up) { cqDeck[i].up = true; cqUpgradedName = CQ_CARDS[cqDeck[i].ci][0] + '+'; break; }
+      }
+    }
+    cqLog.push('rest:' + sel);
+    cqAdvanceRow();
+  }
+  function cqApplyEvent(sel) {
+    var ev = CQ_EVENTS[cqRun.eventIdx];
+    var o = ev.o[sel];
+    if (!o) return;
+    var fx = o.fx;
+    if (fx.indexOf('heal') === 0) cqPlayer.hp = Math.min(cqPlayer.maxHp, cqPlayer.hp + parseInt(fx.slice(4), 10));
+    else if (fx.indexOf('gold') === 0) cqRun.gold = Math.max(0, cqRun.gold + parseInt(fx.slice(4), 10));
+    else if (fx.indexOf('hp-') === 0) cqPlayer.hp = Math.max(1, cqPlayer.hp - parseInt(fx.slice(3), 10));
+    else if (fx === 'card') cqDeck.push({ ci: cqRandomPoolCard(), up: false });
+    else if (fx === 'relic') cqGainRelic();
+    else if (fx.indexOf('maxhp') === 0) { var n = parseInt(fx.slice(5), 10); cqPlayer.maxHp += n; cqPlayer.hp += n; }
+    cqLog.push('event:' + ev.t + ':' + o.l);
+    cqAdvanceRow();
+  }
+  /* ---------- Enemies: practice foes + a 3-foe pack ---------- */
+  var CQ_FOES = [
+    { name: 'TRAINING DUMMY', short: 'DUMMY', hp: 30, col: '#B08954',
+      pats: [{ k: 'atk', n: 2 }, { k: 'blk', n: 5 }, { k: '?', n: 0 }] },
+    { name: 'SCRAP RAT', short: 'RAT', hp: 24, col: '#8A7A6A',
+      pats: [{ k: 'atk', n: 6 }, { k: 'atk', n: 4 }, { k: 'blk', n: 6 }] },
+    { name: 'ASH HOUND', short: 'HOUND', hp: 34, col: '#C46A3A',
+      pats: [{ k: 'atk', n: 8 }, { k: 'buf', n: 1 }, { k: 'atk', n: 6 }, { k: 'deb', n: 1 }] },
+    { name: 'STONE BRUTE', short: 'BRUTE', hp: 48, col: '#7A8A9A',
+      pats: [{ k: 'atk', n: 10 }, { k: 'blk', n: 10 }, { k: 'atk', n: 12 }, { k: 'buf', n: 2 }, { k: '?', n: 0 }] },
+    { name: 'CAVE BAT', short: 'BAT', hp: 20, col: '#9A8AC0',
+      pats: [{ k: 'atk', n: 5 }, { k: 'atk', n: 7 }, { k: 'blk', n: 5 }] },
+    { name: 'MOSS SLIME', short: 'SLIME', hp: 26, col: '#7ED491',
+      pats: [{ k: 'atk', n: 4 }, { k: 'deb', n: 1 }, { k: 'blk', n: 7 }] },
+    { name: 'BANDIT', short: 'BANDIT', hp: 30, col: '#C0A060',
+      pats: [{ k: 'atk', n: 7 }, { k: 'atk', n: 5 }, { k: 'buf', n: 1 }] },
+    { name: 'CULTIST', short: 'CULT', hp: 28, col: '#8A6AC0',
+      pats: [{ k: 'deb', n: 1 }, { k: 'atk', n: 6 }, { k: 'buf', n: 1 }] },
+    { name: 'SKELETON', short: 'SKEL', hp: 32, col: '#E8E8E8',
+      pats: [{ k: 'atk', n: 6 }, { k: 'blk', n: 8 }, { k: 'atk', n: 8 }] },
+    { name: 'WOLF', short: 'WOLF', hp: 24, col: '#8A7A6A',
+      pats: [{ k: 'atk', n: 8 }, { k: 'atk', n: 6 }, { k: '?', n: 0 }] },
+    { name: 'RUST FIEND', short: 'FIEND', hp: 55, col: '#B06030',
+      pats: [{ k: 'atk', n: 9 }, { k: 'buf', n: 2 }, { k: 'atk', n: 11 }, { k: 'blk', n: 10 }] },
+    { name: 'EMBER IMP', short: 'IMP', hp: 50, col: '#E05838',
+      pats: [{ k: 'atk', n: 8 }, { k: 'deb', n: 1 }, { k: 'atk', n: 10 }, { k: 'buf', n: 1 }] },
+    { name: 'THORN BEAST', short: 'BEAST', hp: 60, col: '#5A8A4A',
+      pats: [{ k: 'atk', n: 10 }, { k: 'blk', n: 12 }, { k: 'atk', n: 12 }] },
+    { name: 'GRAVE WRAITH', short: 'WRAITH', hp: 58, col: '#A0A0C0',
+      pats: [{ k: 'deb', n: 2 }, { k: 'atk', n: 9 }, { k: 'atk', n: 11 }] },
+    { name: 'STORM HERALD', short: 'HERALD', hp: 62, col: '#6AA0E0',
+      pats: [{ k: 'atk', n: 11 }, { k: 'buf', n: 2 }, { k: 'atk', n: 9 }, { k: 'deb', n: 1 }] },
+    { name: 'CAVE TROLL', short: 'TROLL', hp: 70, col: '#7A6A4A',
+      pats: [{ k: 'atk', n: 12 }, { k: 'blk', n: 14 }, { k: 'atk', n: 14 }] },
+    { name: 'SCRAP GOLEM', short: 'GOLEM', hp: 85, col: '#8A8A9A',
+      pats: [{ k: 'atk', n: 12 }, { k: 'blk', n: 15 }, { k: 'atk', n: 14 }, { k: 'buf', n: 2 }] },
+    { name: 'ASH WITCH', short: 'WITCH', hp: 95, col: '#C06AA0',
+      pats: [{ k: 'deb', n: 2 }, { k: 'atk', n: 13 }, { k: 'buf', n: 2 }, { k: 'atk', n: 15 }] },
+    { name: 'IRON TYRANT', short: 'TYRANT', hp: 110, col: '#5A6A7A',
+      pats: [{ k: 'atk', n: 14 }, { k: 'blk', n: 16 }, { k: 'atk', n: 16 }, { k: 'buf', n: 2 }] },
+    { name: 'VOID KING', short: 'KING', hp: 140, col: '#3A2A5A',
+      pats: [{ k: 'atk', n: 16 }, { k: 'deb', n: 2 }, { k: 'atk', n: 18 }, { k: 'buf', n: 3 }] }
+  ];
+  var CQ_FIGHTS = [
+    { name: 'TRAINING DUMMY', foes: [0] },
+    { name: 'SCRAP RAT', foes: [1] },
+    { name: 'ASH HOUND', foes: [2] },
+    { name: 'STONE BRUTE', foes: [3] },
+    { name: 'PACK OF THREE', foes: [1, 2, 3] }
+  ];
+
+  /* ---------- State ---------- */
+  var cqPhase = 'select'; // 'select' | 'fight' | 'combat' | 'enemy' | 'win' | 'lose'
+  var cqCharIdx = 0, cqFightIdx = 0;
+  var cqPlayer = null; // {hp,maxHp,block,str,vuln,weak,frail,poison,thorns}
+  var cqEnemies = [];  // {def,hp,maxHp,block,str,vuln,weak,frail,poison,thorns,patIdx,intent,x,y,alive}
+  var cqDeck = [];     // full deck instances {ci,up} (persist across fights in a session)
+  var cqDrawPile = [], cqHand = [], cqDiscard = [], cqExhaust = [];
+  var cqEnergy = 3, cqHandSel = 0, cqHandWin = 0, cqTgt = 0;
+  var cqTurn = 1, cqFightDmg = 0, cqUpgradedName = '';
+  var cqPaused = false, cqOver = false, cqWon = false;
+  var cqFrame = 0, cqAiT = 0, cqEnemyActIdx = 0;
+  /* Animation state (all drawn in drawCardQuest). */
+  var cqLunge = null;  // {who:'p'|enemyIndex, t}
+  var cqSlash = null;  // {x,y,t}
+  var cqPops = [];     // {x,y,txt,t,col}
+  var cqParts = [];    // {x,y,vx,vy,life,col,r}
+  var cqShake = 0, cqFlash = 0;
+  var cqLog = [];      // animation/event log for tests
+
+  function cqNewUnit(hp) {
+    return { hp: hp, maxHp: hp, block: 0, str: 0, vuln: 0, weak: 0, frail: 0, poison: 0, thorns: 0, burn: 0, shadow: 0, rune: 0, spark: 0 };
+  }
+  function cqStarterDeck() {
+    if (CQ_CHARS[cqCharIdx].name === 'BRYN') {
+      var d = [], names = ['CLEAVE', 'CLEAVE', 'CLEAVE', 'CLEAVE', 'CLEAVE', 'GUARD', 'GUARD', 'GUARD', 'GUARD', 'WAR CRY'];
+      for (var i = 0; i < names.length; i++) d.push({ ci: cqCardByName(names[i]), up: false });
+      return d;
+    }
+    var pool = [], a = -1, s = -1, p = -1;
+    for (var i = 0; i < CQ_CARDS.length; i++) {
+      if ((CQ_CARDS[i][6] || 'BRYN') !== CQ_CHARS[cqCharIdx].name) continue;
+      pool.push(i);
+      if (a < 0 && CQ_CARDS[i][2] === 'A') a = i;
+      if (s < 0 && CQ_CARDS[i][2] === 'S') s = i;
+      if (p < 0 && CQ_CARDS[i][2] === 'P') p = i;
+    }
+    var out = [];
+    for (var j = 0; j < 5; j++) out.push({ ci: a, up: false });
+    for (var k = 0; k < 4; k++) out.push({ ci: s, up: false });
+    out.push({ ci: p, up: false });
+    return out;
+  }
+  function cqShuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(cqRand() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+  }
+  function startCardQuest() {
+    cqPhase = 'select'; cqCharIdx = 0; cqFightIdx = 0;
+    cqPlayer = cqNewUnit(CQ_CHARS[0].hp);
+    cqRun = null; cqRunNodeType = null;
+    cqEnemies = []; cqDeck = cqStarterDeck();
+    cqDrawPile = []; cqHand = []; cqDiscard = []; cqExhaust = [];
+    cqEnergy = 3; cqHandSel = 0; cqHandWin = 0; cqTgt = 0; cqTurn = 1;
+    cqFightDmg = 0; cqUpgradedName = '';
+    cqPaused = false; cqOver = false; cqWon = false;
+    cqLunge = null; cqSlash = null; cqPops = []; cqParts = [];
+    cqShake = 0; cqFlash = 0; cqLog = [];
+    screen = 'play';
+    JMFGAMES.musicPlay('cards');
+    JMFGAMES.beep(660, 0.08);
+  }
+  function cqSaveProgress() { cqSave(); }
+
+  /* ---------- Shared damage / block math (player and enemies alike) ---------- */
+  function cqCalcDmg(att, def, base) {
+    var d = base + (att.str || 0);
+    if (att.weak > 0) d = Math.floor(d * 0.75);
+    if (def.vuln > 0) d = Math.floor(d * 1.5);
+    return Math.max(0, d);
+  }
+  function cqGainBlock(u, n) {
+    var b = n;
+    if (u.frail > 0) b = Math.floor(b * 0.75);
+    u.block += b;
+    return b;
+  }
+  function cqHurtRaw(u, n) { // ignores block (poison, thorns)
+    u.hp -= n;
+    return n;
+  }
+  /* One attack hit: attacker lunges, slash arc + damage number pop at the
+     defender, screen shake on big hits, thorns reflect back. Returns the
+     HP damage actually dealt (after block). */
+  function cqAttack(att, def, base, pierce, ax, ay, dx, dy) {
+    var d = cqCalcDmg(att, def, base);
+    var dealt = 0;
+    if (pierce) { dealt = d; def.hp -= d; }
+    else {
+      var blocked = Math.min(def.block, d);
+      def.block -= blocked;
+      dealt = d - blocked;
+      def.hp -= dealt;
+    }
+    cqPops.push({ x: dx, y: dy - 8, txt: '-' + dealt, t: 30, col: '#FFD93D' });
+    cqLog.push('hit:' + dealt);
+    if (dealt >= 12) { cqShake = Math.max(cqShake, 4); }
+    if (att === cqPlayer) cqFightDmg += dealt;
+    if (def.hp <= 0) { def.hp = 0; cqKillBurst(dx, dy, '#FF6B35'); }
+    else if (def.thorns > 0 && dealt > 0) {
+      var back = def.thorns;
+      att.hp -= back;
+      cqPops.push({ x: ax, y: ay - 8, txt: '-' + back, t: 30, col: '#7ED491' });
+      cqLog.push('thorns:' + back);
+      if (att.hp <= 0) att.hp = 0;
+    }
+    return dealt;
+  }
+  function cqKillBurst(x, y, col) {
+    for (var i = 0; i < 12; i++) {
+      cqParts.push({ x: x, y: y, vx: (cqRand() - 0.5) * 3, vy: -0.5 - cqRand() * 2,
+        life: 22 + Math.floor(cqRand() * 12), col: (i % 2 ? col : '#FFD93D'), r: 1 + cqRand() });
+    }
+    cqShake = Math.max(cqShake, 5);
+    cqLog.push('kill');
+    JMFGAMES.beep(180, 0.2);
+  }
+  function cqPoisonTick(u, x, y) {
+    if (u.poison > 0 && u.hp > 0) {
+      var n = u.poison;
+      cqHurtRaw(u, n);
+      cqPops.push({ x: x, y: y - 8, txt: '-' + n + ' PSN', t: 30, col: '#A8E063' });
+      cqLog.push('poison:' + n);
+      u.poison--;
+      if (u.hp <= 0) { u.hp = 0; cqKillBurst(x, y, '#A8E063'); }
+    }
+  }
+  function cqBurnTick(u, x, y) {
+    if (u.burn > 0 && u.hp > 0) {
+      var n = u.burn;
+      cqHurtRaw(u, n);
+      cqPops.push({ x: x, y: y - 8, txt: '-' + n + ' BRN', t: 30, col: '#FF9F1C' });
+      cqLog.push('burn:' + n);
+      if (u.hp <= 0) { u.hp = 0; cqKillBurst(x, y, '#FF9F1C'); }
+    }
+  }
+  function cqDecayStatuses(u) {
+    if (u.vuln > 0) u.vuln--;
+    if (u.weak > 0) u.weak--;
+    if (u.frail > 0) u.frail--;
+  }
+  function cqIntentText(e) {
+    var p = e.intent;
+    if (!p) return '?';
+    if (p.k === 'atk') return 'ATK ' + p.n;
+    if (p.k === 'blk') return 'BLOCK ' + p.n;
+    if (p.k === 'buf') return 'STR +' + p.n;
+    if (p.k === 'deb') return 'WEAK ' + p.n;
+    return '?';
+  }
+  function cqNextIntent(e) {
+    e.patIdx = (e.patIdx + 1) % e.def.pats.length;
+    e.intent = e.def.pats[e.patIdx];
+  }
+
+  /* ---------- Combat flow ---------- */
+  function cqStartCombat(fightIdx, foes, nodeType) {
+    var list = foes || CQ_FIGHTS[fightIdx].foes;
+    cqRunNodeType = nodeType || null;
+    var keepHp = (cqRun && cqPlayer) ? cqPlayer.hp : null;
+    cqPlayer = cqNewUnit(cqRun ? cqRunMaxHp() : CQ_CHARS[cqCharIdx].hp);
+    if (keepHp !== null) cqPlayer.hp = Math.min(keepHp, cqPlayer.maxHp);
+    cqPlayer.str += cqRelicAmt('str');
+    cqPlayer.thorns += cqRelicAmt('thorns');
+    if (cqRelicAmt('healstart') > 0) cqPlayer.hp = Math.min(cqPlayer.maxHp, cqPlayer.hp + cqRelicAmt('healstart'));
+    cqEnemies = [];
+    var xs = [150, 185, 215];
+    if (list.length === 1) xs = [185];
+    else if (list.length === 2) xs = [165, 205];
+    for (var i = 0; i < list.length; i++) {
+      var def = CQ_FOES[list[i]];
+      var e = cqNewUnit(def.hp);
+      e.def = def; e.patIdx = 0; e.intent = def.pats[0];
+      e.x = xs[i]; e.y = 52; e.alive = true;
+      cqEnemies.push(e);
+    }
+    cqDrawPile = cqDeck.slice(); cqShuffle(cqDrawPile);
+    cqHand = []; cqDiscard = []; cqExhaust = [];
+    cqEnergy = 3; cqHandSel = 0; cqHandWin = 0; cqTgt = 0; cqTurn = 1;
+    cqFightDmg = 0; cqUpgradedName = '';
+    cqPhase = 'combat'; cqPaused = false; cqOver = false;
+    cqLunge = null; cqSlash = null; cqPops = []; cqParts = [];
+    cqShake = 0; cqFlash = 0;
+    cqStartPlayerTurn();
+    JMFGAMES.beep(760, 0.08);
+  }
+  function cqStartPlayerTurn() {
+    cqPoisonTick(cqPlayer, 36, 52);
+    cqBurnTick(cqPlayer, 36, 52);
+    if (cqPlayer.hp <= 0) { cqFinish(false); return; }
+    cqDecayStatuses(cqPlayer);
+    cqPlayer.block = 0;
+    cqEnergy = 3 + cqRelicAmt('energy');
+    if (cqPlayer.shadow > 0) cqGainBlock(cqPlayer, cqPlayer.shadow);
+    if (cqPlayer.rune > 0) {
+      var alive0 = cqAliveEnemies();
+      for (var ri = 0; ri < alive0.length; ri++) {
+        var re = alive0[ri];
+        re.hp -= cqPlayer.rune;
+        cqPops.push({ x: re.x, y: re.y - 8, txt: '-' + cqPlayer.rune + ' RUNE', t: 30, col: '#C084FC' });
+        cqLog.push('rune:' + cqPlayer.rune);
+        if (re.hp <= 0) { re.hp = 0; cqKillBurst(re.x, re.y, '#C084FC'); }
+      }
+      cqCheckDeaths();
+      if (cqPhase !== 'combat') return;
+    }
+    if (cqRelicAmt('block') > 0) cqGainBlock(cqPlayer, cqRelicAmt('block'));
+    cqDrawCards(5 + cqRelicAmt('draw'));
+    cqHandSel = 0; cqHandWin = 0;
+    cqPhase = 'combat';
+  }
+  function cqDrawCards(n) {
+    for (var i = 0; i < n; i++) {
+      if (cqDrawPile.length === 0) {
+        if (cqDiscard.length === 0) break;
+        cqDrawPile = cqDiscard; cqDiscard = [];
+        cqShuffle(cqDrawPile);
+        cqLog.push('reshuffle');
+      }
+      var c = cqDrawPile.pop();
+      if (cqHand.length >= 10) { cqDiscard.push(c); }
+      else cqHand.push(c);
+    }
+  }
+  function cqAliveEnemies() {
+    var out = [];
+    for (var i = 0; i < cqEnemies.length; i++) if (cqEnemies[i].alive) out.push(cqEnemies[i]);
+    return out;
+  }
+  function cqTarget() {
+    var alive = cqAliveEnemies();
+    if (alive.length === 0) return null;
+    if (cqTgt >= alive.length) cqTgt = 0;
+    return alive[cqTgt];
+  }
+  function cqPlayCard(idx) {
+    if (cqPhase !== 'combat' || cqPaused) return false;
+    if (idx < 0 || idx >= cqHand.length) return false;
+    var card = cqHand[idx];
+    var f = cqEff(card);
+    if (f.cost > cqEnergy) { JMFGAMES.beep(160, 0.08); cqLog.push('noenergy'); return false; }
+    var tgt = cqTarget();
+    if (f.dmg > 0 && !tgt) return false;
+    cqEnergy -= f.cost;
+    cqHand.splice(idx, 1);
+    if (cqHandSel >= cqHand.length) cqHandSel = Math.max(0, cqHand.length - 1);
+    if (cqHandSel < cqHandWin) cqHandWin = cqHandSel;
+    /* Card-play flash + attacker lunge + slash arc (visible animation). */
+    cqFlash = 8;
+    cqLunge = { who: 'p', t: 12 };
+    if (f.dmg > 0) {
+      var targets = f.all ? cqAliveEnemies() : [tgt];
+      for (var ti = 0; ti < targets.length; ti++) {
+        var e = targets[ti];
+        cqSlash = { x: e.x, y: e.y, t: 14 };
+        for (var h = 0; h < f.hits; h++) {
+          cqAttack(cqPlayer, e, f.dmg, f.pierce, 36, 52, e.x, e.y);
+          if (!e.alive) break;
+        }
+      }
+    }
+    if (f.block > 0) {
+      var b = cqGainBlock(cqPlayer, f.block);
+      cqPops.push({ x: 36, y: 44, txt: '+' + b + ' BLK', t: 30, col: '#7ED491' });
+    }
+    if (f.str > 0) { cqPlayer.str += f.str; cqPops.push({ x: 36, y: 44, txt: 'STR +' + f.str, t: 30, col: '#FF9F1C' }); }
+    if (f.thorns > 0) { cqPlayer.thorns += f.thorns; }
+    if (f.shadow > 0) { cqPlayer.shadow += f.shadow; }
+    if (f.rune > 0) { cqPlayer.rune += f.rune; }
+    if (f.spark > 0) { cqPlayer.spark += f.spark; }
+    if (f.growth > 0) { cqPlayer.maxHp += f.growth; cqPlayer.hp += f.growth; cqPops.push({ x: 36, y: 44, txt: 'MAX HP +' + f.growth, t: 30, col: '#7ED491' }); }
+    if (f.heal > 0) {
+      cqPlayer.hp = Math.min(cqPlayer.maxHp, cqPlayer.hp + f.heal);
+      cqPops.push({ x: 36, y: 44, txt: '+' + f.heal + ' HP', t: 30, col: '#7ED491' });
+    }
+    if (f.draw > 0) cqDrawCards(f.draw);
+    if (f.energy > 0) cqEnergy += f.energy;
+    if (tgt) {
+      if (f.vuln > 0) tgt.vuln += f.vuln;
+      if (f.weak > 0) tgt.weak += f.weak;
+      if (f.frail > 0) tgt.frail += f.frail;
+      if (f.poison > 0) tgt.poison += f.poison;
+      if (f.burn > 0) tgt.burn += f.burn;
+    }
+    if (f.vulnAll > 0 || f.weakAll > 0) {
+      var all = cqAliveEnemies();
+      for (var ai = 0; ai < all.length; ai++) {
+        if (f.vulnAll > 0) all[ai].vuln += f.vulnAll;
+        if (f.weakAll > 0) all[ai].weak += f.weakAll;
+      }
+    }
+    if (f.dmg > 0 && cqPlayer.spark > 0) {
+      var salive = cqAliveEnemies();
+      if (salive.length > 0) {
+        var se = salive[Math.floor(cqRand() * salive.length)];
+        se.hp -= cqPlayer.spark;
+        cqPops.push({ x: se.x, y: se.y - 8, txt: '-' + cqPlayer.spark + ' SPK', t: 30, col: '#FFD93D' });
+        cqLog.push('spark:' + cqPlayer.spark);
+        if (se.hp <= 0) { se.hp = 0; cqKillBurst(se.x, se.y, '#FFD93D'); }
+      }
+    }
+    if (f.exhaust) cqExhaust.push(card); else cqDiscard.push(card);
+    cqLog.push('play:' + f.name);
+    JMFGAMES.beep(880, 0.06);
+    cqCheckDeaths();
+    if (cqPhase === 'combat' && cqPlayer.hp <= 0) cqFinish(false);
+    return true;
+  }
+  function cqCheckDeaths() {
+    var deaths = 0;
+    for (var i = 0; i < cqEnemies.length; i++) {
+      var e = cqEnemies[i];
+      if (e.alive && e.hp <= 0) { e.alive = false; e.hp = 0; deaths++; }
+    }
+    if (deaths > 0 && cqRun && cqRelicAmt('killheal') > 0) {
+      cqPlayer.hp = Math.min(cqPlayer.maxHp, cqPlayer.hp + deaths * cqRelicAmt('killheal'));
+    }
+    if (cqAliveEnemies().length === 0 && cqPhase === 'combat') cqFinish(true);
+  }
+  function cqEndTurn() {
+    if (cqPhase !== 'combat' || cqPaused) return;
+    cqDiscard = cqDiscard.concat(cqHand);
+    cqHand = [];
+    cqPhase = 'enemy';
+    cqEnemyActIdx = 0;
+    cqAiT = 36;
+    JMFGAMES.beep(440, 0.06);
+  }
+  function cqEnemyAct(e) {
+    if (!e.alive) return;
+    cqPoisonTick(e, e.x, e.y);
+    cqBurnTick(e, e.x, e.y);
+    if (!e.alive) { cqCheckDeaths(); return; }
+    cqDecayStatuses(e);
+    var p = e.intent;
+    cqLunge = { who: 'e' + cqEnemies.indexOf(e), t: 12 };
+    if (p.k === 'atk') {
+      cqSlash = { x: 36, y: 52, t: 14 };
+      cqAttack(e, cqPlayer, p.n, false, e.x, e.y, 36, 52);
+    } else if (p.k === 'blk') {
+      var b = cqGainBlock(e, p.n);
+      cqPops.push({ x: e.x, y: e.y - 14, txt: '+' + b + ' BLK', t: 30, col: '#7ED491' });
+    } else if (p.k === 'buf') {
+      e.str += p.n;
+      cqPops.push({ x: e.x, y: e.y - 14, txt: 'STR +' + p.n, t: 30, col: '#FF9F1C' });
+    } else if (p.k === 'deb') {
+      cqPlayer.weak += p.n;
+      cqPops.push({ x: 36, y: 44, txt: 'WEAK ' + p.n, t: 30, col: '#C084FC' });
+    } else { // '?' unknown: resolves to a strike or a guard at random
+      if (cqRand() < 0.5) { cqSlash = { x: 36, y: 52, t: 14 }; cqAttack(e, cqPlayer, 8, false, e.x, e.y, 36, 52); }
+      else { var b2 = cqGainBlock(e, 8); cqPops.push({ x: e.x, y: e.y - 14, txt: '+' + b2 + ' BLK', t: 30, col: '#7ED491' }); }
+    }
+    cqNextIntent(e);
+    if (cqPlayer.hp <= 0) { cqPlayer.hp = 0; cqFinish(false); }
+  }
+  function cqFinish(won) {
+    cqWon = won;
+    cqOver = true;
+    if (cqRun) {
+      if (won) {
+        var nt = cqRun.node ? cqRun.node.type : 'combat';
+        var isFinal = !!cqRun.finalDone && nt === 'boss';
+        var gold = nt === 'elite' ? 40 : (nt === 'boss' ? 60 : 20);
+        gold += cqRelicAmt('goldwin');
+        cqRun.gold += gold;
+        CQ_POINTS += nt === 'boss' ? 50 : (nt === 'elite' ? 25 : 10);
+        if (cqRelicAmt('winheal') > 0) cqPlayer.hp = Math.min(cqPlayer.maxHp, cqPlayer.hp + cqRelicAmt('winheal'));
+        cqDeck.push({ ci: cqRandomPoolCard(), up: false });
+        cqSave(); cqSaveMeta();
+        JMFGAMES.beep(880, 0.25);
+        if (nt === 'boss') {
+          if (isFinal) {
+            CQ_POINTS += 100; cqSaveMeta();
+            cqRun = null; cqPhase = 'runwin'; screen = 'over'; cqOver = true; return;
+          }
+          if (cqRun.act < 3) {
+            cqRun.act++; cqRun.map = cqGenActMap(cqRun.act); cqRun.row = 0; cqRun.sel = 0;
+            cqPhase = 'map'; cqOver = false; screen = 'play'; return;
+          }
+          cqRun.finalDone = true;
+          cqStartRunCombat('final', 3); return;
+        }
+        cqRun.row++; cqRun.sel = 0; cqPhase = 'map'; cqOver = false; screen = 'play'; return;
+      }
+      cqSave(); cqSaveMeta();
+      cqRun = null; cqPhase = 'lose'; screen = 'over';
+      JMFGAMES.beep(220, 0.3);
+      return;
+    }
+    cqPhase = won ? 'win' : 'lose';
+    screen = 'over';
+    if (won) {
+      CQ_WINS++;
+      if (cqFightDmg > CQ_BEST) CQ_BEST = cqFightDmg;
+      /* Victory upgrades one random deck card (name+). */
+      var pick = Math.floor(cqRand() * cqDeck.length);
+      cqDeck[pick].up = true;
+      cqUpgradedName = CQ_CARDS[cqDeck[pick].ci][0] + '+';
+      cqSave();
+      JMFGAMES.beep(880, 0.25);
+    } else {
+      cqSave();
+      JMFGAMES.beep(220, 0.3);
+    }
+  }
+
+  /* ---------- Input ---------- */
+  function cqSelMove(d) {
+    if (cqPhase === 'select') {
+      cqCharIdx = (cqCharIdx + d + CQ_CHARS.length) % CQ_CHARS.length;
+    } else if (cqPhase === 'fight') {
+      cqFightIdx = (cqFightIdx + d + CQ_FIGHTS.length + 1) % (CQ_FIGHTS.length + 1);
+    } else if (cqPhase === 'map') {
+      if (cqRun) { var _n = cqRun.map[cqRun.row].length; cqRun.sel = (cqRun.sel + d + _n) % _n; }
+    } else if (cqPhase === 'shop') {
+      if (cqRun) cqRun.shopSel = (cqRun.shopSel + d + 5) % 5;
+    } else if (cqPhase === 'rest') {
+      if (cqRun) cqRun.restSel = (cqRun.restSel + d + 2) % 2;
+    } else if (cqPhase === 'event') {
+      if (cqRun) { var _o = CQ_EVENTS[cqRun.eventIdx].o.length; cqRun.eventSel = (cqRun.eventSel + d + _o) % _o; }
+    } else if (cqPhase === 'combat' || cqPhase === 'enemy') {
+      var alive = cqAliveEnemies();
+      if (alive.length > 0) cqTgt = (cqTgt + d + alive.length) % alive.length;
+    }
+    JMFGAMES.beep(600, 0.04);
+  }
+  function cqHandMove(d) {
+    if (cqPhase !== 'combat' || cqPaused || cqHand.length === 0) return;
+    cqHandSel = (cqHandSel + d + cqHand.length) % cqHand.length;
+    if (cqHandSel < cqHandWin) cqHandWin = cqHandSel;
+    if (cqHandSel >= cqHandWin + 4) cqHandWin = cqHandSel - 3;
+    JMFGAMES.beep(600, 0.03);
+  }
+  function cqAction() {
+    if (cqPaused) return;
+    if (cqPhase === 'select') {
+      if (!cqIsUnlocked(cqCharIdx)) {
+        if (cqTryUnlock(cqCharIdx)) { JMFGAMES.beep(880, 0.15); } else { JMFGAMES.beep(160, 0.08); }
+        return;
+      }
+      cqPhase = 'fight';
+      JMFGAMES.beep(700, 0.05);
+      return;
+    }
+    if (cqPhase === 'fight') {
+      if (cqFightIdx >= CQ_FIGHTS.length) { cqStartRun(); return; }
+      cqStartCombat(cqFightIdx); return;
+    }
+    if (cqPhase === 'map') { cqEnterNode(); return; }
+    if (cqPhase === 'shop') { cqShopBuy(cqRun.shopSel); return; }
+    if (cqPhase === 'rest') { cqRestChoice(cqRun.restSel); return; }
+    if (cqPhase === 'event') { cqApplyEvent(cqRun.eventSel); return; }
+    if (cqPhase === 'treasure') { cqAdvanceRow(); return; }
+    if (cqPhase === 'runwin') { cqPhase = 'select'; screen = 'play'; cqOver = false; JMFGAMES.beep(700, 0.05); return; }
+    if (cqPhase === 'combat') { cqPlayCard(cqHandSel); return; }
+    if (cqPhase === 'win' || cqPhase === 'lose') {
+      cqPhase = 'fight'; screen = 'play'; cqOver = false;
+      JMFGAMES.beep(700, 0.05);
+      return;
+    }
+  }
+  function cqBack() {
+    if (cqPhase === 'combat') { cqEndTurn(); return; } // B = END TURN (real)
+    if (cqPhase === 'fight') { cqPhase = 'select'; JMFGAMES.beep(500, 0.04); return; }
+    if (cqPhase === 'map') { cqRun = null; cqPhase = 'select'; JMFGAMES.beep(500, 0.04); return; }
+    if (cqPhase === 'shop' || cqPhase === 'rest') { cqAdvanceRow(); return; }
+    if (cqPhase === 'select') { /* top level: Menu quits */ return; }
+  }
+  function cqTogglePause() {
+    if (cqOver) return;
+    cqPaused = !cqPaused;
+    JMFGAMES.beep(330, 0.06);
+  }
+
+  /* ---------- Update ---------- */
+  function cqUpdate() {
+    if (screen !== 'play') return;
+    cqFrame++;
+    if (cqFlash > 0) cqFlash -= 0.5;
+    if (cqShake > 0) cqShake = Math.max(0, cqShake - 0.5);
+    if (cqLunge && --cqLunge.t <= 0) cqLunge = null;
+    if (cqSlash && --cqSlash.t <= 0) cqSlash = null;
+    for (var i = cqPops.length - 1; i >= 0; i--) {
+      cqPops[i].y -= 0.5; cqPops[i].t--;
+      if (cqPops[i].t <= 0) cqPops.splice(i, 1);
+    }
+    for (var j = cqParts.length - 1; j >= 0; j--) {
+      var pt = cqParts[j];
+      pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.08; pt.life--;
+      if (pt.life <= 0) cqParts.splice(j, 1);
+    }
+    if (cqPhase === 'enemy' && !cqPaused) {
+      if (cqAiT > 0) { cqAiT--; return; }
+      if (cqEnemyActIdx < cqEnemies.length) {
+        cqEnemyAct(cqEnemies[cqEnemyActIdx]);
+        cqEnemyActIdx++;
+        cqAiT = 30;
+        if (cqPhase !== 'enemy') return; // fight ended mid-sequence
+        return;
+      }
+      cqTurn++;
+      cqStartPlayerTurn();
+    }
+  }
+
+  /* ---------- Draw ---------- */
+  function cqDrawCard(cx, cy, card, sel) {
+    var f = cqEff(card);
+    var w = 50, h = 44;
+    ctx.fillStyle = sel ? '#FFD93D' : '#2A2A5A';
+    ctx.fillRect(cx - 1, cy - 1, w + 2, h + 2);
+    ctx.fillStyle = f.rarity === 'R' ? '#C084FC' : (f.rarity === 'U' ? '#7ED491' : '#F5E9C8');
+    ctx.fillRect(cx, cy, w, h);
+    ctx.fillStyle = '#1E1E5A';
+    ctx.font = 'bold 6px monospace'; ctx.textAlign = 'left';
+    var nm = f.name.length > 10 ? f.name.slice(0, 10) : f.name;
+    ctx.fillText(nm, cx + 12, cy + 9);
+    ctx.fillStyle = '#FFD93D';
+    ctx.beginPath(); ctx.arc(cx + 7, cy + 7, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#1E1E5A';
+    ctx.fillText(String(f.cost), cx + 5, cy + 10);
+    ctx.font = '6px monospace';
+    ctx.fillStyle = '#1E1E5A';
+    ctx.fillText(f.type === 'A' ? 'ATK' : (f.type === 'S' ? 'SKILL' : 'POWER'), cx + 3, cy + 18);
+    /* Effect text: wrapped to lines of at most 13 chars, inside the card. */
+    var toks = cqFxText(f).split(', ');
+    var lines = [''], li = 0;
+    for (var i = 0; i < toks.length; i++) {
+      if (lines[li].length > 0 && lines[li].length + 2 + toks[i].length > 13) { li++; lines[li] = ''; }
+      lines[li] += (lines[li].length ? ', ' : '') + toks[i];
+    }
+    for (var l = 0; l < Math.min(3, lines.length); l++) ctx.fillText(lines[l], cx + 3, cy + 27 + l * 7);
+    ctx.textAlign = 'left';
+  }
+  function cqDrawUnit(x, y, u, label, col, lungeX) {
+    var lx = x + (lungeX || 0);
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(lx, y, 11, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#1E1E5A';
+    ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(label, lx, y + 3);
+    ctx.textAlign = 'left';
+    /* HP bar (24px wide, under the unit). */
+    ctx.fillStyle = '#3A3A3A';
+    ctx.fillRect(x - 12, y + 15, 24, 4);
+    ctx.fillStyle = '#E5484D';
+    ctx.fillRect(x - 12, y + 15, Math.max(0, 24 * u.hp / u.maxHp), 4);
+    ctx.fillStyle = '#F5E9C8'; ctx.font = '7px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(u.hp + '/' + u.maxHp, x, y + 26);
+    ctx.textAlign = 'left';
+    if (u.block > 0) {
+      ctx.fillStyle = '#7ED491'; ctx.font = '7px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('BLK ' + u.block, x, y + 35);
+      ctx.textAlign = 'left';
+    }
+  }
+  function cqStatusLine(u) {
+    var s = [];
+    if (u.str > 0) s.push('STR' + u.str);
+    if (u.vuln > 0) s.push('VUL' + u.vuln);
+    if (u.weak > 0) s.push('WK' + u.weak);
+    if (u.frail > 0) s.push('FRL' + u.frail);
+    if (u.poison > 0) s.push('PSN' + u.poison);
+    if (u.burn > 0) s.push('BRN' + u.burn);
+    if (u.shadow > 0) s.push('SHD' + u.shadow);
+    if (u.rune > 0) s.push('RUN' + u.rune);
+    if (u.spark > 0) s.push('SPK' + u.spark);
+    if (u.thorns > 0) s.push('THN' + u.thorns);
+    return s.join(' ');
+  }
+  function drawCardQuest() {
+    ctx.save();
+    if (cqShake > 0) {
+      var shx = Math.round((cqRand() - 0.5) * cqShake);
+      var shy = Math.round((cqRand() - 0.5) * cqShake);
+      ctx.translate(shx, shy);
+    }
+    ctx.fillStyle = '#1E1E4A';
+    ctx.fillRect(0, 0, 240, 160);
+    if (cqPhase === 'select') {
+      ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('CARD QUEST', 120, 20);
+      ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace';
+      ctx.fillText('PICK YOUR FIGHTER', 120, 32);
+      ctx.textAlign = 'left';
+      for (var i = 0; i < CQ_CHARS.length; i++) {
+        var ch = CQ_CHARS[i], y = 44 + i * 19;
+        if (i === cqCharIdx) { ctx.fillStyle = '#FFD93D'; ctx.fillRect(10, y - 10, 220, 17); ctx.fillStyle = '#1E1E5A'; }
+        else ctx.fillStyle = '#E8E8FF';
+        ctx.font = 'bold 9px monospace';
+        ctx.fillText(ch.name + ' THE ' + ch.title, 16, y);
+        ctx.font = '7px monospace';
+        ctx.fillText(cqIsUnlocked(i) ? ('HP ' + ch.hp + ' - ' + ch.info) : ('LOCKED - ' + (ch.cost || 0) + ' PTS'), 16, y + 8);
+      }
+      ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('POINTS ' + CQ_POINTS + '  WINS ' + CQ_WINS, 120, 150);
+      ctx.textAlign = 'left';
+    } else if (cqPhase === 'fight') {
+      ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('PICK A FIGHT', 120, 20);
+      ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace';
+      ctx.fillText(CQ_CHARS[cqCharIdx].name + ' - DECK ' + cqDeck.length + ' CARDS', 120, 32);
+      ctx.textAlign = 'left';
+      for (var j = 0; j < CQ_FIGHTS.length + 1; j++) {
+        var fy = 48 + j * 17;
+        if (j === cqFightIdx) { ctx.fillStyle = '#FFD93D'; ctx.fillRect(10, fy - 10, 220, 15); ctx.fillStyle = '#1E1E5A'; }
+        else ctx.fillStyle = '#E8E8FF';
+        ctx.font = '10px monospace';
+        if (j < CQ_FIGHTS.length) {
+          var fg = CQ_FIGHTS[j];
+          ctx.fillText(fg.name + (fg.foes.length > 1 ? ' (X' + fg.foes.length + ')' : ''), 16, fy);
+        } else ctx.fillText('START A RUN (MAP)', 16, fy);
+      }
+      ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('A: FIGHT  B: BACK', 120, 150);
+      ctx.textAlign = 'left';
+    } else if (cqPhase === 'combat' || cqPhase === 'enemy') {
+      /* Top bar. */
+      ctx.fillStyle = '#F5E9C8'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
+      ctx.fillText('HP ' + cqPlayer.hp + '/' + cqPlayer.maxHp, 4, 11);
+      ctx.textAlign = 'center';
+      ctx.fillText('TURN ' + cqTurn, 120, 11);
+      ctx.textAlign = 'right';
+      ctx.fillText('EN ' + cqEnergy + '/3', 236, 11);
+      ctx.textAlign = 'left';
+      /* Player. */
+      var pLunge = (cqLunge && cqLunge.who === 'p') ? 8 : 0;
+      cqDrawUnit(36, 52, cqPlayer, CQ_CHARS[cqCharIdx].name, '#E8B93C', pLunge);
+      var ps = cqStatusLine(cqPlayer);
+      if (ps) { ctx.fillStyle = '#FFD93D'; ctx.font = '7px monospace'; ctx.textAlign = 'center'; ctx.fillText(ps, 36, 96); ctx.textAlign = 'left'; }
+      /* Target status line (top, clear of the hand row). */
+      var tgt0 = cqTarget();
+      if (tgt0) {
+        var ts = cqStatusLine(tgt0);
+        ctx.fillStyle = '#FFD93D'; ctx.font = '7px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('TGT ' + tgt0.def.short + (ts ? ' ' + ts : ''), 120, 22);
+        ctx.textAlign = 'left';
+      }
+      /* Enemies. */
+      for (var k = 0; k < cqEnemies.length; k++) {
+        var e = cqEnemies[k];
+        if (!e.alive) continue;
+        var eLunge = (cqLunge && cqLunge.who === 'e' + k) ? -8 : 0;
+        var tgt = cqTarget();
+        if (tgt === e) {
+          ctx.strokeStyle = '#FFD93D'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(e.x, e.y, 15, 0, Math.PI * 2); ctx.stroke();
+        }
+        cqDrawUnit(e.x, e.y, e, e.def.short, e.def.col, eLunge);
+        ctx.fillStyle = '#F5E9C8'; ctx.font = '7px monospace'; ctx.textAlign = 'center';
+        ctx.fillText(cqIntentText(e), e.x, e.y + 44);
+        ctx.textAlign = 'left';
+      }
+      /* Slash arc (visible attack animation). */
+      if (cqSlash) {
+        ctx.strokeStyle = '#FFD93D'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cqSlash.x, cqSlash.y, 12, -0.6, 1.2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cqSlash.x, cqSlash.y, 8, 2.0, 3.4); ctx.stroke();
+      }
+      /* Hand row: 4 visible cards, scrollable. */
+      var vis = Math.min(4, cqHand.length);
+      for (var c = 0; c < vis; c++) {
+        var ci = cqHandWin + c;
+        if (ci >= cqHand.length) break;
+        var cx = 8 + c * 56;
+        var cy = (ci === cqHandSel) ? 100 : 106;
+        cqDrawCard(cx, cy, cqHand[ci], ci === cqHandSel);
+      }
+      if (cqHandWin > 0) { ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace'; ctx.fillText('<', 2, 126); }
+      if (cqHandWin + 4 < cqHand.length) { ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace'; ctx.fillText('>', 234, 126); }
+      ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace';
+      ctx.fillText('A:PLAY B:END TURN', 4, 157);
+      ctx.textAlign = 'right';
+      ctx.fillText('DRAW ' + cqDrawPile.length + ' DISC ' + cqDiscard.length, 236, 157);
+      ctx.textAlign = 'left';
+      if (cqPhase === 'enemy') {
+        ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('ENEMY TURN', 120, 22);
+        ctx.textAlign = 'left';
+      }
+    } else if (cqPhase === 'map') {
+      ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('ACT ' + cqRun.act + ' - MAP', 120, 18);
+      ctx.fillStyle = '#F5E9C8'; ctx.font = '8px monospace';
+      ctx.fillText('HP ' + cqPlayer.hp + '/' + cqPlayer.maxHp + '  GOLD ' + cqRun.gold + '  PTS ' + CQ_POINTS, 120, 30);
+      ctx.fillText('RELICS ' + cqRun.relics.length + '  DECK ' + cqDeck.length, 120, 40);
+      ctx.textAlign = 'left';
+      var mrow = cqRun.map[cqRun.row];
+      for (var mi = 0; mi < mrow.length; mi++) {
+        var mx = 14 + mi * 72, my = 62;
+        if (mi === cqRun.sel) { ctx.fillStyle = '#FFD93D'; ctx.fillRect(mx - 2, my - 2, 66, 30); ctx.fillStyle = '#1E1E5A'; }
+        else { ctx.fillStyle = '#2A2A5A'; ctx.fillRect(mx - 2, my - 2, 66, 30); ctx.fillStyle = '#E8E8FF'; }
+        ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+        ctx.fillText(mrow[mi].type.toUpperCase(), mx + 31, my + 12);
+        ctx.textAlign = 'left';
+      }
+      ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('ROW ' + (cqRun.row + 1) + ' OF 6 - PICK A NODE', 120, 100);
+      ctx.fillText('A: ENTER  B: QUIT RUN', 120, 114);
+      ctx.fillText('BOSS WAITS AT ROW 6', 120, 128);
+      ctx.textAlign = 'left';
+    } else if (cqPhase === 'shop') {
+      ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('SHOP', 120, 18);
+      ctx.fillStyle = '#F5E9C8'; ctx.font = '8px monospace';
+      ctx.fillText('GOLD ' + cqRun.gold, 120, 30);
+      ctx.textAlign = 'left';
+      for (var si = 0; si < cqRun.shopItems.length; si++) {
+        var it = cqRun.shopItems[si], sy = 46 + si * 18;
+        if (si === cqRun.shopSel) { ctx.fillStyle = '#FFD93D'; ctx.fillRect(10, sy - 10, 220, 15); ctx.fillStyle = '#1E1E5A'; }
+        else ctx.fillStyle = '#E8E8FF';
+        ctx.font = '9px monospace';
+        var lbl = it.kind === 'card' ? cqEff({ ci: it.ci, up: false }).name : (it.kind === 'relic' ? CQ_RELICS[it.ri].n : 'REMOVE A CARD');
+        ctx.fillText((it.sold ? 'SOLD - ' : '') + lbl + ' - ' + it.price + 'G', 16, sy);
+      }
+      ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('A: BUY  B: LEAVE', 120, 150);
+      ctx.textAlign = 'left';
+    } else if (cqPhase === 'rest') {
+      ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('REST SITE', 120, 20);
+      ctx.textAlign = 'left';
+      var restOpts = ['HEAL 30% OF MAX HP', 'UPGRADE A CARD'];
+      for (var ri2 = 0; ri2 < 2; ri2++) {
+        var ry = 56 + ri2 * 20;
+        if (ri2 === cqRun.restSel) { ctx.fillStyle = '#FFD93D'; ctx.fillRect(10, ry - 11, 220, 17); ctx.fillStyle = '#1E1E5A'; }
+        else ctx.fillStyle = '#E8E8FF';
+        ctx.font = 'bold 10px monospace';
+        ctx.fillText(restOpts[ri2], 16, ry);
+      }
+      ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('A: CHOOSE  B: LEAVE', 120, 150);
+      ctx.textAlign = 'left';
+    } else if (cqPhase === 'event') {
+      var ev = CQ_EVENTS[cqRun.eventIdx];
+      ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(ev.t, 120, 20);
+      ctx.textAlign = 'left';
+      for (var ei = 0; ei < ev.o.length; ei++) {
+        var ey = 48 + ei * 20;
+        if (ei === cqRun.eventSel) { ctx.fillStyle = '#FFD93D'; ctx.fillRect(10, ey - 11, 220, 17); ctx.fillStyle = '#1E1E5A'; }
+        else ctx.fillStyle = '#E8E8FF';
+        ctx.font = 'bold 10px monospace';
+        ctx.fillText(ev.o[ei].l, 16, ey);
+      }
+      ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('A: CHOOSE', 120, 150);
+      ctx.textAlign = 'left';
+    } else if (cqPhase === 'treasure') {
+      ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('TREASURE!', 120, 30);
+      ctx.fillStyle = '#F5E9C8'; ctx.font = '9px monospace';
+      ctx.fillText('+' + cqRun.treasureGold + ' GOLD', 120, 52);
+      ctx.fillText(cqRun.relics.length > 0 ? ('RELIC: ' + CQ_RELICS[cqRun.relics[cqRun.relics.length - 1]].n) : 'NO RELIC FOUND', 120, 68);
+      ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace';
+      ctx.fillText('A: CONTINUE', 120, 150);
+      ctx.textAlign = 'left';
+    } else { /* win / lose / runwin panels (also drawn by drawCardQuestOver) */
+      cqDrawEndPanel();
+    }
+    /* Particles (kill bursts) + floating damage numbers. */
+    for (var pi = 0; pi < cqParts.length; pi++) {
+      var pt = cqParts[pi];
+      ctx.fillStyle = pt.col;
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.fill();
+    }
+    for (var pj = 0; pj < cqPops.length; pj++) {
+      var pp = cqPops[pj];
+      ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#1A1A2E';
+      ctx.fillText(pp.txt, pp.x + 1, pp.y + 1);
+      ctx.fillStyle = pp.col;
+      ctx.fillText(pp.txt, pp.x, pp.y);
+      ctx.textAlign = 'left';
+    }
+    /* Card-play flash. */
+    if (cqFlash > 0) {
+      ctx.fillStyle = 'rgba(255,255,255,' + (cqFlash / 8 * 0.35).toFixed(2) + ')';
+      ctx.fillRect(0, 0, 240, 160);
+    }
+    if (cqPaused) {
+      ctx.fillStyle = 'rgba(30,30,90,0.75)';
+      ctx.fillRect(0, 0, 240, 160);
+      ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center'; ctx.font = 'bold 12px monospace';
+      ctx.fillText('PAUSED', 120, 76);
+      ctx.font = '8px monospace'; ctx.fillStyle = '#F5E9C8';
+      ctx.fillText('START: RESUME', 120, 94);
+      ctx.textAlign = 'left';
+    }
+    ctx.restore();
+  }
+  function cqDrawEndPanel() {
+    ctx.fillStyle = '#1E1E5A';
+    ctx.fillRect(48, 40, 144, 88);
+    ctx.fillStyle = '#E8C33C';
+    ctx.fillRect(48, 40, 144, 2);
+    ctx.fillRect(48, 126, 144, 2);
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillStyle = cqWon ? '#7ED491' : '#E5484D';
+    ctx.fillText(cqWon ? 'VICTORY!' : 'DEFEAT', 120, 58);
+    ctx.font = '8px monospace'; ctx.fillStyle = '#F5E9C8';
+    ctx.fillText('WINS ' + CQ_WINS + '  BEST DMG ' + CQ_BEST, 120, 74);
+    if (cqWon && cqUpgradedName) ctx.fillText('UPGRADED: ' + cqUpgradedName, 120, 88);
+    ctx.fillText('DMG DEALT ' + cqFightDmg, 120, 100);
+    ctx.fillText('A: FIGHT AGAIN', 120, 116);
+    ctx.textAlign = 'left';
+  }
+  function drawCardQuestOver() {
+    ctx.fillStyle = '#1E1E4A';
+    ctx.fillRect(0, 0, 240, 160);
+    cqDrawEndPanel();
   }
 
   /* ==================== drop (GBA) ==================== */
@@ -17745,6 +19275,7 @@ function drawShooterOver() {
       else if (currentGame === 'dummy') duMoveAim(0, -1);
       else if (currentGame === 'shooter') { /* ship moves via isDown in shUpdate */ }
       else if (currentGame === 'artillery') { if (arPhase === 'select') arSelMove(-1); else arAimAdjust(0, 5); }
+      else if (currentGame === 'cards') cqSelMove(-1);
       else flap();
     }
     listHoldArm('up');
@@ -17767,6 +19298,7 @@ function drawShooterOver() {
       else if (currentGame === 'dummy') duMoveAim(0, 1);
       else if (currentGame === 'shooter') { /* ship moves via isDown in shUpdate */ }
       else if (currentGame === 'artillery') { if (arPhase === 'select') arSelMove(1); else arAimAdjust(0, -5); }
+      else if (currentGame === 'cards') cqSelMove(1);
     }
     listHoldArm('down');
   });
@@ -17786,6 +19318,7 @@ function drawShooterOver() {
     else if (screen === 'play' && currentGame === 'dummy') duMoveAim(-1, 0);
     else if (screen === 'play' && currentGame === 'shooter') { /* ship moves via isDown in shUpdate */ }
     else if (screen === 'play' && currentGame === 'artillery') arAimAdjust(-5, 0);
+    else if (screen === 'play' && currentGame === 'cards') cqHandMove(-1);
   });
   JMFGAMES.on('press', 'right', function () {
     if (dsGame) return;
@@ -17801,6 +19334,7 @@ function drawShooterOver() {
     else if (screen === 'play' && currentGame === 'dummy') duMoveAim(1, 0);
     else if (screen === 'play' && currentGame === 'shooter') { /* ship moves via isDown in shUpdate */ }
     else if (screen === 'play' && currentGame === 'artillery') arAimAdjust(5, 0);
+    else if (screen === 'play' && currentGame === 'cards') cqHandMove(1);
   });
   JMFGAMES.on('press', 'a', function () {
     if (dsGame) { dsDoDelete(dsGame); return; } // confirm delete-save
@@ -17823,12 +19357,13 @@ function drawShooterOver() {
         else if (g.name === 'RAGDOLL RUCKUS') { currentGame = 'dummy'; startDummy(); }
         else if (g.name === 'STAR STRIKE') { currentGame = 'shooter'; startShooter(); }
         else if (g.name === 'VOLLEY SQUAD') { currentGame = 'artillery'; startArtillery(); }
+        else if (g.name === 'CARD QUEST') { currentGame = 'cards'; startCardQuest(); }
         else { currentGame = 'sky'; startGame(); }
       }
       else { comingName = g.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
-    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'drop') bdAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'pinball') pbAction(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else if (currentGame === 'park') tpAction(); else if (currentGame === 'dummy') duAction(); else if (currentGame === 'shooter') shFire(); else if (currentGame === 'artillery') arAction(); else flap(); }
-    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'drop') startBlockDrop(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'pinball') startPinball(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else if (currentGame === 'pool') poRematch(); else if (currentGame === 'shooter') startShooter(); else if (currentGame === 'artillery') startArtillery(); else startGame(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'drop') bdAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'pinball') pbAction(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else if (currentGame === 'park') tpAction(); else if (currentGame === 'dummy') duAction(); else if (currentGame === 'shooter') shFire(); else if (currentGame === 'artillery') arAction(); else if (currentGame === 'cards') cqAction(); else flap(); }
+    else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'drop') startBlockDrop(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'pinball') startPinball(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else if (currentGame === 'pool') poRematch(); else if (currentGame === 'shooter') startShooter(); else if (currentGame === 'artillery') startArtillery(); else if (currentGame === 'cards') startCardQuest(); else startGame(); }
   });
   JMFGAMES.on('press', 'b', function () {
     // B is a real in-game action in every game; it NEVER returns to the
@@ -17850,6 +19385,7 @@ function drawShooterOver() {
     if (currentGame === 'dummy' && duPaused) { dsAsk('dummy'); return; }
     if (currentGame === 'shooter' && shPaused) { dsAsk('shooter'); return; }
     if (currentGame === 'artillery' && arPaused) { dsAsk('artillery'); return; }
+    if (currentGame === 'cards' && cqPaused) { dsAsk('cards'); return; }
     if (currentGame === 'sky') skyDive();
     else if (currentGame === 'block') bqBack();
     else if (currentGame === 'drop') bdBack();
@@ -17867,6 +19403,7 @@ function drawShooterOver() {
     else if (currentGame === 'dummy') duCycleWeapon();
     else if (currentGame === 'shooter') shBomb();
     else if (currentGame === 'artillery') arUltimate();
+    else if (currentGame === 'cards') cqBack();
   });
   JMFGAMES.on('press', 'start', function () {
     if (dsGame) return;
@@ -17887,6 +19424,7 @@ function drawShooterOver() {
     else if (currentGame === 'dummy') { duPaused = !duPaused; JMFGAMES.beep(330, 0.06); }
     else if (currentGame === 'shooter') { if (!shOver) { shPaused = !shPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'artillery') { if (!arOver) { arPaused = !arPaused; JMFGAMES.beep(330, 0.06); } }
+    else if (currentGame === 'cards') cqTogglePause();
     else if (!dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
   });
   JMFGAMES.on('press', 'menu', function () {
@@ -17918,6 +19456,7 @@ function drawShooterOver() {
     if (currentGame === 'dummy') { duUpdate(); return; }
     if (currentGame === 'shooter') { shUpdate(); return; }
     if (currentGame === 'artillery') { arUpdate(); return; }
+    if (currentGame === 'cards') { cqUpdate(); return; }
     if (currentGame !== 'sky') return; // Hold'em has no per-frame update; without this, Sky Soar physics runs during Hold'em and the falling bird hits the ground -> gameOver() -> 'over' screen (BUSTED panel) on Hold'em launch after Sky was played
     if (!paused) skyTick(); // clouds / particles / pops keep animating (frozen on pause)
     if (paused || dead || !started) return;
@@ -18478,8 +20017,8 @@ function drawShooterOver() {
     if (screen !== 'play') JMFGAMES.musicStop();
     if (screen === 'menu') drawMenu();
     else if (screen === 'coming') drawComing();
-    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'drop') drawBlockDrop(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'pinball') drawPinball(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else if (currentGame === 'park') drawPark(); else if (currentGame === 'dummy') drawDummy(); else if (currentGame === 'shooter') drawShooter(); else if (currentGame === 'artillery') drawArtillery(); else drawGame(); }
-    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'drop') drawBlockDropOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'pinball') drawPinballOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else if (currentGame === 'shooter') drawShooterOver(); else if (currentGame === 'artillery') drawArtilleryOver(); else drawOver(); }
+    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'drop') drawBlockDrop(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'pinball') drawPinball(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else if (currentGame === 'park') drawPark(); else if (currentGame === 'dummy') drawDummy(); else if (currentGame === 'shooter') drawShooter(); else if (currentGame === 'artillery') drawArtillery(); else if (currentGame === 'cards') drawCardQuest(); else drawGame(); }
+    else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'drop') drawBlockDropOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'pinball') drawPinballOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else if (currentGame === 'shooter') drawShooterOver(); else if (currentGame === 'artillery') drawArtilleryOver(); else if (currentGame === 'cards') drawCardQuestOver(); else drawOver(); }
     // Delete-save confirmation overlay (on top of any screen), or the
     // pause-overlay hint for games whose delete option lives on pause.
     if (dsGame) drawDsConfirm();
@@ -18497,6 +20036,7 @@ function drawShooterOver() {
       else if (currentGame === 'dummy' && duPaused) dsHintY = 152;
       else if (currentGame === 'shooter' && shPaused) dsHintY = 152;
       else if (currentGame === 'artillery' && arPaused) dsHintY = 152;
+      else if (currentGame === 'cards' && cqPaused) dsHintY = 152;
       if (dsHintY) {
         ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center'; ctx.font = '8px monospace';
         ctx.fillText('B: DELETE SAVE', W / 2, dsHintY);
