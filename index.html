@@ -398,6 +398,9 @@
      the window follows the selection and wraps jump to the ends.
      Works for any game count. */
   var MENU_PITCH = 15, MENU_ROWS = 6, MENU_TOP_Y = 48, menuTop = 0;
+  // Retro menu blink counter: increments once per menu frame; PRESS START
+  // shows for the first 36 frames of each 60-frame cycle.
+  var menuBlink = 0;
   function menuClamp() {
     if (menuIndex < menuTop) menuTop = menuIndex;
     else if (menuIndex >= menuTop + MENU_ROWS) menuTop = menuIndex - MENU_ROWS + 1;
@@ -20135,43 +20138,58 @@ function drawShooterOver() {
     }
   }
   function drawMenu() {
-    // console menu: rich indigo background, big title, 6 visible rows at
-    // 12px so the game names are big and easy to read on a phone.
-    var g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#3B3B8F');
-    g.addColorStop(1, '#1E1E5A');
-    ctx.fillStyle = g;
+    // Retro DMG menu: 4-shade green monochrome. Dark green background,
+    // light-green text, chunky pixel title, retro frame around the list,
+    // blinking PRESS START, subtle scanlines over the menu only. Layout
+    // is identical to before: same row positions, 12px names, 15px pitch,
+    // 6 visible rows, same indicator and footer.
+    menuBlink = (menuBlink + 1) % 60;
+    ctx.fillStyle = '#0F380F';
     ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#FFD93D';
+    // Chunky pixel title: dark-green shadow offset, light-green face.
     ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#306230';
+    ctx.fillText('JMF GAMES', W / 2 + 2, 22);
+    ctx.fillStyle = '#9BBC0F';
     ctx.fillText('JMF GAMES', W / 2, 20);
-    ctx.fillStyle = '#C9C9F2';
+    ctx.fillStyle = '#8BAC0F';
     ctx.font = '10px monospace';
     ctx.fillText('SELECT A GAME', W / 2, 34);
     ctx.textAlign = 'left';
+    // Retro frame around the list (rows span y 37..127).
+    ctx.strokeStyle = '#306230'; ctx.lineWidth = 2;
+    ctx.strokeRect(6, 36, 228, 95);
     var menuEnd = Math.min(menuTop + MENU_ROWS, GAMES.length);
     for (var i = menuTop; i < menuEnd; i++) {
       var y = MENU_TOP_Y + (i - menuTop) * MENU_PITCH;
       if (i === menuIndex) {
-        ctx.fillStyle = '#FFD93D';
+        ctx.fillStyle = '#8BAC0F';
         ctx.fillRect(10, y - 11, 220, 15);
-        ctx.fillStyle = '#1E1E5A';
+        ctx.fillStyle = '#0F380F';
         ctx.font = 'bold 12px monospace';
         ctx.fillText('>', 16, y);
         ctx.fillText(GAMES[i].name, 30, y);
       } else {
-        ctx.fillStyle = '#E8E8FF';
+        ctx.fillStyle = '#9BBC0F';
         ctx.font = '12px monospace';
         ctx.fillText(GAMES[i].name, 30, y);
       }
     }
     // Scroll indicators (top-right / bottom-right): more games above / below
-    ctx.fillStyle = '#C9C9F2'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+    ctx.fillStyle = '#8BAC0F'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
     if (menuTop > 0) ctx.fillText('▲', 234, 36);
     if (menuEnd < GAMES.length) ctx.fillText('▼', 234, 140);
-    ctx.fillStyle = '#FFD93D'; ctx.textAlign = 'center'; ctx.font = '10px monospace';
+    // Blinking PRESS START in the gap between the list frame and the footer.
+    if (menuBlink < 36) {
+      ctx.fillStyle = '#9BBC0F'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('PRESS START', W / 2, 144);
+    }
+    ctx.fillStyle = '#9BBC0F'; ctx.textAlign = 'center'; ctx.font = '10px monospace';
     ctx.fillText((menuIndex + 1) + ' OF ' + GAMES.length + '  ·  UP/DOWN MOVE - A PLAY', W / 2, 152);
     ctx.textAlign = 'left';
+    // Subtle scanlines over the menu screen only.
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    for (var sy = 0; sy < H; sy += 3) ctx.fillRect(0, sy, W, 1);
   }
   function drawComing() {
     ctx.fillStyle = '#3B3B8F'; ctx.fillRect(0, 0, W, H);
