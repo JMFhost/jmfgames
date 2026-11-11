@@ -3458,7 +3458,8 @@ function cqBgFinal() {
       var shy = Math.round((cqRand() - 0.5) * cqShake);
       ctx.translate(shx, shy);
     }
-    if (cqPhase === 'select') {
+    if (cqPhase === 'select' || cqPhase === 'fight') {
+      // Menu screens: retro DMG green (the fight list is a menu, not a run).
       ctx.fillStyle = '#0F380F';
       ctx.fillRect(0, 0, 240, 160);
     } else {
@@ -3491,22 +3492,25 @@ function cqBgFinal() {
       ctx.fillText('POINTS ' + CQ_POINTS + '  WINS ' + CQ_WINS, 120, 157);
       ctx.textAlign = 'left';
     } else if (cqPhase === 'fight') {
-      ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
-      ctx.fillText('PICK A FIGHT', 120, 20);
-      ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace';
+      ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+      // Title: layered pixel shadow like the main menu title.
+      ctx.fillStyle = '#8BAC0F'; ctx.fillText('PICK A FIGHT', 121, 21);
+      ctx.fillStyle = '#306230'; ctx.fillText('PICK A FIGHT', 122, 22);
+      ctx.fillStyle = '#9BBC0F'; ctx.fillText('PICK A FIGHT', 120, 20);
+      ctx.fillStyle = '#8BAC0F'; ctx.font = '8px monospace';
       ctx.fillText(CQ_CHARS[cqCharIdx].name + ' - DECK ' + cqDeck.length + ' CARDS', 120, 32);
       ctx.textAlign = 'left';
       for (var j = 0; j < CQ_FIGHTS.length + 1; j++) {
         var fy = 48 + j * 17;
-        if (j === cqFightIdx) { ctx.fillStyle = '#FFD93D'; ctx.fillRect(10, fy - 10, 220, 15); ctx.fillStyle = '#1E1E5A'; }
-        else ctx.fillStyle = '#E8E8FF';
+        if (j === cqFightIdx) { ctx.fillStyle = '#8BAC0F'; ctx.fillRect(10, fy - 10, 220, 15); ctx.fillStyle = '#0F380F'; }
+        else ctx.fillStyle = '#9BBC0F';
         ctx.font = '10px monospace';
         if (j < CQ_FIGHTS.length) {
           var fg = CQ_FIGHTS[j];
           ctx.fillText(fg.name + (fg.foes.length > 1 ? ' (X' + fg.foes.length + ')' : ''), 16, fy);
         } else ctx.fillText('START A RUN (MAP)', 16, fy);
       }
-      ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#8BAC0F'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
       ctx.fillText('A: FIGHT  B: BACK', 120, 150);
       ctx.textAlign = 'left';
     } else if (cqPhase === 'combat' || cqPhase === 'enemy') {
