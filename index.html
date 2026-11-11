@@ -20,75 +20,79 @@
 <style>
   /* ============================================================
      JMF GAMES — JMF Games Pocket Console
-     GBA SP clamshell: flip lid with the backlit 240x160 screen,
-     base with D-pad, A/B, Start/Select. Games draw on the canvas
-     and are controlled only by the buttons (JMFGAMES input API).
+     Classic DMG handheld: warm-gray slab body with the dark
+     screen bezel, purple/maroon accent stripe, burgundy A/B,
+     black cross D-pad, gray pill START/MENU. The screen stays
+     240x160 so every game is unchanged. Games draw on the
+     canvas and are controlled only by the buttons (JMFGAMES
+     input API). No third-party trademarks are used anywhere.
      ============================================================ */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;background:#0f1420;color:#e8e8e8;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
   body{padding:20px 12px 48px;line-height:1.5}
   .page-note{max-width:520px;margin:0 auto 16px;text-align:center;color:#9aa3b2;font-size:13px}
 
-  /* ---------- GBA SP body ---------- */
-  .gba{width:min(520px,96vw);margin:0 auto;user-select:none;-webkit-user-select:none;color:#3a3a44}
-  /* Lid: flip-top with the screen */
-  .lid{background:linear-gradient(160deg,#ececf0,#cfcfd8 55%,#b8b8c4);border-radius:22px 22px 10px 10px;padding:16px 18px 14px;box-shadow:0 10px 28px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.6),inset 0 -3px 0 rgba(0,0,0,.18)}
-  .lid-top{display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:2px;color:#4a4a55;font-weight:800;padding:0 4px 10px}
+  /* ---------- Classic DMG slab body ---------- */
+  .jmf{width:min(520px,96vw);margin:0 auto;user-select:none;-webkit-user-select:none;color:#3a382e;border-radius:20px 20px 56px 20px}
+  /* Top of the slab, with the screen */
+  .lid{background:linear-gradient(160deg,#dcd9cb,#cfcabb 55%,#bfbaa7);border-radius:20px 20px 0 0;padding:16px 18px 14px;box-shadow:0 10px 28px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.55),inset 0 -3px 0 rgba(0,0,0,.14)}
+  .lid-top{display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:2px;color:#55503f;font-weight:800;padding:0 4px 10px}
   .led{display:flex;align-items:center;gap:6px}
-  .led i{width:9px;height:9px;border-radius:50%;background:#ff5a5a;box-shadow:0 0 8px #ff5a5a;display:inline-block}
+  .led i{width:9px;height:9px;border-radius:50%;background:#e03030;box-shadow:0 0 6px rgba(224,48,48,.7);display:inline-block}
   .led i.off{background:#7a2025;box-shadow:none}
-  .bezel{background:#1c1e26;border-radius:10px;padding:12px 14px 10px;box-shadow:inset 0 2px 10px rgba(0,0,0,.7)}
-  .bezel-strip{display:flex;justify-content:space-between;font-size:9px;letter-spacing:1px;color:#8a93a5;font-weight:700;padding:0 2px 8px}
-  .bezel-strip .pwr{color:#ff5a5a}
+  .bezel{background:#262626;border-radius:12px;padding:10px 12px;box-shadow:inset 0 2px 10px rgba(0,0,0,.7)}
+  .bezel-strip{display:flex;justify-content:space-between;align-items:center;font-size:9px;letter-spacing:1px;color:#9aa0ae;font-weight:700;padding:0 2px 8px}
+  .bezel-strip .led{color:#c04040}
+  .bezel-accent{height:6px;margin:0 2px 8px;background:linear-gradient(180deg,#7b5ea7 0 2px,transparent 2px 4px,#9b2c4b 4px 6px)}
   .screen{background:#000;border:3px solid #101218;border-radius:4px;overflow:hidden;aspect-ratio:3/2;position:relative}
   .screen canvas{width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges}
   .screen .scan{position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.04) 0 1px,transparent 1px 3px);pointer-events:none}
-  .lid-brand{text-align:center;font-weight:800;font-size:13px;letter-spacing:3px;color:#3a3a44;margin:10px 0 0}
-  .lid-brand small{display:block;font-size:9px;letter-spacing:2px;color:#a9a9e0;font-weight:700}
-  /* Hinge */
-  .hinge{height:14px;margin:0 26px;background:linear-gradient(180deg,#8e8e9a,#6e6e7a);border-radius:0 0 8px 8px;box-shadow:inset 0 2px 3px rgba(0,0,0,.4)}
-  /* Base: controls */
-  .base{background:linear-gradient(160deg,#e2e2e8,#c6c6d0 60%,#b0b0bc);border-radius:10px 10px 26px 26px;padding:18px 20px 24px;box-shadow:0 18px 40px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.55)}
+  .lid-brand{text-align:center;font-weight:800;font-size:13px;letter-spacing:3px;color:#2e3a67;margin:10px 0 0}
+  /* No clamshell hinge on a classic slab: kept in the DOM, hidden */
+  .hinge{display:none}
+  /* Bottom of the slab: controls */
+  .base{background:linear-gradient(160deg,#dcd9cb,#cfcabb 60%,#bfbaa7);border-radius:0 0 56px 20px;padding:18px 20px 24px;box-shadow:0 18px 40px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.5)}
   .controls{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
   .dpad{width:128px;height:128px;position:relative;margin:0 auto}
-  .dpad button{position:absolute;background:#23232e;color:#cfd3dc;border:none;font-size:17px;cursor:pointer;box-shadow:0 4px 0 #101018,0 6px 8px rgba(0,0,0,.4);touch-action:none}
-  .dpad button:active,.dpad button.pressed{transform:translateY(3px);box-shadow:0 1px 0 #101018;background:#34343f}
+  .dpad button{position:absolute;background:#1a1a1a;color:#d8d8d8;border:none;font-size:17px;cursor:pointer;box-shadow:0 4px 0 #0a0a0a,0 6px 8px rgba(0,0,0,.4);touch-action:none}
+  .dpad button:active,.dpad button.pressed{transform:translateY(3px);box-shadow:0 1px 0 #0a0a0a;background:#2e2e2e}
   .dpad .up{left:44px;top:0;width:40px;height:48px;border-radius:6px 6px 0 0}
   .dpad .down{left:44px;bottom:0;width:40px;height:48px;border-radius:0 0 6px 6px}
   .dpad .left{left:0;top:44px;width:48px;height:40px;border-radius:6px 0 0 6px}
   .dpad .right{right:0;top:44px;width:48px;height:40px;border-radius:0 6px 6px 0}
   .ab{position:relative;width:140px;height:92px}
-  .ab button{position:absolute;width:56px;height:56px;border-radius:50%;border:none;font-weight:800;font-size:19px;cursor:pointer;color:#fff;background:linear-gradient(180deg,#b03a4d,#7e2438);box-shadow:0 4px 0 #571423,0 6px 10px rgba(0,0,0,.4);touch-action:none}
-  .ab button:active,.ab button.pressed{transform:translateY(3px);box-shadow:0 1px 0 #571423}
+  .ab button{position:absolute;width:56px;height:56px;border-radius:50%;border:none;font-weight:800;font-size:19px;cursor:pointer;color:#fff;background:linear-gradient(180deg,#a92338,#7a1226);box-shadow:0 4px 0 #5a0e1e,0 6px 10px rgba(0,0,0,.4);touch-action:none}
+  .ab button:active,.ab button.pressed{transform:translateY(3px);box-shadow:0 1px 0 #5a0e1e}
   .ab .b{left:0;bottom:0}
   .ab .a{right:0;top:0}
   .startsel{display:flex;gap:16px;justify-content:center;margin-top:20px}
-  .startsel button{background:#23232e;border:none;border-radius:12px;width:56px;height:14px;cursor:pointer;box-shadow:0 3px 0 #101018;touch-action:none}
-  .startsel button:active,.startsel button.pressed{transform:translateY(2px);box-shadow:0 1px 0 #101018}
-  .startsel .lbl{display:flex;gap:16px;justify-content:center;font-size:10px;font-weight:800;letter-spacing:1px;color:#4a4a55;margin-top:8px}
+  .startsel button{background:#8a8a8a;border:none;border-radius:12px;width:56px;height:14px;cursor:pointer;box-shadow:0 3px 0 #6e6e6e;touch-action:none;transform:rotate(-25deg)}
+  .startsel button:active,.startsel button.pressed{transform:rotate(-25deg) translateY(2px);box-shadow:0 1px 0 #6e6e6e}
+  .startsel .lbl{display:flex;gap:16px;justify-content:center;font-size:10px;font-weight:800;letter-spacing:1px;color:#4a4636;margin-top:8px}
   .startsel .lbl span{width:56px;text-align:center}
   .toggles{display:flex;gap:8px;justify-content:center;margin:16px 0 2px}
-  .toggles button{background:#23232e;color:#cfd3dc;border:none;border-radius:6px;padding:7px 12px;font-size:10px;font-weight:800;letter-spacing:1px;cursor:pointer;box-shadow:0 3px 0 #101018,0 4px 6px rgba(0,0,0,.3);touch-action:none}
-  .toggles button:active{transform:translateY(2px);box-shadow:0 1px 0 #101018}
-  .toggles button.off{color:#7a7f8a;background:#1a1a22}
+  .toggles button{background:#2a2a2a;color:#d8d8d8;border:none;border-radius:6px;padding:7px 12px;font-size:10px;font-weight:800;letter-spacing:1px;cursor:pointer;box-shadow:0 3px 0 #0a0a0a,0 4px 6px rgba(0,0,0,.3);touch-action:none}
+  .toggles button:active{transform:translateY(2px);box-shadow:0 1px 0 #0a0a0a}
+  .toggles button.off{color:#9a9a9a;background:#6a6a6a}
   .grille{margin:20px 8px 0 auto;width:110px;display:grid;grid-template-columns:repeat(6,1fr);gap:5px;transform:rotate(-18deg)}
-  .grille i{height:5px;border-radius:3px;background:#6a6a76;box-shadow:inset 0 1px 2px rgba(0,0,0,.5)}
-  .hint{text-align:center;font-size:12px;color:#9a9ad0;margin-top:14px}
+  .grille i{height:5px;border-radius:3px;background:#8a8578;box-shadow:inset 0 1px 2px rgba(0,0,0,.5)}
+  .hint{text-align:center;font-size:12px;color:#5a5546;margin-top:14px}
 </style>
 </head>
 <body>
-<div class="gba" id="jmfgames">
+<div class="jmf" id="jmfgames">
   <div class="lid">
-    <div class="lid-top"><span>JMF Games Pocket Console</span><span class="led"><i id="powerLed"></i>POWER</span></div>
+    <div class="lid-top"><span>JMF Games Pocket Console</span></div>
     <div class="bezel">
-      <div class="bezel-strip"><span class="pwr">● BATTERY</span><span>BACKLIT TFT · STEREO SOUND</span></div>
+      <div class="bezel-strip"><span class="led"><i id="powerLed"></i>BATTERY</span><span>PIXEL MATRIX · STEREO SOUND</span></div>
+      <div class="bezel-accent"></div>
       <div class="screen">
-        <!-- GAME SCREEN: 240 x 160 (GBA size). Your game draws on this canvas. -->
+        <!-- GAME SCREEN: 240 x 160. Your game draws on this canvas. -->
         <canvas id="gameCanvas" width="240" height="160"></canvas>
         <div class="scan"></div>
       </div>
     </div>
-    <div class="lid-brand">JMF <span style="color:#d6336c">GAMES</span></div>
+    <div class="lid-brand">JMF <span style="color:#7b5ea7">GAMES</span></div>
   </div>
   <div class="hinge"></div>
   <div class="base">
@@ -347,8 +351,8 @@
 </script>
 <script>
 /* ================================================================
-   JMF GAMES — GBA SP CONSOLE CORE + SKY SOAR
-   240x160 canvas, full GBA color. Controlled ONLY by the console
+   JMF GAMES POCKET CONSOLE CORE + SKY SOAR
+   240x160 canvas, full console color. Controlled ONLY by the console
    buttons via the JMFGAMES input API (D-pad, A, B, Start, Menu).
    Screens: 'menu' (game select) | 'coming' (coming soon)
             'play' (Sky Soar) | 'over' (game over panel)
@@ -495,8 +499,8 @@
     ctx.textAlign = 'left';
   }
 
-  /* ---------- Sky Soar tuning (240x160 GBA screen) ----------
-     GBA fun: (1) UNLOCKABLE BIRDS — score milestones unlock new birds
+  /* ---------- Sky Soar tuning (240x160 console screen) ----------
+     console fun: (1) UNLOCKABLE BIRDS — score milestones unlock new birds
      (EMBER 10, AZURE 25, GOLDEN 50, SHADOW 100), saved, shown in the HUD;
      (2) PERFECT GAP BONUS — threading the gap center scores +1 bonus;
      (3) WIND GUSTS — occasional vertical gusts push the bird (visible
@@ -586,16 +590,16 @@
   }
 
 
-  /* ==================== block (GBA) ==================== */
+  /* ==================== block (console) ==================== */
 /* ================================================================
-   BLOCKQUEST (GBA) — 9x9 block puzzle on the 240x160 GBA screen.
+   BLOCKQUEST (console) — 9x9 block puzzle on the 240x160 console screen.
    Controls: D-pad moves cursor / picks tray slot, A selects a tray
    piece and places it, B deselects a picked piece — or, with nothing
    picked up, swaps the highlighted tray piece with the HOLD slot,
    Start pauses, Menu returns to the main menu. Fill a row, column
    or 3x3 box to clear it; tray refills when all 3 pieces are placed;
    game over when no tray piece has a move.
-   GBA additions: COMBO chain (consecutive clearing placements raise
+   console additions: COMBO chain (consecutive clearing placements raise
    a score multiplier), HOLD slot, LEVELS (every 6 lines cleared) with
    adaptive difficulty (piece mix ramps up as you play well, eases off
    when you struggle), a fair tray generator (a new tray always has a
@@ -627,7 +631,7 @@
     { name: 'Rectangle', cells: [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]], color: '#6366F1', w: 3, h: 2 },
     { name: 'Tall Rectangle', cells: [[0,0],[0,1],[1,0],[1,1],[2,0],[2,1]], color: '#E11D48', w: 2, h: 3 }
   ];
-  // GBA layout (240x160): board left, tray + hold panel right.
+  // console layout (240x160): board left, tray + hold panel right.
   var BQ_BX = 6, BQ_BY = 26, BQ_P = 13, BQ_C = 12;
   var BQ_TX = 130, BQ_TW = 106, BQ_TH = 26, BQ_TY = [26, 56, 86];
   var BQ_HX = 130, BQ_HY = 124, BQ_HW = 106, BQ_HH = 21;
@@ -905,7 +909,7 @@
     }
   }
   function bqDrawCell(x, y, color) {
-    // GBA block: bright face, light top edge, dark bottom edge.
+    // console block: bright face, light top edge, dark bottom edge.
     ctx.fillStyle = color;
     ctx.fillRect(x, y, BQ_C, BQ_C);
     ctx.fillStyle = 'rgba(255,255,255,0.28)';
@@ -1058,9 +1062,9 @@
     ctx.textAlign = 'left';
   }
 
-  /* ==================== cards (GBA) ==================== */
+  /* ==================== cards (console) ==================== */
 /* ================================================================
-   CARD QUEST (GBA) — an original deckbuilder card battler on the
+   CARD QUEST (console) — an original deckbuilder card battler on the
    240x160 screen. Pick BRYN the Ironward, build a deck of 60
    original cards, and fight practice battles against a training
    dummy, a scrap rat, an ash hound, a stone brute, or a pack of
@@ -1909,7 +1913,7 @@
       dealt = d - blocked;
       def.hp -= dealt;
     }
-    cqPops.push({ x: dx, y: dy - 8, txt: '-' + dealt, t: 30, col: '#FFD93D' });
+    cqPops.push({ x: dx, y: dy - 8, txt: '-' + dealt, t: 60, col: '#FFD93D' });
     cqLog.push('hit:' + dealt);
     /* Impact: shake scales with the hit (heavy hits shake hard), a burst of
        impact particles + a white flash at the target, and the defender
@@ -1917,18 +1921,18 @@
     cqShake = Math.max(cqShake, dealt >= 12 ? 8 : 3);
     var nParts = dealt >= 12 ? 14 : 6;
     for (var pi2 = 0; pi2 < nParts; pi2++) {
-      cqParts.push({ x: dx, y: dy, vx: (cqRand() - 0.5) * 4, vy: -1 - cqRand() * 2.5,
-        life: 18 + Math.floor(cqRand() * 14), col: (pi2 % 3 === 0 ? '#FFFFFF' : (pi2 % 3 === 1 ? '#FFD93D' : '#FF9F1C')), r: 1 + cqRand() });
+      cqParts.push({ x: dx, y: dy, vx: (cqRand() - 0.5) * 5, vy: -1 - cqRand() * 2.5,
+        life: 30 + Math.floor(cqRand() * 16), col: (pi2 % 3 === 0 ? '#FFFFFF' : (pi2 % 3 === 1 ? '#FFD93D' : '#FF9F1C')), r: 1.5 + cqRand() });
     }
-    cqImpact = { x: dx, y: dy, t: 8, big: dealt >= 12 };
-    if (def === cqPlayer) { cqHeroFlash = 6; cqHeroHit = 8; }
-    else { def.flash = 6; }
+    cqImpact = { x: dx, y: dy, t: 16, big: dealt >= 12 };
+    if (def === cqPlayer) { cqHeroFlash = 12; cqHeroHit = 12; }
+    else { def.flash = 12; }
     if (att === cqPlayer) cqFightDmg += dealt;
     if (def.hp <= 0) { def.hp = 0; cqKillBurst(dx, dy, '#FF6B35'); }
     else if (def.thorns > 0 && dealt > 0) {
       var back = def.thorns;
       att.hp -= back;
-      cqPops.push({ x: ax, y: ay - 8, txt: '-' + back, t: 30, col: '#7ED491' });
+      cqPops.push({ x: ax, y: ay - 8, txt: '-' + back, t: 60, col: '#7ED491' });
       cqLog.push('thorns:' + back);
       if (att.hp <= 0) att.hp = 0;
     }
@@ -1937,7 +1941,7 @@
   function cqKillBurst(x, y, col) {
     for (var i = 0; i < 16; i++) {
       cqParts.push({ x: x, y: y, vx: (cqRand() - 0.5) * 3.5, vy: -0.5 - cqRand() * 2.5,
-        life: 24 + Math.floor(cqRand() * 16), col: (i % 2 ? col : '#FFD93D'), r: 1 + cqRand() });
+        life: 36 + Math.floor(cqRand() * 20), col: (i % 2 ? col : '#FFD93D'), r: 1.5 + cqRand() });
     }
     cqShake = Math.max(cqShake, 8);
     cqLog.push('kill');
@@ -1947,7 +1951,7 @@
     if (u.poison > 0 && u.hp > 0) {
       var n = u.poison;
       cqHurtRaw(u, n);
-      cqPops.push({ x: x, y: y - 8, txt: '-' + n + ' PSN', t: 30, col: '#A8E063' });
+      cqPops.push({ x: x, y: y - 8, txt: '-' + n + ' PSN', t: 60, col: '#A8E063' });
       cqLog.push('poison:' + n);
       u.poison--;
       if (u.hp <= 0) { u.hp = 0; cqKillBurst(x, y, '#A8E063'); }
@@ -1957,7 +1961,7 @@
     if (u.burn > 0 && u.hp > 0) {
       var n = u.burn;
       cqHurtRaw(u, n);
-      cqPops.push({ x: x, y: y - 8, txt: '-' + n + ' BRN', t: 30, col: '#FF9F1C' });
+      cqPops.push({ x: x, y: y - 8, txt: '-' + n + ' BRN', t: 60, col: '#FF9F1C' });
       cqLog.push('burn:' + n);
       if (u.hp <= 0) { u.hp = 0; cqKillBurst(x, y, '#FF9F1C'); }
     }
@@ -2026,7 +2030,7 @@
       for (var ri = 0; ri < alive0.length; ri++) {
         var re = alive0[ri];
         re.hp -= cqPlayer.rune;
-        cqPops.push({ x: re.x, y: re.y - 8, txt: '-' + cqPlayer.rune + ' RUNE', t: 30, col: '#C084FC' });
+        cqPops.push({ x: re.x, y: re.y - 8, txt: '-' + cqPlayer.rune + ' RUNE', t: 60, col: '#C084FC' });
         cqLog.push('rune:' + cqPlayer.rune);
         if (re.hp <= 0) { re.hp = 0; cqKillBurst(re.x, re.y, '#C084FC'); }
       }
@@ -2077,12 +2081,12 @@
     /* Card-play flash + attacker lunge + slash arc (visible animation).
        The lunge eases out and back over 16 frames; the slash sweeps. */
     cqFlash = f.rarity === 'R' ? 12 : 8;
-    cqLunge = { who: 'p', t: 16, dur: 16 };
+    cqLunge = { who: 'p', t: 36, dur: 36 };
     if (f.dmg > 0) {
       var targets = f.all ? cqAliveEnemies() : [tgt];
       for (var ti = 0; ti < targets.length; ti++) {
         var e = targets[ti];
-        cqSlash = { x: e.x, y: e.y, t: 16, dur: 16, kind: 'slash', big: f.dmg >= 12 || f.rarity === 'R' };
+        cqSlash = { x: e.x, y: e.y, t: 36, dur: 36, kind: 'slash', big: f.dmg >= 12 || f.rarity === 'R' };
         for (var h = 0; h < f.hits; h++) {
           cqAttack(cqPlayer, e, f.dmg, f.pierce, 36, 52, e.x, e.y);
           if (!e.alive) break;
@@ -2090,28 +2094,28 @@
       }
     }
     /* Card-type effects: each kind plays its own visual, tied to the card. */
-    if (f.block > 0) cqFx.push({ kind: 'shield', x: 36, y: 52, t: 20, dur: 20 });
-    if (f.type === 'P') cqFx.push({ kind: 'aura', x: 36, y: 52, t: 24, dur: 24, col: '#C084FC' });
-    if (f.str > 0) cqFx.push({ kind: 'str', x: 36, y: 52, t: 16, dur: 16 });
-    if (f.draw > 0 || f.energy > 0) cqFx.push({ kind: 'sparkle', x: 36, y: 52, t: 20, dur: 20 });
+    if (f.block > 0) cqFx.push({ kind: 'shield', x: 36, y: 52, t: 36, dur: 36 });
+    if (f.type === 'P') cqFx.push({ kind: 'aura', x: 36, y: 52, t: 36, dur: 36, col: '#C084FC' });
+    if (f.str > 0) cqFx.push({ kind: 'str', x: 36, y: 52, t: 36, dur: 36 });
+    if (f.draw > 0 || f.energy > 0) cqFx.push({ kind: 'sparkle', x: 36, y: 52, t: 36, dur: 36 });
     if (tgt) {
-      if (f.poison > 0) cqFx.push({ kind: 'poison', x: tgt.x, y: tgt.y, t: 24, dur: 24 });
-      if (f.burn > 0) cqFx.push({ kind: 'burn', x: tgt.x, y: tgt.y, t: 24, dur: 24 });
+      if (f.poison > 0) cqFx.push({ kind: 'poison', x: tgt.x, y: tgt.y, t: 36, dur: 36 });
+      if (f.burn > 0) cqFx.push({ kind: 'burn', x: tgt.x, y: tgt.y, t: 36, dur: 36 });
     }
     if (f.rarity === 'R') { cqShake = Math.max(cqShake, 4); cqLog.push('rare'); }
     if (f.block > 0) {
       var b = cqGainBlock(cqPlayer, f.block);
-      cqPops.push({ x: 36, y: 44, txt: '+' + b + ' BLK', t: 30, col: '#7ED491' });
+      cqPops.push({ x: 36, y: 44, txt: '+' + b + ' BLK', t: 60, col: '#7ED491' });
     }
-    if (f.str > 0) { cqPlayer.str += f.str; cqPops.push({ x: 36, y: 44, txt: 'STR +' + f.str, t: 30, col: '#FF9F1C' }); }
+    if (f.str > 0) { cqPlayer.str += f.str; cqPops.push({ x: 36, y: 44, txt: 'STR +' + f.str, t: 60, col: '#FF9F1C' }); }
     if (f.thorns > 0) { cqPlayer.thorns += f.thorns; }
     if (f.shadow > 0) { cqPlayer.shadow += f.shadow; }
     if (f.rune > 0) { cqPlayer.rune += f.rune; }
     if (f.spark > 0) { cqPlayer.spark += f.spark; }
-    if (f.growth > 0) { cqPlayer.maxHp += f.growth; cqPlayer.hp += f.growth; cqPops.push({ x: 36, y: 44, txt: 'MAX HP +' + f.growth, t: 30, col: '#7ED491' }); }
+    if (f.growth > 0) { cqPlayer.maxHp += f.growth; cqPlayer.hp += f.growth; cqPops.push({ x: 36, y: 44, txt: 'MAX HP +' + f.growth, t: 60, col: '#7ED491' }); }
     if (f.heal > 0) {
       cqPlayer.hp = Math.min(cqPlayer.maxHp, cqPlayer.hp + f.heal);
-      cqPops.push({ x: 36, y: 44, txt: '+' + f.heal + ' HP', t: 30, col: '#7ED491' });
+      cqPops.push({ x: 36, y: 44, txt: '+' + f.heal + ' HP', t: 60, col: '#7ED491' });
     }
     if (f.draw > 0) cqDrawCards(f.draw);
     if (f.energy > 0) cqEnergy += f.energy;
@@ -2134,7 +2138,7 @@
       if (salive.length > 0) {
         var se = salive[Math.floor(cqRand() * salive.length)];
         se.hp -= cqPlayer.spark;
-        cqPops.push({ x: se.x, y: se.y - 8, txt: '-' + cqPlayer.spark + ' SPK', t: 30, col: '#FFD93D' });
+        cqPops.push({ x: se.x, y: se.y - 8, txt: '-' + cqPlayer.spark + ' SPK', t: 60, col: '#FFD93D' });
         cqLog.push('spark:' + cqPlayer.spark);
         if (se.hp <= 0) { se.hp = 0; cqKillBurst(se.x, se.y, '#FFD93D'); }
       }
@@ -2175,40 +2179,40 @@
     var p = e.intent;
     /* Enemy leans in for every act; the lunge eases out and back over 16
        frames so the attack reads on screen, not just as a number. */
-    cqLunge = { who: 'e' + cqEnemies.indexOf(e), t: 16, dur: 16 };
-    if (e.def.hp >= 85) cqBanner = { txt: 'BOSS ATTACK!', t: 18 };
+    cqLunge = { who: 'e' + cqEnemies.indexOf(e), t: 36, dur: 36 };
+    if (e.def.hp >= 85) cqBanner = { txt: 'BOSS ATTACK!', t: 36 };
     if (p.k === 'atk') {
       var ak = CQ_FOE_ATK[e.def.short] || 'slash';
       if (ak === 'bolt') {
         /* Flying projectile: the damage lands when the bolt arrives. */
-        cqProj = { x: e.x, y: e.y, tx: 36, ty: 52, t: 10, dur: 10, col: '#C084FC',
+        cqProj = { x: e.x, y: e.y, tx: 36, ty: 52, t: 24, dur: 24, col: '#C084FC',
           pend: { att: e, def: cqPlayer, base: p.n, pierce: false, ax: e.x, ay: e.y, dx: 36, dy: 52 } };
       } else {
-        cqSlash = { x: 36, y: 52, t: 16, dur: 16, kind: ak, big: p.n >= 12 };
+        cqSlash = { x: 36, y: 52, t: 36, dur: 36, kind: ak, big: p.n >= 12 };
         if (ak === 'slam') cqShake = Math.max(cqShake, 6);
         cqAttack(e, cqPlayer, p.n, false, e.x, e.y, 36, 52);
       }
     } else if (p.k === 'blk') {
       var b = cqGainBlock(e, p.n);
-      cqPops.push({ x: e.x, y: e.y - 14, txt: '+' + b + ' BLK', t: 30, col: '#7ED491' });
+      cqPops.push({ x: e.x, y: e.y - 14, txt: '+' + b + ' BLK', t: 60, col: '#7ED491' });
     } else if (p.k === 'buf') {
       e.str += p.n;
-      cqPops.push({ x: e.x, y: e.y - 14, txt: 'STR +' + p.n, t: 30, col: '#FF9F1C' });
+      cqPops.push({ x: e.x, y: e.y - 14, txt: 'STR +' + p.n, t: 60, col: '#FF9F1C' });
     } else if (p.k === 'deb') {
       cqPlayer.weak += p.n;
-      cqPops.push({ x: 36, y: 44, txt: 'WEAK ' + p.n, t: 30, col: '#C084FC' });
+      cqPops.push({ x: 36, y: 44, txt: 'WEAK ' + p.n, t: 60, col: '#C084FC' });
     } else { // '?' unknown: resolves to a strike or a guard at random
       if (cqRand() < 0.5) {
         var ak2 = CQ_FOE_ATK[e.def.short] || 'slash';
         if (ak2 === 'bolt') {
-          cqProj = { x: e.x, y: e.y, tx: 36, ty: 52, t: 10, dur: 10, col: '#C084FC',
+          cqProj = { x: e.x, y: e.y, tx: 36, ty: 52, t: 24, dur: 24, col: '#C084FC',
             pend: { att: e, def: cqPlayer, base: 8, pierce: false, ax: e.x, ay: e.y, dx: 36, dy: 52 } };
         } else {
-          cqSlash = { x: 36, y: 52, t: 16, dur: 16, kind: ak2, big: false };
+          cqSlash = { x: 36, y: 52, t: 36, dur: 36, kind: ak2, big: false };
           cqAttack(e, cqPlayer, 8, false, e.x, e.y, 36, 52);
         }
       }
-      else { var b2 = cqGainBlock(e, 8); cqPops.push({ x: e.x, y: e.y - 14, txt: '+' + b2 + ' BLK', t: 30, col: '#7ED491' }); }
+      else { var b2 = cqGainBlock(e, 8); cqPops.push({ x: e.x, y: e.y - 14, txt: '+' + b2 + ' BLK', t: 60, col: '#7ED491' }); }
     }
     cqNextIntent(e);
     if (cqPlayer.hp <= 0) { cqPlayer.hp = 0; cqFinish(false); }
@@ -2336,8 +2340,8 @@
   function cqUpdate() {
     if (screen !== 'play') return;
     cqFrame++;
-    if (cqFlash > 0) cqFlash -= 0.5;
-    if (cqShake > 0) cqShake = Math.max(0, cqShake - 0.5);
+    if (cqFlash > 0) cqFlash -= 0.25;
+    if (cqShake > 0) cqShake = Math.max(0, cqShake - 0.35);
     if (cqLunge && --cqLunge.t <= 0) cqLunge = null;
     if (cqSlash && --cqSlash.t <= 0) cqSlash = null;
     if (cqImpact && --cqImpact.t <= 0) cqImpact = null;
@@ -2358,7 +2362,7 @@
       }
     }
     for (var i = cqPops.length - 1; i >= 0; i--) {
-      cqPops[i].y -= 0.5; cqPops[i].t--;
+      cqPops[i].y -= 0.35; cqPops[i].t--;
       if (cqPops[i].t <= 0) cqPops.splice(i, 1);
     }
     for (var j = cqParts.length - 1; j >= 0; j--) {
@@ -2383,7 +2387,7 @@
   /* ---------- Draw ---------- */
   function cqDrawCard(cx, cy, card, sel) {
     var f = cqEff(card);
-    var w = 50, h = 44;
+    var w = 50, h = 40;
     ctx.fillStyle = sel ? '#FFD93D' : '#2A2A5A';
     ctx.fillRect(cx - 1, cy - 1, w + 2, h + 2);
     ctx.fillStyle = f.rarity === 'R' ? '#C084FC' : (f.rarity === 'U' ? '#7ED491' : '#F5E9C8');
@@ -2398,7 +2402,7 @@
     ctx.fillText(String(f.cost), cx + 5, cy + 10);
     ctx.font = '6px monospace';
     ctx.fillStyle = '#1E1E5A';
-    ctx.fillText(f.type === 'A' ? 'ATK' : (f.type === 'S' ? 'SKILL' : 'POWER'), cx + 3, cy + 18);
+    ctx.fillText(f.type === 'A' ? 'ATK' : (f.type === 'S' ? 'SKILL' : 'POWER'), cx + 3, cy + 17);
     /* Effect text: wrapped to lines of at most 13 chars, inside the card. */
     var toks = cqFxText(f).split(', ');
     var lines = [''], li = 0;
@@ -2406,7 +2410,7 @@
       if (lines[li].length > 0 && lines[li].length + 2 + toks[i].length > 13) { li++; lines[li] = ''; }
       lines[li] += (lines[li].length ? ', ' : '') + toks[i];
     }
-    for (var l = 0; l < Math.min(3, lines.length); l++) ctx.fillText(lines[l], cx + 3, cy + 27 + l * 7);
+    for (var l = 0; l < Math.min(3, lines.length); l++) ctx.fillText(lines[l], cx + 3, cy + 25 + l * 7);
     ctx.textAlign = 'left';
   }
   /* Eased lunge offset: 0 -> +14 -> 0 over the lunge's 16 frames. */
@@ -2460,23 +2464,23 @@
      attack kind (slash arcs, claw rakes, slam ring, bite jaws, stab cross). */
   function cqDrawSlash() {
     var s = cqSlash, prog = 1 - s.t / s.dur, x = s.x, y = s.y;
-    ctx.lineWidth = s.big ? 3 : 2;
+    ctx.lineWidth = s.big ? 4 : 3;
     if (s.kind === 'claw') {
       ctx.strokeStyle = '#FFD93D';
       for (var i = -1; i <= 1; i++) {
         ctx.beginPath();
-        ctx.moveTo(x - 12, y - 8 + i * 6 + prog * 8);
+        ctx.moveTo(x - 12, y - 8 + i * 6 + prog * 12);
         ctx.lineTo(x + 10, y + 6 + i * 6 + prog * 8);
         ctx.stroke();
       }
     } else if (s.kind === 'slam') {
       ctx.strokeStyle = '#FF9F1C';
-      ctx.beginPath(); ctx.arc(x, y, 4 + prog * 16, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, 6 + prog * 20, 0, Math.PI * 2); ctx.stroke();
       ctx.strokeStyle = '#FFD93D';
-      ctx.beginPath(); ctx.arc(x, y, 2 + prog * 10, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, 3 + prog * 14, 0, Math.PI * 2); ctx.stroke();
     } else if (s.kind === 'bite') {
       ctx.fillStyle = '#FFD93D';
-      var jaw = 10 - prog * 8;
+      var jaw = 12 - prog * 10;
       ctx.beginPath(); ctx.moveTo(x - 12, y - jaw); ctx.lineTo(x + 12, y - jaw); ctx.lineTo(x, y + 4); ctx.closePath(); ctx.fill();
       ctx.beginPath(); ctx.moveTo(x - 12, y + jaw); ctx.lineTo(x + 12, y + jaw); ctx.lineTo(x, y - 4); ctx.closePath(); ctx.fill();
     } else if (s.kind === 'stab') {
@@ -2485,7 +2489,7 @@
       ctx.strokeStyle = '#FFD93D';
       ctx.beginPath(); ctx.moveTo(x - 14, y + 10 - prog * 6); ctx.lineTo(x + 14, y - 10 + prog * 6); ctx.stroke();
     } else { /* slash: two arcs sweeping wider as the swing progresses */
-      var r = 8 + prog * 10;
+      var r = 10 + prog * 14;
       ctx.strokeStyle = '#FFFFFF';
       ctx.beginPath(); ctx.arc(x, y, r, -0.6 + prog * 0.9, 1.2 + prog * 0.9); ctx.stroke();
       ctx.strokeStyle = '#FFD93D';
@@ -2531,9 +2535,9 @@
     if (cqImpact) {
       var ip = cqImpact, ir = ip.big ? 14 : 10;
       ctx.fillStyle = '#FFFFFF';
-      ctx.beginPath(); ctx.arc(ip.x, ip.y, Math.max(2, Math.round(ir * ip.t / 8)), 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ip.x, ip.y, Math.max(2, Math.round(ir * ip.t / 16)), 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#FFD93D';
-      ctx.beginPath(); ctx.arc(ip.x, ip.y, Math.max(1, Math.round(ir * ip.t / 12)), 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ip.x, ip.y, Math.max(1, Math.round(ir * ip.t / 24)), 0, Math.PI * 2); ctx.fill();
     }
   }
   function cqStatusLine(u) {
@@ -2642,10 +2646,14 @@
       cqDrawFx();
       /* Flying bolt projectile. */
       if (cqProj) {
-        ctx.fillStyle = '#FFFFFF';
-        ctx.beginPath(); ctx.arc(cqProj.x, cqProj.y, 4, 0, Math.PI * 2); ctx.fill();
+        /* Two-dot trail back toward the caster, then a big bright head. */
         ctx.fillStyle = cqProj.col;
-        ctx.beginPath(); ctx.arc(cqProj.x, cqProj.y, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cqProj.pend.ax + (cqProj.x - cqProj.pend.ax) * 0.66, cqProj.pend.ay + (cqProj.y - cqProj.pend.ay) * 0.66, 1, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cqProj.pend.ax + (cqProj.x - cqProj.pend.ax) * 0.33, cqProj.pend.ay + (cqProj.y - cqProj.pend.ay) * 0.33, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath(); ctx.arc(cqProj.x, cqProj.y, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = cqProj.col;
+        ctx.beginPath(); ctx.arc(cqProj.x, cqProj.y, 3, 0, Math.PI * 2); ctx.fill();
       }
       /* Hand row: 4 visible cards, scrollable. First card starts at x=12
          (clear of the edge even mid-shake), last ends at 230. */
@@ -2654,7 +2662,7 @@
         var ci = cqHandWin + c;
         if (ci >= cqHand.length) break;
         var cx = 12 + c * 56;
-        var cy = (ci === cqHandSel) ? 98 : 108;
+        var cy = (ci === cqHandSel) ? 98 : 104;
         cqDrawCard(cx, cy, cqHand[ci], ci === cqHandSel);
       }
       if (cqHandWin > 0) { ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace'; ctx.fillText('<', 2, 126); }
@@ -2793,7 +2801,7 @@
     }
     for (var pj = 0; pj < cqPops.length; pj++) {
       var pp = cqPops[pj];
-      ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+      ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
       ctx.fillStyle = '#1A1A2E';
       ctx.fillText(pp.txt, pp.x + 1, pp.y + 1);
       ctx.fillStyle = pp.col;
@@ -2802,7 +2810,7 @@
     }
     /* Card-play flash. */
     if (cqFlash > 0) {
-      ctx.fillStyle = 'rgba(255,255,255,' + (cqFlash / 8 * 0.35).toFixed(2) + ')';
+      ctx.fillStyle = 'rgba(255,255,255,' + (Math.min(cqFlash, 8) / 8 * 0.22).toFixed(2) + ')';
       ctx.fillRect(0, 0, 240, 160);
     }
     if (cqPaused) {
@@ -2839,10 +2847,10 @@
     cqDrawEndPanel();
   }
 
-  /* ==================== drop (GBA) ==================== */
+  /* ==================== drop (console) ==================== */
 /* ================================================================
-   BLOCK DROP (GBA) — falling-block stacking game on the 240x160
-   GBA screen. Seven piece shapes fall from the top of a 10-wide
+   BLOCK DROP (console) — falling-block stacking game on the 240x160
+   console screen. Seven piece shapes fall from the top of a 10-wide
    well; move, rotate and drop them to fill rows. A completed row
    clears and scores. Clearing 4 rows at once is a QUAD.
    Controls: Left/Right move, Up or A rotate, Down soft drop,
@@ -3206,9 +3214,9 @@
     ctx.textAlign = 'left';
   }
 
-  /* ==================== bj (GBA) ==================== */
+  /* ==================== bj (console) ==================== */
   /* ================================================================
-     BLACKJACK ROYALE (GBA) — 240x160, full colour.
+     BLACKJACK ROYALE (console) — 240x160, full colour.
      Controls: D-pad adjusts the bet (Up/Down +/-$10, Left/Right
      +/-$50) and picks an action (Left/Right or Up/Down), A confirms
      (deal / hit / stand / double / next hand), B stands mid-hand or
@@ -3218,7 +3226,7 @@
      same value (a pair, or any two 10-value cards like 10+J or Q+K),
      first decision only, no re-split; a split A+10 is 21, pays 1:1
      (never 3:2); split Aces get exactly one card each and stand.
-     New in GBA: two AI table-mates (ROSA and MAX) who play visible
+     New in console: two AI table-mates (ROSA and MAX) who play visible
      hands with real basic strategy — sharp on the High Roller table,
      believably sloppy on the Low table. Win-streak bonuses, a High
      Roller table that unlocks at $2,500, and achievements.
@@ -3775,7 +3783,7 @@
     ctx.arcTo(x, y, x + w, y, r);
     ctx.closePath();
   }
-  /* GBA-size card: 20x28 (was 16x22), big enough to read on 240x160.
+  /* console-size card: 20x28 (was 16x22), big enough to read on 240x160.
      Same signature — Solitaire draws through this too. */
   function bjDrawCardAt(x, y, card, faceDown) {
     if (faceDown) {
@@ -4022,9 +4030,9 @@
     ctx.textAlign = 'left';
   }
 
-  /* ==================== holdem (GBA) ==================== */
+  /* ==================== holdem (console) ==================== */
 /* ================================================================
-   TEXAS HOLD'EM (GBA) — 5-handed no-limit Hold'em: the player vs
+   TEXAS HOLD'EM (console) — 5-handed no-limit Hold'em: the player vs
    four named AI opponents (VIC, LUNA, DOC, COLE) on the 240x160 screen.
    Controls: Left/Right picks an action, A confirms, Up/Down
    adjusts the bet/raise amount (+/-$10), B folds mid-hand, Start
@@ -4057,7 +4065,7 @@
    'jmf-games-holdem-ai-balance' is kept for save compatibility
    and now holds the SUM of the four AI balances (AI balances
    reset to $1,000 each on a new match).
-   Cards are drawn with the shared bjDrawCardAt (20x28 GBA cards).
+   Cards are drawn with the shared bjDrawCardAt (20x28 console cards).
    ================================================================ */
   var HE_BAL_KEY = 'jmf-games-holdem-balance';
   var HE_AI_KEY = 'jmf-games-holdem-ai-balance';
@@ -5105,12 +5113,12 @@
     ctx.textAlign = 'left';
   }
 
-  /* ==================== chess (GBA) ==================== */
+  /* ==================== chess (console) ==================== */
 /* ================================================================
-   CHESS CLUB — GBA rebuild (240x160, full colour).
+   CHESS CLUB — console rebuild (240x160, full colour).
    Engine (move gen, rules, eval, search) is the proven console
    engine, kept verbatim except: quiescence/negamax gained a mode-3
-   path (chEval3) for GRANDMASTER. New in GBA:
+   path (chEval3) for GRANDMASTER. New in console:
    - Bigger 18px board (144x144), centred, no side panel — a single
      status line on top (level, move, rating), controls on the bottom.
      Real WOOD board: warm maple light squares, rich walnut dark
@@ -5247,7 +5255,7 @@ function chTactics(s, m) {
   return bonus;
 }
 
-// --- GBA AI: five genuinely different strengths. ---
+// --- console AI: five genuinely different strengths. ---
 function chAiMove(s, level) {
   var moves = chLegalMoves(s);
   if (moves.length === 0) return null;
@@ -5875,7 +5883,7 @@ var chResult = '', chResultSub = '';
 var chLastMove = null;
 var chHist = []; // move history: one SAN line per half-move, e.g. '1. e4', '... e5'
 var chBlink = 0;
-// GBA board geometry: 18px squares, 144x144 board, shifted 8px left
+// console board geometry: 18px squares, 144x144 board, shifted 8px left
 // (CH_X0=40) to make room for the move history panel in the right
 // margin. Top status line at y=7, board y 8..152, bottom controls line
 // at y=159. 18px is the largest square that fits cleanly: the 160px
@@ -6162,7 +6170,7 @@ function chBack() {
 }
 function chUpdate() { chBlink = (chBlink + 1) % 60; }
 
-// GBA palette: indigo gradient background, same as the console menu.
+// console palette: indigo gradient background, same as the console menu.
 function chIndigoBg() {
   var g = ctx.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, '#3B3B8F'); g.addColorStop(1, '#1E1E5A');
@@ -6430,9 +6438,9 @@ function drawChessOver() {
   ctx.textAlign = 'left';
 }
 
-  /* ==================== overlord (GBA) ==================== */
+  /* ==================== overlord (console) ==================== */
 /* ================================================================
-   OVERLORD'S BASTION — GBA rebuild (240x160, full colour).
+   OVERLORD'S BASTION — console rebuild (240x160, full colour).
    3 lanes on a wider field (castles at x 26 / 214, spawn 30 / 210).
    Mana start 160, cap 999, income 8/s BOTH sides (fair — the Saint
    never out-earns the player). Castles 2000 HP, units deal 0.4x
@@ -7240,7 +7248,7 @@ function ovUpdate() {
   if (ovSaintHp <= 0) { ovSaintHp = 0; ovEnd(true); }
   else if (ovDarkHp <= 0) { ovDarkHp = 0; ovEnd(false); }
 }
-// Battlefield figures (~17px on the GBA screen, each silhouette
+// Battlefield figures (~17px on the console screen, each silhouette
 // distinct: no two units look alike). Player (warm) faces right,
 // Saint (cool) faces left — drawn facing right, mirrored with
 // scale(-1,1) for the Saint.
@@ -7740,10 +7748,10 @@ function drawOverlordOver() {
   ctx.textAlign = 'left';
 }
 
-  /* ==================== pinball (GBA) ==================== */
+  /* ==================== pinball (console) ==================== */
 /* ================================================================
-   PINBALL (GBA) — "CORAL REEF", an original pinball table on the
-   240x160 GBA screen. Real ball physics (gravity, bounce, friction,
+   PINBALL (console) — "CORAL REEF", an original pinball table on the
+   240x160 console screen. Real ball physics (gravity, bounce, friction,
    flipper momentum), a plunger lane, 3 jellyfish pop bumpers, 3 pearl
    rollover lanes, 3 starfish targets, a wave ramp, slingshots, and
    PEARL STORM multiball — with particles, flashes, screen shake,
@@ -8526,9 +8534,9 @@ function drawOverlordOver() {
     ctx.textAlign = 'left';
   }
 
-  /* ==================== solitaire (GBA) ==================== */
+  /* ==================== solitaire (console) ==================== */
 /* ================================================================
-   SOLITAIRE (GBA) — Klondike draw-1 on the 240x160 GBA screen.
+   SOLITAIRE (console) — Klondike draw-1 on the 240x160 console screen.
    Controls: D-pad moves the cursor between piles and up/down a
    column, A picks up / drops a card (or a valid stack), or draws
    from the stock, B cancels a picked-up card — or, with nothing
@@ -8538,7 +8546,7 @@ function drawOverlordOver() {
    starting with a King) goes on an empty tableau column, stock
    deals 1 card to the waste and recycles when empty. Win when all
    4 foundations are complete.
-   GBA additions: a SCORING system with bonuses (foundation +10,
+   console additions: a SCORING system with bonuses (foundation +10,
    uncovering a face-down card +5, King to an empty column +5),
    a WIN STREAK (consecutive wins; quitting a game mid-deal breaks
    it), a DAILY DEAL (the first deal of each day is a fixed seeded
@@ -8550,7 +8558,7 @@ function drawOverlordOver() {
    Wins / best moves / best time / best score / streak: localStorage
    'jmf-games-solitaire-wins' / '-best-moves' / '-best-time' /
    '-best-score' / '-streak' (first three keys unchanged).
-   Real cards via the shared bjDrawCardAt (GBA size SOL_CW x SOL_CH);
+   Real cards via the shared bjDrawCardAt (console size SOL_CW x SOL_CH);
    covered tableau cards are drawn as compact rank+suit strips that
    compress (dynamic pitch) as a column grows, so long columns stay
    on screen.
@@ -8561,7 +8569,7 @@ function drawOverlordOver() {
   var SOL_BEST_SCORE_KEY = 'jmf-games-solitaire-best-score';
   var SOL_STREAK_KEY = 'jmf-games-solitaire-streak';
   var SOL_DAILY_KEY = 'jmf-games-solitaire-daily';
-  // GBA layout (240x160): bigger cards, 7 columns across the width.
+  // console layout (240x160): bigger cards, 7 columns across the width.
   var SOL_TOP_Y = 14, SOL_TAB_Y = 60, SOL_CW = 20, SOL_CH = 28, SOL_PITCH = 9, SOL_COLW = 33;
   var solStock, solWaste, solFound, solTab;
   var solMoves = 0, solWins = 0, solBestMoves = 0, solBestTime = 0, solTimeSec = 0;
@@ -9203,13 +9211,13 @@ function drawOverlordOver() {
     ctx.textAlign = 'left';
   }
 
-  /* ==================== beat (GBA) ==================== */
+  /* ==================== beat (console) ==================== */
 /* ================================================================
-   EMBERFALL BRAWL — GBA rebuild (240x160, full colour).
+   EMBERFALL BRAWL — console rebuild (240x160, full colour).
    Auto-battler: pick a hero, they fight alone; A summons allies,
    the D-pad + B fire the hero's FIVE ultimates (manual only —
    ultimates never auto-fire), and EVERY wave ends with a BOSS.
-   New in GBA: 2 new heroes (NOVA the mage, ORIN the guardian),
+   New in console: 2 new heroes (NOVA the mage, ORIN the guardian),
    hero SYNERGIES, a BOSS at the end of every wave (3 rotating
    types with telegraphed patterns), enemies that focus the
    weakest fighter, real knockback / stagger / momentum physics,
@@ -11075,9 +11083,9 @@ function drawBeatOver() {
   ctx.textAlign = 'left';
 }
 
-  /* ==================== pool (GBA) ==================== */
+  /* ==================== pool (console) ==================== */
 /* ================================================================
-   8 BALL POOL — GBA rebuild (240x160, full colour).
+   8 BALL POOL — console rebuild (240x160, full colour).
    Bigger table, real spin/english, trick-shot challenges, streak
    ladder, and five opponents whose STYLES change how they play
    (not just a label). Fair play only: every opponent uses the same
@@ -12167,9 +12175,9 @@ function drawPoolOver() {
   ctx.textAlign = 'left';
 }
 
-  /* ==================== run (GBA) ==================== */
+  /* ==================== run (console) ==================== */
 /* ================================================================
-   SUBWAY RUNNER — GBA rebuild (240x160, full colour).
+   SUBWAY RUNNER — console rebuild (240x160, full colour).
    Wider 3-lane subway, REAL jump physics (velocity + gravity, a
    true arc with hang time), smooth lane slides (no teleport),
    slide momentum, power-ups, moving barriers, track gaps, a daily
@@ -12779,9 +12787,9 @@ function drawRuPlayer() {
   }
 }
 
-  /* ==================== siege (GBA) ==================== */
+  /* ==================== siege (console) ==================== */
 /* ================================================================
-   SLINGSHOT SIEGE — GBA rebuild (240x160, full colour).
+   SLINGSHOT SIEGE — console rebuild (240x160, full colour).
    Same 100 stages, now laid out across the FULL screen width
    (Nov 10 redesign, Jesse: the right side sat empty): hand-built
    stages 1-16 were re-laid-out with the same names, target counts
@@ -12789,7 +12797,7 @@ function drawRuPlayer() {
    siGenStage, now spreading every template from just right of the
    slingshot to the right edge. Jesse's shots formula still rules
    (1 target->2 shots, 2->3, 3->4, 4->6, 5->8).
-   New in the GBA version:
+   New in the console version:
    - WIND: a visible per-stage wind (seeded for generated stages,
      calm on hand-built stages) bends every shot; the aim preview
      shows the bend, so it is always fair and predictable.
@@ -13439,7 +13447,7 @@ function siUpdate() {
   }
 }
 function drawSiStages() {
-  /* GBA style: indigo gradient like the console menu. */
+  /* console style: indigo gradient like the console menu. */
   var g = ctx.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, '#3B3B8F'); g.addColorStop(1, '#1E1E5A');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
@@ -13624,7 +13632,7 @@ function drawSiege() {
   if (siProj && siProj.active) drawSiProj();
   drawSiParts();
   if (siBoom) drawSiBoom();
-  /* GBA HUD: dark translucent bar so white text reads on the bright sky. */
+  /* console HUD: dark translucent bar so white text reads on the bright sky. */
   ctx.fillStyle = 'rgba(16,16,48,0.55)'; ctx.fillRect(0, 0, W, 23);
   ctx.fillStyle = '#FFFFFF'; ctx.font = '8px monospace'; ctx.textAlign = 'left';
   var bossTxt = siIsBoss(siStage) ? ' BOSS!' : '';
@@ -13650,7 +13658,7 @@ function drawSiege() {
     ctx.fillText((pi === siProjIdx ? '> ' : '') + SI_PROJ[pi].name, sx, stripY);
   }
   if (siPhase === 'clear') {
-    /* GBA overlay: dark indigo panel, gold frame, gold title, cream text. */
+    /* console overlay: dark indigo panel, gold frame, gold title, cream text. */
     ctx.fillStyle = 'rgba(18,18,54,0.92)'; ctx.fillRect(40, 44, 160, 76);
     ctx.strokeStyle = '#FFD93D'; ctx.lineWidth = 2;
     ctx.strokeRect(41, 45, 158, 74);
@@ -13686,16 +13694,16 @@ function drawSiege() {
   }
 }
 
-  /* ==================== park (GBA) ==================== */
+  /* ==================== park (console) ==================== */
   /* ================================================================
      THRILL PARK (console) — original theme park manager on the
-     240x160 GBA screen. Build rides, stalls, paths, decor, restrooms,
+     240x160 console screen. Build rides, stalls, paths, decor, restrooms,
      first aid and trash cans on a 24x16
      park grid; guests arrive at the gate, walk the paths, queue and
      ride, spend money at stalls, and leave happy or grumpy. Earn
      ticket and stall income, pay daily upkeep and staff wages, and
      chase 10 campaign
-     goals to become a PARK LEGEND. NEW IN GBA: 4 park scenarios with
+     goals to become a PARK LEGEND. NEW IN console: 4 park scenarios with
      their own goals, a park rating that unlocks the biggest rides,
      VIP visits, and guests with real preferences (thrill-seekers,
      families, kids) who pick rides by mood and queue length and
@@ -13711,9 +13719,9 @@ function drawSiege() {
   var TP_COLS = 24, TP_ROWS = 16, TP_TILE = 12, TP_X0 = 0, TP_Y0 = 0;
   // MASSIVE park: 24x16 tiles (288x192px) — four times the old 12x8 — so
   // there is room to build the big park. World coords start at (0,0); the
-  // GBA screen shows a 240x120 window of it (the park band, y 20..140) and a
+  // console screen shows a 240x120 window of it (the park band, y 20..140) and a
   // camera pans that window after the cursor (see tpUpdateCamera).
-  var TP_VIEW_Y0 = 20, TP_VIEW_H = 120; // GBA: 240x120 park band (was 160x96)
+  var TP_VIEW_Y0 = 20, TP_VIEW_H = 120; // console: 240x120 park band (was 160x96)
   // Entrance gate: two tiles on the bottom edge, centred.
   var TP_GATE_C = 11, TP_GATE_R = 15;
   // Spawn point: centre of the gate, in world pixels.
@@ -13831,7 +13839,7 @@ function drawSiege() {
     { text: 'VALUE $25,000', bonus: 5000 }
   ];
   var TP_STAFF_MAX = 8, TP_STAFF_TYPE_MAX = 3;
-  /* GBA scenarios: pick one when starting a fresh park. Each has its own
+  /* console scenarios: pick one when starting a fresh park. Each has its own
      starting money and its own scenario goal (checked by tpCheckScenarioGoal);
      finishing it pays a big bonus. Classic is the original $5,000 park. */
   var TP_SCENARIOS = [
@@ -14257,7 +14265,7 @@ function drawSiege() {
     if (!best) return false;
     return tpGoTo(g, 'bench', best);
   }
-  /* GBA guest brain: every ride is SCORED from the guest's own state —
+  /* console guest brain: every ride is SCORED from the guest's own state —
      excitement match to their type, minus queue length (thrill-seekers
      tolerate queues, kids and families do not), minus a penalty when the
      ride is too scary for them. The best-scoring ride wins; a guest whose
@@ -14858,7 +14866,7 @@ function drawSiege() {
     tpPhase = 'park';
     JMFGAMES.beep(880, 0.08);
   }
-  /* ---------- Camera: the park is 24x16, the GBA screen shows 240x120 of it.
+  /* ---------- Camera: the park is 24x16, the console screen shows 240x120 of it.
      The camera follows the cursor — it stays put while the cursor is in the
      middle of the view and pans smoothly (lerped) when the cursor nears an
      edge, so the player can reach and build on every tile. ---------- */
@@ -15054,7 +15062,7 @@ function drawSiege() {
      deterministic (a hash of the tile) so nothing is re-randomised
      per frame, and only the visible viewport is drawn, so a big park
      costs the same as a small one. The UI chrome (HUD, menus,
-     minimap) stays in the indigo/gold GBA style. */
+     minimap) stays in the indigo/gold console style. */
   function tpHash(c, r) {
     var h = ((c * 73856093) ^ (r * 19349663) ^ 0x9e3779b9) >>> 0;
     h = (h ^ (h >> 13)) >>> 0;
@@ -15980,7 +15988,7 @@ function drawSiege() {
   }
   function tpDrawMinimap() {
     // 1px per tile, top-right of the park band: where you are in the big park.
-    var mx = W - 27, my = TP_VIEW_Y0 + 1; // 24 wide + 2 border = 26, 16 + 2 = 18 tall, GBA top-right
+    var mx = W - 27, my = TP_VIEW_Y0 + 1; // 24 wide + 2 border = 26, 16 + 2 = 18 tall, console top-right
     ctx.fillStyle = '#1F2937'; ctx.fillRect(mx, my, 26, 18);
     for (var r = 0; r < TP_ROWS; r++) {
       for (var c = 0; c < TP_COLS; c++) {
@@ -16011,7 +16019,7 @@ function drawSiege() {
   function drawPark() {
     var c, r, i;
     if (tpPhase === 'scenario') {
-      // GBA scenario picker: full-screen, roomy, one row per scenario.
+      // console scenario picker: full-screen, roomy, one row per scenario.
       ctx.fillStyle = '#202060'; ctx.fillRect(0, 0, W, H);
       ctx.fillStyle = '#ffd94a'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
       ctx.fillText('THRILL PARK', W / 2, 16);
@@ -16034,7 +16042,7 @@ function drawSiege() {
       ctx.textAlign = 'left';
       return;
     }
-    // GBA HUD: deep-blue bars top and bottom, gold text, room for everything.
+    // console HUD: deep-blue bars top and bottom, gold text, room for everything.
     ctx.fillStyle = '#202060'; ctx.fillRect(0, 0, W, 20);
     ctx.fillStyle = '#202060'; ctx.fillRect(0, 140, W, 20);
     ctx.fillStyle = '#ffe9a8'; ctx.textAlign = 'left'; ctx.font = '8px monospace';
@@ -16153,11 +16161,11 @@ function drawSiege() {
     }
   }
 
-  /* ==================== dummy (GBA) ==================== */
+  /* ==================== dummy (console) ==================== */
 /* ================================================================
-   RAGDOLL RUCKUS — GBA rebuild (240x160, full colour).
+   RAGDOLL RUCKUS — console rebuild (240x160, full colour).
    STITCH the burlap ragdoll in a bigger toy-room arena; aim with
-   the D-pad, A hits, B cycles weapons. New in GBA: 2 new weapons
+   the D-pad, A hits, B cycles weapons. New in console: 2 new weapons
    (WHIP, long reach; ANVIL, huge launch) appended at the END of
    the weapon list so old unlocked bitmasks stay valid; 4
    CHALLENGES with coin rewards; STITCH fights back SMART — he
@@ -16938,11 +16946,11 @@ function drawDummy() {
   }
 }
 
-  /* ==================== shooter (GBA) ==================== */
+  /* ==================== shooter (console) ==================== */
 /* ================================================================
-   STAR STRIKE — GBA rebuild (240x160, full colour).
+   STAR STRIKE — console rebuild (240x160, full colour).
    Vertical shooter: D-pad flies, A fires (hold to auto-fire),
-   B drops a bomb. New in GBA: ship INERTIA (thrust + drag, no
+   B drops a bomb. New in console: ship INERTIA (thrust + drag, no
    instant stops; bullets inherit a slice of ship velocity);
    enemy FORMATIONS (V / LINE / WEDGE fly in together, then break
    off); enemies that DODGE your bullets (fair: only when a bullet
@@ -17773,10 +17781,10 @@ function drawShooterOver() {
   ctx.textAlign = 'left';
 }
 
-  /* ==================== artillery (GBA) ==================== */
+  /* ==================== artillery (console) ==================== */
 /* ================================================================
-   VOLLEY SQUAD (GBA) — "VOLLEY SQUAD", an original 3v4 turn-based
-   artillery game on the 240x160 GBA screen. You + 2 AI teammates
+   VOLLEY SQUAD (console) — "VOLLEY SQUAD", an original 3v4 turn-based
+   artillery game on the 240x160 console screen. You + 2 AI teammates
    you pick vs 4 enemy AI players (they outnumber you on purpose).
    Aim with angle + power, read the wind, and lob shells in arcs
    under gravity across destructible hills on 4 different maps.
@@ -19733,7 +19741,7 @@ function drawShooterOver() {
     if (currentGame !== 'sky') return; // Hold'em has no per-frame update; without this, Sky Soar physics runs during Hold'em and the falling bird hits the ground -> gameOver() -> 'over' screen (BUSTED panel) on Hold'em launch after Sky was played
     if (!paused) skyTick(); // clouds / particles / pops keep animating (frozen on pause)
     if (paused || dead || !started) return;
-    // Wind gusts: occasional vertical push (GBA physics feel).
+    // Wind gusts: occasional vertical push (console physics feel).
     if (gustWait > 0) gustWait--;
     else if (gustFrames <= 0) { gustFrames = 90; gustV = (Math.random() < 0.5 ? -1 : 1) * (0.35 + Math.random() * 0.35); gustWait = 420 + Math.floor(Math.random() * 360); }
     if (gustFrames > 0) { bird.vy += gustV * 0.12; gustFrames--; }
@@ -20127,7 +20135,7 @@ function drawShooterOver() {
     }
   }
   function drawMenu() {
-    // GBA menu: rich indigo background, big title, 6 visible rows at
+    // console menu: rich indigo background, big title, 6 visible rows at
     // 12px so the game names are big and easy to read on a phone.
     var g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, '#3B3B8F');
