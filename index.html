@@ -1762,6 +1762,43 @@
     { name: 'VOID KING', short: 'KING', hp: 140, col: '#3A2A5A',
       pats: [{ k: 'atk', n: 16 }, { k: 'deb', n: 2 }, { k: 'atk', n: 18 }, { k: 'buf', n: 3 }] }
   ];
+  /* ---------- Pixel figures: rect lists [dx,dy,w,h,color], origin = figure centre.
+     Heroes drawn on select + in combat; foes drawn in combat (names go ABOVE
+     the figure, never inside a circle). Bounds: |dx| <= 14, dy -20..14. */
+  var CQ_HERO_FIG = {
+    BRYN: [[-5,-13,10,6,'#C0C8D8'],[-1,-16,2,3,'#E5484D'],[-4,-7,8,3,'#E8B88A'],[-7,-4,14,10,'#7A8AA8'],[-2,-2,4,4,'#FFD93D'],[-7,6,14,2,'#5A3A1A'],[-6,8,5,6,'#3A4A6A'],[1,8,5,6,'#3A4A6A'],[9,-10,3,14,'#E8E8F0'],[7,-1,7,2,'#FFD93D'],[10,1,2,3,'#5A3A1A'],[-12,-6,4,12,'#3A6AC0'],[-11,-2,2,4,'#FFD93D']],
+    SABLE: [[-4,-16,8,4,'#2A2A3A'],[-6,-13,12,6,'#2A2A3A'],[-4,-8,8,4,'#1A1A26'],[-3,-7,2,1,'#FF4D6A'],[1,-7,2,1,'#FF4D6A'],[-7,-4,14,12,'#3A2A4A'],[-7,6,14,2,'#7A4AC0'],[-11,-2,2,8,'#C0C8D8'],[9,-2,2,8,'#C0C8D8'],[-6,2,12,2,'#1A1A26']],
+    ORIN: [[-6,-13,12,7,'#1E5A5A'],[-4,-7,8,3,'#E8B88A'],[-8,-4,16,14,'#2A7A7A'],[-3,-2,6,6,'#4AE0E0'],[-1,0,2,2,'#1E1E4A'],[10,-12,2,22,'#7A5A2A'],[9,-15,4,4,'#4AE0E0'],[-8,8,16,2,'#4AE0E0']],
+    LYRA: [[-6,-16,12,7,'#FF9F1C'],[-4,-18,3,3,'#FFD93D'],[2,-18,3,3,'#FFD93D'],[-4,-9,8,4,'#E8B88A'],[-7,-5,14,15,'#C03A2A'],[-3,-1,2,2,'#FFD93D'],[2,2,2,2,'#FFD93D'],[-12,-12,2,22,'#7A5A2A'],[-13,-15,4,4,'#FF9F1C']],
+    FENN: [[-10,-16,2,6,'#7A5A2A'],[-12,-13,4,2,'#7A5A2A'],[8,-16,2,6,'#7A5A2A'],[8,-13,4,2,'#7A5A2A'],[-5,-11,10,6,'#E8B88A'],[-7,-5,14,12,'#5A8A4A'],[-4,-3,3,3,'#7ED491'],[2,0,3,3,'#7ED491'],[10,-10,2,20,'#7A5A2A'],[9,-13,4,4,'#7ED491'],[-6,7,5,3,'#5A3A1A'],[1,7,5,3,'#5A3A1A']],
+    VESK: [[-6,-13,12,7,'#2A3A6A'],[-4,-7,8,3,'#E8E8E8'],[-7,-5,14,14,'#2A4AC0'],[-1,-4,2,3,'#FFD93D'],[-3,-1,3,3,'#FFD93D'],[-1,2,2,3,'#FFD93D'],[10,-12,2,22,'#5A4A2A'],[9,-15,4,4,'#FFD93D'],[12,-14,2,2,'#FFD93D']]
+  };
+  var CQ_FOE_FIG = {
+    DUMMY: [[-3,-10,6,20,'#8A6A3A'],[-5,-14,10,6,'#B08954'],[-4,-16,8,3,'#E8C33C'],[-6,8,12,3,'#5A3A1A'],[-3,-12,2,2,'#1A1A1A'],[1,-12,2,2,'#1A1A1A']],
+    RAT: [[-9,-2,18,8,'#8A7A6A'],[6,-6,7,7,'#8A7A6A'],[7,-9,3,3,'#8A7A6A'],[-14,0,6,2,'#B09A8A'],[9,-4,2,2,'#E5484D'],[12,-3,2,2,'#E5484D'],[-8,6,3,3,'#6A5A4A'],[5,6,3,3,'#6A5A4A']],
+    HOUND: [[-10,0,20,7,'#C46A3A'],[7,-6,7,7,'#C46A3A'],[12,-3,4,3,'#8A4A2A'],[8,-9,3,3,'#8A4A2A'],[-13,-4,4,2,'#C46A3A'],[9,-4,2,2,'#1A1A1A'],[-8,7,3,4,'#8A4A2A'],[5,7,3,4,'#8A4A2A']],
+    BRUTE: [[-9,-6,18,14,'#7A8A9A'],[-5,-13,10,7,'#8A9AAA'],[-3,-11,2,2,'#E5484D'],[1,-11,2,2,'#E5484D'],[-13,0,5,5,'#7A8A9A'],[8,0,5,5,'#7A8A9A'],[-3,-2,2,4,'#5A6A7A'],[-7,8,5,4,'#5A6A7A'],[2,8,5,4,'#5A6A7A']],
+    BAT: [[-14,-6,10,5,'#6A4A9A'],[4,-6,10,5,'#6A4A9A'],[-4,-4,8,10,'#9A8AC0'],[-4,-8,2,3,'#9A8AC0'],[2,-8,2,3,'#9A8AC0'],[-3,-2,2,2,'#E5484D'],[1,-2,2,2,'#E5484D'],[-2,2,4,2,'#FFFFFF']],
+    SLIME: [[-11,0,22,8,'#7ED491'],[-6,-5,8,6,'#7ED491'],[2,-3,7,4,'#7ED491'],[-5,-1,3,3,'#1A1A1A'],[3,-1,3,3,'#1A1A1A'],[-8,2,4,2,'#C8F0C8']],
+    BANDIT: [[-7,-4,14,12,'#C0A060'],[-5,-10,10,4,'#2A2A2A'],[-3,-9,2,2,'#FFFFFF'],[1,-9,2,2,'#FFFFFF'],[-7,-13,14,3,'#8A6A3A'],[9,-2,2,9,'#E8E8F0'],[-6,8,5,3,'#5A3A1A'],[1,8,5,3,'#5A3A1A']],
+    CULT: [[-8,-6,16,16,'#8A6AC0'],[-6,-13,12,7,'#5A3A8A'],[-3,-10,2,2,'#FFD93D'],[1,-10,2,2,'#FFD93D'],[-2,-2,4,4,'#FFD93D'],[-8,8,16,2,'#5A3A8A']],
+    SKEL: [[-5,-13,10,8,'#E8E8E8'],[-3,-11,2,3,'#1A1A1A'],[1,-11,2,3,'#1A1A1A'],[-6,-5,12,2,'#E8E8E8'],[-6,-1,12,2,'#E8E8E8'],[-6,3,12,2,'#E8E8E8'],[-10,-4,3,8,'#E8E8E8'],[7,-4,3,8,'#E8E8E8']],
+    WOLF: [[-10,0,20,7,'#8A7A6A'],[7,-6,7,7,'#8A7A6A'],[12,-3,4,3,'#5A4A3A'],[7,-10,3,4,'#8A7A6A'],[10,-10,3,4,'#8A7A6A'],[-13,-6,4,3,'#8A7A6A'],[9,-4,2,2,'#FFD93D'],[-8,7,3,4,'#5A4A3A'],[5,7,3,4,'#5A4A3A']],
+    FIEND: [[-8,-4,16,12,'#B06030'],[-9,-13,3,5,'#E8C33C'],[6,-13,3,5,'#E8C33C'],[-3,-9,2,2,'#FFD93D'],[1,-9,2,2,'#FFD93D'],[-11,4,3,4,'#E8E8E8'],[8,4,3,4,'#E8E8E8'],[-6,8,5,3,'#7A3A1A'],[1,8,5,3,'#7A3A1A']],
+    IMP: [[-6,-2,12,9,'#E05838'],[-6,-9,2,4,'#FFD93D'],[4,-9,2,4,'#FFD93D'],[-3,-6,2,2,'#FFFFFF'],[1,-6,2,2,'#FFFFFF'],[-11,2,5,2,'#E05838'],[-4,7,3,3,'#8A2A1A'],[1,7,3,3,'#8A2A1A']],
+    BEAST: [[-9,-4,18,12,'#5A8A4A'],[-6,-9,3,4,'#3A6A2A'],[0,-10,3,4,'#3A6A2A'],[5,-8,3,4,'#3A6A2A'],[-4,-7,2,2,'#FFD93D'],[2,-7,2,2,'#FFD93D'],[-11,2,3,3,'#7ED491'],[8,2,3,3,'#7ED491'],[-7,8,5,3,'#3A6A2A'],[2,8,5,3,'#3A6A2A']],
+    WRAITH: [[-6,-13,12,7,'#A0A0C0'],[-4,-7,8,4,'#1A1A26'],[-3,-6,2,2,'#C084FC'],[1,-6,2,2,'#C084FC'],[-8,-3,16,10,'#A0A0C0'],[-8,7,4,4,'#A0A0C0'],[0,7,4,4,'#A0A0C0'],[4,9,4,3,'#A0A0C0']],
+    HERALD: [[-9,-16,18,5,'#C0D0E0'],[-1,-11,2,4,'#FFD93D'],[-7,-7,14,13,'#6AA0E0'],[-3,-5,2,2,'#1A1A1A'],[1,-5,2,2,'#1A1A1A'],[-7,6,5,3,'#4A7AC0'],[2,6,5,3,'#4A7AC0']],
+    TROLL: [[-10,-6,20,15,'#7A6A4A'],[-5,-14,10,8,'#8A7A5A'],[-3,-12,2,2,'#E5484D'],[1,-12,2,2,'#E5484D'],[10,-8,4,16,'#5A3A1A'],[-13,0,4,6,'#7A6A4A'],[-8,9,5,3,'#5A4A2A'],[3,9,5,3,'#5A4A2A']],
+    GOLEM: [[-5,-14,10,7,'#8A8A9A'],[-9,-7,18,12,'#7A8A9A'],[-3,-3,6,5,'#4AE0E0'],[-13,-5,4,10,'#6A6A7A'],[9,-5,4,10,'#6A6A7A'],[-7,5,5,5,'#6A6A7A'],[2,5,5,5,'#6A6A7A'],[-3,-12,2,2,'#1A1A1A'],[1,-12,2,2,'#1A1A1A']],
+    WITCH: [[-8,-16,16,4,'#3A2A4A'],[-3,-20,6,5,'#3A2A4A'],[-4,-12,8,4,'#E8C8A0'],[-8,-8,16,17,'#C06AA0'],[10,-12,2,20,'#5A3A1A'],[9,-15,4,4,'#FF9F1C'],[-6,0,3,3,'#FFD93D'],[3,4,3,3,'#FFD93D']],
+    TYRANT: [[-6,-16,12,4,'#FFD93D'],[-5,-12,10,6,'#8A8A9A'],[-9,-6,18,13,'#5A6A7A'],[-3,-4,6,6,'#E5484D'],[10,-14,3,18,'#C0C8D8'],[-13,-6,4,12,'#3A4A6A'],[-7,7,5,3,'#3A4A6A'],[2,7,5,3,'#3A4A6A']],
+    KING: [[-6,-17,12,4,'#FFD93D'],[-6,-13,12,7,'#2A1A4A'],[-3,-10,2,2,'#C084FC'],[1,-10,2,2,'#C084FC'],[-9,-6,18,16,'#3A2A5A'],[-3,-3,6,6,'#C084FC'],[-2,-2,4,4,'#0A0A1A'],[-9,8,18,2,'#C084FC']]
+  };
+  /* Attack visual per foe: claw swipe, bite, body slam, stab, slash, or a
+     flying bolt projectile. Bosses (hp >= 85) also get a BOSS ATTACK banner. */
+  var CQ_FOE_ATK = { DUMMY: 'slam', RAT: 'bite', HOUND: 'bite', BRUTE: 'slam', BAT: 'bite', SLIME: 'slam', BANDIT: 'stab', CULT: 'bolt', SKEL: 'slash', WOLF: 'bite', FIEND: 'claw', IMP: 'bolt', BEAST: 'claw', WRAITH: 'bolt', HERALD: 'bolt', TROLL: 'slam', GOLEM: 'slam', WITCH: 'bolt', TYRANT: 'slash', KING: 'bolt' };
+  var CQ_NODE_LETTER = { combat: 'C', elite: 'E', event: 'V', shop: 'S', rest: 'R', treasure: 'T', boss: 'B' };
   var CQ_FIGHTS = [
     { name: 'TRAINING DUMMY', foes: [0] },
     { name: 'SCRAP RAT', foes: [1] },
@@ -1782,11 +1819,16 @@
   var cqPaused = false, cqOver = false, cqWon = false;
   var cqFrame = 0, cqAiT = 0, cqEnemyActIdx = 0;
   /* Animation state (all drawn in drawCardQuest). */
-  var cqLunge = null;  // {who:'p'|enemyIndex, t}
-  var cqSlash = null;  // {x,y,t}
+  var cqLunge = null;  // {who:'p'|enemyIndex, t, dur} — eased lunge, 16 frames
+  var cqSlash = null;  // {x,y,t,dur,kind:'slash'|'claw'|'slam'|'bite'|'stab',big}
   var cqPops = [];     // {x,y,txt,t,col}
   var cqParts = [];    // {x,y,vx,vy,life,col,r}
   var cqShake = 0, cqFlash = 0;
+  var cqFx = [];       // card effects {kind:'shield'|'aura'|'poison'|'burn'|'str'|'sparkle',x,y,t,dur}
+  var cqProj = null;   // flying bolt {x,y,tx,ty,t,dur,pend:{att,def,base,pierce,ax,ay,dx,dy}}
+  var cqBanner = null; // {txt,t} — boss attack warning
+  var cqImpact = null; // {x,y,t,big} — white hit flash at the target
+  var cqHeroFlash = 0, cqHeroHit = 0; // hero hit flash + recoil (frames)
   var cqLog = [];      // animation/event log for tests
 
   function cqNewUnit(hp) {
@@ -1828,7 +1870,9 @@
     cqFightDmg = 0; cqUpgradedName = '';
     cqPaused = false; cqOver = false; cqWon = false;
     cqLunge = null; cqSlash = null; cqPops = []; cqParts = [];
-    cqShake = 0; cqFlash = 0; cqLog = [];
+    cqShake = 0; cqFlash = 0; cqFx = []; cqProj = null; cqBanner = null; cqImpact = null;
+    cqHeroFlash = 0; cqHeroHit = 0; cqFx = []; cqProj = null; cqBanner = null; cqImpact = null;
+    cqHeroFlash = 0; cqHeroHit = 0; cqLog = [];
     screen = 'play';
     JMFGAMES.musicPlay('cards');
     JMFGAMES.beep(660, 0.08);
@@ -1867,7 +1911,18 @@
     }
     cqPops.push({ x: dx, y: dy - 8, txt: '-' + dealt, t: 30, col: '#FFD93D' });
     cqLog.push('hit:' + dealt);
-    if (dealt >= 12) { cqShake = Math.max(cqShake, 4); }
+    /* Impact: shake scales with the hit (heavy hits shake hard), a burst of
+       impact particles + a white flash at the target, and the defender
+       flashes white + recoils. All visible for many frames. */
+    cqShake = Math.max(cqShake, dealt >= 12 ? 8 : 3);
+    var nParts = dealt >= 12 ? 14 : 6;
+    for (var pi2 = 0; pi2 < nParts; pi2++) {
+      cqParts.push({ x: dx, y: dy, vx: (cqRand() - 0.5) * 4, vy: -1 - cqRand() * 2.5,
+        life: 18 + Math.floor(cqRand() * 14), col: (pi2 % 3 === 0 ? '#FFFFFF' : (pi2 % 3 === 1 ? '#FFD93D' : '#FF9F1C')), r: 1 + cqRand() });
+    }
+    cqImpact = { x: dx, y: dy, t: 8, big: dealt >= 12 };
+    if (def === cqPlayer) { cqHeroFlash = 6; cqHeroHit = 8; }
+    else { def.flash = 6; }
     if (att === cqPlayer) cqFightDmg += dealt;
     if (def.hp <= 0) { def.hp = 0; cqKillBurst(dx, dy, '#FF6B35'); }
     else if (def.thorns > 0 && dealt > 0) {
@@ -1880,11 +1935,11 @@
     return dealt;
   }
   function cqKillBurst(x, y, col) {
-    for (var i = 0; i < 12; i++) {
-      cqParts.push({ x: x, y: y, vx: (cqRand() - 0.5) * 3, vy: -0.5 - cqRand() * 2,
-        life: 22 + Math.floor(cqRand() * 12), col: (i % 2 ? col : '#FFD93D'), r: 1 + cqRand() });
+    for (var i = 0; i < 16; i++) {
+      cqParts.push({ x: x, y: y, vx: (cqRand() - 0.5) * 3.5, vy: -0.5 - cqRand() * 2.5,
+        life: 24 + Math.floor(cqRand() * 16), col: (i % 2 ? col : '#FFD93D'), r: 1 + cqRand() });
     }
-    cqShake = Math.max(cqShake, 5);
+    cqShake = Math.max(cqShake, 8);
     cqLog.push('kill');
     JMFGAMES.beep(180, 0.2);
   }
@@ -1953,7 +2008,8 @@
     cqFightDmg = 0; cqUpgradedName = '';
     cqPhase = 'combat'; cqPaused = false; cqOver = false;
     cqLunge = null; cqSlash = null; cqPops = []; cqParts = [];
-    cqShake = 0; cqFlash = 0;
+    cqShake = 0; cqFlash = 0; cqFx = []; cqProj = null; cqBanner = null; cqImpact = null;
+    cqHeroFlash = 0; cqHeroHit = 0;
     cqStartPlayerTurn();
     JMFGAMES.beep(760, 0.08);
   }
@@ -2018,20 +2074,31 @@
     cqHand.splice(idx, 1);
     if (cqHandSel >= cqHand.length) cqHandSel = Math.max(0, cqHand.length - 1);
     if (cqHandSel < cqHandWin) cqHandWin = cqHandSel;
-    /* Card-play flash + attacker lunge + slash arc (visible animation). */
-    cqFlash = 8;
-    cqLunge = { who: 'p', t: 12 };
+    /* Card-play flash + attacker lunge + slash arc (visible animation).
+       The lunge eases out and back over 16 frames; the slash sweeps. */
+    cqFlash = f.rarity === 'R' ? 12 : 8;
+    cqLunge = { who: 'p', t: 16, dur: 16 };
     if (f.dmg > 0) {
       var targets = f.all ? cqAliveEnemies() : [tgt];
       for (var ti = 0; ti < targets.length; ti++) {
         var e = targets[ti];
-        cqSlash = { x: e.x, y: e.y, t: 14 };
+        cqSlash = { x: e.x, y: e.y, t: 16, dur: 16, kind: 'slash', big: f.dmg >= 12 || f.rarity === 'R' };
         for (var h = 0; h < f.hits; h++) {
           cqAttack(cqPlayer, e, f.dmg, f.pierce, 36, 52, e.x, e.y);
           if (!e.alive) break;
         }
       }
     }
+    /* Card-type effects: each kind plays its own visual, tied to the card. */
+    if (f.block > 0) cqFx.push({ kind: 'shield', x: 36, y: 52, t: 20, dur: 20 });
+    if (f.type === 'P') cqFx.push({ kind: 'aura', x: 36, y: 52, t: 24, dur: 24, col: '#C084FC' });
+    if (f.str > 0) cqFx.push({ kind: 'str', x: 36, y: 52, t: 16, dur: 16 });
+    if (f.draw > 0 || f.energy > 0) cqFx.push({ kind: 'sparkle', x: 36, y: 52, t: 20, dur: 20 });
+    if (tgt) {
+      if (f.poison > 0) cqFx.push({ kind: 'poison', x: tgt.x, y: tgt.y, t: 24, dur: 24 });
+      if (f.burn > 0) cqFx.push({ kind: 'burn', x: tgt.x, y: tgt.y, t: 24, dur: 24 });
+    }
+    if (f.rarity === 'R') { cqShake = Math.max(cqShake, 4); cqLog.push('rare'); }
     if (f.block > 0) {
       var b = cqGainBlock(cqPlayer, f.block);
       cqPops.push({ x: 36, y: 44, txt: '+' + b + ' BLK', t: 30, col: '#7ED491' });
@@ -2106,10 +2173,21 @@
     if (!e.alive) { cqCheckDeaths(); return; }
     cqDecayStatuses(e);
     var p = e.intent;
-    cqLunge = { who: 'e' + cqEnemies.indexOf(e), t: 12 };
+    /* Enemy leans in for every act; the lunge eases out and back over 16
+       frames so the attack reads on screen, not just as a number. */
+    cqLunge = { who: 'e' + cqEnemies.indexOf(e), t: 16, dur: 16 };
+    if (e.def.hp >= 85) cqBanner = { txt: 'BOSS ATTACK!', t: 18 };
     if (p.k === 'atk') {
-      cqSlash = { x: 36, y: 52, t: 14 };
-      cqAttack(e, cqPlayer, p.n, false, e.x, e.y, 36, 52);
+      var ak = CQ_FOE_ATK[e.def.short] || 'slash';
+      if (ak === 'bolt') {
+        /* Flying projectile: the damage lands when the bolt arrives. */
+        cqProj = { x: e.x, y: e.y, tx: 36, ty: 52, t: 10, dur: 10, col: '#C084FC',
+          pend: { att: e, def: cqPlayer, base: p.n, pierce: false, ax: e.x, ay: e.y, dx: 36, dy: 52 } };
+      } else {
+        cqSlash = { x: 36, y: 52, t: 16, dur: 16, kind: ak, big: p.n >= 12 };
+        if (ak === 'slam') cqShake = Math.max(cqShake, 6);
+        cqAttack(e, cqPlayer, p.n, false, e.x, e.y, 36, 52);
+      }
     } else if (p.k === 'blk') {
       var b = cqGainBlock(e, p.n);
       cqPops.push({ x: e.x, y: e.y - 14, txt: '+' + b + ' BLK', t: 30, col: '#7ED491' });
@@ -2120,7 +2198,16 @@
       cqPlayer.weak += p.n;
       cqPops.push({ x: 36, y: 44, txt: 'WEAK ' + p.n, t: 30, col: '#C084FC' });
     } else { // '?' unknown: resolves to a strike or a guard at random
-      if (cqRand() < 0.5) { cqSlash = { x: 36, y: 52, t: 14 }; cqAttack(e, cqPlayer, 8, false, e.x, e.y, 36, 52); }
+      if (cqRand() < 0.5) {
+        var ak2 = CQ_FOE_ATK[e.def.short] || 'slash';
+        if (ak2 === 'bolt') {
+          cqProj = { x: e.x, y: e.y, tx: 36, ty: 52, t: 10, dur: 10, col: '#C084FC',
+            pend: { att: e, def: cqPlayer, base: 8, pierce: false, ax: e.x, ay: e.y, dx: 36, dy: 52 } };
+        } else {
+          cqSlash = { x: 36, y: 52, t: 16, dur: 16, kind: ak2, big: false };
+          cqAttack(e, cqPlayer, 8, false, e.x, e.y, 36, 52);
+        }
+      }
       else { var b2 = cqGainBlock(e, 8); cqPops.push({ x: e.x, y: e.y - 14, txt: '+' + b2 + ' BLK', t: 30, col: '#7ED491' }); }
     }
     cqNextIntent(e);
@@ -2253,6 +2340,23 @@
     if (cqShake > 0) cqShake = Math.max(0, cqShake - 0.5);
     if (cqLunge && --cqLunge.t <= 0) cqLunge = null;
     if (cqSlash && --cqSlash.t <= 0) cqSlash = null;
+    if (cqImpact && --cqImpact.t <= 0) cqImpact = null;
+    if (cqBanner && --cqBanner.t <= 0) cqBanner = null;
+    if (cqHeroFlash > 0) cqHeroFlash--;
+    if (cqHeroHit > 0) cqHeroHit--;
+    for (var ei = 0; ei < cqEnemies.length; ei++) if (cqEnemies[ei].flash > 0) cqEnemies[ei].flash--;
+    for (var fi = cqFx.length - 1; fi >= 0; fi--) { cqFx[fi].t--; if (cqFx[fi].t <= 0) cqFx.splice(fi, 1); }
+    if (cqProj) {
+      cqProj.t--;
+      var pr = 1 - cqProj.t / cqProj.dur;
+      cqProj.x = Math.round(cqProj.pend.ax + (cqProj.tx - cqProj.pend.ax) * pr);
+      cqProj.y = Math.round(cqProj.pend.ay + (cqProj.ty - cqProj.pend.ay) * pr);
+      if (cqProj.t <= 0) {
+        var pd = cqProj.pend; cqProj = null;
+        cqAttack(pd.att, pd.def, pd.base, pd.pierce, pd.ax, pd.ay, pd.dx, pd.dy);
+        if (cqPlayer.hp <= 0) { cqPlayer.hp = 0; cqFinish(false); }
+      }
+    }
     for (var i = cqPops.length - 1; i >= 0; i--) {
       cqPops[i].y -= 0.5; cqPops[i].t--;
       if (cqPops[i].t <= 0) cqPops.splice(i, 1);
@@ -2305,14 +2409,39 @@
     for (var l = 0; l < Math.min(3, lines.length); l++) ctx.fillText(lines[l], cx + 3, cy + 27 + l * 7);
     ctx.textAlign = 'left';
   }
-  function cqDrawUnit(x, y, u, label, col, lungeX) {
-    var lx = x + (lungeX || 0);
-    ctx.fillStyle = col;
-    ctx.beginPath(); ctx.arc(lx, y, 11, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#1E1E5A';
-    ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
-    ctx.fillText(label, lx, y + 3);
+  /* Eased lunge offset: 0 -> +14 -> 0 over the lunge's 16 frames. */
+  function cqLungeOff(who) {
+    if (!cqLunge || cqLunge.who !== who) return 0;
+    var prog = 1 - cqLunge.t / cqLunge.dur;
+    return Math.round(14 * Math.sin(prog * Math.PI)) * (who === 'p' ? 1 : -1);
+  }
+  function cqDrawFigRects(rects, ox, oy, s, flash) {
+    for (var i = 0; i < rects.length; i++) {
+      var r = rects[i];
+      ctx.fillStyle = flash ? '#FFFFFF' : r[4];
+      ctx.fillRect(Math.round(ox + r[0] * s), Math.round(oy + r[1] * s),
+        Math.max(1, Math.round(r[2] * s)), Math.max(1, Math.round(r[3] * s)));
+    }
+  }
+  /* Hero figure + name above + HP bar below. flash>0 draws it white (hit). */
+  function cqDrawHeroFig(x, y, name, flash) {
+    var lx = x + cqLungeOff('p') - (cqHeroHit > 0 ? Math.round(5 * cqHeroHit / 8) : 0);
+    cqDrawFigRects(CQ_HERO_FIG[name], lx, y, 1, flash);
+    ctx.fillStyle = '#F5E9C8'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(name, lx, y - 22);
     ctx.textAlign = 'left';
+    cqDrawUnitBar(x, y, cqPlayer);
+  }
+  /* Enemy figure + name above (never inside a circle) + HP bar below. */
+  function cqDrawFoeFig(e, idx) {
+    var lx = e.x + cqLungeOff('e' + idx);
+    cqDrawFigRects(CQ_FOE_FIG[e.def.short], lx, e.y, 1, e.flash > 0);
+    ctx.fillStyle = '#F5E9C8'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(e.def.short, lx, e.y - 22);
+    ctx.textAlign = 'left';
+    cqDrawUnitBar(e.x, e.y, e);
+  }
+  function cqDrawUnitBar(x, y, u) {
     /* HP bar (24px wide, under the unit). */
     ctx.fillStyle = '#3A3A3A';
     ctx.fillRect(x - 12, y + 15, 24, 4);
@@ -2325,6 +2454,86 @@
       ctx.fillStyle = '#7ED491'; ctx.font = '7px monospace'; ctx.textAlign = 'center';
       ctx.fillText('BLK ' + u.block, x, y + 35);
       ctx.textAlign = 'left';
+    }
+  }
+  /* Animated attack slash: sweeps over 16 frames; the shape matches the
+     attack kind (slash arcs, claw rakes, slam ring, bite jaws, stab cross). */
+  function cqDrawSlash() {
+    var s = cqSlash, prog = 1 - s.t / s.dur, x = s.x, y = s.y;
+    ctx.lineWidth = s.big ? 3 : 2;
+    if (s.kind === 'claw') {
+      ctx.strokeStyle = '#FFD93D';
+      for (var i = -1; i <= 1; i++) {
+        ctx.beginPath();
+        ctx.moveTo(x - 12, y - 8 + i * 6 + prog * 8);
+        ctx.lineTo(x + 10, y + 6 + i * 6 + prog * 8);
+        ctx.stroke();
+      }
+    } else if (s.kind === 'slam') {
+      ctx.strokeStyle = '#FF9F1C';
+      ctx.beginPath(); ctx.arc(x, y, 4 + prog * 16, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = '#FFD93D';
+      ctx.beginPath(); ctx.arc(x, y, 2 + prog * 10, 0, Math.PI * 2); ctx.stroke();
+    } else if (s.kind === 'bite') {
+      ctx.fillStyle = '#FFD93D';
+      var jaw = 10 - prog * 8;
+      ctx.beginPath(); ctx.moveTo(x - 12, y - jaw); ctx.lineTo(x + 12, y - jaw); ctx.lineTo(x, y + 4); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x - 12, y + jaw); ctx.lineTo(x + 12, y + jaw); ctx.lineTo(x, y - 4); ctx.closePath(); ctx.fill();
+    } else if (s.kind === 'stab') {
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.beginPath(); ctx.moveTo(x - 14, y - 10 + prog * 6); ctx.lineTo(x + 14, y + 10 - prog * 6); ctx.stroke();
+      ctx.strokeStyle = '#FFD93D';
+      ctx.beginPath(); ctx.moveTo(x - 14, y + 10 - prog * 6); ctx.lineTo(x + 14, y - 10 + prog * 6); ctx.stroke();
+    } else { /* slash: two arcs sweeping wider as the swing progresses */
+      var r = 8 + prog * 10;
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.beginPath(); ctx.arc(x, y, r, -0.6 + prog * 0.9, 1.2 + prog * 0.9); ctx.stroke();
+      ctx.strokeStyle = '#FFD93D';
+      ctx.beginPath(); ctx.arc(x, y, Math.max(3, r - 4), 2.0 + prog * 0.9, 3.4 + prog * 0.9); ctx.stroke();
+    }
+    ctx.lineWidth = 1;
+  }
+  /* Card-effect visuals, one per card kind. */
+  function cqDrawFx() {
+    for (var i = 0; i < cqFx.length; i++) {
+      var f = cqFx[i], prog = 1 - f.t / f.dur;
+      if (f.kind === 'shield') {
+        ctx.strokeStyle = '#7ED4FF'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(f.x, f.y, 17 + Math.round(Math.sin(prog * 6) * 2), 0, Math.PI * 2); ctx.stroke();
+        ctx.lineWidth = 1;
+      } else if (f.kind === 'aura') {
+        ctx.fillStyle = f.col || '#C084FC';
+        for (var a = 0; a < 5; a++) {
+          var ax = f.x - 10 + ((a * 7 + cqFrame * 2) % 20);
+          var ay = f.y + 10 - Math.round(prog * 26 + a * 3);
+          ctx.fillRect(ax, ay, 2, 2);
+        }
+      } else if (f.kind === 'poison' || f.kind === 'burn') {
+        ctx.fillStyle = f.kind === 'poison' ? '#A8E063' : '#FF9F1C';
+        for (var b = 0; b < 3; b++) {
+          var bx = f.x - 6 + b * 6;
+          var by = f.y - 6 - Math.round(prog * 14 + b * 2);
+          ctx.beginPath(); ctx.arc(bx, by, 2, 0, Math.PI * 2); ctx.fill();
+        }
+      } else if (f.kind === 'str') {
+        ctx.strokeStyle = '#FF6B5E'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(f.x, f.y, 15 + Math.round(Math.sin(prog * 8) * 3), 0, Math.PI * 2); ctx.stroke();
+        ctx.lineWidth = 1;
+      } else if (f.kind === 'sparkle') {
+        ctx.fillStyle = '#FFD93D';
+        for (var sp = 0; sp < 4; sp++) {
+          var sx = f.x - 12 + ((sp * 9 + cqFrame * 3) % 24);
+          var sy = f.y - 10 + ((sp * 5) % 16);
+          ctx.fillRect(sx, sy, 2, 2);
+        }
+      }
+    }
+    if (cqImpact) {
+      var ip = cqImpact, ir = ip.big ? 14 : 10;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath(); ctx.arc(ip.x, ip.y, Math.max(2, Math.round(ir * ip.t / 8)), 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#FFD93D';
+      ctx.beginPath(); ctx.arc(ip.x, ip.y, Math.max(1, Math.round(ir * ip.t / 12)), 0, Math.PI * 2); ctx.fill();
     }
   }
   function cqStatusLine(u) {
@@ -2358,15 +2567,19 @@
       ctx.textAlign = 'left';
       for (var i = 0; i < CQ_CHARS.length; i++) {
         var ch = CQ_CHARS[i], y = 44 + i * 19;
-        if (i === cqCharIdx) { ctx.fillStyle = '#FFD93D'; ctx.fillRect(10, y - 10, 220, 17); ctx.fillStyle = '#1E1E5A'; }
-        else ctx.fillStyle = '#E8E8FF';
+        var locked = !cqIsUnlocked(i);
+        if (i === cqCharIdx) { ctx.fillStyle = '#FFD93D'; ctx.fillRect(10, y - 10, 220, 20); }
+        /* Hero portrait left of the text (locked heroes dimmed). */
+        cqDrawFigRects(CQ_HERO_FIG[ch.name], 20, y, 0.55, false);
+        if (locked) { ctx.fillStyle = 'rgba(30,30,74,0.45)'; ctx.fillRect(12, y - 10, 16, 18); }
+        ctx.fillStyle = i === cqCharIdx ? '#1E1E5A' : '#E8E8FF';
         ctx.font = 'bold 9px monospace';
-        ctx.fillText(ch.name + ' THE ' + ch.title, 16, y);
+        ctx.fillText(ch.name + ' THE ' + ch.title, 32, y);
         ctx.font = '7px monospace';
-        ctx.fillText(cqIsUnlocked(i) ? ('HP ' + ch.hp + ' - ' + ch.info) : ('LOCKED - ' + (ch.cost || 0) + ' PTS'), 16, y + 8);
+        ctx.fillText(locked ? ('LOCKED - ' + (ch.cost || 0) + ' PTS') : ('HP ' + ch.hp + ' - ' + ch.info), 32, y + 7);
       }
       ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
-      ctx.fillText('POINTS ' + CQ_POINTS + '  WINS ' + CQ_WINS, 120, 150);
+      ctx.fillText('POINTS ' + CQ_POINTS + '  WINS ' + CQ_WINS, 120, 157);
       ctx.textAlign = 'left';
     } else if (cqPhase === 'fight') {
       ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
@@ -2396,47 +2609,52 @@
       ctx.textAlign = 'right';
       ctx.fillText('EN ' + cqEnergy + '/3', 236, 11);
       ctx.textAlign = 'left';
-      /* Player. */
-      var pLunge = (cqLunge && cqLunge.who === 'p') ? 8 : 0;
-      cqDrawUnit(36, 52, cqPlayer, CQ_CHARS[cqCharIdx].name, '#E8B93C', pLunge);
+      /* Player figure (lunges + recoils + flashes white when hit). */
+      cqDrawHeroFig(36, 52, CQ_CHARS[cqCharIdx].name, cqHeroFlash > 0);
       var ps = cqStatusLine(cqPlayer);
       if (ps) { ctx.fillStyle = '#FFD93D'; ctx.font = '7px monospace'; ctx.textAlign = 'center'; ctx.fillText(ps, 36, 96); ctx.textAlign = 'left'; }
-      /* Target status line (top, clear of the hand row). */
+      /* Target status line — only on the player's turn. The enemy phase
+         uses this slot for ENEMY TURN / BOSS ATTACK, so they never collide. */
       var tgt0 = cqTarget();
-      if (tgt0) {
+      if (tgt0 && cqPhase === 'combat') {
         var ts = cqStatusLine(tgt0);
         ctx.fillStyle = '#FFD93D'; ctx.font = '7px monospace'; ctx.textAlign = 'center';
         ctx.fillText('TGT ' + tgt0.def.short + (ts ? ' ' + ts : ''), 120, 22);
         ctx.textAlign = 'left';
       }
-      /* Enemies. */
+      /* Enemies: figures with names above, target ring, intent below. */
       for (var k = 0; k < cqEnemies.length; k++) {
         var e = cqEnemies[k];
         if (!e.alive) continue;
-        var eLunge = (cqLunge && cqLunge.who === 'e' + k) ? -8 : 0;
         var tgt = cqTarget();
         if (tgt === e) {
           ctx.strokeStyle = '#FFD93D'; ctx.lineWidth = 2;
-          ctx.beginPath(); ctx.arc(e.x, e.y, 15, 0, Math.PI * 2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(e.x, e.y, 17, 0, Math.PI * 2); ctx.stroke();
         }
-        cqDrawUnit(e.x, e.y, e, e.def.short, e.def.col, eLunge);
+        cqDrawFoeFig(e, k);
         ctx.fillStyle = '#F5E9C8'; ctx.font = '7px monospace'; ctx.textAlign = 'center';
         ctx.fillText(cqIntentText(e), e.x, e.y + 44);
         ctx.textAlign = 'left';
       }
-      /* Slash arc (visible attack animation). */
-      if (cqSlash) {
-        ctx.strokeStyle = '#FFD93D'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(cqSlash.x, cqSlash.y, 12, -0.6, 1.2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(cqSlash.x, cqSlash.y, 8, 2.0, 3.4); ctx.stroke();
+      /* Attack animations: slash/claw/slam/bite/stab sweep + impact flash. */
+      if (cqSlash) cqDrawSlash();
+      /* Card-effect visuals (shield, aura, poison, burn, strength, sparkle). */
+      cqDrawFx();
+      /* Flying bolt projectile. */
+      if (cqProj) {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath(); ctx.arc(cqProj.x, cqProj.y, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = cqProj.col;
+        ctx.beginPath(); ctx.arc(cqProj.x, cqProj.y, 2, 0, Math.PI * 2); ctx.fill();
       }
-      /* Hand row: 4 visible cards, scrollable. */
+      /* Hand row: 4 visible cards, scrollable. First card starts at x=12
+         (clear of the edge even mid-shake), last ends at 230. */
       var vis = Math.min(4, cqHand.length);
       for (var c = 0; c < vis; c++) {
         var ci = cqHandWin + c;
         if (ci >= cqHand.length) break;
-        var cx = 8 + c * 56;
-        var cy = (ci === cqHandSel) ? 100 : 106;
+        var cx = 12 + c * 56;
+        var cy = (ci === cqHandSel) ? 98 : 108;
         cqDrawCard(cx, cy, cqHand[ci], ci === cqHandSel);
       }
       if (cqHandWin > 0) { ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace'; ctx.fillText('<', 2, 126); }
@@ -2447,8 +2665,16 @@
       ctx.fillText('DRAW ' + cqDrawPile.length + ' DISC ' + cqDiscard.length, 236, 157);
       ctx.textAlign = 'left';
       if (cqPhase === 'enemy') {
-        ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
-        ctx.fillText('ENEMY TURN', 120, 22);
+        /* Own clear row at y=24: 13px below TURN (y=11); the TGT line is
+           hidden in the enemy phase, so nothing shares this slot. Boss
+           attacks show a red BOSS ATTACK! warning instead. */
+        if (cqBanner) {
+          ctx.fillStyle = '#FF6B5E'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+          ctx.fillText(cqBanner.txt, 120, 24);
+        } else {
+          ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+          ctx.fillText('ENEMY TURN', 120, 24);
+        }
         ctx.textAlign = 'left';
       }
     } else if (cqPhase === 'map') {
@@ -2458,19 +2684,47 @@
       ctx.fillText('HP ' + cqPlayer.hp + '/' + cqPlayer.maxHp + '  GOLD ' + cqRun.gold + '  PTS ' + CQ_POINTS, 120, 30);
       ctx.fillText('RELICS ' + cqRun.relics.length + '  DECK ' + cqDeck.length, 120, 40);
       ctx.textAlign = 'left';
-      var mrow = cqRun.map[cqRun.row];
-      for (var mi = 0; mi < mrow.length; mi++) {
-        var mx = 14 + mi * 72, my = 62;
-        if (mi === cqRun.sel) { ctx.fillStyle = '#FFD93D'; ctx.fillRect(mx - 2, my - 2, 66, 30); ctx.fillStyle = '#1E1E5A'; }
-        else { ctx.fillStyle = '#2A2A5A'; ctx.fillRect(mx - 2, my - 2, 66, 30); ctx.fillStyle = '#E8E8FF'; }
-        ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
-        ctx.fillText(mrow[mi].type.toUpperCase(), mx + 31, my + 12);
-        ctx.textAlign = 'left';
+      /* Mini-map: all 6 rows with branching lines between them, so the
+         path structure is visible (not just three side-by-side boxes). */
+      var mapRows = cqRun.map;
+      var rowY = function (r) { return 52 + r * 12; };
+      var nodeX = function (r, i) {
+        var n = mapRows[r].length;
+        if (n === 1) return 120;
+        if (n === 2) return 90 + i * 60;
+        return 60 + i * 60;
+      };
+      ctx.strokeStyle = '#5A5A9A'; ctx.lineWidth = 1;
+      for (var lr = 0; lr < mapRows.length - 1; lr++) {
+        for (var li = 0; li < mapRows[lr].length; li++) {
+          for (var lj = 0; lj < mapRows[lr + 1].length; lj++) {
+            if (Math.abs(nodeX(lr + 1, lj) - nodeX(lr, li)) <= 70) {
+              ctx.beginPath();
+              ctx.moveTo(nodeX(lr, li), rowY(lr) + 4);
+              ctx.lineTo(nodeX(lr + 1, lj), rowY(lr + 1) - 4);
+              ctx.stroke();
+            }
+          }
+        }
       }
-      ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
-      ctx.fillText('ROW ' + (cqRun.row + 1) + ' OF 6 - PICK A NODE', 120, 100);
-      ctx.fillText('A: ENTER  B: QUIT RUN', 120, 114);
-      ctx.fillText('BOSS WAITS AT ROW 6', 120, 128);
+      for (var mr = 0; mr < mapRows.length; mr++) {
+        for (var mi = 0; mi < mapRows[mr].length; mi++) {
+          var mx = nodeX(mr, mi), my = rowY(mr);
+          var done = mapRows[mr][mi].done;
+          var cur = mr === cqRun.row && mi === cqRun.sel;
+          ctx.fillStyle = cur ? '#FFD93D' : (done ? '#3A3A6A' : (mr === cqRun.row ? '#2A2A5A' : '#1E1E3A'));
+          ctx.fillRect(mx - 8, my - 4, 16, 9);
+          ctx.fillStyle = cur ? '#1E1E5A' : '#E8E8FF';
+          ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
+          ctx.fillText(CQ_NODE_LETTER[mapRows[mr][mi].type], mx, my + 3);
+        }
+      }
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 9px monospace';
+      ctx.fillText(mapRows[cqRun.row][cqRun.sel].type.toUpperCase(), 120, 124);
+      ctx.fillStyle = '#C9C9F2'; ctx.font = '8px monospace';
+      ctx.fillText('ROW ' + (cqRun.row + 1) + ' OF 6', 120, 136);
+      ctx.fillText('A: ENTER  B: QUIT RUN', 120, 150);
       ctx.textAlign = 'left';
     } else if (cqPhase === 'shop') {
       ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
@@ -2599,11 +2853,13 @@
    Levels: every 10 lines cleared the fall gets faster.
    Best score: localStorage 'jmf-games-blockdrop-best'.
    ================================================================ */
-  var BD_COLS = 10, BD_ROWS = 20;
-  // Wider well: 8px cells, full-height (20 rows x 8 = 160). The well is
-  // 80px wide (was 70) and the right panel is a narrower sidebar.
-  var BD_CELL = 8, BD_X = 8, BD_Y = 0;
-  var BD_PX = 96; // right panel x (well right edge is BD_X + 80 = 88)
+  var BD_COLS = 20, BD_ROWS = 20;
+  // Wide well: 2/3 of the 240px screen (160px). Twenty 8px square
+  // columns x 20 rows — double the old 10-column well, same square
+  // blocks, same pieces. The info panel takes the right 1/3
+  // (x=160..240).
+  var BD_CELL = 8, BD_X = 0, BD_Y = 0;
+  var BD_PX = 164; // right panel text x (well right edge is BD_X + 160 = 160)
   // Pieces: rotation-0 cells in an n x n box, (row, col). Rotation is
   // 90 degrees clockwise: (r, c) -> (c, n-1-r), applied rot times.
   var BD_PIECES = [
@@ -2672,20 +2928,26 @@
     // 48/-4/floor-6 so the game stays playable as it speeds up.
     return Math.max(12, 60 - (bdLevel - 1) * 3);
   }
+  function bdSpawnX(idx) {
+    // Spawn centered in the 20-wide well: a 4-wide piece starts at
+    // x=8 (cols 8-11), a 3-wide at x=8, a 2-wide at x=9.
+    return 10 - Math.ceil(BD_PIECES[idx].size / 2);
+  }
   function startBlockDrop() {
     bdGrid = bdEmptyGrid();
     bdBag = [];
     bdScore = 0; bdLines = 0; bdLevel = 1;
     bdPaused = false; bdOver = false;
     bdFallT = 0; bdToast = ''; bdToastT = 0; bdBlink = 0; bdClearing = null;
-    bdCur = { idx: bdDeal(), rot: 0, x: 3, y: 0 };
+    var first = bdDeal();
+    bdCur = { idx: first, rot: 0, x: bdSpawnX(first), y: 0 };
     bdNextIdx = bdDeal();
     screen = 'play';
     JMFGAMES.musicPlay('drop');
     JMFGAMES.beep(660, 0.08);
   }
   function bdSpawnNext() {
-    bdCur = { idx: bdNextIdx, rot: 0, x: 3, y: 0 };
+    bdCur = { idx: bdNextIdx, rot: 0, x: bdSpawnX(bdNextIdx), y: 0 };
     bdNextIdx = bdDeal();
     bdFallT = 0;
     if (!bdFits(bdCur.idx, bdCur.rot, bdCur.x, bdCur.y)) {
@@ -2802,7 +3064,7 @@
     }
   }
   function bdDrawCell(x, y, color) {
-    // GBA block: bright face, light top edge, dark bottom edge.
+    // Square block: bright face, light top edge, dark bottom edge.
     ctx.fillStyle = color;
     ctx.fillRect(x, y, BD_CELL, BD_CELL);
     ctx.fillStyle = 'rgba(255,255,255,0.28)';
@@ -2855,30 +3117,34 @@
       }
     }
     // Well frame. The well uses the full height, so the top/bottom
-    // lines sit on the screen edges (y=0 and y=159) instead of
-    // BD_Y-1 / BD_Y+160, which would be off-screen.
+    // lines sit on the screen edges (y=0 and y=159). The well starts
+    // at the left screen edge (BD_X=0), so the left line sits at x=0
+    // and the right line at x=160 — no negative coords (the bounds
+    // test rejects anything off-screen).
     ctx.fillStyle = '#FFD93D';
-    ctx.fillRect(BD_X - 1, 0, BD_COLS * BD_CELL + 2, 1);
-    ctx.fillRect(BD_X - 1, H - 1, BD_COLS * BD_CELL + 2, 1);
-    ctx.fillRect(BD_X - 1, 0, 1, H);
+    ctx.fillRect(BD_X, 0, BD_COLS * BD_CELL, 1);
+    ctx.fillRect(BD_X, H - 1, BD_COLS * BD_CELL, 1);
+    ctx.fillRect(BD_X, 0, 1, H);
     ctx.fillRect(BD_X + BD_COLS * BD_CELL, 0, 1, H);
-    // Right panel: SCORE / BEST stacked at the top (the top bar is
-    // gone — the well uses the full height), then the NEXT preview.
+    // Right panel (x=164..240, the right 1/3): SCORE / BEST stacked
+    // at the top, then the NEXT preview. The preview uses the same
+    // 8px square cells as the well — a 4-block STRAIGHT is 32px wide,
+    // so the 64px box holds it with room to spare.
     ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'left';
     ctx.fillText('SCORE ' + bdScore, BD_PX, 11);
     ctx.fillText('BEST ' + bdBest, BD_PX, 22);
     ctx.font = 'bold 8px monospace';
     ctx.fillText('NEXT', BD_PX, 36);
     ctx.fillStyle = '#12123A';
-    ctx.fillRect(BD_PX, 40, 52, 34);
+    ctx.fillRect(BD_PX, 40, 64, 36);
     ctx.fillStyle = '#FFD93D';
-    ctx.fillRect(BD_PX, 40, 52, 1);
-    ctx.fillRect(BD_PX, 73, 52, 1);
-    ctx.fillRect(BD_PX, 40, 1, 34);
-    ctx.fillRect(BD_PX + 51, 40, 1, 34);
-    var np = BD_PIECES[bdNextIdx], ncell = 6;
+    ctx.fillRect(BD_PX, 40, 64, 1);
+    ctx.fillRect(BD_PX, 75, 64, 1);
+    ctx.fillRect(BD_PX, 40, 1, 36);
+    ctx.fillRect(BD_PX + 63, 40, 1, 36);
+    var np = BD_PIECES[bdNextIdx], ncell = 8;
     var nw = np.size * ncell, nh = np.size * ncell;
-    var nx0 = BD_PX + Math.floor((52 - nw) / 2), ny0 = 40 + Math.floor((34 - nh) / 2);
+    var nx0 = BD_PX + Math.floor((64 - nw) / 2), ny0 = 40 + Math.floor((36 - nh) / 2);
     for (var ni = 0; ni < np.cells.length; ni++) {
       ctx.fillStyle = np.color;
       ctx.fillRect(nx0 + np.cells[ni][1] * ncell, ny0 + np.cells[ni][0] * ncell, ncell - 1, ncell - 1);
@@ -2896,7 +3162,9 @@
     ctx.fillStyle = '#A7F3D0';
     ctx.fillText('A: ROTATE', BD_PX, 112);
     ctx.fillText('B: HARD DROP', BD_PX, 122);
-    ctx.fillText('DOWN: SOFT DROP', BD_PX, 132);
+    // 'DOWN: SOFT DROP' is 16 chars and would run past x=240 in the
+    // 76px panel — shortened to 'DOWN: SOFT' (same meaning).
+    ctx.fillText('DOWN: SOFT', BD_PX, 132);
     ctx.fillText('START: PAUSE', BD_PX, 142);
     // Toast (clear / level-up flash).
     if (bdToastT > 0) {
@@ -4762,6 +5030,11 @@
     ctx.fillText(heStreet.toUpperCase(), 4, 96);
     if (heStreak >= 2) { ctx.fillStyle = '#e8c33c'; ctx.textAlign = 'right'; ctx.fillText('STREAK ' + heStreak, W - 4, 96); ctx.textAlign = 'left'; ctx.fillStyle = '#f5e9c8'; }
     for (var pi = 0; pi < hePlayer.length; pi++) heDrawHoleCard(0, pi, hePlayer[pi]);
+    // bjDrawCardAt leaves fillStyle as the card's suit colour (red #c03028
+    // for hearts/diamonds) — reset it here, or "YOU BET" / "YOU: ..." come
+    // out red on the green felt (live phone screenshot, Nov 11). The cream
+    // set above is stale by now: the hole cards were drawn after it.
+    ctx.fillStyle = '#f5e9c8';
     ctx.fillText('YOU BET $' + hePlayerBet, 56, 106);
     if (hePlayerHandName && heState === 'result') ctx.fillText(hePlayerHandName, 56, 116);
     else if (heState === 'act' && heCommunity.length >= 3) {
