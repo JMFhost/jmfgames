@@ -398,9 +398,6 @@
      the window follows the selection and wraps jump to the ends.
      Works for any game count. */
   var MENU_PITCH = 15, MENU_ROWS = 6, MENU_TOP_Y = 48, menuTop = 0;
-  // Retro menu blink counter: increments once per menu frame; PRESS START
-  // shows for the first 36 frames of each 60-frame cycle.
-  var menuBlink = 0;
   function menuClamp() {
     if (menuIndex < menuTop) menuTop = menuIndex;
     else if (menuIndex >= menuTop + MENU_ROWS) menuTop = menuIndex - MENU_ROWS + 1;
@@ -20142,9 +20139,8 @@ function drawShooterOver() {
     // Layered title shadow, two-tone selection bar, double frame, lighter
     // scanlines. Layout is identical to before: same row positions, 12px
     // names, 15px pitch, 6 visible rows, same indicator and footer.
-    // PRESS START sits in its own clear band (8px @ y=141) so it never
-    // touches the footer at y=152 in any blink phase.
-    menuBlink = (menuBlink + 1) % 60;
+    // (The blinking start prompt was removed Nov 11: it blinked but Start
+    // does nothing on the menu — A plays — so the prompt was misleading.)
     ctx.fillStyle = '#0F380F';
     ctx.fillRect(0, 0, W, H);
     // Title: stepped 3-layer pixel shadow for a crisp, dimensional look
@@ -20194,12 +20190,6 @@ function drawShooterOver() {
     ctx.fillStyle = '#8BAC0F'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
     if (menuTop > 0) ctx.fillText('▲', 234, 36);
     if (menuEnd < GAMES.length) ctx.fillText('▼', 234, 140);
-    // Blinking PRESS START, 8px in its own clear band (glyphs ~135..141):
-    // clear of the frame bottom (132) and the footer glyph tops (~145).
-    if (menuBlink < 36) {
-      ctx.fillStyle = '#9BBC0F'; ctx.textAlign = 'center'; ctx.font = 'bold 8px monospace';
-      ctx.fillText('PRESS START', W / 2, 141);
-    }
     ctx.fillStyle = '#9BBC0F'; ctx.textAlign = 'center'; ctx.font = '10px monospace';
     ctx.fillText((menuIndex + 1) + ' OF ' + GAMES.length + '  ·  UP/DOWN MOVE - A PLAY', W / 2, 152);
     ctx.textAlign = 'left';
