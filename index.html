@@ -20138,16 +20138,20 @@ function drawShooterOver() {
     }
   }
   function drawMenu() {
-    // Retro DMG menu: 4-shade green monochrome. Dark green background,
-    // light-green text, chunky pixel title, retro frame around the list,
-    // blinking PRESS START, subtle scanlines over the menu only. Layout
-    // is identical to before: same row positions, 12px names, 15px pitch,
-    // 6 visible rows, same indicator and footer.
+    // Retro DMG menu, high-quality polish: 4-shade green monochrome only.
+    // Layered title shadow, two-tone selection bar, double frame, lighter
+    // scanlines. Layout is identical to before: same row positions, 12px
+    // names, 15px pitch, 6 visible rows, same indicator and footer.
+    // PRESS START sits in its own clear band (8px @ y=141) so it never
+    // touches the footer at y=152 in any blink phase.
     menuBlink = (menuBlink + 1) % 60;
     ctx.fillStyle = '#0F380F';
     ctx.fillRect(0, 0, W, H);
-    // Chunky pixel title: dark-green shadow offset, light-green face.
+    // Title: stepped 3-layer pixel shadow for a crisp, dimensional look
+    // (mid-green rim at +1, dark shadow at +2), same size and position.
     ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#8BAC0F';
+    ctx.fillText('JMF GAMES', W / 2 + 1, 21);
     ctx.fillStyle = '#306230';
     ctx.fillText('JMF GAMES', W / 2 + 2, 22);
     ctx.fillStyle = '#9BBC0F';
@@ -20156,15 +20160,26 @@ function drawShooterOver() {
     ctx.font = '10px monospace';
     ctx.fillText('SELECT A GAME', W / 2, 34);
     ctx.textAlign = 'left';
-    // Retro frame around the list (rows span y 37..127).
+    // Double frame around the list (rows span y 37..127): outer dark 2px
+    // stroke plus an inner mid-green 1px stroke. The inner top edge is
+    // the same colour as the selection bar, so the seam is invisible
+    // when the first row is selected.
     ctx.strokeStyle = '#306230'; ctx.lineWidth = 2;
     ctx.strokeRect(6, 36, 228, 95);
+    ctx.strokeStyle = '#8BAC0F'; ctx.lineWidth = 1;
+    ctx.strokeRect(9, 39, 222, 89);
     var menuEnd = Math.min(menuTop + MENU_ROWS, GAMES.length);
     for (var i = menuTop; i < menuEnd; i++) {
       var y = MENU_TOP_Y + (i - menuTop) * MENU_PITCH;
       if (i === menuIndex) {
+        // Two-tone selection bar: mid-green body, light top edge, dark
+        // bottom edge — a crisp bevel; dark text stays readable.
         ctx.fillStyle = '#8BAC0F';
         ctx.fillRect(10, y - 11, 220, 15);
+        ctx.fillStyle = '#9BBC0F';
+        ctx.fillRect(10, y - 11, 220, 2);
+        ctx.fillStyle = '#306230';
+        ctx.fillRect(10, y + 2, 220, 2);
         ctx.fillStyle = '#0F380F';
         ctx.font = 'bold 12px monospace';
         ctx.fillText('>', 16, y);
@@ -20179,16 +20194,17 @@ function drawShooterOver() {
     ctx.fillStyle = '#8BAC0F'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
     if (menuTop > 0) ctx.fillText('▲', 234, 36);
     if (menuEnd < GAMES.length) ctx.fillText('▼', 234, 140);
-    // Blinking PRESS START in the gap between the list frame and the footer.
+    // Blinking PRESS START, 8px in its own clear band (glyphs ~135..141):
+    // clear of the frame bottom (132) and the footer glyph tops (~145).
     if (menuBlink < 36) {
-      ctx.fillStyle = '#9BBC0F'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
-      ctx.fillText('PRESS START', W / 2, 144);
+      ctx.fillStyle = '#9BBC0F'; ctx.textAlign = 'center'; ctx.font = 'bold 8px monospace';
+      ctx.fillText('PRESS START', W / 2, 141);
     }
     ctx.fillStyle = '#9BBC0F'; ctx.textAlign = 'center'; ctx.font = '10px monospace';
     ctx.fillText((menuIndex + 1) + ' OF ' + GAMES.length + '  ·  UP/DOWN MOVE - A PLAY', W / 2, 152);
     ctx.textAlign = 'left';
-    // Subtle scanlines over the menu screen only.
-    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    // Lighter scanlines over the menu screen only.
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
     for (var sy = 0; sy < H; sy += 3) ctx.fillRect(0, sy, W, 1);
   }
   function drawComing() {
