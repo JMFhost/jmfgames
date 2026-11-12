@@ -33,10 +33,26 @@
   .page-note{max-width:520px;margin:0 auto 16px;text-align:center;color:#9aa3b2;font-size:13px}
 
   /* ---------- Classic DMG slab body ---------- */
-  .jmf{width:min(520px,96vw);margin:0 auto;user-select:none;-webkit-user-select:none;color:#3a382e;border-radius:20px 20px 56px 20px}
+  .jmf{width:min(520px,96vw);margin:0 auto;user-select:none;-webkit-user-select:none;color:var(--shell-text);border-radius:20px 20px 56px 20px;
+    --shell-1:#dcd9cb;--shell-2:#cfcabb;--shell-3:#bfbaa7;--shell-text:#3a382e;--shell-muted:#55503f;--shell-brand:#2e3a67;--shell-brand2:#7b5ea7;--shell-grille:#8a8578;--shell-edge:transparent}
+  /* Shell colors (COLOR button). Beige above is the default and matches the
+     classic warm-beige look exactly; each data-shell-color value re-themes
+     the body gradients + shell text so the labels stay readable. Bezel,
+     D-pad fill, A/B fill and pill fill stay fixed on every color. */
+  .jmf[data-shell-color="beige"]{--shell-1:#dcd9cb;--shell-2:#cfcabb;--shell-3:#bfbaa7;--shell-text:#3a382e;--shell-muted:#55503f;--shell-brand:#2e3a67;--shell-brand2:#7b5ea7;--shell-grille:#8a8578;--shell-edge:transparent}
+  .jmf[data-shell-color="black"]{--shell-1:#4d4d4d;--shell-2:#333333;--shell-3:#161616;--shell-text:#ececec;--shell-muted:#c9c9c9;--shell-brand:#ffffff;--shell-brand2:#c9a8ff;--shell-grille:#6a6a6a;--shell-edge:rgba(255,255,255,.4)}
+  .jmf[data-shell-color="blue"]{--shell-1:#6f9fdc;--shell-2:#4a7cc2;--shell-3:#2f5a96;--shell-text:#ffffff;--shell-muted:#dce8fb;--shell-brand:#ffffff;--shell-brand2:#ffd93d;--shell-grille:#2c4f83;--shell-edge:rgba(255,255,255,.35)}
+  .jmf[data-shell-color="gray"]{--shell-1:#a8a8a8;--shell-2:#8c8c8c;--shell-3:#6e6e6e;--shell-text:#202020;--shell-muted:#333333;--shell-brand:#1f2a44;--shell-brand2:#5b4390;--shell-grille:#5a5a5a;--shell-edge:rgba(0,0,0,.4)}
+  .jmf[data-shell-color="green"]{--shell-1:#5cb87a;--shell-2:#3d9e5f;--shell-3:#2a7d49;--shell-text:#ffffff;--shell-muted:#dcf5e4;--shell-brand:#ffffff;--shell-brand2:#ffd93d;--shell-grille:#256b3f;--shell-edge:rgba(255,255,255,.35)}
+  .jmf[data-shell-color="pink"]{--shell-1:#f9c2d4;--shell-2:#f49fbb;--shell-3:#e07d9d;--shell-text:#571f33;--shell-muted:#6e2c42;--shell-brand:#7a1f3d;--shell-brand2:#5b4390;--shell-grille:#c06a89;--shell-edge:rgba(0,0,0,.2)}
+  .jmf[data-shell-color="purple"]{--shell-1:#a68ad9;--shell-2:#8668bd;--shell-3:#654a9c;--shell-text:#ffffff;--shell-muted:#e6dcf7;--shell-brand:#ffffff;--shell-brand2:#ffd93d;--shell-grille:#523c82;--shell-edge:rgba(255,255,255,.35)}
+  .jmf[data-shell-color="red"]{--shell-1:#e76a5e;--shell-2:#d04a3e;--shell-3:#ad3226;--shell-text:#ffffff;--shell-muted:#ffe0dc;--shell-brand:#ffffff;--shell-brand2:#ffd93d;--shell-grille:#8f2a20;--shell-edge:rgba(255,255,255,.35)}
+  .jmf[data-shell-color="silver"]{--shell-1:#f0f0f3;--shell-2:#d5d5dc;--shell-3:#b4b4bf;--shell-text:#33333a;--shell-muted:#55555e;--shell-brand:#2e3a67;--shell-brand2:#7b5ea7;--shell-grille:#9a9aa6;--shell-edge:rgba(0,0,0,.15)}
+  .jmf[data-shell-color="white"]{--shell-1:#ffffff;--shell-2:#f2f2f2;--shell-3:#dcdcdc;--shell-text:#333333;--shell-muted:#555555;--shell-brand:#2e3a67;--shell-brand2:#7b5ea7;--shell-grille:#b5b5b5;--shell-edge:rgba(0,0,0,.15)}
+  .jmf[data-shell-color="yellow"]{--shell-1:#ffdf5e;--shell-2:#f7cd2e;--shell-3:#ddb01a;--shell-text:#4a3800;--shell-muted:#5c4700;--shell-brand:#3d2f00;--shell-brand2:#7b2c4b;--shell-grille:#b3941a;--shell-edge:rgba(0,0,0,.25)}
   /* Top of the slab, with the screen */
-  .lid{background:linear-gradient(160deg,#dcd9cb,#cfcabb 55%,#bfbaa7);border-radius:20px 20px 0 0;padding:16px 18px 14px;box-shadow:0 10px 28px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.55),inset 0 -3px 0 rgba(0,0,0,.14)}
-  .lid-top{display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:2px;color:#55503f;font-weight:800;padding:0 4px 10px}
+  .lid{background:linear-gradient(160deg,var(--shell-1),var(--shell-2) 55%,var(--shell-3));border-radius:20px 20px 0 0;padding:16px 18px 14px;box-shadow:0 10px 28px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.55),inset 0 -3px 0 rgba(0,0,0,.14)}
+  .lid-top{display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:2px;color:var(--shell-muted);font-weight:800;padding:0 4px 10px}
   .led{display:flex;align-items:center;gap:6px}
   .led i{width:9px;height:9px;border-radius:50%;background:#e03030;box-shadow:0 0 6px rgba(224,48,48,.7);display:inline-block}
   .led i.off{background:#7a2025;box-shadow:none}
@@ -47,14 +63,15 @@
   .screen{background:#000;border:3px solid #101218;border-radius:4px;overflow:hidden;aspect-ratio:3/2;position:relative}
   .screen canvas{width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges}
   .screen .scan{position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.04) 0 1px,transparent 1px 3px);pointer-events:none}
-  .lid-brand{text-align:center;font-weight:800;font-size:13px;letter-spacing:3px;color:#2e3a67;margin:10px 0 0}
+  .lid-brand{text-align:center;font-weight:800;font-size:13px;letter-spacing:3px;color:var(--shell-brand);margin:10px 0 0}
+  .lid-brand .brand-accent{color:var(--shell-brand2)}
   /* No clamshell hinge on a classic slab: kept in the DOM, hidden */
   .hinge{display:none}
   /* Bottom of the slab: controls */
-  .base{background:linear-gradient(160deg,#dcd9cb,#cfcabb 60%,#bfbaa7);border-radius:0 0 56px 20px;padding:18px 20px 24px;box-shadow:0 18px 40px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.5)}
+  .base{background:linear-gradient(160deg,var(--shell-1),var(--shell-2) 60%,var(--shell-3));border-radius:0 0 56px 20px;padding:18px 20px 24px;box-shadow:0 18px 40px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.5)}
   .controls{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
   .dpad{width:128px;height:128px;position:relative;margin:0 auto}
-  .dpad button{position:absolute;background:#1a1a1a;color:#d8d8d8;border:none;font-size:17px;cursor:pointer;box-shadow:0 4px 0 #0a0a0a,0 6px 8px rgba(0,0,0,.4);touch-action:none}
+  .dpad button{position:absolute;background:#1a1a1a;color:#d8d8d8;border:1px solid var(--shell-edge);font-size:17px;cursor:pointer;box-shadow:0 4px 0 #0a0a0a,0 6px 8px rgba(0,0,0,.4);touch-action:none}
   .dpad button:active,.dpad button.pressed{transform:translateY(3px);box-shadow:0 1px 0 #0a0a0a;background:#2e2e2e}
   .dpad .up{left:44px;top:0;width:40px;height:48px;border-radius:6px 6px 0 0}
   .dpad .down{left:44px;bottom:0;width:40px;height:48px;border-radius:0 0 6px 6px}
@@ -66,17 +83,24 @@
   .ab .b{left:0;bottom:0}
   .ab .a{right:0;top:0}
   .startsel{display:flex;gap:16px;justify-content:center;margin-top:20px}
-  .startsel button{background:#8a8a8a;border:none;border-radius:12px;width:56px;height:14px;cursor:pointer;box-shadow:0 3px 0 #6e6e6e;touch-action:none;transform:rotate(-25deg)}
+  .startsel button{background:#8a8a8a;border:1px solid var(--shell-edge);border-radius:12px;width:56px;height:14px;cursor:pointer;box-shadow:0 3px 0 #6e6e6e;touch-action:none;transform:rotate(-25deg)}
   .startsel button:active,.startsel button.pressed{transform:rotate(-25deg) translateY(2px);box-shadow:0 1px 0 #6e6e6e}
-  .startsel .lbl{display:flex;gap:16px;justify-content:center;font-size:10px;font-weight:800;letter-spacing:1px;color:#4a4636;margin-top:8px}
+  .startsel .lbl{display:flex;gap:16px;justify-content:center;font-size:10px;font-weight:800;letter-spacing:1px;color:var(--shell-muted);margin-top:8px}
   .startsel .lbl span{width:56px;text-align:center}
   .toggles{display:flex;gap:8px;justify-content:center;margin:16px 0 2px}
-  .toggles button{background:#2a2a2a;color:#d8d8d8;border:none;border-radius:6px;padding:7px 12px;font-size:10px;font-weight:800;letter-spacing:1px;cursor:pointer;box-shadow:0 3px 0 #0a0a0a,0 4px 6px rgba(0,0,0,.3);touch-action:none}
+  .toggles button{background:#2a2a2a;color:#d8d8d8;border:1px solid var(--shell-edge);border-radius:6px;padding:7px 12px;font-size:10px;font-weight:800;letter-spacing:1px;cursor:pointer;box-shadow:0 3px 0 #0a0a0a,0 4px 6px rgba(0,0,0,.3);touch-action:none}
   .toggles button:active{transform:translateY(2px);box-shadow:0 1px 0 #0a0a0a}
   .toggles button.off{color:#9a9a9a;background:#6a6a6a}
+  /* Color picker: in-flow panel below the toggles, so it never covers the
+     game screen. Swatches are phone-sized tap targets (44px min height). */
+  .color-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;margin:14px 0 2px;padding:10px;background:rgba(0,0,0,.14);border:1px solid var(--shell-edge);border-radius:12px}
+  .color-picker[hidden]{display:none}
+  .color-picker button{display:flex;align-items:center;gap:8px;min-height:44px;padding:6px 10px;border:2px solid rgba(0,0,0,.3);border-radius:8px;background:rgba(255,255,255,.28);color:var(--shell-text);font-size:11px;font-weight:800;letter-spacing:1px;cursor:pointer;text-align:left;touch-action:manipulation}
+  .color-picker button i{width:26px;height:26px;border-radius:50%;border:2px solid rgba(0,0,0,.35);flex:none;display:block}
+  .color-picker button.selected{box-shadow:0 0 0 2px #fff,0 0 0 4px #1f2a44}
   .grille{margin:20px 8px 0 auto;width:110px;display:grid;grid-template-columns:repeat(6,1fr);gap:5px;transform:rotate(-18deg)}
-  .grille i{height:5px;border-radius:3px;background:#8a8578;box-shadow:inset 0 1px 2px rgba(0,0,0,.5)}
-  .hint{text-align:center;font-size:12px;color:#5a5546;margin-top:14px}
+  .grille i{height:5px;border-radius:3px;background:var(--shell-grille);box-shadow:inset 0 1px 2px rgba(0,0,0,.5)}
+  .hint{text-align:center;font-size:12px;color:var(--shell-muted);margin-top:14px}
 </style>
 </head>
 <body>
@@ -92,7 +116,7 @@
         <div class="scan"></div>
       </div>
     </div>
-    <div class="lid-brand">JMF <span style="color:#7b5ea7">GAMES</span></div>
+    <div class="lid-brand">JMF <span class="brand-accent">GAMES</span></div>
   </div>
   <div class="hinge"></div>
   <div class="base">
@@ -119,6 +143,21 @@
     <div class="toggles">
       <button type="button" id="soundToggle" aria-label="Toggle sound effects">SOUND: ON</button>
       <button type="button" id="musicToggle" aria-label="Toggle background music">MUSIC: ON</button>
+      <button type="button" id="colorToggle" aria-label="Choose console color" aria-expanded="false" aria-controls="colorPicker">COLOR</button>
+    </div>
+
+    <div class="color-picker" id="colorPicker" role="group" aria-label="Console colors" hidden>
+      <button type="button" data-shell-color-pick="beige" aria-pressed="true"><i style="background:linear-gradient(160deg,#dcd9cb,#cfcabb)"></i><span>BEIGE</span></button>
+      <button type="button" data-shell-color-pick="black" aria-pressed="false"><i style="background:#333333"></i><span>BLACK</span></button>
+      <button type="button" data-shell-color-pick="blue" aria-pressed="false"><i style="background:#4a7cc2"></i><span>BLUE</span></button>
+      <button type="button" data-shell-color-pick="gray" aria-pressed="false"><i style="background:#8c8c8c"></i><span>GRAY</span></button>
+      <button type="button" data-shell-color-pick="green" aria-pressed="false"><i style="background:#3d9e5f"></i><span>GREEN</span></button>
+      <button type="button" data-shell-color-pick="pink" aria-pressed="false"><i style="background:#f49fbb"></i><span>PINK</span></button>
+      <button type="button" data-shell-color-pick="purple" aria-pressed="false"><i style="background:#8668bd"></i><span>PURPLE</span></button>
+      <button type="button" data-shell-color-pick="red" aria-pressed="false"><i style="background:#d04a3e"></i><span>RED</span></button>
+      <button type="button" data-shell-color-pick="silver" aria-pressed="false"><i style="background:#d5d5dc"></i><span>SILVER</span></button>
+      <button type="button" data-shell-color-pick="white" aria-pressed="false"><i style="background:#f2f2f2"></i><span>WHITE</span></button>
+      <button type="button" data-shell-color-pick="yellow" aria-pressed="false"><i style="background:#f7cd2e"></i><span>YELLOW</span></button>
     </div>
 
     <div class="grille"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
@@ -233,10 +272,18 @@
       if (!ac) return;
       var o = ac.createOscillator(), g = ac.createGain();
       o.type = 'square'; o.frequency.value = freq || 660;
-      g.gain.setValueAtTime(0.05, ac.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + (dur || 0.08));
+      // No hard gain step: a 5ms attack ramp from 0.0001, then the
+      // exponential decay, then a linear release to exactly 0 before
+      // stop() — a square wave cut at 0.001 mid-cycle is a pop, and
+      // this beep fires on every button press.
+      var t0 = ac.currentTime, durS = dur || 0.08;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.linearRampToValueAtTime(0.05, t0 + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + durS);
+      g.gain.linearRampToValueAtTime(0, t0 + durS + 0.02);
       o.connect(g); g.connect(ac.destination);
-      o.start(); o.stop(ac.currentTime + (dur || 0.08));
+      o.start(t0); o.stop(t0 + durS + 0.03);
+      o.onended = function () { try { g.disconnect(); } catch (e2) {} };
     } catch (e) {}
   }
 
@@ -278,10 +325,16 @@
       if (midi > 0) {
         var o = ac.createOscillator(), g = ac.createGain();
         o.type = tune.wave; o.frequency.value = midiFreq(midi);
-        g.gain.setValueAtTime(0.035, musicNext);
+        // Attack ramp + release to exactly 0 before stop(): a hard
+        // setValueAtTime step and an exponential tail cut at 0.001 both
+        // click (same fix as the beep above).
+        g.gain.setValueAtTime(0.0001, musicNext);
+        g.gain.linearRampToValueAtTime(0.035, musicNext + 0.005);
         g.gain.exponentialRampToValueAtTime(0.001, musicNext + dur * 0.9);
+        g.gain.linearRampToValueAtTime(0, musicNext + dur);
         o.connect(g); g.connect(ac.destination);
-        o.start(musicNext); o.stop(musicNext + dur);
+        o.start(musicNext); o.stop(musicNext + dur + 0.02);
+        o.onended = function () { try { g.disconnect(); } catch (e2) {} };
       }
       musicNext += dur;
       musicStep++;
@@ -342,6 +395,72 @@
     if (m) m.addEventListener('click', function () { setMusicOn(!musicOn); });
     applyToggles();
   })();
+
+  // ---- Console shell color: COLOR button + picker panel (persisted) ----
+  // The picker is an in-flow HTML panel below the toggles — it never covers
+  // the game screen. Clicking COLOR toggles it; picking a color applies it
+  // and closes the panel; clicking elsewhere or pressing Escape closes it
+  // without changing anything. The Menu console button does NOT dismiss it
+  // (Menu is a game control). Beige is the default and matches the classic
+  // warm-beige shell exactly. Everything is guarded: the headless test
+  // harnesses run this script with stub DOMs that lack setAttribute and
+  // document.addEventListener, and the color picker must never break them.
+  (function wireColorPicker() {
+    try {
+      var COLOR_KEY = 'jmf-games-console-color';
+      var COLORS = ['beige', 'black', 'blue', 'gray', 'green', 'pink', 'purple', 'red', 'silver', 'white', 'yellow'];
+      var root = document.getElementById('jmfgames');
+      var btn = document.getElementById('colorToggle');
+      var picker = document.getElementById('colorPicker');
+      if (!root || !btn || !picker) return;
+      if (typeof root.setAttribute !== 'function') return;
+      var swatches = [];
+      try { swatches = Array.prototype.slice.call(document.querySelectorAll('[data-shell-color-pick]') || []); } catch (e) { swatches = []; }
+      function validColor(v) { return COLORS.indexOf(v) !== -1 ? v : 'beige'; }
+      function currentColor() {
+        try { return validColor(localStorage.getItem(COLOR_KEY)); } catch (e) { return 'beige'; }
+      }
+      function applyColor(name, save) {
+        name = validColor(name);
+        root.setAttribute('data-shell-color', name);
+        swatches.forEach(function (sw) {
+          var on = !!(sw.getAttribute && sw.getAttribute('data-shell-color-pick') === name);
+          if (sw.classList) sw.classList.toggle('selected', on);
+          if (sw.setAttribute) sw.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+        if (save) { try { localStorage.setItem(COLOR_KEY, name); } catch (e) {} }
+      }
+      function openPicker() { picker.hidden = false; if (btn.setAttribute) btn.setAttribute('aria-expanded', 'true'); }
+      function closePicker() { picker.hidden = true; if (btn.setAttribute) btn.setAttribute('aria-expanded', 'false'); }
+      function isOpen() { return !picker.hidden; }
+      applyColor(currentColor(), false);
+      btn.addEventListener('click', function (e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (isOpen()) closePicker(); else openPicker();
+      });
+      swatches.forEach(function (sw) {
+        if (sw.addEventListener) sw.addEventListener('click', function (e) {
+          if (e && e.stopPropagation) e.stopPropagation();
+          applyColor(sw.getAttribute ? sw.getAttribute('data-shell-color-pick') : null, true);
+          closePicker();
+        });
+      });
+      if (typeof document.addEventListener === 'function') {
+        document.addEventListener('click', function (e) {
+          if (!isOpen()) return;
+          var t = e && e.target;
+          if (!t) return;
+          if (t === btn || t === picker) return;
+          if (picker.contains && picker.contains(t)) return;
+          if (btn.contains && btn.contains(t)) return;
+          closePicker();
+        });
+        document.addEventListener('keydown', function (e) {
+          if (e && e.key === 'Escape' && isOpen()) closePicker();
+        });
+      }
+    } catch (e) { /* shell color is cosmetic; never break the console */ }
+  })();
   window.addEventListener('keydown', function (e) {
     if (e.repeat) return;
     if (e.code === 'KeyM') setMusicOn(!musicOn);
@@ -398,7 +517,7 @@
      there (not always to the top level). */
   var TOPMENU = [
     { name: 'RETRO GAMES', collection: true },
-    { name: 'CHILDREN MUSIC', sub: '50 SONGS', music: true }
+    { name: 'CHILDREN MUSIC', sub: '60 SONGS', music: true }
   ];
   var menuLevel = 0, menuReturnLevel = 0;
   var topIndex = 0, topTop = 0;
@@ -20662,9 +20781,20 @@ var hvActiveSlot = 1; /* 1..3 — the slot this run saves into */
 function hvSlotKey(n) { return HV_SLOT_KEYS[(n - 1) % 3]; }
 var HV_DAY_LEN = 2400; /* frames per day (40s); 0..1599 day, 1400..1599 dusk, 1600..2399 night */
 var HV_HUD_H = 14; /* HUD bar y 0..13 */
-var HV_HOUSE_Y0 = 14, HV_HOUSE_Y1 = 150, HV_GROUND_Y = 150;
-var HV_FLOOR_H = 30;
-var HV_FLOOR_Y = [120, 90, 60, 30]; /* F0 ground .. F3 top */
+/* LAYOUT (Nov 11 house lift): the house sits on high ground. HUD ends y 14,
+   roof y 14..30, four 25px floors y 30..130, raised dirt mound y 130..136,
+   log strip y 136..150 (opaque), footer hint y 150..160. The house bottom
+   (130) never touches the log strip (136). See SPEC.md LAYOUT. */
+var HV_HOUSE_Y0 = 14, HV_HOUSE_Y1 = 130, HV_GROUND_Y = 130;
+var HV_FLOOR_H = 25;
+var HV_FLOOR_Y = [105, 80, 55, 30]; /* F0 ground .. F3 top */
+var HV_MOUND_Y0 = 130, HV_MOUND_Y1 = 136; /* raised mound under the house */
+var HV_LOG_Y0 = 136, HV_LOG_Y1 = 150; /* bottom log strip (opaque) */
+/* Feet y for a survivor standing/working on a floor: 6px above the floor
+   bottom (the 6x10px sprite's head clears the room's window). */
+function hvFloorStandY(floor) { return HV_FLOOR_Y[floor] + HV_FLOOR_H - 6; }
+/* Center y of a floor (guard posts, storeroom, gate shots). */
+function hvFloorCenterY(floor) { return HV_FLOOR_Y[floor] + 12; }
 var HV_SLOT_X = [4, 76, 148];
 var HV_SLOT_W = 72;
 var HV_GATE_X = 216; /* gate = right wall of ground floor, slot 3 */
@@ -20771,9 +20901,11 @@ function hvResetFresh() {
     day: 1, tick: 0, speed: 1,
     res: { food: 40, water: 40, scrap: 60, med: 5, ammo: 20 },
     rooms: [], survs: [], exped: [],
-    night: { active: false, isRaid: false, spawned: 0, total: 0, won: false },
+    night: { active: false, isRaid: false, kind: 'none', spawned: 0, total: 0, won: false },
+    sched: (typeof hvNewSchedule === 'function') ? hvNewSchedule(1, 0) : null,
     attackers: [], bullets: [], parts: [], shake: 0, floaters: [],
     log: [],
+    gearStore: { weapons: [], armor: [] }, /* spare expedition gear (see 03) */
     stats: { built: 0, killed: 0, raidsWon: 0, raidsLost: 0, expedDone: 0, deaths: 0 },
     flags: { warned: false, dog: false },
     over: false, overReason: ''
@@ -20783,7 +20915,7 @@ function hvResetFresh() {
   hvS.rooms.push({ floor: 0, slot: 1, type: 'bunk', lvl: 1, invested: 20 });
   hvS.rooms.push({ floor: 0, slot: 2, type: 'rain', lvl: 1, invested: 20 });
   hvS.rooms.push({ floor: 0, slot: 3, type: 'gate', lvl: 1, hp: 100, invested: 0 });
-  var i, s, spots = [[40, 138], [90, 138], [150, 138], [190, 138]];
+  var i, s, spots = [[40, hvFloorStandY(0)], [90, hvFloorStandY(0)], [150, hvFloorStandY(0)], [190, hvFloorStandY(0)]];
   for (i = 0; i < 4; i++) {
     s = hvNewSurvivor();
     s.x = spots[i][0]; s.y = spots[i][1]; s.tx = s.x; s.ty = s.y;
@@ -20805,7 +20937,7 @@ function hvSave() {
     var c = JSON.parse(JSON.stringify(hvS));
     /* transient state is never saved: a load always starts a fresh day */
     c.attackers = []; c.bullets = []; c.parts = []; c.floaters = []; c.shake = 0;
-    c.night = { active: false, isRaid: false, spawned: 0, total: 0, won: false };
+    c.night = { active: false, isRaid: false, kind: 'none', spawned: 0, total: 0, won: false };
     if (c.tick >= 1600) c.tick = 0; /* saved at night -> restart at dawn */
     localStorage.setItem(hvSlotKey(hvActiveSlot), JSON.stringify(c));
     return true;
@@ -20835,6 +20967,32 @@ function hvLoad() {
     d.log = d.log.filter(function (l) {
       return l !== 'THE HAVEN STANDS.' && !/^DAY \d+: BUILD, GATHER, SURVIVE\.$/.test(String(l));
     });
+    /* HOUSE-LIFT MIGRATION (Nov 11): saves from before the lift store
+       survivor y/ty on the OLD geometry (ground stand 138, 30px floors,
+       house bottom 150). Remap every living survivor onto the new
+       geometry so nobody stands below the house or inside the log strip:
+       assigned survivors snap to their room floor's stand level,
+       unassigned ones to the ground-floor stand level. Dead survivors
+       are never drawn, so they are left alone. Attackers need no remap:
+       they are transient and always cleared on load (see below). */
+    if (!d.gearStore || !Array.isArray(d.gearStore.weapons) || !Array.isArray(d.gearStore.armor))
+      d.gearStore = { weapons: [], armor: [] };
+    var mi, ms;
+    for (mi = 0; mi < d.survs.length; mi++) {
+      ms = d.survs[mi];
+      if (!ms || ms.dead) continue;
+      if (ms.room && typeof ms.room.floor === 'number' && ms.room.floor >= 0 && ms.room.floor <= 3) {
+        ms.y = hvFloorStandY(ms.room.floor);
+        ms.ty = hvFloorStandY(ms.room.floor);
+      } else {
+        if (typeof ms.y !== 'number' || ms.y > HV_HOUSE_Y1 || ms.y < HV_HOUSE_Y0) ms.y = hvFloorStandY(0);
+        if (typeof ms.ty !== 'number' || ms.ty > HV_HOUSE_Y1 || ms.ty < HV_HOUSE_Y0) ms.ty = hvFloorStandY(0);
+        if (ms.y > hvFloorStandY(0)) ms.y = hvFloorStandY(0);
+        if (ms.ty > hvFloorStandY(0)) ms.ty = hvFloorStandY(0);
+      }
+      if (typeof ms.x !== 'number') ms.x = 120;
+      if (typeof ms.tx !== 'number') ms.tx = ms.x;
+    }
     /* Day-1 announcement toast on load: a loaded day-1 save shows the
        top toast once (it is module-level, never saved); later days show
        none. This also clears a stale toast left over from a previous
@@ -20844,7 +21002,12 @@ function hvLoad() {
     if (typeof d.overReason !== 'string') d.overReason = '';
     /* transient state always resets on load */
     d.attackers = []; d.bullets = []; d.parts = []; d.floaters = []; d.shake = 0;
-    d.night = { active: false, isRaid: false, spawned: 0, total: 0, won: false };
+    d.night = { active: false, isRaid: false, kind: 'none', spawned: 0, total: 0, won: false };
+    /* Attack scheduler (three-tier model, Nov 11): old saves have no
+       schedule — roll a fresh one from the loaded day/tick. A schedule
+       that is already due fires promptly after load (raids/hordes still
+       give their full warning first). */
+    if (!d.sched && typeof hvNewSchedule === 'function') d.sched = hvNewSchedule(d.day, d.tick);
     if (d.tick >= 1600) d.tick = 0;
     hvS = d;
     return true;
@@ -20966,7 +21129,7 @@ function hvNewSurvivor() {
     id: id, name: hvPick(HV_FIRST_NAMES) + ' ' + hvPick(HV_LAST_NAMES),
     mus: hvRnd(1, 5), qui: hvRnd(1, 5), bra: hvRnd(1, 5), cha: hvRnd(1, 5),
     hp: 0, maxHp: 0, morale: 60, hunger: 0, thirst: 0, sick: false, trait: trait.id,
-    room: null, state: 'idle', x: 120, y: 138, tx: 120, ty: 138, walkT: 0,
+    room: null, state: 'idle', x: 120, y: hvFloorStandY(0), tx: 120, ty: hvFloorStandY(0), walkT: 0,
     strollT: 120 + Math.floor(Math.random() * 240), /* frames until next idle stroll */
     dead: false, away: false
   };
@@ -21037,18 +21200,27 @@ function hvTickEconomy() {
 }
 
 /* ---------------- CLOCK / DAWN ---------------- */
+/* Absolute frame count since day 1, tick 0. The attack scheduler (03)
+   stores arrival times in absolute frames so attacks can land at any
+   time of day, any day. */
+function hvAbsFrame() { return (hvS.day - 1) * HV_DAY_LEN + hvS.tick; }
 function hvTickClock() {
   hvS.tick++;
   if (hvS.tick === 1400) { /* dusk: lookout early warning */
-    if (hvRoomsOf('tower').length > 0) {
-      var n = Math.min(3 + hvS.day, 24);
-      hvLog('LOOKOUT: ABOUT ' + n + ' DEAD EXPECTED TONIGHT.');
-      hvS.flags.warned = true;
+    if (hvRoomsOf('tower').length > 0 && typeof hvNextAttackWithin === 'function') {
+      var wk = hvNextAttackWithin(HV_DAY_LEN);
+      if (wk) {
+        hvLog(wk === 'horde' ? 'LOOKOUT: A MASSIVE HORDE IS COMING.' :
+          'LOOKOUT: RAIDERS EXPECTED WITHIN A DAY.');
+        hvS.flags.warned = true;
+        hvS.flags.warnKind = wk;
+      }
     }
   }
-  if (hvS.tick === 1600) { /* night falls: wave spawns (W3 owns it) */
-    if (typeof hvStartNight === 'function') hvStartNight();
-  }
+  /* Attack scheduler (03): random three-tier attacks at any time of day.
+     Runs BEFORE the dawn block so a new attack can never start on the
+     exact dawn tick and be burned by the glue's hvDawnCombat call. */
+  if (typeof hvSchedulerTick === 'function') hvSchedulerTick();
   if (hvS.tick >= HV_DAY_LEN) { /* dawn */
     hvS.tick = 0;
     hvS.day++;
@@ -21113,8 +21285,8 @@ function hvSurvTick(dawn) {
     s.strollT = 300 + Math.floor(Math.random() * 300);
     var rg = null;
     if (s.room && typeof hvRoomGeo === 'function') rg = hvRoomGeo(s.room.floor, s.room.slot);
-    if (rg) { s.tx = rg.x + 8 + Math.floor(Math.random() * (rg.w - 16)); s.ty = rg.y + 18; }
-    else { s.tx = 8 + Math.floor(Math.random() * 200); s.ty = 138; }
+    if (rg) { s.tx = rg.x + 8 + Math.floor(Math.random() * (rg.w - 16)); s.ty = rg.y + rg.h - 6; }
+    else { s.tx = 8 + Math.floor(Math.random() * 200); s.ty = hvFloorStandY(0); }
     if (Math.abs(s.tx - s.x) < 8) continue; /* too close to bother walking */
     s.state = 'walk';
   }
@@ -21271,7 +21443,7 @@ function hvDemolishRoom(room) {
       s.room = null;
       if (s.state === 'work') { /* walk back down to the ground floor */
         s.state = 'walk';
-        s.tx = 8 + Math.floor(Math.random() * 200); s.ty = 138;
+        s.tx = 8 + Math.floor(Math.random() * 200); s.ty = hvFloorStandY(0);
       }
     }
   }
@@ -21315,7 +21487,7 @@ function hvAssign(survId, room) {
      arrival (hvSurvTick). Before this, no survivor ever entered 'walk'. */
   var gg = (typeof hvRoomGeo === 'function') ? hvRoomGeo(real.floor, real.slot) : null;
   if (gg) {
-    s.tx = gg.x + 8 + Math.floor(Math.random() * (gg.w - 16)); s.ty = gg.y + 18;
+    s.tx = gg.x + 8 + Math.floor(Math.random() * (gg.w - 16)); s.ty = gg.y + gg.h - 6;
     s.state = 'walk';
   } else {
     s.state = 'work';
@@ -21328,7 +21500,7 @@ function hvUnassign(survId) {
   s.room = null;
   if (s.state === 'work') { /* stroll back to the ground floor */
     s.state = 'walk';
-    s.tx = 8 + Math.floor(Math.random() * 200); s.ty = 138;
+    s.tx = 8 + Math.floor(Math.random() * 200); s.ty = hvFloorStandY(0);
   }
   return true;
 }
@@ -21426,6 +21598,14 @@ var HV_HELP_LINES = [
   'AMMO RUNS OUT - KEEP SCRAP',
   'FLOWING TO THE ARMORY.',
   '',
+  'BETTER GUNS AND ARMOR COME',
+  'ONLY FROM EXPEDITIONS.',
+  '',
+  'RAIDERS STRIKE ANY TIME,',
+  'DAY OR NIGHT - THE HORN',
+  'GIVES YOU SECONDS. A HORDE',
+  'IS RARE BUT HUGE.',
+  '',
   'MORALE BELOW 20: PEOPLE LEAVE.',
   'A BUNK FOR EVERY SURVIVOR',
   'KEEPS MORALE UP.',
@@ -21448,6 +21628,11 @@ function hvMixColor(h1, h2, t) {
 }
 
 function hvRoomGeo(floor, slot) {
+  /* Single geometry source: HV_FLOOR_Y / HV_FLOOR_H from 01-core (house
+     lift: 25px floors, F0 y 105..130). Fallback keeps this part loadable
+     standalone. */
+  if (typeof HV_FLOOR_Y !== 'undefined' && typeof HV_FLOOR_H !== 'undefined')
+    return { x: 4 + slot * 72, y: HV_FLOOR_Y[floor], w: 72, h: HV_FLOOR_H };
   return { x: 4 + slot * 72, y: 120 - floor * 30, w: 72, h: 30 };
 }
 
@@ -21568,10 +21753,10 @@ function hvDrawSky() {
     ctx.fillStyle = '#e8e8d0'; ctx.fillRect(mx - 4, my - 4, 8, 8);
     ctx.fillStyle = '#c8c8a8';
     ctx.fillRect(mx - 2, my - 2, 2, 2); ctx.fillRect(mx + 1, my + 1, 2, 2);
-    // fireflies over the yard at night
+    // fireflies over the yard at night (kept above the log strip)
     for (i = 0; i < 8; i++) {
       x = (i * 31 + ((hvS.tick >> 2) % 240)) % 240;
-      y = 120 + ((i * 17) % 28);
+      y = 100 + ((i * 17) % 24);
       ctx.fillStyle = (((hvS.tick >> 4) + i) % 2) ? '#d8e040' : '#a8b820';
       ctx.fillRect(x, y, 1, 1);
     }
@@ -21599,17 +21784,25 @@ function hvDrawSky() {
 
 function hvDrawHouse() {
   var f, s, r, g, i, x;
-  // ground strip
-  ctx.fillStyle = '#5a4028'; ctx.fillRect(0, 150, 240, 10);
-  ctx.fillStyle = '#4a7a2a'; ctx.fillRect(0, 150, 240, 2);
-  // yard dirt path (attackers walk here)
-  ctx.fillStyle = '#7a5a3a'; ctx.fillRect(220, 146, 20, 4);
+  // raised dirt/grass MOUND the house sits on (y 130..136): the house is
+  // built on high ground, so the log strip below it (y 136..150) sits on
+  // clear ground and is never hindered by the house.
+  ctx.fillStyle = '#5a4028'; ctx.fillRect(0, 130, 240, 6);
+  ctx.fillStyle = '#4a7a2a'; ctx.fillRect(0, 130, 240, 2);
+  // dirt speckles + grass tufts on the mound
+  ctx.fillStyle = '#4a3018';
+  ctx.fillRect(10, 133, 3, 1); ctx.fillRect(60, 134, 2, 1); ctx.fillRect(120, 133, 3, 1);
+  ctx.fillRect(180, 134, 2, 1); ctx.fillRect(210, 133, 2, 1);
+  ctx.fillStyle = '#6a9a3a';
+  ctx.fillRect(30, 130, 1, 2); ctx.fillRect(90, 130, 1, 2); ctx.fillRect(150, 130, 1, 2);
+  // yard dirt path on the mound (attackers walk here, feet at y 122..128)
+  ctx.fillStyle = '#7a5a3a'; ctx.fillRect(220, 131, 20, 5);
   ctx.fillStyle = '#4a7a2a';
-  ctx.fillRect(224, 148, 2, 2); ctx.fillRect(232, 149, 2, 1);
-  ctx.fillRect(228, 147, 1, 2);
-  // broken fence post at the far right
-  ctx.fillStyle = '#4a3018'; ctx.fillRect(237, 140, 2, 10);
-  ctx.fillStyle = '#6a4a28'; ctx.fillRect(236, 139, 4, 2);
+  ctx.fillRect(224, 130, 2, 2); ctx.fillRect(232, 130, 2, 1);
+  ctx.fillRect(228, 130, 1, 2);
+  // broken fence post at the far right, planted in the mound
+  ctx.fillStyle = '#4a3018'; ctx.fillRect(237, 122, 2, 10);
+  ctx.fillStyle = '#6a4a28'; ctx.fillRect(236, 121, 4, 2);
   // pitched roof (stepped rows, apex centre x=112)
   for (i = 0; i < 16; i++) {
     var rw = 4 + i * 7;
@@ -21617,19 +21810,20 @@ function hvDrawHouse() {
     ctx.fillRect(112 - rw, 14 + i, rw * 2, 1);
   }
   ctx.fillStyle = '#3a1a10'; ctx.fillRect(2, 29, 220, 2);
-  // chimney + smoke
-  ctx.fillStyle = '#8a4a38'; ctx.fillRect(36, 8, 8, 18);
-  ctx.fillStyle = '#5a2a1a'; ctx.fillRect(34, 6, 12, 3);
+  // chimney + smoke (top clears the HUD at y 14; smoke wisps rise from
+  // behind the HUD bar)
+  ctx.fillStyle = '#8a4a38'; ctx.fillRect(36, 14, 8, 14);
+  ctx.fillStyle = '#5a2a1a'; ctx.fillRect(34, 14, 12, 2);
   for (i = 0; i < 3; i++) {
     var ph = (hvS.tick + i * 22) % 66;
     ctx.fillStyle = 'rgba(200,200,200,' + (0.5 - ph / 140).toFixed(2) + ')';
-    ctx.fillRect(38 + ((i % 2) ? 2 : -2), 4 - Math.floor(ph / 4), 3, 3);
+    ctx.fillRect(38 + ((i % 2) ? 2 : -2), 12 - Math.floor(ph / 4), 3, 3);
   }
   // floors
   for (f = 3; f >= 0; f--) {
     g = hvRoomGeo(f, 0);
     ctx.fillStyle = f === 0 ? '#8a4a38' : '#7a5a34';
-    ctx.fillRect(4, g.y, 216, 30);
+    ctx.fillRect(4, g.y, 216, g.h);
     if (f === 0) {
       // brick mortar lines
       ctx.fillStyle = '#6a3524';
@@ -21646,39 +21840,39 @@ function hvDrawHouse() {
     // room interiors / empty slots
     for (s = 0; s < 3; s++) {
       r = hvDrawRoomAt(f, s);
-      if (r) hvDrawRoomInterior(r, 4 + s * 72, g.y, 72, 30);
+      if (r) hvDrawRoomInterior(r, 4 + s * 72, g.y, 72, g.h);
       else {
         ctx.fillStyle = '#6a5a44';
-        ctx.fillRect(5 + s * 72, g.y + 1, 70, 28);
+        ctx.fillRect(5 + s * 72, g.y + 1, 70, g.h - 2);
         ctx.fillStyle = '#4a5a3a';
         ctx.font = '8px monospace'; ctx.textAlign = 'center';
-        ctx.fillText('EMPTY', 4 + s * 72 + 36, g.y + 17);
+        ctx.fillText('EMPTY', 4 + s * 72 + 36, g.y + 15);
         ctx.textAlign = 'left';
       }
     }
     // locked floor overlay
     if (f > 0 && hvDrawPop() < hvFloorUnlock(f)) {
       ctx.fillStyle = 'rgba(5,15,5,0.62)';
-      ctx.fillRect(4, g.y, 216, 30);
+      ctx.fillRect(4, g.y, 216, g.h);
       // padlock
       ctx.fillStyle = '#c0c0c0';
-      ctx.fillRect(104, g.y + 9, 12, 8);
-      ctx.fillRect(107, g.y + 5, 6, 4);
+      ctx.fillRect(104, g.y + 6, 12, 8);
+      ctx.fillRect(107, g.y + 2, 6, 4);
       ctx.fillStyle = '#0F380F';
-      ctx.fillRect(109, g.y + 12, 2, 3);
+      ctx.fillRect(109, g.y + 9, 2, 3);
       ctx.fillStyle = '#9BBC0F';
       ctx.font = '8px monospace'; ctx.textAlign = 'center';
-      ctx.fillText('NEED ' + hvFloorUnlock(f) + ' SURVIVORS', 112, g.y + 27);
+      ctx.fillText('NEED ' + hvFloorUnlock(f) + ' SURVIVORS', 112, g.y + 22);
       ctx.textAlign = 'left';
     }
   }
-  // floor beams
+  // floor beams (between floors + under the ground floor)
   ctx.fillStyle = '#4a3018';
-  ctx.fillRect(4, 60, 216, 2); ctx.fillRect(4, 90, 216, 2);
-  ctx.fillRect(4, 120, 216, 2); ctx.fillRect(4, 148, 216, 2);
+  ctx.fillRect(4, 55, 216, 2); ctx.fillRect(4, 80, 216, 2);
+  ctx.fillRect(4, 105, 216, 2); ctx.fillRect(4, 128, 216, 2);
   // outer walls
   ctx.fillStyle = '#3a2410';
-  ctx.fillRect(2, 30, 2, 120); ctx.fillRect(220, 30, 2, 120);
+  ctx.fillRect(2, 30, 2, 100); ctx.fillRect(220, 30, 2, 100);
   // doors between rooms (unlocked floors only)
   for (f = 0; f < 4; f++) {
     if (f > 0 && hvDrawPop() < hvFloorUnlock(f)) continue;
@@ -21686,9 +21880,9 @@ function hvDrawHouse() {
     for (i = 0; i < 2; i++) {
       x = 76 + i * 72;
       ctx.fillStyle = '#4a3018';
-      ctx.fillRect(x - 2, g.y + 16, 5, 13);
+      ctx.fillRect(x - 2, g.y + 13, 5, 11);
       ctx.fillStyle = '#c0a040';
-      ctx.fillRect(x + 1, g.y + 22, 1, 1);
+      ctx.fillRect(x + 1, g.y + 19, 1, 1);
     }
   }
 }
@@ -21700,13 +21894,16 @@ function hvDrawGate() {
   var hp = g ? g.hp : 100, lvl = g ? g.lvl : 1;
   var max = 100 * lvl;
   var fr = hvDrawClamp(hp / max, 0, 1);
-  var x0 = 216, y0 = 120, i, lx, top;
+  /* Gate spans the ground floor (y 105..130) and stands on the mound. */
+  var gY0 = (typeof HV_FLOOR_Y !== 'undefined') ? HV_FLOOR_Y[0] : 105;
+  var gY1 = (typeof HV_HOUSE_Y1 !== 'undefined') ? HV_HOUSE_Y1 : 130;
+  var x0 = 216, y0 = gY0, i, lx, top;
   for (i = 0; i < 5; i++) {
     lx = x0 + i;
     top = y0 + (i % 2 === 0 ? 0 : 1);
     if (fr < 0.33 && i === 2) continue; // smashed log missing
     ctx.fillStyle = (i % 2 === 0) ? '#7a5a34' : '#6a4a28';
-    ctx.fillRect(lx, top, 1, 150 - top);
+    ctx.fillRect(lx, top, 1, gY1 - top);
     ctx.fillStyle = '#8a6a42';
     ctx.fillRect(lx, top, 1, 1); // pointed tip
   }
@@ -21736,12 +21933,12 @@ function hvDrawGate() {
     ctx.fillStyle = fr > 0.5 ? '#40c040' : (fr > 0.25 ? '#e0a020' : '#e04020');
     ctx.fillRect(x0 - 2, y0 - 6, Math.max(1, Math.floor(10 * fr)), 2);
   }
-  // level pips
-  for (i = 0; i < lvl; i++) hvDrawStar(x0 + 1 + i * 3, y0 + 27, '#ffd94a');
+  // level pips (inside the gate, above the mound)
+  for (i = 0; i < lvl; i++) hvDrawStar(x0 + 1 + i * 3, y0 + 22, '#ffd94a');
 }
 
 // ---- room interiors (one distinct, detailed scene per room type) ----
-// room: {floor, slot, type, lvl, hp}; x,y,w,h = slot rect (72x30).
+// room: {floor, slot, type, lvl, hp}; x,y,w,h = slot rect (72x25).
 
 function hvDrawRoomInterior(room, x, y, w, h) {
   var rx = x, ry = y, i, lvl = room.lvl || 1;
@@ -21941,7 +22138,7 @@ function hvDrawRoomInterior(room, x, y, w, h) {
       ctx.fillRect(rx + 6, ry + 13, 1, 4); ctx.fillRect(rx + 31, ry + 13, 1, 4);
     }
     if (lvl >= 3) { // rug + lamp
-      ctx.fillStyle = '#a04040'; ctx.fillRect(rx + 28, ry + 24, 16, 2);
+      ctx.fillStyle = '#a04040'; ctx.fillRect(rx + 28, ry + 22, 16, 2);
       ctx.fillStyle = '#ffd94a'; ctx.fillRect(rx + 33, ry + 6, 3, 3);
     }
     break;
@@ -22123,13 +22320,13 @@ function hvDrawRoomInterior(room, x, y, w, h) {
     ctx.fillStyle = '#ffd94a';
     ctx.fillRect(rx + 46, ry + 5, 2, 3);
     if (hvIsNight()) {
-      // searchlight beam sweeping toward the yard
+      // searchlight beam sweeping toward the yard (ends at the mound, y 134)
       var sweep = Math.sin(hvS.tick / 40) * 8;
       ctx.fillStyle = 'rgba(255,255,150,0.13)';
       ctx.beginPath();
       ctx.moveTo(rx + 48, ry + 6);
-      ctx.lineTo(240, 132 + sweep);
-      ctx.lineTo(240, 152 + sweep);
+      ctx.lineTo(240, 124 + sweep);
+      ctx.lineTo(240, 134);
       ctx.closePath();
       ctx.fill();
     }
@@ -22155,7 +22352,10 @@ function hvDrawRoomInterior(room, x, y, w, h) {
 
 // 6x10 pixel person, feet at (x, y). pose: 'idle'|'walk'|'work'|'sleep'|'injured'|'defend'.
 // dir: 1 = faces right, -1 = faces left.
-function hvDrawPerson(x, y, color, pose, dir) {
+// weapon: null (unarmed) or a HV_WEAPONS id — guards visibly carry their gun
+// (barrel length grows with the tier; the scoped rifle gets a scope dot).
+// armor: null or a HV_ARMOR id — a vest band drawn over the torso.
+function hvDrawPerson(x, y, color, pose, dir, weapon, armor) {
   var t = hvS.tick, bob = 0;
   if (pose === 'walk') bob = ((t >> 3) % 2) ? 1 : 0;
   if (pose === 'sleep') {
@@ -22187,8 +22387,25 @@ function hvDrawPerson(x, y, color, pose, dir) {
   // torso
   ctx.fillStyle = color;
   ctx.fillRect(x - 2, y - 7 + bob, 5, 4);
+  // armor: vest band over the torso (olive = padded vest, grey = plate vest)
+  if (armor) {
+    ctx.fillStyle = armor === 'plate' ? '#8a8a8a' : '#6a6a3a';
+    ctx.fillRect(x - 2, y - 6 + bob, 5, 2);
+  }
   // arms / gun
-  if (pose === 'work') {
+  if (weapon && (pose === 'defend' || pose === 'work' || pose === 'idle')) {
+    // guards hold their gun: barrel length by tier, pointing at the threat
+    var blen = weapon === 'scoped' ? 9 : (weapon === 'pistol' ? 5 : 7);
+    var bx = dir > 0 ? x + 2 : x - 1 - blen;
+    ctx.fillStyle = '#222222';
+    ctx.fillRect(bx, y - 6 + bob, blen, 1);
+    ctx.fillStyle = color;
+    ctx.fillRect(x + (dir > 0 ? 2 : -3), y - 6 + bob, 2, 1);
+    if (weapon === 'scoped') { // scope dot above the barrel
+      ctx.fillStyle = '#222222';
+      ctx.fillRect(bx + (dir > 0 ? 3 : 3), y - 8 + bob, 2, 1);
+    }
+  } else if (pose === 'work') {
     ctx.fillStyle = color;
     ctx.fillRect(x + (dir > 0 ? 3 : -4), y - 6 + bob, 2, 1);
     ctx.fillRect(x + (dir > 0 ? 3 : -4), y - 5 + bob, 1, 1);
@@ -22342,7 +22559,7 @@ function hvDrawRaider(a) {
 // ---- world actors / effects ----
 
 function hvDrawSurvivors() {
-  var i, s, pose, dir, col;
+  var i, s, pose, dir, col, rm, weapon;
   if (!hvS || !hvS.survs) return;
   for (i = 0; i < hvS.survs.length; i++) {
     s = hvS.survs[i];
@@ -22359,7 +22576,17 @@ function hvDrawSurvivors() {
     } else if (s.state === 'defend') {
       dir = -1; // guards face the gate / yard
     }
-    hvDrawPerson(s.x, s.y, col, pose, dir);
+    /* Guards (assigned to a Watch Post or Lookout Tower) visibly carry
+       their gun — the basic pistol by default, or a better looted weapon.
+       Armor shows as a vest band. Non-guards carry nothing. */
+    weapon = null;
+    if (s.room) {
+      rm = hvDrawRoomAt(s.room.floor, s.room.slot);
+      if (rm && (rm.type === 'post' || rm.type === 'tower'))
+        weapon = s.weapon || 'pistol';
+    }
+    if (s.state === 'defend' && !weapon) weapon = s.weapon || 'pistol';
+    hvDrawPerson(s.x, s.y, col, pose, dir, weapon, s.armor || null);
     if (s.hp < s.maxHp) hvDrawHpBar(s.x - 5, s.y - 14, 10, s.hp / s.maxHp);
   }
 }
@@ -22426,7 +22653,7 @@ function hvDrawFloaters() {
 
 function hvDrawCursorRect() {
   var c = hvCurSafe(), g, x, y, w, h;
-  if (c.slot === 3) { x = 213; y = 117; w = 11; h = 35; }
+  if (c.slot === 3) { x = 213; y = 102; w = 11; h = 30; } /* gate: y 105..130 */
   else { g = hvRoomGeo(c.floor, c.slot); x = g.x; y = g.y; w = g.w; h = g.h; }
   ctx.fillStyle = ((hvS.tick >> 4) % 2 === 0) ? '#ffe94a' : '#8BAC0F';
   ctx.fillRect(x, y, w, 1);
@@ -22465,7 +22692,9 @@ function hvDrawHud() {
 function hvDrawLog() {
   var i, n = (hvS.log && hvS.log.length) || 0;
   if (!n) return;
-  ctx.fillStyle = 'rgba(5,20,5,0.6)';
+  /* FULLY OPAQUE dark ground: the house now sits on the mound above the
+     strip, and nothing may bleed through behind the words. */
+  ctx.fillStyle = '#051405';
   ctx.fillRect(0, 136, 240, 14);
   ctx.fillStyle = HV_C_TEXT;
   ctx.font = '8px monospace';
@@ -22504,7 +22733,7 @@ function hvDrawHint() {
   var mode = (typeof hvMode !== 'undefined' && hvMode) ? hvMode : 'house';
   var h = HV_HINTS[mode] || HV_HINTS.house;
   ctx.fillStyle = HV_C_BG;
-  ctx.fillRect(0, 152, 240, 8);
+  ctx.fillRect(0, 150, 240, 10); /* footer bar: flush under the log strip */
   ctx.fillStyle = HV_C_BAR;
   ctx.font = '8px monospace';
   ctx.textAlign = 'center';
@@ -22764,6 +22993,14 @@ function hvDrawSurvMenu() {
     foot.push('HP ' + s.hp + '/' + s.maxHp + ' MORALE ' + s.morale +
       ' HUNGER ' + s.hunger + ' THIRST ' + s.thirst +
       (s.sick ? '  SICK' : ''));
+    /* Gear: every guard carries the basic pistol; better guns and armor
+       come only from expedition loot (see 03/04). */
+    var gw = 'PISTOL', ga = 'NONE';
+    if (typeof HV_WEAPONS !== 'undefined' && HV_WEAPONS && s.weapon && HV_WEAPONS[s.weapon])
+      gw = HV_WEAPONS[s.weapon].name;
+    if (typeof HV_ARMOR !== 'undefined' && HV_ARMOR && s.armor && HV_ARMOR[s.armor])
+      ga = HV_ARMOR[s.armor].name;
+    foot.push('GUN ' + gw + '  ARMOR ' + ga);
   }
   hvDrawMenuPanel('SURVIVORS - ' + hvDrawPop() + '/' + hvDrawPopCap(), lines, sel, foot);
 }
@@ -22909,26 +23146,39 @@ function drawHaven() {
   hvDrawHud();
   hvDrawLog();
   hvDrawDayToast();
-  // night banner / dusk early-warning banner
+  // attack banner (an attack is in progress, any time of day) /
+  // warning banner (a raid/horde is coming) / dusk lookout banner
   if (hvS.night && hvS.night.active) {
     var nLeft = hvS.attackers ? hvS.attackers.length : 0;
-    var bt = hvS.night.isRaid ? 'RAID! DEFEND THE HAVEN' :
-      'NIGHT ' + hvS.day + ' - ' + nLeft + ' ATTACKER' + (nLeft === 1 ? '' : 'S') + ' LEFT';
+    var bt, bc;
+    if (hvS.night.kind === 'raid') { bt = 'RAID! DEFEND THE HAVEN'; bc = '#ff5544'; }
+    else if (hvS.night.kind === 'horde') { bt = 'HORDE! HOLD THE GATE - ' + nLeft + ' LEFT'; bc = '#ff7744'; }
+    else if (hvS.night.kind === 'trickle') { bt = 'DEAD AT THE FENCE - ' + nLeft + ' LEFT'; bc = '#ffd94a'; }
+    else { bt = nLeft + ' ATTACKER' + (nLeft === 1 ? '' : 'S') + ' LEFT'; bc = '#ffd94a'; }
     ctx.fillStyle = 'rgba(10,10,10,0.7)';
     ctx.fillRect(55, 16, 130, 11);
-    ctx.fillStyle = hvS.night.isRaid ? '#ff5544' : '#ffd94a';
+    ctx.fillStyle = bc;
     ctx.font = 'bold 8px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(bt.substr(0, 30), 120, 24);
     ctx.textAlign = 'left';
+  } else if (hvS.sched && hvS.sched.warnKind) {
+    var wt = hvS.sched.warnKind === 'horde' ? 'A MASSIVE HORDE APPROACHES!' : 'RAIDERS INCOMING - PREPARE!';
+    ctx.fillStyle = 'rgba(10,10,10,0.7)';
+    ctx.fillRect(55, 16, 130, 11);
+    ctx.fillStyle = '#ff5544';
+    ctx.font = 'bold 8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(wt.substr(0, 30), 120, 24);
+    ctx.textAlign = 'left';
   } else if (hvS.tick >= 1400 && hvS.tick < 1600 && hvS.flags && hvS.flags.warned) {
-    var wn = (hvS.night && hvS.night.total) ? hvS.night.total : Math.min(3 + hvS.day, 24);
+    var wb = (hvS.flags.warnKind === 'horde') ? 'LOOKOUT: A HORDE IS COMING!' : 'LOOKOUT: RAIDERS EXPECTED SOON';
     ctx.fillStyle = 'rgba(10,10,10,0.7)';
     ctx.fillRect(55, 16, 130, 11);
     ctx.fillStyle = '#ffd94a';
     ctx.font = 'bold 8px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('LOOKOUT: ' + wn + ' INCOMING AT NIGHTFALL', 120, 24);
+    ctx.fillText(wb, 120, 24);
     ctx.textAlign = 'left';
   }
   if (mode === 'house') hvDrawCursorRect();
@@ -23030,15 +23280,34 @@ function drawHavenOver() {
 
 /* ================================================================
    HAVEN'S STAND — 03-combat.js (combat sim only, no drawing)
-   Night waves, raider raids, defender shooting, gate clawing,
-   breach + indoor melee, traps, dawn burn/flee, night result.
+   Three-tier random attacks (Jesse, Nov 11): no fixed nightly wave.
+     1. ZOMBIE TRICKLE — 1-3 dead wander in every 600-1500 frames
+        (log line only, no alarm; guards handle them routinely).
+     2. RAIDER ATTACKS — the real threat: random every 7-30 days at a
+        random time of day, armed gangs that target the storeroom,
+        steal, then flee. Short horn alarm (300 frames, 600 with a
+        lookout tower) before they arrive.
+     3. MASSIVE ZOMBIE HORDES — rare (every 25-45 days), huge
+        (20-40 dead), with a long advance warning (1200 frames,
+        2400 with a tower) so the player can prepare.
+   The attack scheduler (hvSchedulerTick, called from hvTickClock)
+   rolls each next attack when the previous one starts. Dawn always
+   ends an in-progress attack: zombies burn, raiders flee (hvDawnCombat,
+   via the assembly glue). Guards (post/tower assignees) shoot from
+   their posts at any attacker in range — including breached attackers
+   indoors — 1 ammo per shot, muzzle flash + tracer; out of ammo they
+   melee (dmg 3, range 10). Non-guards never shoot.
+   Weapons & armor (Jesse, Nov 11): every guard carries the BASIC
+   PISTOL by default. Better weapons (HUNTING RIFLE / SHOTGUN / SCOPED
+   RIFLE) and armor (PADDED VEST / PLATE VEST) come ONLY from
+   expedition loot (see 04) — never built, bought, or granted otherwise.
    Reads/writes hvS.attackers / hvS.bullets / hvS.parts /
    hvS.floaters / hvS.shake for the draw worker. No input.
    ES5, var-only, hv/HV-prefixed globals only.
    W1 must call hvDawnCombat() from its dawn hook (tick 2400);
    hvCombatTick() also catches the dawn boundary itself.
-   Particle/floater ageing lives here (night only); W1 should
-   age hvS.parts / hvS.floaters during the day if it wants them
+   Particle/floater ageing lives here (attack only); W1 should
+   age hvS.parts / hvS.floaters during peacetime if it wants them
    to keep decaying after dawn.
    ================================================================ */
 
@@ -23054,6 +23323,17 @@ var HV_TRAP_DMG = 8;        /* traps: dmg to first 3 at gate */
 var HV_TRAP_MAX = 3;
 var HV_MELEE_DMG = 3;       /* defender melee at 0 ammo */
 var HV_MELEE_RANGE = 10;
+
+/* ---- attack scheduler: three tiers, all random (Jesse, Nov 11) ---- */
+var HV_TRICKLE_MIN = 600;   /* frames between trickles (10s real) */
+var HV_TRICKLE_MAX = 1500;  /* frames between trickles (25s real) */
+var HV_RAID_MIN_DAYS = 7;   /* raid interval: 7..30 game days */
+var HV_RAID_MAX_DAYS = 30;
+var HV_HORDE_MIN_DAYS = 25; /* horde interval: 25..45 game days */
+var HV_HORDE_MAX_DAYS = 45;
+var HV_RAID_WARN = 300;     /* horn alarm lead before a raid (5s) */
+var HV_HORDE_WARN = 1200;   /* advance warning lead before a horde (20s) */
+/* A lookout tower doubles both warning leads (early warning). */
 
 /* Attacker defs: gateDmg = per claw hit on the gate (every 50f),
    melee = per hit on a survivor indoors (every 50f). */
@@ -23073,12 +23353,27 @@ var HV_DEF = {
 /* Room level scaling (spec): L2 = 1.5x, L3 = 2.5x base. */
 var HV_LVL_MUL = [1, 1, 1.5, 2.5];
 
-/* Per-night scratch (parallel to hvS.attackers, same indices). */
+/* ---- WEAPONS & ARMOR (expedition loot only) ----
+   pistol = the basic gun every guard carries (no exploring needed).
+   rifle/shotgun/scoped + vest/plate come ONLY from expeditions (04).
+   rank orders the tiers for grant/draw decisions (higher = better). */
+var HV_WEAPONS = {
+  pistol:  { name: 'PISTOL',        dmg: 0, range: 0,   rateMul: 1,    rank: 0 },
+  rifle:   { name: 'HUNTING RIFLE', dmg: 3, range: 20,  rateMul: 1,    rank: 1 },
+  shotgun: { name: 'SHOTGUN',       dmg: 7, range: -10, rateMul: 0.75, rank: 2 },
+  scoped:  { name: 'SCOPED RIFLE',  dmg: 6, range: 50,  rateMul: 1.25, rank: 3 }
+};
+var HV_ARMOR = {
+  vest:  { name: 'PADDED VEST', reduce: 0.25, rank: 1 },
+  plate: { name: 'PLATE VEST',  reduce: 0.50, rank: 2 }
+};
+
+/* Per-attack scratch (parallel to hvS.attackers, same indices). */
 var hvSpawnQ = [];       /* kinds waiting to spawn */
 var hvSpawnT = 0;        /* frames until next spawn */
 var hvAtkCd = [];        /* per-attacker cooldown (claw / shot / melee) */
 var hvDefCd = {};        /* per-survivor fire cooldown, keyed by surv id */
-var hvTrapUsed = 0;      /* attackers already hit by traps tonight */
+var hvTrapUsed = 0;      /* attackers already hit by traps this attack */
 var hvGateBreached = false;
 var hvNightDeaths = 0;
 
@@ -23109,8 +23404,14 @@ function hvCDist(x1, y1, x2, y2) {
   var dx = x2 - x1, dy = y2 - y1;
   return Math.sqrt(dx * dx + dy * dy);
 }
+/* Center y of a floor, from the single geometry source (01-core).
+   Fallback keeps this part loadable standalone (old 30px geometry). */
+function hvFloorCY(floor) {
+  if (typeof HV_FLOOR_Y !== 'undefined') return HV_FLOOR_Y[floor] + 12;
+  return 135 - floor * 30;
+}
 function hvCRoomCenter(floor, slot) {
-  return { x: 4 + slot * 72 + 36, y: 135 - floor * 30 };
+  return { x: 4 + slot * 72 + 36, y: hvFloorCY(floor) };
 }
 /* surv.room is {floor, slot} only (spec state shape) — room type/lvl
    always comes from the hvS.rooms list, never from the survivor. */
@@ -23138,6 +23439,13 @@ function hvArmoryBonus() {
   }
   return b;
 }
+function hvHasTower() {
+  var i;
+  for (i = 0; i < hvS.rooms.length; i++) {
+    if (hvS.rooms[i].type === 'tower') return true;
+  }
+  return false;
+}
 function hvHasTraps() {
   var i;
   for (i = 0; i < hvS.rooms.length; i++) {
@@ -23154,7 +23462,7 @@ function hvStoreroomPos() {
       return c;
     }
   }
-  return { x: 60, y: 135 };
+  return { x: 60, y: hvFloorCY(0) };
 }
 function hvLivingSurvs() {
   var i, out = [];
@@ -23173,10 +23481,77 @@ function hvNearestSurv(x, y) {
   return best;
 }
 
+/* ---- weapons & armor helpers ---- */
+function hvWeaponOf(s) {
+  if (s.weapon && HV_WEAPONS[s.weapon]) return HV_WEAPONS[s.weapon];
+  return HV_WEAPONS.pistol; /* basic gun: every guard carries one */
+}
+function hvWeaponRank(id) { return (id && HV_WEAPONS[id]) ? HV_WEAPONS[id].rank : 0; }
+function hvArmorRank(id) { return (id && HV_ARMOR[id]) ? HV_ARMOR[id].rank : 0; }
+function hvArmorReduce(s) {
+  if (s.armor && HV_ARMOR[s.armor]) return HV_ARMOR[s.armor].reduce;
+  return 0;
+}
+/* Grant one looted gear item (expeditions only — see 04). team = the
+   returning survivors, or null for any living survivor. The worst-geared
+   survivor who can use it takes it; otherwise it goes to the haven's
+   spare-gear shelf (hvS.gearStore). Returns 'survivor' | 'store' | null. */
+function hvGrantGear(itemId, team) {
+  var isWeapon = !!HV_WEAPONS[itemId], isArmor = !!HV_ARMOR[itemId];
+  if (!isWeapon && !isArmor) return null;
+  var cands = [], i, s;
+  if (team && team.length) cands = team.slice(0);
+  else for (i = 0; i < hvS.survs.length; i++) if (!hvS.survs[i].dead) cands.push(hvS.survs[i]);
+  /* Worst-geared first, so the neediest survivor gets the upgrade. */
+  cands.sort(function (a, b) {
+    var ra = isWeapon ? hvWeaponRank(a.weapon) : hvArmorRank(a.armor);
+    var rb = isWeapon ? hvWeaponRank(b.weapon) : hvArmorRank(b.armor);
+    return ra - rb;
+  });
+  for (i = 0; i < cands.length; i++) {
+    s = cands[i];
+    if (isWeapon && hvWeaponRank(s.weapon) < HV_WEAPONS[itemId].rank) {
+      s.weapon = itemId;
+      hvCLog(s.name.toUpperCase() + ' FOUND A ' + HV_WEAPONS[itemId].name + '!');
+      return 'survivor';
+    }
+    if (isArmor && hvArmorRank(s.armor) < HV_ARMOR[itemId].rank) {
+      s.armor = itemId;
+      hvCLog(s.name.toUpperCase() + ' FOUND A ' + HV_ARMOR[itemId].name + '!');
+      return 'survivor';
+    }
+  }
+  if (!hvS.gearStore) hvS.gearStore = { weapons: [], armor: [] };
+  if (isWeapon) hvS.gearStore.weapons.push(itemId);
+  else hvS.gearStore.armor.push(itemId);
+  hvCLog('STOWED A ' + (isWeapon ? HV_WEAPONS[itemId].name : HV_ARMOR[itemId].name) + ' ON THE GEAR SHELF.');
+  return 'store';
+}
+/* A guard taking post draws the best spare gear from the shelf when they
+   have none of their own. The Armory room is NOT required to hold gear —
+   it still gives +2 guard damage per level and makes ammo. */
+function hvDrawGear(s) {
+  var i, best, bi;
+  if (!hvS.gearStore) return;
+  if (!s.weapon && hvS.gearStore.weapons.length) {
+    best = -1; bi = -1;
+    for (i = 0; i < hvS.gearStore.weapons.length; i++)
+      if (hvWeaponRank(hvS.gearStore.weapons[i]) > best) { best = hvWeaponRank(hvS.gearStore.weapons[i]); bi = i; }
+    if (bi >= 0) s.weapon = hvS.gearStore.weapons.splice(bi, 1)[0];
+  }
+  if (!s.armor && hvS.gearStore.armor.length) {
+    best = -1; bi = -1;
+    for (i = 0; i < hvS.gearStore.armor.length; i++)
+      if (hvArmorRank(hvS.gearStore.armor[i]) > best) { best = hvArmorRank(hvS.gearStore.armor[i]); bi = i; }
+    if (bi >= 0) s.armor = hvS.gearStore.armor.splice(bi, 1)[0];
+  }
+}
+
 /* Defender fire stats for one survivor (null if not a guard post).
-   dmg = room base * lvl mul + armory + SHARPSHOOTER +3 + NIGHT OWL +2. */
+   dmg = room base * lvl mul + armory + SHARPSHOOTER +3 + NIGHT OWL +2
+   + weapon bonus. Weapon also shifts range and fire rate. */
 function hvDefenderStats(s) {
-  var base, mul, dmg, rm;
+  var base, mul, dmg, rm, w;
   if (!s.room) return null;
   rm = hvRoomAtFS(s.room.floor, s.room.slot);
   if (!rm) return null;
@@ -23186,14 +23561,111 @@ function hvDefenderStats(s) {
   dmg = base.dmg * mul + hvArmoryBonus();
   if (s.trait === 'SHARPSHOOTER') dmg += 3;
   if (s.trait === 'NIGHT OWL') dmg += 2;
-  return { dmg: Math.round(dmg * 10) / 10, range: base.range, rate: base.rate };
+  w = hvWeaponOf(s);
+  dmg += w.dmg;
+  return { dmg: Math.round(dmg * 10) / 10,
+    range: Math.max(10, base.range + w.range),
+    rate: Math.max(10, Math.round(base.rate * w.rateMul)) };
+}
+
+/* ---- attack scheduler (three tiers, all random) ---- */
+function hvRollFrames(minF, maxF) {
+  return minF + Math.floor(Math.random() * (maxF - minF + 1));
+}
+/* Random delay: a uniform whole number of days plus a random tick of the
+   day, so attacks land at any time of day, not just at nightfall. */
+function hvRollDayOffset(minDays, maxDays) {
+  var days = minDays + Math.floor(Math.random() * (maxDays - minDays + 1));
+  var tick = Math.floor(Math.random() * HV_DAY_LEN);
+  return days * HV_DAY_LEN + tick;
+}
+/* Fresh schedule, rolled from (day, tick). No guaranteed first attack:
+   the first raid is 7-30 days out like every other; the first trickle
+   lands within the first day so the player sees combat early. */
+function hvNewSchedule(day, tick) {
+  var abs = (day - 1) * HV_DAY_LEN + tick;
+  return {
+    nextTrickle: abs + hvRollFrames(HV_TRICKLE_MIN, HV_TRICKLE_MAX),
+    nextRaid: abs + hvRollDayOffset(HV_RAID_MIN_DAYS, HV_RAID_MAX_DAYS),
+    nextHorde: abs + hvRollDayOffset(HV_HORDE_MIN_DAYS, HV_HORDE_MAX_DAYS),
+    raidWarned: false, hordeWarned: false, warnKind: null
+  };
+}
+/* Warning lead for a tier: a lookout tower doubles it (early warning). */
+function hvWarnLead(kind) {
+  var base = kind === 'horde' ? HV_HORDE_WARN : HV_RAID_WARN;
+  return hvHasTower() ? base * 2 : base;
+}
+/* 'raid' | 'horde' | null: the next big attack arriving within `frames`
+   (used by the dusk lookout warning). */
+function hvNextAttackWithin(frames) {
+  if (!hvS.sched) return null;
+  var abs = hvAbsFrame();
+  var r = hvS.sched.nextRaid - abs, h = hvS.sched.nextHorde - abs;
+  if (r >= 0 && r <= frames && (h < 0 || r <= h)) return 'raid';
+  if (h >= 0 && h <= frames) return 'horde';
+  return null;
+}
+function hvHorn(big) {
+  if (typeof JMFGAMES !== 'undefined' && JMFGAMES && typeof JMFGAMES.beep === 'function') {
+    if (big) { JMFGAMES.beep(110, 0.5); JMFGAMES.beep(165, 0.4); }
+    else JMFGAMES.beep(220, 0.3);
+  }
+}
+/* Called every tick from hvTickClock. Attacks never stack: while one is
+   active, due attacks wait (their warnings still give the full lead —
+   a past-due arrival is pushed out when its warning fires). No attack
+   starts in the last 100 frames before dawn (it would burn instantly). */
+function hvSchedulerTick() {
+  if (!hvS || hvS.over) return;
+  if (!hvS.sched) { hvS.sched = hvNewSchedule(hvS.day, hvS.tick); return; }
+  if (hvS.night.active) return;
+  if (hvS.tick >= HV_DAY_LEN - 100) return;
+  var abs = hvAbsFrame(), sc = hvS.sched, lead;
+  /* Raid: horn warning, then the raid. */
+  lead = hvWarnLead('raid');
+  if (!sc.raidWarned && abs >= sc.nextRaid - lead) {
+    sc.raidWarned = true; sc.warnKind = 'raid';
+    if (sc.nextRaid < abs + lead) sc.nextRaid = abs + lead;
+    hvCLog('HORN BLARES — RAIDERS APPROACHING!');
+    hvHorn(0);
+  }
+  if (abs >= sc.nextRaid) {
+    sc.warnKind = null;
+    hvStartAttack('raid');
+    sc.nextRaid = hvAbsFrame() + hvRollDayOffset(HV_RAID_MIN_DAYS, HV_RAID_MAX_DAYS);
+    sc.raidWarned = false;
+    return;
+  }
+  /* Horde: long advance warning, then the horde. */
+  lead = hvWarnLead('horde');
+  if (!sc.hordeWarned && abs >= sc.nextHorde - lead) {
+    sc.hordeWarned = true; sc.warnKind = 'horde';
+    if (sc.nextHorde < abs + lead) sc.nextHorde = abs + lead;
+    hvCLog('THE GROUND TREMBLES — A MASSIVE HORDE IS COMING!');
+    hvHorn(1);
+  }
+  if (abs >= sc.nextHorde) {
+    sc.warnKind = null;
+    hvStartAttack('horde');
+    sc.nextHorde = hvAbsFrame() + hvRollDayOffset(HV_HORDE_MIN_DAYS, HV_HORDE_MAX_DAYS);
+    sc.hordeWarned = false;
+    return;
+  }
+  /* Trickle: small, no warning, just a log line. */
+  if (abs >= sc.nextTrickle) {
+    hvStartAttack('trickle');
+    sc.nextTrickle = hvAbsFrame() + hvRollFrames(HV_TRICKLE_MIN, HV_TRICKLE_MAX);
+  }
 }
 
 /* ---- spawning ---- */
 function hvSpawnOne(kind) {
   var def = HV_ATK[kind], lane;
-  lane = 140 + (hvS.night.spawned % 4) * 3;
-  if (kind === 'raider' || kind === 'raiderBrute' || kind === 'raiderBoss') lane = 142;
+  /* Attackers walk the yard on the mound (feet y 122..128), above the
+     log strip and clear of the house. */
+  lane = 122 + (hvS.night.spawned % 4) * 2;
+  if (kind === 'raider' || kind === 'raiderBrute' || kind === 'raiderBoss') lane = 126;
   hvS.attackers.push({ kind: kind, x: HV_SPAWN_X, y: lane,
     hp: def.hp, maxHp: def.hp, dmg: def.gateDmg, spd: def.spd,
     state: 'approach', tx: HV_GATE_X, loot: 0 });
@@ -23221,6 +23693,34 @@ function hvSpawnWave(day) {
   hvS.night.spawned = 0;
   hvSpawnT = 0;
 }
+/* Trickle: 1-3 dead, mostly shamblers, runners from day 3, no brutes. */
+function hvSpawnTrickle(day) {
+  var count = 1, i;
+  if (Math.random() < 0.5) count++;
+  if (day >= 5 && Math.random() < 0.3) count++;
+  hvSpawnQ = [];
+  for (i = 0; i < count; i++)
+    hvSpawnQ.push((day >= 3 && Math.random() < 0.25) ? 'runner' : 'shambler');
+  hvShuffleQueue();
+  hvS.night.total = hvSpawnQ.length;
+  hvS.night.spawned = 0;
+  hvSpawnT = 0;
+}
+/* Horde: 20-40 dead, brutes included — a major event. */
+function hvSpawnHorde(day) {
+  var count = Math.min(20 + day, 40);
+  var brutes = Math.max(1, Math.floor(day / 5));
+  var runners = Math.round((count - brutes) * 0.25);
+  var shamblers = count - brutes - runners, i;
+  hvSpawnQ = [];
+  for (i = 0; i < shamblers; i++) hvSpawnQ.push('shambler');
+  for (i = 0; i < runners; i++) hvSpawnQ.push('runner');
+  for (i = 0; i < brutes; i++) hvSpawnQ.push('brute');
+  hvShuffleQueue();
+  hvS.night.total = hvSpawnQ.length;
+  hvS.night.spawned = 0;
+  hvSpawnT = 0;
+}
 function hvSpawnRaid(day) {
   var count = 2 + Math.floor(day / 4), i;
   /* Assembly: the raider-spy event (W4) adds raiders to the next raid. */
@@ -23235,21 +23735,22 @@ function hvSpawnRaid(day) {
   hvSpawnT = 0;
 }
 
-/* ---- night start / end ---- */
-function hvStartNight() {
+/* ---- attack start / end ---- */
+function hvStartAttack(kind) {
   var i, s, c, rm;
+  if (hvS.night.active) return false;
   hvS.night.active = true;
   hvS.night.won = false;
-  hvS.night.isRaid = (hvS.day % 4 === 0 && hvS.day >= 4) ||
-    (hvS.day >= 4 && Math.random() < 0.15);
+  hvS.night.kind = kind;
+  hvS.night.isRaid = (kind === 'raid');
   hvTrapUsed = 0;
   hvGateBreached = false;
   hvNightDeaths = 0;
   hvDefCd = {};
   hvAtkCd = [];
-  /* A gate left at 0 hp from a previous night is already breached. */
+  /* A gate left at 0 hp from a previous attack is already breached. */
   if (hvGateRoom().hp <= 0) hvGateBreached = true;
-  /* Guards take their posts. */
+  /* Guards take their posts (and draw spare gear from the shelf). */
   for (i = 0; i < hvS.survs.length; i++) {
     s = hvS.survs[i];
     if (s.dead || s.away || !s.room) continue;
@@ -23258,18 +23759,27 @@ function hvStartNight() {
       s.state = 'defend';
       c = hvCRoomCenter(s.room.floor, s.room.slot);
       s.x = c.x; s.y = c.y;
+      hvDrawGear(s);
     }
   }
-  if (hvS.night.isRaid) {
+  if (kind === 'raid') {
     hvSpawnRaid(hvS.day);
-    hvCLog('NIGHT ' + hvS.day + ' — RAIDERS AT THE GATE! (' + hvS.night.total + ')');
+    hvCLog('RAIDERS AT THE GATE! (' + hvS.night.total + ')');
+  } else if (kind === 'horde') {
+    hvSpawnHorde(hvS.day);
+    hvCLog('A MASSIVE HORDE IS HERE! (' + hvS.night.total + ')');
   } else {
-    hvSpawnWave(hvS.day);
-    hvCLog('NIGHT ' + hvS.day + ' — THE DEAD ARE COMING. (' + hvS.night.total + ')');
+    hvSpawnTrickle(hvS.day);
+    hvCLog('MOVEMENT AT THE FENCE — THE DEAD SHAMBLE IN. (' + hvS.night.total + ')');
   }
+  return true;
 }
-function hvEndNight() {
-  var i, s, won;
+/* Back-compat alias: the old fixed nightly wave is gone; a legacy call
+   starts a horde (the big zombie wave). */
+function hvStartNight() { return hvStartAttack('horde'); }
+function hvEndAttack() {
+  var i, s, won, kind;
+  kind = hvS.night.kind;
   won = !hvGateBreached && hvNightDeaths === 0;
   hvS.night.active = false;
   hvS.night.won = won;
@@ -23278,19 +23788,26 @@ function hvEndNight() {
   for (i = 0; i < hvS.survs.length; i++) {
     s = hvS.survs[i];
     if (!s.dead && s.state === 'defend') s.state = 'idle';
-    if (!s.dead && won) s.morale = Math.min(100, (s.morale || 60) + 5);
+    if (!s.dead && won && kind !== 'trickle') s.morale = Math.min(100, (s.morale || 60) + 5);
   }
-  if (hvS.night.isRaid) {
+  if (kind === 'raid') {
     if (won) { hvS.stats.raidsWon++; hvCLog('RAID REPELLED! The haven stands.'); }
     else { hvS.stats.raidsLost++; hvCLog('RAIDERS BROKE THROUGH!'); }
+  } else if (kind === 'horde') {
+    if (won) { hvS.stats.raidsWon++; hvCLog('THE HORDE WAS BROKEN! The haven stands.'); }
+    else { hvS.stats.raidsLost++; hvCLog('THE HORDE OVERRAN THE HAVEN!'); }
   } else {
-    if (won) { hvS.stats.raidsWon++; hvCLog('DAWN BREAKS — the haven held.'); }
-    else { hvS.stats.raidsLost++; hvCLog('THE GATE FELL — the haven was overrun.'); }
+    /* Trickle: routine — no raid stat, no morale bonus, unless it broke in. */
+    if (won) hvCLog('THE DEAD WERE DRIVEN OFF.');
+    else { hvS.stats.raidsLost++; hvCLog('THE GATE FELL — THE HAVEN WAS OVERRUN.'); }
   }
+  hvS.night.kind = 'none';
 }
 
-/* Dawn: zombies burn, raiders flee, night resolves. Called by W1's
-   dawn hook; hvCombatTick also calls it if tick hits 2400 first. */
+/* Dawn: zombies burn, raiders flee, the attack resolves. Called by W1's
+   dawn hook (via the assembly glue); hvCombatTick also calls it if tick
+   hits 2400 first. Any attack still running at dawn ends here — the
+   next dawn always clears the leftovers. */
 function hvDawnCombat() {
   var i, a, burned = 0, fled = 0;
   if (!hvS.night.active) return;
@@ -23311,7 +23828,7 @@ function hvDawnCombat() {
   }
   if (burned > 0) hvCLog(burned + ' dead burned away in the dawn light.');
   if (fled > 0) hvCLog(fled + ' raider(s) fled into the dawn.');
-  hvEndNight();
+  hvEndAttack();
 }
 
 /* ---- deaths ---- */
@@ -23356,6 +23873,17 @@ function hvHurtAttacker(i, dmg, hx, hy) {
     (a.kind === 'raider' || a.kind === 'raiderBrute' || a.kind === 'raiderBoss') ? '#EF4444' : '#65A30D');
   if (a.hp <= 0) hvKillAttacker(i);
 }
+/* Damage to a survivor from zombies/raiders, reduced by worn armor
+   (padded vest -25%, plate vest -50%, minimum 1). Armor does NOT reduce
+   starvation, sickness, or expedition injuries. Returns damage taken. */
+function hvHurtSurvivor(s, dmg, cause) {
+  var taken = Math.max(1, Math.round(dmg * (1 - hvArmorReduce(s))));
+  s.hp -= taken;
+  hvCFloater(s.x, s.y - 12, '-' + taken, '#FCA5A5');
+  hvCParts(s.x, s.y - 4, 3, '#EF4444');
+  if (s.hp <= 0) hvKillSurvivor(s, cause);
+  return taken;
+}
 
 /* ---- defenders ---- */
 function hvDefendersTick() {
@@ -23367,7 +23895,8 @@ function hvDefendersTick() {
     if (!st) continue;
     cd = hvDefCd[s.id] || 0;
     if (cd > 0) { hvDefCd[s.id] = cd - 1; continue; }
-    /* Nearest attacker in range. */
+    /* Nearest attacker in range (guards keep shooting breached attackers
+       indoors — only fleeing ones are left alone). */
     best = -1; bd = 1e9;
     for (j = 0; j < hvS.attackers.length; j++) {
       a = hvS.attackers[j];
@@ -23413,10 +23942,7 @@ function hvBulletsTick() {
         s = hvS.survs[j];
         if (s.dead || s.away) continue;
         if (hvCDist(b.x, b.y, s.x, s.y - 4) < 5) {
-          s.hp -= b.dmg;
-          hvCFloater(s.x, s.y - 12, '-' + Math.round(b.dmg), '#FCA5A5');
-          hvCParts(s.x, s.y - 4, 3, '#EF4444');
-          if (s.hp <= 0) hvKillSurvivor(s, 'by a raider bullet');
+          hvHurtSurvivor(s, b.dmg, 'by a raider bullet');
           hit = true;
           break;
         }
@@ -23455,7 +23981,7 @@ function hvBreachGate() {
   hvGateBreached = true;
   hvCLog('THE GATE HAS FALLEN!');
   hvCShake(6);
-  hvCParts(HV_GATE_X, 140, 10, '#A16207');
+  hvCParts(HV_GATE_X, hvFloorCY(0) + 5, 10, '#A16207');
   for (i = 0; i < hvS.attackers.length; i++) {
     a = hvS.attackers[i];
     if (a.state === 'gate') { a.state = 'breach'; hvAtkCd[i] = 0; }
@@ -23508,7 +24034,7 @@ function hvAttackersTick() {
           if (s) {
             dx = s.x - a.x; dy = (s.y - 4) - a.y;
           } else {
-            dx = HV_GATE_X - a.x; dy = 142 - a.y;
+            dx = HV_GATE_X - a.x; dy = hvFloorCY(0) - a.y;
           }
           var dl = Math.sqrt(dx * dx + dy * dy) || 1;
           hvS.bullets.push({ x: a.x - 3, y: a.y - 4,
@@ -23566,12 +24092,9 @@ function hvAttackersTick() {
       d = hvCDist(a.x, a.y, s.x, s.y);
       if (d > 12) { a.state = 'breach'; continue; }
       if (hvAtkCd[i] <= 0) {
-        s.hp -= def.melee;
-        hvCFloater(s.x, s.y - 12, '-' + def.melee, '#FCA5A5');
-        hvCParts(s.x, s.y - 4, 3, '#EF4444');
+        hvHurtSurvivor(s, def.melee, 'by the dead');
         hvCShake(1);
         hvAtkCd[i] = HV_MELEE_EVERY;
-        if (s.hp <= 0) hvKillSurvivor(s, 'by the dead');
       }
     } else if (a.state === 'flee') {
       a.x += a.spd + 0.3;
@@ -23583,7 +24106,7 @@ function hvAttackersTick() {
   }
 }
 
-/* ---- main per-frame combat tick (called by hvUpdate during night) ---- */
+/* ---- main per-frame combat tick (called by hvUpdate during an attack) ---- */
 function hvCombatTick() {
   var i;
   if (!hvS.night.active) return;
@@ -23599,7 +24122,7 @@ function hvCombatTick() {
   hvDefendersTick();
   hvAttackersTick();
   hvBulletsTick();
-  /* Age combat particles + floaters (night only; see header note). */
+  /* Age combat particles + floaters (attack only; see header note). */
   for (i = hvS.parts.length - 1; i >= 0; i--) {
     hvS.parts[i].x += hvS.parts[i].vx;
     hvS.parts[i].y += hvS.parts[i].vy;
@@ -23612,8 +24135,8 @@ function hvCombatTick() {
     if (hvS.floaters[i].life <= 0) hvS.floaters.splice(i, 1);
   }
   if (hvS.shake > 0) hvS.shake--;
-  /* Night over: queue empty and nothing left standing. */
-  if (hvSpawnQ.length === 0 && hvS.attackers.length === 0) hvEndNight();
+  /* Attack over: queue empty and nothing left standing. */
+  if (hvSpawnQ.length === 0 && hvS.attackers.length === 0) hvEndAttack();
 }
 
 /* ---- test helper: rough defensive strength of the shelter ---- */
@@ -23643,43 +24166,60 @@ function hvDefensePower() {
 // EXPEDITION DESTINATIONS
 // loot weights are BASE units: actual loot = base * (0.5 + 0.1*avgBra +
 // 0.1*avgQui) * (1.25 if any SCAVENGER), rounded, capped by hvResCap.
+// gear: ONE roll per expedition return (only if someone comes home alive).
+// Better weapons and armor come ONLY from expeditions — never built,
+// bought, or granted any other way (Jesse, Nov 11). pool = item ids from
+// HV_WEAPONS / HV_ARMOR (03); the finder carries it, surplus goes to the
+// spare-gear shelf. The police station (danger 4) has the best odds.
 // ---------------------------------------------------------------------------
 var HV_DESTS = [
   { id: 'market',   name: 'RUINED MARKET',  days: 1, danger: 2,
     loot: { food: 10, water: 4, scrap: 6, med: 2, ammo: 2 },
+    gear: { chance: 0.12, pool: ['rifle', 'vest'] },
     desc: 'Stalls picked clean, but the back rooms still hide cans and coins.' },
   { id: 'hospital', name: 'OLD HOSPITAL',  days: 2, danger: 3,
     loot: { food: 2, water: 4, scrap: 3, med: 12, ammo: 2 },
+    gear: { chance: 0.12, pool: ['vest', 'vest', 'rifle'] },
     desc: 'Dark wards full of the sick dead. The pharmacy wing is worth it.' },
   { id: 'farm',     name: 'FARMHOUSE',     days: 2, danger: 2,
     loot: { food: 12, water: 6, scrap: 3, med: 1, ammo: 2 },
+    gear: { chance: 0.08, pool: ['rifle'] },
     desc: 'A dead farmstead. Root cellar, grain bins, and a rusted well pump.' },
   { id: 'gas',      name: 'GAS STATION',   days: 1, danger: 2,
     loot: { food: 4, water: 2, scrap: 8, med: 1, ammo: 3 },
+    gear: { chance: 0.12, pool: ['rifle', 'shotgun'] },
     desc: 'Snack racks, a tool cage, and tanks nobody can pump anymore.' },
   { id: 'school',   name: 'SCHOOLHOUSE',   days: 2, danger: 3,
     loot: { food: 6, water: 5, scrap: 5, med: 3, ammo: 2 },
+    gear: { chance: 0.10, pool: ['rifle', 'vest'] },
     desc: 'The cafeteria stores and the nurse office. The gym echoes.' },
   { id: 'library',  name: 'LIBRARY',       days: 1, danger: 1,
     loot: { food: 2, water: 2, scrap: 4, med: 1, ammo: 1 },
+    gear: { chance: 0.06, pool: ['vest'] },
     desc: 'Quiet stacks. Dry paper, old maps, and a staff room kettle.' },
   { id: 'hardware', name: 'HARDWARE STORE', days: 1, danger: 2,
     loot: { food: 1, water: 1, scrap: 14, med: 1, ammo: 3 },
+    gear: { chance: 0.20, pool: ['shotgun', 'shotgun', 'rifle'] },
     desc: 'Aisles of tools, wire, and nails. Heavy lifting, good salvage.' },
   { id: 'pharmacy', name: 'PHARMACY',      days: 1, danger: 3,
     loot: { food: 1, water: 2, scrap: 2, med: 12, ammo: 1 },
+    gear: { chance: 0.06, pool: ['vest'] },
     desc: 'Picked over by every survivor for miles. Still, shelves hide things.' },
   { id: 'police',   name: 'POLICE STATION', days: 2, danger: 4,
     loot: { food: 2, water: 2, scrap: 6, med: 3, ammo: 12 },
+    gear: { chance: 0.30, pool: ['shotgun', 'scoped', 'plate', 'rifle'] },
     desc: 'The armory cage and the evidence room. Heavily infested.' },
   { id: 'chapel',   name: 'CHAPEL',        days: 1, danger: 1,
     loot: { food: 4, water: 4, scrap: 2, med: 2, ammo: 1 },
+    gear: { chance: 0.06, pool: ['vest'] },
     desc: 'Candles, a food pantry, and pews nobody sits in anymore.' },
   { id: 'motel',    name: 'MOTEL',         days: 2, danger: 3,
     loot: { food: 6, water: 6, scrap: 5, med: 3, ammo: 3 },
+    gear: { chance: 0.12, pool: ['rifle', 'vest', 'shotgun'] },
     desc: 'Room after room of dead luggage. The ice machines still drip.' },
   { id: 'greenhouse', name: 'GREENHOUSE',  days: 2, danger: 2,
     loot: { food: 10, water: 8, scrap: 2, med: 1, ammo: 1 },
+    gear: { chance: 0.08, pool: ['rifle'] },
     desc: 'Overgrown beds behind cracked glass. Tomatoes gone wild.' }
 ];
 
@@ -23750,7 +24290,8 @@ function hvFallbackSurvivor() {
     bra: hvRandInt(1, 5), cha: hvRandInt(1, 5),
     hp: 80, maxHp: 80, morale: 60, hunger: 0, thirst: 0,
     sick: false, trait: 'LUCKY', room: null,
-    state: 'idle', x: 40, y: 130, tx: 40, ty: 130,
+    state: 'idle', x: 40, y: (typeof hvFloorStandY === 'function' ? hvFloorStandY(0) : 124),
+    tx: 40, ty: (typeof hvFloorStandY === 'function' ? hvFloorStandY(0) : 124),
     walkT: 0, dead: false, away: false
   };
   s.maxHp = 60 + s.mus * 10;
@@ -23859,12 +24400,14 @@ function hvResolveExpedition(ex) {
     }
   }
 
-  // --- bring the living home ---
+  // --- bring the living home: they walk back in through the gate ---
+  var homeY = (typeof hvFloorStandY === 'function') ? hvFloorStandY(0) : 124;
   for (i = 0; i < alive.length; i++) {
     s = alive[i];
     s.away = false;
     s.state = 'idle';
     s.room = null;
+    s.x = 216; s.y = homeY; s.tx = 216; s.ty = homeY;
     names.push(s.name);
     braSum += s.bra;
     quiSum += s.qui;
@@ -23894,6 +24437,15 @@ function hvResolveExpedition(ex) {
   hvS.stats.expedDone++;
   hvLog(names.join(' and ') + ' returned from ' +
     (dest ? dest.name : 'the run') + '.' + lootTxt);
+
+  // --- gear roll: ONE chance per return, only from the destination table.
+  // Better weapons/armor come ONLY from expeditions (Jesse, Nov 11). ---
+  if (dest && dest.gear && typeof hvGrantGear === 'function') {
+    if (Math.random() < dest.gear.chance) {
+      var pick = dest.gear.pool[Math.floor(Math.random() * dest.gear.pool.length)];
+      hvGrantGear(pick, alive);
+    }
+  }
 
   // --- road event roll: 40% on return ---
   if (Math.random() < 0.40) {
@@ -23926,7 +24478,7 @@ var HV_ROAD_EVENTS = [
     choices: [
       { label: 'SEARCH IT', ok: 'Glove box, trunk, under the seats: a proper haul.',
         bad: 'The car alarm screams. Shamblers turn toward the noise from every direction.',
-        w: 0.75, okFx: { res: { scrap: 6, ammo: 3 } }, badFx: { hurt: 10 } },
+        w: 0.75, okFx: { res: { scrap: 6, ammo: 3 }, gear: { chance: 0.5, pool: ['shotgun', 'rifle'] } }, badFx: { hurt: 10 } },
       { label: 'TAKE PARTS', ok: 'Battery cables, mirrors, a good spare tire. All useful.',
         bad: 'The hood slips and slams on a hand. It swells up purple by evening.',
         w: 0.85, okFx: { res: { scrap: 5 } }, badFx: { hurt: 5 } },
@@ -23995,7 +24547,7 @@ var HV_ROAD_EVENTS = [
         w: 0.8, okFx: { res: { scrap: -8 } }, badFx: { res: { scrap: -12 }, morale: -3 } },
       { label: 'FIGHT', ok: 'Fast, brutal, and over in seconds. Their gear is yours now.',
         bad: 'They are better shots than they look. Someone goes down hard before the group breaks away.',
-        w: 0.5, okFx: { res: { ammo: 8, scrap: 5 } }, badFx: { hurt: 20 } },
+        w: 0.5, okFx: { res: { ammo: 8, scrap: 5 }, gear: { chance: 0.6, pool: ['shotgun', 'rifle', 'vest'] } }, badFx: { hurt: 20 } },
       { label: 'RUN', ok: 'Into the trees, full sprint. They do not bother chasing.',
         bad: 'A shot cracks past. Someone catches a graze and keeps running on pure fear.',
         w: 0.7, okFx: { morale: -3 }, badFx: { hurt: 12, morale: -3 } }
@@ -24081,7 +24633,7 @@ var HV_ROAD_EVENTS = [
     choices: [
       { label: 'SEARCH THE CHECKPOINT', ok: 'Ammo crates, a first aid kit, and a rifle sling. A soldier’s worth of supplies.',
         bad: 'A tripwire, rigged by someone careful. The blast throws everyone to the ground.',
-        w: 0.7, okFx: { res: { ammo: 8, med: 2 } }, badFx: { hurt: 20 } },
+        w: 0.7, okFx: { res: { ammo: 8, med: 2 }, gear: { chance: 0.5, pool: ['rifle', 'scoped', 'vest'] } }, badFx: { hurt: 20 } },
       { label: 'CLIMB AROUND', ok: 'Over the sandbags and back to the road. No fuss.',
         bad: 'A sandbag gives way and someone lands hard on the far side.',
         w: 0.9, okFx: {}, badFx: { hurt: 5 } }
@@ -24194,6 +24746,9 @@ function hvRoadEvent() {
 //   leaveSurv one random living survivor walks off
 //   spy       15% chance the newcomer is a raider spy: next raid +2 raiders
 //   trade     open trade mode (W5 calls hvTradeOffers)
+//   gear      expedition-loot gear: a string id grants it, or
+//             { chance, pool } rolls once for a random pool item
+//             (road events only — daily events never grant gear)
 // ---------------------------------------------------------------------------
 var HV_DAILY_EVENTS = [
   { id: 'trader',
@@ -24657,6 +25212,17 @@ function hvApplyFx(fx) {
   if (fx.trade) {
     hvS.flags.tradeOpen = true;
   }
+
+  // Gear (expedition loot only): a string id grants that item; an object
+  // { chance, pool } rolls once and grants a random pool item. The grant
+  // goes to a living survivor who can use it, else the spare-gear shelf.
+  if (fx.gear && typeof hvGrantGear === 'function') {
+    if (typeof fx.gear === 'string') {
+      hvGrantGear(fx.gear, null);
+    } else if (fx.gear.pool && Math.random() < (fx.gear.chance || 0)) {
+      hvGrantGear(fx.gear.pool[Math.floor(Math.random() * fx.gear.pool.length)], null);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -24758,7 +25324,7 @@ var hvSave = (typeof hvSave === 'function') ? hvSave : function () {
   copy.attackers = []; copy.bullets = []; copy.parts = []; copy.floaters = [];
   copy.shake = 0;
   if (copy.night) {
-    copy.night = { active: false, isRaid: false, spawned: 0, total: 0, won: false };
+    copy.night = { active: false, isRaid: false, kind: 'none', spawned: 0, total: 0, won: false };
     copy.tick = 0;
   }
   try { localStorage.setItem('jmf-games-haven-save', JSON.stringify(copy)); } catch (e) {}
@@ -25815,7 +26381,7 @@ hvUpdate = function () {
   /* ==================== music (console) ==================== */
 /* ================================================================
    CHILDREN MUSIC — an MP3-player-like bedtime piano player on the
-   main menu (NOT a game, NOT inside Retro Games). 50 traditional /
+   main menu (NOT a game, NOT inside Retro Games). 60 traditional /
    public-domain children's songs, simple piano only, no voice,
    listed A to Z by title. Autoplay + loop until stopped. Each song
    is a FULL song (over 2 minutes): the stored melody is arranged at
@@ -25829,8 +26395,11 @@ hvUpdate = function () {
    re-include the highlighted song · Start = shuffle · Menu = exit
    (exiting stops the audio). Exclusions + shuffle persist in
    localStorage. Respects the console MUSIC toggle (off = silent,
-   position held). Audio is frame-driven (60Hz update) with a
-   lookahead scheduler, so it also runs headless in the vm tests
+   position held). Audio is scheduled on the Web Audio clock with a
+   15s lookahead, pumped both by rAF (60Hz) and by a 200ms interval
+   timer, so it keeps playing when the tab is backgrounded or the
+   phone screen turns off (rAF stops, the timer keeps going; Media
+   Session makes it lock-screen media). Headless in the vm tests
    (no AudioContext there: silent mode, state machine still advances).
    ================================================================ */
 
@@ -25856,14 +26425,30 @@ var CM_SONGS_A = [
   { t: "CAMPTOWN RACES", bpm: 100, mel: [[67,1],[67,1],[69,1],[71,1],[72,1],[71,1],[69,1],[67,1],[67,2],[64,1],[62,1],[60,2],[62,2],[67,1],[67,1],[69,1],[71,1],[72,1],[71,1],[69,1],[67,1],[67,1],[69,1],[71,1],[72,1],[71,1],[69,1],[60,2]], bas: [[43,4],[38,4],[43,4],[38,4],[43,4],[38,4],[48,4],[43,4]] },
   // 9. CIELITO LINDO — E G A G E D C D | E F E D C D E | E G A G E D C | D E F E D C C
   { t: "CIELITO LINDO", bpm: 96, mel: [[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[65,1],[64,1],[62,1],[60,2],[62,1],[64,1],[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[65,1],[64,1],[62,1],[60,4]], bas: [[48,4],[43,4],[41,4],[48,4],[48,4],[43,4],[41,4],[48,4]] },
+  // DECK THE HALLS (key of C) — verified vs Songtive (1877 Pennsylvania
+  // School Journal score, moved F->C) + La Touche Musicale: G F E D C D E C |
+  // D E F D E D C B C | D E F D E F G D | E F# G A B C B A G | A A A A G F E D C
+  { t: "DECK THE HALLS", bpm: 100, mel: [[67,1],[65,1],[64,1],[62,1],[60,1],[62,1],[64,1],[60,1],[62,1],[64,1],[65,1],[62,1],[64,.5],[62,.5],[60,1],[59,.5],[60,1],[67,1],[65,1],[64,1],[62,1],[60,1],[62,1],[64,1],[60,1],[62,1],[64,1],[65,1],[62,1],[64,.5],[62,.5],[60,1],[59,.5],[60,1],[62,1],[64,1],[65,1],[62,1],[64,1],[65,1],[67,1],[62,1],[64,1],[66,1],[67,1],[69,1],[71,1],[72,1],[71,.5],[69,.5],[67,1],[67,1],[65,1],[64,1],[62,1],[60,1],[62,1],[64,1],[60,1],[69,.5],[69,.5],[69,1],[69,1],[67,1],[65,1],[64,1],[62,1],[60,1]], bas: [[48,4],[43,4],[41,4],[48,4],[48,4],[43,4],[41,4],[48,4],[48,4],[43,4],[41,4],[48,4],[43,4],[48,4],[43,4],[48,4]] },
   // 10. FRERE JACQUES (key of C)
   // C D E C C D E C | E F G E F G | G A G F E C G A G F E C | C G C C G C
   { t: "FRERE JACQUES", bpm: 104, mel: [[60,1],[62,1],[64,1],[60,1],[60,1],[62,1],[64,1],[60,1],[64,1],[65,1],[67,2],[64,1],[65,1],[67,2],[67,1],[69,1],[67,1],[65,1],[64,1],[60,1],[67,1],[69,1],[67,1],[65,1],[64,1],[60,1],[60,1],[67,1],[60,2],[60,1],[67,1],[60,2]], bas: [[48,4],[48,4],[43,4],[41,4],[48,4],[43,4],[48,4],[41,4],[48,4]] },
   // GO TELL AUNT RHODY (A minor) — E A A B A G E | E A A B C5 B A | E A A B A G E | G A B A G E A
   { t: "GO TELL AUNT RHODY", bpm: 92, mel: [[64,1],[69,1],[69,1],[71,1],[69,1],[67,1],[64,2],[64,1],[69,1],[69,1],[71,1],[72,1],[71,1],[69,2],[64,1],[69,1],[69,1],[71,1],[69,1],[67,1],[64,2],[67,1],[69,1],[71,1],[69,1],[67,1],[64,1],[69,2]], bas: [[45,4],[40,4],[45,4],[40,4],[45,4],[40,4],[45,4],[45,4]] },
+  // GOD REST YE MERRY GENTLEMEN (A minor) — verified vs Zebra Keys
+  // (A minor, 4/4): A | A E E D | C B A G | A B C D | E A | E E |
+  // F D E F | G A E D | C A B C | D C D | E F E | E D C B | A C B A |
+  // D C D | E F G A | E D C B | A (repeat of the first phrase omitted)
+  { t: "GOD REST YE MERRY GENTLEMEN", bpm: 96, mel: [[69,1],[69,1],[76,1],[76,1],[74,1],[72,1],[71,1],[69,1],[67,1],[69,1],[71,1],[72,1],[74,1],[76,1],[69,2],[76,1],[76,2],[77,1],[74,1],[76,1],[77,1],[79,1],[69,1],[76,1],[74,1],[72,1],[69,1],[71,1],[72,1],[74,1],[72,1],[74,2],[76,1],[77,1],[76,1],[76,1],[74,1],[72,1],[71,1],[69,1],[72,1],[71,1],[69,1],[74,1],[72,1],[74,2],[76,1],[77,1],[79,1],[81,1],[76,1],[74,1],[72,1],[71,1],[69,2]], bas: [[45,4],[40,4],[45,4],[40,4],[45,4],[40,4],[45,4],[43,4],[45,4],[40,4],[45,4],[40,4],[45,4],[40,4],[45,4]] },
   // 12. HAPPY BIRTHDAY TO YOU (key of C)
   // G G A G C B | G G A G D C | G G G E C B A | F F E C D C
   { t: "HAPPY BIRTHDAY TO YOU", bpm: 96, mel: [[67,0.5],[67,0.5],[69,1],[67,1],[72,1],[71,2],[67,0.5],[67,0.5],[69,1],[67,1],[74,1],[72,2],[67,0.5],[67,0.5],[79,1],[76,1],[72,1],[71,1],[69,1],[77,0.5],[77,0.5],[76,1],[72,1],[74,1],[72,2]], bas: [[48,4],[43,4],[48,4],[43,4],[41,4],[48,4]] },
+  // HARK! THE HERALD ANGELS SING (key of C) — verified vs Zebra Keys
+  // (C major, 4/4; the repeat of the opening strain is kept, the middle
+  // "Joyful, all ye nations rise" strain is omitted so the verse fits):
+  // G C C B | C E E D | G G G F | E D E | G C C B | C E E D | G D D B |
+  // B A G | A A A G | F E F | D E F G C | C D E | A A A G | F E F |
+  // D E F G | C D C
+  { t: "HARK! THE HERALD ANGELS SING", bpm: 100, mel: [[67,1],[72,1],[72,1.5],[71,.5],[72,1],[76,1],[76,1.5],[74,.5],[67,1],[67,1],[67,1.5],[77,.5],[76,1],[74,1],[76,2],[67,1],[72,1],[72,1.5],[71,.5],[72,1],[76,1],[76,1.5],[74,.5],[67,1],[74,1],[74,1.5],[71,.5],[71,1],[69,1],[67,2],[69,1],[69,1],[69,1.5],[67,.5],[77,1],[76,1],[77,2],[74,.5],[76,.5],[77,1],[79,1],[72,1],[72,1],[74,1],[76,2],[69,1],[69,1],[69,1.5],[67,.5],[77,1],[76,1],[77,2],[74,1],[76,1],[77,1],[79,1],[72,1],[74,1],[72,1]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[41,4],[43,4],[48,4],[48,4],[43,4],[48,4],[41,4],[43,4],[48,4],[43,4],[48,4]] },
   // 13. HE'S GOT THE WHOLE WORLD IN HIS HANDS — E G A A | G E D C | D E D C | D D E D | E G A C' | B A G E | D D C D | C
   { t: "HE'S GOT THE WHOLE WORLD IN HIS HANDS", bpm: 96, mel: [[64,1],[67,1],[69,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[62,1],[60,1],[62,2],[64,1],[62,1],[64,1],[67,1],[69,1],[72,1],[71,1],[69,1],[67,1],[64,1],[62,2],[60,1],[62,1],[60,4]], bas: [[48,4],[43,4],[41,4],[48,4],[48,4],[41,4],[43,4],[48,4]] },
   // HERE WE GO ROUND THE MULBERRY BUSH (key of F) — F A C5 C5 D5 C5 A G | F A C5 C5 A G | F A C5 C5 D5 C5 A G | F A C5 D5 C5 A F
@@ -25893,6 +26478,11 @@ var CM_SONGS_B = [
   { t: "JESUS LOVES ME", bpm: 96, mel: [[67,.5],[64,.5],[64,.5],[62,.5],[64,.5],[67,.5],[67,1],[69,.5],[69,.5],[72,.5],[69,.5],[69,.5],[67,.5],[67,1],[67,.5],[64,.5],[64,.5],[62,.5],[64,.5],[67,.5],[67,1],[69,.5],[69,.5],[67,.5],[60,.5],[64,.5],[62,.5],[60,1],[67,.5],[64,.5],[64,.5],[62,.5],[64,.5],[67,.5],[67,1],[69,.5],[69,.5],[72,.5],[69,.5],[69,.5],[67,.5],[67,1],[67,.5],[64,.5],[64,.5],[62,.5],[64,.5],[67,.5],[67,1],[69,.5],[69,.5],[67,.5],[60,.5],[64,.5],[62,.5],[60,1]], bas: [[48,2],[48,2],[53,2],[48,2],[48,2],[48,2],[55,2],[48,2],[48,2],[48,2],[53,2],[48,2],[48,2],[48,2],[55,2],[48,2]] },
   // 5. JINGLE BELLS — E E E | E E E | E G C' D' | E | F F F E | E E E D | D E D G | C
   { t: "JINGLE BELLS", bpm: 104, mel: [[64,1],[64,1],[64,2],[64,1],[64,1],[64,2],[64,1],[67,1],[72,1],[74,1],[64,4],[65,1],[65,1],[65,1],[64,1],[64,1],[64,1],[64,1],[62,1],[62,1],[64,1],[62,1],[67,1],[60,4]], bas: [[48,4],[48,4],[43,4],[48,4],[41,4],[48,4],[43,4],[48,4]] },
+  // JOY TO THE WORLD (key of C) — verified vs piano-keyboard-guide.com
+  // + La Touche Musicale + Songtive (Lowell Mason's "Antioch", D->C):
+  // C B A G F E D C | G A A B B C | C C B A G G F E | C C B A G G F E |
+  // E E E E F G | E D D D E F | D C C A G F E | F E D C
+  { t: "JOY TO THE WORLD", bpm: 96, mel: [[72,1],[71,1],[69,1],[67,1],[65,1],[64,1],[62,1],[60,2],[67,1],[69,1],[69,1],[71,1],[71,1],[72,2],[72,1],[72,1],[71,1],[69,1],[67,1],[67,1],[65,1],[64,2],[72,1],[72,1],[71,1],[69,1],[67,1],[67,1],[65,1],[64,2],[64,1],[64,1],[64,1],[64,1],[65,1],[67,2],[64,1],[62,1],[62,1],[62,1],[64,1],[65,2],[62,1],[60,1],[60,1],[69,1],[67,1],[65,1],[64,2],[65,1],[64,1],[62,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[41,4],[48,4],[43,4],[48,4],[41,4],[43,4],[48,4],[43,4],[48,4],[43,4],[48,4]] },
   // 6. KUMBAYA — G C' C' C' | B A G A | B B A G | E E D E | G C' C' C' | D' C' B A | G G A B | C'
   { t: "KUMBAYA", bpm: 88, mel: [[67,1],[72,1],[72,1],[72,1],[71,1],[69,1],[67,1],[69,1],[71,2],[69,1],[67,1],[64,2],[62,1],[64,1],[67,1],[72,1],[72,1],[72,1],[74,1],[72,1],[71,1],[69,1],[67,2],[69,1],[71,1],[72,4]], bas: [[48,4],[41,4],[48,4],[43,4],[48,4],[41,4],[43,4],[48,4]] },
   // LA CUCARACHA (key of C) — E G A G E D C | E G A G E D C | G G A A B A G | C5 B A G E D C
@@ -25907,6 +26497,15 @@ var CM_SONGS_B = [
   { t: "MARY HAD A LITTLE LAMB", bpm: 100, mel: [[64,1],[62,1],[60,1],[62,1],[64,1],[64,1],[64,2],[62,1],[62,1],[62,2],[64,1],[67,1],[67,2],[64,1],[62,1],[60,1],[62,1],[64,1],[64,1],[64,1],[64,1],[62,1],[62,1],[64,1],[62,1],[60,4]], bas: [[48,4],[43,4],[43,4],[48,4],[48,4],[43,4],[43,4],[48,4]] },
   // 11. MICHAEL ROW THE BOAT ASHORE — G C' B C' | D' C' B A | G G E D | C C D E | G C' B C' | D' C' B G | A A G E | C
   { t: "MICHAEL ROW THE BOAT ASHORE", bpm: 92, mel: [[67,1],[72,1],[71,1],[72,1],[74,1],[72,1],[71,1],[69,1],[67,2],[64,1],[62,1],[60,2],[62,1],[64,1],[67,1],[72,1],[71,1],[72,1],[74,1],[72,1],[71,1],[67,1],[69,2],[67,1],[64,1],[60,4]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[41,4],[48,4]] },
+  // O CHRISTMAS TREE (key of C) — verified vs Songtive (Wikipedia
+  // "O Tannenbaum" score, G->C): pickup G, C C C D E E E | E D E F B D C
+  // (x2), then G G E A G G F F | F F D G F F E E, then the opening again.
+  { t: "O CHRISTMAS TREE", bpm: 88, mel: [[55,1],[60,1],[60,1],[60,1],[62,1],[64,1],[64,1],[64,1],[64,1],[62,1],[64,1],[65,1],[59,1],[62,1],[60,1],[55,1],[60,1],[60,1],[60,1],[62,1],[64,1],[64,1],[64,1],[64,1],[62,1],[64,1],[65,1],[59,1],[62,1],[60,1],[67,1],[67,1],[64,1],[69,1],[67,1],[67,1],[65,1],[65,1],[65,1],[65,1],[62,1],[67,1],[65,1],[65,1],[64,1],[64,1],[55,1],[60,1],[60,1],[60,1],[62,1],[64,1],[64,1],[64,1],[64,1],[62,1],[64,1],[65,1],[59,1],[62,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[41,4],[43,4],[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[41,4],[43,4],[48,4],[48,4]] },
+  // O COME, ALL YE FAITHFUL (key of C) — verified vs Music Theory Print
+  // (Army and Navy Hymnal 1920, "Adeste Fideles", G->C): C G C G C F |
+  // C C G C D G E D E F | E D C C B A B C D E B A G |
+  // B A G C C B C D C G E E D E F | E D E F E D C B C F | E D C C
+  { t: "O COME, ALL YE FAITHFUL", bpm: 92, mel: [[60,1],[67,1],[60,1],[67,1],[60,1],[65,2],[60,1],[60,1],[67,1],[60,1],[62,1],[67,1],[64,1],[62,1],[65,2],[64,1],[62,1],[60,1],[60,1],[71,1],[69,1],[71,1],[72,1],[62,1],[64,1],[71,1],[69,1],[67,2],[71,1],[69,1],[67,1],[60,1],[60,1],[71,1],[72,1],[62,1],[60,1],[67,1],[64,1],[64,1],[62,1],[65,2],[64,1],[62,1],[64,1],[65,1],[64,1],[62,1],[60,1],[71,1],[72,1],[65,2],[64,1],[62,1],[60,1],[60,2]], bas: [[48,4],[43,4],[48,4],[41,4],[48,4],[43,4],[48,4],[41,4],[48,4],[43,4],[48,4],[41,4],[43,4],[48,4],[43,4],[48,4]] },
   // ODE TO JOY (key of C) — E E F G G F E D | C C D E E D D | E E F G G F E D | C C D E D C C
   { t: "ODE TO JOY", bpm: 96, mel: [[64,1],[64,1],[65,1],[67,1],[67,1],[65,1],[64,1],[62,1],[60,1],[60,1],[62,1],[64,1],[64,1],[62,1],[62,2],[64,1],[64,1],[65,1],[67,1],[67,1],[65,1],[64,1],[62,1],[60,1],[60,1],[62,1],[64,1],[62,1],[60,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[41,4],[48,4]] },
   // OH! SUSANNA (key of C) — E G A G E D C D | E D C D E | E G A G E D C D | E G A G E D C
@@ -25946,6 +26545,11 @@ var CM_SONGS_C = [
   { t: "THE ALPHABET SONG", bpm: 100, mel: [[72,1],[72,1],[79,1],[79,1],[81,1],[81,1],[79,2],[77,1],[77,1],[76,1],[76,1],[74,1],[74,1],[72,2],[79,1],[79,1],[77,1],[77,1],[76,1],[76,1],[74,2],[79,1],[79,1],[77,1],[77,1],[76,1],[76,1],[74,2],[72,1],[72,1],[79,1],[79,1],[81,1],[81,1],[79,2],[77,1],[77,1],[76,1],[76,1],[74,1],[74,1],[72,2]], bas: [[48,4],[43,4],[41,4],[48,4],[43,4],[48,4],[43,4],[48,4],[48,4],[43,4],[41,4],[48,4]] },
   // THE FARMER IN THE DELL (key of C) — C E G G A G E D | C E G G A G E C | G G A A B A G | E G A G E D C
   { t: "THE FARMER IN THE DELL", bpm: 96, mel: [[60,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,1],[60,1],[67,1],[67,1],[69,1],[69,1],[71,1],[69,1],[67,2],[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[43,4],[48,4]] },
+  // THE FIRST NOEL (key of C) — verified vs piano-keyboard-guide.com +
+  // trebly.fun (C major, 3/4, one-beat pickup): E D C D E F G | A B C B A G |
+  // A B C B A G | A B C G F E | E D C D E F G | C B A B C D E |
+  // C B A G A B C G F E
+  { t: "THE FIRST NOEL", bpm: 92, mel: [[64,1],[62,1],[60,1],[62,1],[64,1],[65,1],[67,2],[69,1],[71,1],[72,1],[71,1],[69,1],[67,2],[69,1],[71,1],[72,1],[71,1],[69,1],[67,2],[69,1],[71,1],[72,1],[67,1],[65,1],[64,2],[64,1],[62,1],[60,1],[62,1],[64,1],[65,1],[67,2],[72,1],[71,1],[69,1],[71,1],[72,1],[62,1],[64,2],[72,1],[71,1],[69,1],[67,1],[69,1],[71,1],[72,1],[67,1],[65,1],[64,2]], bas: [[48,4],[43,4],[48,4],[41,4],[48,4],[43,4],[48,4],[41,4],[48,4],[43,4],[48,4],[41,4],[43,4],[48,4]] },
   // 10. THE GRAND OLD DUKE OF YORK (key of C)
   // C D E E D C D | E D C D E D C | C D E F G A G E | A G F E D C
   // C D E F G A G E | A G F E D C | C D E F G A G | A G F E D C
@@ -25959,6 +26563,21 @@ var CM_SONGS_C = [
   // 14. TWINKLE TWINKLE LITTLE STAR (key of C)
   // C C G G A A G | F F E E D D C | G G F F E E D | G G F F E E D | C C G G A A G | F F E E D D C
   { t: "TWINKLE TWINKLE LITTLE STAR", bpm: 100, mel: [[72,1],[72,1],[79,1],[79,1],[81,1],[81,1],[79,2],[77,1],[77,1],[76,1],[76,1],[74,1],[74,1],[72,2],[79,1],[79,1],[77,1],[77,1],[76,1],[76,1],[74,2],[79,1],[79,1],[77,1],[77,1],[76,1],[76,1],[74,2],[72,1],[72,1],[79,1],[79,1],[81,1],[81,1],[79,2],[77,1],[77,1],[76,1],[76,1],[74,1],[74,1],[72,2]], bas: [[48,4],[43,4],[41,4],[48,4],[43,4],[48,4],[43,4],[48,4],[48,4],[43,4],[41,4],[48,4]] },
+  // UP ON THE HOUSETOP (key of C) — verified vs Zebra Keys (C major, 4/4)
+  // + noobnotes (G->C): G G A G E | C E G | A A G E | D G G | G G A G E |
+  // C E G | A A A G E | D G C | F F A | G G G E | D D F | E G G C E |
+  // G G A G E F G A | E D G C
+  { t: "UP ON THE HOUSETOP", bpm: 104, mel: [[67,1],[67,.5],[69,.5],[67,1],[64,1],[60,1],[64,1],[67,2],[69,1],[69,1],[67,1],[64,1],[62,1],[67,1],[67,2],[67,1],[67,.5],[69,.5],[67,1],[64,1],[60,1],[64,1],[67,2],[69,1],[69,.5],[69,.5],[67,1],[64,1],[62,1],[67,1],[60,2],[65,1],[65,1],[69,2],[67,1],[67,.5],[67,.5],[64,2],[62,1],[62,1],[65,2],[64,1],[67,.5],[67,.5],[60,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,1],[65,1],[67,1],[69,1],[64,1],[62,1],[67,1],[60,2]], bas: [[48,4],[43,4],[41,4],[48,4],[48,4],[43,4],[41,4],[48,4],[48,4],[43,4],[41,4],[48,4],[43,4],[48,4],[48,4]] },
+  // WE THREE KINGS (E minor) — verified vs NotationIQ + Benchoom
+  // (Hopkins 1863 score): B A G E F# G F# E (x2) | G G A A B B D C B |
+  // A B A G F# E | F# A G G G D G E G | G G G D G E G |
+  // G G A A B B D C B | A A B A G F# E
+  { t: "WE THREE KINGS", bpm: 92, mel: [[71,1],[69,1],[67,1],[64,1],[66,1],[67,1],[66,1],[64,1],[71,1],[69,1],[67,1],[64,1],[66,1],[67,1],[66,1],[64,1],[67,1],[67,1],[69,1],[69,1],[71,1],[71,1],[74,.5],[72,.5],[71,1],[69,1],[71,1],[69,1],[67,1],[66,1],[64,1],[66,1],[69,1],[67,1],[67,1],[67,1],[62,1],[67,1],[64,1],[67,1],[67,1],[67,1],[67,1],[62,1],[67,1],[64,1],[67,1],[67,1],[67,1],[69,1],[69,1],[71,1],[71,1],[74,.5],[72,.5],[71,1],[69,1],[69,1],[71,1],[69,1],[67,1],[66,1],[64,2]], bas: [[40,4],[47,4],[40,4],[47,4],[40,4],[43,4],[40,4],[47,4],[40,4],[47,4],[40,4],[43,4],[40,4],[47,4],[40,4],[40,4]] },
+  // WE WISH YOU A MERRY CHRISTMAS (key of C) — verified vs
+  // piano-keyboard-guide.com + answers.com (C major, 3/4):
+  // C F F G F E D D | D G G A G F E C | C A A Bb A G F D | C C D G E F |
+  // C F F F E | E F E D C | G A G F C C | C C D G E F
+  { t: "WE WISH YOU A MERRY CHRISTMAS", bpm: 96, mel: [[60,1],[65,1],[65,1],[67,1],[65,1],[64,1],[62,1],[62,2],[62,1],[67,1],[67,1],[69,1],[67,1],[65,1],[64,1],[60,2],[60,1],[69,1],[69,1],[70,1],[69,1],[67,1],[65,1],[62,2],[60,1],[60,1],[62,1],[67,1],[64,1],[65,2],[60,1],[65,1],[65,1],[65,1],[64,2],[64,1],[65,1],[64,1],[62,1],[60,2],[67,1],[69,1],[67,1],[65,1],[60,1],[60,2],[60,1],[60,1],[62,1],[67,1],[64,1],[65,2]], bas: [[48,4],[41,4],[43,4],[48,4],[48,4],[41,4],[43,4],[48,4],[41,4],[43,4],[48,4],[41,4],[43,4],[48,4],[48,4]] },
   // 15. WHEN THE SAINTS GO MARCHING IN — C E F G | C E F G | C E F G | E D E D | E D C E | D D E D | C E G G | C
   { t: "WHEN THE SAINTS GO MARCHING IN", bpm: 100, mel: [[60,1],[64,1],[65,1],[67,1],[60,1],[64,1],[65,1],[67,1],[60,1],[64,1],[65,1],[67,1],[64,1],[62,1],[64,1],[62,1],[64,1],[62,1],[60,1],[64,1],[62,2],[64,1],[62,1],[60,1],[64,1],[67,2],[60,4]], bas: [[48,4],[48,4],[43,4],[48,4],[41,4],[48,4],[43,4],[48,4]] },
   // 16. YANKEE DOODLE (key of C)
@@ -25968,18 +26587,42 @@ var CM_SONGS_C = [
 
 var CM_SONGS = CM_SONGS_A.concat(CM_SONGS_B, CM_SONGS_C);
 
-/* ---------- Persistence ---------- */
-var CM_KEY_EX = 'jmf-games-children-music-excluded'; // JSON array of song indices
+/* ---------- Persistence ----------
+   Exclusions are stored by SONG TITLE, not by index: inserting songs
+   alphabetically (the 10 Christmas songs, Nov 2026) shifts indices,
+   which would corrupt index-keyed exclusions. Legacy index-keyed data
+   is migrated once on load (see CM_OLD_TITLES below). */
+var CM_KEY_EX = 'jmf-games-children-music-excluded'; // JSON array of song titles
 var CM_KEY_SH = 'jmf-games-children-music-shuffle';  // '1' / '0'
-var cmExcluded = {}; // idx -> true
+var cmExcluded = {}; // song title -> true
 var cmShuffle = false;
+/* The old 50-song alphabetical order (before the 10 Christmas songs
+   were added). Only used to migrate legacy index-keyed exclusions:
+   an old stored index N meant CM_OLD_TITLES[N]. */
+var CM_OLD_TITLES = ["ALOUETTE","AMAZING GRACE","AU CLAIR DE LA LUNE","AULD LANG SYNE","AWAY IN A MANGER","BAA BAA BLACK SHEEP","BRAHMS' LULLABY","CAMPTOWN RACES","CIELITO LINDO","FRERE JACQUES","GO TELL AUNT RHODY","HAPPY BIRTHDAY TO YOU","HE'S GOT THE WHOLE WORLD IN HIS HANDS","HERE WE GO ROUND THE MULBERRY BUSH","HOME ON THE RANGE","HUMPTY DUMPTY","HUSH LITTLE BABY","I'VE BEEN WORKING ON THE RAILROAD","IF YOU'RE HAPPY AND YOU KNOW IT","ITSY BITSY SPIDER","JESUS LOVES ME","JINGLE BELLS","KUMBAYA","LA CUCARACHA","LIGHTLY ROW","LONDON BRIDGE IS FALLING DOWN","MARY HAD A LITTLE LAMB","MICHAEL ROW THE BOAT ASHORE","ODE TO JOY","OH! SUSANNA","OLD MACDONALD HAD A FARM","PAT-A-CAKE","POP GOES THE WEASEL","RING AROUND THE ROSIE","ROCK-A-BYE BABY","ROW ROW ROW YOUR BOAT","SAKURA SAKURA","SHE'LL BE COMING 'ROUND THE MOUNTAIN","SILENT NIGHT","SKIP TO MY LOU","SWING LOW SWEET CHARIOT","THE ALPHABET SONG","THE FARMER IN THE DELL","THE GRAND OLD DUKE OF YORK","THE MUFFIN MAN","THIS LITTLE LIGHT OF MINE","THIS OLD MAN","TWINKLE TWINKLE LITTLE STAR","WHEN THE SAINTS GO MARCHING IN","YANKEE DOODLE"];
+function cmTitleIndex(t) {
+  for (var i = 0; i < CM_SONGS.length; i++) if (CM_SONGS[i].t === t) return i;
+  return -1;
+}
 function cmLoadPrefs() {
   cmExcluded = {}; cmShuffle = false;
   try {
     var raw = localStorage.getItem(CM_KEY_EX);
     if (raw) {
       var arr = JSON.parse(raw);
-      if (arr && arr.length) for (var i = 0; i < arr.length; i++) cmExcluded[arr[i] | 0] = true;
+      if (arr && arr.length) {
+        var migrated = false;
+        for (var i = 0; i < arr.length; i++) {
+          var e = arr[i];
+          if (typeof e === 'number') {
+            var t = CM_OLD_TITLES[e | 0];
+            if (t) { cmExcluded[t] = true; migrated = true; }
+          } else if (typeof e === 'string' && e) {
+            if (cmTitleIndex(e) >= 0) cmExcluded[e] = true;
+          }
+        }
+        if (migrated) cmSavePrefs(); // rewrite the store as titles, once
+      }
     }
     cmShuffle = localStorage.getItem(CM_KEY_SH) === '1';
   } catch (e) { cmExcluded = {}; cmShuffle = false; }
@@ -25987,7 +26630,7 @@ function cmLoadPrefs() {
 function cmSavePrefs() {
   try {
     var arr = [];
-    for (var k in cmExcluded) if (cmExcluded[k]) arr.push(parseInt(k, 10));
+    for (var k in cmExcluded) if (cmExcluded[k]) arr.push(k);
     localStorage.setItem(CM_KEY_EX, JSON.stringify(arr));
     localStorage.setItem(CM_KEY_SH, cmShuffle ? '1' : '0');
   } catch (e) {}
@@ -25998,7 +26641,7 @@ var cmActive = false;   // player open (screen 'play', currentGame 'music')
 var cmPlaying = false;  // playing (not paused); false also when nothing to play
 var cmOrder = [];       // play order: included song indices (sequential or shuffled)
 var cmPos = 0;          // position in cmOrder of the current song
-var cmCursor = 0;       // list cursor: index into CM_SONGS (0..49), includes excluded
+var cmCursor = 0;       // list cursor: index into CM_SONGS (0..59), includes excluded
 var cmListTop = 0;      // first visible list row
 var CM_ROWS = 6, CM_PITCH = 13, CM_LIST_Y = 64;
 var cmSong = null;      // current song object
@@ -26018,6 +26661,23 @@ var cmLastMelodyMidi = 0; // last melody note (drives the pressed piano key)
 var cmLastMelodyFrame = -1000;
 var cmAc = null;        // AudioContext (lazy; null headless)
 var cmMaster = null;    // master gain node
+var cmLastAudioTime = null; // AudioContext time of the last cmUpdate pump (null = re-anchor next pump)
+/* Background playback: the scheduler runs on the Web Audio clock with a
+   long lookahead, pumped by rAF AND by a timer (see cmPump below).
+   CM_PUMP_MS / CM_LOOKAHEAD_SEC: the timer fires every 200ms in the
+   foreground; backgrounded tabs throttle timers to ~1Hz, so the
+   lookahead must cover many seconds of throttled gaps — 15s survives
+   even a 10s+ stall with margin, while still scheduling only the
+   current song (never the whole playlist: ~40 notes / ~160 nodes
+   alive at once, not 60 songs' worth). */
+var CM_PUMP_MS = 200;
+var CM_LOOKAHEAD_SEC = 15;
+var cmPumpTimer = null; // setInterval id for the background pump (null = stopped)
+var cmVoices = [];      // scheduled piano voices [{gain, oscs, when, stop}] — lets pause / song-change cancel notes that have not sounded yet
+var cmAudibleIdx = 0;   // next event whose beat the AUDIBLE clock has passed (drives the piano-key highlight; the scheduler runs 15s ahead of it)
+var cmMusicOffDone = false; // the MUSIC-off transition (cancel + rewind) has been done for this off-period
+var cmMediaSessionWired = false; // Media Session action handlers registered
+var cmVisibilityWired = false;   // visibilitychange listener registered
 
 function cmMelBeatsOf(s) {
   var t = 0;
@@ -26140,7 +26800,7 @@ function cmBeatToSec(b) {
   var u = b - cmFinalStart, L = Math.max(1, cmSongBeats - cmFinalStart);
   return cmFinalStart * spb + spb * (u + 0.3 * u * u / (2 * L));
 }
-function cmIsExcluded(idx) { return !!cmExcluded[idx]; }
+function cmIsExcluded(idx) { var s = CM_SONGS[idx]; return !!s && !!cmExcluded[s.t]; }
 function cmIncludedList() {
   var out = [];
   for (var i = 0; i < CM_SONGS.length; i++) if (!cmIsExcluded(i)) out.push(i);
@@ -26198,6 +26858,10 @@ function cmPianoNote(midi, when, vel, hand) {
     g.gain.setValueAtTime(0.0001, when);
     g.gain.linearRampToValueAtTime(peak, when + 0.008);
     g.gain.exponentialRampToValueAtTime(0.001, when + ring);
+    // Release to exactly 0 before the oscillators stop: an exponential
+    // ramp only asymptotes to 0.001, so stopping there cuts a live
+    // waveform (a pop) — worse when several notes stop together.
+    g.gain.linearRampToValueAtTime(0, when + ring + 0.03);
     g.connect(cmMaster);
     var o1 = ac.createOscillator(); o1.type = 'sine'; o1.frequency.value = f;
     var g1 = ac.createGain(); g1.gain.value = 1; o1.connect(g1); g1.connect(g);
@@ -26208,36 +26872,89 @@ function cmPianoNote(midi, when, vel, hand) {
     var stop = when + ring + 0.05;
     o1.start(when); o2.start(when); o3.start(when);
     o1.stop(stop); o2.stop(stop); o3.stop(stop);
+    // Free the voice once it has stopped (the gain is at 0 by then).
+    o1.onended = function () { try { g.disconnect(); } catch (e2) {} };
+    // Track the voice so pause / MUSIC-off / song-change can cancel
+    // notes that have not sounded yet (with a 15s lookahead, most
+    // scheduled notes are still in the future). Finished voices are
+    // pruned here so the list only ever holds ringing + lookahead
+    // voices (tens, not the whole song).
+    cmVoices.push({ gain: g, oscs: [o1, o2, o3], when: when, stop: stop });
+    var nowP = ac.currentTime, kept = [];
+    for (var vi = 0; vi < cmVoices.length; vi++) if (cmVoices[vi].stop > nowP) kept.push(cmVoices[vi]);
+    cmVoices = kept;
   } catch (e) {}
 }
 function cmSilence() {
-  // Kill the master gain with a fast (30ms) ramp, not a hard cut:
-  // an instant setValueAtTime(0) is a step in the waveform and pops.
+  // Fade the master gain out with setTargetAtTime, not cancel +
+  // setValueAtTime(gain.value): .value is the last SET value, not the
+  // value mid-ramp, so re-setting it after a ramp has started is a
+  // step in the waveform (a pop) — and the matching unsilence step
+  // (0 -> 0.9) fired on every exit -> re-enter. setTargetAtTime
+  // starts from the true rendered value, so it can never step.
   if (cmAc && cmMaster) {
     try {
       var t = cmAc.currentTime;
       cmMaster.gain.cancelScheduledValues(t);
-      cmMaster.gain.setValueAtTime(cmMaster.gain.value, t);
-      cmMaster.gain.linearRampToValueAtTime(0, t + 0.03);
+      cmMaster.gain.setTargetAtTime(0, t, 0.01);
     } catch (e) {}
   }
 }
 function cmUnsilence() {
-  // Restore the master gain with a short ramp up, for the same reason.
+  // Restore the master gain with a short exponential approach, for
+  // the same reason: no step, whatever the gain was doing before.
   if (cmAc && cmMaster) {
     try {
       var t = cmAc.currentTime;
       cmMaster.gain.cancelScheduledValues(t);
-      cmMaster.gain.setValueAtTime(cmMaster.gain.value, t);
-      cmMaster.gain.linearRampToValueAtTime(0.9, t + 0.05);
+      cmMaster.gain.setTargetAtTime(0.9, t, 0.015);
     } catch (e) {}
   }
+}
+function cmCancelFutureVoices() {
+  // Cancel every scheduled voice that has not sounded yet: stop its
+  // oscillators now (a stop time before the start time means it never
+  // sounds) and disconnect its gain, so it can never be heard. Voices
+  // already sounding are left alone — they ring out naturally over
+  // their ~1.4s decay, which is the natural piano sound of pausing.
+  // Without this, a 15s lookahead would keep playing for up to 15s
+  // after a pause, a MUSIC-off, or a song change. cmPlayed is decremented
+  // for each cancelled voice so it keeps counting notes actually
+  // scheduled (a cancelled note is re-scheduled — and re-counted — on
+  // resume, via cmRewindSchedule).
+  if (!cmAc || !cmVoices.length) return;
+  var now = cmAc.currentTime;
+  var kept = [];
+  for (var i = 0; i < cmVoices.length; i++) {
+    var v = cmVoices[i];
+    if (v.stop <= now) continue; // already finished: drop, already counted
+    if (v.when > now + 0.03) { // still in the future (30ms grace for a note sounding right now)
+      try { for (var j = 0; j < v.oscs.length; j++) v.oscs[j].stop(now); } catch (e) {}
+      try { v.gain.disconnect(); } catch (e2) {}
+      cmPlayed = Math.max(0, cmPlayed - 1);
+    } else kept.push(v);
+  }
+  cmVoices = kept;
+}
+function cmRewindSchedule() {
+  // After the future voices were cancelled (pause / MUSIC-off), point
+  // the scheduler back at the first event not yet audible, so resuming
+  // re-schedules exactly the cancelled notes — nothing already played
+  // (beat <= cmBeatPos) is ever scheduled twice, and nothing is lost.
+  var i = 0;
+  while (i < cmEv.length && cmEv[i].beat <= cmBeatPos) i++;
+  cmEvIdx = i;
 }
 
 /* ---------- Playback ---------- */
 function cmStartSong(idx) {
   var s = CM_SONGS[idx];
   if (!s) { cmSong = null; cmPlaying = false; return; }
+  // The old song's not-yet-sounded voices (up to 15s of lookahead)
+  // must not bleed into the new song: cancel them before the event
+  // list is replaced. At a natural song end this is a no-op — the old
+  // song's remaining voices already started and are ringing out.
+  cmCancelFutureVoices();
   cmSong = s;
   cmEv = cmBuildArrangement(s);
   cmMelBeats = cmMelBeatsOf(s);
@@ -26245,6 +26962,9 @@ function cmStartSong(idx) {
   cmFinalStart = Math.min(8, cmMelBeats) + (cmVerseCount(s) - 1) * cmMelBeats;
   cmEvIdx = 0; cmBeatPos = 0; cmTime = 0;
   cmRubato = 1; cmLastRubatoBeat = 0; cmRit = 1;
+  cmAudibleIdx = 0;
+  cmLastAudioTime = null; // re-anchor the beat clock to the audio clock
+  cmUpdateMediaSession(); // lock-screen title follows the song
 }
 function cmStartCurrent() {
   var idx = cmCurrentIdx();
@@ -26271,40 +26991,93 @@ function cmScheduleNote(ev, delaySec) {
   vel *= (ev.vmul !== undefined && ev.vmul !== null) ? ev.vmul : 1; // per-verse dynamics
   var jit = (Math.random() - 0.5) * 0.016; // ±8ms
   cmPlayed++;
-  if (ev.hand === 'm' && ev.midi > 0) { cmLastMelodyMidi = ev.midi; cmLastMelodyFrame = cmFrame; }
+  // (The piano-key highlight is NOT set here: with a 15s lookahead this
+  // runs far ahead of what is sounding. cmUpdate tracks the audible
+  // beat separately — see cmAudibleIdx.)
   if (ev.midi <= 0) return;
   if (!cmAc) return; // headless / silent: state machine still advances
   var when = cmAc.currentTime + Math.max(0, delaySec + jit);
   cmPianoNote(ev.midi, when, vel, ev.hand);
 }
+function cmScheduleAhead() {
+  // Schedule every event whose beat time falls within the lookahead
+  // window (CM_LOOKAHEAD_SEC ahead of the audible beat). Called by
+  // cmUpdate for the current song, and again right after a song-end
+  // transition so the next song's first notes are scheduled at once —
+  // the next pump may be ~1s away in the background, and by then the
+  // new song's opening notes would be past and skipped (a gap).
+  if (!cmSong) return;
+  var spb = 60 / cmSong.bpm;
+  var lookBeats = CM_LOOKAHEAD_SEC / (spb * cmRubato * cmRit);
+  while (cmEvIdx < cmEv.length && cmEv[cmEvIdx].beat <= cmBeatPos + lookBeats) {
+    var ev = cmEv[cmEvIdx++];
+    // A note whose beat time is already past (pump stalled longer than
+    // the whole lookahead) is SKIPPED, not bunched: firing it at now,
+    // together with every other missed note, is a burst chord / clip /
+    // pop. With a 15s lookahead this only ever triggers after a stall
+    // longer than 15s. A note up to 60ms late still plays (its onset
+    // is inaudibly late).
+    if (cmAc && (cmBeatPos - ev.beat) * spb * cmRubato * cmRit > 0.06) continue;
+    var delaySec = Math.max(0, (ev.beat - cmBeatPos) * spb * cmRubato * cmRit);
+    cmScheduleNote(ev, delaySec);
+  }
+}
 function cmUpdate() {
   cmFrame++;
-  if (!cmActive || !cmPlaying || !cmSong || !cmOrder.length) return;
+  if (!cmActive || !cmPlaying || !cmSong || !cmOrder.length) { cmLastAudioTime = null; return; }
   // MUSIC toggle off: silent and paused — the position is held, so
-  // turning music back on resumes exactly where it stopped.
-  if (typeof JMFGAMES !== 'undefined' && JMFGAMES.isMusicOn && !JMFGAMES.isMusicOn()) return;
+  // turning music back on resumes exactly where it stopped. On the
+  // transition, cancel the notes already scheduled ahead (otherwise up
+  // to 15s of lookahead would keep playing after the toggle) and rewind
+  // the scheduler so turning it back on resumes from the held spot.
+  if (typeof JMFGAMES !== 'undefined' && JMFGAMES.isMusicOn && !JMFGAMES.isMusicOn()) {
+    if (cmAc && !cmMusicOffDone) { cmMusicOffDone = true; cmCancelFutureVoices(); cmRewindSchedule(); }
+    cmLastAudioTime = null; return;
+  }
+  cmMusicOffDone = false;
   var spb = 60 / cmSong.bpm; // seconds per beat at rubato 1
   // Ritardando: the final verse eases from 1x to 1.3x beat length.
   cmRit = cmBeatPos <= cmFinalStart ? 1 :
     1 + 0.3 * Math.min(1, (cmBeatPos - cmFinalStart) / Math.max(1, cmSongBeats - cmFinalStart));
-  cmBeatPos += (1 / 60) / (spb * cmRubato * cmRit);
+  // Beat clock: driven by the AudioContext clock when there is one, so
+  // a stalled/hitched frame pump cannot bunch notes. The old code
+  // advanced cmBeatPos by a fixed 1/60 per rAF call while the audio
+  // clock ran on: after a stall the song lagged real time (and any
+  // catch-up would have fired every missed note at once, at now).
+  // Advancing by audio-clock delta keeps beat and audio in sync; the
+  // scheduling loop below skips notes whose beat time is already past
+  // instead of firing them all at currentTime. Headless (no
+  // AudioContext) keeps the old frame-driven advance, so the silent
+  // state machine and its tests are unchanged.
+  if (cmAc) {
+    var now = cmAc.currentTime;
+    if (cmLastAudioTime === null || now < cmLastAudioTime) { cmLastAudioTime = now; }
+    var dt = Math.max(0, now - cmLastAudioTime);
+    cmLastAudioTime = now;
+    cmBeatPos += dt / (spb * cmRubato * cmRit);
+  } else {
+    cmBeatPos += (1 / 60) / (spb * cmRubato * cmRit);
+  }
   // Beat-derived clock: the timer, the total and the progress bar are
   // all read off the same beat position, so they always agree — even
   // over a 2+ minute song with rubato and a ritardando.
   cmTime = cmBeatToSec(cmBeatPos);
+  // Piano-key highlight follows the AUDIBLE beat, not the scheduling
+  // pointer: the scheduler runs 15s ahead of what is sounding, so the
+  // key of the note actually playing now is the last melody event the
+  // beat clock has passed.
+  while (cmAudibleIdx < cmEv.length && cmEv[cmAudibleIdx].beat <= cmBeatPos) {
+    var aev = cmEv[cmAudibleIdx++];
+    if (aev.hand === 'm' && aev.midi > 0) { cmLastMelodyMidi = aev.midi; cmLastMelodyFrame = cmFrame; }
+  }
   // Rubato: the tempo drifts a little every 4 beats (a phrase), like a
   // person easing into the music — never more than ±6%.
   if (cmBeatPos - cmLastRubatoBeat >= 4) {
     cmLastRubatoBeat = cmBeatPos;
     cmRubato = Math.max(0.94, Math.min(1.06, cmRubato + (Math.random() - 0.5) * 0.04));
   }
-  var lookBeats = 0.25 / (spb * cmRubato * cmRit);
-  while (cmEvIdx < cmEv.length && cmEv[cmEvIdx].beat <= cmBeatPos + lookBeats) {
-    var ev = cmEv[cmEvIdx++];
-    var delaySec = Math.max(0, (ev.beat - cmBeatPos) * spb * cmRubato * cmRit);
-    cmScheduleNote(ev, delaySec);
-  }
-  if (cmBeatPos >= cmSongBeats) cmNextSong(); // song ends -> next, wraps
+  cmScheduleAhead();
+  if (cmBeatPos >= cmSongBeats) { cmNextSong(); cmScheduleAhead(); } // song ends -> next, wraps; next song scheduled at once
 }
 
 /* ---------- Entry / exit ---------- */
@@ -26328,14 +27101,21 @@ function startMusic() {
     cmSong = null;
     cmPlaying = false;
   }
+  cmStartPump(); // timer pump: keeps audio scheduling when rAF is dead (backgrounded tab / screen off)
+  cmSetupMediaSession(); // lock-screen controls (guarded: no-op where unsupported)
+  cmUpdateMediaSession();
+  cmInitVisibility(); // hidden = keep playing; visible = resync + resume the context
 }
 function cmExit() {
-  // Exiting MUST stop the audio: silence the master gain at once, then
-  // park the player (the ≤0.25s of already-scheduled notes is silenced
-  // with it). Menu returns to the top level.
+  // Exiting MUST stop the audio: cancel the lookahead's not-yet-sounded
+  // notes and silence the master gain at once, then park the player.
+  // Menu returns to the top level.
   cmPlaying = false;
   cmActive = false;
+  cmStopPump(); // no more scheduling once the player is closed
+  cmCancelFutureVoices(); // the lookahead's not-yet-sounded notes must not survive the exit (a fast re-enter unsilences the master)
   cmSilence();
+  cmUpdateMediaSession(); // lock screen: no longer playing
 }
 
 /* ---------- Controls ---------- */
@@ -26351,10 +27131,29 @@ function cmListMove(d) {
   cmClampList();
   JMFGAMES.beep(600, 0.04);
 }
+function cmPausePlayback() {
+  // The one pause path, shared by the A button and the lock-screen
+  // pause handler. Pausing cancels the notes already scheduled ahead
+  // (otherwise up to 15s of lookahead would keep playing) and rewinds
+  // the scheduler so resuming replays exactly the cancelled notes from
+  // the held spot. Nothing here ever resumes on its own: no
+  // auto-resume on visibility change, no auto-resume from the pump.
+  if (!cmActive || !cmPlaying) return;
+  cmPlaying = false;
+  if (cmAc) { cmCancelFutureVoices(); cmRewindSchedule(); }
+  cmUpdateMediaSession();
+}
+function cmResumePlayback() {
+  // The one resume path, shared by the A button and the lock-screen
+  // play handler. Only ever called from an explicit play action.
+  if (!cmActive || cmPlaying || !cmOrder.length || !cmSong) return;
+  cmPlaying = true;
+  cmEnsureAudio(); cmStartPump(); cmUnsilence();
+  cmUpdateMediaSession();
+}
 function cmTogglePlay() {
   if (!cmActive || !cmOrder.length || !cmSong) return;
-  cmPlaying = !cmPlaying;
-  if (cmPlaying) { cmEnsureAudio(); cmUnsilence(); }
+  if (cmPlaying) cmPausePlayback(); else cmResumePlayback();
   JMFGAMES.beep(cmPlaying ? 880 : 440, 0.06);
 }
 function cmPlayCursor() {
@@ -26370,16 +27169,18 @@ function cmPlayCursor() {
   cmPos = p;
   cmStartCurrent();
   cmPlaying = true;
-  cmEnsureAudio(); cmUnsilence();
+  cmEnsureAudio(); cmStartPump(); cmUnsilence();
+  cmUpdateMediaSession();
   JMFGAMES.beep(880, 0.06);
 }
 function cmToggleExclude() {
   if (!cmActive) return;
   var idx = cmCursor;
+  var title = CM_SONGS[idx] ? CM_SONGS[idx].t : '';
   var wasCurrent = (idx === cmCurrentIdx());
   var nextPos = cmPos; // slot the next song slides into if the current one goes
-  if (cmIsExcluded(idx)) delete cmExcluded[idx];
-  else cmExcluded[idx] = true;
+  if (cmExcluded[title]) delete cmExcluded[title];
+  else cmExcluded[title] = true;
   cmSavePrefs();
   var keep = wasCurrent ? null : cmCurrentIdx();
   cmBuildOrder(keep);
@@ -26389,6 +27190,7 @@ function cmToggleExclude() {
     if (cmOrder.length) { cmPos = Math.min(nextPos, cmOrder.length - 1); cmStartCurrent(); cmPlaying = true; }
     else { cmSong = null; cmPlaying = false; }
   }
+  cmUpdateMediaSession();
   JMFGAMES.beep(cmIsExcluded(idx) ? 330 : 660, 0.06);
 }
 function cmToggleShuffle() {
@@ -26397,6 +27199,109 @@ function cmToggleShuffle() {
   cmSavePrefs();
   cmBuildOrder(cmCurrentIdx());
   JMFGAMES.beep(cmShuffle ? 990 : 660, 0.06);
+}
+
+/* ---------- Background playback: timer pump + Media Session + visibility ----------
+   Problem: core-tail-mid.js calls cmUpdate() once per rAF frame, and
+   rAF stops when the tab is backgrounded/minimized or the phone screen
+   turns off — audio would die as soon as the ≤0.25s lookahead drained.
+   Fix: (1) a 200ms interval timer pumps the SAME cmUpdate, so audio
+   keeps scheduling while rAF is dead; (2) a 15s lookahead (see
+   CM_LOOKAHEAD_SEC) covers background timer throttling (~1Hz) with
+   huge margin; (3) Media Session makes it lock-screen media, which is
+   what keeps the browser treating it as playback with the screen off.
+   NO Wake Lock is used: the screen must be allowed to turn off.
+   Double-advance safety: cmUpdate's beat clock is driven by
+   AudioContext-clock deltas through the single cmLastAudioTime anchor,
+   shared by both pumps — whichever pump runs second in a tick sees a
+   ~0 delta and advances nothing, so rAF + timer can never double-count.
+   Headless (no AudioContext) the beat clock is frame-driven, so the
+   timer pump returns without touching it: the frame path owns the
+   clock there, exactly as before. Closing the tab/browser stops the
+   audio automatically: nothing here keeps anything alive past unload
+   (no keepalive, no Wake Lock, no service worker). */
+function cmPump() {
+  if (!cmAc) return; // headless: the frame path owns the beat clock
+  if (cmActive && cmPlaying && cmAc.state === 'suspended') {
+    try { cmAc.resume(); } catch (e) {} // the OS may suspend the context with the screen off
+  }
+  cmUpdate();
+}
+function cmStartPump() {
+  if (cmPumpTimer !== null) return;
+  if (!cmAc) return;
+  try { if (typeof setInterval !== 'undefined') cmPumpTimer = setInterval(cmPump, CM_PUMP_MS); } catch (e) { cmPumpTimer = null; }
+}
+function cmStopPump() {
+  if (cmPumpTimer !== null) {
+    try { if (typeof clearInterval !== 'undefined') clearInterval(cmPumpTimer); } catch (e) {}
+    cmPumpTimer = null;
+  }
+}
+function cmMediaSession() {
+  try {
+    if (typeof navigator === 'undefined' || !navigator) return null;
+    return navigator.mediaSession || null;
+  } catch (e) { return null; }
+}
+function cmUpdateMediaSession() {
+  // Metadata + playback state, refreshed on every song change, pause
+  // and resume so the lock screen always shows the truth. Fully
+  // guarded: headless and unsupported browsers are no-ops.
+  var ms = cmMediaSession();
+  if (!ms) return;
+  try {
+    if (cmSong && typeof MediaSessionMetadata !== 'undefined') {
+      ms.metadata = new MediaSessionMetadata({ title: cmSong.t, artist: 'JMF Games', album: 'Children Music' });
+    }
+  } catch (e) {}
+  try { ms.playbackState = (!cmActive || !cmSong) ? 'none' : (cmPlaying ? 'playing' : 'paused'); } catch (e) {}
+}
+function cmMediaStep(d) {
+  // Lock-screen next / previous track: change song and play it (the
+  // standard media behaviour — a track step while paused starts
+  // playing). Guarded by cmActive in the handlers.
+  if (!cmActive || !cmOrder.length) return;
+  if (d < 0) cmPrevSong(); else cmNextSong();
+  cmPlaying = true;
+  cmEnsureAudio(); cmStartPump(); cmUnsilence();
+  cmUpdateMediaSession();
+}
+function cmSetupMediaSession() {
+  var ms = cmMediaSession();
+  if (!ms || !ms.setActionHandler || cmMediaSessionWired) return;
+  try {
+    ms.setActionHandler('play', function () { if (cmActive) cmResumePlayback(); });
+    ms.setActionHandler('pause', function () { if (cmActive) cmPausePlayback(); });
+    ms.setActionHandler('previoustrack', function () { if (cmActive) cmMediaStep(-1); });
+    ms.setActionHandler('nexttrack', function () { if (cmActive) cmMediaStep(1); });
+    cmMediaSessionWired = true;
+  } catch (e) {}
+}
+function cmOnVisibilityChange() {
+  // Hidden: do NOTHING — no pause, no silence. The interval pump keeps
+  // scheduling and the audio keeps playing; the frozen UI is expected.
+  // Visible again: resync the UI (timer, progress bar, piano keys all
+  // read off cmBeatPos/cmTime) from the audio clock, and resume the
+  // AudioContext if the OS suspended it. Never auto-resumes playback:
+  // a paused player stays paused across hide/show.
+  var hidden = false;
+  try { hidden = !!(typeof document !== 'undefined' && document && document.hidden); } catch (e) {}
+  if (hidden) return;
+  if (cmActive && cmPlaying && cmAc) {
+    try { if (cmAc.state === 'suspended') cmAc.resume(); } catch (e2) {}
+    cmUpdate();
+  }
+  cmUpdateMediaSession();
+}
+function cmInitVisibility() {
+  if (cmVisibilityWired) return;
+  try {
+    if (typeof document !== 'undefined' && document && document.addEventListener) {
+      document.addEventListener('visibilitychange', cmOnVisibilityChange);
+      cmVisibilityWired = true;
+    }
+  } catch (e) {}
 }
 
 /* ---------- Draw ---------- */
