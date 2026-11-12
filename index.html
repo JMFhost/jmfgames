@@ -39885,11 +39885,11 @@ function stSprFoeHollow(bx, by, t, ph) {
   }
   function stDrawHeroSelect() {
     ctx.fillStyle = ST_COLORS.bg; ctx.fillRect(0, 0, W, H);
-    stText(stTruePick ? 'TRUE ENDING: PICK A HERO' : 'CHOOSE A HERO', 8, 14, ST_COLORS.bone, 14, true);
+    stText(stTruePick ? 'TRUE ENDING: PICK A HERO' : 'CHOOSE A HERO', 8, 16, ST_COLORS.bone, 14, true);
     var story = stLoadJSON(ST_KEY_STORY, stDefaultStory());
     for (var i = 0; i < ST_HEROES.length; i++) {
       var h = ST_HEROES[i];
-      var y = 20 + i * 13;
+      var y = 27 + i * 12;
       if (stHeroIdx === i) {
         ctx.fillStyle = ST_COLORS.panelEdge;
         ctx.fillRect(8, y - 9, 96, 12);
@@ -39916,10 +39916,10 @@ function stSprFoeHollow(bx, by, t, ph) {
   function stDrawTrioPick() {
     if (!stTrioPick) return;
     ctx.fillStyle = ST_COLORS.bg; ctx.fillRect(0, 0, W, H);
-    stText('PICK THREE HEROES', 8, 14, ST_COLORS.bone, 14, true);
+    stText('PICK THREE HEROES', 8, 16, ST_COLORS.bone, 14, true);
     for (var i = 0; i < ST_HEROES.length; i++) {
       var h = ST_HEROES[i];
-      var y = 26 + i * 12;
+      var y = 27 + i * 12;
       var picked = stTrioPick.picks.indexOf(h.id) >= 0;
       if (stTrioPick.idx === i) {
         ctx.fillStyle = ST_COLORS.panelEdge;
@@ -39929,7 +39929,7 @@ function stSprFoeHollow(bx, by, t, ph) {
       stText(h.name.toUpperCase() + (picked ? ' *' : ''), 10, y, picked ? ST_COLORS.gold : ST_COLORS.bone, 10, true);
       stText(h.stats, 156, y, ST_COLORS.dim, 9, true, 'right');
     }
-    var by = 26 + ST_HEROES.length * 12;
+    var by = 27 + ST_HEROES.length * 12;
     var ready = stTrioPick.picks.length === 3;
     if (stTrioPick.idx === ST_HEROES.length) {
       ctx.fillStyle = ST_COLORS.panelEdge;
@@ -39941,7 +39941,7 @@ function stSprFoeHollow(bx, by, t, ph) {
   }
   function stDrawHowto() {
     ctx.fillStyle = ST_COLORS.bg; ctx.fillRect(0, 0, W, H);
-    stText('HOW TO PLAY', 8, 14, ST_COLORS.bone, 14, true);
+    stText('HOW TO PLAY', 8, 16, ST_COLORS.bone, 14, true);
     var lines;
     if (stHowtoPage === 0) {
       lines = ['D-PAD: MOVE CURSOR', 'A: CONFIRM / PLAY CARD', 'B: BACK / CARD DETAIL', 'START: PAUSE', 'MENU: EXIT TO MAIN MENU', '', 'PICK A HERO, CROSS THE MAP,', 'BEAT EVERY CHAPTER BOSS.'];
@@ -40056,12 +40056,12 @@ function stSprFoeHollow(bx, by, t, ph) {
     stDrawBg(stT);
     /* Top bar with a shade strip so the HUD reads over the art. */
     ctx.fillStyle = 'rgba(5,7,15,0.85)';
-    ctx.fillRect(0, 0, W, 12);
-    stText('TURN ' + c.turn, 4, 10, ST_COLORS.bone, 10, true);
+    ctx.fillRect(0, 0, W, 15);
+    stText('TURN ' + c.turn, 4, 13, ST_COLORS.bone, 10, true);
     var alive = 0;
     for (var i = 0; i < c.foes.length; i++) if (c.foes[i].alive) alive++;
-    stText('FOES ' + alive, 236, 10, ST_COLORS.bone, 10, true, 'right');
-    if (c.log) stText(c.log.slice(0, 26), 120, 10, ST_COLORS.bone, 9, true, 'center');
+    stText('FOES ' + alive, 236, 13, ST_COLORS.bone, 10, true, 'right');
+    if (c.log) stText(c.log.slice(0, 26), 120, 13, ST_COLORS.bone, 9, true, 'center');
     /* Foe zones, one per live foe (summons reuse dead foes' zones). */
     var zi = 0;
     for (var f = 0; f < c.foes.length; f++) {
@@ -40070,9 +40070,9 @@ function stSprFoeHollow(bx, by, t, ph) {
       var zx = zi * 80;
       zi++;
       var intent = stFoeIntent(foe);
-      stText(foe.name.slice(0, 12).toUpperCase(), zx + 40, 20, ST_COLORS.bone, 10, true, 'center');
+      stText(foe.name.slice(0, 12).toUpperCase(), zx + 40, 23, ST_COLORS.bone, 10, true, 'center');
       /* Intent icon: glyph + number beside the foe, clear of the name. */
-      var ix = zx + 62, iy = 24;
+      var ix = zx + 62, iy = 27;
       ctx.fillStyle = intent.kind === 'harm' ? ST_COLORS.harm : intent.kind === 'guard' ? ST_COLORS.guard : ST_COLORS.dim;
       ctx.fillRect(ix, iy, 14, 14);
       if (intent.kind === 'harm') stText(intent.n, ix + 7, iy + 11, '#FFFFFF', 10, true, 'center');
@@ -40080,55 +40080,55 @@ function stSprFoeHollow(bx, by, t, ph) {
       else stText('?', ix + 7, iy + 11, '#FFFFFF', 10, true, 'center');
       var flash = stFlashFoe === f && stFlashT > 0;
       var foeDef = stFoeDef(foe);
-      if (typeof stDrawFoeFigure === 'function') stDrawFoeFigure(foe, zx + 24, 20, stT, stFoePoseFor(f), flash);
-      else if (foeDef) stDrawFoeSprite(foeDef.sprite, zx + 24, 20, stT, flash);
-      stDrawStatusChips(foe, zx + 6, 52, 4);
-      stBar(zx + 8, 62, 30, 4, foe.hp / foe.maxHp, ST_COLORS.foeHp, ST_COLORS.barEmpty);
-      stText(foe.hp + '/' + foe.maxHp + (foe.guard > 0 ? ' G' + foe.guard : ''), zx + 40, 66, ST_COLORS.dim, 8, true);
+      if (typeof stDrawFoeFigure === 'function') stDrawFoeFigure(foe, zx + 24, 23, stT, stFoePoseFor(f), flash);
+      else if (foeDef) stDrawFoeSprite(foeDef.sprite, zx + 24, 23, stT, flash);
+      stDrawStatusChips(foe, zx + 6, 55, 4);
+      stBar(zx + 8, 65, 30, 4, foe.hp / foe.maxHp, ST_COLORS.foeHp, ST_COLORS.barEmpty);
+      stText(foe.hp + '/' + foe.maxHp + (foe.guard > 0 ? ' G' + foe.guard : ''), zx + 40, 69, ST_COLORS.dim, 8, true);
       if ((c.focus === 'foes' || c.aiming >= 0) && c.targetSel === f) {
         ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(zx + 1, 10, 78, 1); ctx.fillRect(zx + 1, 65, 78, 1);
-        ctx.fillRect(zx + 1, 10, 1, 56); ctx.fillRect(zx + 78, 10, 1, 56);
+        ctx.fillRect(zx + 1, 13, 78, 1); ctx.fillRect(zx + 1, 68, 78, 1);
+        ctx.fillRect(zx + 1, 13, 1, 56); ctx.fillRect(zx + 78, 13, 1, 56);
       }
     }
     /* Hero area. */
     var hero = stHeroById(stActiveHeroId());
-    if (typeof stDrawHeroFigure === 'function') stDrawHeroFigure(hero, 8, 66, stT, stHeroPose);
-    else stDrawHeroSprite(hero, 8, 66, stT);
+    if (typeof stDrawHeroFigure === 'function') stDrawHeroFigure(hero, 8, 68, stT, stHeroPose);
+    else stDrawHeroSprite(hero, 8, 68, stT);
     /* Hurt flash: a white veil over the hero on alternating frames. */
     if (stHeroFlashT > 0 && stSettings().flash && (stT % 2 === 0)) {
       ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      ctx.fillRect(8, 66, 32, 32);
+      ctx.fillRect(8, 68, 32, 32);
     }
-    stText(hero.name.toUpperCase(), 48, 74, ST_COLORS.bone, 10, true);
+    stText(hero.name.toUpperCase(), 48, 76, ST_COLORS.bone, 10, true);
     var mech = c.mech || stNewMech(stActiveHeroId());
-    stDrawMechLine(mech, 96, 74);
-    stBar(48, 76, 80, 6, c.hero.hp / c.hero.maxHp, ST_COLORS.heroHp, ST_COLORS.barEmpty);
-    stText('HP ' + c.hero.hp + '/' + c.hero.maxHp + ' G ' + c.hero.guard, 48, 90, ST_COLORS.bone, 10, true);
-    stDrawStatusChips(c.hero, 48, 92, 5);
+    stDrawMechLine(mech, 96, 76);
+    stBar(48, 78, 80, 6, c.hero.hp / c.hero.maxHp, ST_COLORS.heroHp, ST_COLORS.barEmpty);
+    stText('HP ' + c.hero.hp + '/' + c.hero.maxHp + ' G ' + c.hero.guard, 48, 92, ST_COLORS.bone, 10, true);
+    stDrawStatusChips(c.hero, 48, 94, 5);
     /* Momentum zone. */
-    stText(ST_STR.momentum, 152, 74, ST_COLORS.dim, 9, true);
-    stBar(152, 76, 80, 8, c.momentum / ST_MOMENTUM_CAP, ST_COLORS.cyan, ST_COLORS.barEmpty);
+    stText(ST_STR.momentum, 152, 76, ST_COLORS.dim, 9, true);
+    stBar(152, 78, 80, 8, c.momentum / ST_MOMENTUM_CAP, ST_COLORS.cyan, ST_COLORS.barEmpty);
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(152, 76, 80, 1); ctx.fillRect(152, 83, 80, 1);
+    ctx.fillRect(152, 78, 80, 1); ctx.fillRect(152, 85, 80, 1);
     var momVal = stMomFlashT > 0 && stMomFlash ? stMomFlash : c.momentum + '/' + ST_MOMENTUM_CAP;
-    stText(momVal, 192, 92, c.momentum >= ST_MOMENTUM_CAP ? ST_COLORS.gold : ST_COLORS.bone, 10, true, 'center');
+    stText(momVal, 192, 94, c.momentum >= ST_MOMENTUM_CAP ? ST_COLORS.gold : ST_COLORS.bone, 10, true, 'center');
     /* Enchantment row above the hand, right side under Momentum. */
     for (var e = 0; e < c.enchants.length; e++) {
       var en = c.enchants[e];
       var ex = 140 + e * 32;
       ctx.fillStyle = ST_COLORS.panelEdge;
-      ctx.fillRect(ex, 96, 32, 8);
-      stText(en.name.slice(0, 6).toUpperCase() + ' ' + en.hp, ex + 2, 103, ST_COLORS.gold, 8, true);
+      ctx.fillRect(ex, 98, 32, 8);
+      stText(en.name.slice(0, 6).toUpperCase() + ' ' + en.hp, ex + 2, 105, ST_COLORS.gold, 8, true);
     }
     /* Foe-side enchantment chips, above the Momentum bar. */
     for (var fe = 0; fe < c.foeEnchants.length; fe++) {
       var fen = c.foeEnchants[fe];
       var fx2 = 152 + fe * 28;
       ctx.fillStyle = ST_COLORS.panelEdge;
-      ctx.fillRect(fx2, 66, 26, 7);
+      ctx.fillRect(fx2, 68, 26, 7);
       var auraName = ST_AURA_DEFS[fen.aura] ? ST_AURA_DEFS[fen.aura].name : 'AURA';
-      stText(auraName.slice(0, 3).toUpperCase() + ' ' + fen.hp, fx2 + 2, 72, ST_COLORS.harm, 8, true);
+      stText(auraName.slice(0, 3).toUpperCase() + ' ' + fen.hp, fx2 + 2, 74, ST_COLORS.harm, 8, true);
     }
     /* Trio strip: each member's HP and Momentum, active in gold. */
     if (c.trio) {
@@ -40137,7 +40137,7 @@ function stSprFoeHollow(bx, by, t, ph) {
         var mx = 4 + tm * 78;
         var mName = stHeroById(mem.heroId).name.slice(0, 5).toUpperCase();
         var mActive = c.trio.idx === tm;
-        stText(mName + ' ' + mem.holder.hp + '/' + mem.holder.maxHp + ' M' + mem.momentum, mx, 100,
+        stText(mName + ' ' + mem.holder.hp + '/' + mem.holder.maxHp + ' M' + mem.momentum, mx, 102,
           mem.holder.hp <= 0 ? ST_COLORS.ash : mActive ? ST_COLORS.gold : ST_COLORS.dim, 9, true);
       }
     }
@@ -40152,7 +40152,7 @@ function stSprFoeHollow(bx, by, t, ph) {
       var card = stCardById(c.hand[idx]);
       if (!card) continue;
       var sel = idx === c.handSel && c.focus === 'hand';
-      var hx = 4 + hI * 58, hy = sel ? 104 : 108;
+      var hx = 4 + hI * 58, hy = sel ? 106 : 110;
       stDrawCardMini(card, hx, hy, 56, 36, sel, stCanPlay(card));
     }
     /* Bottom bar with a shade strip so it reads over the art. */
@@ -40171,7 +40171,7 @@ function stSprFoeHollow(bx, by, t, ph) {
     if (stActiveHeroId() === 'selene') stText('FATE ' + mech.fate, 164, 156, fateSel ? ST_COLORS.select : ST_COLORS.bone, 9, true, 'center');
     else if (stActiveHeroId() === 'hale') stText('CALL', 164, 156, callSel ? ST_COLORS.select : ST_COLORS.bone, 9, true, 'center');
     stText('DISCARD ' + c.discardPile.length, 236, 156, ST_COLORS.dim, 9, true, 'right');
-    if (c.aiming >= 0 && !c.trio) stText('PICK A FOE', 76, 100, ST_COLORS.select, 10, true, 'center');
+    if (c.aiming >= 0 && !c.trio) stText('PICK A FOE', 76, 102, ST_COLORS.select, 10, true, 'center');
     /* Quill sees the top 3 cards of the draw pile (solo fights). */
     if (!c.trio && stActiveHeroId() === 'quill' && c.aiming < 0 && c.drawPile.length > 0) {
       var tops = [];
@@ -40179,13 +40179,13 @@ function stSprFoeHollow(bx, by, t, ph) {
         var tc = stCardById(c.drawPile[c.drawPile.length - 1 - tp]);
         if (tc) tops.push(tc.name.slice(0, 5).toUpperCase());
       }
-      stText('TOP:' + tops.join('/'), 4, 100, ST_COLORS.cyan, 9, true);
+      stText('TOP:' + tops.join('/'), 4, 102, ST_COLORS.cyan, 9, true);
     }
     /* Foe-act banner: the latest log line, big, while acts play out. */
     if (stFoeBannerT > 0 && c.log) {
       ctx.fillStyle = 'rgba(5,7,15,0.92)';
-      ctx.fillRect(0, 94, W, 13);
-      stText(c.log.slice(0, 34), 120, 104, ST_COLORS.select, 10, true, 'center');
+      ctx.fillRect(0, 96, W, 13);
+      stText(c.log.slice(0, 34), 120, 106, ST_COLORS.select, 10, true, 'center');
     }
     if (stPotionOpen) stDrawPotionList();
     if (stDiscardPick) stDrawDiscardOverlay();
@@ -40295,8 +40295,8 @@ function stSprFoeHollow(bx, by, t, ph) {
   function stDrawEvent() {
     if (!stEvent) return;
     ctx.fillStyle = ST_COLORS.bg; ctx.fillRect(0, 0, W, H);
-    stText('CAMPFIRE', 8, 14, ST_COLORS.bone, 14, true);
-    stText(stEvent.event.name.toUpperCase(), 232, 14, ST_COLORS.gold, 9, true, 'right');
+    stText('CAMPFIRE', 8, 16, ST_COLORS.bone, 14, true);
+    stText(stEvent.event.name.toUpperCase(), 232, 16, ST_COLORS.gold, 9, true, 'right');
     stPanel(8, 18, 224, 64, ST_COLORS.panel, ST_COLORS.panelEdge);
     var lines = stWrap(stEvent.event.text, 34).slice(0, 5);
     for (var i = 0; i < lines.length; i++) stText(lines[i], 14, 30 + i * 12, ST_COLORS.bone, 10, true);
@@ -40335,9 +40335,9 @@ function stSprFoeHollow(bx, by, t, ph) {
   function stDrawShop() {
     if (!stShop) return;
     ctx.fillStyle = ST_COLORS.bg; ctx.fillRect(0, 0, W, H);
-    stText('SHOP', 4, 14, ST_COLORS.bone, 14, true);
-    stText('GOLD ' + stRun.gold, 236, 14, ST_COLORS.gold, 10, true, 'right');
-    stText(stHeroById(stRun.heroId).name.toUpperCase() + '  DECK ' + stRun.deck.length, 4, 24, ST_COLORS.dim, 9, true);
+    stText('SHOP', 4, 16, ST_COLORS.bone, 14, true);
+    stText('GOLD ' + stRun.gold, 236, 16, ST_COLORS.gold, 10, true, 'right');
+    stText(stHeroById(stRun.heroId).name.toUpperCase() + '  DECK ' + stRun.deck.length, 4, 26, ST_COLORS.dim, 9, true);
     stDrawTabs(['BUY', 'SELL', 'LEAVE'], stShop.tab, 28);
     var rows = stShopRows();
     var top = Math.max(0, Math.min(stShop.row - 2, rows.length - 5));
@@ -40389,8 +40389,8 @@ function stSprFoeHollow(bx, by, t, ph) {
   function stDrawRest() {
     if (!stRest) return;
     ctx.fillStyle = ST_COLORS.bg; ctx.fillRect(0, 0, W, H);
-    stText('REST SITE', 4, 14, ST_COLORS.bone, 14, true);
-    stText(stHeroById(stRun.heroId).name.toUpperCase() + ' HP ' + stRun.hp + '/' + stRun.maxHp + ' GOLD ' + stRun.gold, 4, 24, ST_COLORS.dim, 9, true);
+    stText('REST SITE', 4, 16, ST_COLORS.bone, 14, true);
+    stText(stHeroById(stRun.heroId).name.toUpperCase() + ' HP ' + stRun.hp + '/' + stRun.maxHp + ' GOLD ' + stRun.gold, 4, 26, ST_COLORS.dim, 9, true);
     stDrawIcon('ember', 108, 30, 20, ST_COLORS.ember);
     if (stRest.upgrading) {
       var list = stRestUpgradeList();
@@ -40429,8 +40429,8 @@ function stSprFoeHollow(bx, by, t, ph) {
   function stDrawSmith() {
     if (!stSmith) return;
     ctx.fillStyle = ST_COLORS.bg; ctx.fillRect(0, 0, W, H);
-    stText('SMITH', 4, 14, ST_COLORS.bone, 14, true);
-    stText('GOLD ' + stRun.gold, 236, 14, ST_COLORS.gold, 10, true, 'right');
+    stText('SMITH', 4, 16, ST_COLORS.bone, 14, true);
+    stText('GOLD ' + stRun.gold, 236, 16, ST_COLORS.gold, 10, true, 'right');
     stDrawTabs(['CARDS', 'WEAPON', 'SWAP', 'LEAVE'], stSmith.tab, 18);
     var rows = stSmithRows();
     var top = Math.max(0, Math.min(stSmith.row - 2, rows.length - 5));
@@ -40482,9 +40482,9 @@ function stSprFoeHollow(bx, by, t, ph) {
   function stDrawAlch() {
     if (!stAlch) return;
     ctx.fillStyle = ST_COLORS.bg; ctx.fillRect(0, 0, W, H);
-    stText('ALCHEMIST', 4, 14, ST_COLORS.bone, 14, true);
-    stText('GOLD ' + stRun.gold, 236, 14, ST_COLORS.gold, 10, true, 'right');
-    stText('POTIONS ' + stRun.potions.length + '/' + ST_MAX_POTIONS + '  BREW 25G', 4, 24, ST_COLORS.dim, 9, true);
+    stText('ALCHEMIST', 4, 16, ST_COLORS.bone, 14, true);
+    stText('GOLD ' + stRun.gold, 236, 16, ST_COLORS.gold, 10, true, 'right');
+    stText('POTIONS ' + stRun.potions.length + '/' + ST_MAX_POTIONS + '  BREW 25G', 4, 26, ST_COLORS.dim, 9, true);
     stDrawTabs(['BUY', 'BREW', 'LEAVE'], stAlch.tab, 28);
     var rows = stAlchRows();
     for (var i = 0; i < rows.length; i++) {
@@ -40515,8 +40515,8 @@ function stSprFoeHollow(bx, by, t, ph) {
   function stDrawDeck() {
     if (!stDeckView) return;
     ctx.fillStyle = ST_COLORS.bg; ctx.fillRect(0, 0, W, H);
-    stText('DECK', 4, 14, ST_COLORS.bone, 14, true);
-    stText('DECK: ' + stRun.deck.length, 236, 14, ST_COLORS.gold, 10, true, 'right');
+    stText('DECK', 4, 16, ST_COLORS.bone, 14, true);
+    stText('DECK: ' + stRun.deck.length, 236, 16, ST_COLORS.gold, 10, true, 'right');
     var sortBar = 'SORT: ' + ST_DECK_SORTS[stDeckView.sort];
     if (stDeckView.focus === 'sort') {
       ctx.fillStyle = ST_COLORS.panelEdge;
@@ -40558,8 +40558,8 @@ function stSprFoeHollow(bx, by, t, ph) {
     var v = stCollectionView;
     ctx.fillStyle = ST_COLORS.bg; ctx.fillRect(0, 0, W, H);
     var totals = stCollectionTotals();
-    stText('COLLECTION', 4, 14, ST_COLORS.bone, 14, true);
-    stText(totals.owned + '/' + totals.total, 236, 14, ST_COLORS.gold, 10, true, 'right');
+    stText('COLLECTION', 4, 16, ST_COLORS.bone, 14, true);
+    stText(totals.owned + '/' + totals.total, 236, 16, ST_COLORS.gold, 10, true, 'right');
     var heroName = v.hero === 0 ? 'ALL' : stHeroById(ST_HERO_IDS[v.hero - 1]).name.toUpperCase();
     var themes = stCollectionThemes(v.hero === 0 ? null : ST_HERO_IDS[v.hero - 1]);
     var themeName = v.theme === 0 ? 'ALL' : (themes[v.theme - 1] || 'ALL').toUpperCase().slice(0, 10);
