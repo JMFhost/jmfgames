@@ -42,6 +42,14 @@
   .jmf[data-shell-color="beige"]{--shell-1:#dcd9cb;--shell-2:#cfcabb;--shell-3:#bfbaa7;--shell-text:#3a382e;--shell-muted:#55503f;--shell-brand:#2e3a67;--shell-brand2:#7b5ea7;--shell-grille:#8a8578;--shell-edge:transparent}
   .jmf[data-shell-color="black"]{--shell-1:#4d4d4d;--shell-2:#333333;--shell-3:#161616;--shell-text:#ececec;--shell-muted:#c9c9c9;--shell-brand:#ffffff;--shell-brand2:#c9a8ff;--shell-grille:#6a6a6a;--shell-edge:rgba(255,255,255,.4)}
   .jmf[data-shell-color="blue"]{--shell-1:#6f9fdc;--shell-2:#4a7cc2;--shell-3:#2f5a96;--shell-text:#ffffff;--shell-muted:#dce8fb;--shell-brand:#ffffff;--shell-brand2:#ffd93d;--shell-grille:#2c4f83;--shell-edge:rgba(255,255,255,.35)}
+  .jmf[data-shell-color="dark-beige"]{--shell-1:#c8a97e;--shell-2:#b08d5f;--shell-3:#8f6f47;--shell-text:#3b2c1a;--shell-muted:#57452c;--shell-brand:#24304f;--shell-brand2:#6b4a8f;--shell-grille:#7d6748;--shell-edge:rgba(0,0,0,.25)}
+  .jmf[data-shell-color="dark-blue"]{--shell-1:#3a5f9e;--shell-2:#2c4a7e;--shell-3:#1e3560;--shell-text:#ffffff;--shell-muted:#cfddf2;--shell-brand:#ffffff;--shell-brand2:#ffd93d;--shell-grille:#1a2d52;--shell-edge:rgba(255,255,255,.35)}
+  .jmf[data-shell-color="dark-gray"]{--shell-1:#6e6e6e;--shell-2:#565656;--shell-3:#3a3a3a;--shell-text:#ececec;--shell-muted:#c9c9c9;--shell-brand:#ffffff;--shell-brand2:#c9a8ff;--shell-grille:#4a4a4a;--shell-edge:rgba(255,255,255,.4)}
+  .jmf[data-shell-color="dark-green"]{--shell-1:#2f7d4f;--shell-2:#23603c;--shell-3:#17452b;--shell-text:#ffffff;--shell-muted:#d2ecda;--shell-brand:#ffffff;--shell-brand2:#ffd93d;--shell-grille:#123a23;--shell-edge:rgba(255,255,255,.35)}
+  .jmf[data-shell-color="dark-pink"]{--shell-1:#c65b83;--shell-2:#a8436a;--shell-3:#832c52;--shell-text:#ffffff;--shell-muted:#f8dce7;--shell-brand:#ffffff;--shell-brand2:#ffd93d;--shell-grille:#6e2545;--shell-edge:rgba(255,255,255,.35)}
+  .jmf[data-shell-color="dark-purple"]{--shell-1:#6b4a9e;--shell-2:#553783;--shell-3:#3f2763;--shell-text:#ffffff;--shell-muted:#ddd2f0;--shell-brand:#ffffff;--shell-brand2:#ffd93d;--shell-grille:#332053;--shell-edge:rgba(255,255,255,.35)}
+  .jmf[data-shell-color="dark-red"]{--shell-1:#a83a2e;--shell-2:#8c2a20;--shell-3:#6b1d16;--shell-text:#ffffff;--shell-muted:#f6d9d4;--shell-brand:#ffffff;--shell-brand2:#ffd93d;--shell-grille:#571811;--shell-edge:rgba(255,255,255,.35)}
+  .jmf[data-shell-color="dark-yellow"]{--shell-1:#d9a91f;--shell-2:#b8890f;--shell-3:#8f6a08;--shell-text:#3a2c00;--shell-muted:#4d3c00;--shell-brand:#2e2400;--shell-brand2:#7b2c4b;--shell-grille:#7a5c08;--shell-edge:rgba(0,0,0,.25)}
   .jmf[data-shell-color="gray"]{--shell-1:#a8a8a8;--shell-2:#8c8c8c;--shell-3:#6e6e6e;--shell-text:#202020;--shell-muted:#333333;--shell-brand:#1f2a44;--shell-brand2:#5b4390;--shell-grille:#5a5a5a;--shell-edge:rgba(0,0,0,.4)}
   .jmf[data-shell-color="green"]{--shell-1:#5cb87a;--shell-2:#3d9e5f;--shell-3:#2a7d49;--shell-text:#ffffff;--shell-muted:#dcf5e4;--shell-brand:#ffffff;--shell-brand2:#ffd93d;--shell-grille:#256b3f;--shell-edge:rgba(255,255,255,.35)}
   .jmf[data-shell-color="pink"]{--shell-1:#f9c2d4;--shell-2:#f49fbb;--shell-3:#e07d9d;--shell-text:#571f33;--shell-muted:#6e2c42;--shell-brand:#7a1f3d;--shell-brand2:#5b4390;--shell-grille:#c06a89;--shell-edge:rgba(0,0,0,.2)}
@@ -92,8 +100,10 @@
   .toggles button:active{transform:translateY(2px);box-shadow:0 1px 0 #0a0a0a}
   .toggles button.off{color:#9a9a9a;background:#6a6a6a}
   /* Color picker: in-flow panel below the toggles, so it never covers the
-     game screen. Swatches are phone-sized tap targets (44px min height). */
-  .color-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;margin:14px 0 2px;padding:10px;background:rgba(0,0,0,.14);border:1px solid var(--shell-edge);border-radius:12px}
+     game screen. Swatches are phone-sized tap targets (44px min height).
+     19 colors flow in a 3-column grid on the console width (2 on phones);
+     the 132px minimum keeps two-word names like DARK PURPLE on one line. */
+  .color-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px;margin:14px 0 2px;padding:10px;background:rgba(0,0,0,.14);border:1px solid var(--shell-edge);border-radius:12px}
   .color-picker[hidden]{display:none}
   .color-picker button{display:flex;align-items:center;gap:8px;min-height:44px;padding:6px 10px;border:2px solid rgba(0,0,0,.3);border-radius:8px;background:rgba(255,255,255,.28);color:var(--shell-text);font-size:11px;font-weight:800;letter-spacing:1px;cursor:pointer;text-align:left;touch-action:manipulation}
   .color-picker button i{width:26px;height:26px;border-radius:50%;border:2px solid rgba(0,0,0,.35);flex:none;display:block}
@@ -150,6 +160,14 @@
       <button type="button" data-shell-color-pick="beige" aria-pressed="true"><i style="background:linear-gradient(160deg,#dcd9cb,#cfcabb)"></i><span>BEIGE</span></button>
       <button type="button" data-shell-color-pick="black" aria-pressed="false"><i style="background:#333333"></i><span>BLACK</span></button>
       <button type="button" data-shell-color-pick="blue" aria-pressed="false"><i style="background:#4a7cc2"></i><span>BLUE</span></button>
+      <button type="button" data-shell-color-pick="dark-beige" aria-pressed="false"><i style="background:#b08d5f"></i><span>DARK BEIGE</span></button>
+      <button type="button" data-shell-color-pick="dark-blue" aria-pressed="false"><i style="background:#2c4a7e"></i><span>DARK BLUE</span></button>
+      <button type="button" data-shell-color-pick="dark-gray" aria-pressed="false"><i style="background:#565656"></i><span>DARK GRAY</span></button>
+      <button type="button" data-shell-color-pick="dark-green" aria-pressed="false"><i style="background:#23603c"></i><span>DARK GREEN</span></button>
+      <button type="button" data-shell-color-pick="dark-pink" aria-pressed="false"><i style="background:#a8436a"></i><span>DARK PINK</span></button>
+      <button type="button" data-shell-color-pick="dark-purple" aria-pressed="false"><i style="background:#553783"></i><span>DARK PURPLE</span></button>
+      <button type="button" data-shell-color-pick="dark-red" aria-pressed="false"><i style="background:#8c2a20"></i><span>DARK RED</span></button>
+      <button type="button" data-shell-color-pick="dark-yellow" aria-pressed="false"><i style="background:#b8890f"></i><span>DARK YELLOW</span></button>
       <button type="button" data-shell-color-pick="gray" aria-pressed="false"><i style="background:#8c8c8c"></i><span>GRAY</span></button>
       <button type="button" data-shell-color-pick="green" aria-pressed="false"><i style="background:#3d9e5f"></i><span>GREEN</span></button>
       <button type="button" data-shell-color-pick="pink" aria-pressed="false"><i style="background:#f49fbb"></i><span>PINK</span></button>
@@ -412,7 +430,7 @@
   (function wireColorPicker() {
     try {
       var COLOR_KEY = 'jmf-games-console-color';
-      var COLORS = ['beige', 'black', 'blue', 'gray', 'green', 'pink', 'purple', 'red', 'silver', 'white', 'yellow'];
+      var COLORS = ['beige', 'black', 'blue', 'dark-beige', 'dark-blue', 'dark-gray', 'dark-green', 'dark-pink', 'dark-purple', 'dark-red', 'dark-yellow', 'gray', 'green', 'pink', 'purple', 'red', 'silver', 'white', 'yellow'];
       var root = document.getElementById('jmfgames');
       var btn = document.getElementById('colorToggle');
       var picker = document.getElementById('colorPicker');
@@ -24028,6 +24046,17 @@ if (typeof srRegister === 'function') srRegister('shooter', {
    'jmf-games-tank-save' on every action, every 300 frames, and
    whenever the coordinator calls ftSave() (Menu exit path).
 
+   STARTER PLANTS: every fresh tank starts with three plants at
+   fixed spots on the sand (x 20/110/205). They are REAL decor
+   objects — movable in DECOR mode and sellable in the SELL tab
+   (PLANT 20 -> 10 coins) — with fixed heights and sway phases
+   matching the original look, so a fresh tank looks identical to
+   before. SAVE MIGRATION: saves written before this change (v: 1)
+   carry no starters in their decor array; ftApplyState seeds them
+   exactly once (as many as fit under the 10-decor cap) and the
+   next snapshot writes v: 2, so a sold starter is never
+   resurrected and repeated loads never duplicate them.
+
    DELETE-SAVE reset code (coordinator confirm overlay):
      dsClearKeys(['jmf-games-tank-save']); ftResetFresh(); startTank();
 
@@ -24065,6 +24094,22 @@ if (typeof srRegister === 'function') srRegister('shooter', {
   ];
   var FT_NAMES = ['BUBBLES', 'SPLASH', 'PEBBLE', 'MARINA', 'RIPPLE', 'SUNNY', 'AZURE', 'LUNA', 'PEARL', 'OPAL', 'REEF', 'TIDE', 'MISTY', 'SKIPPER', 'WIGGLES', 'CORAL'];
   var FT_MAX_FISH = 12, FT_MAX_DECOR = 10;
+  // Starter plants: fixed positions, heights and sway phases
+  // matching the original background art, so a fresh tank looks
+  // identical now that the starters are real decor objects.
+  // ftStarterDecor() returns fresh copies (never shared refs).
+  var FT_STARTERS = [
+    { kind: 'plant', x: 20, h: 18, ph: 0 },
+    { kind: 'plant', x: 110, h: 22, ph: 2 },
+    { kind: 'plant', x: 205, h: 16, ph: 4 }
+  ];
+  function ftStarterDecor() {
+    var out = [];
+    for (var i = 0; i < FT_STARTERS.length; i++) {
+      out.push({ kind: 'plant', x: FT_STARTERS[i].x, h: FT_STARTERS[i].h, ph: FT_STARTERS[i].ph });
+    }
+    return out;
+  }
   var ftFish = null, ftDecorPlaced = [], ftFood = [], ftBubbles = [];
   var ftCoins = 50, ftDirt = 10, ftTotalEarned = 0;
   var ftMode = 0, ftCurX = 120, ftCurY = 70;
@@ -24073,7 +24118,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
   var ftShopOpen = false, ftShopTab = 0, ftShopSel = 0, ftDetailIdx = -1;
   var ftCarryIdx = -1, ftCarryOrigX = 0, ftSellConfirm = null;
   var ftToast = '', ftToastT = 0, ftHintT = 0, ftScrubT = 0, ftScrubX = 0, ftScrubY = 0;
-  var ftSandDots = [], ftBasePlants = [];
+  var ftSandDots = [];
 
   function ftNow() { return Date.now(); }
   function ftClamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
@@ -24121,7 +24166,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     ftFish.push(a); ftFish.push(b);
     a.name = ftNextName(); b.name = ftNextName();
     ftRetarget(a); ftRetarget(b);
-    ftDecorPlaced = [];
+    ftDecorPlaced = ftStarterDecor();
     ftFood = []; ftBubbles = [];
     ftCoins = 50; ftDirt = 10; ftTotalEarned = 0;
     ftMode = 0; ftCurX = 120; ftCurY = 70;
@@ -24133,9 +24178,6 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     for (var i = 0; i < 24; i++) {
       ftSandDots.push({ x: 8 + Math.floor(Math.random() * 224), y: 138 + Math.floor(Math.random() * 10) });
     }
-    ftBasePlants = [
-      { x: 20, h: 18, ph: 0 }, { x: 110, h: 22, ph: 2 }, { x: 205, h: 16, ph: 4 }
-    ];
   }
   function ftResetFresh() {
     try { localStorage.removeItem(FT_SAVE_KEY); } catch (e) {}
@@ -24151,17 +24193,28 @@ if (typeof srRegister === 'function') srRegister('shooter', {
         hunger: f.hunger, happy: f.happy, size: f.size, grow: f.grow });
     }
     var decor = [];
-    for (var j = 0; j < ftDecorPlaced.length; j++) decor.push({ kind: ftDecorPlaced[j].kind, x: ftDecorPlaced[j].x });
+    for (var j = 0; j < ftDecorPlaced.length; j++) {
+      var de = { kind: ftDecorPlaced[j].kind, x: ftDecorPlaced[j].x };
+      // Starter plants carry their fixed height/sway so a moved
+      // starter keeps its look; shop-bought decor omits them and
+      // draws with the defaults. See ftDrawDecor.
+      if (ftDecorPlaced[j].h !== undefined) de.h = ftDecorPlaced[j].h;
+      if (ftDecorPlaced[j].ph !== undefined) de.ph = ftDecorPlaced[j].ph;
+      decor.push(de);
+    }
     var food = [];
     for (var k = 0; k < ftFood.length; k++) food.push({ x: ftFood[k].x, y: ftFood[k].y, age: ftFood[k].age });
-    return { v: 1, coins: ftCoins, dirt: ftDirt, totalEarned: ftTotalEarned,
+    return { v: 2, coins: ftCoins, dirt: ftDirt, totalEarned: ftTotalEarned,
       fish: fish, decor: decor, food: food,
       mode: ftMode, curX: ftCurX, curY: ftCurY, frame: ftFrame, dayT: ftDayT,
       savedAt: ftNow() };
   }
   function ftNum(v, lo, hi) { return typeof v === 'number' && isFinite(v) && v >= lo && v <= hi; }
   function ftValidState(d) {
-    if (!d || typeof d !== 'object' || d.v !== 1) return false;
+    // v: 1 = pre-starter saves (migrated on load, see ftApplyState);
+    // v: 2 = current. Decor h/ph fields are cosmetic and sanitized
+    // on apply, so they are not validated here.
+    if (!d || typeof d !== 'object' || (d.v !== 1 && d.v !== 2)) return false;
     if (!ftNum(d.coins, 0, 999999) || !ftNum(d.dirt, 0, 100)) return false;
     if (d.totalEarned !== undefined && !ftNum(d.totalEarned, 0, 9999999)) return false;
     if (!Array.isArray(d.fish) || d.fish.length < 1 || d.fish.length > FT_MAX_FISH) return false;
@@ -24207,7 +24260,25 @@ if (typeof srRegister === 'function') srRegister('shooter', {
       ftFish.push(f);
     }
     ftDecorPlaced = [];
-    for (var j = 0; j < d.decor.length; j++) ftDecorPlaced.push({ kind: d.decor[j].kind, x: d.decor[j].x });
+    for (var j = 0; j < d.decor.length; j++) {
+      var de = { kind: d.decor[j].kind, x: d.decor[j].x };
+      if (ftNum(d.decor[j].h, 1, 60)) de.h = d.decor[j].h;
+      if (ftNum(d.decor[j].ph, -100, 100)) de.ph = d.decor[j].ph;
+      ftDecorPlaced.push(de);
+    }
+    // MIGRATION (v:1 -> v:2): saves written before the starter
+    // plants became real decor carry no starters in their decor
+    // array. Seed them at the front (x order), but only as many as
+    // fit under FT_MAX_DECOR, and only for v:1 states. The next
+    // snapshot writes v:2, so seeding happens exactly once: a sold
+    // starter is never resurrected, and repeated loads of the same
+    // v:1 save always rebuild from the saved array (no duplicates).
+    // A v:1 save already holding 10 bought decor gets no starters.
+    if (d.v === 1) {
+      var room = Math.max(0, FT_MAX_DECOR - ftDecorPlaced.length);
+      var seed = ftStarterDecor().slice(0, room);
+      ftDecorPlaced = seed.concat(ftDecorPlaced);
+    }
     ftFood = [];
     if (d.food) for (var k = 0; k < d.food.length; k++) ftFood.push({ x: d.food[k].x, y: d.food[k].y, age: ftNum(d.food[k].age, 0, 900) ? d.food[k].age : 0 });
     ftBubbles = [];
@@ -24225,9 +24296,6 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     for (var n = 0; n < 24; n++) {
       ftSandDots.push({ x: 8 + Math.floor(Math.random() * 224), y: 138 + Math.floor(Math.random() * 10) });
     }
-    ftBasePlants = [
-      { x: 20, h: 18, ph: 0 }, { x: 110, h: 22, ph: 2 }, { x: 205, h: 16, ph: 4 }
-    ];
   }
   /* Away-time rule (see the header comment for the full rule): hunger
      +1 per 10 min away (cap +80), dirt +1 per 15 min (cap +60),
@@ -24610,7 +24678,12 @@ if (typeof srRegister === 'function') srRegister('shooter', {
   function ftDrawDecor(dc) {
     var x = Math.floor(dc.x), sandY = 136;
     if (dc.kind === 'plant') {
-      ftDrawPlant(x, sandY, 20, x);
+      // Starter plants carry fixed h/ph (see FT_STARTERS); bought
+      // plants omit them and draw with the defaults (h 20, sway
+      // phase = x), exactly as before.
+      var ph2 = ftNum(dc.h, 1, 60) ? dc.h : 20;
+      var sw2 = ftNum(dc.ph, -100, 100) ? dc.ph : x;
+      ftDrawPlant(x, sandY, ph2, sw2);
     } else if (dc.kind === 'rock') {
       ctx.fillStyle = '#94A3B8';
       ctx.fillRect(x - 7, sandY - 6, 14, 6);
@@ -24836,7 +24909,6 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     ctx.fillStyle = '#C9A86A'; ctx.fillRect(FT_LEFT, 136, FT_RIGHT - FT_LEFT, 2);
     ctx.fillStyle = '#C9A86A';
     for (var sd = 0; sd < ftSandDots.length; sd++) ctx.fillRect(ftSandDots[sd].x, ftSandDots[sd].y, 1, 1);
-    for (var bp = 0; bp < ftBasePlants.length; bp++) ftDrawPlant(ftBasePlants[bp].x, 136, ftBasePlants[bp].h, ftBasePlants[bp].ph);
     for (var dc = 0; dc < ftDecorPlaced.length; dc++) ftDrawDecor(ftDecorPlaced[dc]);
     // Carried decor: white corner brackets so the pickup is obvious.
     if (ftCarryIdx >= 0 && ftDecorPlaced[ftCarryIdx]) {
@@ -24933,8 +25005,11 @@ if (typeof srRegister === 'function') srRegister('shooter', {
       ctx.fillText('B CHANGES MODE', 120, 41);
       ctx.textAlign = 'left';
     }
-    // Toast.
-    if (ftToastT > 0) {
+    // Toast. Hidden while a panel (shop/detail) or the pause
+    // overlay is up: those translucent panels sit on top of this
+    // spot, and the bright toast text would show through and
+    // overlap the panel text (e.g. the shop SELL tab row).
+    if (ftToastT > 0 && !ftShopOpen && ftDetailIdx < 0 && !ftPaused) {
       ctx.font = 'bold 8px monospace';
       var tw = ftToast.length * 6 + 12;
       var tx0 = Math.max(2, Math.floor(W / 2 - tw / 2));
@@ -25013,7 +25088,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
    Delete-save reset: dsClearKeys(['jmf-games-rune-save']); rmSave = {unlocked:1,stars:[],total:0}; startRuneMatch();
    ================================================================ */
   var RM_COLS = 8, RM_ROWS = 8, RM_TILE = 16, RM_X = 56, RM_Y = 16;
-  var RM_HINT_TIME = 100; // hint stays visible ~1.67s (was 30f + blink-gated: invisible)
+  var RM_HINT_TIME = 180; // hint stays visible ~3s at 60fps, ~1.5s at 120Hz (was 30f + blink-gated: invisible)
   var RM_SAVE_KEY = 'jmf-games-rune-save';
   var RM_NAMES = ['FLAME', 'WAVE', 'LEAF', 'STORM', 'MOON', 'SUN'];
   var RM_COLORS = ['#F87171', '#60A5FA', '#4ADE80', '#FACC15', '#C084FC', '#FB923C'];
@@ -26428,7 +26503,6 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     ctx.fillText('JMF GAMES', W / 2, 20);
     ctx.fillStyle = '#8BAC0F';
     ctx.font = '10px monospace';
-    ctx.fillText('RETRO GAMES', W / 2, 34);
     ctx.textAlign = 'left';
     // Double frame around the list (rows span y 37..127): outer dark 2px
     // stroke plus an inner mid-green 1px stroke. The inner top edge is
