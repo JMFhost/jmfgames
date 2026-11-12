@@ -356,14 +356,6 @@
     musicActive = false;
     if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
   }
-  function musicForget() {
-    // Drop the remembered tune WITHOUT touching the timer: after this,
-    // MUSIC off->on resumes nothing. Children Music calls it on entry
-    // so a game chiptune can never restart underneath the piano.
-    // (musicStop deliberately keeps the tune — the MUSIC toggle inside
-    // a game resumes it — so forgetting is a separate, explicit act.)
-    musicTune = null;
-  }
   function applyToggles() {
     var s = document.getElementById('soundToggle');
     var m = document.getElementById('musicToggle');
@@ -390,7 +382,6 @@
     beep: beep,
     musicPlay: musicPlay,
     musicStop: musicStop,
-    musicForget: musicForget,
     setSoundOn: setSoundOn,
     setMusicOn: setMusicOn,
     isSoundOn: function () { return soundOn; },
@@ -508,8 +499,8 @@
     { name: 'CARD QUEST', playable: true },
     { name: 'CHESS CLUB', playable: true },
     { name: 'EMBERFALL BRAWL', playable: true },
-    { name: "OVERLORD'S BASTION", playable: true },
     { name: 'ORB MAZE', playable: true },
+    { name: "OVERLORD'S BASTION", playable: true },
     { name: 'PINBALL', playable: true },
     { name: 'RAGDOLL RUCKUS', playable: true },
     { name: 'RUNE MATCH', playable: true },
@@ -523,23 +514,6 @@
     { name: 'VOLLEY SQUAD', playable: true }
   ];
 
-  /* ---------- Top-level menu: collections only ---------- */
-  /* The top level lists collections. RETRO GAMES holds all twenty-one
-     games (games under 5MB live in Retro Games); CHILDREN MUSIC is a
-     piano player, not a game, and lives on the top level beside it.
-     menuLevel 0 = top level, 1 = inside RETRO GAMES. menuReturnLevel
-     remembers which list a game was launched from, so Menu returns
-     there (not always to the top level). */
-  var TOPMENU = [
-    { name: 'RETRO GAMES', collection: true },
-    { name: 'CHILDREN MUSIC', sub: '60 SONGS', music: true }
-  ];
-  var menuLevel = 0, menuReturnLevel = 0;
-  var topIndex = 0, topTop = 0;
-  var topFrame = 0; // animation clock for the top-level menu: +1 per update while on the menu screen (drawTopMenu/drawTopCover read it; the Retro list never does)
-  function menuList() { return menuLevel === 0 ? TOPMENU : GAMES; }
-  function menuCurIdx() { return menuLevel === 0 ? topIndex : menuIndex; }
-  function menuSetIdx(v) { if (menuLevel === 0) topIndex = v; else menuIndex = v; }
 
   var SCENERY = [{"name":"Golden Hour Meadow","top":"#FFE9A8","bot":"#FF8FA3","h1":"#E8A85C","h2":"#6FA85A"},{"name":"Peach Sunrise Over Hills","top":"#FFD9A0","bot":"#FF6B9D","h1":"#D98A5F","h2":"#7A8E5A"},{"name":"Misty Lavender Morning","top":"#E8D9FF","bot":"#F2C6E0","h1":"#A793D6","h2":"#7D7AA8"},{"name":"Rose Gold Horizon","top":"#FFD6A5","bot":"#C77DFF","h1":"#D17AA0","h2":"#8E5F7A"},{"name":"Amber Valley Dawn","top":"#FFE3A3","bot":"#E07A3F","h1":"#C9823A","h2":"#6F8A45"},{"name":"Soft Pink Sakura Morning","top":"#FFDCE8","bot":"#FF8FAB","h1":"#E89AB5","h2":"#E79BB0"},{"name":"Emerald Hills Day","top":"#A8E6A1","bot":"#2E8B57","h1":"#4EA35A","h2":"#2B7A3D"},{"name":"Azure Sky & White Clouds","top":"#7EC8FF","bot":"#FFFFFF","h1":"#7FB069","h2":"#4A7C59"},{"name":"Turquoise Lagoon Day","top":"#4DE3FF","bot":"#FFF6B7","h1":"#28B8A8","h2":"#F2C14E"},{"name":"Sunny Sunflower Fields","top":"#FFE66D","bot":"#FF9F1C","h1":"#E9A331","h2":"#5B8C3E"},{"name":"Crystal Lake Noon","top":"#AEEBFF","bot":"#9ADFFF","h1":"#7AB8D6","h2":"#3E7CB1"},{"name":"Tropical Palm Paradise","top":"#7FFFD4","bot":"#FFE66D","h1":"#1F9D7A","h2":"#F2A93B"},{"name":"Mediterranean Coast Day","top":"#8ED0FF","bot":"#7FB069","h1":"#D9B98A","h2":"#2E86AB"},{"name":"Alpine Meadow Summer","top":"#B8F1FF","bot":"#FFD166","h1":"#6BAF8A","h2":"#3F7A5A"},{"name":"Bamboo Forest Light","top":"#D6F5B0","bot":"#56AB2F","h1":"#5B9E4D","h2":"#2E6B2E"},{"name":"Rainbow After Rain","top":"#A8C0FF","bot":"#FFE29A","h1":"#7AA0C4","h2":"#5A8A5A"},{"name":"Lavender Fields Provence","top":"#D8B4FE","bot":"#F0ABFC","h1":"#8B5CF6","h2":"#5B3A8E"},{"name":"Desert Cactus Noon","top":"#FFD89B","bot":"#E76F51","h1":"#C77D4A","h2":"#A66A2E"},{"name":"Canyon Red Rocks","top":"#FF9A76","bot":"#9B2226","h1":"#A83A2E","h2":"#7A211E"},{"name":"Arctic Ice Day","top":"#D6F0FF","bot":"#FFFFFF","h1":"#A8D8EA","h2":"#EAF6FF"},{"name":"Tangerine Sunset Beach","top":"#FFB75E","bot":"#FF3D68","h1":"#F2844A","h2":"#E86A5A"},{"name":"Crimson Sunset Canyon","top":"#FF512F","bot":"#7A0C4A","h1":"#7A1C3A","h2":"#4A0F2A"},{"name":"Violet Dusk Harbor","top":"#7B5EA7","bot":"#FF8FAB","h1":"#4A3B6B","h2":"#2E2A4A"},{"name":"Golden Gate Sunset","top":"#FF9966","bot":"#FFD166","h1":"#B84A2E","h2":"#6B2E2E"},{"name":"Pink Lake Sunset","top":"#FFC0CB","bot":"#FF6A88","h1":"#E07A8A","h2":"#B85A6A"},{"name":"Fiery Volcano Sunset","top":"#FF4E50","bot":"#2B0A0A","h1":"#3A0A0A","h2":"#1A0505"},{"name":"Sunset Over Vineyards","top":"#FFAF7B","bot":"#6A4C93","h1":"#7A4A6B","h2":"#4A2E4A"},{"name":"Amber Desert Dusk","top":"#E8A87C","bot":"#5C3D2E","h1":"#9A6A3A","h2":"#6B4A2E"},{"name":"Sunset City Skyline","top":"#FF9A56","bot":"#4A235A","h1":"#3A1A3A","h2":"#241228"},{"name":"Rose Sunset Over Ocean","top":"#FF8C94","bot":"#C44569","h1":"#A83A5A","h2":"#6B2340"},{"name":"Starry Milky Way","top":"#0B1026","bot":"#3B2F63","h1":"#1B2440","h2":"#0F162E"},{"name":"Moonlit Ocean Night","top":"#0A1A3A","bot":"#2E86AB","h1":"#123A6B","h2":"#0A2547"},{"name":"Midnight City Lights","top":"#0F0C29","bot":"#FF6B35","h1":"#1A123A","h2":"#0F0A26"},{"name":"Northern Lights Aurora","top":"#0B2E4F","bot":"#A8E063","h1":"#123A3A","h2":"#0A2A2A"},{"name":"Purple Galaxy Night","top":"#1A0033","bot":"#FF00CC","h1":"#2A0A4A","h2":"#1A0033"},{"name":"Firefly Forest Night","top":"#0A1F14","bot":"#FFE66D","h1":"#0F2E1E","h2":"#081F14"},{"name":"Snowy Night Village","top":"#1B2A4A","bot":"#F8F9FA","h1":"#DDE8F0","h2":"#8FA8B8"},{"name":"Neon Tokyo Night","top":"#0D0221","bot":"#FF2E88","h1":"#1A0A3A","h2":"#0D0221"},{"name":"Full Moon Over Desert","top":"#1A1A40","bot":"#F2D492","h1":"#3A2E5A","h2":"#241E3A"},{"name":"Twilight Lavender Night","top":"#2B1055","bot":"#E0B0FF","h1":"#4A2E6B","h2":"#2E1A4A"},{"name":"Cherry Blossom Spring","top":"#FFD6E8","bot":"#A8E6CF","h1":"#F2A8C0","h2":"#D67AA0"},{"name":"Spring Tulip Fields","top":"#FF9A9E","bot":"#FFD194","h1":"#E07A8A","h2":"#B85A6A"},{"name":"Fresh Rain Spring Forest","top":"#B8D8BA","bot":"#7FB069","h1":"#5A8A5A","h2":"#3E6B3E"},{"name":"Summer Waterfall Valley","top":"#7ED6DF","bot":"#F6E27A","h1":"#4A9A8A","h2":"#2E6B5A"},{"name":"Sunflower Summer Sunset","top":"#FFC94D","bot":"#FF5E62","h1":"#B87A1E","h2":"#7A5210"},{"name":"Autumn Maple Forest","top":"#FF9A3D","bot":"#8B2E1B","h1":"#8B2E1B","h2":"#5A1A0F"},{"name":"Golden Autumn Park","top":"#FFE8A3","bot":"#FB8500","h1":"#C98A1E","h2":"#8A5A10"},{"name":"Harvest Pumpkin Fields","top":"#FFB35C","bot":"#6B4226","h1":"#A86A2E","h2":"#6B4226"},{"name":"Winter Wonderland Pines","top":"#EAF6FF","bot":"#8EC9EE","h1":"#DDEFFF","h2":"#8EC9EE"},{"name":"Snowy Mountain Christmas","top":"#BDE0FE","bot":"#FFFFFF","h1":"#A8C8E8","h2":"#E8F4FF"},{"name":"Bali Rice Terraces","top":"#A8E063","bot":"#FFE66D","h1":"#4A8A2E","h2":"#2E6B1E"},{"name":"Santorini White & Blue","top":"#A8D8EA","bot":"#3A86FF","h1":"#FFFFFF","h2":"#3A86FF"},{"name":"Kyoto Temple Autumn","top":"#FFD6A5","bot":"#B56576","h1":"#A83A3A","h2":"#6B2E2E"},{"name":"Swiss Alps Winter","top":"#DFF3FF","bot":"#FFFFFF","h1":"#EAF6FF","h2":"#8EC9EE"},{"name":"Iceland Waterfall & Rainbow","top":"#A8E6CF","bot":"#FFD166","h1":"#6BAF8A","h2":"#3F7A5A"},{"name":"Egyptian Desert Oasis","top":"#FFE8A3","bot":"#EE964B","h1":"#D9A83A","h2":"#A87A2E"},{"name":"Amazon Rainforest Mist","top":"#A8D5BA","bot":"#2D6A4F","h1":"#2D6A4F","h2":"#1B4332"},{"name":"Great Wall Sunset","top":"#FF9E5E","bot":"#6A040F","h1":"#7A3A1E","h2":"#4A2110"},{"name":"Venice Canal Dusk","top":"#6A4C93","bot":"#FFAFCC","h1":"#3A2A5A","h2":"#241A3A"},{"name":"Paris Eiffel Dusk","top":"#FFAFCC","bot":"#FFC8DD","h1":"#7A5A8A","h2":"#4A3A5A"},{"name":"Floating Islands Sky","top":"#A8C0FF","bot":"#FFD6FF","h1":"#8A7AC0","h2":"#5A4A8A"},{"name":"Crystal Cave Glow","top":"#0F2027","bot":"#2C5364","h1":"#1A3A4A","h2":"#0F2027"},{"name":"Enchanted Mushroom Forest","top":"#0B3D2E","bot":"#FFD166","h1":"#123B2A","h2":"#0A2A1E"},{"name":"Dragon Valley Mist","top":"#5B5F97","bot":"#B8C0D8","h1":"#4A4E7A","h2":"#2E315A"},{"name":"Candy Cloud Kingdom","top":"#FFAFCC","bot":"#BDE0FE","h1":"#FF8FAB","h2":"#FB6F92"},{"name":"Underwater Coral World","top":"#0077B6","bot":"#90E0EF","h1":"#0077B6","h2":"#023E8A"},{"name":"Lava Volcano World","top":"#1A0A00","bot":"#FF4500","h1":"#2A0A00","h2":"#1A0500"},{"name":"Sky Castle Clouds","top":"#B8E0FF","bot":"#FFE29A","h1":"#8EC9EE","h2":"#5A8AB8"},{"name":"Magic Aurora Forest","top":"#0A2A43","bot":"#C084FC","h1":"#0A3A2A","h2":"#061F16"},{"name":"Dreamy Pastel Clouds","top":"#FFD6FF","bot":"#C8B6FF","h1":"#C8B6FF","h2":"#A78BFA"},{"name":"Stormy Ocean Waves","top":"#2C3E50","bot":"#7FB3D5","h1":"#2C3E50","h2":"#1A2A3A"},{"name":"Thunderstorm Over City","top":"#232526","bot":"#F2C94C","h1":"#232526","h2":"#111111"},{"name":"Rainy Neon Street","top":"#1A1A2E","bot":"#E94560","h1":"#1A1A2E","h2":"#0F0F1A"},{"name":"Foggy Pine Forest","top":"#8E9EAB","bot":"#7A8B6F","h1":"#7A8B6F","h2":"#4A5A4A"},{"name":"Snowstorm Mountain Pass","top":"#D3D3D3","bot":"#FFFFFF","h1":"#E8E8E8","h2":"#9AA8B8"},{"name":"Cloudy Highlands","top":"#A8B8C8","bot":"#8FA8B8","h1":"#7A8A9A","h2":"#5A6A7A"},{"name":"Monsoon Green Valley","top":"#2F5233","bot":"#A8D5BA","h1":"#2F5233","h2":"#1B3A22"},{"name":"Rainbow Storm Clearing","top":"#4A4E69","bot":"#FFE29A","h1":"#6B5A6B","h2":"#4A3E4A"},{"name":"Windy Desert Dunes","top":"#E6C87A","bot":"#F4E4BC","h1":"#C9A86A","h2":"#A88A4A"},{"name":"Icy Blizzard Peaks","top":"#E0F7FA","bot":"#FFFFFF","h1":"#D0F0FF","h2":"#8EC9EE"},{"name":"Coral Pink Beach","top":"#FFB7B2","bot":"#FF9AA2","h1":"#FF8FA3","h2":"#E86A8A"},{"name":"Emerald Rice Paddies","top":"#B5E48C","bot":"#D9ED92","h1":"#2A9D8F","h2":"#1B6B5A"},{"name":"Bluebell Forest Spring","top":"#B8E0D2","bot":"#A8C3E8","h1":"#7AA8D6","h2":"#5A7AA8"},{"name":"Sunflower Desert Sunset","top":"#FF9E00","bot":"#7B2CBF","h1":"#7A3A1E","h2":"#4A2110"},{"name":"Glacier Bay Icebergs","top":"#A8D8EA","bot":"#FFFFFF","h1":"#D0F4FF","h2":"#8EC9EE"},{"name":"Savannah Sunset Safari","top":"#FFB703","bot":"#023047","h1":"#B87A1E","h2":"#6B4A10"},{"name":"Countryside Cottage Dawn","top":"#FFE5B4","bot":"#A8E6CF","h1":"#C9A87A","h2":"#7A8A5A"},{"name":"Lighthouse Storm Coast","top":"#2C3E50","bot":"#AEB6BF","h1":"#2C3E50","h2":"#1A2A3A"},{"name":"Ancient Ruins Jungle","top":"#2E7D32","bot":"#A5D6A7","h1":"#2E7D32","h2":"#1B5E20"},{"name":"Hot Air Balloons Valley","top":"#FFD166","bot":"#8ECAE6","h1":"#7AB8A8","h2":"#4A8A7A"},{"name":"Bioluminescent Beach Night","top":"#001233","bot":"#00F5D4","h1":"#001845","h2":"#000A24"},{"name":"Lavender Sunset Fields","top":"#C084FC","bot":"#FBBF24","h1":"#8B5CF6","h2":"#5B3A8E"},{"name":"Mountain Lake Reflection","top":"#89CFF0","bot":"#FFAFCC","h1":"#5A8AB8","h2":"#3A6A98"},{"name":"Sakura Night Festival","top":"#1E1B4B","bot":"#F472B6","h1":"#2E1A4A","h2":"#1E1B4B"},{"name":"Golden Bamboo Sunset","top":"#FFD700","bot":"#2E7D32","h1":"#B8860B","h2":"#6B5A10"},{"name":"Aurora Over Frozen Lake","top":"#0B1D3A","bot":"#4ADE80","h1":"#DDEFFF","h2":"#8EC9EE"},{"name":"Desert Starry Oasis","top":"#0A0A2A","bot":"#FFD700","h1":"#2A2340","h2":"#1A1430"},{"name":"Tropical Sunset Waterfall","top":"#FF6B35","bot":"#2EC4B6","h1":"#2E8A6B","h2":"#1B5A45"},{"name":"Cloud Sea Sunrise","top":"#FFE8D6","bot":"#FFFFFF","h1":"#F2C6A0","h2":"#D9A87A"},{"name":"Eternal Horizon Grand Finale","top":"#FF6EC4","bot":"#4ADede","h1":"#7873F5","h2":"#4A2E8A"}];
 
@@ -552,20 +526,10 @@
      the window follows the selection and wraps jump to the ends.
      Works for any game count. */
   var MENU_PITCH = 15, MENU_ROWS = 6, MENU_TOP_Y = 48, menuTop = 0;
-  /* Top-level game cards (menuLevel 0): large premium cards, 2 visible
-     at a 48px pitch. The Retro Games list keeps the 6-row retro layout. */
-  var TOP_ROWS = 2, TOP_PITCH = 48, TOP_TOP_Y = 44, TOP_CARD_H = 44;
   function menuClamp() {
-    // Clamp the CURRENT level's cursor into its scroll window (top level
-    // uses topIndex/topTop with TOP_ROWS, the Retro Games list uses
-    // menuIndex/menuTop with MENU_ROWS).
-    if (menuLevel === 0) {
-      if (topIndex < topTop) topTop = topIndex;
-      else if (topIndex >= topTop + TOP_ROWS) topTop = topIndex - TOP_ROWS + 1;
-    } else {
-      if (menuIndex < menuTop) menuTop = menuIndex;
-      else if (menuIndex >= menuTop + MENU_ROWS) menuTop = menuIndex - MENU_ROWS + 1;
-    }
+    // Clamp the menu cursor into its scroll window.
+    if (menuIndex < menuTop) menuTop = menuIndex;
+    else if (menuIndex >= menuTop + MENU_ROWS) menuTop = menuIndex - MENU_ROWS + 1;
   }
   // Hold-to-fast-scroll (menu only): holding Up/Down auto-repeats after
   // ~350ms (21 frames), then one row per ~100ms (6 frames), until the
@@ -577,9 +541,9 @@
     if (!JMFGAMES.isDown(menuHoldDir)) { menuHoldDir = ''; return; }
     menuHoldFrames++; menuHoldLast++;
     if (menuHoldFrames > 21 && menuHoldLast >= 6) {
-      var L = menuList().length;
-      if (menuHoldDir === 'up') menuSetIdx((menuCurIdx() + L - 1) % L);
-      else menuSetIdx((menuCurIdx() + 1) % L);
+      var L = GAMES.length;
+      if (menuHoldDir === 'up') menuIndex = (menuIndex + L - 1) % L;
+      else menuIndex = (menuIndex + 1) % L;
       menuClamp(); JMFGAMES.beep(600, 0.04);
       menuHoldLast = 0;
     }
@@ -598,7 +562,6 @@
     if (currentGame === 'beat' && buPhase === 'select') return function (d) { buSelMove(d); };
     if (currentGame === 'beat' && buPhase === 'upgrade') return function (d) { buUpMove(d); };
     if (currentGame === 'chess' && (chState === 'level' || chState === 'color')) return function (d) { chMove(d, 0); };
-    if (currentGame === 'music') return function (d) { cmListMove(d); }; // Children Music song list
     return null;
   }
   function listHoldTick() {
@@ -635,7 +598,7 @@
   var SR_VERSION = 1;
   var SR_KEY = 'jmf-games-session';
   var SR_HOOKS = {};
-  var SR_GAMES = ['sky', 'block', 'drop', 'bj', 'holdem', 'chess', 'overlord', 'pinball', 'solitaire', 'beat', 'pool', 'run', 'siege', 'park', 'dummy', 'shooter', 'artillery', 'cards', 'maze', 'tank', 'rune', 'music'];
+  var SR_GAMES = ['sky', 'block', 'drop', 'bj', 'holdem', 'chess', 'overlord', 'pinball', 'solitaire', 'beat', 'pool', 'run', 'siege', 'park', 'dummy', 'shooter', 'artillery', 'cards', 'maze', 'tank', 'rune'];
   var srTick = 0;
   var srLastScreen = 'menu';
   function srRegister(game, hooks) { if (SR_GAMES.indexOf(game) >= 0 && hooks) SR_HOOKS[game] = hooks; }
@@ -661,7 +624,6 @@
     else if (screen === 'menu' || screen === 'over') srClearSession();
   }
   function srStartGame(game) {
-    menuReturnLevel = (game === 'music') ? 0 : 1;
     if (game === 'pool') { currentGame = 'pool'; startPool(); }
     else if (game === 'block') { currentGame = 'block'; startBlockQuest(); }
     else if (game === 'drop') { currentGame = 'drop'; startBlockDrop(); }
@@ -682,7 +644,6 @@
     else if (game === 'maze') { currentGame = 'maze'; startMaze(); }
     else if (game === 'tank') { currentGame = 'tank'; startTank(); }
     else if (game === 'rune') { currentGame = 'rune'; startRuneMatch(); }
-    else if (game === 'music') { currentGame = 'music'; startMusic(); }
     else { currentGame = 'sky'; startGame(); }
   }
   function srRestoreOnLoad() {
@@ -824,7 +785,6 @@
   function toMenu() {
     srClearSession(); // deliberate exit clears the session immediately, not on the next frame
     screen = 'menu';
-    menuLevel = menuReturnLevel; // back to the list the game came from
     menuClamp(); // keep the selection visible in the scroll window
     JMFGAMES.beep(440, 0.06);
   }
@@ -838,9 +798,8 @@
     var name = splashPending; splashPending = null;
     if (name) launchMenuGame(name);
   }
-  // Launch a game by its menu name (shared by the top level and the
-  // Retro Games list). Sky Soar is the core's own game, launched by the
-  // fall-through branch.
+  // Launch a game by its menu name. Sky Soar is the core's own game,
+  // launched by the fall-through branch.
   function launchMenuGame(name) {
     if (name === '8 BALL POOL') { currentGame = 'pool'; startPool(); }
     else if (name === 'BLOCK QUEST') { currentGame = 'block'; startBlockQuest(); }
@@ -24042,13 +24001,22 @@ if (typeof srRegister === 'function') srRegister('shooter', {
 
    Controls: D-pad moves the cursor (in the shop it moves the
    selection), A is the context action for the current mode,
-   B CYCLES THE MODE (FISH -> FEED -> CLEAN -> SHOP -> FISH...),
-   Start pauses, Menu returns to the main menu. When a panel (shop
-   or fish detail) is open, B closes the panel instead of cycling.
-   A in FISH mode taps the nearest fish to the cursor and shows its
-   name, species, size, hunger and happiness. A in FEED mode drops
-   food pellets; fish swim to the food and eat it. A in CLEAN mode
-   scrubs dirt off the glass. A in SHOP mode opens the shop.
+   B CYCLES THE MODE (FISH -> FEED -> CLEAN -> SHOP -> DECOR ->
+   FISH...), Start pauses, Menu returns to the main menu. When a
+   panel (shop or fish detail) is open, B closes the panel instead
+   of cycling. A in FISH mode taps the nearest fish to the cursor
+   and shows its name, species, size, hunger and happiness. A in
+   FEED mode drops food pellets; fish swim to the food and eat it.
+   A in CLEAN mode scrubs dirt off the glass. A in SHOP mode opens
+   the shop. A in DECOR mode picks up the decor nearest the cursor
+   (decor sits on the sand, so moving is horizontal): D-pad slides
+   it along the sand, A places it, B cancels and puts it back.
+   The shop has a third SELL tab: pick a fish or a placed decor,
+   A opens a confirm step, A again sells it, B cancels. SELL
+   PRICES (fair): a fish sells for 50% of its buy price, +25% per
+   size above small (a fully grown fish returns its full price);
+   decor sells for 50% of its buy price. The last fish can never
+   be sold, so the tank can never soft-lock with no way to earn.
 
    Coins: while playing, every 10 seconds each fish that is fed
    (hunger under 50), happy (happiness over 40) and swimming in
@@ -24076,8 +24044,8 @@ if (typeof srRegister === 'function') srRegister('shooter', {
    ================================================================ */
   var FT_SAVE_KEY = 'jmf-games-tank-save';
   var FT_LEFT = 6, FT_RIGHT = 234, FT_TOP = 18, FT_BOT = 136;
-  var FT_MODES = ['FISH', 'FEED', 'CLEAN', 'SHOP'];
-  var FT_MODE_COLORS = ['#FFFFFF', '#FACC15', '#4ADE80', '#F472B6'];
+  var FT_MODES = ['FISH', 'FEED', 'CLEAN', 'SHOP', 'DECOR'];
+  var FT_MODE_COLORS = ['#FFFFFF', '#FACC15', '#4ADE80', '#F472B6', '#FDBA74'];
   var FT_SPECIES = [
     { name: 'SUNFIN', color: '#FACC15', color2: '#F59E0B', price: 40, speed: 0.5, shape: 'round' },
     { name: 'BLUEBOLT', color: '#38BDF8', color2: '#2563EB', price: 60, speed: 0.8, shape: 'dart' },
@@ -24103,6 +24071,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
   var ftPaused = false, ftStarted = false;
   var ftFrame = 0, ftDayT = 0;
   var ftShopOpen = false, ftShopTab = 0, ftShopSel = 0, ftDetailIdx = -1;
+  var ftCarryIdx = -1, ftCarryOrigX = 0, ftSellConfirm = null;
   var ftToast = '', ftToastT = 0, ftHintT = 0, ftScrubT = 0, ftScrubX = 0, ftScrubY = 0;
   var ftSandDots = [], ftBasePlants = [];
 
@@ -24158,6 +24127,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     ftMode = 0; ftCurX = 120; ftCurY = 70;
     ftFrame = 0; ftDayT = 0;
     ftShopOpen = false; ftShopTab = 0; ftShopSel = 0; ftDetailIdx = -1;
+    ftCarryIdx = -1; ftSellConfirm = null;
     ftToast = ''; ftToastT = 0; ftHintT = 900; ftScrubT = 0;
     ftSandDots = [];
     for (var i = 0; i < 24; i++) {
@@ -24218,7 +24188,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
         if (!ftNum(d.food[m].x, FT_LEFT, FT_RIGHT) || !ftNum(d.food[m].y, FT_TOP, FT_BOT + 14)) return false;
       }
     }
-    if (d.mode !== undefined && (!ftNum(d.mode, 0, 3) || Math.floor(d.mode) !== d.mode)) return false;
+    if (d.mode !== undefined && (!ftNum(d.mode, 0, FT_MODES.length - 1) || Math.floor(d.mode) !== d.mode)) return false;
     return true;
   }
   function ftApplyState(d) {
@@ -24249,6 +24219,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     ftFrame = ftNum(d.frame, 0, 1e9) ? Math.floor(d.frame) : 0;
     ftDayT = ftNum(d.dayT, 0, 3599) ? Math.floor(d.dayT) : 0;
     ftShopOpen = false; ftDetailIdx = -1; ftShopSel = 0;
+    ftCarryIdx = -1; ftSellConfirm = null;
     ftToast = ''; ftToastT = 0; ftHintT = 0; ftScrubT = 0;
     ftSandDots = [];
     for (var n = 0; n < 24; n++) {
@@ -24308,6 +24279,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     if (!loaded) ftFreshTank();
     ftStarted = true; ftPaused = false;
     ftShopOpen = false; ftDetailIdx = -1;
+    ftCarryIdx = -1; ftSellConfirm = null;
     screen = 'play';
     JMFGAMES.musicPlay('tank');
     JMFGAMES.beep(660, 0.08);
@@ -24331,8 +24303,9 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     JMFGAMES.beep(760, 0.06);
     ftToastMsg('SCRUB SCRUB!');
   }
-  function ftShopItems() { return ftShopTab === 0 ? FT_SPECIES : FT_DECOR; }
+  function ftShopItems() { return ftShopTab === 0 ? FT_SPECIES : (ftShopTab === 1 ? FT_DECOR : ftSellList()); }
   function ftBuySelected() {
+    if (ftShopTab === 2) { ftSellSelect(); return; }
     var items = ftShopItems(), item = items[ftShopSel];
     if (!item) return;
     if (ftShopTab === 0) {
@@ -24355,6 +24328,108 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     }
     ftSave();
   }
+  /* SELL PRICES (fair, no grind trap — see header): a fish sells
+     for 50% of its species buy price, +25% per size above small, so
+     a fully grown fish returns its full buy price. Decor sells for
+     50% of its buy price. All values floored to whole coins. */
+  function ftFishSellPrice(f) {
+    return Math.floor(FT_SPECIES[f.sp].price * (0.5 + 0.25 * (f.size - 1)));
+  }
+  function ftDecorName(kind) {
+    for (var i = 0; i < FT_DECOR.length; i++) if (FT_DECOR[i].kind === kind) return FT_DECOR[i].name;
+    return 'DECOR';
+  }
+  function ftDecorSellPrice(kind) {
+    for (var i = 0; i < FT_DECOR.length; i++) if (FT_DECOR[i].kind === kind) return Math.floor(FT_DECOR[i].price / 2);
+    return 0;
+  }
+  // SELL tab listing: owned fish first (in tank order), then placed
+  // decor (in placement order). Entries carry everything the confirm
+  // step needs, including the live index for removal.
+  function ftSellList() {
+    var list = [];
+    for (var i = 0; i < ftFish.length; i++) {
+      var f = ftFish[i];
+      list.push({ type: 'fish', idx: i, name: f.name, sp: f.sp, size: f.size, price: ftFishSellPrice(f) });
+    }
+    for (var j = 0; j < ftDecorPlaced.length; j++) {
+      var dc = ftDecorPlaced[j];
+      list.push({ type: 'decor', idx: j, name: ftDecorName(dc.kind), kind: dc.kind, price: ftDecorSellPrice(dc.kind) });
+    }
+    return list;
+  }
+  // LAST-FISH RULE: the only remaining fish can never be sold. The
+  // tank earns coins only from fish, so selling the last fish for
+  // less than the cheapest buy price (40) could strand the player
+  // in an empty tank with no way to earn — a soft-lock. Refusing
+  // the sale keeps the game always playable.
+  function ftSellSelect() {
+    var list = ftSellList();
+    var e = list[ftShopSel];
+    if (!e) return;
+    if (e.type === 'fish' && ftFish.length <= 1) {
+      ftToastMsg('KEEP AT LEAST 1 FISH!');
+      JMFGAMES.beep(180, 0.1);
+      return;
+    }
+    ftSellConfirm = e;
+    JMFGAMES.beep(700, 0.05);
+  }
+  function ftConfirmSell() {
+    var e = ftSellConfirm;
+    ftSellConfirm = null;
+    if (!e) return;
+    if (e.type === 'fish') {
+      if (ftFish.length <= 1) { ftToastMsg('KEEP AT LEAST 1 FISH!'); JMFGAMES.beep(180, 0.1); return; }
+      var f = ftFish[e.idx];
+      if (!f || f.name !== e.name) return; // stale entry: fail safe, sell nothing
+      ftCoins += e.price;
+      ftFish.splice(e.idx, 1);
+      ftToastMsg('SOLD ' + e.name + ' FOR ' + e.price + '!');
+    } else {
+      var dc = ftDecorPlaced[e.idx];
+      if (!dc || dc.kind !== e.kind) return; // stale entry: fail safe
+      ftCoins += e.price;
+      ftDecorPlaced.splice(e.idx, 1);
+      ftToastMsg('SOLD ' + e.name + ' FOR ' + e.price + '!');
+    }
+    JMFGAMES.beep(880, 0.1);
+    ftShopSel = Math.max(0, Math.min(ftShopSel, ftSellList().length - 1));
+    ftSave();
+  }
+  // Decor sits on the sand: selection is by horizontal distance only.
+  function ftNearestDecor(maxDist) {
+    var best = -1, bd = maxDist;
+    for (var i = 0; i < ftDecorPlaced.length; i++) {
+      var d = Math.abs(ftDecorPlaced[i].x - ftCurX);
+      if (d < bd) { bd = d; best = i; }
+    }
+    return best;
+  }
+  // DECOR mode action: pick up the nearest decor, or place the one
+  // being carried. While carried, the decor follows the cursor x
+  // (see ftMove); placing commits the new position to the save.
+  function ftDecorAction() {
+    if (ftCarryIdx >= 0) {
+      ftCarryIdx = -1;
+      ftToastMsg('DECOR MOVED!');
+      JMFGAMES.beep(880, 0.08);
+      ftSave();
+      return;
+    }
+    var idx = ftNearestDecor(16);
+    if (idx < 0) { ftToastMsg('NO DECOR HERE - MOVE CURSOR'); return; }
+    ftCarryIdx = idx;
+    ftCarryOrigX = ftDecorPlaced[idx].x;
+    JMFGAMES.beep(700, 0.05);
+  }
+  function ftCarryCancel() {
+    if (ftCarryIdx < 0) return;
+    ftDecorPlaced[ftCarryIdx].x = ftCarryOrigX;
+    ftCarryIdx = -1;
+    ftToastMsg('MOVE CANCELLED');
+    JMFGAMES.beep(600, 0.04);
+  }
   function ftNearestFish(maxDist) {
     var best = -1, bd = maxDist;
     for (var i = 0; i < ftFish.length; i++) {
@@ -24367,6 +24442,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
   function ftAction() {
     if (!ftStarted || ftPaused || !ftFish) return;
     if (ftDetailIdx >= 0) { ftDetailIdx = -1; JMFGAMES.beep(600, 0.04); return; }
+    if (ftSellConfirm) { ftConfirmSell(); return; }
     if (ftShopOpen) { ftBuySelected(); return; }
     if (ftMode === 0) {
       var idx = ftNearestFish(24);
@@ -24376,28 +24452,35 @@ if (typeof srRegister === 'function') srRegister('shooter', {
       ftDropFood();
     } else if (ftMode === 2) {
       ftCleanAt();
-    } else {
+    } else if (ftMode === 3) {
       ftShopOpen = true; ftShopSel = 0;
       JMFGAMES.beep(700, 0.05);
+    } else if (ftMode === 4) {
+      ftDecorAction();
     }
     ftSave();
   }
   /* B BUTTON: cycles the cursor mode FISH -> FEED -> CLEAN -> SHOP
-     and wraps back to FISH. When a panel is open, B closes the panel
-     instead (so panels stay closable with the console buttons). */
+     -> DECOR and wraps back to FISH. B answers NO to a sell
+     confirm, cancels a decor carry (decor returns to its original
+     spot), and closes an open panel — so panels and prompts stay
+     closable with the console buttons. */
   function ftBack() {
     if (!ftStarted || ftPaused || !ftFish) return;
     if (ftDetailIdx >= 0) { ftDetailIdx = -1; JMFGAMES.beep(600, 0.04); return; }
+    if (ftSellConfirm) { ftSellConfirm = null; JMFGAMES.beep(600, 0.04); return; }
     if (ftShopOpen) { ftShopOpen = false; JMFGAMES.beep(600, 0.04); return; }
+    if (ftCarryIdx >= 0) { ftCarryCancel(); return; }
     ftMode = (ftMode + 1) % FT_MODES.length;
     ftToastMsg('MODE: ' + FT_MODES[ftMode]);
     JMFGAMES.beep(620, 0.05);
   }
   function ftMove(dx, dy) {
     if (!ftStarted || ftPaused || !ftFish) return;
+    if (ftSellConfirm) return; // confirm step: only A/B answer it
     if (ftShopOpen) {
       if (dx !== 0) {
-        ftShopTab = ftShopTab === 0 ? 1 : 0;
+        ftShopTab = (ftShopTab + dx + 3) % 3;
         ftShopSel = 0;
         JMFGAMES.beep(700, 0.03);
       }
@@ -24417,6 +24500,9 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     }
     ftCurX = ftClamp(ftCurX + dx * 6, FT_LEFT, FT_RIGHT);
     ftCurY = ftClamp(ftCurY + dy * 6, FT_TOP, FT_BOT);
+    if (ftCarryIdx >= 0 && ftDecorPlaced[ftCarryIdx]) {
+      ftDecorPlaced[ftCarryIdx].x = ftClamp(ftCurX, 16, 224);
+    }
   }
   function ftFishStep(f) {
     var sp = FT_SPECIES[f.sp];
@@ -24653,6 +24739,8 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     ctx.fillText('FISH', 33, 49);
     ctx.fillStyle = ftShopTab === 1 ? '#FACC15' : '#7DD3FC';
     ctx.fillText('DECOR', 70, 49);
+    ctx.fillStyle = ftShopTab === 2 ? '#FACC15' : '#7DD3FC';
+    ctx.fillText('SELL', 112, 49);
     ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'right';
     ctx.fillText('COINS ' + ftCoins, 207, 49);
     ctx.textAlign = 'left';
@@ -24675,7 +24763,28 @@ if (typeof srRegister === 'function') srRegister('shooter', {
       ctx.textAlign = 'left';
     }
     ctx.fillStyle = '#7DD3FC'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
-    ctx.fillText('A:BUY  B:CLOSE  <>:TAB', 120, 132);
+    if (items.length === 0) ctx.fillText('NOTHING TO SELL', 120, 90);
+    ctx.fillText(ftShopTab === 2 ? 'A:SELL  B:CLOSE  <>:TAB' : 'A:BUY  B:CLOSE  <>:TAB', 120, 132);
+    ctx.textAlign = 'left';
+    if (ftSellConfirm) ftDrawSellConfirm();
+  }
+  // Sell confirm overlay: A sells, B cancels. Drawn over the shop.
+  function ftDrawSellConfirm() {
+    var e = ftSellConfirm;
+    if (!e) return;
+    ctx.fillStyle = 'rgba(4,30,48,0.96)';
+    ctx.fillRect(55, 58, 130, 48);
+    ctx.fillStyle = '#FACC15';
+    ctx.fillRect(55, 58, 130, 1); ctx.fillRect(55, 105, 130, 1);
+    ctx.fillRect(55, 58, 1, 48); ctx.fillRect(184, 58, 1, 48);
+    ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('SELL ' + e.name + '?', 120, 72);
+    ctx.font = '8px monospace';
+    var detail = e.price + ' COINS';
+    if (e.type === 'fish') detail += ' (' + FT_SPECIES[e.sp].name + ')';
+    ctx.fillText(detail, 120, 84);
+    ctx.fillStyle = '#7DD3FC';
+    ctx.fillText('A:YES  B:NO', 120, 96);
     ctx.textAlign = 'left';
   }
   function ftDrawDetail() {
@@ -24729,6 +24838,15 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     for (var sd = 0; sd < ftSandDots.length; sd++) ctx.fillRect(ftSandDots[sd].x, ftSandDots[sd].y, 1, 1);
     for (var bp = 0; bp < ftBasePlants.length; bp++) ftDrawPlant(ftBasePlants[bp].x, 136, ftBasePlants[bp].h, ftBasePlants[bp].ph);
     for (var dc = 0; dc < ftDecorPlaced.length; dc++) ftDrawDecor(ftDecorPlaced[dc]);
+    // Carried decor: white corner brackets so the pickup is obvious.
+    if (ftCarryIdx >= 0 && ftDecorPlaced[ftCarryIdx]) {
+      var cdx = Math.floor(ftDecorPlaced[ftCarryIdx].x);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(cdx - 13, 114, 5, 1); ctx.fillRect(cdx - 13, 114, 1, 5);
+      ctx.fillRect(cdx + 8, 114, 5, 1); ctx.fillRect(cdx + 12, 114, 1, 5);
+      ctx.fillRect(cdx - 13, 135, 5, 1); ctx.fillRect(cdx - 13, 131, 1, 5);
+      ctx.fillRect(cdx + 8, 135, 5, 1); ctx.fillRect(cdx + 12, 131, 1, 5);
+    }
     // Food pellets.
     ctx.fillStyle = '#92400E';
     for (var p = 0; p < ftFood.length; p++) ctx.fillRect(Math.floor(ftFood[p].x), Math.floor(ftFood[p].y), 2, 2);
@@ -24787,10 +24905,14 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     // Bottom hint bar.
     ctx.fillStyle = '#0B3D5C'; ctx.fillRect(0, 152, W, 8);
     ctx.fillStyle = '#7DD3FC'; ctx.font = '8px monospace';
-    var hints = ['A:VIEW FISH  B:MODE', 'A:DROP FOOD  B:MODE', 'A:SCRUB  B:MODE', 'A:OPEN SHOP  B:MODE'];
-    ctx.fillText(hints[ftMode], 4, 159);
+    var hints = ['A:VIEW FISH  B:MODE', 'A:DROP FOOD  B:MODE', 'A:SCRUB  B:MODE', 'A:OPEN SHOP  B:MODE', 'A:MOVE DECOR  B:MODE'];
+    ctx.fillText(ftCarryIdx >= 0 ? 'A:PLACE  B:CANCEL' : hints[ftMode], 4, 159);
     ctx.textAlign = 'right';
-    ctx.fillText(bright > 0.5 ? 'DAY' : 'NIGHT', 236, 159);
+    // Day counter: one day per 3600-frame day/night cycle, derived
+    // from the persisted frame count so it survives save/load. The
+    // label is right-aligned at 236 like the HUD above it: the text
+    // extends left from the anchor, so it stays inside the glass.
+    ctx.fillText((bright > 0.5 ? 'DAY ' : 'NIGHT ') + (Math.floor(ftFrame / 3600) + 1), 236, 159);
     ctx.textAlign = 'left';
     // Cursor brackets (hidden while a panel is open).
     if (!ftShopOpen && ftDetailIdx < 0 && !ftPaused) {
@@ -24858,10 +24980,13 @@ if (typeof srRegister === 'function') srRegister('shooter', {
 
   /* ---------- Session restore hooks (core contract in core-head.js).
      save() snapshots the live tank (fish, coins, dirt, decor, food,
-     cursor, mode, frame/day timers). restore() validates strictly
-     and rebuilds; it returns false on any bad data so the core falls
-     back to the menu. Pause hook REQUIRED: the tank keeps living in
-     real time, so a restore resumes PAUSED under the overlay. ---------- */
+     cursor, mode, frame/day timers). Moved decor positions and
+     sales persist through the same snapshot (the decor/fish arrays);
+     carry/confirm UI state is transient and resets on restore.
+     restore() validates strictly and rebuilds; it returns false on
+     any bad data so the core falls back to the menu. Pause hook
+     REQUIRED: the tank keeps living in real time, so a restore
+     resumes PAUSED under the overlay. ---------- */
   function ftSaveLive() {
     if (!ftStarted || !ftFish) return null;
     return ftSnapshot();
@@ -24888,6 +25013,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
    Delete-save reset: dsClearKeys(['jmf-games-rune-save']); rmSave = {unlocked:1,stars:[],total:0}; startRuneMatch();
    ================================================================ */
   var RM_COLS = 8, RM_ROWS = 8, RM_TILE = 16, RM_X = 56, RM_Y = 16;
+  var RM_HINT_TIME = 100; // hint stays visible ~1.67s (was 30f + blink-gated: invisible)
   var RM_SAVE_KEY = 'jmf-games-rune-save';
   var RM_NAMES = ['FLAME', 'WAVE', 'LEAF', 'STORM', 'MOON', 'SUN'];
   var RM_COLORS = ['#F87171', '#60A5FA', '#4ADE80', '#FACC15', '#C084FC', '#FB923C'];
@@ -24906,7 +25032,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     { goal: 'score', target: 4000, moves: 25 }
   ];
   var rmSave, rmMode, rmLevel, rmBoard, rmSpec, rmShards, rmScore, rmMoves;
-  var rmClearGot, rmSpecGot, rmShardGot, rmCur, rmSel, rmHint, rmHintCd;
+  var rmClearGot, rmSpecGot, rmShardGot, rmCur, rmSel, rmHint, rmHintCd, rmHintT;
   var rmParts, rmPops, rmCombo, rmPaused, rmOver, rmWin, rmStars, rmSelLevel, rmFlash;
   function rmDefaultSave() { return { unlocked: 1, stars: [], total: 0 }; }
   function rmLoadSave() {
@@ -24972,7 +25098,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     if (lv.goal === 'shards') rmPlaceShards(lv.target);
     rmScore = 0; rmMoves = lv.moves;
     rmClearGot = 0; rmSpecGot = 0; rmShardGot = 0;
-    rmCur = { c: 3, r: 3 }; rmSel = null; rmHint = null; rmHintCd = 0;
+    rmCur = { c: 3, r: 3 }; rmSel = null; rmHint = null; rmHintCd = 0; rmHintT = 0;
     rmParts = []; rmPops = []; rmCombo = 0; rmFlash = 0;
     rmPaused = false; rmOver = false; rmWin = false; rmStars = 0;
     rmMode = 'play';
@@ -25310,6 +25436,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
       return;
     }
     if (rmMode !== 'play') return;
+    rmClearHint(); // next input dismisses the hint
     rmCur.c = Math.max(0, Math.min(RM_COLS - 1, rmCur.c + dx));
     rmCur.r = Math.max(0, Math.min(RM_ROWS - 1, rmCur.r + dy));
   }
@@ -25326,6 +25453,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
       return;
     }
     if (rmMode !== 'play' || rmOver) return;
+    rmClearHint(); // next input dismisses the hint
     if (!rmSel) {
       rmSel = { c: rmCur.c, r: rmCur.r };
       JMFGAMES.beep(520, 0.04);
@@ -25341,13 +25469,29 @@ if (typeof srRegister === 'function') srRegister('shooter', {
       JMFGAMES.beep(520, 0.04);
     }
   }
+  function rmClearHint() { rmHint = null; rmHintT = 0; rmHintCd = 0; }
   function rmBack() {
     if (rmPaused || rmMode !== 'play' || rmOver) return;
     if (rmSel) { rmSel = null; JMFGAMES.beep(440, 0.04); return; }
-    if (rmHintCd > 0) return;
-    rmHint = rmFindMove();
+    if (rmHintCd > 0 && rmHint) {
+      // Cooldown: the hint is still on screen — show it again at full
+      // visibility instead of swallowing the press silently.
+      rmHintT = RM_HINT_TIME;
+      JMFGAMES.beep(990, 0.08);
+      return;
+    }
+    var mv = rmFindMove();
+    if (!mv) {
+      // No move exists: engage the no-move/shuffle path, never a dead hint.
+      rmShuffle();
+      rmPops.push({ x: RM_X + 64, y: RM_Y + 56, text: 'SHUFFLE!', life: 50 });
+      JMFGAMES.beep(660, 0.08);
+      return;
+    }
+    rmHint = mv;
+    rmHintT = RM_HINT_TIME;
     rmHintCd = 90;
-    if (rmHint) JMFGAMES.beep(990, 0.08);
+    JMFGAMES.beep(990, 0.08);
   }
   function rmUpdate() {
     var i;
@@ -25362,7 +25506,9 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     }
     if (rmFlash > 0) rmFlash--;
     if (rmHintCd > 0) rmHintCd--;
-    if (rmHint && rmHintCd <= 60) rmHint = null;
+    // Hint lifetime is its own timer (was: cleared at cd<=60, 30f after
+    // the press, while the 90f cooldown still blocked re-hinting).
+    if (rmHintT > 0) { rmHintT--; if (rmHintT <= 0) rmHint = null; }
     if (rmPaused || rmOver || rmMode !== 'play') return;
   }
   function rmSaveLive() {
@@ -25394,7 +25540,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     rmWin = !!d.win; rmStars = d.stars || 0;
     rmMode = rmWin ? 'win' : 'play';
     rmPaused = false; rmOver = false;
-    rmParts = []; rmPops = []; rmHint = null; rmHintCd = 0; rmFlash = 0;
+    rmParts = []; rmPops = []; rmHint = null; rmHintCd = 0; rmHintT = 0; rmFlash = 0;
     screen = 'play';
     return true;
   }
@@ -25472,10 +25618,16 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     if (rmSel) {
       ctx.strokeStyle = '#FACC15'; ctx.strokeRect(RM_X + rmSel.c * RM_TILE + 1, RM_Y + rmSel.r * RM_TILE + 1, RM_TILE - 2, RM_TILE - 2);
     }
-    if (rmHint && rmHintCd % 16 < 8) {
+    if (rmHint) {
+      // Solid outlines on BOTH hinted tiles + a HINT label: no blink
+      // gate (the old `cd % 16 < 8` gate hid the hint half the time).
       ctx.strokeStyle = '#22D3EE';
       ctx.strokeRect(RM_X + rmHint.c1 * RM_TILE, RM_Y + rmHint.r1 * RM_TILE, RM_TILE, RM_TILE);
       ctx.strokeRect(RM_X + rmHint.c2 * RM_TILE, RM_Y + rmHint.r2 * RM_TILE, RM_TILE, RM_TILE);
+      ctx.font = '8px monospace'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#22D3EE';
+      ctx.fillText('HINT!', RM_X + 64, RM_Y - 6);
+      ctx.textAlign = 'left';
     }
     if (rmFlash > 0) {
       ctx.fillStyle = 'rgba(253,230,138,0.12)';
@@ -25579,1382 +25731,9 @@ if (typeof srRegister === 'function') srRegister('shooter', {
   if (typeof srRegister === 'function') {
     srRegister('rune', { save: rmSaveLive, restore: rmRestoreLive, pause: function () { rmPaused = true; } });
   }
-
-  /* ==================== music (console) ==================== */
-/* ================================================================
-   CHILDREN MUSIC — an MP3-player-like bedtime piano player on the
-   main menu (NOT a game, NOT inside Retro Games). 60 traditional /
-   public-domain children's songs, simple piano only, no voice,
-   listed A to Z by title. Autoplay + loop until stopped. Each song
-   is a FULL song (over 2 minutes): the stored melody is arranged at
-   playback time as an intro + many varied verses (plain, harmony,
-   octave up, arpeggiated, gentle, final with a ritardando) — same
-   calm tempo, never slowed down. The piano plays note by note like
-   a good but not professional player: gentle rubato, velocity
-   variation, slight timing offsets — warm, not robotic.
-   Controls: Up/Down = song list · Left/Right = prev/next song ·
-   A = play the highlighted song / play-pause · B = exclude /
-   re-include the highlighted song · Start = shuffle · Menu = exit
-   (exiting stops the audio). Exclusions + shuffle persist in
-   localStorage. Respects the console MUSIC toggle (off = silent,
-   position held). Audio is scheduled on the Web Audio clock with a
-   15s lookahead, pumped both by rAF (60Hz) and by a 200ms interval
-   timer, so it keeps playing when the tab is backgrounded or the
-   phone screen turns off (rAF stops, the timer keeps going; Media
-   Session makes it lock-screen media). Headless in the vm tests
-   (no AudioContext there: silent mode, state machine still advances).
-   ================================================================ */
-
-/* Children Music song data — batch A (17 songs). All traditional / public domain. */
-var CM_SONGS_A = [
-  // ALOUETTE (key of C) — C D E D C D E D | C D E G G E D C | C D E D C D E D | C E G A G E C
-  { t: "ALOUETTE", bpm: 100, mel: [[60,1],[62,1],[64,1],[62,1],[60,1],[62,1],[64,1],[62,1],[60,1],[62,1],[64,1],[67,1],[67,1],[64,1],[62,1],[60,1],[60,1],[62,1],[64,1],[62,1],[60,1],[62,1],[64,1],[62,1],[60,1],[64,1],[67,1],[69,1],[67,1],[64,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[48,4],[48,4]] },
-  // 2. AMAZING GRACE — verified vs pianumero (key of C): G C E C E D C A G | G C E C E D G | E G E C E D C A G | G C E C E D C
-  { t: "AMAZING GRACE", bpm: 88, mel: [[67,1],[72,1],[76,2],[72,1],[76,1],[74,1],[72,1],[69,1],[67,3],[67,1],[72,1],[76,2],[72,1],[76,1],[74,1],[67,3],[76,1],[67,1],[76,2],[72,1],[76,1],[74,1],[72,1],[69,1],[67,3],[67,1],[72,1],[76,2],[72,1],[76,1],[74,1],[72,3]], bas: [[48,3],[48,3],[48,3],[48,3],[55,3],[55,3],[48,3],[48,3],[48,3],[48,3],[55,3],[55,3],[48,3],[48,3],[48,2]] },
-  // AU CLAIR DE LA LUNE (key of C) — C C C D E D C | C C C D E D C | A A A G E G A | G E D E D C C
-  { t: "AU CLAIR DE LA LUNE", bpm: 88, mel: [[60,1],[60,1],[60,1],[62,1],[64,1],[62,1],[60,2],[60,1],[60,1],[60,1],[62,1],[64,1],[62,1],[60,2],[69,1],[69,1],[69,1],[67,1],[64,1],[67,1],[69,2],[67,1],[64,1],[62,1],[64,1],[62,1],[60,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[45,4],[43,4],[48,4],[48,4]] },
-  // 4. AULD LANG SYNE — C F F F | E D E F | G G F E | D D E D | C F F F | E D E F | G G A G | F E C C
-  { t: "AULD LANG SYNE", bpm: 88, mel: [[60,1],[65,1],[65,1],[65,1],[64,1],[62,1],[64,1],[65,1],[67,2],[65,1],[64,1],[62,2],[64,1],[62,1],[60,1],[65,1],[65,1],[65,1],[64,1],[62,1],[64,1],[65,1],[67,2],[69,1],[67,1],[65,1],[64,1],[60,2]], bas: [[48,4],[41,4],[48,4],[43,4],[48,4],[41,4],[43,4],[48,4]] },
-  // 5. AWAY IN A MANGER — C E G G | E D C D | E E D C | D D E D | C E G G | A G E D | E E D C | C
-  { t: "AWAY IN A MANGER", bpm: 92, mel: [[60,1],[64,1],[67,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,2],[62,1],[60,1],[62,2],[64,1],[62,1],[60,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,1],[62,1],[64,2],[62,1],[60,1],[60,4]], bas: [[48,4],[43,4],[41,4],[48,4],[48,4],[43,4],[41,4],[48,4]] },
-  // 6. BAA BAA BLACK SHEEP (key of C — same tune as Twinkle)
-  // C C G G A A G | F F E E D D C | G G F F E E D | G G F F E E D | C C G G A A G | F F E E D D C
-  { t: "BAA BAA BLACK SHEEP", bpm: 100, mel: [[72,1],[72,1],[79,1],[79,1],[81,1],[81,1],[79,2],[77,1],[77,1],[76,1],[76,1],[74,1],[74,1],[72,2],[79,1],[79,1],[77,1],[77,1],[76,1],[76,1],[74,2],[79,1],[79,1],[77,1],[77,1],[76,1],[76,1],[74,2],[72,1],[72,1],[79,1],[79,1],[81,1],[81,1],[79,2],[77,1],[77,1],[76,1],[76,1],[74,1],[74,1],[72,2]], bas: [[48,4],[43,4],[41,4],[48,4],[43,4],[48,4],[43,4],[48,4],[48,4],[43,4],[41,4],[48,4]] },
-  // 7. BRAHMS' LULLABY (key of C, waltz feel)
-  // BRAHMS' LULLABY — verified vs Zebra Keys RH (3/4): pickup E E | G E E | G E G | C B A | A G D E | F D D E | F D F | B A G B | C C C | C A F | G E C | F G A | G C C | C A F | G E C | F E D | C
-  { t: "BRAHMS' LULLABY", bpm: 80, mel: [[64,1],[64,1],[67,1],[64,1],[64,1],[67,1],[64,1],[67,1],[72,1],[71,1],[69,1],[69,1],[67,1],[62,.5],[64,.5],[65,1],[62,1],[62,.5],[64,.5],[65,1],[62,1],[65,1],[71,.5],[69,.5],[67,1],[71,1],[72,1],[72,1],[72,1],[72,1],[69,1],[65,1],[67,1],[64,1],[60,1],[65,1],[67,1],[69,1],[67,1],[72,1],[72,1],[72,1],[69,1],[65,1],[67,1],[64,1],[60,1],[65,1],[64,1],[62,1],[60,3]], bas: [[48,3],[48,3],[48,3],[55,3],[53,3],[53,3],[55,3],[48,3],[53,3],[48,3],[53,3],[48,3],[53,3],[48,3],[55,3],[48,5]] },
-  // CAMPTOWN RACES (key of G) — G G A B C5 B A G | G E D C D | G G A B C5 B A G | G A B C5 B A C
-  { t: "CAMPTOWN RACES", bpm: 100, mel: [[67,1],[67,1],[69,1],[71,1],[72,1],[71,1],[69,1],[67,1],[67,2],[64,1],[62,1],[60,2],[62,2],[67,1],[67,1],[69,1],[71,1],[72,1],[71,1],[69,1],[67,1],[67,1],[69,1],[71,1],[72,1],[71,1],[69,1],[60,2]], bas: [[43,4],[38,4],[43,4],[38,4],[43,4],[38,4],[48,4],[43,4]] },
-  // 9. CIELITO LINDO — E G A G E D C D | E F E D C D E | E G A G E D C | D E F E D C C
-  { t: "CIELITO LINDO", bpm: 96, mel: [[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[65,1],[64,1],[62,1],[60,2],[62,1],[64,1],[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[65,1],[64,1],[62,1],[60,4]], bas: [[48,4],[43,4],[41,4],[48,4],[48,4],[43,4],[41,4],[48,4]] },
-  // DECK THE HALLS (key of C) — verified vs Songtive (1877 Pennsylvania
-  // School Journal score, moved F->C) + La Touche Musicale: G F E D C D E C |
-  // D E F D E D C B C | D E F D E F G D | E F# G A B C B A G | A A A A G F E D C
-  { t: "DECK THE HALLS", bpm: 100, mel: [[67,1],[65,1],[64,1],[62,1],[60,1],[62,1],[64,1],[60,1],[62,1],[64,1],[65,1],[62,1],[64,.5],[62,.5],[60,1],[59,.5],[60,1],[67,1],[65,1],[64,1],[62,1],[60,1],[62,1],[64,1],[60,1],[62,1],[64,1],[65,1],[62,1],[64,.5],[62,.5],[60,1],[59,.5],[60,1],[62,1],[64,1],[65,1],[62,1],[64,1],[65,1],[67,1],[62,1],[64,1],[66,1],[67,1],[69,1],[71,1],[72,1],[71,.5],[69,.5],[67,1],[67,1],[65,1],[64,1],[62,1],[60,1],[62,1],[64,1],[60,1],[69,.5],[69,.5],[69,1],[69,1],[67,1],[65,1],[64,1],[62,1],[60,1]], bas: [[48,4],[43,4],[41,4],[48,4],[48,4],[43,4],[41,4],[48,4],[48,4],[43,4],[41,4],[48,4],[43,4],[48,4],[43,4],[48,4]] },
-  // 10. FRERE JACQUES (key of C)
-  // C D E C C D E C | E F G E F G | G A G F E C G A G F E C | C G C C G C
-  { t: "FRERE JACQUES", bpm: 104, mel: [[60,1],[62,1],[64,1],[60,1],[60,1],[62,1],[64,1],[60,1],[64,1],[65,1],[67,2],[64,1],[65,1],[67,2],[67,1],[69,1],[67,1],[65,1],[64,1],[60,1],[67,1],[69,1],[67,1],[65,1],[64,1],[60,1],[60,1],[67,1],[60,2],[60,1],[67,1],[60,2]], bas: [[48,4],[48,4],[43,4],[41,4],[48,4],[43,4],[48,4],[41,4],[48,4]] },
-  // GO TELL AUNT RHODY (A minor) — E A A B A G E | E A A B C5 B A | E A A B A G E | G A B A G E A
-  { t: "GO TELL AUNT RHODY", bpm: 92, mel: [[64,1],[69,1],[69,1],[71,1],[69,1],[67,1],[64,2],[64,1],[69,1],[69,1],[71,1],[72,1],[71,1],[69,2],[64,1],[69,1],[69,1],[71,1],[69,1],[67,1],[64,2],[67,1],[69,1],[71,1],[69,1],[67,1],[64,1],[69,2]], bas: [[45,4],[40,4],[45,4],[40,4],[45,4],[40,4],[45,4],[45,4]] },
-  // GOD REST YE MERRY GENTLEMEN (A minor) — verified vs Zebra Keys
-  // (A minor, 4/4): A | A E E D | C B A G | A B C D | E A | E E |
-  // F D E F | G A E D | C A B C | D C D | E F E | E D C B | A C B A |
-  // D C D | E F G A | E D C B | A (repeat of the first phrase omitted)
-  { t: "GOD REST YE MERRY GENTLEMEN", bpm: 96, mel: [[69,1],[69,1],[76,1],[76,1],[74,1],[72,1],[71,1],[69,1],[67,1],[69,1],[71,1],[72,1],[74,1],[76,1],[69,2],[76,1],[76,2],[77,1],[74,1],[76,1],[77,1],[79,1],[69,1],[76,1],[74,1],[72,1],[69,1],[71,1],[72,1],[74,1],[72,1],[74,2],[76,1],[77,1],[76,1],[76,1],[74,1],[72,1],[71,1],[69,1],[72,1],[71,1],[69,1],[74,1],[72,1],[74,2],[76,1],[77,1],[79,1],[81,1],[76,1],[74,1],[72,1],[71,1],[69,2]], bas: [[45,4],[40,4],[45,4],[40,4],[45,4],[40,4],[45,4],[43,4],[45,4],[40,4],[45,4],[40,4],[45,4],[40,4],[45,4]] },
-  // 12. HAPPY BIRTHDAY TO YOU (key of C)
-  // G G A G C B | G G A G D C | G G G E C B A | F F E C D C
-  { t: "HAPPY BIRTHDAY TO YOU", bpm: 96, mel: [[67,0.5],[67,0.5],[69,1],[67,1],[72,1],[71,2],[67,0.5],[67,0.5],[69,1],[67,1],[74,1],[72,2],[67,0.5],[67,0.5],[79,1],[76,1],[72,1],[71,1],[69,1],[77,0.5],[77,0.5],[76,1],[72,1],[74,1],[72,2]], bas: [[48,4],[43,4],[48,4],[43,4],[41,4],[48,4]] },
-  // HARK! THE HERALD ANGELS SING (key of C) — verified vs Zebra Keys
-  // (C major, 4/4; the repeat of the opening strain is kept, the middle
-  // "Joyful, all ye nations rise" strain is omitted so the verse fits):
-  // G C C B | C E E D | G G G F | E D E | G C C B | C E E D | G D D B |
-  // B A G | A A A G | F E F | D E F G C | C D E | A A A G | F E F |
-  // D E F G | C D C
-  { t: "HARK! THE HERALD ANGELS SING", bpm: 100, mel: [[67,1],[72,1],[72,1.5],[71,.5],[72,1],[76,1],[76,1.5],[74,.5],[67,1],[67,1],[67,1.5],[77,.5],[76,1],[74,1],[76,2],[67,1],[72,1],[72,1.5],[71,.5],[72,1],[76,1],[76,1.5],[74,.5],[67,1],[74,1],[74,1.5],[71,.5],[71,1],[69,1],[67,2],[69,1],[69,1],[69,1.5],[67,.5],[77,1],[76,1],[77,2],[74,.5],[76,.5],[77,1],[79,1],[72,1],[72,1],[74,1],[76,2],[69,1],[69,1],[69,1.5],[67,.5],[77,1],[76,1],[77,2],[74,1],[76,1],[77,1],[79,1],[72,1],[74,1],[72,1]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[41,4],[43,4],[48,4],[48,4],[43,4],[48,4],[41,4],[43,4],[48,4],[43,4],[48,4]] },
-  // 13. HE'S GOT THE WHOLE WORLD IN HIS HANDS — E G A A | G E D C | D E D C | D D E D | E G A C' | B A G E | D D C D | C
-  { t: "HE'S GOT THE WHOLE WORLD IN HIS HANDS", bpm: 96, mel: [[64,1],[67,1],[69,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[62,1],[60,1],[62,2],[64,1],[62,1],[64,1],[67,1],[69,1],[72,1],[71,1],[69,1],[67,1],[64,1],[62,2],[60,1],[62,1],[60,4]], bas: [[48,4],[43,4],[41,4],[48,4],[48,4],[41,4],[43,4],[48,4]] },
-  // HERE WE GO ROUND THE MULBERRY BUSH (key of F) — F A C5 C5 D5 C5 A G | F A C5 C5 A G | F A C5 C5 D5 C5 A G | F A C5 D5 C5 A F
-  { t: "HERE WE GO ROUND THE MULBERRY BUSH", bpm: 96, mel: [[65,1],[69,1],[72,1],[72,1],[74,1],[72,1],[69,1],[67,1],[65,2],[69,1],[72,1],[72,2],[69,1],[67,1],[65,1],[69,1],[72,1],[72,1],[74,1],[72,1],[69,1],[67,1],[65,1],[69,1],[72,1],[74,1],[72,1],[69,1],[65,2]], bas: [[41,4],[48,4],[41,4],[48,4],[41,4],[48,4],[41,4],[41,4]] },
-  // HOME ON THE RANGE (key of G) — D G B A G E D | D G B B A G A B | B D5 B A G E D | D G B A G E D
-  { t: "HOME ON THE RANGE", bpm: 92, mel: [[62,1],[67,1],[71,1],[69,1],[67,1],[64,1],[62,2],[62,1],[67,1],[71,1],[71,1],[69,1],[67,1],[69,1],[71,1],[71,1],[74,1],[71,1],[69,1],[67,1],[64,1],[62,2],[62,1],[67,1],[71,1],[69,1],[67,1],[64,1],[62,2]], bas: [[43,4],[43,4],[48,4],[38,4],[43,4],[43,4],[48,4],[38,4]] },
-  // 16. HUMPTY DUMPTY — C E G G | A G E D | E E D C | D D E F | G G F E | D E F G | E E D C | C
-  { t: "HUMPTY DUMPTY", bpm: 96, mel: [[60,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,1],[62,1],[64,2],[62,1],[60,1],[62,2],[64,1],[65,1],[67,2],[65,1],[64,1],[62,1],[64,1],[65,1],[67,1],[64,2],[62,1],[60,1],[60,4]], bas: [[48,4],[43,4],[48,4],[43,4],[41,4],[48,4],[43,4],[48,4]] },
-  // 17. HUSH LITTLE BABY (key of C)
-  // C E G G A G E | E G G A G E D | C E G G A G E | E G A G E D C
-  { t: "HUSH LITTLE BABY", bpm: 92, mel: [[60,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,2],[64,1],[67,1],[67,1],[69,1],[67,1],[64,1],[62,2],[60,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,2],[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,2]], bas: [[48,4],[43,4],[43,4],[48,4],[48,4],[43,4],[43,4],[48,4]] },
-];
-
-/* Children Music song data — batch B (17 songs). All traditional / public domain. */
-var CM_SONGS_B = [
-  // I'VE BEEN WORKING ON THE RAILROAD (key of C) — C E G G A G E D | C D E G E D | C E G G A G E D | G A C5 B A G C
-  { t: "I'VE BEEN WORKING ON THE RAILROAD", bpm: 100, mel: [[60,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,2],[62,1],[64,1],[67,2],[64,1],[62,1],[60,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,1],[62,1],[67,1],[69,1],[72,1],[71,1],[69,1],[67,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[48,4],[48,4]] },
-  // 2. IF YOU'RE HAPPY AND YOU KNOW IT (key of C)
-  // C D E F E D C D | E D C D E C C | C D E F E D C D | E D C D E C C
-  // C D E F E D C D | E F G F E D C
-  { t: "IF YOU'RE HAPPY AND YOU KNOW IT", bpm: 100, mel: [[60,1],[62,1],[64,1],[65,1],[64,1],[62,1],[60,1],[62,1],[64,1],[62,1],[60,1],[62,1],[64,2],[60,1],[60,1],[60,1],[62,1],[64,1],[65,1],[64,1],[62,1],[60,1],[62,1],[64,1],[62,1],[60,1],[62,1],[64,2],[60,1],[60,1],[60,1],[62,1],[64,1],[65,1],[64,1],[62,1],[60,1],[62,1],[64,1],[65,1],[67,1],[65,1],[64,1],[62,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[41,4],[48,4],[43,4],[48,4]] },
-  // 3. ITSY BITSY SPIDER (key of C)
-  // ITSY BITSY SPIDER — verified vs kidsplaymusic/noobnotes: (G) C C C D E | E D C D E C | E E F G | G F E F G E | C C D E | E D C D E C | (G) G C C C D E | E D C D E C
-  { t: "ITSY BITSY SPIDER", bpm: 100, mel: [[67,1],[72,1],[72,1],[72,1],[74,1],[76,1],[76,1],[74,1],[72,1],[74,1],[76,1],[72,1],[76,1],[76,1],[77,1],[79,1],[79,1],[77,1],[76,1],[77,1],[79,1],[76,1],[72,1],[72,1],[74,1],[76,1],[76,1],[74,1],[72,1],[74,1],[76,1],[72,1],[67,1],[67,1],[72,1],[72,1],[72,1],[74,1],[76,1],[76,1],[74,1],[72,1],[74,1],[76,1],[72,2]], bas: [[48,4],[43,4],[41,4],[48,4],[48,4],[43,4],[41,4],[48,4],[48,4],[43,4],[48,5]] },
-  // 4. JESUS LOVES ME (key of C)
-  // JESUS LOVES ME — verified vs 1862 printing (piano.org): G E E D | E G G | A A C5 A | A G G | G E E D | E G G | A A G C4 | E D C
-  { t: "JESUS LOVES ME", bpm: 96, mel: [[67,.5],[64,.5],[64,.5],[62,.5],[64,.5],[67,.5],[67,1],[69,.5],[69,.5],[72,.5],[69,.5],[69,.5],[67,.5],[67,1],[67,.5],[64,.5],[64,.5],[62,.5],[64,.5],[67,.5],[67,1],[69,.5],[69,.5],[67,.5],[60,.5],[64,.5],[62,.5],[60,1],[67,.5],[64,.5],[64,.5],[62,.5],[64,.5],[67,.5],[67,1],[69,.5],[69,.5],[72,.5],[69,.5],[69,.5],[67,.5],[67,1],[67,.5],[64,.5],[64,.5],[62,.5],[64,.5],[67,.5],[67,1],[69,.5],[69,.5],[67,.5],[60,.5],[64,.5],[62,.5],[60,1]], bas: [[48,2],[48,2],[53,2],[48,2],[48,2],[48,2],[55,2],[48,2],[48,2],[48,2],[53,2],[48,2],[48,2],[48,2],[55,2],[48,2]] },
-  // 5. JINGLE BELLS — E E E | E E E | E G C' D' | E | F F F E | E E E D | D E D G | C
-  { t: "JINGLE BELLS", bpm: 104, mel: [[64,1],[64,1],[64,2],[64,1],[64,1],[64,2],[64,1],[67,1],[72,1],[74,1],[64,4],[65,1],[65,1],[65,1],[64,1],[64,1],[64,1],[64,1],[62,1],[62,1],[64,1],[62,1],[67,1],[60,4]], bas: [[48,4],[48,4],[43,4],[48,4],[41,4],[48,4],[43,4],[48,4]] },
-  // JOY TO THE WORLD (key of C) — verified vs piano-keyboard-guide.com
-  // + La Touche Musicale + Songtive (Lowell Mason's "Antioch", D->C):
-  // C B A G F E D C | G A A B B C | C C B A G G F E | C C B A G G F E |
-  // E E E E F G | E D D D E F | D C C A G F E | F E D C
-  { t: "JOY TO THE WORLD", bpm: 96, mel: [[72,1],[71,1],[69,1],[67,1],[65,1],[64,1],[62,1],[60,2],[67,1],[69,1],[69,1],[71,1],[71,1],[72,2],[72,1],[72,1],[71,1],[69,1],[67,1],[67,1],[65,1],[64,2],[72,1],[72,1],[71,1],[69,1],[67,1],[67,1],[65,1],[64,2],[64,1],[64,1],[64,1],[64,1],[65,1],[67,2],[64,1],[62,1],[62,1],[62,1],[64,1],[65,2],[62,1],[60,1],[60,1],[69,1],[67,1],[65,1],[64,2],[65,1],[64,1],[62,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[41,4],[48,4],[43,4],[48,4],[41,4],[43,4],[48,4],[43,4],[48,4],[43,4],[48,4]] },
-  // 6. KUMBAYA — G C' C' C' | B A G A | B B A G | E E D E | G C' C' C' | D' C' B A | G G A B | C'
-  { t: "KUMBAYA", bpm: 88, mel: [[67,1],[72,1],[72,1],[72,1],[71,1],[69,1],[67,1],[69,1],[71,2],[69,1],[67,1],[64,2],[62,1],[64,1],[67,1],[72,1],[72,1],[72,1],[74,1],[72,1],[71,1],[69,1],[67,2],[69,1],[71,1],[72,4]], bas: [[48,4],[41,4],[48,4],[43,4],[48,4],[41,4],[43,4],[48,4]] },
-  // LA CUCARACHA (key of C) — E G A G E D C | E G A G E D C | G G A A B A G | C5 B A G E D C
-  { t: "LA CUCARACHA", bpm: 104, mel: [[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,2],[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,2],[67,1],[67,1],[69,1],[69,1],[71,1],[69,1],[67,2],[72,1],[71,1],[69,1],[67,1],[64,1],[62,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[48,4],[48,4]] },
-  // LIGHTLY ROW (key of C) — C E G E C E G E | A A G E D E C | C E G E C E G E | E G A G E D C
-  { t: "LIGHTLY ROW", bpm: 88, mel: [[60,1],[64,1],[67,1],[64,1],[60,1],[64,1],[67,1],[64,1],[69,1],[69,1],[67,1],[64,1],[62,1],[64,1],[60,2],[60,1],[64,1],[67,1],[64,1],[60,1],[64,1],[67,1],[64,1],[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[48,4],[48,4]] },
-  // 9. LONDON BRIDGE IS FALLING DOWN (key of C)
-  // LONDON BRIDGE — verified vs 1916 printing (piano.org): G A G F E F G | D E F | E F G | G A G F E F G | D G E C
-  { t: "LONDON BRIDGE IS FALLING DOWN", bpm: 100, mel: [[67,1],[69,1],[67,1],[65,1],[64,1],[65,1],[67,2],[62,1],[64,1],[65,1],[64,1],[65,1],[67,2],[67,1],[69,1],[67,1],[65,1],[64,1],[65,1],[67,2],[62,1],[67,1],[64,1],[60,2]], bas: [[48,4],[43,4],[48,4],[48,4],[43,4],[48,4],[48,4]] },
-  // 10. MARY HAD A LITTLE LAMB (key of C)
-  // E D C D E E E | D D D E G G | E D C D E E E E | D D E D C
-  { t: "MARY HAD A LITTLE LAMB", bpm: 100, mel: [[64,1],[62,1],[60,1],[62,1],[64,1],[64,1],[64,2],[62,1],[62,1],[62,2],[64,1],[67,1],[67,2],[64,1],[62,1],[60,1],[62,1],[64,1],[64,1],[64,1],[64,1],[62,1],[62,1],[64,1],[62,1],[60,4]], bas: [[48,4],[43,4],[43,4],[48,4],[48,4],[43,4],[43,4],[48,4]] },
-  // 11. MICHAEL ROW THE BOAT ASHORE — G C' B C' | D' C' B A | G G E D | C C D E | G C' B C' | D' C' B G | A A G E | C
-  { t: "MICHAEL ROW THE BOAT ASHORE", bpm: 92, mel: [[67,1],[72,1],[71,1],[72,1],[74,1],[72,1],[71,1],[69,1],[67,2],[64,1],[62,1],[60,2],[62,1],[64,1],[67,1],[72,1],[71,1],[72,1],[74,1],[72,1],[71,1],[67,1],[69,2],[67,1],[64,1],[60,4]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[41,4],[48,4]] },
-  // O CHRISTMAS TREE (key of C) — verified vs Songtive (Wikipedia
-  // "O Tannenbaum" score, G->C): pickup G, C C C D E E E | E D E F B D C
-  // (x2), then G G E A G G F F | F F D G F F E E, then the opening again.
-  { t: "O CHRISTMAS TREE", bpm: 88, mel: [[55,1],[60,1],[60,1],[60,1],[62,1],[64,1],[64,1],[64,1],[64,1],[62,1],[64,1],[65,1],[59,1],[62,1],[60,1],[55,1],[60,1],[60,1],[60,1],[62,1],[64,1],[64,1],[64,1],[64,1],[62,1],[64,1],[65,1],[59,1],[62,1],[60,1],[67,1],[67,1],[64,1],[69,1],[67,1],[67,1],[65,1],[65,1],[65,1],[65,1],[62,1],[67,1],[65,1],[65,1],[64,1],[64,1],[55,1],[60,1],[60,1],[60,1],[62,1],[64,1],[64,1],[64,1],[64,1],[62,1],[64,1],[65,1],[59,1],[62,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[41,4],[43,4],[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[41,4],[43,4],[48,4],[48,4]] },
-  // O COME, ALL YE FAITHFUL (key of C) — verified vs Music Theory Print
-  // (Army and Navy Hymnal 1920, "Adeste Fideles", G->C): C G C G C F |
-  // C C G C D G E D E F | E D C C B A B C D E B A G |
-  // B A G C C B C D C G E E D E F | E D E F E D C B C F | E D C C
-  { t: "O COME, ALL YE FAITHFUL", bpm: 92, mel: [[60,1],[67,1],[60,1],[67,1],[60,1],[65,2],[60,1],[60,1],[67,1],[60,1],[62,1],[67,1],[64,1],[62,1],[65,2],[64,1],[62,1],[60,1],[60,1],[71,1],[69,1],[71,1],[72,1],[62,1],[64,1],[71,1],[69,1],[67,2],[71,1],[69,1],[67,1],[60,1],[60,1],[71,1],[72,1],[62,1],[60,1],[67,1],[64,1],[64,1],[62,1],[65,2],[64,1],[62,1],[64,1],[65,1],[64,1],[62,1],[60,1],[71,1],[72,1],[65,2],[64,1],[62,1],[60,1],[60,2]], bas: [[48,4],[43,4],[48,4],[41,4],[48,4],[43,4],[48,4],[41,4],[48,4],[43,4],[48,4],[41,4],[43,4],[48,4],[43,4],[48,4]] },
-  // ODE TO JOY (key of C) — E E F G G F E D | C C D E E D D | E E F G G F E D | C C D E D C C
-  { t: "ODE TO JOY", bpm: 96, mel: [[64,1],[64,1],[65,1],[67,1],[67,1],[65,1],[64,1],[62,1],[60,1],[60,1],[62,1],[64,1],[64,1],[62,1],[62,2],[64,1],[64,1],[65,1],[67,1],[67,1],[65,1],[64,1],[62,1],[60,1],[60,1],[62,1],[64,1],[62,1],[60,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[41,4],[48,4]] },
-  // OH! SUSANNA (key of C) — E G A G E D C D | E D C D E | E G A G E D C D | E G A G E D C
-  { t: "OH! SUSANNA", bpm: 100, mel: [[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,2],[62,1],[60,1],[62,2],[64,2],[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[48,4],[43,4]] },
-  // 14. OLD MACDONALD HAD A FARM (key of C)
-  // G G G D E E D | B B A A G | G G G D E E D | B B A A G
-  // D D G G G G D D | D D G G G D D G | G G G D E E D | B B A A G
-  { t: "OLD MACDONALD HAD A FARM", bpm: 104, mel: [[67,1],[67,1],[67,1],[62,1],[64,1],[64,1],[62,2],[71,1],[71,1],[69,1],[69,1],[67,4],[67,1],[67,1],[67,1],[62,1],[64,1],[64,1],[62,2],[71,1],[71,1],[69,1],[69,1],[67,4],[62,1],[62,1],[67,1],[67,1],[67,1],[67,1],[62,1],[62,1],[62,1],[62,1],[67,1],[67,1],[67,1],[62,1],[62,1],[67,1],[67,1],[67,1],[67,1],[62,1],[64,1],[64,1],[62,2],[71,1],[71,1],[69,1],[69,1],[67,4]], bas: [[48,4],[43,4],[43,4],[48,4],[48,4],[43,4],[43,4],[48,4],[43,4],[48,4],[43,4],[48,4],[48,4],[43,4],[43,4],[48,4]] },
-  // 15. PAT-A-CAKE — G E C E | G G A G | E D C D | E E D C | G E C E | G A G E | D D E D | C
-  { t: "PAT-A-CAKE", bpm: 100, mel: [[67,1],[64,1],[60,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,2],[62,1],[60,1],[67,1],[64,1],[60,1],[64,1],[67,1],[69,1],[67,1],[64,1],[62,2],[64,1],[62,1],[60,4]], bas: [[48,4],[43,4],[41,4],[48,4],[48,4],[43,4],[41,4],[48,4]] },
-  // POP GOES THE WEASEL (key of C) — C E G G A G E D | C E G C5 B A G E | C E G G A G E D | C E G C5 G C
-  { t: "POP GOES THE WEASEL", bpm: 104, mel: [[60,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,1],[64,1],[67,1],[72,1],[71,1],[69,1],[67,1],[64,1],[60,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,1],[64,1],[67,1],[72,2],[67,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[48,4],[48,4]] },
-  // RING AROUND THE ROSIE (key of C) — C E G E C E G E | C E G C5 B A G E | A A G G E E C
-  { t: "RING AROUND THE ROSIE", bpm: 96, mel: [[60,1],[64,1],[67,1],[64,1],[60,1],[64,1],[67,1],[64,1],[60,1],[64,1],[67,1],[72,1],[71,1],[69,1],[67,1],[64,1],[69,1],[69,1],[67,1],[67,1],[64,1],[64,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[48,4]] },
-];
-
-/* Children Music song data — batch C (16 songs). All traditional / public domain. */
-var CM_SONGS_C = [
-  // 1. ROCK-A-BYE BABY (key of C)
-  // E G A G E C D | E G A G E D C | G A C A G F E | G A C A G E C
-  { t: "ROCK-A-BYE BABY", bpm: 84, mel: [[64,1],[67,1],[69,1],[67,1],[64,2],[60,1],[62,1],[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,2],[67,1],[69,1],[72,1],[69,1],[67,1],[65,1],[64,2],[67,1],[69,1],[72,1],[69,1],[67,1],[64,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[41,4],[48,4],[43,4],[48,4]] },
-  // 2. ROW ROW ROW YOUR BOAT (key of C)
-  // C C C D E | E D E F G | C C G E C | G E C D C
-  { t: "ROW ROW ROW YOUR BOAT", bpm: 96, mel: [[60,1],[60,1],[60,1],[62,1],[64,2],[64,1],[62,1],[64,1],[65,1],[67,2],[72,1],[72,1],[67,1],[64,1],[60,2],[67,1],[64,1],[60,1],[62,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[41,4],[48,4]] },
-  // 3. SAKURA SAKURA — A B C' C' | E' D' C' B | A A B C' | D' C' B A | E' E' D' C' | B C' D' D' | E' D' C' B | A
-  { t: "SAKURA SAKURA", bpm: 88, mel: [[69,1],[71,1],[72,2],[76,1],[74,1],[72,1],[71,1],[69,2],[71,1],[72,1],[74,1],[72,1],[71,1],[69,1],[76,2],[74,1],[72,1],[71,1],[72,1],[74,2],[76,1],[74,1],[72,1],[71,1],[69,4]], bas: [[45,4],[40,4],[45,4],[40,4],[45,4],[40,4],[45,4],[45,4]] },
-  // SHE'LL BE COMING 'ROUND THE MOUNTAIN (key of C) — C C E G G A G E | D E C D E C | C C E G G A G E | D E C D E D C
-  { t: "SHE'LL BE COMING 'ROUND THE MOUNTAIN", bpm: 104, mel: [[60,1],[60,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,1],[62,1],[64,1],[60,2],[62,1],[64,1],[60,2],[60,1],[60,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,1],[62,1],[64,1],[60,1],[62,1],[64,1],[62,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[43,4],[48,4]] },
-  // 5. SILENT NIGHT — G A G E | G A G E | D' D' B | C' C' G | A A C' | B B C' | D' D' B G | C'
-  { t: "SILENT NIGHT", bpm: 88, mel: [[67,1],[69,1],[67,1],[64,1],[67,1],[69,1],[67,1],[64,1],[74,1],[74,1],[71,2],[72,1],[72,1],[67,2],[69,1],[69,1],[72,2],[71,1],[71,1],[72,2],[74,2],[71,1],[67,1],[72,4]], bas: [[48,4],[43,4],[48,4],[43,4],[41,4],[48,4],[43,4],[48,4]] },
-  // SKIP TO MY LOU (key of C) — E G A G E D C | G G A A B A G | E G A G E D C | E G A G E D C
-  { t: "SKIP TO MY LOU", bpm: 108, mel: [[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,2],[67,1],[67,1],[69,1],[69,1],[71,1],[69,1],[67,2],[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,2],[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[48,4],[48,4]] },
-  // 7. SWING LOW SWEET CHARIOT — E G A C' | B A G E | D E D C | D D E D | E G A C' | B A G E | D D C D | C
-  { t: "SWING LOW SWEET CHARIOT", bpm: 92, mel: [[64,1],[67,1],[69,1],[72,1],[71,1],[69,1],[67,1],[64,1],[62,1],[64,1],[62,1],[60,1],[62,2],[64,1],[62,1],[64,1],[67,1],[69,1],[72,1],[71,1],[69,1],[67,1],[64,1],[62,2],[60,1],[62,1],[60,4]], bas: [[48,4],[41,4],[48,4],[43,4],[48,4],[41,4],[43,4],[48,4]] },
-  // 8. THE ALPHABET SONG (key of C — same tune as Twinkle)
-  // C C G G A A G | F F E E D D C | G G F F E E D | G G F F E E D | C C G G A A G | F F E E D D C
-  { t: "THE ALPHABET SONG", bpm: 100, mel: [[72,1],[72,1],[79,1],[79,1],[81,1],[81,1],[79,2],[77,1],[77,1],[76,1],[76,1],[74,1],[74,1],[72,2],[79,1],[79,1],[77,1],[77,1],[76,1],[76,1],[74,2],[79,1],[79,1],[77,1],[77,1],[76,1],[76,1],[74,2],[72,1],[72,1],[79,1],[79,1],[81,1],[81,1],[79,2],[77,1],[77,1],[76,1],[76,1],[74,1],[74,1],[72,2]], bas: [[48,4],[43,4],[41,4],[48,4],[43,4],[48,4],[43,4],[48,4],[48,4],[43,4],[41,4],[48,4]] },
-  // THE FARMER IN THE DELL (key of C) — C E G G A G E D | C E G G A G E C | G G A A B A G | E G A G E D C
-  { t: "THE FARMER IN THE DELL", bpm: 96, mel: [[60,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,1],[60,1],[67,1],[67,1],[69,1],[69,1],[71,1],[69,1],[67,2],[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[43,4],[48,4]] },
-  // THE FIRST NOEL (key of C) — verified vs piano-keyboard-guide.com +
-  // trebly.fun (C major, 3/4, one-beat pickup): E D C D E F G | A B C B A G |
-  // A B C B A G | A B C G F E | E D C D E F G | C B A B C D E |
-  // C B A G A B C G F E
-  { t: "THE FIRST NOEL", bpm: 92, mel: [[64,1],[62,1],[60,1],[62,1],[64,1],[65,1],[67,2],[69,1],[71,1],[72,1],[71,1],[69,1],[67,2],[69,1],[71,1],[72,1],[71,1],[69,1],[67,2],[69,1],[71,1],[72,1],[67,1],[65,1],[64,2],[64,1],[62,1],[60,1],[62,1],[64,1],[65,1],[67,2],[72,1],[71,1],[69,1],[71,1],[72,1],[62,1],[64,2],[72,1],[71,1],[69,1],[67,1],[69,1],[71,1],[72,1],[67,1],[65,1],[64,2]], bas: [[48,4],[43,4],[48,4],[41,4],[48,4],[43,4],[48,4],[41,4],[48,4],[43,4],[48,4],[41,4],[43,4],[48,4]] },
-  // 10. THE GRAND OLD DUKE OF YORK (key of C)
-  // C D E E D C D | E D C D E D C | C D E F G A G E | A G F E D C
-  // C D E F G A G E | A G F E D C | C D E F G A G | A G F E D C
-  { t: "THE GRAND OLD DUKE OF YORK", bpm: 104, mel: [[60,1],[62,1],[64,1],[64,1],[62,1],[60,1],[62,2],[64,1],[62,1],[60,1],[62,1],[64,1],[62,1],[60,2],[60,1],[62,1],[64,1],[65,1],[67,1],[69,1],[67,1],[64,1],[69,1],[67,1],[65,1],[64,1],[62,1],[60,3],[60,1],[62,1],[64,1],[65,1],[67,1],[69,1],[67,1],[64,1],[69,1],[67,1],[65,1],[64,1],[62,1],[60,3],[60,1],[62,1],[64,1],[65,1],[67,2],[69,1],[67,1],[69,1],[67,1],[65,1],[64,1],[62,1],[60,3]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[41,4],[48,4],[48,4],[43,4],[41,4],[48,4],[48,4],[43,4],[41,4],[48,4]] },
-  // 11. THE MUFFIN MAN — C D E F | G G A G | F E D E | C C D E | C D E F | G G A G | F E D C | C
-  { t: "THE MUFFIN MAN", bpm: 100, mel: [[60,1],[62,1],[64,1],[65,1],[67,1],[67,1],[69,1],[67,1],[65,1],[64,1],[62,1],[64,1],[60,2],[62,1],[64,1],[60,1],[62,1],[64,1],[65,1],[67,1],[67,1],[69,1],[67,1],[65,1],[64,1],[62,1],[60,1],[60,4]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[41,4],[48,4]] },
-  // 12. THIS LITTLE LIGHT OF MINE — C E G G | A G E D | C C D E | D D C D | E G A G | E D C D | E E D C | C
-  { t: "THIS LITTLE LIGHT OF MINE", bpm: 96, mel: [[60,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,2],[62,1],[64,1],[62,2],[60,1],[62,1],[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,1],[62,1],[64,2],[62,1],[60,1],[60,4]], bas: [[48,4],[43,4],[48,4],[43,4],[41,4],[48,4],[43,4],[48,4]] },
-  // THIS OLD MAN (key of C) — G G A G E D C | E E G G A G E | G G A G E D C | E G A G E D C
-  { t: "THIS OLD MAN", bpm: 100, mel: [[67,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,2],[64,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,2],[67,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,2],[64,1],[67,1],[69,1],[67,1],[64,1],[62,1],[60,2]], bas: [[48,4],[43,4],[48,4],[43,4],[48,4],[43,4],[48,4],[48,4]] },
-  // 14. TWINKLE TWINKLE LITTLE STAR (key of C)
-  // C C G G A A G | F F E E D D C | G G F F E E D | G G F F E E D | C C G G A A G | F F E E D D C
-  { t: "TWINKLE TWINKLE LITTLE STAR", bpm: 100, mel: [[72,1],[72,1],[79,1],[79,1],[81,1],[81,1],[79,2],[77,1],[77,1],[76,1],[76,1],[74,1],[74,1],[72,2],[79,1],[79,1],[77,1],[77,1],[76,1],[76,1],[74,2],[79,1],[79,1],[77,1],[77,1],[76,1],[76,1],[74,2],[72,1],[72,1],[79,1],[79,1],[81,1],[81,1],[79,2],[77,1],[77,1],[76,1],[76,1],[74,1],[74,1],[72,2]], bas: [[48,4],[43,4],[41,4],[48,4],[43,4],[48,4],[43,4],[48,4],[48,4],[43,4],[41,4],[48,4]] },
-  // UP ON THE HOUSETOP (key of C) — verified vs Zebra Keys (C major, 4/4)
-  // + noobnotes (G->C): G G A G E | C E G | A A G E | D G G | G G A G E |
-  // C E G | A A A G E | D G C | F F A | G G G E | D D F | E G G C E |
-  // G G A G E F G A | E D G C
-  { t: "UP ON THE HOUSETOP", bpm: 104, mel: [[67,1],[67,.5],[69,.5],[67,1],[64,1],[60,1],[64,1],[67,2],[69,1],[69,1],[67,1],[64,1],[62,1],[67,1],[67,2],[67,1],[67,.5],[69,.5],[67,1],[64,1],[60,1],[64,1],[67,2],[69,1],[69,.5],[69,.5],[67,1],[64,1],[62,1],[67,1],[60,2],[65,1],[65,1],[69,2],[67,1],[67,.5],[67,.5],[64,2],[62,1],[62,1],[65,2],[64,1],[67,.5],[67,.5],[60,1],[64,1],[67,1],[67,1],[69,1],[67,1],[64,1],[65,1],[67,1],[69,1],[64,1],[62,1],[67,1],[60,2]], bas: [[48,4],[43,4],[41,4],[48,4],[48,4],[43,4],[41,4],[48,4],[48,4],[43,4],[41,4],[48,4],[43,4],[48,4],[48,4]] },
-  // WE THREE KINGS (E minor) — verified vs NotationIQ + Benchoom
-  // (Hopkins 1863 score): B A G E F# G F# E (x2) | G G A A B B D C B |
-  // A B A G F# E | F# A G G G D G E G | G G G D G E G |
-  // G G A A B B D C B | A A B A G F# E
-  { t: "WE THREE KINGS", bpm: 92, mel: [[71,1],[69,1],[67,1],[64,1],[66,1],[67,1],[66,1],[64,1],[71,1],[69,1],[67,1],[64,1],[66,1],[67,1],[66,1],[64,1],[67,1],[67,1],[69,1],[69,1],[71,1],[71,1],[74,.5],[72,.5],[71,1],[69,1],[71,1],[69,1],[67,1],[66,1],[64,1],[66,1],[69,1],[67,1],[67,1],[67,1],[62,1],[67,1],[64,1],[67,1],[67,1],[67,1],[67,1],[62,1],[67,1],[64,1],[67,1],[67,1],[67,1],[69,1],[69,1],[71,1],[71,1],[74,.5],[72,.5],[71,1],[69,1],[69,1],[71,1],[69,1],[67,1],[66,1],[64,2]], bas: [[40,4],[47,4],[40,4],[47,4],[40,4],[43,4],[40,4],[47,4],[40,4],[47,4],[40,4],[43,4],[40,4],[47,4],[40,4],[40,4]] },
-  // WE WISH YOU A MERRY CHRISTMAS (key of C) — verified vs
-  // piano-keyboard-guide.com + answers.com (C major, 3/4):
-  // C F F G F E D D | D G G A G F E C | C A A Bb A G F D | C C D G E F |
-  // C F F F E | E F E D C | G A G F C C | C C D G E F
-  { t: "WE WISH YOU A MERRY CHRISTMAS", bpm: 96, mel: [[60,1],[65,1],[65,1],[67,1],[65,1],[64,1],[62,1],[62,2],[62,1],[67,1],[67,1],[69,1],[67,1],[65,1],[64,1],[60,2],[60,1],[69,1],[69,1],[70,1],[69,1],[67,1],[65,1],[62,2],[60,1],[60,1],[62,1],[67,1],[64,1],[65,2],[60,1],[65,1],[65,1],[65,1],[64,2],[64,1],[65,1],[64,1],[62,1],[60,2],[67,1],[69,1],[67,1],[65,1],[60,1],[60,2],[60,1],[60,1],[62,1],[67,1],[64,1],[65,2]], bas: [[48,4],[41,4],[43,4],[48,4],[48,4],[41,4],[43,4],[48,4],[41,4],[43,4],[48,4],[41,4],[43,4],[48,4],[48,4]] },
-  // 15. WHEN THE SAINTS GO MARCHING IN — C E F G | C E F G | C E F G | E D E D | E D C E | D D E D | C E G G | C
-  { t: "WHEN THE SAINTS GO MARCHING IN", bpm: 100, mel: [[60,1],[64,1],[65,1],[67,1],[60,1],[64,1],[65,1],[67,1],[60,1],[64,1],[65,1],[67,1],[64,1],[62,1],[64,1],[62,1],[64,1],[62,1],[60,1],[64,1],[62,2],[64,1],[62,1],[60,1],[64,1],[67,2],[60,4]], bas: [[48,4],[48,4],[43,4],[48,4],[41,4],[48,4],[43,4],[48,4]] },
-  // 16. YANKEE DOODLE (key of C)
-  // C C D E C E D | C C D E F E D C | D D E F G F E D | C C D E F E D C
-  { t: "YANKEE DOODLE", bpm: 104, mel: [[60,1],[60,1],[62,1],[64,1],[60,1],[64,1],[62,2],[60,1],[60,1],[62,1],[64,1],[65,1],[64,1],[62,1],[60,1],[62,1],[62,1],[64,1],[65,1],[67,1],[65,1],[64,1],[62,1],[60,1],[60,1],[62,1],[64,1],[65,1],[64,1],[62,1],[60,1]], bas: [[48,4],[43,4],[41,4],[48,4],[43,4],[48,4],[48,4],[48,4]] },
-];
-
-var CM_SONGS = CM_SONGS_A.concat(CM_SONGS_B, CM_SONGS_C);
-
-/* ---------- Persistence ----------
-   Exclusions are stored by SONG TITLE, not by index: inserting songs
-   alphabetically (the 10 Christmas songs, Nov 2026) shifts indices,
-   which would corrupt index-keyed exclusions. Legacy index-keyed data
-   is migrated once on load (see CM_OLD_TITLES below). */
-var CM_KEY_EX = 'jmf-games-children-music-excluded'; // JSON array of song titles
-var CM_KEY_SH = 'jmf-games-children-music-shuffle';  // '1' / '0'
-var cmExcluded = {}; // song title -> true
-var cmShuffle = false;
-/* The old 50-song alphabetical order (before the 10 Christmas songs
-   were added). Only used to migrate legacy index-keyed exclusions:
-   an old stored index N meant CM_OLD_TITLES[N]. */
-var CM_OLD_TITLES = ["ALOUETTE","AMAZING GRACE","AU CLAIR DE LA LUNE","AULD LANG SYNE","AWAY IN A MANGER","BAA BAA BLACK SHEEP","BRAHMS' LULLABY","CAMPTOWN RACES","CIELITO LINDO","FRERE JACQUES","GO TELL AUNT RHODY","HAPPY BIRTHDAY TO YOU","HE'S GOT THE WHOLE WORLD IN HIS HANDS","HERE WE GO ROUND THE MULBERRY BUSH","HOME ON THE RANGE","HUMPTY DUMPTY","HUSH LITTLE BABY","I'VE BEEN WORKING ON THE RAILROAD","IF YOU'RE HAPPY AND YOU KNOW IT","ITSY BITSY SPIDER","JESUS LOVES ME","JINGLE BELLS","KUMBAYA","LA CUCARACHA","LIGHTLY ROW","LONDON BRIDGE IS FALLING DOWN","MARY HAD A LITTLE LAMB","MICHAEL ROW THE BOAT ASHORE","ODE TO JOY","OH! SUSANNA","OLD MACDONALD HAD A FARM","PAT-A-CAKE","POP GOES THE WEASEL","RING AROUND THE ROSIE","ROCK-A-BYE BABY","ROW ROW ROW YOUR BOAT","SAKURA SAKURA","SHE'LL BE COMING 'ROUND THE MOUNTAIN","SILENT NIGHT","SKIP TO MY LOU","SWING LOW SWEET CHARIOT","THE ALPHABET SONG","THE FARMER IN THE DELL","THE GRAND OLD DUKE OF YORK","THE MUFFIN MAN","THIS LITTLE LIGHT OF MINE","THIS OLD MAN","TWINKLE TWINKLE LITTLE STAR","WHEN THE SAINTS GO MARCHING IN","YANKEE DOODLE"];
-function cmTitleIndex(t) {
-  for (var i = 0; i < CM_SONGS.length; i++) if (CM_SONGS[i].t === t) return i;
-  return -1;
-}
-function cmLoadPrefs() {
-  cmExcluded = {}; cmShuffle = false;
-  try {
-    var raw = localStorage.getItem(CM_KEY_EX);
-    if (raw) {
-      var arr = JSON.parse(raw);
-      if (arr && arr.length) {
-        var migrated = false;
-        for (var i = 0; i < arr.length; i++) {
-          var e = arr[i];
-          if (typeof e === 'number') {
-            var t = CM_OLD_TITLES[e | 0];
-            if (t) { cmExcluded[t] = true; migrated = true; }
-          } else if (typeof e === 'string' && e) {
-            if (cmTitleIndex(e) >= 0) cmExcluded[e] = true;
-          }
-        }
-        if (migrated) cmSavePrefs(); // rewrite the store as titles, once
-      }
-    }
-    cmShuffle = localStorage.getItem(CM_KEY_SH) === '1';
-  } catch (e) { cmExcluded = {}; cmShuffle = false; }
-}
-function cmSavePrefs() {
-  try {
-    var arr = [];
-    for (var k in cmExcluded) if (cmExcluded[k]) arr.push(k);
-    localStorage.setItem(CM_KEY_EX, JSON.stringify(arr));
-    localStorage.setItem(CM_KEY_SH, cmShuffle ? '1' : '0');
-  } catch (e) {}
-}
-
-/* ---------- Player state ---------- */
-var cmActive = false;   // player open (screen 'play', currentGame 'music')
-var cmPlaying = false;  // playing (not paused); false also when nothing to play
-var cmOrder = [];       // play order: included song indices (sequential or shuffled)
-var cmPos = 0;          // position in cmOrder of the current song
-var cmCursor = 0;       // list cursor: index into CM_SONGS (0..59), includes excluded
-var cmListTop = 0;      // first visible list row
-var CM_ROWS = 6, CM_PITCH = 13, CM_LIST_Y = 64;
-var cmSong = null;      // current song object
-var cmEv = [];          // merged events [{beat, midi, dur, hand, vmul}] sorted by beat
-var cmEvIdx = 0;        // next event to schedule
-var cmBeatPos = 0;      // current beat position within the song
-var cmTime = 0;         // beat-derived clock (seconds) within the song
-var cmRubato = 1;       // current tempo factor from the deterministic rubato curve (0.95..1.05)
-var cmAudioElapsed = 0; // seconds of song audio elapsed (the beat clock's source of truth)
-var cmTimeTable = null; // cumulative audio seconds at 0.1-beat grid points (exact beat->time map)
-var cmTimeTableSong = null; // song the table was built for
-var cmRubatoPhases = null;  // per-song rubato curve phases (seeded by title hash)
-var CM_TABLE_STEP = 0.1;    // beat resolution of the integrated tempo map
-var cmSongBeats = 0;    // total beats of the current (arranged) song
-var cmMelBeats = 0;     // beats of the stored melody (one verse)
-var cmFinalStart = 0;   // beat where the final verse begins
-var cmRit = 1;          // current ritardando factor (1 in the body, up to 1.3 at the end)
-var cmFrame = 0;        // animation clock for the player screen
-var cmPlayed = 0;       // notes scheduled so far (diagnostic / test hook)
-var cmLastMelodyMidi = 0; // last melody note (drives the pressed piano key)
-var cmLastMelodyFrame = -1000;
-var cmAc = null;        // AudioContext (lazy; null headless)
-var cmMaster = null;    // master gain node
-var cmLastAudioTime = null; // AudioContext time of the last cmUpdate pump (null = re-anchor next pump)
-/* Background playback: the scheduler runs on the Web Audio clock with a
-   long lookahead, pumped by rAF AND by a timer (see cmPump below).
-   CM_PUMP_MS / CM_LOOKAHEAD_SEC: the timer fires every 200ms in the
-   foreground; backgrounded tabs throttle timers to ~1Hz, so the
-   lookahead must cover many seconds of throttled gaps — 15s survives
-   even a 10s+ stall with margin, while still scheduling only the
-   current song (never the whole playlist: ~40 notes / ~160 nodes
-   alive at once, not 60 songs' worth). */
-var CM_PUMP_MS = 200;
-var CM_LOOKAHEAD_SEC = 15;
-var cmPumpTimer = null; // setInterval id for the background pump (null = stopped)
-var cmVoices = [];      // scheduled piano voices [{gain, oscs, when, stop}] — lets pause / song-change cancel notes that have not sounded yet
-var cmAudibleIdx = 0;   // next event whose beat the AUDIBLE clock has passed (drives the piano-key highlight; the scheduler runs 15s ahead of it)
-var cmMusicOffDone = false; // the MUSIC-off transition (cancel + rewind) has been done for this off-period
-var cmMediaSessionWired = false; // Media Session action handlers registered
-var cmVisibilityWired = false;   // visibilitychange listener registered
-
-function cmMelBeatsOf(s) {
-  var t = 0;
-  for (var i = 0; i < s.mel.length; i++) t += s.mel[i][1];
-  return t;
-}
-
-/* ---------- Arrangement: one melody, many varied verses ----------
-   A stored song is a single short melody (~15-28s). Jesse wants FULL
-   songs, over 2 minutes each, at the same calm tempo — so each song is
-   arranged at playback time as an intro + many varied verses of its
-   own melody (never slowed down, never stretched notes). The melody
-   data is stored ONCE; the verses are generated by code, so the file
-   stays small. The verse count is computed per song so the arranged
-   song lands at ~135s nominal or more (margin over the 120s floor,
-   even with rubato running ~6% fast). */
-function cmVerseCount(s) {
-  var mb = cmMelBeatsOf(s);
-  var intro = Math.min(8, mb);
-  var target = 135 * s.bpm / 60; // beats for ~135s at this tempo
-  var v = Math.ceil((target - intro) / mb);
-  return Math.max(6, v); // at least 6 varied verses
-}
-function cmVersePlan(s) {
-  // Verse styles: index 0 is the intro; the last verse is the gentle
-  // ending; the middle verses cycle plain / harmony / octave-up /
-  // arpeggio / gentle so no two verses in a row sound alike.
-  var n = cmVerseCount(s);
-  var plan = ['intro'];
-  var cyc = ['harmony', 'octaveUp', 'arpeggio', 'plain'];
-  for (var v = 1; v <= n; v++) {
-    if (v === n) plan.push('final');
-    else if (v === 1) plan.push('plain');
-    else if (v === 2) plan.push('harmony');
-    else if (v === 3) plan.push('octaveUp');
-    else if (v === 4) plan.push('arpeggio');
-    else if (v === 5) plan.push('gentle');
-    else plan.push(cyc[(v - 6) % 4]);
-  }
-  return plan;
-}
-function cmArrangementBeats(s) {
-  var mb = cmMelBeatsOf(s);
-  return Math.min(8, mb) + cmVerseCount(s) * mb + 2; // +2: the held final note
-}
-function cmSongTotalBeats(s) {
-  return cmArrangementBeats(s); // arranged length, not the raw melody
-}
-function cmBuildArrangement(s) {
-  var ev = [];
-  var mb = cmMelBeatsOf(s);
-  var introBeats = Math.min(8, mb);
-  var plan = cmVersePlan(s);
-  var i, k;
-  function pushMelody(startBeat, style, vmul) {
-    var b = 0;
-    for (k = 0; k < s.mel.length; k++) {
-      var m = s.mel[k][0], d = s.mel[k][1];
-      var mm = m;
-      if (m > 0) {
-        if (style === 'octaveUp') mm = m + 12;
-        else if (style === 'gentle') mm = m - 12;
-      }
-      var dd = d;
-      if (style === 'final' && k === s.mel.length - 1) dd = d + 2; // held ending
-      ev.push({ beat: startBeat + b, midi: mm, dur: dd, hand: 'm', vmul: vmul });
-      b += d;
-    }
-  }
-  function pushBass(startBeat, style, vmul) {
-    var b = 0;
-    for (k = 0; k < s.bas.length; k++) {
-      var m = s.bas[k][0], d = s.bas[k][1];
-      if (style === 'arpeggio') {
-        // Arpeggiate the bass note: root, fifth, octave, one per beat.
-        var steps = Math.max(1, Math.round(d));
-        for (var q = 0; q < steps; q++) {
-          ev.push({ beat: startBeat + b + q, midi: m + [0, 7, 12][q % 3], dur: 1, hand: 'b', vmul: vmul * 0.8 });
-        }
-      } else {
-        ev.push({ beat: startBeat + b, midi: m, dur: d, hand: 'b', vmul: vmul });
-        if (style === 'harmony' || style === 'gentle') {
-          // Left-hand chord: the fifth above the bass, soft.
-          ev.push({ beat: startBeat + b, midi: m + 7, dur: d, hand: 'b', vmul: vmul * 0.6 });
-        }
-      }
-      b += d;
-    }
-  }
-  // Intro: the first phrase of the melody, soft, with its bass.
-  var b0 = 0;
-  for (i = 0; i < s.mel.length && b0 < introBeats; i++) {
-    ev.push({ beat: b0, midi: s.mel[i][0], dur: Math.min(s.mel[i][1], introBeats - b0), hand: 'm', vmul: 0.65 });
-    b0 += s.mel[i][1];
-  }
-  var bb = 0;
-  for (i = 0; i < s.bas.length && bb < introBeats; i++) {
-    ev.push({ beat: bb, midi: s.bas[i][0], dur: Math.min(s.bas[i][1], introBeats - bb), hand: 'b', vmul: 0.6 });
-    bb += s.bas[i][1];
-  }
-  // Verses: the whole melody again, each time dressed differently.
-  for (var v = 1; v < plan.length; v++) {
-    var st = plan[v];
-    var start = introBeats + (v - 1) * mb;
-    var mv = st === 'gentle' ? 0.8 : (st === 'final' ? 0.85 : (st === 'octaveUp' ? 0.95 : 1));
-    var bv = st === 'gentle' ? 0.9 : (st === 'final' ? 0.9 : 1);
-    pushMelody(start, st, mv);
-    pushBass(start, st, bv);
-  }
-  ev.sort(function (a, c) { return a.beat - c.beat || (a.hand === 'm' ? -1 : 1); });
-  return ev;
-}
-function cmRubatoPhasesFor(s) {
-  // Per-song rubato shape, seeded by the title hash: every song has its
-  // own gentle tempo curve, identical on every play (deterministic —
-  // the beat->time map must be the same when the song is built and when
-  // it is played, or the scheduler and the beat clock drift apart).
-  var h = 0;
-  for (var i = 0; i < s.t.length; i++) h = ((h * 31) + s.t.charCodeAt(i)) | 0;
-  h = h >>> 0;
-  return { p1: (h % 1000) / 1000 * Math.PI * 2, p2: ((h >> 10) % 1000) / 1000 * Math.PI * 2 };
-}
-function cmRubatoAt(beat) {
-  // Deterministic rubato: a smooth sum of two sines over phrases
-  // (periods 7 and 3 phrases), zero-mean over a song, ±5% — inside the
-  // ±6% the old random walk allowed, but continuous (no 4-beat steps)
-  // and identical on every play, so the timing map is exact.
-  var ph = cmRubatoPhases;
-  if (!ph) { if (!cmSong) return 1; ph = cmRubatoPhasesFor(cmSong); }
-  var x = beat / 4;
-  var s = (Math.sin(2 * Math.PI * x / 7 + ph.p1) + 0.6 * Math.sin(2 * Math.PI * x / 3 + ph.p2)) / 1.6;
-  return 1 + 0.05 * s;
-}
-function cmRitAt(beat) {
-  // Ritardando: the final verse eases from 1x to 1.3x beat length.
-  if (!cmSong || beat <= cmFinalStart) return 1;
-  return 1 + 0.3 * Math.min(1, (beat - cmFinalStart) / Math.max(1, cmSongBeats - cmFinalStart));
-}
-function cmBuildTimeTable() {
-  // Integrate the tempo curve (rubato x ritardando) once per song at
-  // 0.1-beat resolution. The table is the single source of truth for
-  // beat->time: the scheduler reads event times off it, the beat clock
-  // inverts it, and the timer/total read off it — so the audio, the
-  // clock and the display can never diverge (the old code scheduled
-  // with the CURRENT rubato/rit as if constant over the 15s lookahead
-  // while the clock integrated the changing values, which left a
-  // 2-4s dead-silence gap at every song transition and played the
-  // final verse faster than the intended ritardando).
-  var spb = 60 / cmSong.bpm;
-  var tab = [0];
-  var b = 0, t = 0;
-  while (b < cmSongBeats - 1e-9) {
-    var step = Math.min(CM_TABLE_STEP, cmSongBeats - b);
-    t += step * spb * cmRubatoAt(b + step / 2) * cmRitAt(b + step / 2);
-    b += step;
-    tab.push(t);
-  }
-  cmTimeTable = tab;
-  cmTimeTableSong = cmSong;
-}
-function cmEnsureTimeTable() {
-  if (!cmSong) return false;
-  if (cmTimeTable && cmTimeTableSong === cmSong) return true;
-  cmBuildTimeTable();
-  return true;
-}
-function cmBeatToSec(b) {
-  // Beat position -> seconds, exact: the tempo curve (rubato x
-  // ritardando) is integrated at song build, so the timer, the total
-  // and the progress bar always agree with what is actually sounding.
-  if (!cmSong || !cmEnsureTimeTable()) return 0;
-  if (b <= 0) return 0;
-  if (b >= cmSongBeats) return cmTimeTable[cmTimeTable.length - 1];
-  var f = b / CM_TABLE_STEP;
-  var i = Math.floor(f);
-  var g0 = Math.min(i * CM_TABLE_STEP, cmSongBeats);
-  var g1 = Math.min((i + 1) * CM_TABLE_STEP, cmSongBeats);
-  var u = (b - g0) / Math.max(1e-9, g1 - g0);
-  return cmTimeTable[i] + (cmTimeTable[i + 1] - cmTimeTable[i]) * u;
-}
-function cmTimeToBeat(t) {
-  // Inverse of cmBeatToSec: audio seconds elapsed -> beat position.
-  if (!cmSong || !cmEnsureTimeTable()) return 0;
-  var tab = cmTimeTable;
-  if (t <= 0) return 0;
-  if (t >= tab[tab.length - 1]) return cmSongBeats;
-  var lo = 0, hi = tab.length - 1;
-  while (lo < hi - 1) { var mid = (lo + hi) >> 1; if (tab[mid] <= t) lo = mid; else hi = mid; }
-  var g0 = Math.min(lo * CM_TABLE_STEP, cmSongBeats);
-  var g1 = Math.min((lo + 1) * CM_TABLE_STEP, cmSongBeats);
-  var u = (t - tab[lo]) / Math.max(1e-9, tab[lo + 1] - tab[lo]);
-  return g0 + (g1 - g0) * u;
-}
-function cmIsExcluded(idx) { var s = CM_SONGS[idx]; return !!s && !!cmExcluded[s.t]; }
-function cmIncludedList() {
-  var out = [];
-  for (var i = 0; i < CM_SONGS.length; i++) if (!cmIsExcluded(i)) out.push(i);
-  return out;
-}
-function cmBuildOrder(keepSongIdx) {
-  var inc = cmIncludedList();
-  if (cmShuffle) {
-    // Fisher-Yates (Math.random; order verified by tests as a permutation).
-    for (var i = inc.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
-      var tmp = inc[i]; inc[i] = inc[j]; inc[j] = tmp;
-    }
-  }
-  cmOrder = inc;
-  if (keepSongIdx !== undefined && keepSongIdx !== null) {
-    var p = cmOrder.indexOf(keepSongIdx);
-    cmPos = p >= 0 ? p : 0;
-  } else cmPos = 0;
-}
-function cmCurrentIdx() {
-  if (!cmOrder.length) return -1;
-  return cmOrder[((cmPos % cmOrder.length) + cmOrder.length) % cmOrder.length];
-}
-
-/* ---------- Piano voice (WebAudio; silent headless) ---------- */
-function cmEnsureAudio() {
-  if (cmAc) {
-    try { if (cmAc.state === 'suspended' || cmAc.state === 'interrupted') cmAc.resume(); } catch (e) {}
-    return cmAc;
-  }
-  try {
-    var AC = (typeof window !== 'undefined') && (window.AudioContext || window.webkitAudioContext);
-    if (!AC) return null;
-    cmAc = new AC();
-    cmMaster = cmAc.createGain();
-    cmMaster.gain.value = 0.9;
-    cmMaster.connect(cmAc.destination);
-    if (cmAc.state === 'suspended' || cmAc.state === 'interrupted') cmAc.resume();
-    return cmAc;
-  } catch (e) { cmAc = null; return null; }
-}
-function cmMidiFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
-function cmPianoNote(midi, when, vel, hand) {
-  // A piano-like voice: sine fundamental + 2nd harmonic + a soft
-  // triangle 3rd, fast attack and a long exponential decay (the note
-  // rings past its written length, like a real piano). Gentle volume.
-  var ac = cmAc;
-  if (!ac || !cmMaster) return;
-  var f = cmMidiFreq(midi);
-  var ring = hand === 'b' ? 2.2 : 1.4;
-  var peak = (hand === 'b' ? 0.10 : 0.16) * vel;
-  try {
-    var g = ac.createGain();
-    // Intrinsic value matches the first automation event: a fresh gain
-    // defaults to 1.0, and the 1.0 -> 0.0001 timeline step is inaudible
-    // only because the oscillators start at phase 0 — belt-and-braces
-    // in case `when` ever lands in the past (GC pause mid-batch).
-    g.gain.value = 0.0001;
-    g.gain.setValueAtTime(0.0001, when);
-    g.gain.linearRampToValueAtTime(peak, when + 0.008);
-    g.gain.exponentialRampToValueAtTime(0.001, when + ring);
-    // Release to exactly 0 before the oscillators stop: an exponential
-    // ramp only asymptotes to 0.001, so stopping there cuts a live
-    // waveform (a pop) — worse when several notes stop together.
-    g.gain.linearRampToValueAtTime(0, when + ring + 0.03);
-    g.connect(cmMaster);
-    var o1 = ac.createOscillator(); o1.type = 'sine'; o1.frequency.value = f;
-    var g1 = ac.createGain(); g1.gain.value = 1; o1.connect(g1); g1.connect(g);
-    var o2 = ac.createOscillator(); o2.type = 'sine'; o2.frequency.value = f * 2;
-    var g2 = ac.createGain(); g2.gain.value = 0.35; o2.connect(g2); g2.connect(g);
-    var o3 = ac.createOscillator(); o3.type = 'triangle'; o3.frequency.value = f * 3;
-    var g3 = ac.createGain(); g3.gain.value = 0.12; o3.connect(g3); g3.connect(g);
-    var stop = when + ring + 0.05;
-    o1.start(when); o2.start(when); o3.start(when);
-    o1.stop(stop); o2.stop(stop); o3.stop(stop);
-    // Free the voice once it has stopped (the gain is at 0 by then).
-    o1.onended = function () { try { g.disconnect(); } catch (e2) {} };
-    // Track the voice so pause / MUSIC-off / song-change can cancel
-    // notes that have not sounded yet (with a 15s lookahead, most
-    // scheduled notes are still in the future). Finished voices are
-    // pruned here so the list only ever holds ringing + lookahead
-    // voices (tens, not the whole song).
-    cmVoices.push({ gain: g, oscs: [o1, o2, o3], when: when, stop: stop });
-    var nowP = ac.currentTime, kept = [];
-    for (var vi = 0; vi < cmVoices.length; vi++) if (cmVoices[vi].stop > nowP) kept.push(cmVoices[vi]);
-    cmVoices = kept;
-  } catch (e) {}
-}
-function cmSilence() {
-  // Fade the master gain out with setTargetAtTime, not cancel +
-  // setValueAtTime(gain.value): .value is the last SET value, not the
-  // value mid-ramp, so re-setting it after a ramp has started is a
-  // step in the waveform (a pop) — and the matching unsilence step
-  // (0 -> 0.9) fired on every exit -> re-enter. setTargetAtTime
-  // starts from the true rendered value, so it can never step.
-  if (cmAc && cmMaster) {
-    try {
-      var t = cmAc.currentTime;
-      cmMaster.gain.cancelScheduledValues(t);
-      cmMaster.gain.setTargetAtTime(0, t, 0.01);
-    } catch (e) {}
-  }
-}
-function cmUnsilence() {
-  // Restore the master gain with a short exponential approach, for
-  // the same reason: no step, whatever the gain was doing before.
-  if (cmAc && cmMaster) {
-    try {
-      var t = cmAc.currentTime;
-      cmMaster.gain.cancelScheduledValues(t);
-      cmMaster.gain.setTargetAtTime(0.9, t, 0.015);
-    } catch (e) {}
-  }
-}
-function cmCancelFutureVoices() {
-  // Cancel every scheduled voice that has not sounded yet: stop its
-  // oscillators now (a stop time before the start time means it never
-  // sounds) and disconnect its gain, so it can never be heard. Voices
-  // already sounding are left alone — they ring out naturally over
-  // their ~1.4s decay, which is the natural piano sound of pausing.
-  // Without this, a 15s lookahead would keep playing for up to 15s
-  // after a pause, a MUSIC-off, or a song change. cmPlayed is decremented
-  // for each cancelled voice so it keeps counting notes actually
-  // scheduled (a cancelled note is re-scheduled — and re-counted — on
-  // resume, via cmRewindSchedule).
-  if (!cmAc || !cmVoices.length) return;
-  var now = cmAc.currentTime;
-  // The cancel/keep decision MUST use the same time and the same grace
-  // as cmRewindSchedule, or notes drop or duplicate on resume: a voice
-  // kept here but re-scheduled there sounds twice; a voice cancelled
-  // here but skipped there never sounds. Both key off the voice's
-  // ACTUAL scheduled start time (`when`, recorded on the event as
-  // lastWhen — it already includes the onset jitter), with the same
-  // 30ms grace for a note sounding right now. Keying the cancel off
-  // the event's tSec instead disagrees with `when` by the jitter and
-  // can cut a voice that already started, or duplicate one at the
-  // grace boundary.
-  var kept = [];
-  for (var i = 0; i < cmVoices.length; i++) {
-    var v = cmVoices[i];
-    if (v.stop <= now) continue; // already finished: drop, already counted
-    if (v.when > now + 0.03) { // still in the future (30ms grace for a note sounding right now)
-      try { for (var j = 0; j < v.oscs.length; j++) v.oscs[j].stop(now); } catch (e) {}
-      try { v.gain.disconnect(); } catch (e2) {}
-      cmPlayed = Math.max(0, cmPlayed - 1);
-    } else kept.push(v);
-  }
-  cmVoices = kept;
-}
-function cmRewindSchedule() {
-  // After the future voices were cancelled (pause / MUSIC-off), point
-  // the scheduler back at the first event whose voice was cancelled,
-  // so resuming re-schedules exactly the cancelled notes — nothing
-  // already played is ever scheduled twice, and nothing is lost. The
-  // floor is the SAME scheduled-start time + 30ms grace
-  // cmCancelFutureVoices used (recorded per event as lastWhen):
-  // events at or below it were kept (they sound) and must not be
-  // re-scheduled; events above it were cancelled and must be. Events
-  // never scheduled (no lastWhen — e.g. skipped by the 60ms rule)
-  // fall back to the beat rule.
-  var i = 0;
-  var floor = cmAc ? cmAc.currentTime + 0.03 : Infinity;
-  while (i < cmEv.length && (cmEv[i].lastWhen !== undefined ? cmEv[i].lastWhen <= floor : cmEv[i].beat <= cmBeatPos)) i++;
-  cmEvIdx = i;
-}
-
-/* ---------- Playback ---------- */
-function cmStartSong(idx) {
-  var s = CM_SONGS[idx];
-  if (!s) { cmSong = null; cmPlaying = false; return; }
-  // The old song's not-yet-sounded voices (up to 15s of lookahead)
-  // must not bleed into the new song: cancel them before the event
-  // list is replaced. At a natural song end this is a no-op — the old
-  // song's remaining voices already started and are ringing out.
-  cmCancelFutureVoices();
-  cmSong = s;
-  cmEv = cmBuildArrangement(s);
-  cmMelBeats = cmMelBeatsOf(s);
-  cmSongBeats = cmArrangementBeats(s);
-  cmFinalStart = Math.min(8, cmMelBeats) + (cmVerseCount(s) - 1) * cmMelBeats;
-  // Exact timing: per-song rubato phases, the integrated beat->time
-  // table, and each event's audio time — the scheduler and the beat
-  // clock both read off this map, so they can never drift apart.
-  cmRubatoPhases = cmRubatoPhasesFor(s);
-  cmBuildTimeTable();
-  for (var ei = 0; ei < cmEv.length; ei++) cmEv[ei].tSec = cmBeatToSec(cmEv[ei].beat);
-  cmEvIdx = 0; cmBeatPos = 0; cmTime = 0; cmAudioElapsed = 0;
-  cmRubato = cmRubatoAt(0); cmRit = 1;
-  cmAudibleIdx = 0;
-  // Null the anchor: the beat clock starts counting at the first pump
-  // after the song starts. (Anchoring to now here would count the gap
-  // before that pump — up to 1s when backgrounded — and the 60ms rule
-  // would skip the song's opening notes, which were never scheduled
-  // during the gap. The boundary case, where pumps are already
-  // running, anchors in cmUpdate instead — see the song-end line.)
-  cmLastAudioTime = null;
-  cmUpdateMediaSession(); // lock-screen title follows the song
-}
-function cmStartCurrent() {
-  var idx = cmCurrentIdx();
-  if (idx < 0) { cmSong = null; cmPlaying = false; return; }
-  cmStartSong(idx);
-  cmCursor = idx;
-  cmClampList();
-}
-function cmNextSong() {
-  if (!cmOrder.length) { cmSong = null; cmPlaying = false; return; }
-  cmPos = (cmPos + 1) % cmOrder.length;
-  cmStartCurrent();
-}
-function cmPrevSong() {
-  if (!cmOrder.length) { cmSong = null; cmPlaying = false; return; }
-  cmPos = (cmPos - 1 + cmOrder.length) % cmOrder.length;
-  cmStartCurrent();
-}
-function cmScheduleNote(ev, delaySec, nowBase) {
-  // Humanized playing: per-note velocity + a tiny onset jitter, on top
-  // of the deterministic rubato curve. Good but not professional:
-  // warm and slightly imperfect, never metronomic, never sloppy.
-  var vel = ev.hand === 'm' ? 0.62 + Math.random() * 0.28 : 0.5 + Math.random() * 0.2;
-  vel *= (ev.vmul !== undefined && ev.vmul !== null) ? ev.vmul : 1; // per-verse dynamics
-  var jit = (Math.random() - 0.5) * 0.016; // ±8ms
-  cmPlayed++;
-  // (The piano-key highlight is NOT set here: with a 15s lookahead this
-  // runs far ahead of what is sounding. cmUpdate tracks the audible
-  // beat separately — see cmAudibleIdx.)
-  if (ev.midi <= 0) return;
-  if (!cmAc) return; // headless / silent: state machine still advances
-  // One time base per scheduling batch (passed in by cmScheduleAhead):
-  // re-reading currentTime per note would let the batch's own execution
-  // time — or a GC pause mid-loop — drift later notes late.
-  var base = (nowBase !== undefined && nowBase !== null) ? nowBase : cmAc.currentTime;
-  var when = base + Math.max(0, delaySec + jit);
-  // Record the voice's ACTUAL start time on the event: the cancel and
-  // rewind decisions both key off it (see cmCancelFutureVoices), so a
-  // note is never both kept and re-scheduled, or cancelled and lost.
-  ev.lastWhen = when;
-  cmPianoNote(ev.midi, when, vel, ev.hand);
-}
-function cmScheduleAhead() {
-  // Schedule every event whose audio time falls within the lookahead
-  // window (CM_LOOKAHEAD_SEC ahead of the elapsed audio). Called by
-  // cmUpdate for the current song, and again right after a song-end
-  // transition so the next song's first notes are scheduled at once —
-  // the next pump may be ~1s away in the background, and by then the
-  // new song's opening notes would be past and skipped (a gap).
-  if (!cmSong) return;
-  // Events carry their exact audio time (tSec, read off the integrated
-  // tempo map at song build); the lookahead window is in seconds of
-  // elapsed audio, so scheduling is exact at any rubato/ritardando.
-  // The batch shares one currentTime reading (see cmScheduleNote).
-  var nowBase = cmAc ? cmAc.currentTime : 0;
-  while (cmEvIdx < cmEv.length && cmEv[cmEvIdx].tSec <= cmAudioElapsed + CM_LOOKAHEAD_SEC) {
-    var ev = cmEv[cmEvIdx++];
-    // A note whose audio time is already past (pump stalled longer than
-    // the whole lookahead) is SKIPPED, not bunched: firing it at now,
-    // together with every other missed note, is a burst chord / clip /
-    // pop. With a 15s lookahead this only ever triggers after a stall
-    // longer than 15s. A note up to 60ms late still plays (its onset
-    // is inaudibly late).
-    if (cmAc && cmAudioElapsed - ev.tSec > 0.06) continue;
-    var delaySec = Math.max(0, ev.tSec - cmAudioElapsed);
-    cmScheduleNote(ev, delaySec, nowBase);
-  }
-}
-function cmUpdate() {
-  cmFrame++;
-  if (!cmActive || !cmPlaying || !cmSong || !cmOrder.length) { cmLastAudioTime = null; return; }
-  // MUSIC toggle off: silent and paused — the position is held, so
-  // turning music back on resumes exactly where it stopped. On the
-  // transition, cancel the notes already scheduled ahead (otherwise up
-  // to 15s of lookahead would keep playing after the toggle) and rewind
-  // the scheduler so turning it back on resumes from the held spot.
-  if (typeof JMFGAMES !== 'undefined' && JMFGAMES.isMusicOn && !JMFGAMES.isMusicOn()) {
-    if (cmAc && !cmMusicOffDone) { cmMusicOffDone = true; cmCancelFutureVoices(); cmRewindSchedule(); }
-    cmLastAudioTime = null; return;
-  }
-  // MUSIC off->on transition (the flag was set while held): re-anchor
-  // the beat clock, for the same reason as the resume path — if no
-  // pump ran while held, the anchor is stale and the first on-pump
-  // would jump the clock by the held duration, skipping notes.
-  if (cmMusicOffDone) cmLastAudioTime = null;
-  cmMusicOffDone = false;
-  // Beat clock: elapsed audio time is the source of truth, and the beat
-  // position is read off the integrated tempo map (cmTimeToBeat), so
-  // the clock, the scheduler and the display always agree exactly —
-  // the old code advanced the beat by dt/(spb*rubato*rit) with the
-  // CURRENT factors while scheduling assumed them constant over the
-  // 15s lookahead, which drifted the clock up to ~6s behind the audio
-  // by song end and left a dead-silence gap at every transition.
-  // Driven by the AudioContext clock when there is one, so a
-  // stalled/hitched frame pump cannot bunch notes; headless (no
-  // AudioContext) advances by 1/60 per frame, so the silent state
-  // machine and its tests are unchanged.
-  if (cmAc) {
-    var now = cmAc.currentTime;
-    if (cmLastAudioTime === null || now < cmLastAudioTime) { cmLastAudioTime = now; }
-    var dt = Math.max(0, now - cmLastAudioTime);
-    cmLastAudioTime = now;
-    cmAudioElapsed += dt;
-  } else {
-    cmAudioElapsed += 1 / 60;
-  }
-  cmBeatPos = cmTimeToBeat(cmAudioElapsed);
-  cmRubato = cmRubatoAt(cmBeatPos);
-  cmRit = cmRitAt(cmBeatPos);
-  // Beat-derived clock: the timer, the total and the progress bar are
-  // all read off the same beat position, so they always agree — even
-  // over a 2+ minute song with rubato and a ritardando.
-  cmTime = cmBeatToSec(cmBeatPos);
-  // Piano-key highlight follows the AUDIBLE beat, not the scheduling
-  // pointer: the scheduler runs 15s ahead of what is sounding, so the
-  // key of the note actually playing now is the last melody event the
-  // beat clock has passed.
-  while (cmAudibleIdx < cmEv.length && cmEv[cmAudibleIdx].beat <= cmBeatPos) {
-    var aev = cmEv[cmAudibleIdx++];
-    if (aev.hand === 'm' && aev.midi > 0) { cmLastMelodyMidi = aev.midi; cmLastMelodyFrame = cmFrame; }
-  }
-  // Rubato is a deterministic curve of beat (cmRubatoAt), derived from
-  // the beat position above — no random walk: the timing map must be
-  // the same when the song is built and when it is played.
-  cmScheduleAhead();
-  if (cmBeatPos >= cmSongBeats) {
-    // Song ends -> next, wraps; next song scheduled at once. Anchor the
-    // beat clock to this pump's audio time: cmStartSong nulls the
-    // anchor (right for a fresh entry), but here pumps are already
-    // running, and nulling would lose one full pump interval (up to 1s
-    // backgrounded) of beat advance at every boundary, permanently.
-    cmNextSong(); cmScheduleAhead();
-    if (cmAc) cmLastAudioTime = cmAc.currentTime;
-  }
-}
-
-/* ---------- Entry / exit ---------- */
-function startMusic() {
-  JMFGAMES.musicStop(); // stop any game chiptune first
-  // Forget the last game's tune too: musicStop only stops the timer,
-  // and MUSIC off->on would otherwise resurrect the chiptune loop
-  // underneath the piano (setMusicOn resumes the remembered tune).
-  if (JMFGAMES.musicForget) JMFGAMES.musicForget();
-  currentGame = 'music';
-  screen = 'play';
-  cmActive = true;
-  cmFrame = 0;
-  cmLoadPrefs();
-  cmBuildOrder(null);
-  cmCursor = 0;
-  cmListTop = 0;
-  cmEnsureAudio();
-  cmUnsilence();
-  if (cmOrder.length) {
-    cmPos = 0;
-    cmStartCurrent();
-    cmPlaying = true; // autoplay on enter
-  } else {
-    cmSong = null;
-    cmPlaying = false;
-  }
-  cmStartPump(); // timer pump: keeps audio scheduling when rAF is dead (backgrounded tab / screen off)
-  cmSetupMediaSession(); // lock-screen controls (guarded: no-op where unsupported)
-  cmUpdateMediaSession();
-  cmInitVisibility(); // hidden = keep playing; visible = resync + resume the context
-}
-function cmExit() {
-  // Exiting MUST stop the audio: cancel the lookahead's not-yet-sounded
-  // notes and silence the master gain at once, then park the player.
-  // Menu returns to the top level.
-  cmPlaying = false;
-  cmActive = false;
-  cmStopPump(); // no more scheduling once the player is closed
-  cmCancelFutureVoices(); // the lookahead's not-yet-sounded notes must not survive the exit (a fast re-enter unsilences the master)
-  cmSilence();
-  cmUpdateMediaSession(); // lock screen: no longer playing
-}
-
-/* ---------- Controls ---------- */
-function cmClampList() {
-  if (cmCursor < cmListTop) cmListTop = cmCursor;
-  else if (cmCursor >= cmListTop + CM_ROWS) cmListTop = cmCursor - CM_ROWS + 1;
-  if (cmListTop < 0) cmListTop = 0;
-  if (cmListTop > Math.max(0, CM_SONGS.length - CM_ROWS)) cmListTop = Math.max(0, CM_SONGS.length - CM_ROWS);
-}
-function cmListMove(d) {
-  if (!cmActive) return;
-  cmCursor = Math.max(0, Math.min(CM_SONGS.length - 1, cmCursor + d));
-  cmClampList();
-  JMFGAMES.beep(600, 0.04);
-}
-function cmPausePlayback() {
-  // The one pause path, shared by the A button and the lock-screen
-  // pause handler. Pausing cancels the notes already scheduled ahead
-  // (otherwise up to 15s of lookahead would keep playing) and rewinds
-  // the scheduler so resuming replays exactly the cancelled notes from
-  // the held spot. Nothing here ever resumes on its own: no
-  // auto-resume on visibility change, no auto-resume from the pump.
-  if (!cmActive || !cmPlaying) return;
-  cmPlaying = false;
-  if (cmAc) { cmCancelFutureVoices(); cmRewindSchedule(); }
-  cmUpdateMediaSession();
-}
-function cmResumePlayback() {
-  // The one resume path, shared by the A button and the lock-screen
-  // play handler. Only ever called from an explicit play action.
-  if (!cmActive || cmPlaying || !cmOrder.length || !cmSong) return;
-  cmPlaying = true;
-  // Re-anchor the beat clock: if no pump ran while paused (backgrounded
-  // tab, frozen page, lock-screen resume), the anchor is stale and the
-  // first pump would jump the clock by the whole paused duration,
-  // skipping seconds of notes via the 60ms rule. Nulling it makes the
-  // next pump start from the resume moment, whatever ran during the
-  // pause. (On a live page the paused pumps already null it every
-  // tick, so this is a no-op there.)
-  cmLastAudioTime = null;
-  cmEnsureAudio(); cmStartPump(); cmUnsilence();
-  cmUpdateMediaSession();
-}
-function cmTogglePlay() {
-  if (!cmActive || !cmOrder.length || !cmSong) return;
-  if (cmPlaying) cmPausePlayback(); else cmResumePlayback();
-  JMFGAMES.beep(cmPlaying ? 880 : 440, 0.06);
-}
-function cmPlayCursor() {
-  // A: if the cursor is on the song already playing, toggle pause;
-  // otherwise start playing the highlighted song (excluded songs
-  // never play — low beep, no-op).
-  if (!cmActive || !cmOrder.length) return;
-  var cur = cmCurrentIdx();
-  if (cmCursor === cur) { cmTogglePlay(); return; }
-  if (cmIsExcluded(cmCursor)) { JMFGAMES.beep(220, 0.08); return; }
-  var p = cmOrder.indexOf(cmCursor);
-  if (p < 0) return;
-  cmPos = p;
-  cmStartCurrent();
-  cmPlaying = true;
-  cmEnsureAudio(); cmStartPump(); cmUnsilence();
-  cmUpdateMediaSession();
-  JMFGAMES.beep(880, 0.06);
-}
-function cmToggleExclude() {
-  if (!cmActive) return;
-  var idx = cmCursor;
-  var title = CM_SONGS[idx] ? CM_SONGS[idx].t : '';
-  var wasCurrent = (idx === cmCurrentIdx());
-  var nextPos = cmPos; // slot the next song slides into if the current one goes
-  if (cmExcluded[title]) delete cmExcluded[title];
-  else cmExcluded[title] = true;
-  cmSavePrefs();
-  var keep = wasCurrent ? null : cmCurrentIdx();
-  cmBuildOrder(keep);
-  if (wasCurrent) {
-    // Excluding the song that is playing: move on to the next one at
-    // once (or stop if nothing is left).
-    if (cmOrder.length) { cmPos = Math.min(nextPos, cmOrder.length - 1); cmStartCurrent(); cmPlaying = true; }
-    else { cmSong = null; cmPlaying = false; }
-  }
-  cmUpdateMediaSession();
-  JMFGAMES.beep(cmIsExcluded(idx) ? 330 : 660, 0.06);
-}
-function cmToggleShuffle() {
-  if (!cmActive) return;
-  cmShuffle = !cmShuffle;
-  cmSavePrefs();
-  cmBuildOrder(cmCurrentIdx());
-  JMFGAMES.beep(cmShuffle ? 990 : 660, 0.06);
-}
-
-/* ---------- Background playback: timer pump + Media Session + visibility ----------
-   Problem: core-tail-mid.js calls cmUpdate() once per rAF frame, and
-   rAF stops when the tab is backgrounded/minimized or the phone screen
-   turns off — audio would die as soon as the ≤0.25s lookahead drained.
-   Fix: (1) a 200ms interval timer pumps the SAME cmUpdate, so audio
-   keeps scheduling while rAF is dead; (2) a 15s lookahead (see
-   CM_LOOKAHEAD_SEC) covers background timer throttling (~1Hz) with
-   huge margin; (3) Media Session makes it lock-screen media, which is
-   what keeps the browser treating it as playback with the screen off.
-   NO Wake Lock is used: the screen must be allowed to turn off.
-   Double-advance safety: cmUpdate's beat clock is driven by
-   AudioContext-clock deltas through the single cmLastAudioTime anchor,
-   shared by both pumps — whichever pump runs second in a tick sees a
-   ~0 delta and advances nothing, so rAF + timer can never double-count.
-   Headless (no AudioContext) the beat clock is frame-driven, so the
-   timer pump returns without touching it: the frame path owns the
-   clock there, exactly as before. Closing the tab/browser stops the
-   audio automatically: nothing here keeps anything alive past unload
-   (no keepalive, no Wake Lock, no service worker). */
-function cmPump() {
-  if (!cmAc) return; // headless: the frame path owns the beat clock
-  if (cmActive && cmPlaying && (cmAc.state === 'suspended' || cmAc.state === 'interrupted')) {
-    try { cmAc.resume(); } catch (e) {} // the OS may suspend the context with the screen off
-  }
-  cmUpdate();
-}
-function cmStartPump() {
-  if (cmPumpTimer !== null) return;
-  if (!cmAc) return;
-  try { if (typeof setInterval !== 'undefined') cmPumpTimer = setInterval(cmPump, CM_PUMP_MS); } catch (e) { cmPumpTimer = null; }
-}
-function cmStopPump() {
-  if (cmPumpTimer !== null) {
-    try { if (typeof clearInterval !== 'undefined') clearInterval(cmPumpTimer); } catch (e) {}
-    cmPumpTimer = null;
-  }
-}
-function cmMediaSession() {
-  try {
-    if (typeof navigator === 'undefined' || !navigator) return null;
-    return navigator.mediaSession || null;
-  } catch (e) { return null; }
-}
-function cmUpdateMediaSession() {
-  // Metadata + playback state, refreshed on every song change, pause
-  // and resume so the lock screen always shows the truth. Fully
-  // guarded: headless and unsupported browsers are no-ops.
-  var ms = cmMediaSession();
-  if (!ms) return;
-  try {
-    if (cmSong && typeof MediaSessionMetadata !== 'undefined') {
-      ms.metadata = new MediaSessionMetadata({ title: cmSong.t, artist: 'JMF Games', album: 'Children Music' });
-    }
-  } catch (e) {}
-  try { ms.playbackState = (!cmActive || !cmSong) ? 'none' : (cmPlaying ? 'playing' : 'paused'); } catch (e) {}
-}
-function cmMediaStep(d) {
-  // Lock-screen next / previous track: change song and play it (the
-  // standard media behaviour — a track step while paused starts
-  // playing). Guarded by cmActive in the handlers.
-  if (!cmActive || !cmOrder.length) return;
-  if (d < 0) cmPrevSong(); else cmNextSong();
-  cmPlaying = true;
-  cmEnsureAudio(); cmStartPump(); cmUnsilence();
-  cmUpdateMediaSession();
-}
-function cmSetupMediaSession() {
-  var ms = cmMediaSession();
-  if (!ms || !ms.setActionHandler || cmMediaSessionWired) return;
-  try {
-    ms.setActionHandler('play', function () { if (cmActive) cmResumePlayback(); });
-    ms.setActionHandler('pause', function () { if (cmActive) cmPausePlayback(); });
-    ms.setActionHandler('previoustrack', function () { if (cmActive) cmMediaStep(-1); });
-    ms.setActionHandler('nexttrack', function () { if (cmActive) cmMediaStep(1); });
-    cmMediaSessionWired = true;
-  } catch (e) {}
-}
-function cmOnVisibilityChange() {
-  // Hidden: do NOTHING — no pause, no silence. The interval pump keeps
-  // scheduling and the audio keeps playing; the frozen UI is expected.
-  // Visible again: resync the UI (timer, progress bar, piano keys all
-  // read off cmBeatPos/cmTime) from the audio clock, and resume the
-  // AudioContext if the OS suspended it. Never auto-resumes playback:
-  // a paused player stays paused across hide/show.
-  var hidden = false;
-  try { hidden = !!(typeof document !== 'undefined' && document && document.hidden); } catch (e) {}
-  if (hidden) return;
-  if (cmActive && cmPlaying && cmAc) {
-    try { if (cmAc.state === 'suspended' || cmAc.state === 'interrupted') cmAc.resume(); } catch (e2) {}
-    cmUpdate();
-  }
-  cmUpdateMediaSession();
-}
-function cmInitVisibility() {
-  if (cmVisibilityWired) return;
-  try {
-    if (typeof document !== 'undefined' && document && document.addEventListener) {
-      document.addEventListener('visibilitychange', cmOnVisibilityChange);
-      cmVisibilityWired = true;
-    }
-  } catch (e) {}
-}
-
-/* ---------- Draw ---------- */
-function cmDrawKeys(x, y, w, h) {
-  // Mini piano keyboard (5 white keys + 3 black keys), drawn in code.
-  // The key of the most recent melody note stays "pressed" briefly:
-  // bright gold fill + a dark outline + a gold triangle marker above
-  // it, so the playing key is obvious even at a glance. (The live
-  // check could not make out the old small blue key — this one is
-  // bigger, gold, and holds longer.)
-  var kw = w / 5;
-  var pressed = -1;
-  if (cmFrame - cmLastMelodyFrame < 18 && cmLastMelodyMidi > 0) {
-    var pc = ((cmLastMelodyMidi % 12) + 12) % 12; // 0=C 2=D 4=E 5=F 7=G 9=A 11=B
-    var whiteMap = { 0: 0, 2: 1, 4: 2, 5: 3, 7: 4 };
-    if (whiteMap[pc] !== undefined) pressed = whiteMap[pc];
-  }
-  var i;
-  for (i = 0; i < 5; i++) {
-    ctx.fillStyle = (pressed === i) ? '#FFD93D' : '#F2F5FF';
-    ctx.fillRect(x + i * kw, y, kw - 1, h);
-    if (pressed === i) {
-      ctx.strokeStyle = '#8A6D00'; ctx.lineWidth = 1;
-      ctx.strokeRect(x + i * kw + 0.5, y + 0.5, kw - 2, h - 1);
-    }
-  }
-  var blackAt = [0.7, 1.7, 3.7]; // black keys sit between white keys C/D, D/E, F/G
-  for (i = 0; i < 3; i++) {
-    ctx.fillStyle = '#10141F';
-    ctx.fillRect(x + blackAt[i] * kw - 2, y, 4, Math.floor(h * 0.6));
-  }
-  if (pressed >= 0) {
-    // Gold triangle marker above the pressed key.
-    var cx = x + pressed * kw + kw / 2;
-    ctx.fillStyle = '#FFD93D';
-    ctx.beginPath();
-    ctx.moveTo(cx - 3, y - 6);
-    ctx.lineTo(cx + 3, y - 6);
-    ctx.lineTo(cx, y - 1);
-    ctx.closePath();
-    ctx.fill();
-  }
-  ctx.strokeStyle = '#3A4666'; ctx.lineWidth = 1;
-  ctx.strokeRect(x, y, w, h);
-}
-function cmFmtTime(sec) {
-  var s = Math.max(0, Math.floor(sec));
-  return Math.floor(s / 60) + ':' + (s % 60 < 10 ? '0' : '') + (s % 60);
-}
-function drawMusic() {
-  // Premium navy home-screen look, like the top-level menu.
-  var bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#0B1026'); bg.addColorStop(0.55, '#131A30'); bg.addColorStop(1, '#070A14');
-  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = '#F2F5FF'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
-  ctx.fillText('CHILDREN MUSIC', W / 2, 14);
-  ctx.fillStyle = '#8A94B8'; ctx.font = '8px monospace';
-  ctx.fillText(CM_SONGS.length + ' BEDTIME SONGS · PIANO ONLY', W / 2, 26);
-  ctx.textAlign = 'left';
-  // Now-playing panel (keys are 40px wide now, so the text starts at x=54).
-  cmDrawKeys(8, 30, 40, 28);
-  var cur = cmCurrentIdx();
-  var title = cur >= 0 ? CM_SONGS[cur].t : '—';
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = title.length > 26 ? 'bold 8px monospace' : 'bold 10px monospace';
-  ctx.fillText(title.length > 40 ? title.substr(0, 39) + '…' : title, 54, 40);
-  var musicOff = (typeof JMFGAMES !== 'undefined' && JMFGAMES.isMusicOn && !JMFGAMES.isMusicOn());
-  var status = musicOff ? 'MUSIC OFF — TAP MUSIC' :
-    (!cmOrder.length ? 'NO SONGS SELECTED' :
-    (cmPlaying ? 'PLAYING ' : 'PAUSED ') + (cur + 1) + '/' + CM_SONGS.length +
-    ' · ' + cmFmtTime(cmTime) + '/' + (cmSong ? cmFmtTime(cmBeatToSec(cmSongBeats)) : '0:00') +
-    (cmShuffle ? ' · SHUFFLE' : ''));
-  ctx.fillStyle = '#9AA7C8'; ctx.font = '8px monospace';
-  ctx.fillText(status, 54, 50);
-  // Progress bar (time fraction, so the bar and the timer always agree).
-  ctx.fillStyle = '#2A3558'; ctx.fillRect(54, 54, 178, 3);
-  if (cmSong && cmSongBeats > 0) {
-    ctx.fillStyle = '#4DA3FF';
-    ctx.fillRect(54, 54, Math.max(2, Math.floor(178 * Math.min(1, cmTime / cmBeatToSec(cmSongBeats)))), 3);
-  }
-  // Song list (6 rows, hold-to-fast-scroll like the other lists).
-  if (!cmOrder.length) {
-    ctx.fillStyle = '#FFD93D'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
-    ctx.fillText('NO SONGS SELECTED', W / 2, 92);
-    ctx.fillStyle = '#9AA7C8'; ctx.font = '8px monospace';
-    ctx.fillText('PRESS B ON A SONG TO ADD IT BACK', W / 2, 106);
-    ctx.textAlign = 'left';
-  } else {
-    var end = Math.min(cmListTop + CM_ROWS, CM_SONGS.length);
-    for (var i = cmListTop; i < end; i++) {
-      var y = CM_LIST_Y + (i - cmListTop) * CM_PITCH;
-      var isCur = (i === cur);
-      var isEx = cmIsExcluded(i);
-      if (i === cmCursor) {
-        ctx.fillStyle = '#26335C'; ctx.fillRect(8, y - 10, 224, 12);
-        ctx.strokeStyle = '#4DA3FF'; ctx.lineWidth = 1; ctx.strokeRect(8, y - 10, 224, 12);
-      }
-      ctx.fillStyle = isEx ? '#5A6B8A' : (isCur ? '#FFD93D' : '#D8DEEE');
-      ctx.font = '8px monospace';
-      ctx.fillText((isEx ? 'X ' : '') + CM_SONGS[i].t, 14, y);
-    }
-    ctx.fillStyle = '#8A94B8'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
-    if (cmListTop > 0) ctx.fillText('▲', 234, 64);
-    if (end < CM_SONGS.length) ctx.fillText('▼', 234, 128);
-    ctx.textAlign = 'left';
-  }
-  // Footer: the controls, labelled.
-  ctx.fillStyle = '#7C88A8'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
-  ctx.fillText('A: PLAY/PAUSE  B: EXCLUDE  START: SHUFFLE', W / 2, 142);
-  ctx.fillText('UP/DOWN: LIST  LEFT/RIGHT: SONG  MENU: EXIT', W / 2, 154);
-  ctx.textAlign = 'left';
-}
-
-/* ---------- Session restore hooks (srRegister 'music') ----------
-   Plugs Children Music into the core session-restore framework
-   (core-head.js): a browser refresh returns to the same song at the
-   same position, in the same play order. Spec:
-   session-restore-hooks-spec.md §1. The spec was written against the
-   OLD timing core; the implementation below is adapted to the CURRENT
-   deterministic timing core (audio-diagnosis refactor, Nov 11):
-
-   ADAPTATION 1 — cmAudioElapsed is the clock, cmBeatPos is derived.
-   cmUpdate sets cmBeatPos = cmTimeToBeat(cmAudioElapsed) on every
-   pump, so snapshotting/restoring cmBeatPos alone would be overwritten
-   by the next pump. The snapshot therefore carries BOTH beatPos (the
-   spec field, kept for validation) AND elapsed (cmAudioElapsed, the
-   source of truth). Restore sets cmAudioElapsed first, then recomputes
-   cmBeatPos = cmTimeToBeat(elapsed) and cmTime = cmBeatToSec(beatPos)
-   off the exact beat->time map, so clock, scheduler and display agree.
-   A snapshot without elapsed (defensive only — none exists in the
-   wild) falls back to cmBeatToSec(beatPos).
-
-   ADAPTATION 2 — cmRubato / cmRit are derived, never 1. The spec's
-   "cmRubato = 1, cmRit = 1" predates the deterministic rubato curve
-   (phases seeded by the title hash). Restore recomputes both at the
-   restored beat: cmRubatoAt(cmBeatPos) / cmRitAt(cmBeatPos) — exactly
-   what cmUpdate computes on the next pump. cmRubatoPhases is rebuilt
-   by cmStartSong and is never snapshotted.
-
-   ADAPTATION 3 — cmRewindSchedule keys off ev.lastWhen now. After
-   cmStartSong the event list is fresh (no lastWhen on any event), so
-   the rewind falls back to its beat rule and points cmEvIdx at the
-   first event past the restored beat — the spec's intent, unchanged.
-   EXCEPTION: at position 0 the beat rule would skip the beat-0 opening
-   notes, so restore leaves cmEvIdx = 0 there (fresh-start semantics).
-
-   ADAPTATION 4 — cmMusicOffDone is reset. The MUSIC-off transition
-   flag is fresh-start state; a stale true would make the first
-   post-restore pump re-run the cancel+rewind transition. Restore
-   clears it (with cmLastAudioTime = null, the re-anchor).
-
-   MUSIC-OFF SEMANTICS (verified, not guessed): the existing toggle
-   contract — asserted by music.test.js section (f) — is that MUSIC-off
-   KEEPS cmPlaying true while cmUpdate holds the position, and MUSIC-on
-   resumes from the held spot with no extra press. Restore follows the
-   same contract: with MUSIC off, cmPlaying follows d.playing and the
-   cmUpdate hold path does the pausing ("do not fight the toggle").
-   NO pause hook: the playing/paused decision lives in restore (step 5
-   of the spec) because it depends on the AudioContext state at restore
-   time. */
-function cmSessionSave() {
-  // Cheap and side-effect free: plain JSON only, mutable state copied.
-  if (!cmActive || !cmSong) return null;
-  return {
-    title: cmSong.t,
-    pos: cmPos,
-    order: cmOrder.slice(),
-    cursor: cmCursor,
-    beatPos: cmBeatPos,
-    elapsed: cmAudioElapsed,
-    playing: !!cmPlaying,
-    shuffle: !!cmShuffle
-  };
-}
-function cmSessionRestore(d) {
-  // Validate BEFORE assigning anything: false on any doubt (the core
-  // falls back to the menu). Never throws on bad data.
-  if (!d || typeof d !== 'object' || Array.isArray(d)) return false;
-  var titleIdx = (typeof d.title === 'string') ? cmTitleIndex(d.title) : -1;
-  if (titleIdx < 0) return false;
-  if (!Array.isArray(d.order) || !d.order.length) return false;
-  var i;
-  for (i = 0; i < d.order.length; i++) {
-    var o = d.order[i];
-    if (typeof o !== 'number' || !isFinite(o) || Math.floor(o) !== o || o < 0 || o >= CM_SONGS.length) return false;
-  }
-  if (typeof d.pos !== 'number' || !isFinite(d.pos) || Math.floor(d.pos) !== d.pos || d.pos < 0 || d.pos >= d.order.length) return false;
-  if (typeof d.beatPos !== 'number' || !isFinite(d.beatPos) || d.beatPos < 0) return false;
-  var hasElapsed = (d.elapsed !== undefined && d.elapsed !== null);
-  if (hasElapsed && (typeof d.elapsed !== 'number' || !isFinite(d.elapsed) || d.elapsed < 0)) return false;
-  if (typeof d.playing !== 'boolean') return false;
-  // A bad cursor alone must NOT fail the restore: clamp it (non-numeric
-  // falls back to the restored song's own index). The shuffle field is
-  // redundant with prefs (already loaded by startMusic) and the order
-  // is authoritative — a bad shuffle value is ignored, not fatal.
-  var cursor = (typeof d.cursor === 'number' && isFinite(d.cursor))
-    ? Math.max(0, Math.min(CM_SONGS.length - 1, Math.floor(d.cursor))) : titleIdx;
-  // Order check: the snapshot order must be a permutation of the
-  // currently included songs (same set, no duplicates) with the title
-  // at pos. Otherwise exclusions changed since the snapshot: repair.
-  var inc = cmIncludedList();
-  var setOk = (d.order.length === inc.length);
-  if (setOk) {
-    var inSet = {}, seenOrd = {};
-    for (i = 0; i < inc.length; i++) inSet[inc[i]] = true;
-    for (i = 0; i < d.order.length; i++) {
-      if (!inSet[d.order[i]] || seenOrd[d.order[i]]) { setOk = false; break; }
-      seenOrd[d.order[i]] = true;
-    }
-  }
-  var beatPos = d.beatPos;
-  var elapsed = hasElapsed ? d.elapsed : null;
-  var useOrder, usePos;
-  if (setOk && d.order[d.pos] === titleIdx) {
-    useOrder = d.order.slice();
-    usePos = d.pos;
-  } else {
-    // Exclusions changed (or order/pos disagree with the title):
-    // rebuild the order and re-seat the title if it is still included.
-    // Never restore an excluded song as current.
-    cmBuildOrder(null);
-    if (!cmOrder.length) {
-      // Everything is excluded now: the fresh empty state startMusic
-      // produced is already correct; nothing to position.
-      cmPlaying = false;
-      cmUpdateMediaSession();
-      return true;
-    }
-    useOrder = cmOrder.slice();
-    var p = cmOrder.indexOf(titleIdx);
-    if (p >= 0) usePos = p;
-    else { usePos = 0; beatPos = 0; elapsed = 0; }
-  }
-  cmOrder = useOrder;
-  cmPos = usePos;
-  cmCursor = cursor;
-  cmClampList();
-  var idx = cmCurrentIdx();
-  if (idx < 0) { cmSong = null; cmPlaying = false; cmUpdateMediaSession(); return true; }
-  // Start the song (rebuilds cmEv, the beat->time map and the rubato
-  // phases; resets beat/elapsed/time/audible; re-anchors the clock),
-  // then position within it via the elapsed-audio clock.
-  cmStartSong(idx);
-  var total = cmBeatToSec(cmSongBeats);
-  var targetElapsed = (elapsed !== null) ? elapsed : cmBeatToSec(beatPos);
-  if (targetElapsed < 0) targetElapsed = 0;
-  if (targetElapsed >= total) {
-    // Snapshot taken exactly at a song boundary: advance to the next
-    // song from the start instead of restoring a finished song.
-    cmNextSong();
-    targetElapsed = 0;
-  }
-  cmAudioElapsed = targetElapsed;
-  cmBeatPos = cmTimeToBeat(cmAudioElapsed);
-  cmTime = cmBeatToSec(cmBeatPos);
-  cmRubato = cmRubatoAt(cmBeatPos);
-  cmRit = cmRitAt(cmBeatPos);
-  if (targetElapsed > 0) cmRewindSchedule();
-  else cmEvIdx = 0; // position 0: keep the beat-0 opening notes
-  // Advance the audible pointer past everything the beat clock has
-  // passed (mirrors the scan in cmUpdate, including melody-key tracking).
-  while (cmAudibleIdx < cmEv.length && cmEv[cmAudibleIdx].beat <= cmBeatPos) {
-    var aev = cmEv[cmAudibleIdx++];
-    if (aev.hand === 'm' && aev.midi > 0) { cmLastMelodyMidi = aev.midi; cmLastMelodyFrame = cmFrame; }
-  }
-  cmLastAudioTime = null;
-  cmMusicOffDone = false;
-  // Playing state + autoplay policy (spec §1.2 step 5).
-  if (!d.playing) {
-    cmPlaying = false;
-    cmUpdateMediaSession();
-    return true;
-  }
-  var musicOff = false;
-  try { musicOff = (typeof JMFGAMES !== 'undefined' && JMFGAMES.isMusicOn && !JMFGAMES.isMusicOn()); } catch (e) { musicOff = false; }
-  if (musicOff) {
-    // MUSIC off: cmPlaying stays true and the cmUpdate MUSIC-off path
-    // holds the position silently; turning MUSIC back on resumes from
-    // the held spot (the established toggle contract). Do not fight it.
-    cmPlaying = true;
-    cmUpdateMediaSession();
-    return true;
-  }
-  cmEnsureAudio(); // already attempts resume() on a suspended context
-  if (!cmAc) {
-    cmPlaying = true; // headless / no Web Audio: frame-driven machine advances
-  } else if (cmAc.state === 'running') {
-    cmPlaying = true;
-    cmStartPump();
-    cmUnsilence();
-  } else {
-    // Suspended (browser blocked autoplay — the normal fresh-load
-    // case): PAUSED at the exact position, with the existing PLAY
-    // affordance. NO .then()/poll auto-resume: only an explicit play
-    // action (A button, lock-screen play) may resume.
-    cmPlaying = false;
-  }
-  cmUpdateMediaSession();
-  return true;
-}
-if (typeof srRegister === 'function') srRegister('music', {
-  save: cmSessionSave,
-  restore: cmSessionRestore
-  // NOTE: no `pause` hook for music — the playing/paused decision
-  // lives in restore() (see the header comment above).
-});
   JMFGAMES.on('press', 'up', function () {
     if (dsGame) return;
-    if (screen === 'menu') { var Lu = menuList().length; menuSetIdx((menuCurIdx() + Lu - 1) % Lu); menuClamp(); JMFGAMES.beep(600, 0.04); menuHoldDir = 'up'; menuHoldFrames = 0; menuHoldLast = 0; }
+    if (screen === 'menu') { var Lu = GAMES.length; menuIndex = (menuIndex + Lu - 1) % Lu; menuClamp(); JMFGAMES.beep(600, 0.04); menuHoldDir = 'up'; menuHoldFrames = 0; menuHoldLast = 0; }
     else if (screen === 'play') {
       if (currentGame === 'block') bqMove(-1, 0);
       else if (currentGame === 'drop') bdRotate();
@@ -26975,14 +25754,13 @@ if (typeof srRegister === 'function') srRegister('music', {
       else if (currentGame === 'maze') mzMove(0, -1);
       else if (currentGame === 'tank') ftMove(0, -1);
       else if (currentGame === 'rune') rmMove(0, -1);
-      else if (currentGame === 'music') cmListMove(-1);
       else flap();
     }
     listHoldArm('up');
   });
   JMFGAMES.on('press', 'down', function () {
     if (dsGame) return;
-    if (screen === 'menu') { var Ld = menuList().length; menuSetIdx((menuCurIdx() + 1) % Ld); menuClamp(); JMFGAMES.beep(600, 0.04); menuHoldDir = 'down'; menuHoldFrames = 0; menuHoldLast = 0; }
+    if (screen === 'menu') { var Ld = GAMES.length; menuIndex = (menuIndex + 1) % Ld; menuClamp(); JMFGAMES.beep(600, 0.04); menuHoldDir = 'down'; menuHoldFrames = 0; menuHoldLast = 0; }
     else if (screen === 'play') {
       if (currentGame === 'block') bqMove(1, 0);
       else if (currentGame === 'bj') { bjAdjustBet(-10); bjCycleAction(1); }
@@ -27002,7 +25780,6 @@ if (typeof srRegister === 'function') srRegister('music', {
       else if (currentGame === 'maze') mzMove(0, 1);
       else if (currentGame === 'tank') ftMove(0, 1);
       else if (currentGame === 'rune') rmMove(0, 1);
-      else if (currentGame === 'music') cmListMove(1);
     }
     listHoldArm('down');
   });
@@ -27026,7 +25803,6 @@ if (typeof srRegister === 'function') srRegister('music', {
     else if (screen === 'play' && currentGame === 'maze') mzMove(-1, 0);
     else if (screen === 'play' && currentGame === 'tank') ftMove(-1, 0);
     else if (screen === 'play' && currentGame === 'rune') rmMove(-1, 0);
-    else if (screen === 'play' && currentGame === 'music') cmPrevSong();
   });
   JMFGAMES.on('press', 'right', function () {
     if (dsGame) return;
@@ -27046,40 +25822,28 @@ if (typeof srRegister === 'function') srRegister('music', {
     else if (screen === 'play' && currentGame === 'maze') mzMove(1, 0);
     else if (screen === 'play' && currentGame === 'tank') ftMove(1, 0);
     else if (screen === 'play' && currentGame === 'rune') rmMove(1, 0);
-    else if (screen === 'play' && currentGame === 'music') cmNextSong();
   });
   JMFGAMES.on('press', 'a', function () {
     if (dsGame) { dsDoDelete(dsGame); return; } // confirm delete-save
     if (screen === 'menu') {
-      var mEntry = menuList()[menuCurIdx()];
-      if (menuLevel === 0 && mEntry.collection) {
-        // Enter the RETRO GAMES collection (the top level's only entry;
-        // every game lives inside Retro Games).
-        menuLevel = 1; menuClamp(); JMFGAMES.beep(600, 0.04);
-      } else if (mEntry.music) {
-        // CHILDREN MUSIC is a player, not a game: no splash, straight
-        // into the player (it autoplays; Menu exits back here).
-        menuReturnLevel = menuLevel; startMusic(); JMFGAMES.beep(600, 0.04);
-      } else if (mEntry.playable) {
-        menuReturnLevel = menuLevel; // Menu returns to THIS list
+      var mEntry = GAMES[menuIndex];
+      if (mEntry.playable) {
         // Universal splash first: every menu launch passes through the
         // 3s credit screen (A/B skip, Menu cancels); the game itself
         // starts only when splashLaunch() runs.
         splashPending = mEntry.name; splashT = 0; screen = 'splash';
         JMFGAMES.beep(600, 0.04);
       }
-      else { menuReturnLevel = menuLevel; comingName = mEntry.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
+      else { comingName = mEntry.name; screen = 'coming'; JMFGAMES.beep(500, 0.08); }
     } else if (screen === 'coming') { toMenu(); }
     else if (screen === 'splash') { splashLaunch(); JMFGAMES.beep(880, 0.06); } // A skips the splash
-    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'drop') bdAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'pinball') pbAction(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else if (currentGame === 'park') tpAction(); else if (currentGame === 'dummy') duAction(); else if (currentGame === 'shooter') shFire(); else if (currentGame === 'artillery') arAction(); else if (currentGame === 'cards') cqAction(); else if (currentGame === 'maze') mzAction(); else if (currentGame === 'tank') ftAction(); else if (currentGame === 'rune') rmAction(); else if (currentGame === 'music') cmPlayCursor(); else flap(); }
+    else if (screen === 'play') { if (currentGame === 'block') bqAction(); else if (currentGame === 'drop') bdAction(); else if (currentGame === 'bj') bjAction(); else if (currentGame === 'holdem') heAction(); else if (currentGame === 'chess') chAction(); else if (currentGame === 'overlord') ovDeploy(); else if (currentGame === 'pinball') pbAction(); else if (currentGame === 'solitaire') solAction(); else if (currentGame === 'beat') buAction(); else if (currentGame === 'pool') poAction(); else if (currentGame === 'run') ruAction(); else if (currentGame === 'siege') siAction(); else if (currentGame === 'park') tpAction(); else if (currentGame === 'dummy') duAction(); else if (currentGame === 'shooter') shFire(); else if (currentGame === 'artillery') arAction(); else if (currentGame === 'cards') cqAction(); else if (currentGame === 'maze') mzAction(); else if (currentGame === 'tank') ftAction(); else if (currentGame === 'rune') rmAction(); else flap(); }
     else if (screen === 'over') { if (currentGame === 'block') startBlockQuest(); else if (currentGame === 'drop') startBlockDrop(); else if (currentGame === 'bj') bjResetSession(); else if (currentGame === 'holdem') heResetSession(); else if (currentGame === 'chess') chNewGame(chLevel); else if (currentGame === 'overlord') startOverlord(); else if (currentGame === 'pinball') startPinball(); else if (currentGame === 'solitaire') startSolitaire(); else if (currentGame === 'beat') startBeat(); else if (currentGame === 'pool') poRematch(); else if (currentGame === 'shooter') startShooter(); else if (currentGame === 'artillery') startArtillery(); else if (currentGame === 'cards') startCardQuest(); else if (currentGame === 'maze') startMaze(); else if (currentGame === 'tank') startTank(); else if (currentGame === 'rune') startRuneMatch(); else startGame(); }
   });
   JMFGAMES.on('press', 'b', function () {
     // B is a real in-game action in every game; it NEVER returns to the
     // main menu (Menu is the only way back). On 'over'/'coming' B does nothing.
     if (dsGame) { dsGame = null; JMFGAMES.beep(440, 0.06); return; } // cancel delete-save
-    // B on the Retro Games list steps back to the top level.
-    if (screen === 'menu' && menuLevel === 1) { menuLevel = 0; menuClamp(); JMFGAMES.beep(440, 0.06); return; }
     if (screen === 'splash') { splashLaunch(); JMFGAMES.beep(880, 0.06); return; } // B skips the splash too
     if (screen !== 'play') return;
     // B while paused (games whose delete option lives on the pause overlay)
@@ -27122,7 +25886,6 @@ if (typeof srRegister === 'function') srRegister('music', {
     else if (currentGame === 'maze') mzBack();
     else if (currentGame === 'tank') ftBack();
     else if (currentGame === 'rune') rmBack();
-    else if (currentGame === 'music') cmToggleExclude();
   });
   JMFGAMES.on('press', 'start', function () {
     if (dsGame) return;
@@ -27147,17 +25910,14 @@ if (typeof srRegister === 'function') srRegister('music', {
     else if (currentGame === 'maze') { if (!mzOver) { mzPaused = !mzPaused; JMFGAMES.beep(330, 0.06); } }
     else if (currentGame === 'tank') { ftPaused = !ftPaused; JMFGAMES.beep(330, 0.06); }
     else if (currentGame === 'rune') { if (!rmOver) { rmPaused = !rmPaused; JMFGAMES.beep(330, 0.06); } }
-    else if (currentGame === 'music') { cmToggleShuffle(); JMFGAMES.beep(330, 0.06); } // Start toggles shuffle in the player
     else if (!dead) { paused = !paused; JMFGAMES.beep(330, 0.06); }
   });
   JMFGAMES.on('press', 'menu', function () {
-    // Menu is the ONLY way back to the menu from a game (even mid-hand),
-    // level/color select, game-over, or pause — and it returns to the
-    // list the game was launched from (Retro Games for the quick games),
-    // not always to the top level.
+    // Menu is the ONLY way back to the game list from a game (even
+    // mid-hand), level/color select, game-over, or pause.
     dsGame = null; // cancel any delete-save confirmation
     if (screen === 'splash') splashPending = null; // cancel the pending launch: no game started yet
-    if (screen === 'play' || screen === 'over' || screen === 'coming' || screen === 'splash') { if (currentGame === 'park') tpSave(); if (currentGame === 'dummy') duSave(); if (currentGame === 'shooter') shSave(); if (currentGame === 'tank') ftSave(); if (currentGame === 'music') cmExit(); toMenu(); }
+    if (screen === 'play' || screen === 'over' || screen === 'coming' || screen === 'splash') { if (currentGame === 'park') tpSave(); if (currentGame === 'dummy') duSave(); if (currentGame === 'shooter') shSave(); if (currentGame === 'tank') ftSave(); toMenu(); }
   });
 
   /* ---------- Update (one fixed 1/60s step) ---------- */
@@ -27165,7 +25925,7 @@ if (typeof srRegister === 'function') srRegister('music', {
   var perfectFrames = 0;
   function update() {
     srNoteScreen();
-    if (screen === 'menu') { topFrame++; menuHoldTick(); listHoldDir = ''; return; }
+    if (screen === 'menu') { menuHoldTick(); listHoldDir = ''; return; }
     menuHoldDir = ''; // not on the menu: no hold-repeat
     listHoldTick(); // in-game list screens: hold-to-fast-scroll (no-op elsewhere)
     if (screen === 'splash') { splashT++; if (splashT >= 180) splashLaunch(); return; } // 3s credit, then the game starts
@@ -27189,7 +25949,6 @@ if (typeof srRegister === 'function') srRegister('music', {
     if (currentGame === 'maze') { mzUpdate(); return; }
     if (currentGame === 'tank') { ftUpdate(); return; }
     if (currentGame === 'rune') { rmUpdate(); return; }
-    if (currentGame === 'music') { cmUpdate(); return; }
     if (currentGame !== 'sky') return; // Hold'em has no per-frame update; without this, Sky Soar physics runs during Hold'em and the falling bird hits the ground -> gameOver() -> 'over' screen (BUSTED panel) on Hold'em launch after Sky was played
     if (!paused) skyTick(); // clouds / particles / pops keep animating (frozen on pause)
     if (paused || dead || !started) return;
@@ -27586,65 +26345,6 @@ if (typeof srRegister === 'function') srRegister('music', {
       ctx.textAlign = 'left';
     }
   }
-  // ---------- Top-level menu: premium modern console-home look ----------
-  // The top level is the console's home screen: a dark rich navy
-  // background with depth, large game cards with mini cover art drawn in
-  // code, clean modern type. NOT the retro DMG green — that look lives
-  // inside RETRO GAMES (menuLevel 1), which keeps its exact retro draw.
-  // One card per top-level entry; 2 visible at a 48px pitch, scrolling
-  // like the retro list when more big games join.
-  function drawTopCover(e, cx, cy) {
-    // Mini cover art (36x32) for a top-level entry, drawn in code.
-    // Collections get the retro handheld motif; standalone big games get
-    // the joystick motif; Children Music gets a piano motif. New
-    // top-level entries can add their own case.
-    if (e.piano || e.music) {
-      // Mini piano: dark body, five white keys, three black keys. One
-      // white key is "pressed" (blue) on a slow cycle, so the cover
-      // looks alive like the handheld LCD and the joystick bob.
-      ctx.fillStyle = '#232A3D'; ctx.fillRect(cx, cy, 36, 32);
-      ctx.strokeStyle = '#3A4666'; ctx.lineWidth = 1; ctx.strokeRect(cx, cy, 36, 32);
-      var pk = Math.floor(topFrame / 30) % 5;
-      for (var pi = 0; pi < 5; pi++) {
-        ctx.fillStyle = (pi === pk) ? '#4DA3FF' : '#F2F5FF';
-        ctx.fillRect(cx + 4 + pi * 5.6, cy + 8, 4.6, 18);
-      }
-      ctx.fillStyle = '#10141F';
-      ctx.fillRect(cx + 7.5, cy + 8, 3, 10);
-      ctx.fillRect(cx + 13, cy + 8, 3, 10);
-      ctx.fillRect(cx + 24, cy + 8, 3, 10);
-      ctx.fillStyle = '#4DA3FF'; ctx.fillRect(cx + 4, cy + 4, 28, 2);
-    } else if (e.collection) {
-      // Retro handheld console: dark body, LCD screen, D-pad, buttons.
-      ctx.fillStyle = '#232A3D'; ctx.fillRect(cx, cy, 36, 32);
-      ctx.strokeStyle = '#3A4666'; ctx.lineWidth = 1; ctx.strokeRect(cx, cy, 36, 32);
-      ctx.fillStyle = '#10141F'; ctx.fillRect(cx + 4, cy + 3, 20, 15);
-      ctx.fillStyle = '#9ACD32'; ctx.fillRect(cx + 5, cy + 4, 18, 13);
-      // The LCD is alive: a tiny ball bounces across the little screen
-      // and one pixel blinks, so the handheld looks switched on.
-      ctx.fillStyle = '#4A6B1F'; ctx.fillRect(cx + 8, cy + 8, 3, 3);
-      if ((topFrame & 32) === 0) ctx.fillRect(cx + 14, cy + 7, 2, 2);
-      var lcdBx = cx + 6 + (Math.floor(topFrame / 2) % 14);
-      var lcdByCyc = topFrame % 20;
-      var lcdBy = cy + 5 + (lcdByCyc < 10 ? lcdByCyc : 20 - lcdByCyc);
-      ctx.fillStyle = '#1F3A17'; ctx.fillRect(lcdBx, lcdBy, 2, 2);
-      ctx.fillStyle = '#4A5878';
-      ctx.fillRect(cx + 6, cy + 21, 3, 9);
-      ctx.fillRect(cx + 3, cy + 24, 9, 3);
-      ctx.fillStyle = '#D95D4E'; ctx.fillRect(cx + 26, cy + 22, 3, 3);
-      ctx.fillStyle = '#4DA3FF'; ctx.fillRect(cx + 31, cy + 25, 3, 3);
-    } else {
-      // Joystick: base, stick, ball top, one button. The ball bobs
-      // gently (idle motion, so future big-game cards inherit it).
-      ctx.fillStyle = '#232A3D'; ctx.fillRect(cx + 4, cy + 22, 28, 8);
-      ctx.strokeStyle = '#3A4666'; ctx.lineWidth = 1; ctx.strokeRect(cx + 4, cy + 22, 28, 8);
-      ctx.fillStyle = '#4A5878'; ctx.fillRect(cx + 16, cy + 10, 4, 13);
-      var joyBob = Math.round(2 * Math.sin(topFrame * 0.05));
-      ctx.fillStyle = '#D95D4E'; ctx.fillRect(cx + 14, cy + 5 + joyBob, 8, 8);
-      ctx.fillStyle = '#F2F5FF'; ctx.fillRect(cx + 16, cy + 7 + joyBob, 2, 2);
-      ctx.fillStyle = '#4DA3FF'; ctx.fillRect(cx + 28, cy + 24, 4, 4);
-    }
-  }
   // ---------- Universal animated splash: JMF Games Pocket Console credit,
   // shown for 3 seconds (180 frames) before ANY Retro game launches. The
   // design is the console credit card (dark green card, joystick motif,
@@ -27705,115 +26405,16 @@ if (typeof srRegister === 'function') srRegister('music', {
     ctx.textAlign = 'left';
     ctx.restore();
   }
-  function drawTopMenu() {
-    var list = TOPMENU;
-    var idx = topIndex;
-    var top = topTop;
-    var tf = topFrame; // animation phase: +1 per update while on this menu
-    // Deep charcoal/navy background with depth.
-    var bg = ctx.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#0B1026'); bg.addColorStop(0.55, '#131A30'); bg.addColorStop(1, '#070A14');
-    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-    // Two large soft glowing circles drifting slowly behind the menu —
-    // different sizes, speeds and phases so they never line up. Very
-    // subtle (low alpha): the card stays readable at all times.
-    ctx.fillStyle = 'rgba(64,110,220,0.10)';
-    ctx.beginPath(); ctx.arc(120 + 52 * Math.sin(tf * 0.004), 72 + 26 * Math.sin(tf * 0.007 + 1.3), 46, 0, 6.2832); ctx.fill();
-    ctx.fillStyle = 'rgba(77,163,255,0.08)';
-    ctx.beginPath(); ctx.arc(120 + 70 * Math.sin(tf * 0.003 + 2.1), 84 + 30 * Math.cos(tf * 0.005 + 0.6), 30, 0, 6.2832); ctx.fill();
-    // Soft glow behind the title: gently pulsing, drifting a touch.
-    var topPulse = 0.5 + 0.5 * Math.sin(tf * 0.02);
-    ctx.fillStyle = 'rgba(64,110,220,' + (0.14 + 0.10 * topPulse).toFixed(2) + ')';
-    ctx.beginPath(); ctx.arc(120 + 6 * Math.sin(tf * 0.003), 26 + 3 * Math.cos(tf * 0.004), 64, 0, 6.2832); ctx.fill();
-    ctx.fillStyle = 'rgba(77,163,255,' + (0.07 + 0.05 * topPulse).toFixed(2) + ')';
-    ctx.beginPath(); ctx.arc(120 + 6 * Math.sin(tf * 0.003), 26 + 3 * Math.cos(tf * 0.004), 34, 0, 6.2832); ctx.fill();
-    // Bottom shade grounds the footer.
-    var shade = ctx.createLinearGradient(0, 128, 0, H);
-    shade.addColorStop(0, 'rgba(0,0,0,0)'); shade.addColorStop(1, 'rgba(0,0,0,0.32)');
-    ctx.fillStyle = shade; ctx.fillRect(0, 128, W, 32);
-    // Title: clean modern treatment — near-white with a soft dark shadow
-    // and a thin bright accent rule underneath.
-    ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
-    ctx.fillStyle = '#22305A'; ctx.fillText('JMF GAMES', W / 2 + 1, 21);
-    ctx.fillStyle = '#F2F5FF'; ctx.fillText('JMF GAMES', W / 2, 20);
-    // Shimmer sweep across the title: a soft light band drifting back
-    // and forth over the letters every ~6 seconds (360 frames), subtle
-    // enough that the text stays fully readable at all times.
-    var shimCyc = tf % 360;
-    var shimT = shimCyc < 180 ? shimCyc / 180 : (360 - shimCyc) / 180;
-    ctx.fillStyle = 'rgba(255,255,255,0.08)';
-    ctx.fillRect(74 + shimT * 92, 10, 14, 14);
-    // Accent rule under the title, with a bright segment travelling
-    // along it (ping-pong, ~3 seconds each way).
-    ctx.fillStyle = '#4DA3FF'; ctx.fillRect(W / 2 - 32, 26, 64, 2);
-    var segCyc = tf % 180;
-    var segT = segCyc < 90 ? segCyc / 90 : (180 - segCyc) / 90;
-    ctx.fillStyle = '#D6EBFF'; ctx.fillRect((W / 2 - 32) + segT * 48, 26, 16, 2);
-    ctx.fillStyle = '#8A94B8'; ctx.font = '10px monospace';
-    ctx.fillText('SELECT A GAME', W / 2, 36);
-    ctx.textAlign = 'left';
-    // Cards.
-    var end = Math.min(top + TOP_ROWS, list.length);
-    for (var i = top; i < end; i++) {
-      var y = TOP_TOP_Y + (i - top) * TOP_PITCH;
-      var e = list[i];
-      var sel = (i === idx);
-      if (sel) {
-        // Selected card: glow gently pulses, and a faint light sweep
-        // drifts across the card (ping-pong, ~6 seconds each way).
-        var cardPulse = 0.5 + 0.5 * Math.sin(tf * 0.03);
-        ctx.fillStyle = 'rgba(77,163,255,' + (0.14 + 0.12 * cardPulse).toFixed(2) + ')'; ctx.fillRect(8, y - 2, 224, 48);
-        var cg = ctx.createLinearGradient(0, y, 0, y + TOP_CARD_H);
-        cg.addColorStop(0, '#26335C'); cg.addColorStop(1, '#1A2340');
-        ctx.fillStyle = cg; ctx.fillRect(10, y, 220, TOP_CARD_H);
-        ctx.strokeStyle = '#4DA3FF'; ctx.lineWidth = 2; ctx.strokeRect(10, y, 220, TOP_CARD_H);
-        ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.fillRect(12, y + 1, 216, 2);
-        var cardCyc = tf % 360;
-        var cardT = cardCyc < 180 ? cardCyc / 180 : (360 - cardCyc) / 180;
-        var cardBandX = 10 + cardT * 196;
-        ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(cardBandX, y, 24, TOP_CARD_H);
-      } else {
-        var cg2 = ctx.createLinearGradient(0, y, 0, y + TOP_CARD_H);
-        cg2.addColorStop(0, '#1B2340'); cg2.addColorStop(1, '#141A2E');
-        ctx.fillStyle = cg2; ctx.fillRect(10, y, 220, TOP_CARD_H);
-        ctx.strokeStyle = '#2A3558'; ctx.lineWidth = 1; ctx.strokeRect(10, y, 220, TOP_CARD_H);
-      }
-      drawTopCover(e, 28, y + 6);
-      // '>' at x=16 on the name baseline keeps the test harness's
-      // selectedGame() working (it reads the '>' then the name).
-      if (sel) {
-        ctx.fillStyle = '#4DA3FF'; ctx.font = 'bold 12px monospace';
-        ctx.fillText('>', 16, y + 20);
-      }
-      ctx.fillStyle = sel ? '#FFFFFF' : '#D8DEEE';
-      ctx.font = 'bold 12px monospace';
-      ctx.fillText(e.name, 70, y + 20);
-      var sub = e.collection ? (GAMES.length + ' GAMES') : (e.sub || '');
-      if (sub) { ctx.fillStyle = '#9AA7C8'; ctx.font = '8px monospace'; ctx.fillText(sub, 70, y + 33); }
-    }
-    // Scroll indicators (top-right / bottom-right): more entries above / below.
-    ctx.fillStyle = '#8A94B8'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
-    if (top > 0) ctx.fillText('▲', 234, 44);
-    if (end < list.length) ctx.fillText('▼', 234, 140);
-    ctx.fillStyle = '#7C88A8'; ctx.textAlign = 'center'; ctx.font = '10px monospace';
-    ctx.fillText((idx + 1) + ' OF ' + list.length + '  ·  UP/DOWN MOVE - A PLAY', W / 2, 152);
-    ctx.textAlign = 'left';
-  }
   function drawMenu() {
-    // Top level has its own premium draw (drawTopMenu); the Retro Games
-    // list below keeps the exact retro DMG green draw.
-    if (menuLevel === 0) { drawTopMenu(); return; }
     // Retro DMG menu, high-quality polish: 4-shade green monochrome only.
     // Layered title shadow, two-tone selection bar, double frame, lighter
     // scanlines. Layout is identical to before: same row positions, 12px
     // names, 15px pitch, 6 visible rows, same indicator and footer.
     // (The blinking start prompt was removed Nov 11: it blinked but Start
     // does nothing on the menu — A plays — so the prompt was misleading.)
-    // This draw is the Retro Games list only; the top level has its own
-    // premium draw (drawTopMenu). The subtitle names the list you are in.
-    var list = menuList();
-    var idx = menuCurIdx();
-    var top = menuLevel === 0 ? topTop : menuTop;
+    var list = GAMES;
+    var idx = menuIndex;
+    var top = menuTop;
     ctx.fillStyle = '#0F380F';
     ctx.fillRect(0, 0, W, H);
     // Title: stepped 3-layer pixel shadow for a crisp, dimensional look
@@ -27827,7 +26428,7 @@ if (typeof srRegister === 'function') srRegister('music', {
     ctx.fillText('JMF GAMES', W / 2, 20);
     ctx.fillStyle = '#8BAC0F';
     ctx.font = '10px monospace';
-    ctx.fillText(menuLevel === 0 ? 'SELECT A GAME' : 'RETRO GAMES · B BACK', W / 2, 34);
+    ctx.fillText('RETRO GAMES', W / 2, 34);
     ctx.textAlign = 'left';
     // Double frame around the list (rows span y 37..127): outer dark 2px
     // stroke plus an inner mid-green 1px stroke. The inner top edge is
@@ -27996,7 +26597,7 @@ if (typeof srRegister === 'function') srRegister('music', {
     if (screen === 'menu') drawMenu();
     else if (screen === 'splash') drawSplash();
     else if (screen === 'coming') drawComing();
-    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'drop') drawBlockDrop(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'pinball') drawPinball(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else if (currentGame === 'park') drawPark(); else if (currentGame === 'dummy') drawDummy(); else if (currentGame === 'shooter') drawShooter(); else if (currentGame === 'artillery') drawArtillery(); else if (currentGame === 'cards') drawCardQuest(); else if (currentGame === 'maze') drawMaze(); else if (currentGame === 'tank') drawTank(); else if (currentGame === 'rune') drawRuneMatch(); else if (currentGame === 'music') drawMusic(); else drawGame(); }
+    else if (screen === 'play') { if (currentGame === 'block') drawBlockQuest(); else if (currentGame === 'drop') drawBlockDrop(); else if (currentGame === 'bj') drawBlackjack(); else if (currentGame === 'holdem') drawHoldem(); else if (currentGame === 'chess') drawChess(); else if (currentGame === 'overlord') drawOverlord(); else if (currentGame === 'pinball') drawPinball(); else if (currentGame === 'solitaire') drawSolitaire(); else if (currentGame === 'beat') drawBeat(); else if (currentGame === 'pool') drawPool(); else if (currentGame === 'run') drawRunner(); else if (currentGame === 'siege') drawSiege(); else if (currentGame === 'park') drawPark(); else if (currentGame === 'dummy') drawDummy(); else if (currentGame === 'shooter') drawShooter(); else if (currentGame === 'artillery') drawArtillery(); else if (currentGame === 'cards') drawCardQuest(); else if (currentGame === 'maze') drawMaze(); else if (currentGame === 'tank') drawTank(); else if (currentGame === 'rune') drawRuneMatch(); else drawGame(); }
     else if (screen === 'over') { if (currentGame === 'block') drawBlockQuestOver(); else if (currentGame === 'drop') drawBlockDropOver(); else if (currentGame === 'bj') drawBlackjackOver(); else if (currentGame === 'holdem') drawHoldemOver(); else if (currentGame === 'chess') drawChessOver(); else if (currentGame === 'overlord') drawOverlordOver(); else if (currentGame === 'pinball') drawPinballOver(); else if (currentGame === 'solitaire') drawSolitaireOver(); else if (currentGame === 'beat') drawBeatOver(); else if (currentGame === 'pool') drawPoolOver(); else if (currentGame === 'shooter') drawShooterOver(); else if (currentGame === 'artillery') drawArtilleryOver(); else if (currentGame === 'cards') drawCardQuestOver(); else if (currentGame === 'maze') drawMazeOver(); else if (currentGame === 'tank') drawTankOver(); else if (currentGame === 'rune') drawRuneMatchOver(); else drawOver(); }
     // Delete-save confirmation overlay (on top of any screen), or the
     // pause-overlay hint for games whose delete option lives on pause.
