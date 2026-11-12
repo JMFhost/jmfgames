@@ -102,10 +102,11 @@
   /* Color picker: in-flow panel below the toggles, so it never covers the
      game screen. Swatches are phone-sized tap targets (44px min height).
      19 colors flow in a 3-column grid on the console width (2 on phones);
-     the 132px minimum keeps two-word names like DARK PURPLE on one line. */
-  .color-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px;margin:14px 0 2px;padding:10px;background:rgba(0,0,0,.14);border:1px solid var(--shell-edge);border-radius:12px}
+     the 148px minimum keeps two-word names like DARK PURPLE on one line (cell minus padding, swatch and gap leaves room for the longest name at 10px). */
+  .color-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:8px;margin:14px 0 2px;padding:10px;background:rgba(0,0,0,.14);border:1px solid var(--shell-edge);border-radius:12px}
   .color-picker[hidden]{display:none}
-  .color-picker button{display:flex;align-items:center;gap:8px;min-height:44px;padding:6px 10px;border:2px solid rgba(0,0,0,.3);border-radius:8px;background:rgba(255,255,255,.28);color:var(--shell-text);font-size:11px;font-weight:800;letter-spacing:1px;cursor:pointer;text-align:left;touch-action:manipulation}
+  .color-picker button{display:flex;align-items:center;gap:8px;min-height:44px;padding:6px 10px;border:2px solid rgba(0,0,0,.3);border-radius:8px;background:rgba(255,255,255,.28);color:var(--shell-text);font-size:10px;font-weight:800;letter-spacing:.5px;cursor:pointer;text-align:left;touch-action:manipulation}
+  .color-picker button span{white-space:nowrap}
   .color-picker button i{width:26px;height:26px;border-radius:50%;border:2px solid rgba(0,0,0,.35);flex:none;display:block}
   .color-picker button.selected{box-shadow:0 0 0 2px #fff,0 0 0 4px #1f2a44}
   .grille{margin:20px 8px 0 auto;width:110px;display:grid;grid-template-columns:repeat(6,1fr);gap:5px;transform:rotate(-18deg)}
@@ -24042,6 +24043,18 @@ if (typeof srRegister === 'function') srRegister('shooter', {
    slowly and dims the view; hunger rises slowly. Fish GROW through
    3 sizes (small, medium, large) when well fed.
 
+   FISH SIZE + ANIMATION: fish draw at FT_FISH_SCALE (0.75) of
+   their original sprite size, so the tank reads as more massive;
+   the cursor hit radius (24px) stays generous. Swimming is
+   heading-based with gradual turns, eased bursts and glides, a
+   speed-linked tail wag, per-species personality (turn rate, wag
+   tempo, burstiness, bob), and a slow depth drift that draws
+   nearer fish slightly larger and on top. Contented fish
+   sometimes PLAY with decor (arch swim-through, castle laps,
+   plant peek-a-boo, chest peeks, rock nudges) on a bounded
+   cadence; food always interrupts play. All animation and play
+   state is transient — never saved — so old saves load fine.
+
    Persistence: full tank state is saved under localStorage key
    'jmf-games-tank-save' on every action, every 300 frames, and
    whenever the coordinator calls ftSave() (Menu exit path).
@@ -24075,15 +24088,19 @@ if (typeof srRegister === 'function') srRegister('shooter', {
   var FT_LEFT = 6, FT_RIGHT = 234, FT_TOP = 18, FT_BOT = 136;
   var FT_MODES = ['FISH', 'FEED', 'CLEAN', 'SHOP', 'DECOR'];
   var FT_MODE_COLORS = ['#FFFFFF', '#FACC15', '#4ADE80', '#F472B6', '#FDBA74'];
+  // Personality: turn = max turn rate (rad/frame), wag = tail-wag
+  // tempo multiplier, burst = dart-burst chance per frame, bob =
+  // vertical bob amplitude multiplier. Eels slither, puffs bob,
+  // darts dart; gliders turn slow and wide.
   var FT_SPECIES = [
-    { name: 'SUNFIN', color: '#FACC15', color2: '#F59E0B', price: 40, speed: 0.5, shape: 'round' },
-    { name: 'BLUEBOLT', color: '#38BDF8', color2: '#2563EB', price: 60, speed: 0.8, shape: 'dart' },
-    { name: 'MOONGLIDER', color: '#E2E8F0', color2: '#94A3B8', price: 90, speed: 0.4, shape: 'wide' },
-    { name: 'CORAL PUFF', color: '#FB7185', color2: '#E11D48', price: 120, speed: 0.3, shape: 'puff' },
-    { name: 'GOLDEN DASH', color: '#FBBF24', color2: '#B45309', price: 150, speed: 1.0, shape: 'slim' },
-    { name: 'RIPPLE EEL', color: '#2DD4BF', color2: '#0F766E', price: 180, speed: 0.65, shape: 'eel' },
-    { name: 'VELVETFIN', color: '#A78BFA', color2: '#6D28D9', price: 200, speed: 0.45, shape: 'veil' },
-    { name: 'STARSCALE', color: '#4ADE80', color2: '#15803D', price: 250, speed: 0.55, shape: 'star' }
+    { name: 'SUNFIN', color: '#FACC15', color2: '#F59E0B', price: 40, speed: 0.5, shape: 'round', turn: 0.09, wag: 1.0, burst: 0.002, bob: 1.0 },
+    { name: 'BLUEBOLT', color: '#38BDF8', color2: '#2563EB', price: 60, speed: 0.8, shape: 'dart', turn: 0.12, wag: 1.3, burst: 0.006, bob: 0.8 },
+    { name: 'MOONGLIDER', color: '#E2E8F0', color2: '#94A3B8', price: 90, speed: 0.4, shape: 'wide', turn: 0.05, wag: 0.8, burst: 0.001, bob: 1.2 },
+    { name: 'CORAL PUFF', color: '#FB7185', color2: '#E11D48', price: 120, speed: 0.3, shape: 'puff', turn: 0.05, wag: 0.7, burst: 0.0005, bob: 2.0 },
+    { name: 'GOLDEN DASH', color: '#FBBF24', color2: '#B45309', price: 150, speed: 1.0, shape: 'slim', turn: 0.11, wag: 1.4, burst: 0.005, bob: 0.9 },
+    { name: 'RIPPLE EEL', color: '#2DD4BF', color2: '#0F766E', price: 180, speed: 0.65, shape: 'eel', turn: 0.06, wag: 1.6, burst: 0.001, bob: 0.6 },
+    { name: 'VELVETFIN', color: '#A78BFA', color2: '#6D28D9', price: 200, speed: 0.45, shape: 'veil', turn: 0.07, wag: 0.9, burst: 0.001, bob: 1.1 },
+    { name: 'STARSCALE', color: '#4ADE80', color2: '#15803D', price: 250, speed: 0.55, shape: 'star', turn: 0.08, wag: 1.0, burst: 0.002, bob: 1.0 }
   ];
   var FT_DECOR = [
     { name: 'PLANT', kind: 'plant', price: 20 },
@@ -24119,6 +24136,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
   var ftCarryIdx = -1, ftCarryOrigX = 0, ftSellConfirm = null;
   var ftToast = '', ftToastT = 0, ftHintT = 0, ftScrubT = 0, ftScrubX = 0, ftScrubY = 0;
   var ftSandDots = [];
+  var ftPlayStarts = 0; // transient: decor-play episodes started (debug hook, never saved)
 
   function ftNow() { return Date.now(); }
   function ftClamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
@@ -24131,18 +24149,31 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     }
     return FT_NAMES[ftFish.length % FT_NAMES.length] + ' ' + (ftFish.length + 1);
   }
-  // Body size in pixels [length, height] for a fish of this species/size.
+  // Fish draw at 0.75 of their original sprite size so the tank
+  // reads as more massive. Body size in pixels [length, height]
+  // for a fish of this species/size: default [8,5] [11,6] [13,8],
+  // eel [15,3] [20,4] [24,5], puff [8,6] [11,8] [13,9].
+  var FT_FISH_SCALE = 0.75;
   function ftFishDims(f) {
     var s = f.size, shape = FT_SPECIES[f.sp].shape;
-    if (shape === 'eel') return [14 + s * 6, 3 + s];
-    if (shape === 'puff') return [8 + s * 3, 6 + s * 2];
-    return [8 + s * 3, 4 + s * 2];
+    var L, Hh;
+    if (shape === 'eel') { L = 14 + s * 6; Hh = 3 + s; }
+    else if (shape === 'puff') { L = 8 + s * 3; Hh = 6 + s * 2; }
+    else { L = 8 + s * 3; Hh = 4 + s * 2; }
+    return [Math.max(6, Math.round(L * FT_FISH_SCALE)), Math.max(3, Math.round(Hh * FT_FISH_SCALE))];
   }
   function ftNewFish(sp, x, y) {
-    return { sp: sp, name: '', x: x, y: y, dir: Math.random() < 0.5 ? -1 : 1,
+    var dir = Math.random() < 0.5 ? -1 : 1;
+    return { sp: sp, name: '', x: x, y: y, dir: dir,
       tx: x, ty: y, retarget: 60 + Math.floor(Math.random() * 180),
       phase: Math.random() * 6.28, dartT: 0,
-      hunger: 20, happy: 80, size: 1, grow: 0 };
+      hunger: 20, happy: 80, size: 1, grow: 0,
+      // TRANSIENT animation/play state: never written to the save
+      // (ftSnapshot omits it) and rebuilt fresh on every load.
+      heading: dir > 0 ? 0 : Math.PI, speedCur: FT_SPECIES[sp].speed,
+      wag: Math.random() * 6.28, play: null,
+      playCd: 120 + Math.floor(Math.random() * 240),
+      depthPh: Math.random() * 6.28 };
   }
   function ftRetarget(f) {
     var d = ftFishDims(f), hw = Math.floor(d[0] / 2) + 4, hh = Math.floor(d[1] / 2) + 3;
@@ -24161,8 +24192,8 @@ if (typeof srRegister === 'function') srRegister('shooter', {
   }
   function ftFreshTank() {
     ftFish = [];
-    var a = ftNewFish(0, 70, 60); a.dir = 1;
-    var b = ftNewFish(1, 170, 90); b.dir = -1;
+    var a = ftNewFish(0, 70, 60); a.dir = 1; a.heading = 0;
+    var b = ftNewFish(1, 170, 90); b.dir = -1; b.heading = Math.PI;
     ftFish.push(a); ftFish.push(b);
     a.name = ftNextName(); b.name = ftNextName();
     ftRetarget(a); ftRetarget(b);
@@ -24174,6 +24205,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     ftShopOpen = false; ftShopTab = 0; ftShopSel = 0; ftDetailIdx = -1;
     ftCarryIdx = -1; ftSellConfirm = null;
     ftToast = ''; ftToastT = 0; ftHintT = 900; ftScrubT = 0;
+    ftPlayStarts = 0;
     ftSandDots = [];
     for (var i = 0; i < 24; i++) {
       ftSandDots.push({ x: 8 + Math.floor(Math.random() * 224), y: 138 + Math.floor(Math.random() * 10) });
@@ -24250,6 +24282,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
       var s = d.fish[i];
       var f = ftNewFish(s.sp, ftClamp(s.x, FT_LEFT + 4, FT_RIGHT - 4), ftClamp(s.y, FT_TOP + 4, FT_BOT - 4));
       f.name = s.name; f.dir = s.dir;
+      f.heading = s.dir > 0 ? 0 : Math.PI;
       f.tx = ftNum(s.tx, FT_LEFT, FT_RIGHT) ? s.tx : f.x;
       f.ty = ftNum(s.ty, FT_TOP, FT_BOT) ? s.ty : f.y;
       f.retarget = ftNum(s.retarget, 0, 1000) ? Math.floor(s.retarget) : 120;
@@ -24292,6 +24325,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     ftShopOpen = false; ftDetailIdx = -1; ftShopSel = 0;
     ftCarryIdx = -1; ftSellConfirm = null;
     ftToast = ''; ftToastT = 0; ftHintT = 0; ftScrubT = 0;
+    ftPlayStarts = 0;
     ftSandDots = [];
     for (var n = 0; n < 24; n++) {
       ftSandDots.push({ x: 8 + Math.floor(Math.random() * 224), y: 138 + Math.floor(Math.random() * 10) });
@@ -24572,18 +24606,134 @@ if (typeof srRegister === 'function') srRegister('shooter', {
       ftDecorPlaced[ftCarryIdx].x = ftClamp(ftCurX, 16, 224);
     }
   }
+  /* ---------- Decor play (transient behavior, never saved). ----------
+     Every so often a contented fish picks a decor piece and plays
+     with it: through the arch, around the castle, peek-a-boo at a
+     plant, peeking from the chest, nudging the rock. Play is a
+     waypoint list with holds; food always interrupts it, and a
+     sold/moved decor aborts it safely. Cadence: considered only at
+     natural retarget points, 35% chance, then a 4-10s cooldown, and
+     at most a third of the tank plays at once — noticeable, never
+     constant. */
+  function ftPlayMoves(kind, x, dir) {
+    var cx = function (v) { return ftClamp(v, FT_LEFT + 8, FT_RIGHT - 8); };
+    if (kind === 'arch') return [
+      { x: cx(x - 20 * dir), y: 122, hold: 0 },
+      { x: cx(x), y: 126, hold: 0 },
+      { x: cx(x + 20 * dir), y: 122, hold: 0 },
+      { x: cx(x + 32 * dir), y: 112, hold: 0 }
+    ];
+    if (kind === 'castle') {
+      var m = [];
+      for (var k = 0; k < 8; k++) {
+        var a = Math.PI / 2 + (k / 8) * 2 * Math.PI * dir;
+        m.push({ x: cx(x + Math.cos(a) * 20), y: 118 + Math.sin(a) * 10, hold: 0 });
+      }
+      return m;
+    }
+    if (kind === 'plant') return [
+      { x: cx(x), y: 116, hold: 0 },
+      { x: cx(x - 7), y: 120, hold: 35, wig: 1 },
+      { x: cx(x + 7), y: 120, hold: 35, wig: 1 },
+      { x: cx(x), y: 122, hold: 45, wig: 2 }
+    ];
+    if (kind === 'chest') return [
+      { x: cx(x), y: 108, hold: 20, wig: 1 },
+      { x: cx(x), y: 116, hold: 15 },
+      { x: cx(x), y: 108, hold: 20, wig: 1 },
+      { x: cx(x), y: 116, hold: 15 },
+      { x: cx(x), y: 106, hold: 0 }
+    ];
+    // rock: approach, bump twice (the rock wobbles), swim off.
+    return [
+      { x: cx(x - 12 * dir), y: 128, hold: 0 },
+      { x: cx(x - 8 * dir), y: 128, hold: 8, bump: 1 },
+      { x: cx(x - 12 * dir), y: 128, hold: 8 },
+      { x: cx(x - 8 * dir), y: 128, hold: 8, bump: 1 },
+      { x: cx(x - 14 * dir), y: 124, hold: 0 }
+    ];
+  }
+  function ftPlayEligible(f) {
+    if (f.play || f.playCd > 0) return false;
+    if (f.hunger >= 70 || f.happy < 40) return false;
+    if (ftDecorPlaced.length === 0) return false;
+    var playing = 0;
+    for (var i = 0; i < ftFish.length; i++) if (ftFish[i].play) playing++;
+    return playing < Math.max(1, Math.floor(ftFish.length / 3));
+  }
+  function ftStartPlay(f) {
+    var di = Math.floor(Math.random() * ftDecorPlaced.length);
+    var dc = ftDecorPlaced[di];
+    var dir = Math.random() < 0.5 ? 1 : -1;
+    f.play = { kind: dc.kind, di: di, x: dc.x, t: 0, step: 0, holdT: 0,
+      moves: ftPlayMoves(dc.kind, dc.x, dir) };
+    f.tx = f.play.moves[0].x; f.ty = f.play.moves[0].y;
+    ftPlayStarts++;
+  }
+  function ftEndPlay(f, cooldown) {
+    f.play = null;
+    f.playCd = cooldown;
+    ftRetarget(f);
+  }
+  function ftPlayStep(f) {
+    var p = f.play;
+    var dc = ftDecorPlaced[p.di];
+    // Sold, swapped, or carried far away: abort safely.
+    if (!dc || dc.kind !== p.kind || Math.abs(dc.x - p.x) > 30) { ftEndPlay(f, 120); return; }
+    var mv = p.moves[p.step];
+    if (!mv) { ftEndPlay(f, 240 + Math.floor(Math.random() * 360)); return; }
+    p.t++;
+    if (p.t > 900) { ftEndPlay(f, 240); return; } // never trap a fish
+    var dxp = mv.x - f.x, dyp = mv.y - f.y;
+    var dp = Math.sqrt(dxp * dxp + dyp * dyp);
+    if (dp < 5) {
+      p.holdT++;
+      if (mv.bump && p.holdT === 1) dc.wob = 18; // nudge wobbles the rock
+      if (mv.wig) {
+        f.tx = mv.x + Math.sin(p.t * 0.5) * 2 * mv.wig;
+        f.ty = mv.y + Math.cos(p.t * 0.4);
+      } else { f.tx = mv.x; f.ty = mv.y; }
+      if (p.holdT > mv.hold) {
+        p.step++; p.holdT = 0;
+        if (Math.random() < 0.3 && ftBubbles.length < 18) ftBubbles.push({ x: f.x, y: f.y - 2, r: 1 });
+      }
+    } else {
+      p.holdT = 0;
+      f.tx = mv.x; f.ty = mv.y;
+    }
+  }
+  function ftWanderNext(f) {
+    if (ftPlayEligible(f) && Math.random() < 0.35) { ftStartPlay(f); return; }
+    ftRetarget(f);
+  }
+  // Depth cue: each fish drifts slowly between the front and back
+  // glass (0 = far, 1 = near). Draw-only: affects draw order and a
+  // small size factor, never position, bounds, or the save.
+  function ftFishDepthVal(f) {
+    return 0.5 + 0.5 * Math.sin(ftFrame / 900 + (f.depthPh || 0));
+  }
+  /* Steering: fish turn GRADUALLY toward their target (heading eases
+     at the species turn rate) and ease their speed up and down, so
+     motion reads as swimming instead of sliding. The facing dir is
+     derived from the heading with hysteresis, so a fish never
+     flickers when swimming near-vertically. Food always wins: a
+     pellet in range cancels play and takes over steering. */
   function ftFishStep(f) {
     var sp = FT_SPECIES[f.sp];
+    if (f.heading === undefined) f.heading = f.dir > 0 ? 0 : Math.PI;
+    if (f.speedCur === undefined) f.speedCur = sp.speed;
+    if (f.wag === undefined) f.wag = 0;
     var d = ftFishDims(f), hw = Math.floor(d[0] / 2) + 4, hh = Math.floor(d[1] / 2) + 3;
-    // Hungry fish head for the nearest pellet within reach.
-    var tx = f.tx, ty = f.ty, pellet = null, bd = 120;
+    // Hungry fish head for the nearest pellet within reach. Food
+    // seeking always wins over wandering AND decor play.
+    var pellet = null, bd = 120;
     for (var i = 0; i < ftFood.length; i++) {
       var pdx = ftFood[i].x - f.x, pdy = ftFood[i].y - f.y;
       var pd = Math.sqrt(pdx * pdx + pdy * pdy);
       if (pd < bd) { bd = pd; pellet = ftFood[i]; }
     }
     if (pellet) {
-      tx = pellet.x; ty = pellet.y;
+      if (f.play) { f.play = null; f.playCd = 180; }
       if (bd < 7) {
         for (var j = 0; j < ftFood.length; j++) {
           if (ftFood[j] === pellet) { ftFood.splice(j, 1); break; }
@@ -24595,26 +24745,52 @@ if (typeof srRegister === 'function') srRegister('shooter', {
         ftRetarget(f);
         return;
       }
+      f.tx = pellet.x; f.ty = pellet.y;
+    } else if (f.play) {
+      ftPlayStep(f); // sets f.tx/f.ty, or ends play + retargets
+    } else {
+      var dx0 = f.tx - f.x, dy0 = f.ty - f.y;
+      var arrived = Math.sqrt(dx0 * dx0 + dy0 * dy0) < 4;
+      f.retarget--;
+      if (arrived || f.retarget <= 0) ftWanderNext(f);
     }
-    var dx = tx - f.x, dy = ty - f.y;
+    if (f.playCd > 0) f.playCd--;
+    // Smooth steering toward the current target.
+    var dx = f.tx - f.x, dy = f.ty - f.y;
     var dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < 4) { ftRetarget(f); return; }
-    f.retarget--;
-    if (f.retarget <= 0) ftRetarget(f);
-    var step = sp.speed;
-    if (f.dartT > 0) { step *= 2.5; f.dartT--; }
-    else if (Math.random() < 0.002) f.dartT = 25;
-    if (f.hunger >= 70) step *= 0.6; // hungry fish swim slowly
-    f.x += (dx / dist) * step;
-    f.y += (dy / dist) * step * 0.7;
-    if (dx > 0.5) f.dir = 1;
-    else if (dx < -0.5) f.dir = -1;
+    var want = Math.atan2(dy * 0.7, dx);
+    var diff = want - f.heading;
+    while (diff > Math.PI) diff -= 2 * Math.PI;
+    while (diff < -Math.PI) diff += 2 * Math.PI;
+    var maxTurn = sp.turn || 0.08;
+    if (diff > maxTurn) f.heading += maxTurn;
+    else if (diff < -maxTurn) f.heading -= maxTurn;
+    else f.heading = want;
+    // Eased speed: bursts spool up, glides spool down, plus a slow
+    // sinusoidal variation so no two crossings look identical.
+    var cruise = sp.speed * (0.85 + 0.15 * Math.sin(f.phase * 0.5));
+    var target = cruise;
+    if (f.dartT > 0) { target = cruise * 2.2; f.dartT--; }
+    else if (Math.random() < (sp.burst || 0.002)) f.dartT = 20 + Math.floor(Math.random() * 15);
+    if (f.hunger >= 70) target *= 0.6; // hungry fish swim slowly
+    if (f.play) target *= 0.85; // unhurried play pace
+    f.speedCur += (target - f.speedCur) * (target > f.speedCur ? 0.08 : 0.04);
+    if (dist >= 1) {
+      f.x += Math.cos(f.heading) * f.speedCur;
+      f.y += Math.sin(f.heading) * f.speedCur;
+    }
+    var cx = Math.cos(f.heading);
+    if (cx > 0.3) f.dir = 1;
+    else if (cx < -0.3) f.dir = -1;
     f.phase += 0.08;
-    // Turn at the glass: clamp inside and pick a fresh inward target.
-    if (f.x < FT_LEFT + hw) { f.x = FT_LEFT + hw; f.dir = 1; ftRetarget(f); }
-    if (f.x > FT_RIGHT - hw) { f.x = FT_RIGHT - hw; f.dir = -1; ftRetarget(f); }
-    if (f.y < FT_TOP + hh) { f.y = FT_TOP + hh; ftRetarget(f); }
-    if (f.y > FT_BOT - hh) { f.y = FT_BOT - hh; ftRetarget(f); }
+    // Tail wag runs faster the faster the fish swims.
+    f.wag += (0.12 + f.speedCur * 0.22) * (sp.wag || 1);
+    // Turn at the glass: clamp inside and pick a fresh inward
+    // target (unless mid-play — the play state re-aims next frame).
+    if (f.x < FT_LEFT + hw) { f.x = FT_LEFT + hw; if (!f.play) ftRetarget(f); }
+    if (f.x > FT_RIGHT - hw) { f.x = FT_RIGHT - hw; if (!f.play) ftRetarget(f); }
+    if (f.y < FT_TOP + hh) { f.y = FT_TOP + hh; if (!f.play) ftRetarget(f); }
+    if (f.y > FT_BOT - hh) { f.y = FT_BOT - hh; if (!f.play) ftRetarget(f); }
     if (Math.random() < 0.0015 && ftBubbles.length < 18) {
       ftBubbles.push({ x: f.x + f.dir * Math.floor(d[0] / 2), y: f.y - 2, r: 1 + Math.floor(Math.random() * 2) });
     }
@@ -24649,6 +24825,7 @@ if (typeof srRegister === 'function') srRegister('shooter', {
       ftSave();
     }
     for (var s = 0; s < ftFish.length; s++) ftFishStep(ftFish[s]);
+    for (var w = 0; w < ftDecorPlaced.length; w++) if (ftDecorPlaced[w].wob > 0) ftDecorPlaced[w].wob--;
     for (var p = ftFood.length - 1; p >= 0; p--) {
       ftFood[p].age++;
       if (ftFood[p].y < FT_BOT - 2) ftFood[p].y += 0.15;
@@ -24685,12 +24862,14 @@ if (typeof srRegister === 'function') srRegister('shooter', {
       var sw2 = ftNum(dc.ph, -100, 100) ? dc.ph : x;
       ftDrawPlant(x, sandY, ph2, sw2);
     } else if (dc.kind === 'rock') {
+      // Nudged rocks wobble briefly (transient dc.wob, never saved).
+      var rx = x + (dc.wob > 0 ? Math.round(Math.sin(dc.wob * 0.6)) : 0);
       ctx.fillStyle = '#94A3B8';
-      ctx.fillRect(x - 7, sandY - 6, 14, 6);
+      ctx.fillRect(rx - 7, sandY - 6, 14, 6);
       ctx.fillStyle = '#64748B';
-      ctx.fillRect(x - 7, sandY - 2, 14, 2);
+      ctx.fillRect(rx - 7, sandY - 2, 14, 2);
       ctx.fillStyle = '#CBD5E1';
-      ctx.fillRect(x - 5, sandY - 6, 4, 2);
+      ctx.fillRect(rx - 5, sandY - 6, 4, 2);
     } else if (dc.kind === 'arch') {
       ctx.fillStyle = '#B8A888';
       ctx.fillRect(x - 10, sandY - 16, 4, 16);
@@ -24724,11 +24903,18 @@ if (typeof srRegister === 'function') srRegister('shooter', {
   }
   function ftDrawFish(f, selected) {
     var sp = FT_SPECIES[f.sp];
-    var d = ftFishDims(f), L = d[0], Hh = d[1];
-    var x = Math.floor(f.x), y = Math.floor(f.y + Math.sin(f.phase) * 1.5);
+    var d = ftFishDims(f);
+    // Depth: far fish draw slightly smaller, near fish slightly
+    // larger (draw-only; bounds and hit tests use ftFishDims).
+    var ds = 0.88 + 0.24 * ftFishDepthVal(f);
+    var L = Math.max(4, Math.round(d[0] * ds)), Hh = Math.max(3, Math.round(d[1] * ds));
+    var x = Math.floor(f.x), y = Math.floor(f.y + Math.sin(f.phase) * 1.5 * (sp.bob || 1));
     var dir = f.dir, shape = sp.shape;
     var bx = x - Math.floor(L / 2), by = y - Math.floor(Hh / 2);
-    var wag = Math.sin(ftFrame / 5 + f.phase) > 0 ? 1 : -1;
+    // Continuous tail wag: amplitude grows with swim speed.
+    var wagAmp = 1 + Math.min(2, f.speedCur || 0);
+    var wagOff = Math.max(-2, Math.min(2, Math.round(Math.sin(f.wag || 0) * wagAmp)));
+    var tailW = Math.max(2, Math.floor(L / 4));
     if (selected) {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(bx - 5, by - 4, 4, 1); ctx.fillRect(bx - 5, by - 4, 1, 4);
@@ -24741,21 +24927,21 @@ if (typeof srRegister === 'function') srRegister('shooter', {
       var seg = Math.floor(L / 3);
       ctx.fillStyle = sp.color;
       for (var s = 0; s < 3; s++) {
-        var off = Math.floor(Math.sin(f.phase + s * 1.2) * 2);
+        var off = Math.max(-2, Math.min(2, Math.round(Math.sin((f.wag || 0) + s * 1.3) * wagAmp)));
         var sx = dir > 0 ? bx + (2 - s) * seg : bx + s * seg;
         ctx.fillRect(sx, by + off, seg, Hh);
       }
       ctx.fillStyle = sp.color2;
       var tailX = dir > 0 ? bx - 2 : bx + L;
-      ctx.fillRect(tailX, by + Math.floor(Math.sin(f.phase) * 2), 2, Hh);
+      ctx.fillRect(tailX, by + wagOff, 2, Hh);
       var ex = dir > 0 ? bx + L - 3 : bx + 1;
       ctx.fillStyle = '#FFFFFF'; ctx.fillRect(ex, by, 2, 2);
       ctx.fillStyle = '#111111'; ctx.fillRect(ex + (dir > 0 ? 1 : 0), by, 1, 1);
     } else {
       // Tail (wags), body, top fin, eye.
       ctx.fillStyle = sp.color2;
-      if (dir > 0) ctx.fillRect(bx - 3, by + 1 + wag, 3, Hh - 2);
-      else ctx.fillRect(bx + L, by + 1 + wag, 3, Hh - 2);
+      if (dir > 0) ctx.fillRect(bx - tailW, by + 1 + wagOff, tailW, Math.max(1, Hh - 2));
+      else ctx.fillRect(bx + L, by + 1 + wagOff, tailW, Math.max(1, Hh - 2));
       if (shape === 'puff') {
         ctx.fillStyle = sp.color;
         ctx.fillRect(bx + 2, by - 1, L - 4, Hh + 2);
@@ -24826,8 +25012,11 @@ if (typeof srRegister === 'function') srRegister('shooter', {
         ctx.fillRect(29, top, 182, 12);
       }
       if (ftShopTab === 0) {
+        // Size-1 silhouette of the species, at the same scale as
+        // the fish in the tank (clamped to the chip column).
+        var cd = ftFishDims({ sp: idx, size: 1 });
         ctx.fillStyle = items[idx].color;
-        ctx.fillRect(33, top + 3, 8, 6);
+        ctx.fillRect(33, top + 3 + Math.floor((6 - cd[1]) / 2), Math.min(cd[0], 10), cd[1]);
       }
       ctx.fillStyle = '#FFFFFF'; ctx.font = '8px monospace';
       ctx.fillText(items[idx].name, 46, top + 10);
@@ -24922,8 +25111,10 @@ if (typeof srRegister === 'function') srRegister('shooter', {
     // Food pellets.
     ctx.fillStyle = '#92400E';
     for (var p = 0; p < ftFood.length; p++) ctx.fillRect(Math.floor(ftFood[p].x), Math.floor(ftFood[p].y), 2, 2);
-    // Fish.
-    for (var i = 0; i < ftFish.length; i++) ftDrawFish(ftFish[i], i === ftDetailIdx);
+    // Fish, far-to-near so nearer fish overlap farther ones.
+    var order = ftFish.slice();
+    order.sort(function (a, b) { return ftFishDepthVal(a) - ftFishDepthVal(b); });
+    for (var i = 0; i < order.length; i++) ftDrawFish(order[i], order[i] === ftFish[ftDetailIdx]);
     // Bubbles.
     for (var b = 0; b < ftBubbles.length; b++) {
       var bub = ftBubbles[b];
