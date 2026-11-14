@@ -469,6 +469,32 @@ body {
   border-radius: 1px;
 }
 
+/* Falling-blocks icon: a tiny original stack of rounded blocks on a
+   violet tile — two settled blocks with one block falling above them. */
+.ph-icon-fall {
+  background: linear-gradient(150deg, #7c5cf0 0%, #4a2fb5 100%);
+}
+
+.ph-fall-stack {
+  position: relative;
+  width: 34px;
+  height: 36px;
+}
+
+.ph-fall-stack i {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  box-shadow: inset 0 2px 2px rgba(255, 255, 255, 0.35),
+    inset 0 -2px 2px rgba(0, 0, 0, 0.18),
+    0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.ph-fall-stack i:nth-child(1) { left: 0; bottom: 0; background: #ffd479; }
+.ph-fall-stack i:nth-child(2) { left: 19px; bottom: 0; background: #4cd6a5; }
+.ph-fall-stack i:nth-child(3) { left: 19px; bottom: 19px; background: #6ec1ff; }
+
 /* ---------- Home edit mode ---------- */
 
 /* In edit mode the icons jiggle; the Done button appears below the grid. */
@@ -2091,6 +2117,287 @@ body {
   }
 }
 </style>
+<style>
+/* source: bf-game.css */
+/* Blockfall game chrome: header, side panels, board, controls, stats
+   row, overlay + sheet base classes. Scoped under .bf-game so nothing
+   leaks into the shell. Theme colors come from the shared --bz-theme-*
+   variables; every var() carries a fallback so the game stays sane when
+   variables are missing. Piece colors never appear here: the canvas
+   draws pieces from the engine's fixed palette. The board panel is a
+   translucent dark canvas surface over the theme background. */
+
+.bf-game,
+.bf-game * {
+  box-sizing: border-box;
+}
+
+.bf-game {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 390px;
+  height: 100%;
+  margin: 0 auto;
+  /* Clear the 48px shell status bar, which overlays the top of the
+     screen — same treatment as the other games in this shell. */
+  padding-top: 48px;
+  background: transparent;
+  color: var(--bz-theme-text, #eaf6f6);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------ header */
+.bf-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 2px;
+  background: transparent;
+}
+
+.bf-stats {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.bf-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+  min-width: 44px;
+}
+
+.bf-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bz-theme-muted, #8fb3c7);
+}
+
+.bf-value {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--bz-theme-text, #eaf6f6);
+}
+
+/* ------------------------------------------------------------ buttons */
+.bf-btn {
+  appearance: none;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--bz-theme-panel-edge, #1d4a63);
+  background: var(--bz-theme-btn-bg, #16405a);
+  color: var(--bz-theme-text, #eaf6f6);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.bf-btn:active {
+  background: var(--bz-theme-btn-bg-active, #1d5274);
+}
+
+.bf-buttons {
+  display: flex;
+  gap: 8px;
+  padding: 6px 8px;
+}
+
+.bf-buttons .bf-btn {
+  flex: 1;
+}
+
+/* --------------------------------------------------------- middle row */
+/* The row group is centered, matching the layout math: 8px padding +
+   52px side panel + 6px gap + board + 6px gap + 52px side panel +
+   8px padding, with leftover slack split evenly on both sides. */
+.bf-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+  padding: 2px 8px 6px;
+  min-height: 0;
+}
+
+.bf-side {
+  flex: 0 0 52px;
+  width: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.bf-side-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bz-theme-muted, #8fb3c7);
+}
+
+.bf-side canvas {
+  display: block;
+  border-radius: 8px;
+  background: var(--bz-theme-tray-bg, #ffffff0a);
+  border: 1px solid var(--bz-theme-panel-edge, #1d4a63);
+}
+
+.bf-board-wrap {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+#bf-canvas {
+  display: block;
+  touch-action: none;
+  border-radius: 10px;
+}
+
+/* ------------------------------------------------------------ controls */
+.bf-controls {
+  display: flex;
+  gap: 8px;
+  padding: 4px 8px 8px;
+}
+
+.bf-controls .bf-btn {
+  flex: 1;
+  min-height: 52px;
+  font-size: 20px;
+}
+
+/* ----------------------------------------------------------- stats row */
+.bf-stats-row {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  padding: 2px 8px 10px;
+  min-height: 20px;
+}
+
+.bf-stats-row .bf-stat {
+  min-width: 52px;
+}
+
+.bf-stats-row .bf-value {
+  font-size: 15px;
+}
+
+/* ------------------------------------------- overlay + sheet base chrome */
+/* The overlays module fills these elements; this file defines only the
+   shared chrome (backdrop, card, type) so every sheet looks alike. */
+.bf-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--bz-theme-overlay, #040f17c7);
+}
+
+.bf-overlay[hidden] {
+  display: none;
+}
+
+/* The pause sheet is an overlay over the whole app section: the wire
+   appends it to the mount AFTER the 100%-height game root, so without
+   positioning it landed below the fold in normal flow and the board
+   stayed visible behind it. Mirror the overlay treatment (absolute,
+   inset 0, backdrop, centered card). The extra bottom padding keeps
+   the card clear of the shell home indicator: that 44px strip sits
+   above the app section (z-index 40 in shell.css) and would otherwise
+   cover the lowest sheet button. */
+.bf-sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 16px 60px;
+  background: var(--bz-theme-overlay, #040f17c7);
+}
+
+.bf-sheet[hidden] {
+  display: none;
+}
+
+/* Card treatment shared by the pause sheet and the game-over overlay.
+   The game-over card had no styles, so its text floated over the board
+   with no distinct panel. */
+.bf-sheet-card,
+.bf-over-card {
+  width: 100%;
+  max-width: 320px;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--bz-theme-panel, #123549);
+  border: 1px solid var(--bz-theme-panel-edge, #1d4a63);
+  color: var(--bz-theme-text, #eaf6f6);
+  text-align: center;
+}
+
+.bf-sheet h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.bf-sheet p {
+  margin: 0 0 8px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--bz-theme-muted, #8fb3c7);
+}
+
+.bf-sheet .bf-btn {
+  margin-top: 8px;
+}
+
+.bf-over-card h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.bf-over-card p {
+  margin: 0 0 8px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--bz-theme-muted, #8fb3c7);
+}
+
+.bf-over-card .bf-btn {
+  margin-top: 8px;
+}
+
+/* ------------------------------------------------------ reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .bf-game,
+  .bf-game * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+</style>
 </head>
 <body>
 <div id="ph-stage">
@@ -2117,6 +2424,10 @@ body {
       </div>
       <main id="ph-home">
         <div class="ph-home-grid">
+          <button type="button" class="ph-app-icon" data-app="blockfall" aria-label="Blockfall">
+            <span class="ph-icon ph-icon-fall" aria-hidden="true"><span class="ph-fall-stack"><i></i><i></i><i></i></span></span>
+            <span class="ph-icon-label">Blockfall</span>
+          </button>
           <button type="button" class="ph-app-icon" data-app="blockzen" aria-label="Block Zen">
             <span class="ph-icon ph-icon-blocks" aria-hidden="true"><span class="ph-mini-grid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></span>
             <span class="ph-icon-label">Block Zen</span>
@@ -2140,6 +2451,7 @@ body {
         </div>
         <button type="button" id="ph-home-done" class="ph-home-done">Done</button>
       </main>
+      <section id="app-blockfall" class="ph-app" aria-label="Blockfall"></section>
       <section id="app-blockzen" class="ph-app" aria-label="Block Zen"></section>
       <section id="app-solitaire" class="ph-app" aria-label="Solitaire"></section>
       <section id="app-settings" class="ph-app" aria-label="Settings">
@@ -2228,7 +2540,7 @@ body {
   var SETTINGS_KEY = 'jmf-phone-settings-v1';
   /* Default home order: games alphabetical first, then utilities
      alphabetical. */
-  var DEFAULT_HOME_ORDER = ['blockzen', 'invesim', 'solitaire', 'about', 'settings'];
+  var DEFAULT_HOME_ORDER = ['blockfall', 'blockzen', 'invesim', 'solitaire', 'about', 'settings'];
   var EXTERNAL_HOME_URL = 'https://invesim.com';
 
   var registry = {};
@@ -2998,6 +3310,28 @@ body {
   function init() {
     /* Register the launch lineup. The game section stays empty here;
        the game worker fills it at runtime. */
+    PhoneShell.registerApp('blockfall', { title: 'Blockfall', el: $('app-blockfall'),
+      /* Re-measure + re-render on open (Solitaire pattern): the board is
+         laid out while its section is hidden at boot, so render on open.
+         Guarded and blockfall-scoped; never throws. */
+      onOpen: function () {
+        try {
+          if (typeof window !== 'undefined' && window.BFGame &&
+              typeof window.BFGame.render === 'function') {
+            window.BFGame.render();
+          }
+        } catch (e) { /* re-render is best-effort; the game loop re-renders */ }
+      },
+      /* Auto-pause on hide: the wire worker exposes this handle from the
+         wire boot block. Guarded; never throws. Do not init the wire here. */
+      onClose: function () {
+        try {
+          if (typeof window !== 'undefined' && window.__BF__ && window.__BF__.wire &&
+              typeof window.__BF__.wire.onAppHidden === 'function') {
+            window.__BF__.wire.onAppHidden();
+          }
+        } catch (e) { /* auto-pause is best-effort */ }
+      } });
     PhoneShell.registerApp('blockzen', { title: 'Block Zen', el: $('app-blockzen') });
     PhoneShell.registerApp('invesim', { title: 'InveSim', url: EXTERNAL_HOME_URL });
     PhoneShell.registerApp('solitaire', { title: 'Solitaire', el: $('app-solitaire'),
@@ -4999,6 +5333,15 @@ if (typeof window !== 'undefined') window.BZUI = BZUI;
 //   sol:place   — soft tap: one low short blip.
 //   sol:invalid — muted thud: one low quiet blip, quieter than all others.
 //   sol:win     — gentle rising figure: four soft sine notes, C-E-G-C.
+//   bf:move     — very short soft tick, quieter than a click.
+//   bf:rotate   — quiet flick: one short soft glide.
+//   bf:lock     — soft tap: one low short blip.
+//   bf:clear    — rising pentatonic arpeggio; more notes and a higher
+//                  start as the line count (1..3) and the combo grow.
+//   bf:clear4   — four-line flourish: a longer, higher rising figure
+//                  than the best clear, plus a short vibration pulse.
+//   bf:levelup  — gentle two-note rise.
+//   bf:gameover — gentle descending two-tone, same voice as gameover.
 // All voices run through a master gain at a modest level; peaks stay
 // well below clipping.
 //
@@ -5039,6 +5382,16 @@ if (typeof window !== 'undefined') window.BZUI = BZUI;
 //   sol:win        {score, moves, time, streak, best, isNewBest} — gentle
 //                            rising figure + one short vibration pulse.
 //   No recycle sound: sol-wire dispatches nothing for a stock recycle.
+//   bf:move       {} — very short soft tick.
+//   bf:rotate     {kicked} — quiet flick.
+//   bf:lock       {shape} — soft tap.
+//   bf:clear      {count, points, combo, level} — arpeggio scaled by
+//                            count + combo; a count of 4 plays the
+//                            four-line flourish instead.
+//   bf:clear4     {points, combo, level} — four-line flourish + one
+//                            short vibration pulse.
+//   bf:levelup    {level} — gentle two-note rise.
+//   bf:gameover   {score, lines, level} — descending two-tone.
 
 var BZAudio = (function () {
   'use strict';
@@ -5496,6 +5849,149 @@ var BZAudio = (function () {
     }
   }
 
+  // --- Blockfall sound effects (same soft voice, buses, and levels) ---
+
+  // Line count for the clear arpeggio: 1..3. Anything else (missing,
+  // non-numeric, out of range) falls back to 1; a count of 4 never
+  // reaches this helper through the event handler, which routes it
+  // to the four-line flourish instead.
+  function _clampBfCount(count) {
+    if (typeof count !== 'number' || !isFinite(count)) return 1;
+    var n = Math.floor(count);
+    if (n < 1) return 1;
+    if (n > 3) return 3;
+    return n;
+  }
+
+  // Combo for the Blockfall clear voices: 0 means no combo bonus yet
+  // (the first clearing drop), capped at 5 like the Block Zen combo.
+  function _clampBfCombo(combo) {
+    if (typeof combo !== 'number' || !isFinite(combo)) return 0;
+    var n = Math.floor(combo);
+    if (n < 0) return 0;
+    if (n > 5) return 5;
+    return n;
+  }
+
+  // Very short soft tick, quieter than a click.
+  function playBfMove() {
+    try {
+      if (!_soundOn) return;
+      if (!_ensureCtx()) return;
+      _resume();
+      _tone({ freq: 1050, dur: 0.04, type: 'sine',
+              peak: 0.08, attack: 0.002, bus: _sfxBus });
+    } catch (e) {
+      /* effects must never throw */
+    }
+  }
+
+  // Quiet flick: one short soft downward glide.
+  function playBfRotate() {
+    try {
+      if (!_soundOn) return;
+      if (!_ensureCtx()) return;
+      _resume();
+      _tone({ freq: 780, freqEnd: 580, dur: 0.06, type: 'sine',
+              peak: 0.12, attack: 0.004, bus: _sfxBus });
+    } catch (e) {
+      /* effects must never throw */
+    }
+  }
+
+  // Soft tap: one low short blip.
+  function playBfLock() {
+    try {
+      if (!_soundOn) return;
+      if (!_ensureCtx()) return;
+      _resume();
+      _tone({ freq: 300, freqEnd: 240, dur: 0.10, type: 'sine',
+              peak: 0.18, attack: 0.005, bus: _sfxBus });
+    } catch (e) {
+      /* effects must never throw */
+    }
+  }
+
+  // Rising pentatonic arpeggio over CLEAR_SCALE. Both the line count
+  // (1..3) and the combo shape the figure: each adds notes and lifts
+  // the start pitch, so a 3-line clear with a combo sounds bigger
+  // than a lone single-line clear. The start is capped so the figure
+  // never runs past the top of the scale.
+  function playBfClear(count, combo) {
+    try {
+      if (!_soundOn) return;
+      if (!_ensureCtx()) return;
+      _resume();
+      var cnt = _clampBfCount(count);
+      var cb = _clampBfCombo(combo);
+      var noteCount = 3 + (cnt - 1) + Math.min(cb, 2); // 3 .. 7
+      var start = (cnt - 1) + Math.min(cb, 3);
+      if (start > CLEAR_SCALE.length - noteCount) {
+        start = CLEAR_SCALE.length - noteCount;
+      }
+      var peak = 0.16 + 0.01 * cnt + 0.01 * Math.min(cb, 4); // 0.17 .. 0.23
+      for (var i = 0; i < noteCount; i++) {
+        _tone({ freq: CLEAR_SCALE[start + i], at: i * 0.07, dur: 0.24,
+                type: 'triangle', peak: peak, attack: 0.01, bus: _sfxBus });
+      }
+    } catch (e) {
+      /* effects must never throw */
+    }
+  }
+
+  // Four-line flourish: a longer rising run over CLEAR_SCALE — more
+  // notes, a higher peak, and a longer tail than the best clear —
+  // plus a short vibration pulse. The pulse fires before the sound
+  // check, so it stays independent of the sound toggle, like the
+  // win haptic.
+  function playBfClear4(combo) {
+    try {
+      tick(15);
+      if (!_soundOn) return;
+      if (!_ensureCtx()) return;
+      _resume();
+      var cb = _clampBfCombo(combo);
+      var peak = 0.24 + 0.01 * Math.min(cb, 2); // 0.24 .. 0.26
+      for (var i = 0; i < 9; i++) {
+        _tone({ freq: CLEAR_SCALE[2 + i], at: i * 0.08, dur: 0.32,
+                type: 'triangle', peak: peak, attack: 0.01, bus: _sfxBus });
+      }
+    } catch (e) {
+      /* effects must never throw */
+    }
+  }
+
+  // Gentle two-note rise.
+  function playBfLevelUp() {
+    try {
+      if (!_soundOn) return;
+      if (!_ensureCtx()) return;
+      _resume();
+      _tone({ freq: 523.25, dur: 0.35, type: 'sine',
+              peak: 0.18, attack: 0.02, bus: _sfxBus });
+      _tone({ freq: 783.99, at: 0.18, dur: 0.45, type: 'sine',
+              peak: 0.20, attack: 0.02, bus: _sfxBus });
+    } catch (e) {
+      /* effects must never throw */
+    }
+  }
+
+  // Gentle descending two-tone, in the same voice as playGameOver
+  // (same notes): A4, then E4.
+  function playBfGameOver() {
+    try {
+      if (!_soundOn) return;
+      if (!_ensureCtx()) return;
+      _resume();
+      _tone({ freq: 440.00, dur: 0.40, type: 'sine',
+              peak: 0.22, attack: 0.02, bus: _sfxBus });
+      _tone({ freq: 329.63, at: 0.32, dur: 0.60, type: 'sine',
+              peak: 0.20, attack: 0.02, bus: _sfxBus });
+    } catch (e) {
+      /* effects must never throw */
+    }
+  }
+
   // --- generative music ---
 
   function _scheduleBar() {
@@ -5716,6 +6212,41 @@ var BZAudio = (function () {
     } catch (e) { /* never throw */ }
   }
 
+  function _onBfMove() {
+    try { playBfMove(); } catch (e) { /* never throw */ }
+  }
+
+  function _onBfRotate() {
+    try { playBfRotate(); } catch (e) { /* never throw */ }
+  }
+
+  function _onBfLock() {
+    try { playBfLock(); } catch (e) { /* never throw */ }
+  }
+
+  function _onBfClear(ev) {
+    try {
+      var detail = (ev && ev.detail) || {};
+      if (detail.count === 4) playBfClear4(detail.combo);
+      else playBfClear(detail.count, detail.combo);
+    } catch (e) { /* never throw */ }
+  }
+
+  function _onBfClear4(ev) {
+    try {
+      var detail = (ev && ev.detail) || {};
+      playBfClear4(detail.combo);
+    } catch (e) { /* never throw */ }
+  }
+
+  function _onBfLevelUp() {
+    try { playBfLevelUp(); } catch (e) { /* never throw */ }
+  }
+
+  function _onBfGameOver() {
+    try { playBfGameOver(); } catch (e) { /* never throw */ }
+  }
+
   function _bindEvents() {
     if (_eventsBound) return;
     try {
@@ -5731,6 +6262,13 @@ var BZAudio = (function () {
       w.addEventListener('sol:place', _onSolPlace);
       w.addEventListener('sol:invalid', _onSolInvalid);
       w.addEventListener('sol:win', _onSolWin);
+      w.addEventListener('bf:move', _onBfMove);
+      w.addEventListener('bf:rotate', _onBfRotate);
+      w.addEventListener('bf:lock', _onBfLock);
+      w.addEventListener('bf:clear', _onBfClear);
+      w.addEventListener('bf:clear4', _onBfClear4);
+      w.addEventListener('bf:levelup', _onBfLevelUp);
+      w.addEventListener('bf:gameover', _onBfGameOver);
       _eventsBound = true;
     } catch (e) {
       /* never throw */
@@ -5787,6 +6325,13 @@ var BZAudio = (function () {
     playSolPlace: playSolPlace,
     playSolInvalid: playSolInvalid,
     playSolWin: playSolWin,
+    playBfMove: playBfMove,
+    playBfRotate: playBfRotate,
+    playBfLock: playBfLock,
+    playBfClear: playBfClear,
+    playBfClear4: playBfClear4,
+    playBfLevelUp: playBfLevelUp,
+    playBfGameOver: playBfGameOver,
     SETTINGS_KEY: SETTINGS_KEY,
     // Test-only hooks: song data, the cycle rule, the shuffle pick,
     // and the injectable random source. Production code never calls
@@ -7088,6 +7633,12 @@ var BZSettings = (function () {
       'four foundations from Ace to King, uncover every card, and chase ' +
       'your win streak — with unlimited undo and a hint whenever you ' +
       'want one.'));
+    body.appendChild(_el('p', 'bz-about-text',
+      'Blockfall is a falling-blocks puzzle built for touch. Drag pieces ' +
+      'into place, tap to rotate, and swipe or flick down to drop — the ' +
+      'ghost preview shows exactly where each piece will land, and you ' +
+      'can hold a piece for later. Clear lines to climb levels and chase ' +
+      'your best score, with four lines at once earning the biggest bonus.'));
     body.appendChild(_el('p', 'bz-about-text',
       'The green chart icon on the home screen opens the companion ' +
       'investing simulation in this same tab.'));
@@ -11419,6 +11970,4013 @@ if (typeof window !== 'undefined') {
     }
   } catch (e) {
     _log(e);
+  }
+})();
+</script>
+<script>
+// source: bf-engine.js
+// BFEngine — pure logic for Blockfall (falling-blocks puzzle, 10x20 board).
+// No DOM, no timers, no I/O, no built-in randomness. All randomness flows
+// through an injected RNG (createRng) or the threaded rngState carried in
+// game state. Deterministic: same inputs, same outputs.
+//
+// Board representation: Array(200), row-major, 10 columns x 20 rows.
+// 0 = empty, otherwise shape index + 1 (shape indices are 0..6).
+// A shape is identified everywhere by its index into SHAPES (0..6, in
+// I O T S Z J L order); each SHAPES entry carries the letter id for
+// display and debugging. Helper functions also accept the letter id
+// and resolve it to the same index. Rotation states are normalized
+// (min row/col = 0); rotation advances clockwise. Pieces spawn fully
+// visible at row 0; there are no hidden buffer rows.
+//
+// Game state (frozen, serializable; this is what the save module
+// stores): {v, seed, rngState, board, bag, queue, current, hold,
+// canHold, score, lines, level, combo, fallMs, lockMs, lockResets,
+// grounded, gameOver, piecesPlaced}. queue holds the next 3 shape ids,
+// bag the remaining ids of the current 7-bag, current is
+// {shape, rot, row, col} or null, hold is a shape id or null. rngState
+// threads the mulberry32 stream through the state so a saved game
+// resumes the exact same piece sequence.
+
+var BFEngine = (function () {
+  'use strict';
+
+  var COLS = 10;
+  var ROWS = 20;
+  var LOCK_DELAY_MS = 500;
+  var LOCK_RESET_CAP = 15;
+  var LEVEL_LINES = 10;
+
+  // ---------------------------------------------------------------- shapes
+  // The 7 four-block shapes, in I O T S Z J L order. Each entry has 4
+  // rotation states; each state is 4 cells, normalized, and rotating
+  // any state 90 degrees clockwise yields the next state (mod 4).
+  // I, S and Z have 2 distinct states (180-degree symmetry); O has 1;
+  // T, J and L have 4 distinct states.
+  var SHAPES = [
+    { id: 'I', states: [
+      [[0, 0], [0, 1], [0, 2], [0, 3]],
+      [[0, 0], [1, 0], [2, 0], [3, 0]],
+      [[0, 0], [0, 1], [0, 2], [0, 3]],
+      [[0, 0], [1, 0], [2, 0], [3, 0]]
+    ] },
+    { id: 'O', states: [
+      [[0, 0], [0, 1], [1, 0], [1, 1]],
+      [[0, 0], [0, 1], [1, 0], [1, 1]],
+      [[0, 0], [0, 1], [1, 0], [1, 1]],
+      [[0, 0], [0, 1], [1, 0], [1, 1]]
+    ] },
+    { id: 'T', states: [
+      [[0, 0], [0, 1], [0, 2], [1, 1]],
+      [[0, 1], [1, 0], [1, 1], [2, 1]],
+      [[0, 1], [1, 0], [1, 1], [1, 2]],
+      [[0, 0], [1, 0], [1, 1], [2, 0]]
+    ] },
+    { id: 'S', states: [
+      [[0, 1], [0, 2], [1, 0], [1, 1]],
+      [[0, 0], [1, 0], [1, 1], [2, 1]],
+      [[0, 1], [0, 2], [1, 0], [1, 1]],
+      [[0, 0], [1, 0], [1, 1], [2, 1]]
+    ] },
+    { id: 'Z', states: [
+      [[0, 0], [0, 1], [1, 1], [1, 2]],
+      [[0, 1], [1, 0], [1, 1], [2, 0]],
+      [[0, 0], [0, 1], [1, 1], [1, 2]],
+      [[0, 1], [1, 0], [1, 1], [2, 0]]
+    ] },
+    { id: 'J', states: [
+      [[0, 0], [1, 0], [1, 1], [1, 2]],
+      [[0, 0], [0, 1], [1, 0], [2, 0]],
+      [[0, 0], [0, 1], [0, 2], [1, 2]],
+      [[0, 1], [1, 1], [2, 0], [2, 1]]
+    ] },
+    { id: 'L', states: [
+      [[0, 2], [1, 0], [1, 1], [1, 2]],
+      [[0, 0], [1, 0], [2, 0], [2, 1]],
+      [[0, 0], [0, 1], [0, 2], [1, 0]],
+      [[0, 0], [0, 1], [1, 1], [2, 1]]
+    ] }
+  ];
+
+  // Fixed hex color per shape, indexed by shape index (0..6, same order
+  // as SHAPES). Never theme variables: pieces must stay readable on
+  // every dark panel and photo background. Letter-id aliases are set
+  // below so COLORS['I'] works the same as COLORS[0]; COLORS.length
+  // stays 7.
+  //   I cyan, O yellow, T purple, S green, Z red, J blue, L orange.
+  var COLORS = ['#22d3ee', '#facc15', '#c084fc', '#4ade80',
+                '#f87171', '#60a5fa', '#fb923c'];
+  COLORS.I = COLORS[0];
+  COLORS.O = COLORS[1];
+  COLORS.T = COLORS[2];
+  COLORS.S = COLORS[3];
+  COLORS.Z = COLORS[4];
+  COLORS.J = COLORS[5];
+  COLORS.L = COLORS[6];
+
+  // ---------------------------------------------------------------- helpers
+  function isInt(x) {
+    return typeof x === 'number' && isFinite(x) && Math.floor(x) === x;
+  }
+
+  function isUint32(x) {
+    return isInt(x) && x >= 0 && x <= 4294967295;
+  }
+
+  // Resolve a shape reference to its index: a valid index passes
+  // through, a letter id ('I', 'O', ...) resolves to the same index,
+  // anything else yields -1.
+  function shapeIndex(shapeId) {
+    var i;
+    if (isInt(shapeId) && shapeId >= 0 && shapeId < SHAPES.length) {
+      return shapeId;
+    }
+    if (typeof shapeId === 'string') {
+      for (i = 0; i < SHAPES.length; i++) {
+        if (SHAPES[i].id === shapeId) return i;
+      }
+    }
+    return -1;
+  }
+
+  function cellIndex(row, col) {
+    return row * COLS + col;
+  }
+
+  function newBoard() {
+    var board = new Array(ROWS * COLS);
+    for (var i = 0; i < board.length; i++) board[i] = 0;
+    return board;
+  }
+
+  function shapeCells(shapeId, rot) {
+    var idx = shapeIndex(shapeId);
+    if (idx < 0) return [];
+    var r = isInt(rot) ? ((rot % 4) + 4) % 4 : 0;
+    var cells = SHAPES[idx].states[r];
+    var out = [];
+    for (var i = 0; i < cells.length; i++) {
+      out.push([cells[i][0], cells[i][1]]);
+    }
+    return out;
+  }
+
+  function shapeBounds(shapeId, rot) {
+    var cells = shapeCells(shapeId, rot);
+    var maxRow = -1;
+    var maxCol = -1;
+    for (var i = 0; i < cells.length; i++) {
+      if (cells[i][0] > maxRow) maxRow = cells[i][0];
+      if (cells[i][1] > maxCol) maxCol = cells[i][1];
+    }
+    return { rows: maxRow + 1, cols: maxCol + 1 };
+  }
+
+  function canPlace(board, shapeId, rot, row, col) {
+    if (!board) return false;
+    var cells = shapeCells(shapeId, rot);
+    if (cells.length === 0) return false;
+    for (var i = 0; i < cells.length; i++) {
+      var r = row + cells[i][0];
+      var c = col + cells[i][1];
+      if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return false;
+      if (board[cellIndex(r, c)] !== 0) return false;
+    }
+    return true;
+  }
+
+  function place(board, shapeId, rot, row, col) {
+    // Returns a NEW board; the input is never mutated. Out-of-range
+    // cells are ignored defensively so illegal input can never crash.
+    var next = board.slice();
+    var idx = shapeIndex(shapeId);
+    if (idx < 0) return next;
+    var cells = shapeCells(idx, rot);
+    var value = idx + 1;
+    for (var i = 0; i < cells.length; i++) {
+      var r = row + cells[i][0];
+      var c = col + cells[i][1];
+      if (r < 0 || r >= ROWS || c < 0 || c >= COLS) continue;
+      next[cellIndex(r, c)] = value;
+    }
+    return next;
+  }
+
+  function ghostRow(board, shapeId, rot, row, col) {
+    // Largest row at or below the given row where the piece fits,
+    // found by descending while the next row fits. In play the
+    // starting row always fits, so this is the landing row.
+    var r = row;
+    while (canPlace(board, shapeId, rot, r + 1, col)) r++;
+    return r;
+  }
+
+  function findClears(board) {
+    var rows = [];
+    var r, c, full;
+    for (r = 0; r < ROWS; r++) {
+      full = true;
+      for (c = 0; c < COLS; c++) {
+        if (board[cellIndex(r, c)] === 0) { full = false; break; }
+      }
+      if (full) rows.push(r);
+    }
+    return rows;
+  }
+
+  function applyClears(board, rows) {
+    // Returns a NEW board with the given rows removed and the rows
+    // above shifted down; fresh empty rows appear at the top. The
+    // input is never mutated. Duplicate, unsorted, and out-of-range
+    // row entries are tolerated.
+    var cleared = {};
+    var i, r, c;
+    if (rows) {
+      for (i = 0; i < rows.length; i++) {
+        if (isInt(rows[i]) && rows[i] >= 0 && rows[i] < ROWS) {
+          cleared[rows[i]] = true;
+        }
+      }
+    }
+    var kept = [];
+    for (r = 0; r < ROWS; r++) {
+      if (!cleared[r]) kept.push(board.slice(r * COLS, r * COLS + COLS));
+    }
+    var next = newBoard();
+    var startRow = ROWS - kept.length;
+    for (i = 0; i < kept.length; i++) {
+      for (c = 0; c < COLS; c++) {
+        next[cellIndex(startRow + i, c)] = kept[i][c];
+      }
+    }
+    return next;
+  }
+
+  // ---------------------------------------------------------------- RNG
+  // mulberry32: small, fast, deterministic PRNG. Same seed means the
+  // same sequence. rngStep is the pure single-step form; createRng is
+  // the closure form built on it, so both forms produce identical
+  // sequences from the same starting state.
+  function rngStep(s) {
+    var a = ((s >>> 0) + 0x6D2B79F5) | 0;
+    var t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return [((t ^ (t >>> 14)) >>> 0) / 4294967296, a >>> 0];
+  }
+
+  function createRng(seed) {
+    var a = seed >>> 0;
+    return function () {
+      var res = rngStep(a);
+      a = res[1];
+      return res[0];
+    };
+  }
+
+  // Fisher-Yates shuffle of all 7 shape ids using the injected rng
+  // function. Exactly 6 draws, i from 6 down to 1.
+  function newBag(rngFn) {
+    var bag = [0, 1, 2, 3, 4, 5, 6];
+    var i, j, tmp;
+    for (i = bag.length - 1; i > 0; i--) {
+      j = Math.floor(rngFn() * (i + 1));
+      if (j < 0) j = 0;
+      if (j > i) j = i;
+      tmp = bag[i];
+      bag[i] = bag[j];
+      bag[j] = tmp;
+    }
+    return bag;
+  }
+
+  // Same shuffle, driven by a threaded rngState instead of a closure.
+  // Returns the bag plus the rngState after the 6 draws.
+  function drawBag(rngState) {
+    var bag = [0, 1, 2, 3, 4, 5, 6];
+    var s = rngState >>> 0;
+    var i, j, tmp, res;
+    for (i = bag.length - 1; i > 0; i--) {
+      res = rngStep(s);
+      s = res[1];
+      j = Math.floor(res[0] * (i + 1));
+      if (j < 0) j = 0;
+      if (j > i) j = i;
+      tmp = bag[i];
+      bag[i] = bag[j];
+      bag[j] = tmp;
+    }
+    return { bag: bag, rngState: s };
+  }
+
+  // ---------------------------------------------------------------- scoring
+  function gravityMs(level) {
+    return Math.max(50, Math.round(800 * Math.pow(0.85, level - 1)));
+  }
+
+  // Base {1:100, 2:300, 3:500, 4:800} times level, plus a combo bonus
+  // of 50 * (combo - 1) * level once combo reaches 2. combo counts
+  // consecutive clearing locks INCLUDING this one. Lines outside
+  // 1..4 score 0.
+  function scoreClear(lines, level, combo) {
+    if (lines !== 1 && lines !== 2 && lines !== 3 && lines !== 4) {
+      return 0;
+    }
+    var base = [0, 100, 300, 500, 800][lines];
+    var points = base * level;
+    if (combo >= 2) points += 50 * (combo - 1) * level;
+    return points;
+  }
+
+  function dropPoints(cells, hard) {
+    return cells * (hard ? 2 : 1);
+  }
+
+  // ---------------------------------------------------------------- rotation
+  function rotateIndex(rot, dir) {
+    return (((rot + dir) % 4) + 4) % 4;
+  }
+
+  // Kick offsets tried in order when a rotation collides. fromRot and
+  // toRot are accepted for symmetry with the rotation API; v1 uses one
+  // kick set for every non-O rotation. The O piece has [[0, 0]] only:
+  // its rotation is visually identical, though its rot index still
+  // advances. A fresh array is returned on every call.
+  function kickOffsets(shapeId, fromRot, toRot) {
+    if (shapeIndex(shapeId) === 1) return [[0, 0]];
+    return [[0, 0], [0, -1], [0, 1], [-1, 0], [0, -2], [0, 2]];
+  }
+
+  // First kick that fits, as {rot, row, col}, or null when no kick
+  // fits. piece is {shape, rot, row, col}; it is never mutated. v1
+  // only rotates clockwise (dir +1).
+  function tryRotate(board, piece) {
+    if (!piece) return null;
+    var idx = shapeIndex(piece.shape);
+    if (idx < 0) return null;
+    var toRot = rotateIndex(piece.rot, 1);
+    var kicks = kickOffsets(idx, piece.rot, toRot);
+    for (var i = 0; i < kicks.length; i++) {
+      var r = piece.row + kicks[i][0];
+      var c = piece.col + kicks[i][1];
+      if (canPlace(board, idx, toRot, r, c)) {
+        return { rot: toRot, row: r, col: c };
+      }
+    }
+    return null;
+  }
+
+  function spawnFor(shapeId) {
+    var idx = shapeIndex(shapeId);
+    if (idx < 0) idx = 0;
+    var bounds = shapeBounds(idx, 0);
+    return {
+      shape: idx,
+      rot: 0,
+      row: 0,
+      col: Math.floor((COLS - bounds.cols) / 2)
+    };
+  }
+
+  // ---------------------------------------------------------------- game state
+  function clonePiece(p) {
+    if (!p) return null;
+    return { shape: p.shape, rot: p.rot, row: p.row, col: p.col };
+  }
+
+  function cloneState(s) {
+    return {
+      v: s.v,
+      seed: s.seed,
+      rngState: s.rngState,
+      board: (s.board && s.board.slice) ? s.board.slice() : newBoard(),
+      bag: (s.bag && s.bag.slice) ? s.bag.slice() : [],
+      queue: (s.queue && s.queue.slice) ? s.queue.slice() : [],
+      current: clonePiece(s.current),
+      hold: s.hold,
+      canHold: s.canHold,
+      score: s.score,
+      lines: s.lines,
+      level: s.level,
+      combo: s.combo,
+      fallMs: s.fallMs,
+      lockMs: s.lockMs,
+      lockResets: s.lockResets,
+      grounded: s.grounded,
+      gameOver: s.gameOver,
+      piecesPlaced: s.piecesPlaced
+    };
+  }
+
+  function newGame(seed, opts) {
+    var seedVal = (typeof seed === 'number' && isFinite(seed)) ?
+      (seed >>> 0) : 0;
+    var rngState = seedVal;
+    if (opts && typeof opts.rngState === 'number' &&
+        isFinite(opts.rngState)) {
+      rngState = opts.rngState >>> 0;
+    }
+    var drawn = drawBag(rngState);
+    var bag = drawn.bag;
+    return {
+      v: 1,
+      seed: seedVal,
+      rngState: drawn.rngState,
+      board: newBoard(),
+      bag: bag.slice(4),
+      queue: bag.slice(1, 4),
+      current: spawnFor(bag[0]),
+      hold: null,
+      canHold: true,
+      score: 0,
+      lines: 0,
+      level: 1,
+      combo: 0,
+      fallMs: 0,
+      lockMs: 0,
+      lockResets: 0,
+      grounded: false,
+      gameOver: false,
+      piecesPlaced: 0
+    };
+  }
+
+  // Take the next shape id from the front of the queue, refilling the
+  // queue back to 3 from the bag and drawing a fresh bag (threading
+  // rngState) whenever the bag runs out. Mutates the working state.
+  function takeNext(work) {
+    var drawn;
+    while (work.queue.length === 0) {
+      if (work.bag.length === 0) {
+        drawn = drawBag(work.rngState);
+        work.bag = drawn.bag;
+        work.rngState = drawn.rngState;
+      }
+      work.queue.push(work.bag.shift());
+    }
+    var shape = work.queue.shift();
+    while (work.queue.length < 3) {
+      if (work.bag.length === 0) {
+        drawn = drawBag(work.rngState);
+        work.bag = drawn.bag;
+        work.rngState = drawn.rngState;
+      }
+      work.queue.push(work.bag.shift());
+    }
+    return shape;
+  }
+
+  // Shared lock path: place the piece, clear lines, score, advance the
+  // level, and spawn the next piece. Mutates the working state and
+  // appends events in order: 'lock', 'clear' (only when lines were
+  // cleared), 'levelup' (only when the level increased), then either
+  // 'spawn' or 'gameover'. Clear points use the level BEFORE the clear
+  // updates it, and the 'clear' event carries that same level.
+  function lockCurrent(work, events) {
+    var piece = work.current;
+    work.board = place(work.board, piece.shape, piece.rot,
+                       piece.row, piece.col);
+    events.push({ type: 'lock', shape: piece.shape,
+                  row: piece.row, col: piece.col });
+    var rows = findClears(work.board);
+    var count = rows.length;
+    var levelBefore = work.level;
+    var points = 0;
+    if (count > 0) {
+      work.board = applyClears(work.board, rows);
+      work.combo = work.combo + 1;
+      points = scoreClear(count, levelBefore, work.combo);
+      work.score += points;
+    } else {
+      work.combo = 0;
+    }
+    work.lines += count;
+    var newLevel = Math.floor(work.lines / LEVEL_LINES) + 1;
+    work.level = newLevel;
+    work.piecesPlaced += 1;
+    if (count > 0) {
+      events.push({ type: 'clear', rows: rows, count: count,
+                    points: points, combo: work.combo,
+                    level: levelBefore });
+    }
+    if (newLevel > levelBefore) {
+      events.push({ type: 'levelup', level: newLevel });
+    }
+    var spawned = spawnFor(takeNext(work));
+    if (!canPlace(work.board, spawned.shape, spawned.rot,
+                  spawned.row, spawned.col)) {
+      work.gameOver = true;
+      work.current = null;
+      events.push({ type: 'gameover', score: work.score,
+                    lines: work.lines, level: work.level });
+      return;
+    }
+    work.current = spawned;
+    work.canHold = true;
+    work.fallMs = 0;
+    work.lockMs = 0;
+    work.lockResets = 0;
+    work.grounded = false;
+    events.push({ type: 'spawn', shape: spawned.shape });
+  }
+
+  // One frame of play. Never mutates the input state; returns
+  // {state, events}. input is {move, rotate, softDrop, hardDrop, hold};
+  // missing fields default to no-op. Events are objects with a type
+  // field plus the payload fields named in the frozen semantics:
+  // 'hold', 'move', 'rotate' {kicked}, 'harddrop' {cells, points},
+  // 'lock' {shape, row, col}, 'clear' {rows, count, points, combo,
+  // level}, 'levelup' {level}, 'spawn' {shape}, 'gameover'
+  // {score, lines, level}.
+  //
+  // Order: (1) game over / no piece: unchanged. (2) hold. (3) move.
+  // (4) rotate. (5) hard drop, then lock immediately and the step ends
+  // (the freshly spawned piece starts clean on the next step).
+  // (6) gravity. (7) lock delay. Move/rotate while grounded reset the
+  // lock timer and count a reset, but only while lockResets is below
+  // the cap; at the cap the move still works and the timer keeps
+  // accumulating.
+  function step(state, dtMs, input) {
+    if (!state || typeof state !== 'object' || Array.isArray(state)) {
+      return { state: state, events: [] };
+    }
+    var work = cloneState(state);
+    var events = [];
+    if (work.gameOver || !work.current) {
+      return { state: work, events: events };
+    }
+    var dt = (typeof dtMs === 'number' && isFinite(dtMs) && dtMs > 0) ?
+      dtMs : 0;
+    var inp = input || {};
+    var move = 0;
+    if (typeof inp.move === 'number') {
+      if (inp.move < 0) move = -1;
+      else if (inp.move > 0) move = 1;
+    }
+    var doRotate = !!inp.rotate;
+    var softDrop = !!inp.softDrop;
+    var hardDrop = !!inp.hardDrop;
+    var doHold = !!inp.hold;
+
+    // (2) Hold: swap with the held piece, or park the current piece
+    // in the empty slot and take the next queued piece. Timers reset
+    // and the slot locks until the next lock. If the incoming piece
+    // cannot spawn, the game ends here.
+    if (doHold && work.canHold) {
+      var oldShape = work.current.shape;
+      if (work.hold === null || work.hold === undefined) {
+        work.hold = oldShape;
+        work.current = spawnFor(takeNext(work));
+      } else {
+        var held = work.hold;
+        work.hold = oldShape;
+        work.current = spawnFor(held);
+      }
+      work.canHold = false;
+      work.fallMs = 0;
+      work.lockMs = 0;
+      work.lockResets = 0;
+      work.grounded = false;
+      events.push({ type: 'hold' });
+      if (!canPlace(work.board, work.current.shape, work.current.rot,
+                    work.current.row, work.current.col)) {
+        work.gameOver = true;
+        work.current = null;
+        events.push({ type: 'gameover', score: work.score,
+                      lines: work.lines, level: work.level });
+        return { state: work, events: events };
+      }
+    }
+
+    // (3) Move: one cell if it fits; the event fires only on success.
+    if (move !== 0) {
+      var targetCol = work.current.col + move;
+      if (canPlace(work.board, work.current.shape, work.current.rot,
+                   work.current.row, targetCol)) {
+        work.current = { shape: work.current.shape, rot: work.current.rot,
+                         row: work.current.row, col: targetCol };
+        events.push({ type: 'move' });
+        if (work.grounded && work.lockResets < LOCK_RESET_CAP) {
+          work.lockMs = 0;
+          work.lockResets += 1;
+        }
+      }
+    }
+
+    // (4) Rotate: first fitting kick wins; kicked is true when the
+    // piece had to shift row or column to turn.
+    if (doRotate) {
+      var rotated = tryRotate(work.board, work.current);
+      if (rotated) {
+        var kicked = rotated.row !== work.current.row ||
+                     rotated.col !== work.current.col;
+        work.current = { shape: work.current.shape, rot: rotated.rot,
+                         row: rotated.row, col: rotated.col };
+        events.push({ type: 'rotate', kicked: kicked });
+        if (work.grounded && work.lockResets < LOCK_RESET_CAP) {
+          work.lockMs = 0;
+          work.lockResets += 1;
+        }
+      }
+    }
+
+    // (5) Hard drop: slam to the landing row, score 2 per cell, then
+    // lock immediately. The step ends here.
+    if (hardDrop) {
+      var landing = ghostRow(work.board, work.current.shape,
+                             work.current.rot, work.current.row,
+                             work.current.col);
+      var cells = landing - work.current.row;
+      if (cells < 0) cells = 0;
+      work.current = { shape: work.current.shape, rot: work.current.rot,
+                       row: landing, col: work.current.col };
+      var pts = dropPoints(cells, true);
+      work.score += pts;
+      events.push({ type: 'harddrop', cells: cells, points: pts });
+      lockCurrent(work, events);
+      return { state: work, events: events };
+    }
+
+    // (6) Gravity: accumulate elapsed time; descend while a full
+    // interval has passed. Soft drop runs 20x faster (floored at
+    // 20ms) and scores 1 per descended cell. A failed descent marks
+    // the piece grounded and clamps fallMs to one interval.
+    var interval = softDrop ?
+      Math.max(20, gravityMs(work.level) / 20) : gravityMs(work.level);
+    work.fallMs += dt;
+    while (work.fallMs >= interval) {
+      if (canPlace(work.board, work.current.shape, work.current.rot,
+                   work.current.row + 1, work.current.col)) {
+        work.current = { shape: work.current.shape, rot: work.current.rot,
+                         row: work.current.row + 1, col: work.current.col };
+        work.fallMs -= interval;
+        if (softDrop) work.score += 1;
+        work.grounded = false;
+      } else {
+        work.grounded = true;
+        if (work.fallMs > interval) work.fallMs = interval;
+        break;
+      }
+    }
+
+    // (7) Lock delay: a grounded piece locks once 500ms have
+    // accumulated on the lock timer.
+    if (work.grounded) {
+      work.lockMs += dt;
+      if (work.lockMs >= LOCK_DELAY_MS) {
+        lockCurrent(work, events);
+      }
+    }
+
+    return { state: work, events: events };
+  }
+
+  // ---------------------------------------------------------------- validation
+  function isIdArray(arr, maxLen) {
+    if (!Array.isArray(arr) || arr.length > maxLen) return false;
+    for (var i = 0; i < arr.length; i++) {
+      if (!isInt(arr[i]) || arr[i] < 0 || arr[i] >= SHAPES.length) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Strict shape check for saved states. Rejects anything that is not
+  // the frozen v1 shape: wrong version, a board that is not Array(200)
+  // of ints 0..7, queue/bag entries that are not valid shape ids,
+  // numbers out of range, a current piece that is not well-formed or
+  // does not fit on its own board, or a hold slot that is neither null
+  // nor a valid id. Never throws; hostile shapes return false. Extra
+  // fields are ignored. Level is checked only for its own range
+  // (integer >= 1); no cross-field consistency beyond the current
+  // piece fitting is required.
+  function validateState(state) {
+    try {
+      if (!state || typeof state !== 'object' || Array.isArray(state)) {
+        return false;
+      }
+      if (state.v !== 1) return false;
+      if (!isUint32(state.seed)) return false;
+      if (!isUint32(state.rngState)) return false;
+      if (!Array.isArray(state.board) ||
+          state.board.length !== ROWS * COLS) return false;
+      for (var i = 0; i < state.board.length; i++) {
+        var v = state.board[i];
+        if (!isInt(v) || v < 0 || v > 7) return false;
+      }
+      if (!isIdArray(state.queue, 3)) return false;
+      if (!isIdArray(state.bag, 6)) return false;
+      if (state.hold !== null &&
+          !(isInt(state.hold) && state.hold >= 0 &&
+            state.hold < SHAPES.length)) return false;
+      if (typeof state.canHold !== 'boolean') return false;
+      if (!isInt(state.score) || state.score < 0) return false;
+      if (!isInt(state.lines) || state.lines < 0) return false;
+      if (!isInt(state.level) || state.level < 1) return false;
+      if (!isInt(state.combo) || state.combo < 0) return false;
+      if (typeof state.fallMs !== 'number' || !isFinite(state.fallMs) ||
+          state.fallMs < 0) return false;
+      if (typeof state.lockMs !== 'number' || !isFinite(state.lockMs) ||
+          state.lockMs < 0) return false;
+      if (!isInt(state.lockResets) || state.lockResets < 0 ||
+          state.lockResets > LOCK_RESET_CAP) return false;
+      if (typeof state.grounded !== 'boolean') return false;
+      if (typeof state.gameOver !== 'boolean') return false;
+      if (!isInt(state.piecesPlaced) || state.piecesPlaced < 0) {
+        return false;
+      }
+      if (state.current !== null) {
+        var cur = state.current;
+        if (!cur || typeof cur !== 'object' || Array.isArray(cur)) {
+          return false;
+        }
+        if (!isInt(cur.shape) || cur.shape < 0 ||
+            cur.shape >= SHAPES.length) return false;
+        if (!isInt(cur.rot) || cur.rot < 0 || cur.rot > 3) return false;
+        if (!isInt(cur.row) || cur.row < 0 || cur.row >= ROWS) {
+          return false;
+        }
+        if (!isInt(cur.col) || cur.col < 0 || cur.col >= COLS) {
+          return false;
+        }
+        if (!canPlace(state.board, cur.shape, cur.rot, cur.row,
+                      cur.col)) return false;
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  return {
+    COLS: COLS,
+    ROWS: ROWS,
+    LOCK_DELAY_MS: LOCK_DELAY_MS,
+    LOCK_RESET_CAP: LOCK_RESET_CAP,
+    LEVEL_LINES: LEVEL_LINES,
+    SHAPES: SHAPES,
+    COLORS: COLORS,
+    createRng: createRng,
+    rngStep: rngStep,
+    newBoard: newBoard,
+    cellIndex: cellIndex,
+    shapeCells: shapeCells,
+    shapeBounds: shapeBounds,
+    canPlace: canPlace,
+    place: place,
+    ghostRow: ghostRow,
+    findClears: findClears,
+    applyClears: applyClears,
+    gravityMs: gravityMs,
+    scoreClear: scoreClear,
+    dropPoints: dropPoints,
+    rotateIndex: rotateIndex,
+    kickOffsets: kickOffsets,
+    tryRotate: tryRotate,
+    spawnFor: spawnFor,
+    newBag: newBag,
+    newGame: newGame,
+    step: step,
+    validateState: validateState
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = BFEngine;
+if (typeof window !== 'undefined') window.BFEngine = BFEngine;
+</script>
+<script>
+// source: bf-save.js
+// BFSave — save/resume/delete + stats for Blockfall.
+// No DOM. UMD: global BFSave + module.exports. Storage failures (missing,
+// blocked, or throwing storage) never throw: load/loadStats return
+// their empty values, writes become silent no-ops.
+//
+// Keys (exact, per plan; no other storage key is ever touched):
+//   jmf-phone-blockfall-save-v1 — mid-game state JSON, wrapped in an
+//     envelope {v: 1, state}
+//   jmf-phone-blockfall-stats-v1 — stats JSON
+//
+// Saved state shape (must match the engine state shape):
+//   {v, seed, rngState, board, bag, queue, current, hold, canHold,
+//    score, lines, level, combo, fallMs, lockMs, lockResets, grounded,
+//    gameOver, piecesPlaced}
+// Structural validation (validateSave): v is 1; seed and rngState are
+// 32-bit unsigned integers; board is an array of exactly 200 integers
+// in 0..7 (0 empty, otherwise shape index + 1); bag is an array of
+// 0..6 distinct shape ids; queue is an array of exactly 3 shape ids;
+// current is null or {shape, rot, row, col} with rot 0..3, row 0..19,
+// col 0..9 (pieces spawn fully visible at row 0; there are no hidden
+// buffer rows); hold is null or a shape id; canHold, grounded, and
+// gameOver are booleans; score, lines, combo, and piecesPlaced are
+// integers >= 0; level is an integer >= 1; fallMs and lockMs are
+// finite numbers >= 0 (a fresh game has fallMs 0); lockResets is an
+// integer 0..15. Every listed field must be present; extra fields are
+// allowed so the engine can grow the shape without invalidating older
+// saves. Shape ids are the numeric indices 0..6 into the engine's
+// shape table (in I, O, T, S, Z, J, L order) — the same ids the
+// engine's validateState accepts, so every genuine engine state
+// passes this check.
+//
+// load() additionally requires the envelope: the stored JSON must be
+// an object with v === 1 and a state object. A raw state written
+// without the envelope, or an envelope without v, loads as null.
+// validateSave() accepts either a state or an envelope (an object
+// carrying a `state` property is read as an envelope) so tests can
+// check both forms; load() always requires the envelope.
+//
+// Stats shape:
+//   {games, best, mostLines, maxLevel, totalClears} — all non-negative
+//   integers. loadStats() fills each missing or bad field with 0, so
+//   older or partial records still load with the good fields kept.
+//   Corrupt JSON yields the all-zero defaults, never a throw.
+//
+// init(storage, opts): storage-like {getItem, setItem, removeItem}.
+// When storage is omitted or unusable, the global localStorage is
+// resolved fresh on every call (access can throw when blocked, and
+// fresh resolution keeps late availability and test doubles working).
+// opts.validate, when a function, is an engine validator: a state
+// must pass BOTH the built-in structural check and the engine check
+// (an engine check that throws counts as a rejection). The methods
+// on BFSave itself use the global store with the built-in check only;
+// init() returns an api object with the same methods bound to the
+// given storage and validator. An options object passed as the first
+// argument (no storage methods) is read as opts.
+
+var BFSave = (function () {
+  'use strict';
+
+  var SAVE_KEY = 'jmf-phone-blockfall-save-v1';
+  var STATS_KEY = 'jmf-phone-blockfall-stats-v1';
+
+  var STATE_KEYS = ['v', 'seed', 'rngState', 'board', 'bag', 'queue',
+    'current', 'hold', 'canHold', 'score', 'lines', 'level', 'combo',
+    'fallMs', 'lockMs', 'lockResets', 'grounded', 'gameOver',
+    'piecesPlaced'];
+  var STAT_FIELDS = ['games', 'best', 'mostLines', 'maxLevel',
+    'totalClears'];
+  var SHAPE_COUNT = 7;
+  var MAX_UINT32 = 4294967295;
+  var MAX_LOCK_RESETS = 15;
+  var MAX_BAG = 6;
+
+  function _has(obj, key) {
+    return Object.prototype.hasOwnProperty.call(obj, key);
+  }
+
+  function _isInt(v) {
+    return typeof v === 'number' && isFinite(v) && Math.floor(v) === v;
+  }
+
+  function _isShapeId(v) {
+    return _isInt(v) && v >= 0 && v < SHAPE_COUNT;
+  }
+
+  function _validBoard(board) {
+    if (!Array.isArray(board) || board.length !== 200) return false;
+    for (var i = 0; i < 200; i++) {
+      var c = board[i];
+      if (!_isInt(c) || c < 0 || c > 7) return false;
+    }
+    return true;
+  }
+
+  function _validBag(bag) {
+    if (!Array.isArray(bag) || bag.length > MAX_BAG) return false;
+    var seen = {};
+    for (var i = 0; i < bag.length; i++) {
+      if (!_isShapeId(bag[i])) return false;
+      if (seen[bag[i]]) return false;
+      seen[bag[i]] = true;
+    }
+    return true;
+  }
+
+  function _validQueue(queue) {
+    if (!Array.isArray(queue) || queue.length !== 3) return false;
+    for (var i = 0; i < 3; i++) {
+      if (!_isShapeId(queue[i])) return false;
+    }
+    return true;
+  }
+
+  function _validCurrent(current) {
+    if (current === null) return true;
+    if (!current || typeof current !== 'object' || Array.isArray(current)) return false;
+    if (!_isShapeId(current.shape)) return false;
+    if (!_isInt(current.rot) || current.rot < 0 || current.rot > 3) return false;
+    if (!_isInt(current.row) || current.row < 0 || current.row > 19) return false;
+    if (!_isInt(current.col) || current.col < 0 || current.col > 9) return false;
+    return true;
+  }
+
+  function _validState(s) {
+    if (!s || typeof s !== 'object' || Array.isArray(s)) return false;
+    for (var k = 0; k < STATE_KEYS.length; k++) {
+      if (!_has(s, STATE_KEYS[k])) return false;
+    }
+    if (s.v !== 1) return false;
+    if (!_isInt(s.seed) || s.seed < 0 || s.seed > MAX_UINT32) return false;
+    if (!_isInt(s.rngState) || s.rngState < 0 || s.rngState > MAX_UINT32) return false;
+    if (!_validBoard(s.board)) return false;
+    if (!_validBag(s.bag)) return false;
+    if (!_validQueue(s.queue)) return false;
+    if (!_validCurrent(s.current)) return false;
+    if (s.hold !== null && !_isShapeId(s.hold)) return false;
+    if (typeof s.canHold !== 'boolean') return false;
+    if (!_isInt(s.score) || s.score < 0) return false;
+    if (!_isInt(s.lines) || s.lines < 0) return false;
+    if (!_isInt(s.level) || s.level < 1) return false;
+    if (!_isInt(s.combo) || s.combo < 0) return false;
+    if (typeof s.fallMs !== 'number' || !isFinite(s.fallMs) || s.fallMs < 0) return false;
+    if (typeof s.lockMs !== 'number' || !isFinite(s.lockMs) || s.lockMs < 0) return false;
+    if (!_isInt(s.lockResets) || s.lockResets < 0 || s.lockResets > MAX_LOCK_RESETS) return false;
+    if (typeof s.grounded !== 'boolean') return false;
+    if (typeof s.gameOver !== 'boolean') return false;
+    if (!_isInt(s.piecesPlaced) || s.piecesPlaced < 0) return false;
+    return true;
+  }
+
+  // Structural check, exposed for tests. Accepts a state or an
+  // envelope: an object carrying a `state` property is read as an
+  // envelope and must carry v === 1. Never throws.
+  function validateSave(obj) {
+    try {
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return false;
+      if (_has(obj, 'state')) {
+        return obj.v === 1 && _validState(obj.state);
+      }
+      return _validState(obj);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function _defaultStore() {
+    try {
+      if (typeof localStorage === 'undefined' || localStorage === null) return null;
+      return localStorage;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function _storeLike(s) {
+    return !!s && typeof s.getItem === 'function' &&
+      typeof s.setItem === 'function' &&
+      typeof s.removeItem === 'function';
+  }
+
+  function _defaultStats() {
+    return { games: 0, best: 0, mostLines: 0, maxLevel: 0,
+      totalClears: 0 };
+  }
+
+  // One stats field: a finite non-negative number floors to itself,
+  // anything else becomes 0.
+  function _statNum(v) {
+    if (typeof v === 'number' && isFinite(v) && v >= 0) return Math.floor(v);
+    return 0;
+  }
+
+  function _makeApi(resolveStore, validateFn) {
+    function _isValid(state) {
+      if (!_validState(state)) return false;
+      if (typeof validateFn === 'function') {
+        try {
+          return validateFn(state) === true;
+        } catch (e) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function save(state) {
+      try {
+        if (!_isValid(state)) return;
+        var store = resolveStore();
+        if (!store) return;
+        store.setItem(SAVE_KEY, JSON.stringify({ v: 1, state: state }));
+      } catch (e) {
+        /* storage errors are silent: the game must never break on a save */
+      }
+    }
+
+    function load() {
+      try {
+        var store = resolveStore();
+        if (!store) return null;
+        var raw = store.getItem(SAVE_KEY);
+        if (typeof raw !== 'string') return null;
+        var parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+        if (parsed.v !== 1) return null;
+        if (!_isValid(parsed.state)) return null;
+        return parsed.state;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function clearSave() {
+      try {
+        var store = resolveStore();
+        if (!store) return;
+        store.removeItem(SAVE_KEY);
+      } catch (e) {
+        /* silent */
+      }
+    }
+
+    function loadStats() {
+      try {
+        var store = resolveStore();
+        if (!store) return _defaultStats();
+        var raw = store.getItem(STATS_KEY);
+        if (typeof raw !== 'string') return _defaultStats();
+        var parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+          return _defaultStats();
+        }
+        var out = _defaultStats();
+        for (var i = 0; i < STAT_FIELDS.length; i++) {
+          out[STAT_FIELDS[i]] = _statNum(parsed[STAT_FIELDS[i]]);
+        }
+        return out;
+      } catch (e) {
+        return _defaultStats();
+      }
+    }
+
+    function recordGame(result) {
+      result = result || {};
+      var stats = loadStats();
+      var score = _statNum(result.score);
+      var lines = _statNum(result.lines);
+      var level = _statNum(result.level);
+      var clears = _statNum(result.clears);
+      stats.games += 1;
+      if (score > stats.best) stats.best = score;
+      if (lines > stats.mostLines) stats.mostLines = lines;
+      if (level > stats.maxLevel) stats.maxLevel = level;
+      stats.totalClears += clears;
+      try {
+        var store = resolveStore();
+        if (store) store.setItem(STATS_KEY, JSON.stringify(stats));
+      } catch (e) {
+        /* silent: the returned stats are still correct */
+      }
+      return stats;
+    }
+
+    function clearStats() {
+      try {
+        var store = resolveStore();
+        if (!store) return;
+        store.removeItem(STATS_KEY);
+      } catch (e) {
+        /* silent */
+      }
+    }
+
+    return {
+      save: save,
+      load: load,
+      clearSave: clearSave,
+      loadStats: loadStats,
+      recordGame: recordGame,
+      clearStats: clearStats,
+      validateSave: validateSave,
+      SAVE_KEY: SAVE_KEY,
+      STATS_KEY: STATS_KEY
+    };
+  }
+
+  function init(storage, opts) {
+    // An options object passed as the first argument (an object with
+    // no storage methods) is read as opts, with the default store.
+    if (storage && !_storeLike(storage) && typeof storage === 'object' &&
+        !Array.isArray(storage)) {
+      opts = storage;
+      storage = null;
+    }
+    opts = opts || {};
+    var validateFn = null;
+    try {
+      if (typeof opts.validate === 'function') validateFn = opts.validate;
+    } catch (e) {
+      validateFn = null;
+    }
+    if (_storeLike(storage)) {
+      var fixed = storage;
+      return _makeApi(function () { return fixed; }, validateFn);
+    }
+    return _makeApi(_defaultStore, validateFn);
+  }
+
+  var _defaultApi = _makeApi(_defaultStore, null);
+
+  return {
+    init: init,
+    save: _defaultApi.save,
+    load: _defaultApi.load,
+    clearSave: _defaultApi.clearSave,
+    loadStats: _defaultApi.loadStats,
+    recordGame: _defaultApi.recordGame,
+    clearStats: _defaultApi.clearStats,
+    validateSave: validateSave,
+    SAVE_KEY: SAVE_KEY,
+    STATS_KEY: STATS_KEY
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = BFSave;
+if (typeof window !== 'undefined') window.BFSave = BFSave;
+</script>
+<script>
+// source: bf-ui.js
+// BFUI — game-over overlay, pause sheet, stats row, and board
+// flourishes for Blockfall. Global BFUI (+ module.exports guard).
+// Styling comes from the classes in bf-game.css; this file only builds
+// the DOM and wires the callbacks it is given. No game logic lives
+// here. All values are coerced to numbers before they reach text, and
+// all text goes through textContent, so markup can never be injected.
+//
+// showGameOver(parent, opts) — builds the #bf-gameover overlay
+//   (class bf-overlay) in parent. opts: {score, lines, level, best,
+//   isNewBest, onNewGame, onHome}. Any existing overlay in parent is
+//   replaced, so repeated calls never stack overlays. Buttons:
+//   #bf-over-new ("New Game"), #bf-over-home ("Home"). Returns the
+//   overlay element, or null when nothing was built.
+// hideGameOver(parent) — removes any #bf-gameover overlay in parent.
+// showPauseSheet(parent, opts) — builds the #bf-pause-sheet sheet
+//   (class bf-sheet) in parent. opts: {onResume, onNewGame,
+//   onClearSave}. Buttons: #bf-sheet-resume ("Resume"),
+//   #bf-sheet-new ("New Game"), #bf-sheet-clear ("Delete Save").
+//   Delete uses an ARMED CONFIRM: the first tap arms the button (its
+//   label becomes "Tap again to confirm" and it gains the bf-armed
+//   class); a second tap within 3000ms fires onClearSave. The arm
+//   expires on its own after 3000ms (see _armTimeoutMs), and tapping
+//   any other control in the sheet disarms it at once. Returns the
+//   sheet element, or null when nothing was built. Any existing sheet
+//   in parent is replaced.
+// hidePauseSheet(parent) — removes any #bf-pause-sheet sheet in parent.
+// renderStats(el, stats) — fills el with structured .bf-stat spans
+//   (label + .bf-value): Played, Best, Lines (most), Level (max),
+//   from stats {games, best, mostLines, maxLevel}.
+// flashClear(boardWrap, count) — adds bf-flash to the board wrap
+//   (plus bf-flash-quad when count is 4); both classes are removed
+//   after ~600ms (see _flashMs). A fresh call restarts the timer.
+// pulseLevel(el, level) — writes "Level N" into el and adds the
+//   bf-pulse class, removed after ~600ms (see _pulseMs). A fresh
+//   call restarts the timer.
+// All functions no-op safely when the document is unavailable or the
+// target element is missing, and never throw. The only globals read
+// are document and window (guarded), plus setTimeout/clearTimeout
+// (guarded) for the flourish and arm timers.
+
+var BFUI = (function () {
+  'use strict';
+
+  var ARM_TIMEOUT_MS = 3000;
+  var FLASH_MS = 600;
+  var PULSE_MS = 600;
+
+  function _toInt(v) {
+    if (typeof v !== 'number' || !isFinite(v)) return 0;
+    var n = Math.floor(v);
+    return n < 0 ? 0 : n;
+  }
+
+  function _call(fn) {
+    try {
+      if (typeof fn === 'function') fn();
+    } catch (e) {
+      /* a callback failure must never break the UI */
+    }
+  }
+
+  // document is resolved per call so the module loads standalone (tests,
+  // build checks) and still works once a document exists.
+  function _doc() {
+    try {
+      if (typeof document === 'undefined' || !document) return null;
+      if (typeof document.createElement !== 'function') return null;
+      return document;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function _later(fn, ms) {
+    try {
+      if (typeof setTimeout === 'function') return setTimeout(fn, ms);
+    } catch (e) {
+      /* a missing timer leaves the class or arm in place; harmless */
+    }
+    return null;
+  }
+
+  function _cancel(id) {
+    try {
+      if (id !== null && id !== undefined &&
+          typeof clearTimeout === 'function') clearTimeout(id);
+    } catch (e) {
+      /* silent */
+    }
+  }
+
+  function _el(doc, tag, className, text) {
+    var el = doc.createElement(tag);
+    if (className) {
+      try {
+        el.className = className;
+      } catch (e) {
+        /* class assignment must never throw */
+      }
+    }
+    if (text !== undefined && text !== null) {
+      try {
+        el.textContent = text;
+      } catch (e) {
+        /* text assignment must never throw */
+      }
+    }
+    return el;
+  }
+
+  function _button(doc, label, onClick) {
+    var btn = _el(doc, 'button', 'bf-btn', label);
+    try {
+      btn.type = 'button';
+    } catch (e) {
+      /* harmless on hosts without a type property */
+    }
+    try {
+      if (btn.addEventListener) {
+        btn.addEventListener('click', function () {
+          try {
+            onClick();
+          } catch (e) {
+            /* a click handler must never throw */
+          }
+        });
+      }
+    } catch (e) {
+      /* a button without listeners still renders */
+    }
+    return btn;
+  }
+
+  function _setId(el, id) {
+    try {
+      el.id = id;
+    } catch (e) {
+      /* an id-less element still renders */
+    }
+  }
+
+  function _addClass(el, cls) {
+    try {
+      var cur = el.className || '';
+      if ((' ' + cur + ' ').indexOf(' ' + cls + ' ') === -1) {
+        el.className = (cur ? cur + ' ' : '') + cls;
+      }
+    } catch (e) {
+      /* silent */
+    }
+  }
+
+  function _removeClass(el, cls) {
+    try {
+      var cur = el.className || '';
+      var parts = cur.split(' ');
+      var kept = [];
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i] && parts[i] !== cls) kept.push(parts[i]);
+      }
+      el.className = kept.join(' ');
+    } catch (e) {
+      /* silent */
+    }
+  }
+
+  // Collect every descendant of root whose id matches, walking
+  // children directly (no querySelector dependency, so minimal
+  // element stubs work too).
+  function _collectById(root, id, out) {
+    var kids = null;
+    try {
+      kids = root.children;
+    } catch (e) {
+      return;
+    }
+    if (!kids) return;
+    for (var i = 0; i < kids.length; i++) {
+      var kid = kids[i];
+      try {
+        if (kid.id === id) out.push(kid);
+      } catch (e) {
+        /* non-element node: keep walking */
+      }
+      _collectById(kid, id, out);
+    }
+  }
+
+  function _removeById(parent, id) {
+    try {
+      var found = [];
+      _collectById(parent, id, found);
+      for (var i = 0; i < found.length; i++) {
+        try {
+          var p = found[i].parentNode;
+          if (p && p.removeChild) p.removeChild(found[i]);
+        } catch (e) {
+          /* removal is best-effort */
+        }
+      }
+    } catch (e) {
+      /* silent */
+    }
+  }
+
+  function showGameOver(parent, opts) {
+    try {
+      if (!parent) return null;
+      var doc = _doc();
+      if (!doc) return null;
+      opts = opts || {};
+      _removeById(parent, 'bf-gameover');
+
+      var overlay = _el(doc, 'div', 'bf-overlay', null);
+      _setId(overlay, 'bf-gameover');
+      var card = _el(doc, 'div', 'bf-over-card', null);
+      card.appendChild(_el(doc, 'h2', 'bf-over-title', 'Game Over'));
+      if (opts.isNewBest) {
+        card.appendChild(_el(doc, 'p', 'bf-newbest', 'NEW BEST!'));
+      }
+      card.appendChild(_el(doc, 'p', 'bf-over-row',
+        'Score: ' + _toInt(opts.score)));
+      card.appendChild(_el(doc, 'p', 'bf-over-row',
+        'Lines: ' + _toInt(opts.lines)));
+      card.appendChild(_el(doc, 'p', 'bf-over-row',
+        'Level: ' + _toInt(opts.level)));
+      card.appendChild(_el(doc, 'p', 'bf-over-row',
+        'Best: ' + _toInt(opts.best)));
+      var btnNew = _button(doc, 'New Game', function () {
+        _call(opts.onNewGame);
+      });
+      _setId(btnNew, 'bf-over-new');
+      var btnHome = _button(doc, 'Home', function () {
+        _call(opts.onHome);
+      });
+      _setId(btnHome, 'bf-over-home');
+      card.appendChild(btnNew);
+      card.appendChild(btnHome);
+      overlay.appendChild(card);
+      parent.appendChild(overlay);
+      return overlay;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function hideGameOver(parent) {
+    try {
+      if (!parent) return;
+      if (!_doc()) return;
+      _removeById(parent, 'bf-gameover');
+    } catch (e) {
+      /* silent */
+    }
+  }
+
+  function showPauseSheet(parent, opts) {
+    try {
+      if (!parent) return null;
+      var doc = _doc();
+      if (!doc) return null;
+      opts = opts || {};
+      _removeById(parent, 'bf-pause-sheet');
+
+      var sheet = _el(doc, 'div', 'bf-sheet', null);
+      _setId(sheet, 'bf-pause-sheet');
+      var card = _el(doc, 'div', 'bf-sheet-card', null);
+      card.appendChild(_el(doc, 'h2', 'bf-sheet-title', 'Paused'));
+
+      // Armed-confirm state for the delete button. disarm() restores
+      // the label and class and cancels the expiry timer; it is safe
+      // to call when nothing is armed and after the sheet is gone.
+      var armed = false;
+      var timer = null;
+      var clearBtn = null;
+      function disarm() {
+        armed = false;
+        _cancel(timer);
+        timer = null;
+        if (clearBtn) {
+          try {
+            clearBtn.textContent = 'Delete Save';
+          } catch (e) {
+            /* silent */
+          }
+          _removeClass(clearBtn, 'bf-armed');
+        }
+      }
+
+      var btnResume = _button(doc, 'Resume', function () {
+        disarm();
+        _call(opts.onResume);
+      });
+      _setId(btnResume, 'bf-sheet-resume');
+      var btnNew = _button(doc, 'New Game', function () {
+        disarm();
+        _call(opts.onNewGame);
+      });
+      _setId(btnNew, 'bf-sheet-new');
+      clearBtn = _button(doc, 'Delete Save', function () {
+        if (!armed) {
+          armed = true;
+          try {
+            clearBtn.textContent = 'Tap again to confirm';
+          } catch (e) {
+            /* silent */
+          }
+          _addClass(clearBtn, 'bf-armed');
+          _cancel(timer);
+          timer = _later(function () {
+            disarm();
+          }, ARM_TIMEOUT_MS);
+        } else {
+          disarm();
+          _call(opts.onClearSave);
+        }
+      });
+      _setId(clearBtn, 'bf-sheet-clear');
+
+      card.appendChild(btnResume);
+      card.appendChild(btnNew);
+      card.appendChild(clearBtn);
+
+      // Tapping anything else in the sheet disarms an armed delete
+      // button. Clicks on the delete button itself bubble here too
+      // and are skipped: the button's own handler owns its armed
+      // state.
+      try {
+        if (sheet.addEventListener) {
+          sheet.addEventListener('click', function (ev) {
+            try {
+              var t = ev && ev.target;
+              if (t === clearBtn) return;
+              disarm();
+            } catch (e) {
+              /* silent */
+            }
+          });
+        }
+      } catch (e) {
+        /* the sheet works without the disarm listener */
+      }
+
+      sheet.appendChild(card);
+      parent.appendChild(sheet);
+      return sheet;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function hidePauseSheet(parent) {
+    try {
+      if (!parent) return;
+      if (!_doc()) return;
+      _removeById(parent, 'bf-pause-sheet');
+    } catch (e) {
+      /* silent */
+    }
+  }
+
+  // Structured spans using the .bf-stat/.bf-label/.bf-value classes:
+  // one label + value pair per stat (Played/Best/Lines/Level). No-ops
+  // without a document. Never throws; bad values coerce to 0, and all
+  // text goes through textContent so markup can never be injected.
+  function renderStats(el, stats) {
+    try {
+      if (!el) return;
+      var doc = _doc();
+      if (!doc) return;
+      stats = stats || {};
+      _addClass(el, 'bf-stats-row');
+      var pairs = [
+        ['Played', _toInt(stats.games)],
+        ['Best', _toInt(stats.best)],
+        ['Lines', _toInt(stats.mostLines)],
+        ['Level', _toInt(stats.maxLevel)]
+      ];
+      var built = [];
+      for (var i = 0; i < pairs.length; i++) {
+        var stat = _el(doc, 'span', 'bf-stat', null);
+        stat.appendChild(_el(doc, 'span', 'bf-label', pairs[i][0]));
+        stat.appendChild(_el(doc, 'span', 'bf-value', String(pairs[i][1])));
+        built.push(stat);
+      }
+      // Replace the previous contents (works in a real DOM and in
+      // minimal element stubs): remove children, then append the new
+      // spans. The spans are built first so a host without child
+      // removal keeps its old contents instead of going blank.
+      try {
+        while (el.firstChild) el.removeChild(el.firstChild);
+      } catch (e) {
+        /* fall through: textContent clear below */
+      }
+      try {
+        el.textContent = '';
+      } catch (e) {
+        /* silent */
+      }
+      for (var j = 0; j < built.length; j++) el.appendChild(built[j]);
+    } catch (e) {
+      /* stats display must never break the game */
+    }
+  }
+
+  function flashClear(boardWrap, count) {
+    try {
+      if (!boardWrap) return;
+      if (!_doc()) return;
+      _addClass(boardWrap, 'bf-flash');
+      if (_toInt(count) === 4) _addClass(boardWrap, 'bf-flash-quad');
+      var prev = null;
+      try {
+        prev = boardWrap._bfFlashTimer || null;
+      } catch (e) {
+        prev = null;
+      }
+      _cancel(prev);
+      var id = _later(function () {
+        _removeClass(boardWrap, 'bf-flash');
+        _removeClass(boardWrap, 'bf-flash-quad');
+        try {
+          boardWrap._bfFlashTimer = null;
+        } catch (e) {
+          /* silent */
+        }
+      }, FLASH_MS);
+      try {
+        boardWrap._bfFlashTimer = id;
+      } catch (e) {
+        /* silent */
+      }
+    } catch (e) {
+      /* a flourish must never break the game */
+    }
+  }
+
+  function pulseLevel(el, level) {
+    try {
+      if (!el) return;
+      if (!_doc()) return;
+      try {
+        el.textContent = 'Level ' + _toInt(level);
+      } catch (e) {
+        /* silent */
+      }
+      _addClass(el, 'bf-pulse');
+      var prev = null;
+      try {
+        prev = el._bfPulseTimer || null;
+      } catch (e) {
+        prev = null;
+      }
+      _cancel(prev);
+      var id = _later(function () {
+        _removeClass(el, 'bf-pulse');
+        try {
+          el._bfPulseTimer = null;
+        } catch (e) {
+          /* silent */
+        }
+      }, PULSE_MS);
+      try {
+        el._bfPulseTimer = id;
+      } catch (e) {
+        /* silent */
+      }
+    } catch (e) {
+      /* a flourish must never break the game */
+    }
+  }
+
+  return {
+    showGameOver: showGameOver,
+    hideGameOver: hideGameOver,
+    showPauseSheet: showPauseSheet,
+    hidePauseSheet: hidePauseSheet,
+    renderStats: renderStats,
+    flashClear: flashClear,
+    pulseLevel: pulseLevel,
+    _armTimeoutMs: ARM_TIMEOUT_MS,
+    _flashMs: FLASH_MS,
+    _pulseMs: PULSE_MS
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = BFUI;
+if (typeof window !== 'undefined') window.BFUI = BFUI;
+</script>
+<script>
+// source: bf-game.js
+// BFGame — canvas rendering + input + frame loop for Blockfall, the
+// falling-blocks game on the JMF Games Phone.
+//
+// The game builds its own DOM inside the mount element passed to init():
+// header (score / lines / level / best), New Game + Pause buttons, a
+// middle row (hold panel, board canvas, next panel), a control button
+// row, and a stats row. The board, pieces, ghost preview, grid, and
+// clear flourishes draw on one canvas; DOM holds the chrome. Touch-first
+// Pointer Events: horizontal drag moves, tap rotates, swipe-down-and-hold
+// soft-drops, quick flick down hard-drops; on-screen buttons and a
+// keyboard map cover the same moves.
+//
+// Pure rules live in BFEngine (passed via opts.engine, or read from the
+// window global). Engine state uses NUMERIC shape ids (0..6) in the
+// board, queue, bag, hold slot, current piece, and event payloads; this
+// file draws through the numeric index and passes ids to engine calls
+// unchanged, never assuming letter ids.
+//
+// The frame loop runs on requestAnimationFrame, accumulates real elapsed
+// time, and calls engine.step once per frame with the current input
+// snapshot, so 60fps and 120fps phones play identically. Frame dt is
+// clamped (MAX_DT_MS) so a backgrounded tab never fast-forwards the game.
+// Move repeat (DAS) uses an initial delay of 150ms and a 50ms repeat
+// while a direction is held (interpretation: the frozen spec names the
+// constants but not the repeat source; buttons and arrow keys share it).
+//
+// Callbacks (all optional, all failure-isolated):
+//   onAction({type, ...}) — every engine event mapped to an audio name:
+//     move, rotate, lock, clear, clear4 (a 4-line clear), levelup,
+//     gameover. A hard drop folds into the lock event (no separate
+//     action); spawn/hold engine events produce no action call.
+//   onStateChange(state) — ONLY after discrete transitions (locks, holds,
+//     hard drops, game over, pause), never per frame. Fires BEFORE
+//     onGameOver so a save written here is cleared by the game-over path.
+//   onGameOver({score, lines, level}) — in addition to onAction gameover.
+//   onPauseChange(paused) — pause/resume transitions; the game never
+//     renders the pause sheet itself (the wire owns sheet visibility).
+//
+// init() does NOT start a game: it renders an empty board and waits. The
+// caller must call newGame() (fresh game) or restore(saved) (resume).
+//
+// The default seed for a new game is drawn from the platform's unseeded
+// source in exactly one place (_freshSeed); everything else flows through
+// the engine's seeded RNG. Particle jitter uses a small local generator,
+// never the seed source.
+//
+// Reduced motion: when the platform reports prefers-reduced-motion, clear
+// flourishes are skipped entirely (no flash, no particles, no pulse).
+//
+// No DOM access happens at module load; the module loads cleanly in plain
+// node (all document/window access is guarded).
+
+var BFGame = (function () {
+  'use strict';
+
+  // ------------------------------------------------------------- geometry
+  // Layout rule: the game root is capped at 390px (max-width, centered).
+  // The middle row is PAD_X + side panel + GAP + board + GAP + side panel
+  // + PAD_X, centered as a group (the CSS centers .bf-main). cell is the
+  // largest whole size that fits the width; when an available height is
+  // given and cell * ROWS would exceed it, cell shrinks to fit the height
+  // (never below MIN_CELL). Board rect coordinates are root-relative;
+  // canvas drawing uses canvas-local coordinates (origin at the board's
+  // top-left corner) because the canvas element is exactly board-sized.
+  var SCREEN_W = 390;          // logical phone screen width (CSS px)
+  var SCREEN_H = 844;          // logical phone screen height (CSS px)
+  var COLS = 10;
+  var ROWS = 20;
+  var PAD_X = 8;               // root side padding (CSS px, matches CSS)
+  var SIDE_W = 52;             // hold/next panel width (CSS px, matches CSS)
+  var GAP = 6;                 // gap between board and side panels (CSS px)
+  var MIN_CELL = 8;            // height-shrink floor; cells never go below this
+  var DEFAULT_BOARD_H = 560;   // board height fallback when unmeasurable
+  var TAP_SLOP = 10;           // px of movement allowed for a tap
+  var TAP_MAX_MS = 500;        // max press duration for a tap
+  var FLICK_DY = 40;           // min downward travel for a flick (px)
+  var FLICK_VELOCITY = 0.9;    // min downward velocity for a flick (px/ms)
+  var DAS_DELAY = 150;         // held-move initial delay (ms)
+  var DAS_REPEAT = 50;         // held-move repeat interval (ms)
+  var MAX_DT_MS = 100;         // per-frame dt clamp (ms)
+  var FLASH_MS = 300;          // clear-flash duration (ms)
+  var PULSE_MS = 400;          // level-up border pulse duration (ms)
+  var MINI_W = 48;             // hold/next mini-canvas width (CSS px)
+  var MINI_H = 44;             // one mini preview height (CSS px)
+  var MINI_GAP = 4;            // gap between stacked next previews (CSS px)
+  var MAX_QUEUE = 8;           // cap on queued drag moves (prevents runaway)
+  var MAX_PARTICLES = 120;     // particle pool cap
+  // Fixed piece colors, indexed by NUMERIC shape id 0..6 (I, O, T, S, Z,
+  // J, L order). Used only when the engine palette is unavailable; the
+  // engine COLORS array is authoritative. Never theme variables: pieces
+  // must stay readable on every photo background.
+  var FALLBACK_COLORS = ['#22d3ee', '#facc15', '#c084fc', '#4ade80',
+                         '#f87171', '#60a5fa', '#fb923c'];
+  var FALLBACK_SHAPE_IDS = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
+  var BOARD_PANEL = '#040a12b8'; // translucent dark board panel (8-digit hex, alpha 0.72)
+
+  // ---------------------------------------------------------------- state
+  var _mount = null;
+  var _root = null;
+  var _canvas = null;
+  var _ctx = null;
+  var _boardWrap = null;
+  var _holdCanvas = null;
+  var _holdCtx = null;
+  var _nextCanvas = null;
+  var _nextCtx = null;
+  var _scoreEl = null;
+  var _linesEl = null;
+  var _levelEl = null;
+  var _bestEl = null;
+  var _pauseBtn = null;
+  var _statsRow = null;
+  var _headerEl = null;
+  var _buttonsEl = null;
+  var _mainEl = null;
+  var _controlsEl = null;
+  var _opts = {};
+  var _engine = null;
+  var _themeName = 'aurora';
+  var _state = null;
+  var _started = false;
+  var _paused = false;
+  var _best = 0;
+  var _bestSet = false;
+  var _layout = null;
+  var _dpr = 1;
+  var _raf = 0;
+  var _rafIsTimeout = false;
+  var _running = false;
+  var _lastT = 0;
+  var _moveQueue = [];
+  var _queuedRotate = false;
+  var _queuedHardDrop = false;
+  var _queuedHold = false;
+  var _softDropHeld = false;
+  var _heldDir = 0;
+  var _holdStart = 0;
+  var _lastRepeat = 0;
+  var _gesture = null;
+  var _particles = [];
+  var _flash = null;
+  var _pulseT0 = 0;
+  var _gameOverFired = false;
+  var _lastHeader = null;
+  var _lastMiniSig = '';
+  var _fxSeed = 123456789;
+  var _boundWindow = false;
+
+  // ---------------------------------------------------------------- utils
+  function _now() {
+    if (typeof performance !== 'undefined' && performance.now) return performance.now();
+    return new Date().getTime();
+  }
+
+  function _call(name, arg) {
+    var fn = _opts && _opts[name];
+    if (typeof fn === 'function') {
+      try { fn(arg); } catch (err) { /* callbacks must never break the game */ }
+    }
+  }
+
+  function _getEngine() {
+    if (!_engine && typeof window !== 'undefined' && window.BFEngine) {
+      _engine = window.BFEngine;
+    }
+    return _engine;
+  }
+
+  function _eng(name) {
+    var e = _getEngine();
+    if (e && typeof e[name] === 'function') return e[name];
+    return null;
+  }
+
+  function _getUI() {
+    if (_opts && _opts.ui) return _opts.ui;
+    if (typeof window !== 'undefined' && window.BFUI) return window.BFUI;
+    return null;
+  }
+
+  // Resolve a shape reference to its numeric index 0..6. Numeric ids pass
+  // through; letter ids resolve through the engine SHAPES table (or the
+  // local fallback order when the engine table is missing); anything else
+  // yields -1. Used ONLY for drawing; ids are passed to engine calls
+  // unchanged.
+  function _shapeIndex(id) {
+    if (typeof id === 'number' && isFinite(id) && Math.floor(id) === id &&
+        id >= 0 && id < 7) return id;
+    if (typeof id === 'string') {
+      var e = _getEngine();
+      var table = (e && e.SHAPES && e.SHAPES.length) ? e.SHAPES : null;
+      var i;
+      if (table) {
+        for (i = 0; i < table.length; i++) {
+          if (table[i] && table[i].id === id) return i;
+        }
+      }
+      for (i = 0; i < FALLBACK_SHAPE_IDS.length; i++) {
+        if (FALLBACK_SHAPE_IDS[i] === id) return i;
+      }
+    }
+    return -1;
+  }
+
+  // Piece color for a numeric shape index, from the engine COLORS array
+  // (dual-access: COLORS[0] === COLORS['I']); falls back to the local
+  // fixed palette when the engine palette is missing.
+  function _pieceColor(idx) {
+    var e = _getEngine();
+    if (e && e.COLORS && typeof e.COLORS[idx] === 'string') return e.COLORS[idx];
+    if (idx >= 0 && idx < FALLBACK_COLORS.length) return FALLBACK_COLORS[idx];
+    return '#888888';
+  }
+
+  function _shapeCells(shape, rot) {
+    var fn = _eng('shapeCells');
+    if (!fn) return [];
+    try {
+      var cells = fn(shape, rot);
+      return cells || [];
+    } catch (err) { return []; }
+  }
+
+  function _shapeBounds(shape, rot) {
+    var fn = _eng('shapeBounds');
+    if (!fn) return { rows: 1, cols: 1 };
+    try {
+      var b = fn(shape, rot);
+      return b || { rows: 1, cols: 1 };
+    } catch (err) { return { rows: 1, cols: 1 }; }
+  }
+
+  function _ghostRow(board, shape, rot, row, col) {
+    var fn = _eng('ghostRow');
+    if (fn) {
+      try { return fn(board, shape, rot, row, col); } catch (err) { /* fall through */ }
+    }
+    var can = _eng('canPlace');
+    if (!can) return row;
+    var r = row;
+    try {
+      while (can(board, shape, rot, r + 1, col)) r++;
+    } catch (err) { /* keep the last good row */ }
+    return r;
+  }
+
+  function _cloneState(s) {
+    if (!s || typeof s !== 'object') return null;
+    return {
+      v: s.v,
+      seed: s.seed,
+      rngState: s.rngState,
+      board: (s.board && s.board.slice) ? s.board.slice() : [],
+      bag: (s.bag && s.bag.slice) ? s.bag.slice() : [],
+      queue: (s.queue && s.queue.slice) ? s.queue.slice() : [],
+      current: s.current ? { shape: s.current.shape, rot: s.current.rot,
+                             row: s.current.row, col: s.current.col } : null,
+      hold: s.hold,
+      canHold: s.canHold,
+      score: s.score,
+      lines: s.lines,
+      level: s.level,
+      combo: s.combo,
+      fallMs: s.fallMs,
+      lockMs: s.lockMs,
+      lockResets: s.lockResets,
+      grounded: s.grounded,
+      gameOver: s.gameOver,
+      piecesPlaced: s.piecesPlaced
+    };
+  }
+
+  function _hexRgb(hex) {
+    if (typeof hex !== 'string') return null;
+    var m = /^#?([0-9a-f]{6})$/i.exec(hex);
+    if (!m) return null;
+    var n = parseInt(m[1], 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+
+  // amt in (-1, 1): positive lightens toward white, negative darkens.
+  function _shade(hex, amt) {
+    var rgb = _hexRgb(hex);
+    if (!rgb) return hex;
+    var t = amt < 0 ? 0 : 255;
+    var p = Math.abs(amt);
+    var r = Math.round(rgb[0] + (t - rgb[0]) * p);
+    var g = Math.round(rgb[1] + (t - rgb[1]) * p);
+    var b = Math.round(rgb[2] + (t - rgb[2]) * p);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+
+  // The ONE default seed source in this file: drawn once per new game
+  // when the caller supplies no seed, and nowhere else.
+  function _freshSeed() {
+    return (Date.now() ^ (Math.random() * 1e9 | 0)) >>> 0;
+  }
+
+  // Small local generator for particle jitter only (mulberry-style step
+  // over a counter seed). Visual noise, never gameplay randomness.
+  function _fxRand() {
+    _fxSeed = (_fxSeed + 0x6D2B79F5) | 0;
+    var t = Math.imul(_fxSeed ^ (_fxSeed >>> 15), 1 | _fxSeed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+
+  function _reducedMotion() {
+    try {
+      if (typeof window !== 'undefined' && window.matchMedia) {
+        return !!window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      }
+    } catch (err) { /* fall through: motion allowed */ }
+    return false;
+  }
+
+  function _resetTransient() {
+    _moveQueue = [];
+    _queuedRotate = false;
+    _queuedHardDrop = false;
+    _queuedHold = false;
+    _softDropHeld = false;
+    _heldDir = 0;
+    _holdStart = 0;
+    _lastRepeat = 0;
+    _gesture = null;
+    _particles = [];
+    _flash = null;
+    _pulseT0 = 0;
+    _lastMiniSig = '';
+  }
+
+  // ------------------------------------------------------------ layout math
+  // Pure: board + side panels fit inside `width` with the root cap
+  // applied (widths above SCREEN_W behave exactly like SCREEN_W). cell is
+  // floored to whole pixels from the width, then shrunk to fit `height`
+  // when given (cell * ROWS <= height), never below MIN_CELL. The row
+  // group is centered: leftover slack splits evenly on both sides.
+  function _computeLayout(arg) {
+    var a = arg || {};
+    var width = (typeof a.width === 'number' && isFinite(a.width) && a.width > 0) ?
+      a.width : SCREEN_W;
+    var effW = Math.min(width, SCREEN_W);
+    var cell = Math.floor((effW - 2 * PAD_X - 2 * SIDE_W - 2 * GAP) / COLS);
+    if (cell < MIN_CELL) cell = MIN_CELL;
+    if (typeof a.height === 'number' && isFinite(a.height) && a.height > 0) {
+      var maxCell = Math.floor(a.height / ROWS);
+      if (maxCell < cell) cell = Math.max(maxCell, MIN_CELL);
+    }
+    var boardW = cell * COLS;
+    var boardH = cell * ROWS;
+    var totalW = 2 * PAD_X + 2 * SIDE_W + 2 * GAP + boardW;
+    var offsetX = Math.floor((effW - totalW) / 2);
+    if (offsetX < 0) offsetX = 0;
+    var holdX = PAD_X + offsetX;
+    var boardX = holdX + SIDE_W + GAP;
+    var nextX = boardX + boardW + GAP;
+    return {
+      width: effW,
+      height: (typeof a.height === 'number' && isFinite(a.height)) ? a.height : 0,
+      cell: cell,
+      boardW: boardW,
+      boardH: boardH,
+      boardX: boardX,
+      boardY: 0,
+      sideW: SIDE_W,
+      padX: PAD_X,
+      gap: GAP,
+      holdX: holdX,
+      nextX: nextX,
+      totalW: totalW
+    };
+  }
+
+  // Pure width rule (the wide-phone lesson): measure the game root first
+  // — the root is capped at 390px and centered, so it is the layout
+  // container. The mount (full-width section) is only a fallback. Widths
+  // outside 280..520 are distrusted (unlaid-out or absurd). The result is
+  // always clamped to SCREEN_W.
+  function _measureFromWidths(rootW, mountW) {
+    var w = 0;
+    if (typeof rootW === 'number' && isFinite(rootW) && rootW >= 280 && rootW <= 520) {
+      w = rootW;
+    } else if (typeof mountW === 'number' && isFinite(mountW) && mountW >= 280 && mountW <= 520) {
+      w = mountW;
+    } else {
+      return SCREEN_W;
+    }
+    return Math.min(w, SCREEN_W);
+  }
+
+  function _measureWidth() {
+    var rw = (_root && _root.clientWidth) || 0;
+    var mw = (_mount && _mount.clientWidth) || 0;
+    return _measureFromWidths(rw, mw);
+  }
+
+  // Pure: available board height = root height minus chrome height,
+  // floored to whole pixels and clamped at zero. Non-finite inputs
+  // count as zero, and a negative input counts as zero, so the result
+  // is always a usable non-negative pixel count (callers fall back to
+  // DEFAULT_BOARD_H when nothing measurable produced a positive value).
+  function _availableHeight(rootH, chromeH) {
+    var root = (typeof rootH === 'number' && isFinite(rootH) && rootH > 0) ? rootH : 0;
+    var chrome = (typeof chromeH === 'number' && isFinite(chromeH) && chromeH > 0) ? chromeH : 0;
+    var avail = Math.floor(root - chrome);
+    return avail > 0 ? avail : 0;
+  }
+
+  // Height a chrome row needs: the larger of its laid-out height and
+  // its content height, so a row squeezed by an oversized board still
+  // reports the height it needs rather than the squeezed height.
+  function _rowHeight(el) {
+    if (!el) return 0;
+    var h = el.offsetHeight || 0;
+    var s = el.scrollHeight || 0;
+    return s > h ? s : h;
+  }
+
+  // A computed padding in pixels, with a fallback when styles are
+  // unreadable (the fallbacks mirror the CSS values).
+  function _stylePx(el, prop, fallback) {
+    try {
+      if (typeof window !== 'undefined' && window.getComputedStyle && el) {
+        var v = parseFloat(window.getComputedStyle(el)[prop]);
+        if (isFinite(v) && v >= 0) return v;
+      }
+    } catch (err) { /* fall through to the fallback */ }
+    return fallback;
+  }
+
+  // Available board height, measured from the live layout: the game
+  // root's height minus the real chrome heights (header, buttons row,
+  // controls row, stats row, root top padding, middle-row padding).
+  // The old form read the board wrap's height, but the wrap's height
+  // comes from the canvas inside it, so the height-shrink path in
+  // _computeLayout never engaged and the board never re-grew after a
+  // narrow resize. When anything is unmeasurable (hidden section,
+  // missing rows) the DEFAULT_BOARD_H fallback stands.
+  function _measureBoardHeight() {
+    if (_root && _root.clientHeight > 200 && _headerEl && _buttonsEl &&
+        _mainEl && _controlsEl && _statsRow) {
+      var headerH = _rowHeight(_headerEl);
+      var buttonsH = _rowHeight(_buttonsEl);
+      var controlsH = _rowHeight(_controlsEl);
+      var statsH = _rowHeight(_statsRow);
+      if (headerH > 0 && buttonsH > 0 && controlsH > 0 && statsH > 0) {
+        var chrome = headerH + buttonsH + controlsH + statsH +
+          _stylePx(_root, 'paddingTop', 48) +
+          _stylePx(_mainEl, 'paddingTop', 2) +
+          _stylePx(_mainEl, 'paddingBottom', 6);
+        var avail = _availableHeight(_root.clientHeight, chrome);
+        if (avail > 0) return avail;
+      }
+    }
+    return DEFAULT_BOARD_H;
+  }
+
+  // ------------------------------------------------------- gesture classes
+  // Thresholds (frozen): TAP_SLOP px of movement, TAP_MAX_MS duration for
+  // a tap; a flick is a downward move of more than FLICK_DY px at more
+  // than FLICK_VELOCITY px/ms. Boundaries are inclusive for taps (exactly
+  // TAP_SLOP px / TAP_MAX_MS still counts) and exclusive for flicks
+  // (dy and velocity must both EXCEED their thresholds). A predominantly
+  // horizontal move beyond the slop is a drag (diagonal ties go to drag);
+  // a predominantly vertical DOWNWARD move beyond the slop is a swipe;
+  // upward moves and long motionless presses are 'none'. Non-positive or
+  // unknown durations count as instant (dt 0).
+  function _classifyGesture(dx, dy, dtMs) {
+    var ax = Math.abs(dx);
+    var ay = Math.abs(dy);
+    var dt = (typeof dtMs === 'number' && isFinite(dtMs) && dtMs > 0) ? dtMs : 0;
+    if (dy > FLICK_DY) {
+      var vel = dt > 0 ? dy / dt : Infinity;
+      if (vel > FLICK_VELOCITY) return 'flick';
+    }
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist <= TAP_SLOP && dt <= TAP_MAX_MS) return 'tap';
+    if (ax > TAP_SLOP && ax >= ay) return 'drag';
+    if (dy > TAP_SLOP && ay > ax) return 'swipe';
+    return 'none';
+  }
+
+  // ------------------------------------------------------------- DOM build
+  function _el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined && text !== null) node.textContent = text;
+    return node;
+  }
+
+  function _button(id, cls, text, label) {
+    var btn = _el('button', cls, text);
+    btn.id = id;
+    btn.type = 'button';
+    btn.setAttribute('aria-label', label);
+    return btn;
+  }
+
+  function _buildDom(mount) {
+    mount.innerHTML = '';
+    _lastHeader = null;
+    _lastMiniSig = '';
+
+    _root = _el('div', 'bf-game');
+
+    // Header: home, score/lines/level/best.
+    var header = _el('div', 'bf-header');
+    var homeBtn = _button('bf-home', 'bf-btn bf-home', '\u2039 Home', 'Back to home');
+    homeBtn.addEventListener('click', _goHome);
+    header.appendChild(homeBtn);
+    var stats = _el('div', 'bf-stats');
+    var defs = [
+      ['Score', 'bf-score', 'score'],
+      ['Lines', 'bf-lines', 'lines'],
+      ['Level', 'bf-level', 'level'],
+      ['Best', 'bf-best', 'best']
+    ];
+    var els = {};
+    for (var i = 0; i < defs.length; i++) {
+      var box = _el('div', 'bf-stat');
+      box.appendChild(_el('span', 'bf-label', defs[i][0]));
+      var val = _el('span', 'bf-value', '0');
+      val.id = defs[i][1];
+      box.appendChild(val);
+      stats.appendChild(box);
+      els[defs[i][2]] = val;
+    }
+    _scoreEl = els.score;
+    _linesEl = els.lines;
+    _levelEl = els.level;
+    _bestEl = els.best;
+    header.appendChild(stats);
+    _root.appendChild(header);
+    _headerEl = header;
+
+    // Buttons row: New Game, Pause.
+    var btnRow = _el('div', 'bf-buttons');
+    var newBtn = _button('bf-new', 'bf-btn', 'New Game', 'Start a new game');
+    newBtn.addEventListener('click', function () { newGame(); });
+    btnRow.appendChild(newBtn);
+    _pauseBtn = _button('bf-pause', 'bf-btn', 'Pause', 'Pause or resume the game');
+    _pauseBtn.addEventListener('click', function () {
+      if (_paused) resume();
+      else pause();
+    });
+    btnRow.appendChild(_pauseBtn);
+    _root.appendChild(btnRow);
+    _buttonsEl = btnRow;
+
+    // Main row: hold panel + board + next panel.
+    var main = _el('div', 'bf-main');
+    var holdPanel = _el('div', 'bf-side');
+    holdPanel.id = 'bf-hold';
+    holdPanel.appendChild(_el('span', 'bf-side-label', 'Hold'));
+    _holdCanvas = document.createElement('canvas');
+    _holdCanvas.id = 'bf-hold-canvas';
+    _holdCanvas.setAttribute('aria-label', 'Held piece');
+    holdPanel.appendChild(_holdCanvas);
+    main.appendChild(holdPanel);
+
+    _boardWrap = _el('div', 'bf-board-wrap');
+    _canvas = document.createElement('canvas');
+    _canvas.id = 'bf-canvas';
+    _canvas.setAttribute('aria-label', 'Blockfall board');
+    _canvas.addEventListener('pointerdown', _onCanvasPointerDown);
+    _canvas.addEventListener('pointermove', _onCanvasPointerMove);
+    _canvas.addEventListener('pointerup', _onCanvasPointerUp);
+    _canvas.addEventListener('pointercancel', _onCanvasPointerCancel);
+    _canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    _boardWrap.appendChild(_canvas);
+    main.appendChild(_boardWrap);
+
+    var nextPanel = _el('div', 'bf-side');
+    nextPanel.id = 'bf-next';
+    nextPanel.appendChild(_el('span', 'bf-side-label', 'Next'));
+    _nextCanvas = document.createElement('canvas');
+    _nextCanvas.id = 'bf-next-canvas';
+    _nextCanvas.setAttribute('aria-label', 'Next pieces');
+    nextPanel.appendChild(_nextCanvas);
+    main.appendChild(nextPanel);
+    _root.appendChild(main);
+    _mainEl = main;
+
+    // Control button row: move left/right, rotate, hard drop, hold.
+    var controls = _el('div', 'bf-controls');
+    var leftBtn = _button('bf-left', 'bf-btn', '\u25C0', 'Move left');
+    var rightBtn = _button('bf-right', 'bf-btn', '\u25B6', 'Move right');
+    var rotateBtn = _button('bf-rotate', 'bf-btn', '\u27F3', 'Rotate');
+    var dropBtn = _button('bf-drop', 'bf-btn', '\u2B07', 'Hard drop');
+    var holdBtn = _button('bf-hold-btn', 'bf-btn', 'Hold', 'Hold piece');
+    _bindHoldButton(leftBtn, -1);
+    _bindHoldButton(rightBtn, 1);
+    _bindTapButton(rotateBtn, _queueRotate);
+    _bindTapButton(dropBtn, _queueHardDrop);
+    _bindTapButton(holdBtn, _queueHold);
+    controls.appendChild(leftBtn);
+    controls.appendChild(rightBtn);
+    controls.appendChild(rotateBtn);
+    controls.appendChild(dropBtn);
+    controls.appendChild(holdBtn);
+    controls.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    _root.appendChild(controls);
+    _controlsEl = controls;
+
+    // Stats row: filled by setStats() through the ui module's renderStats.
+    _statsRow = _el('div', 'bf-stats-row');
+    _root.appendChild(_statsRow);
+
+    mount.appendChild(_root);
+    _layout = _computeLayout({ width: _measureWidth(), height: _measureBoardHeight() });
+    _setupCanvas();
+    _setupMinis();
+  }
+
+  function _setupCanvas() {
+    if (!_canvas || !_layout) return;
+    _dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+    _canvas.width = Math.round(_layout.boardW * _dpr);
+    _canvas.height = Math.round(_layout.boardH * _dpr);
+    _canvas.style.width = _layout.boardW + 'px';
+    _canvas.style.height = _layout.boardH + 'px';
+    _ctx = _canvas.getContext('2d');
+    _ctx.setTransform(_dpr, 0, 0, _dpr, 0, 0);
+  }
+
+  function _setupMinis() {
+    _dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+    if (_holdCanvas) {
+      _holdCanvas.width = Math.round(MINI_W * _dpr);
+      _holdCanvas.height = Math.round(MINI_H * _dpr);
+      _holdCanvas.style.width = MINI_W + 'px';
+      _holdCanvas.style.height = MINI_H + 'px';
+      _holdCtx = _holdCanvas.getContext('2d');
+      _holdCtx.setTransform(_dpr, 0, 0, _dpr, 0, 0);
+    }
+    if (_nextCanvas) {
+      var h = 3 * MINI_H + 2 * MINI_GAP;
+      _nextCanvas.width = Math.round(MINI_W * _dpr);
+      _nextCanvas.height = Math.round(h * _dpr);
+      _nextCanvas.style.width = MINI_W + 'px';
+      _nextCanvas.style.height = h + 'px';
+      _nextCtx = _nextCanvas.getContext('2d');
+      _nextCtx.setTransform(_dpr, 0, 0, _dpr, 0, 0);
+    }
+  }
+
+  function _updateHeader() {
+    if (!_state) return;
+    var sig = _state.score + '|' + _state.lines + '|' + _state.level + '|' +
+      (_bestSet ? _best : '');
+    if (sig === _lastHeader) return;
+    _lastHeader = sig;
+    if (_scoreEl) _scoreEl.textContent = String(_state.score);
+    if (_linesEl) _linesEl.textContent = String(_state.lines);
+    if (_levelEl) _levelEl.textContent = String(_state.level);
+    // Best is written here ONLY after setBest() was called; otherwise the
+    // wire owns #bf-best and must not be overwritten on every frame.
+    if (_bestEl && _bestSet) _bestEl.textContent = String(_best);
+  }
+
+  function _updatePauseBtn() {
+    if (_pauseBtn) _pauseBtn.textContent = _paused ? 'Resume' : 'Pause';
+  }
+
+  function _goHome() {
+    try {
+      if (typeof window !== 'undefined' && window.PhoneShell &&
+          typeof window.PhoneShell.goHome === 'function') {
+        window.PhoneShell.goHome();
+      }
+    } catch (err) { /* shell absent or failed: never throw */ }
+  }
+
+  // --------------------------------------------------------------- drawing
+  // Theme colors for the chrome around the pieces, read fresh on every
+  // render from the computed CSS variables (so theme switches apply
+  // immediately), with hardcoded fallbacks when variables are missing.
+  function _themeColors() {
+    var out = {
+      panel: '#0b1e2e', grid: '#16394a', edge: '#16394a',
+      text: '#eafaf3', accent: '#4cc9f0'
+    };
+    try {
+      if (typeof window !== 'undefined' && window.getComputedStyle && _root) {
+        var cs = window.getComputedStyle(_root);
+        var g = function (name, fb) {
+          var v = cs.getPropertyValue(name);
+          v = v ? String(v).trim() : '';
+          return v || fb;
+        };
+        out.panel = g('--bz-theme-panel', out.panel);
+        out.grid = g('--bz-theme-grid', out.grid);
+        out.edge = g('--bz-theme-panel-edge', out.edge);
+        out.text = g('--bz-theme-text', out.text);
+        out.accent = g('--bz-theme-accent', out.accent);
+      }
+    } catch (err) { /* fallbacks stand */ }
+    return out;
+  }
+
+  function _rr(ctx, x, y, w, h, r) {
+    if (r > w / 2) r = w / 2;
+    if (r > h / 2) r = h / 2;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  // Vector block with depth: soft bottom shadow, vertical gradient
+  // (lighter top), 1px top highlight, subtle inner edge.
+  function _drawBlock(ctx, x, y, size, color, alpha) {
+    var r = Math.max(2, size * 0.2);
+    ctx.save();
+    if (alpha !== undefined && alpha !== 1) ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#00000047';
+    _rr(ctx, x + 1, y + 3, size - 2, size - 2, r);
+    ctx.fill();
+    var g = ctx.createLinearGradient(0, y, 0, y + size);
+    g.addColorStop(0, _shade(color, 0.38));
+    g.addColorStop(0.55, color);
+    g.addColorStop(1, _shade(color, -0.22));
+    ctx.fillStyle = g;
+    _rr(ctx, x + 1, y + 1, size - 2, size - 2, r);
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff80';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x + r + 1, y + 2.5);
+    ctx.lineTo(x + size - r - 1, y + 2.5);
+    ctx.stroke();
+    ctx.strokeStyle = '#0000002e';
+    _rr(ctx, x + 1.5, y + 1.5, size - 3, size - 3, Math.max(1, r - 1));
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function _render() {
+    if (!_ctx || !_layout) return;
+    var ctx = _ctx;
+    var layout = _layout;
+    var cell = layout.cell;
+    var now = _now();
+    var colors = _themeColors();
+
+    ctx.setTransform(_dpr, 0, 0, _dpr, 0, 0);
+    ctx.clearRect(0, 0, layout.boardW, layout.boardH);
+
+    // Board panel: translucent dark so pieces pop on every photo.
+    ctx.fillStyle = BOARD_PANEL;
+    _rr(ctx, 0, 0, layout.boardW, layout.boardH, 10);
+    ctx.fill();
+    ctx.strokeStyle = colors.edge;
+    ctx.lineWidth = 1;
+    _rr(ctx, 0.5, 0.5, layout.boardW - 1, layout.boardH - 1, 10);
+    ctx.stroke();
+
+    // Grid lines.
+    ctx.strokeStyle = colors.grid;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    var i;
+    for (i = 1; i < COLS; i++) {
+      ctx.moveTo(i * cell + 0.5, 0);
+      ctx.lineTo(i * cell + 0.5, layout.boardH);
+    }
+    for (i = 1; i < ROWS; i++) {
+      ctx.moveTo(0, i * cell + 0.5);
+      ctx.lineTo(layout.boardW, i * cell + 0.5);
+    }
+    ctx.stroke();
+
+    var st = _state;
+    if (st && st.board) {
+      // Locked cells: board values are numeric shape index + 1.
+      var r, c, v;
+      for (r = 0; r < ROWS; r++) {
+        for (c = 0; c < COLS; c++) {
+          v = st.board[r * COLS + c];
+          if (v < 1 || v > 7) continue;
+          _drawBlock(ctx, c * cell, r * cell, cell, _pieceColor(v - 1), 1);
+        }
+      }
+
+      // Ghost preview: translucent outline at the landing row, drawn
+      // before the current piece so any overlap resolves in its favor.
+      // Skipped when the piece is already grounded at its landing row.
+      var cur = st.current;
+      if (cur) {
+        var grow = _ghostRow(st.board, cur.shape, cur.rot, cur.row, cur.col);
+        var cells = _shapeCells(cur.shape, cur.rot);
+        var ghostColor = _pieceColor(_shapeIndex(cur.shape));
+        if (grow > cur.row) {
+          for (i = 0; i < cells.length; i++) {
+            var gr = grow + cells[i][0];
+            var gc = cur.col + cells[i][1];
+            if (gr < 0 || gr >= ROWS || gc < 0 || gc >= COLS) continue;
+            ctx.save();
+            ctx.globalAlpha = 0.10;
+            ctx.fillStyle = ghostColor;
+            _rr(ctx, gc * cell + 1, gr * cell + 1, cell - 2, cell - 2, 4);
+            ctx.fill();
+            ctx.restore();
+            ctx.save();
+            ctx.globalAlpha = 0.45;
+            ctx.strokeStyle = ghostColor;
+            ctx.lineWidth = 1.5;
+            _rr(ctx, gc * cell + 1.5, gr * cell + 1.5, cell - 3, cell - 3, 4);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+        // Current piece.
+        for (i = 0; i < cells.length; i++) {
+          var pr = cur.row + cells[i][0];
+          var pc = cur.col + cells[i][1];
+          if (pr < 0 || pr >= ROWS || pc < 0 || pc >= COLS) continue;
+          _drawBlock(ctx, pc * cell, pr * cell, cell, ghostColor, 1);
+        }
+      }
+    }
+
+    // Clear flash: fading white overlay on the cleared rows.
+    if (_flash) {
+      var fp = (now - _flash.t0) / FLASH_MS;
+      if (fp >= 1) {
+        _flash = null;
+      } else {
+        ctx.save();
+        ctx.globalAlpha = 0.5 * (1 - fp);
+        ctx.fillStyle = '#ffffff';
+        for (i = 0; i < _flash.rows.length; i++) {
+          var fr = _flash.rows[i];
+          if (fr >= 0 && fr < ROWS) ctx.fillRect(0, fr * cell, layout.boardW, cell);
+        }
+        ctx.restore();
+      }
+    }
+
+    // Level-up pulse: fading accent border.
+    if (_pulseT0) {
+      var pp = (now - _pulseT0) / PULSE_MS;
+      if (pp >= 1) {
+        _pulseT0 = 0;
+      } else {
+        ctx.save();
+        ctx.globalAlpha = 0.8 * (1 - pp);
+        ctx.strokeStyle = colors.accent;
+        ctx.lineWidth = 3;
+        _rr(ctx, 1.5, 1.5, layout.boardW - 3, layout.boardH - 3, 9);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // Burst particles.
+    for (i = 0; i < _particles.length; i++) {
+      var p = _particles[i];
+      var life = p.life / p.maxLife;
+      if (life < 0) life = 0;
+      ctx.save();
+      ctx.globalAlpha = life;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+      ctx.restore();
+    }
+
+    _updateHeader();
+    _renderMinis();
+  }
+
+  function _drawMini(ctx, shapeIdx, x, y, w, h, alpha, colors) {
+    if (shapeIdx < 0) {
+      // Empty slot: faint outline, no piece.
+      ctx.save();
+      ctx.strokeStyle = colors.grid;
+      ctx.lineWidth = 1;
+      _rr(ctx, x + 3, y + 3, w - 6, h - 6, 6);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+    var bounds = _shapeBounds(shapeIdx, 0);
+    var cell = Math.floor(Math.min((w - 8) / bounds.cols, (h - 8) / bounds.rows));
+    if (cell < 4) cell = 4;
+    var pw = bounds.cols * cell;
+    var ph = bounds.rows * cell;
+    var ox = x + (w - pw) / 2;
+    var oy = y + (h - ph) / 2;
+    var cells = _shapeCells(shapeIdx, 0);
+    var color = _pieceColor(shapeIdx);
+    for (var i = 0; i < cells.length; i++) {
+      _drawBlock(ctx, ox + cells[i][1] * cell, oy + cells[i][0] * cell,
+        cell, color, alpha);
+    }
+  }
+
+  function _renderMinis() {
+    var st = _state;
+    var sig = st ? (String(st.hold) + '|' + (st.canHold ? '1' : '0') + '|' +
+      (st.queue ? st.queue.join(',') : '') + '|' + _themeName) : ('none|' + _themeName);
+    if (sig === _lastMiniSig) return;
+    _lastMiniSig = sig;
+    var colors = _themeColors();
+    if (_holdCtx) {
+      _holdCtx.setTransform(_dpr, 0, 0, _dpr, 0, 0);
+      _holdCtx.clearRect(0, 0, MINI_W, MINI_H);
+      var holdIdx = st ? _shapeIndex(st.hold) : -1;
+      // A spent hold slot (no swap until the next lock) draws dimmed.
+      var alpha = (st && !st.canHold && holdIdx >= 0) ? 0.35 : 1;
+      _drawMini(_holdCtx, holdIdx, 0, 0, MINI_W, MINI_H, alpha, colors);
+    }
+    if (_nextCtx) {
+      var totalH = 3 * MINI_H + 2 * MINI_GAP;
+      _nextCtx.setTransform(_dpr, 0, 0, _dpr, 0, 0);
+      _nextCtx.clearRect(0, 0, MINI_W, totalH);
+      for (var i = 0; i < 3; i++) {
+        var idx = -1;
+        if (st && st.queue && typeof st.queue[i] !== 'undefined') {
+          idx = _shapeIndex(st.queue[i]);
+        }
+        _drawMini(_nextCtx, idx, 0, i * (MINI_H + MINI_GAP),
+          MINI_W, MINI_H, 1, colors);
+      }
+    }
+  }
+
+  // ------------------------------------------------------------- particles
+  function _spawnClearFx(rows, count) {
+    if (_reducedMotion() || !_layout) return;
+    _flash = { rows: rows.slice(), t0: _now() };
+    var perRow = count >= 4 ? 16 : 10;
+    var cell = _layout.cell;
+    for (var i = 0; i < rows.length; i++) {
+      var y = rows[i] * cell + cell / 2;
+      for (var k = 0; k < perRow; k++) {
+        if (_particles.length >= MAX_PARTICLES) _particles.shift();
+        _particles.push({
+          x: _fxRand() * _layout.boardW,
+          y: y + (_fxRand() - 0.5) * cell,
+          vx: (_fxRand() - 0.5) * 120,
+          vy: -40 - _fxRand() * 120,
+          life: 500 + _fxRand() * 300,
+          maxLife: 800,
+          size: 2 + _fxRand() * 3,
+          color: _pieceColor(Math.floor(_fxRand() * 7))
+        });
+      }
+    }
+  }
+
+  function _updateParticles(dt) {
+    if (!_particles.length) return;
+    var step = dt / 1000;
+    var kept = [];
+    for (var i = 0; i < _particles.length; i++) {
+      var p = _particles[i];
+      p.life -= dt;
+      if (p.life <= 0) continue;
+      p.x += p.vx * step;
+      p.y += p.vy * step;
+      p.vy += 900 * step;
+      kept.push(p);
+    }
+    _particles = kept;
+  }
+
+  // ----------------------------------------------------------------- input
+  function _live() {
+    return _started && !_paused && !!_state && !_state.gameOver;
+  }
+
+  function _queueMove(dir) {
+    if (!_live()) return;
+    if (_moveQueue.length < MAX_QUEUE) _moveQueue.push(dir < 0 ? -1 : 1);
+  }
+
+  function _queueRotate() {
+    if (_live()) _queuedRotate = true;
+  }
+
+  function _queueHardDrop() {
+    if (_live()) _queuedHardDrop = true;
+  }
+
+  function _queueHold() {
+    if (_live()) _queuedHold = true;
+  }
+
+  function _beginHold(dir) {
+    _heldDir = dir;
+    _holdStart = _now();
+    _lastRepeat = _holdStart;
+  }
+
+  function _endHold(dir) {
+    if (_heldDir === dir) _heldDir = 0;
+  }
+
+  function _bindHoldButton(btn, dir) {
+    btn.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      _queueMove(dir);
+      _beginHold(dir);
+    });
+    var end = function () { _endHold(dir); };
+    btn.addEventListener('pointerup', end);
+    btn.addEventListener('pointercancel', end);
+    btn.addEventListener('pointerleave', end);
+  }
+
+  function _bindTapButton(btn, fn) {
+    btn.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      fn();
+    });
+  }
+
+  // Convert a pointer event to canvas-local coordinates, accounting for
+  // the shell's scale transform via the live bounding rect.
+  function _toCanvas(e) {
+    var boardW = _layout ? _layout.boardW : SCREEN_W;
+    var boardH = _layout ? _layout.boardH : SCREEN_H;
+    var rect = _canvas.getBoundingClientRect();
+    var sx = rect.width ? boardW / rect.width : 1;
+    var sy = rect.height ? boardH / rect.height : 1;
+    return {
+      x: (e.clientX - rect.left) * sx,
+      y: (e.clientY - rect.top) * sy
+    };
+  }
+
+  function _onCanvasPointerDown(e) {
+    if (!_live() || _gesture) return;
+    e.preventDefault();
+    var pt = _toCanvas(e);
+    _gesture = {
+      pointerId: e.pointerId,
+      startX: pt.x,
+      startY: pt.y,
+      anchorX: pt.x,
+      startT: _now(),
+      softDrop: false,
+      hardDropFired: false
+    };
+    try {
+      if (_canvas.setPointerCapture) _canvas.setPointerCapture(e.pointerId);
+    } catch (err) { /* capture unsupported: moves still arrive on canvas */ }
+  }
+
+  function _onCanvasPointerMove(e) {
+    if (!_gesture || e.pointerId !== _gesture.pointerId) return;
+    var pt = _toCanvas(e);
+    var cell = (_layout && _layout.cell) || 25;
+    // Horizontal drag: one queued move per cell width dragged, repeating
+    // while the drag continues. The anchor advances per applied cell so
+    // slow drags accumulate correctly.
+    while (pt.x - _gesture.anchorX >= cell) {
+      _queueMove(1);
+      _gesture.anchorX += cell;
+    }
+    while (_gesture.anchorX - pt.x >= cell) {
+      _queueMove(-1);
+      _gesture.anchorX -= cell;
+    }
+    var dx = pt.x - _gesture.startX;
+    var dy = pt.y - _gesture.startY;
+    var dt = _now() - _gesture.startT;
+    // Quick flick down fires the hard drop mid-gesture for responsiveness;
+    // the pointer-up classification below is the backstop.
+    if (!_gesture.hardDropFired && dy > FLICK_DY && Math.abs(dy) > Math.abs(dx)) {
+      var vel = dt > 0 ? dy / dt : Infinity;
+      if (vel > FLICK_VELOCITY) {
+        _gesture.hardDropFired = true;
+        _queueHardDrop();
+      }
+    }
+    // Swipe down and hold: soft drop stays active while the pointer is
+    // held below the slop on a downward path; lifting back up releases it.
+    if (dy > TAP_SLOP && Math.abs(dy) > Math.abs(dx)) _gesture.softDrop = true;
+    else if (dy <= TAP_SLOP) _gesture.softDrop = false;
+  }
+
+  function _onCanvasPointerUp(e) {
+    if (!_gesture || e.pointerId !== _gesture.pointerId) return;
+    var g = _gesture;
+    _gesture = null;
+    if (!_live()) return;
+    var pt = _toCanvas(e);
+    var cls = _classifyGesture(pt.x - g.startX, pt.y - g.startY, _now() - g.startT);
+    if (cls === 'tap') _queueRotate();
+    else if (cls === 'flick' && !g.hardDropFired) _queueHardDrop();
+    // 'drag' moves were already applied during the move; 'swipe' soft
+    // drop ends with the pointer; 'none' does nothing.
+  }
+
+  function _onCanvasPointerCancel(e) {
+    if (_gesture && e.pointerId === _gesture.pointerId) _gesture = null;
+  }
+
+  function _onKeyDown(e) {
+    if (!_started) return;
+    // Visibility guard: the handler is bound to window, so without
+    // this a key press would reach a hidden game (the P key would
+    // resume a paused game behind the home screen and run gravity in
+    // the background). The shell marks the open app's section with
+    // the 'active' class; keys are ignored while this game's section
+    // lacks it. Mounts without a class list (stubs, plain-node runs)
+    // skip the guard and behave exactly as before.
+    if (_mount && _mount.classList &&
+        typeof _mount.classList.contains === 'function' &&
+        !_mount.classList.contains('active')) return;
+    var key = e.key;
+    if (key === 'p' || key === 'P') {
+      if (e.repeat) return;
+      if (_paused) resume();
+      else pause();
+      return;
+    }
+    if (!_live() || e.repeat) return;
+    if (key === 'ArrowLeft') {
+      e.preventDefault();
+      _queueMove(-1);
+      _beginHold(-1);
+    } else if (key === 'ArrowRight') {
+      e.preventDefault();
+      _queueMove(1);
+      _beginHold(1);
+    } else if (key === 'ArrowUp' || key === 'x' || key === 'X') {
+      e.preventDefault();
+      _queueRotate();
+    } else if (key === 'ArrowDown') {
+      e.preventDefault();
+      _softDropHeld = true;
+    } else if (key === ' ' || key === 'Spacebar') {
+      e.preventDefault();
+      _queueHardDrop();
+    } else if (key === 'c' || key === 'C' || key === 'Shift') {
+      _queueHold();
+    }
+  }
+
+  function _onKeyUp(e) {
+    var key = e.key;
+    if (key === 'ArrowLeft') _endHold(-1);
+    else if (key === 'ArrowRight') _endHold(1);
+    else if (key === 'ArrowDown') _softDropHeld = false;
+  }
+
+  function _onResize() {
+    render();
+  }
+
+  function _bindWindow() {
+    if (_boundWindow || typeof window === 'undefined') return;
+    _boundWindow = true;
+    window.addEventListener('keydown', _onKeyDown);
+    window.addEventListener('keyup', _onKeyUp);
+    window.addEventListener('resize', _onResize);
+  }
+
+  function _unbindWindow() {
+    if (!_boundWindow || typeof window === 'undefined') return;
+    _boundWindow = false;
+    window.removeEventListener('keydown', _onKeyDown);
+    window.removeEventListener('keyup', _onKeyUp);
+    window.removeEventListener('resize', _onResize);
+  }
+
+  // ------------------------------------------------------------ frame loop
+  function _buildInput(now) {
+    var input = { move: 0, rotate: 0, softDrop: false, hardDrop: false, hold: false };
+    if (_moveQueue.length) {
+      input.move = _moveQueue.shift();
+    } else if (_heldDir !== 0 && now - _holdStart >= DAS_DELAY &&
+               now - _lastRepeat >= DAS_REPEAT) {
+      input.move = _heldDir;
+      _lastRepeat = now;
+    }
+    if (_queuedRotate) {
+      input.rotate = 1;
+      _queuedRotate = false;
+    }
+    if (_queuedHardDrop) {
+      input.hardDrop = true;
+      _queuedHardDrop = false;
+    }
+    if (_queuedHold) {
+      input.hold = true;
+      _queuedHold = false;
+    }
+    input.softDrop = _softDropHeld || !!(_gesture && _gesture.softDrop);
+    return input;
+  }
+
+  function _scheduleFrame() {
+    if (typeof requestAnimationFrame === 'function') {
+      _rafIsTimeout = false;
+      _raf = requestAnimationFrame(_frame);
+    } else if (typeof setTimeout === 'function') {
+      _rafIsTimeout = true;
+      _raf = setTimeout(function () { _frame(_now()); }, 16);
+    }
+  }
+
+  function _cancelFrame() {
+    if (!_raf) return;
+    if (_rafIsTimeout) {
+      if (typeof clearTimeout === 'function') clearTimeout(_raf);
+    } else if (typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(_raf);
+    }
+    _raf = 0;
+    _rafIsTimeout = false;
+  }
+
+  function _startLoop() {
+    if (_running) return;
+    _running = true;
+    _lastT = _now();
+    _scheduleFrame();
+  }
+
+  function _stopLoop() {
+    _running = false;
+    _cancelFrame();
+  }
+
+  function _frame(t) {
+    _raf = 0;
+    _rafIsTimeout = false;
+    if (!_running) return;
+    var now = (typeof t === 'number' && isFinite(t)) ? t : _now();
+    var dt = now - _lastT;
+    _lastT = now;
+    if (!(dt > 0)) dt = 0;
+    if (dt > MAX_DT_MS) dt = MAX_DT_MS;
+    if (_state && !_state.gameOver && !_paused) {
+      var stepFn = _eng('step');
+      if (stepFn) {
+        var res = null;
+        try { res = stepFn(_state, dt, _buildInput(now)); } catch (err) { res = null; }
+        if (res && res.state) {
+          _state = _cloneState(res.state);
+          _handleEvents(res.events || []);
+        }
+      }
+    }
+    _updateParticles(dt);
+    _render();
+    if (_running) _scheduleFrame();
+  }
+
+  // Map engine events to the frozen callback contract. onAction fires in
+  // event order; onStateChange fires once per frame when any discrete
+  // transition occurred; onGameOver fires last (after onStateChange) so a
+  // save written by the state hook is cleared by the game-over path.
+  function _handleEvents(events) {
+    var discrete = false;
+    var gameOverEv = null;
+    for (var i = 0; i < events.length; i++) {
+      var ev = events[i];
+      if (!ev || typeof ev.type !== 'string') continue;
+      if (ev.type === 'move') {
+        _call('onAction', { type: 'move' });
+      } else if (ev.type === 'rotate') {
+        _call('onAction', { type: 'rotate', kicked: !!ev.kicked });
+      } else if (ev.type === 'lock') {
+        _call('onAction', { type: 'lock', shape: ev.shape, row: ev.row, col: ev.col });
+        discrete = true;
+      } else if (ev.type === 'harddrop') {
+        // Folds into the lock event: no separate action call. Still a
+        // discrete transition (a hard drop always locks in the same step).
+        discrete = true;
+      } else if (ev.type === 'clear') {
+        var isFour = ev.count === 4;
+        _call('onAction', {
+          type: isFour ? 'clear4' : 'clear',
+          rows: ev.rows, count: ev.count, points: ev.points,
+          combo: ev.combo, level: ev.level
+        });
+        if (ev.rows) _spawnClearFx(ev.rows, ev.count);
+        discrete = true;
+      } else if (ev.type === 'levelup') {
+        _call('onAction', { type: 'levelup', level: ev.level });
+        if (!_reducedMotion()) _pulseT0 = _now();
+        discrete = true;
+      } else if (ev.type === 'hold') {
+        // No action call; the swap is a discrete transition for saves.
+        discrete = true;
+      } else if (ev.type === 'gameover') {
+        _call('onAction', {
+          type: 'gameover', score: ev.score, lines: ev.lines, level: ev.level
+        });
+        gameOverEv = ev;
+        discrete = true;
+      }
+      // 'spawn' produces no action call.
+    }
+    _updateHeader();
+    if (discrete) _call('onStateChange', state());
+    if (gameOverEv && !_gameOverFired) {
+      _gameOverFired = true;
+      _stopLoop();
+      var st = _state || {};
+      _call('onGameOver', {
+        score: (typeof gameOverEv.score === 'number') ? gameOverEv.score : st.score,
+        lines: (typeof gameOverEv.lines === 'number') ? gameOverEv.lines : st.lines,
+        level: (typeof gameOverEv.level === 'number') ? gameOverEv.level : st.level
+      });
+    }
+  }
+
+  // ------------------------------------------------------------- public API
+  function init(mount, opts) {
+    _opts = opts || {};
+    _engine = _opts.engine || null;
+    _getEngine();
+    if (typeof document === 'undefined') return api;
+    var mountEl = mount;
+    if (typeof mountEl === 'string') mountEl = document.getElementById(mountEl);
+    if (!mountEl) return api;
+    // Compatibility: if handed a <canvas> instead of a mount container,
+    // build the chrome in its parent element.
+    if (mountEl.tagName === 'CANVAS' && mountEl.parentNode) {
+      mountEl = mountEl.parentNode;
+    }
+    _mount = mountEl;
+    _buildDom(mountEl);
+    if (_opts.theme !== undefined && _opts.theme !== null) setTheme(_opts.theme);
+    _bindWindow();
+    _updateHeader();
+    render();
+    return api;
+  }
+
+  function newGame(opts) {
+    var fn = _eng('newGame');
+    if (!fn) return;
+    var seed;
+    if (opts && typeof opts.seed === 'number' && isFinite(opts.seed)) {
+      seed = opts.seed >>> 0;
+    } else {
+      seed = _freshSeed();
+    }
+    var st = null;
+    try { st = fn(seed); } catch (err) { st = null; }
+    if (!st) return;
+    _state = _cloneState(st);
+    _started = true;
+    _paused = false;
+    _gameOverFired = false;
+    _resetTransient();
+    _updateHeader();
+    _updatePauseBtn();
+    _render();
+    _startLoop();
+    _call('onStateChange', state());
+  }
+
+  function state() {
+    if (!_state) return null;
+    return _cloneState(_state);
+  }
+
+  // Loads a saved state. Invalid states are rejected silently (return
+  // false, current state untouched). A valid live state resumes the loop;
+  // a finished state renders but does not run. Deliberately fires no
+  // onStateChange: restore() is the load path, and firing the save hook
+  // on load could overwrite the save being read.
+  function restore(st) {
+    var fn = _eng('validateState');
+    if (!fn) return false;
+    var ok = false;
+    try { ok = !!fn(st); } catch (err) { ok = false; }
+    if (!ok) return false;
+    _state = _cloneState(st);
+    _started = true;
+    _paused = false;
+    _gameOverFired = !!_state.gameOver;
+    _resetTransient();
+    _updateHeader();
+    _updatePauseBtn();
+    _render();
+    if (!_state.gameOver) _startLoop();
+    return true;
+  }
+
+  // Theme switches are picked up from the CSS variables on the next
+  // render; setTheme only records the name and re-renders. The themes
+  // module owns the data-bz-theme attribute.
+  function setTheme(name) {
+    if (typeof name !== 'string') return;
+    _themeName = name;
+    _lastMiniSig = '';
+    _render();
+  }
+
+  function setBest(value) {
+    if (typeof value !== 'number' || !isFinite(value)) return;
+    _best = value;
+    _bestSet = true;
+    if (_bestEl) _bestEl.textContent = String(_best);
+  }
+
+  // Renders the stats row through the ui module (opts.ui, else the global
+  // BFUI). Guarded: no-ops when the ui module or the row is missing.
+  function setStats(stats) {
+    var ui = _getUI();
+    if (ui && typeof ui.renderStats === 'function' && _statsRow) {
+      try { ui.renderStats(_statsRow, stats || {}); } catch (err) { /* never throw */ }
+    }
+  }
+
+  function render() {
+    if (typeof document === 'undefined' || !_root || !_canvas) return;
+    _layout = _computeLayout({ width: _measureWidth(), height: _measureBoardHeight() });
+    _setupCanvas();
+    // Settle passes: the first measurement can read chrome heights
+    // while the previous board size still squeezes the flex column, so
+    // re-measure after the canvas resize and re-lay out while the
+    // layout keeps changing. Capped at two extra passes; the layout
+    // only ever shrinks toward the fitting size, so this terminates.
+    for (var pass = 0; pass < 2; pass++) {
+      var settled = _computeLayout({ width: _measureWidth(), height: _measureBoardHeight() });
+      if (settled.cell === _layout.cell && settled.boardW === _layout.boardW &&
+          settled.boardH === _layout.boardH) break;
+      _layout = settled;
+      _setupCanvas();
+    }
+    _render();
+  }
+
+  // Pause freezes the loop and input, clears queued intents so nothing
+  // stale fires on resume, and notifies the wire (which owns the pause
+  // sheet and the save-on-pause). A finished game cannot be paused: the
+  // game-over overlay already owns the screen.
+  function pause() {
+    if (!_started || _paused) return;
+    if (_state && _state.gameOver) return;
+    _paused = true;
+    _stopLoop();
+    _resetTransient();
+    _updatePauseBtn();
+    _call('onPauseChange', true);
+    _call('onStateChange', state());
+  }
+
+  function resume() {
+    if (!_started || !_paused) return;
+    _paused = false;
+    _updatePauseBtn();
+    if (_state && !_state.gameOver) _startLoop();
+    _call('onPauseChange', false);
+  }
+
+  function isPaused() {
+    return _paused;
+  }
+
+  // Stops the loop and unbinds window listeners. The DOM is left in place
+  // for the shell to manage; a later init() rebuilds it.
+  function destroy() {
+    _stopLoop();
+    _unbindWindow();
+    _resetTransient();
+    _started = false;
+    _paused = false;
+    _canvas = null;
+    _ctx = null;
+    _holdCanvas = null;
+    _holdCtx = null;
+    _nextCanvas = null;
+    _nextCtx = null;
+    _root = null;
+    _mount = null;
+  }
+
+  var api = {
+    init: init,
+    newGame: newGame,
+    state: state,
+    restore: restore,
+    setTheme: setTheme,
+    setBest: setBest,
+    setStats: setStats,
+    render: render,
+    pause: pause,
+    resume: resume,
+    isPaused: isPaused,
+    destroy: destroy,
+    GEOMETRY: {
+      SCREEN_W: SCREEN_W, COLS: COLS, ROWS: ROWS,
+      PAD_X: PAD_X, SIDE_W: SIDE_W, GAP: GAP, MIN_CELL: MIN_CELL,
+      TAP_SLOP: TAP_SLOP, TAP_MAX_MS: TAP_MAX_MS,
+      FLICK_DY: FLICK_DY, FLICK_VELOCITY: FLICK_VELOCITY,
+      DAS_DELAY: DAS_DELAY, DAS_REPEAT: DAS_REPEAT
+    },
+    _computeLayout: _computeLayout,
+    _measureWidth: _measureWidth,
+    _measureFromWidths: _measureFromWidths,
+    _availableHeight: _availableHeight,
+    _classifyGesture: _classifyGesture
+  };
+
+  return api;
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = BFGame;
+if (typeof window !== 'undefined') {
+  window.BFGame = BFGame;
+  window.__BF__ = window.__BF__ || {};
+  window.__BF__.game = BFGame;
+}
+</script>
+<script>
+// source: bf-wire.js
+// BFWire — wiring between the Blockfall game, save, and UI modules.
+// Explicit init: Phase B calls BFWire.init(mountEl, opts) from the
+// shell registration. A guarded boot block at the end of this file
+// also calls init() on DOMContentLoaded (or at once when the DOM is
+// already ready) when the #app-blockfall mount exists; it is skipped
+// entirely with no document (plain node), runs only once, and never
+// throws, so the module stays safe to include before the shell
+// exists. It never imports or modifies the shell. It loads standalone
+// in plain node and no-ops safely when collaborators are missing.
+//
+// init(mountEl, opts) — opts: {game, engine, save, ui, storage, theme,
+//   autostart}. Collaborators resolve from opts first, then from the
+//   window globals (BFGame, BFEngine, BFSave, BFUI), all guarded. When
+//   the game or the mount is missing, or game.init throws, init
+//   returns null without throwing. Otherwise it returns a handle
+//   {game, save, ui, pauseGame, resumeGame, onAppHidden, destroy}.
+//   save resolves through BFSave.init(storage) when the global is
+//   used, so an injected storage binds here; an opts.save object is
+//   used as-is and opts.storage is then ignored. save or ui may be
+//   null in the handle when neither opts nor a global provided them;
+//   the wire keeps working (saving and overlays are skipped).
+//
+// Owns: game init + save/resume, best-score and stats pushes, the
+// window CustomEvents the audio pass listens for, theme forwarding,
+// save-on-change, pause/resume, and auto-pause on hide.
+//
+// Audio events (dispatched on window, the same target the other
+// games use — the audio module listens on window):
+//   'bf:move'      {}                              — piece moved
+//   'bf:rotate'    {kicked}                        — piece rotated
+//   'bf:lock'      {shape}                         — piece locked
+//   'bf:clear'     {count, points, combo, level}   — lines cleared
+//   'bf:clear4'    {points, combo, level}          — four-line clear
+//   'bf:levelup'   {level}                         — level gained
+//   'bf:gameover'  {score, lines, level}           — game ended
+// Every event comes from the game's onAction callback, one dispatch
+// per call, with details built from the action payload (missing
+// numbers default to 0, a missing or malformed lock shape to null; a
+// lock shape id passes through unchanged in either form the engine
+// uses — numeric 0..6 or letter). Only the
+// game-over detail falls back to game.state() for fields the payload
+// lacks. Unknown action kinds dispatch nothing. onGameOver itself
+// dispatches no audio event: the game reports the ending through
+// onAction('gameover') too, and dispatching from both paths would
+// play the ending sound twice. Phase B should verify the game emits
+// both callbacks for a finished game.
+//
+// Save: onStateChange saves the state it is given (or a fresh
+// game.state() when called bare); onPauseChange(true) saves
+// game.state() as well. A finished game never restores: at boot a
+// saved state with gameOver true is cleared, never passed to
+// restore(). No new game auto-starts unless opts.autostart is true.
+// Game over records the game (clears = lines: in this game the rows
+// cleared and the lines count are the same thing, and the game-over
+// payload carries no separate clears field), clears the mid-game
+// save, pushes the new best and the recorded stats to the game, and
+// shows the game-over overlay. isNewBest is score > previous best AND
+// score > 0, with the
+// previous best read BEFORE recording, so a tie is not a new best.
+//
+// Theme: the shared-settings theme at boot comes from opts.theme,
+// else BZThemes.current() (guarded, exactly the shared boot-theme
+// pattern), else undefined. Afterwards the wire listens for the
+// 'bz:theme' window CustomEvent ({detail: {theme: name}}) and
+// forwards each change to game.setTheme. BZThemes may be absent.
+//
+// Pause: pauseGame() pauses the game and shows the pause sheet;
+// resumeGame() hides the sheet and resumes. The sheet's New Game
+// hides the sheet and starts a fresh game; its Delete Save clears
+// the mid-game save ONLY (stats stay — clearSave touches only the
+// save key) and starts a fresh game, matching the house delete-save
+// flow: resuming the same game would re-save it on the next lock and
+// undo the delete. onPauseChange(true) from the game also shows the
+// sheet (and onPauseChange(false) hides it), so the sheet always
+// mirrors the paused state no matter which side paused first; the
+// sheet show is idempotent, so a wire-driven pause never stacks two
+// sheets. onAppHidden() pauses only when the game is active —
+// started, not paused, not over — and is the hook Phase B calls
+// from the shell onClose. The wire also listens for
+// document.visibilitychange and calls onAppHidden() when the page
+// hides. "Started" means the state shows play in progress: a live
+// falling piece, pieces placed, a score, lines, or any filled board
+// cell; an untouched fresh state is left alone. The game's own Home
+// button (#bf-home) calls PhoneShell.goHome directly and is owned by
+// the game; the overlay Home button hides the overlay and calls
+// PhoneShell.goHome when it exists. destroy() removes the theme and
+// visibility listeners only; it does not destroy the game or touch
+// saves.
+//
+// Verification handle: window.__BF__ = {game, engine, save, ui},
+// merged with any existing __BF__ fields; the boot block merges a
+// wire field into the same handle. The other games' handles are
+// never touched. The handle is set only on a successful init.
+
+var BFWire = (function () {
+  'use strict';
+
+  function _log(err) {
+    try {
+      if (typeof console !== 'undefined' && console.error) console.error('[bf-wire]', err);
+    } catch (e) {
+      /* logging must never throw */
+    }
+  }
+
+  function _win() {
+    try {
+      return (typeof window !== 'undefined') ? window : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function _doc() {
+    try {
+      if (typeof document === 'undefined' || !document) return null;
+      return document;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function _global(name) {
+    try {
+      var w = _win();
+      if (w) return w[name];
+    } catch (e) {
+      /* a guarded global read must never throw */
+    }
+    return undefined;
+  }
+
+  // Dispatch a window CustomEvent, with the document.createEvent
+  // fallback for hosts without the CustomEvent constructor. This is
+  // the same target and shape the other games' wiring uses, and the
+  // target the audio module listens on.
+  function _dispatch(name, detail) {
+    try {
+      if (typeof window === 'undefined') return;
+      var evt = null;
+      if (typeof CustomEvent !== 'undefined') {
+        evt = new CustomEvent(name, { detail: detail });
+      } else if (typeof document !== 'undefined' && document.createEvent) {
+        evt = document.createEvent('CustomEvent');
+        if (evt.initCustomEvent) evt.initCustomEvent(name, false, false, detail);
+      }
+      if (evt && window.dispatchEvent) window.dispatchEvent(evt);
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  function _finiteNum(v, alt) {
+    if (typeof v === 'number' && isFinite(v)) return v;
+    if (typeof alt === 'number' && isFinite(alt)) return alt;
+    return 0;
+  }
+
+  function _defaultStats() {
+    return { games: 0, best: 0, mostLines: 0, maxLevel: 0,
+      totalClears: 0 };
+  }
+
+  // The shared-settings theme at boot, when the themes module is
+  // present. Anything unexpected yields undefined, which the game
+  // treats as "no theme passed" and renders with its default.
+  function _bootTheme() {
+    try {
+      var themes = _global('BZThemes');
+      if (themes && typeof themes.current === 'function') {
+        var name = themes.current();
+        if (typeof name === 'string' && name) return name;
+      }
+    } catch (e) {
+      /* theme is best-effort: boot proceeds without it */
+    }
+    return undefined;
+  }
+
+  function _resolveGame(opts) {
+    try {
+      if (opts && opts.game) return opts.game;
+    } catch (e) {
+      /* fall through to the global */
+    }
+    return _global('BFGame');
+  }
+
+  function _resolveEngine(opts) {
+    var engine = undefined;
+    try {
+      if (opts) engine = opts.engine;
+    } catch (e) {
+      engine = undefined;
+    }
+    if (engine === undefined || engine === null) engine = _global('BFEngine');
+    return engine;
+  }
+
+  function _resolveSave(opts) {
+    try {
+      if (opts && opts.save) return opts.save;
+    } catch (e) {
+      /* fall through to the global */
+    }
+    var g = _global('BFSave');
+    if (!g) return null;
+    try {
+      if (typeof g.init === 'function') {
+        var api = null;
+        try {
+          api = g.init(opts && opts.storage);
+        } catch (e) {
+          api = null;
+        }
+        if (api) return api;
+      }
+    } catch (e) {
+      /* fall through to the global object itself */
+    }
+    return g;
+  }
+
+  function _resolveUi(opts) {
+    try {
+      if (opts && opts.ui) return opts.ui;
+    } catch (e) {
+      /* fall through to the global */
+    }
+    return _global('BFUI') || null;
+  }
+
+  function init(mountEl, opts) {
+    try {
+      opts = opts || {};
+      if (!mountEl) return null;
+      var game = _resolveGame(opts);
+      if (!game || typeof game.init !== 'function') return null;
+      var engine = _resolveEngine(opts);
+      var save = _resolveSave(opts);
+      var ui = _resolveUi(opts);
+
+      var theme = undefined;
+      try {
+        if (typeof opts.theme === 'string' && opts.theme) {
+          theme = opts.theme;
+        } else {
+          theme = _bootTheme();
+        }
+      } catch (e) {
+        theme = undefined;
+      }
+
+      var themeHandler = null;
+      var visHandler = null;
+
+      function _stats() {
+        try {
+          if (save && save.loadStats) {
+            var s = save.loadStats();
+            if (s && typeof s === 'object') return s;
+          }
+        } catch (e) {
+          /* stats are best-effort */
+        }
+        return _defaultStats();
+      }
+
+      function _best() {
+        var s = _stats();
+        if (s && typeof s.best === 'number' && isFinite(s.best) && s.best > 0) {
+          return Math.floor(s.best);
+        }
+        return 0;
+      }
+
+      function _gameState() {
+        try {
+          if (game.state) return game.state();
+        } catch (e) {
+          /* a state read failure leaves the caller with nothing */
+        }
+        return null;
+      }
+
+      function _saveState(s) {
+        try {
+          if (save && save.save) save.save(s);
+        } catch (e) {
+          /* auto-save is best-effort */
+        }
+      }
+
+      function _hideSheet() {
+        try {
+          if (ui && ui.hidePauseSheet) ui.hidePauseSheet(mountEl);
+        } catch (e) {
+          /* best-effort */
+        }
+      }
+
+      function _hideOver() {
+        try {
+          if (ui && ui.hideGameOver) ui.hideGameOver(mountEl);
+        } catch (e) {
+          /* best-effort */
+        }
+      }
+
+      function _sheetNewGame() {
+        _hideSheet();
+        _hideOver();
+        try {
+          if (game.newGame) game.newGame();
+        } catch (e) {
+          _log(e);
+        }
+      }
+
+      // Delete-save clears the mid-game save ONLY: stats stay, because
+      // clearSave touches only the save key. A fresh game starts so
+      // the abandoned game is not re-saved on its next lock.
+      function _sheetClearSave() {
+        try {
+          if (save && save.clearSave) save.clearSave();
+        } catch (e) {
+          /* best-effort */
+        }
+        _hideSheet();
+        try {
+          if (game.newGame) game.newGame();
+        } catch (e) {
+          _log(e);
+        }
+      }
+
+      function _showSheet() {
+        try {
+          if (ui && ui.showPauseSheet) {
+            ui.showPauseSheet(mountEl, {
+              onResume: resumeGame,
+              onNewGame: _sheetNewGame,
+              onClearSave: _sheetClearSave
+            });
+          }
+        } catch (e) {
+          _log(e);
+        }
+      }
+
+      function _overNewGame() {
+        _hideOver();
+        _hideSheet();
+        try {
+          if (game.newGame) game.newGame();
+        } catch (e) {
+          _log(e);
+        }
+      }
+
+      function _overHome() {
+        _hideOver();
+        try {
+          var shell = _global('PhoneShell');
+          if (shell && shell.goHome) shell.goHome();
+        } catch (e) {
+          /* going home is best-effort without a shell */
+        }
+      }
+
+      function _onAction(kind, payload) {
+        try {
+          var data = payload;
+          if (typeof kind !== 'string') {
+            // Object form: onAction({kind: 'lock', shape: ...}) or
+            // onAction({type: 'lock', shape: ...}).
+            if (kind && typeof kind === 'object' &&
+                typeof kind.kind === 'string') {
+              data = kind;
+              kind = kind.kind;
+            } else if (kind && typeof kind === 'object' &&
+                typeof kind.type === 'string') {
+              data = kind;
+              kind = kind.type;
+            } else {
+              return;
+            }
+          }
+          data = data || {};
+          if (kind === 'move') {
+            _dispatch('bf:move', {});
+          } else if (kind === 'rotate') {
+            _dispatch('bf:rotate', { kicked: !!data.kicked });
+          } else if (kind === 'lock') {
+            // The shape id passes through as the game sent it: the
+            // engine's numeric index (0..6) or a letter id. Anything
+            // else becomes null.
+            var sh = data.shape;
+            _dispatch('bf:lock', {
+              shape: (typeof sh === 'string' || typeof sh === 'number') ? sh : null
+            });
+          } else if (kind === 'clear') {
+            _dispatch('bf:clear', {
+              count: _finiteNum(data.count, 0),
+              points: _finiteNum(data.points, 0),
+              combo: _finiteNum(data.combo, 0),
+              level: _finiteNum(data.level, 0)
+            });
+          } else if (kind === 'clear4') {
+            _dispatch('bf:clear4', {
+              points: _finiteNum(data.points, 0),
+              combo: _finiteNum(data.combo, 0),
+              level: _finiteNum(data.level, 0)
+            });
+          } else if (kind === 'levelup') {
+            _dispatch('bf:levelup', { level: _finiteNum(data.level, 0) });
+          } else if (kind === 'gameover') {
+            var st = _gameState() || {};
+            _dispatch('bf:gameover', {
+              score: _finiteNum(data.score, st.score),
+              lines: _finiteNum(data.lines, st.lines),
+              level: _finiteNum(data.level, st.level)
+            });
+          }
+          // Unknown kinds dispatch nothing.
+        } catch (e) {
+          _log(e);
+        }
+      }
+
+      function _onStateChange(state) {
+        try {
+          var s = state;
+          if (!s) s = _gameState();
+          if (s) _saveState(s);
+        } catch (e) {
+          _log(e);
+        }
+      }
+
+      function _onGameOver(payload) {
+        try {
+          // A finished game ends the pause flow too: the sheet must
+          // never coexist with the game-over overlay.
+          _hideSheet();
+          payload = payload || {};
+          var current = _gameState() || {};
+          var score = _finiteNum(payload.score, current.score);
+          var lines = _finiteNum(payload.lines, current.lines);
+          var level = _finiteNum(payload.level, current.level);
+          var prevBest = _best();
+          var best = Math.max(prevBest, score);
+          var recordedStats = null;
+          try {
+            if (save && save.recordGame) {
+              // clears = lines: the rows cleared and the lines count
+              // are the same thing in this game, and the game-over
+              // payload carries no separate clears field.
+              var ns = save.recordGame({
+                score: score, lines: lines, level: level, clears: lines
+              });
+              if (ns && typeof ns === 'object') recordedStats = ns;
+              if (ns && typeof ns.best === 'number' && isFinite(ns.best)) {
+                best = Math.floor(ns.best);
+              }
+            }
+          } catch (e) {
+            _log(e);
+          }
+          // A finished game must not restore: clear the mid-game
+          // save. Stats are kept: recordGame already wrote them, and
+          // clearSave touches only the save key.
+          try {
+            if (save && save.clearSave) save.clearSave();
+          } catch (e) {
+            /* best-effort */
+          }
+          // The previous best was read BEFORE recording, so a tie
+          // with the old best is not a new best.
+          var isNewBest = score > prevBest && score > 0;
+          try {
+            if (game.setBest) game.setBest(best);
+          } catch (e) {
+            /* best display is best-effort */
+          }
+          // Push the recorded stats so the stats row shows the
+          // finished game; when recording returned nothing usable,
+          // fall back to a fresh read of the stored stats. Guarded
+          // like the best push: games without the hook skip it.
+          try {
+            if (typeof game.setStats === 'function') {
+              var toShow = recordedStats;
+              if (!toShow || typeof toShow !== 'object') toShow = _stats();
+              game.setStats(toShow);
+            }
+          } catch (e) {
+            /* stats display is best-effort */
+          }
+          try {
+            if (ui && ui.showGameOver) {
+              _hideOver();
+              ui.showGameOver(mountEl, {
+                score: score,
+                lines: lines,
+                level: level,
+                best: best,
+                isNewBest: isNewBest,
+                onNewGame: _overNewGame,
+                onHome: _overHome
+              });
+            }
+          } catch (e) {
+            _log(e);
+          }
+        } catch (e) {
+          _log(e);
+        }
+      }
+
+      // On pause the game state is saved, and the sheet is shown so
+      // the sheet always mirrors the paused state no matter which
+      // side paused first. On resume the sheet is hidden.
+      function _onPauseChange(paused) {
+        try {
+          if (paused) {
+            var s = _gameState();
+            if (s) _saveState(s);
+            _showSheet();
+          } else {
+            _hideSheet();
+          }
+        } catch (e) {
+          _log(e);
+        }
+      }
+
+      function pauseGame() {
+        try {
+          if (game.pause) game.pause();
+        } catch (e) {
+          _log(e);
+        }
+        _showSheet();
+      }
+
+      function resumeGame() {
+        _hideSheet();
+        try {
+          if (game.resume) game.resume();
+        } catch (e) {
+          _log(e);
+        }
+      }
+
+      // "Started" means the state shows play in progress: a live
+      // falling piece, pieces placed, a score, lines, or any filled
+      // board cell. An untouched fresh state is not started.
+      function _started(st) {
+        try {
+          if (st.current) return true;
+          if (typeof st.piecesPlaced === 'number' && st.piecesPlaced > 0) return true;
+          if (typeof st.score === 'number' && st.score > 0) return true;
+          if (typeof st.lines === 'number' && st.lines > 0) return true;
+          if (Array.isArray(st.board)) {
+            for (var i = 0; i < st.board.length; i++) {
+              if (st.board[i]) return true;
+            }
+          }
+          return false;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function onAppHidden() {
+        try {
+          var paused = false;
+          try {
+            if (game.isPaused) paused = !!game.isPaused();
+          } catch (e) {
+            paused = false;
+          }
+          if (paused) return;
+          var st = _gameState();
+          if (!st || typeof st !== 'object') return;
+          if (st.gameOver === true) return;
+          if (!_started(st)) return;
+          pauseGame();
+        } catch (e) {
+          _log(e);
+        }
+      }
+
+      function destroy() {
+        try {
+          var w = _win();
+          if (w && w.removeEventListener && themeHandler) {
+            w.removeEventListener('bz:theme', themeHandler);
+          }
+        } catch (e) {
+          /* listener removal is best-effort */
+        }
+        try {
+          var d = _doc();
+          if (d && d.removeEventListener && visHandler) {
+            d.removeEventListener('visibilitychange', visHandler);
+          }
+        } catch (e) {
+          /* listener removal is best-effort */
+        }
+      }
+
+      var initOpts = {
+        engine: engine,
+        theme: theme,
+        onAction: _onAction,
+        onStateChange: _onStateChange,
+        onGameOver: _onGameOver,
+        onPauseChange: _onPauseChange
+      };
+
+      try {
+        game.init(mountEl, initOpts);
+      } catch (e) {
+        _log(e);
+        return null;
+      }
+
+      // Forward shared-theme changes to the game. The themes module
+      // dispatches CustomEvent('bz:theme', {detail: {theme: name}})
+      // on every change; the listener is guarded so a missing or
+      // oddly-shaped event can never break the game.
+      try {
+        var w = _win();
+        if (w && w.addEventListener) {
+          themeHandler = function (ev) {
+            try {
+              var detail = ev && ev.detail;
+              var name = detail && detail.theme;
+              if (typeof name === 'string' && name &&
+                  game.setTheme) game.setTheme(name);
+            } catch (e) {
+              _log(e);
+            }
+          };
+          w.addEventListener('bz:theme', themeHandler);
+        }
+      } catch (e) {
+        _log(e);
+      }
+
+      // Auto-pause when the page hides (tab switch, lock, app
+      // switch). The handler checks the hidden state so a return to
+      // visibility never pauses.
+      try {
+        var d = _doc();
+        if (d && d.addEventListener) {
+          visHandler = function () {
+            try {
+              var hidden = false;
+              try {
+                if (d.hidden === true) hidden = true;
+              } catch (e) {
+                /* fall through to visibilityState */
+              }
+              try {
+                if (d.visibilityState === 'hidden') hidden = true;
+              } catch (e) {
+                /* hidden stays as read above */
+              }
+              if (hidden) onAppHidden();
+            } catch (e) {
+              _log(e);
+            }
+          };
+          d.addEventListener('visibilitychange', visHandler);
+        }
+      } catch (e) {
+        _log(e);
+      }
+
+      // Verification handle, merged with any existing fields. The
+      // other games' handles are never touched.
+      try {
+        var w2 = _win();
+        if (w2) {
+          var h = w2.__BF__;
+          if (!h || typeof h !== 'object') h = {};
+          h.game = game;
+          h.engine = engine;
+          h.save = save;
+          h.ui = ui;
+          w2.__BF__ = h;
+        }
+      } catch (e) {
+        _log(e);
+      }
+
+      try {
+        if (game.setBest) game.setBest(_best());
+      } catch (e) {
+        _log(e);
+      }
+
+      // Push the full stats object so the stats row renders at boot
+      // instead of staying empty. Guarded like the best push: games
+      // without the hook skip it, and a throwing hook never breaks
+      // boot.
+      try {
+        if (typeof game.setStats === 'function') game.setStats(_stats());
+      } catch (e) {
+        _log(e);
+      }
+
+      // Resume a valid mid-game save; a finished save is cleared and
+      // never restored as a dead board. Anything else stays idle
+      // unless autostart asks for a fresh game.
+      var restored = false;
+      var saved = null;
+      try {
+        saved = save ? save.load() : null;
+      } catch (e) {
+        saved = null;
+        _log(e);
+      }
+      if (saved) {
+        if (saved.gameOver === true) {
+          try {
+            if (save && save.clearSave) save.clearSave();
+          } catch (e) {
+            /* best-effort */
+          }
+        } else if (game.restore) {
+          try {
+            var ok = game.restore(saved);
+            restored = (ok !== false);
+          } catch (e) {
+            _log(e);
+            restored = false;
+          }
+        }
+      }
+      if (!restored && opts.autostart) {
+        try {
+          if (game.newGame) game.newGame();
+        } catch (e) {
+          _log(e);
+        }
+      }
+
+      return {
+        game: game,
+        save: save,
+        ui: ui,
+        pauseGame: pauseGame,
+        resumeGame: resumeGame,
+        onAppHidden: onAppHidden,
+        destroy: destroy
+      };
+    } catch (e) {
+      _log(e);
+      return null;
+    }
+  }
+
+  return {
+    init: init
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = BFWire;
+if (typeof window !== 'undefined') window.BFWire = BFWire;
+
+// ---- Phase B boot block ----
+// Boots the game when the page provides the mount element, following
+// the same guarded boot pattern the other games' wiring uses: run on
+// DOMContentLoaded (or at once when the DOM is already ready), once
+// only, never throwing, and skipped entirely when there is no
+// document (plain node). The mount lookup, the init call, the handle
+// merge, and the boot-pause are each guarded, so missing collaborators
+// or a missing mount simply mean nothing happens. The boot-pause
+// (handle.onAppHidden()) freezes the restored/autostarted game behind
+// the lock/home screens: its frame loop must not run gravity while the
+// app section is hidden. The player sees exactly one pause sheet on
+// first open and taps Resume; there is deliberately no auto-resume
+// here.
+(function () {
+  'use strict';
+
+  var _booted = false;
+
+  function _bootLog(err) {
+    try {
+      if (typeof console !== 'undefined' && console.error) console.error('[bf-wire]', err);
+    } catch (e) {
+      /* logging must never throw */
+    }
+  }
+
+  function _boot() {
+    if (_booted) return;
+    _booted = true;
+    try {
+      if (typeof document === 'undefined' || !document) return;
+      var mount = null;
+      try {
+        if (typeof document.getElementById === 'function') {
+          mount = document.getElementById('app-blockfall');
+        }
+      } catch (e) {
+        mount = null;
+      }
+      if (!mount) return;
+      var wire = null;
+      try {
+        if (typeof BFWire !== 'undefined' && BFWire) wire = BFWire;
+      } catch (e) {
+        wire = null;
+      }
+      if (!wire || typeof wire.init !== 'function') {
+        try {
+          if (typeof window !== 'undefined' && window && window.BFWire) {
+            wire = window.BFWire;
+          }
+        } catch (e) {
+          wire = null;
+        }
+      }
+      if (!wire || typeof wire.init !== 'function') return;
+      var handle = null;
+      try {
+        handle = wire.init(mount, { autostart: true });
+      } catch (e) {
+        _bootLog(e);
+        handle = null;
+      }
+      if (!handle) return;
+      // Merge the handle into the existing verification object
+      // without clobbering the fields init already set.
+      try {
+        if (typeof window !== 'undefined' && window) {
+          var h = window.__BF__;
+          if (!h || typeof h !== 'object') h = {};
+          h.wire = handle;
+          window.__BF__ = h;
+        }
+      } catch (e) {
+        _bootLog(e);
+      }
+      // Boot-pause: no-ops when the game never started.
+      try {
+        if (handle.onAppHidden) handle.onAppHidden();
+      } catch (e) {
+        _bootLog(e);
+      }
+    } catch (e) {
+      _bootLog(e);
+    }
+  }
+
+  try {
+    if (typeof document === 'undefined' || !document) return;
+    if (document.readyState === 'loading' &&
+        typeof document.addEventListener === 'function') {
+      document.addEventListener('DOMContentLoaded', _boot);
+    } else {
+      _boot();
+    }
+  } catch (e) {
+    _bootLog(e);
   }
 })();
 </script>
