@@ -801,7 +801,13 @@ body {
   --bz-btn-bg: #16405a;
   --bz-btn-bg-active: #1d5274;
   position: relative;
-  width: 390px;
+  /* Fluid below 390px: on narrower phones the root is the screen width
+     (the old fixed 390px overflowed the .ph-app container and its
+     overflow-x:hidden clipped the board's right side); at >=390px this
+     is exactly 390px, centered, as before. Same pattern as the other
+     three games. */
+  width: 100%;
+  max-width: 390px;
   margin: 0 auto;
   /* P3 fix: clear the 48px shell status bar, which overlays the top of the
      screen. Without this the game header sits under the clock/signal icons.
@@ -901,11 +907,49 @@ body {
   outline-offset: 2px;
 }
 
+/* ------------------------------------------- narrow phones (<=374px) */
+/* The header row (Home + Score/Best + Music + Restart) needs ~370px at
+   the default sizes; on a narrower phone the stats overflowed into the
+   buttons (score/best values overlapped Home/Music by ~5px, labels by
+   far more). Below 375px the row compacts horizontally — tighter
+   buttons, gaps, and stats — so nothing overlaps and no button clips.
+   Vertical metrics are deliberately NOT touched (label/value font
+   sizes stay at their defaults): shrinking them shortens the header,
+   which pulls the buttons up and eats the move-down top clearance
+   (11.6px -> 10.4px at 360x640, below the 11px floor). These rules
+   apply ONLY below 375px: the 390px layout is pixel-identical, and on
+   desktop (framed, wide viewport) they never fire. */
+@media (max-width: 374px) {
+  .bz-header {
+    gap: 5px;
+    padding: 10px 8px 8px;
+  }
+
+  .bz-stats {
+    gap: 8px;
+  }
+
+  .bz-stat {
+    min-width: 40px;
+  }
+
+  .bz-btn {
+    padding: 8px 9px;
+    font-size: 13px;
+  }
+}
+
 /* ------------------------------------------------------------ board */
 #bz-canvas {
   display: block;
-  width: 390px;
-  height: 366px;
+  /* CSS-scaled to the root: at 390px this is exactly 390x366 (the
+     backing store's aspect ratio fixes the height); below 390px the
+     board shrinks with the screen instead of clipping. _setupCanvas
+     keeps the DPR-scaled 390x366 backing store, so drawing code and
+     _toCanvas hit-testing (which normalizes via the live rect) are
+     untouched. */
+  width: 100%;
+  height: auto;
   touch-action: none;
 }
 
@@ -931,6 +975,15 @@ body {
 
 .bz-tray-slot canvas {
   display: block;
+  /* Fixed 118px at 390px (identical to the old inline size); below that,
+     shrink to the slot's full border-box width. 100% is the slot's
+     content box, 2px narrower than the slot (1px borders), so +2px keeps
+     the canvas flush with the slot edge at every width instead of
+     overflowing narrow slots. The backing store stays 118x118
+     (DPR-scaled); tray drawing code is untouched. */
+  width: 118px;
+  max-width: calc(100% + 2px);
+  height: auto;
   touch-action: none;
   pointer-events: none;
 }
@@ -2165,6 +2218,12 @@ body {
 
 .sol-sheet-card {
   width: 100%;
+  /* Capped at the game root's 390px: the sheet is appended to the
+     full-width mount section, so without the cap the card (and its
+     buttons) stretch past the centered game column on screens wider
+     than 390px. The flex parent centers it, so at 390px and below
+     this changes nothing. */
+  max-width: 390px;
   /* Bottom padding clears the 44px home-indicator zone (its bar sits
      ~20-25px above the screen bottom) plus the device safe area, so the
      last button — the Music row — never sits under the indicator bar. */
@@ -2596,6 +2655,30 @@ body {
   margin-top: 8px;
 }
 
+/* --------------------------------------------- narrow phones (<=359px) */
+/* At 320px the five control buttons shrink to ~54px wide, below the
+   ~58px the 20px "Hold" label needs, so the label paints past the
+   button edge; and 6-digit header values overrun their 44px stat
+   boxes. Smaller control type + tighter side padding, and a tighter
+   header-stats gap + slightly smaller header values, restore the fit
+   with room to spare. The query only matches viewports below 360px,
+   so the 390px layout is byte-for-byte unaffected. */
+@media (max-width: 359px) {
+  .bf-controls .bf-btn {
+    font-size: 17px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .bf-stats {
+    gap: 6px;
+  }
+
+  .bf-header .bf-value {
+    font-size: 16px;
+  }
+}
+
 /* ------------------------------------------------------ reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .bf-game,
@@ -2741,6 +2824,10 @@ body {
   width: 100%;
   display: flex;
   justify-content: center;
+  /* Fixed chrome: never shrink. The board's size comes ONLY from
+     --chs-board-size (set by the height-aware layout); the wrap must
+     never squeeze it when the column overflows. */
+  flex: 0 0 auto;
 }
 
 .chs-board {
@@ -3199,6 +3286,9 @@ body {
   display: flex;
   gap: 6px;
   padding: 8px 8px 2px;
+  /* Fixed chrome: never shrink (same rule as the bars). Only the
+     move-list body flexes in this column. */
+  flex: 0 0 auto;
 }
 
 .chs-controls .chs-btn {
@@ -3245,6 +3335,17 @@ body {
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.05);
   overflow: hidden;
+  /* The move list is the column's ONLY flexible item: it is a flex
+     column whose body shrinks (and scrolls internally) when the
+     column overflows, so the toggle is never pushed off-screen and
+     the board never has to move for it. When the column fits, the
+     box is exactly toggle + body content, as before. min-height is
+     the toggle (32px) + the two 1px borders: the box can never
+     shrink below its toggle, whatever the viewport. */
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  min-height: 34px;
 }
 
 .chs-movelist-toggle {
@@ -3260,6 +3361,8 @@ body {
   text-align: left;
   cursor: pointer;
   touch-action: manipulation;
+  /* Never squeezed: the toggle stays fully visible at every height. */
+  flex: 0 0 auto;
 }
 
 .chs-movelist-body {
@@ -3269,6 +3372,11 @@ body {
   font-size: 13px;
   line-height: 1.6;
   font-variant-numeric: tabular-nums;
+  /* The flexible part: grows into leftover column space up to
+     max-height, shrinks (scrolling internally) when the column
+     overflows. min-height: 0 lets it shrink below its content. */
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .chs-movelist-body[hidden] {
@@ -4581,7 +4689,19 @@ body {
           }
         } catch (e) { /* auto-pause is best-effort */ }
       } });
-    PhoneShell.registerApp('blockzen', { title: 'Block Zen', game: true, el: $('app-blockzen') });
+    PhoneShell.registerApp('blockzen', { title: 'Block Zen', game: true, el: $('app-blockzen'),
+      /* Re-measure + re-render on open (Blockfall/Chess pattern): the
+         board is laid out while its section is hidden at boot, so the
+         height-aware fit must re-run once the section is visible.
+         Guarded and blockzen-scoped; never throws. */
+      onOpen: function () {
+        try {
+          if (typeof window !== 'undefined' && window.BZGame &&
+              typeof window.BZGame.render === 'function') {
+            window.BZGame.render();
+          }
+        } catch (e) { /* re-render is best-effort; the next move re-renders */ }
+      } });
     PhoneShell.registerApp('chess', { title: 'Chess', game: true, el: $('app-chess'),
       /* Re-measure + re-render on open (Blockfall pattern): the board is
          laid out while its section is hidden at boot, so render on open.
@@ -5562,8 +5682,11 @@ var BZGame = (function () {
     _dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
     _canvas.width = Math.round(SCREEN_W * _dpr);
     _canvas.height = Math.round(BOARD_H * _dpr);
-    _canvas.style.width = SCREEN_W + 'px';
-    _canvas.style.height = BOARD_H + 'px';
+    // No inline CSS size: bz-game.css sizes the canvas (width 100%,
+    // height auto), so it scales down on phones narrower than 390px
+    // instead of overflowing. The backing store above stays the logical
+    // 390x366 (DPR-scaled), so all drawing code is untouched, and
+    // _toCanvas normalizes pointer coords via the live rect.
     _ctx = _canvas.getContext('2d');
     _ctx.setTransform(_dpr, 0, 0, _dpr, 0, 0);
   }
@@ -5572,11 +5695,67 @@ var BZGame = (function () {
     var cv = _slotCanvas[slot];
     cv.width = Math.round(TRAY_SLOT * _dpr);
     cv.height = Math.round(TRAY_SLOT * _dpr);
-    cv.style.width = TRAY_SLOT + 'px';
-    cv.style.height = TRAY_SLOT + 'px';
+    // No inline CSS size: bz-game.css sizes tray canvases (118px at
+    // 390px, shrinking to the slot width below that). Backing store
+    // stays 118x118 (DPR-scaled); tray drawing code is untouched.
     var ctx = cv.getContext('2d');
     ctx.setTransform(_dpr, 0, 0, _dpr, 0, 0);
     _slotCtx[slot] = ctx;
+  }
+
+  // Height-aware board fit (fit-all-phones fix, Nov 14): the board's
+  // CSS size scales with WIDTH only, so on short screens (360x568,
+  // 390x568) header + board + tray exceed the viewport and the tray
+  // clips below the screen edge. Cap the board width so the whole
+  // column fits the visible section. All inputs are measured live
+  // (section height, root padding, header + tray heights), so the
+  // result is stable across renders at one viewport and the board
+  // never moves mid-game. At roomy sizes the cap exceeds the root
+  // width and the inline size is cleared, restoring the exact CSS
+  // path (390x844 pixel-identical). The FX overlay re-syncs to the
+  // live canvas rect on every burst, and _toCanvas normalizes via
+  // the live rect, so shrinking the canvas changes no drawing or
+  // hit-testing code. Returns early while the section is hidden
+  // (clientHeight 0 at boot); the shell's onOpen re-render
+  // re-measures once the section is visible (Chess pattern).
+  var _fitW = -1; // last applied board CSS width; -1 = CSS default
+  function _fitBoard() {
+    if (!_root || !_canvas || !_trayEl || typeof window === 'undefined') return;
+    var sec = _mount;
+    if (!sec || !(sec.clientHeight > 200)) return;
+    var header = _root.querySelector('.bz-header');
+    if (!header) return;
+    var padTop = 48, padBottom = 0;
+    try {
+      var cs = window.getComputedStyle(_root);
+      padTop = parseFloat(cs.paddingTop) || 0;
+      padBottom = parseFloat(cs.paddingBottom) || 0;
+    } catch (err) { /* fall back to the 48px floor */ }
+    var availH = sec.clientHeight - padTop - padBottom -
+      header.offsetHeight - _trayEl.offsetHeight - 4;
+    var rootW = _root.clientWidth;
+    if (!(availH > 100) || !(rootW > 0)) return;
+    var fitW = Math.floor(availH * SCREEN_W / BOARD_H);
+    var target = Math.min(rootW, fitW);
+    if (target < 256) target = 256; // playable floor; never bites >=568px tall
+    if (Math.abs(target - _fitW) < 1) return;
+    _fitW = target;
+    if (target >= rootW - 0.5) {
+      _canvas.style.width = '';
+      _canvas.style.marginLeft = '';
+      _canvas.style.marginRight = '';
+    } else {
+      _canvas.style.width = target + 'px';
+      _canvas.style.marginLeft = 'auto';
+      _canvas.style.marginRight = 'auto';
+    }
+  }
+
+  var _resizeBound = false;
+  function _onResize() {
+    // Guarded like Chess: only re-fit while this section is visible.
+    if (!_mount || !(_mount.clientHeight > 200)) return;
+    _fitBoard();
   }
 
   // Keep the DOM chrome (header/overlay) in sync with the active palette.
@@ -6185,6 +6364,19 @@ var BZGame = (function () {
     _mount = mountEl;
     _buildDom(mountEl);
 
+    if (!_resizeBound && typeof window !== 'undefined') {
+      _resizeBound = true;
+      window.addEventListener('resize', _onResize);
+      // Mobile browser toolbars show/hide without a reliable window
+      // resize, but the visual viewport DOES fire — re-fit on it too
+      // (Chess/shell pattern).
+      try {
+        if (window.visualViewport && window.visualViewport.addEventListener) {
+          window.visualViewport.addEventListener('resize', _onResize);
+        }
+      } catch (err) { /* best-effort; window resize still covers most cases */ }
+    }
+
     if (_opts.theme !== undefined && _opts.theme !== null) setTheme(_opts.theme);
     _updateHeader();
     _render();
@@ -6307,6 +6499,7 @@ var BZGame = (function () {
   }
 
   function render() {
+    _fitBoard();
     _render();
     _renderTray();
   }
@@ -7949,7 +8142,8 @@ if (typeof window !== 'undefined') {
 // `cells` is absent or empty.
 //
 // Particles render on an overlay canvas positioned exactly over #bz-canvas
-// (same 390x366 CSS size, DPR-scaled backing store, pointer-events none).
+// (same CSS size as the board canvas — it tracks the board's live layout
+// size — DPR-scaled backing store, pointer-events none).
 // The animation loop runs only while particles are alive and stops when
 // idle. Popups animate with transform/opacity only (CSS keyframes).
 // Particle scatter uses Math.random — visual only, untestable-by-design.
@@ -7960,8 +8154,8 @@ var BZFx = (function () {
   'use strict';
 
   var SIZE = 9;
-  var WIDTH = 390;   // canvas CSS width (contract geometry)
-  var HEIGHT = 366;  // canvas CSS height: 9*38 + 8*3
+  var WIDTH = 390;   // logical canvas width: backing store + drawing coords
+  var HEIGHT = 366;  // logical canvas height: 9*38 + 8*3
   var CELL = 38;
   var GAP = 3;
   var PITCH = CELL + GAP; // 41
@@ -8094,6 +8288,27 @@ var BZFx = (function () {
   }
 
   // --------------------------------------------------------- overlay canvas
+  // The overlay's CSS size tracks the board canvas's live layout size:
+  // at 390px that is 390x366 (identical to before); on narrower phones
+  // the board canvas CSS-scales down and the overlay follows it exactly.
+  // clientWidth/clientHeight are layout px (unaffected by the shell's
+  // scale transform), which is what an inline style size needs. The
+  // backing store stays WIDTH x HEIGHT (DPR-scaled) and all particle
+  // math stays in logical 390x366 coordinates, so drawing is untouched.
+  // Falls back to WIDTH/HEIGHT when no layout size is measurable
+  // (e.g. the node harness's fake DOM, which has no clientWidth).
+  function _boardCssSize(boardCanvas) {
+    var w = WIDTH;
+    var h = HEIGHT;
+    try {
+      if (boardCanvas) {
+        if (boardCanvas.clientWidth > 0) w = boardCanvas.clientWidth;
+        if (boardCanvas.clientHeight > 0) h = boardCanvas.clientHeight;
+      }
+    } catch (e) { /* fall back to the contract size */ }
+    return { w: w, h: h };
+  }
+
   // Size the OVERLAY (never the board canvas) and align it to the board
   // canvas's offset within their shared parent.
   function _syncOverlay(boardCanvas, overlay, ctx) {
@@ -8106,8 +8321,9 @@ var BZFx = (function () {
     if (!(_dpr > 0)) _dpr = 1;
     overlay.width = Math.round(WIDTH * _dpr);
     overlay.height = Math.round(HEIGHT * _dpr);
-    overlay.style.width = WIDTH + 'px';
-    overlay.style.height = HEIGHT + 'px';
+    var size = _boardCssSize(boardCanvas);
+    overlay.style.width = size.w + 'px';
+    overlay.style.height = size.h + 'px';
     overlay.style.left = (boardCanvas.offsetLeft || 0) + 'px';
     overlay.style.top = (boardCanvas.offsetTop || 0) + 'px';
     try {
@@ -8134,8 +8350,9 @@ var BZFx = (function () {
       overlay.style.zIndex = '4';
       overlay.style.left = (canvas.offsetLeft || 0) + 'px';
       overlay.style.top = (canvas.offsetTop || 0) + 'px';
-      overlay.style.width = WIDTH + 'px';
-      overlay.style.height = HEIGHT + 'px';
+      var initialSize = _boardCssSize(canvas);
+      overlay.style.width = initialSize.w + 'px';
+      overlay.style.height = initialSize.h + 'px';
       var ctx = null;
       try {
         ctx = overlay.getContext('2d');
@@ -12518,7 +12735,17 @@ var SolGame = (function () {
   }
 
   function _measureTableauHeight() {
-    if (_tableauEl && _tableauEl.clientHeight > 80) return _tableauEl.clientHeight - 4;
+    // Reserve the shell's 44px home-indicator zone: #ph-home-indicator
+    // is a full-width, 44px-tall tap target (z-index 40) across the
+    // bottom of the screen, so any card under it is untappable — a tap
+    // on the card's center goes home instead of selecting the card
+    // (seen at 320x568 with a 19-card column, Nov 14, 2026). The
+    // columns start 8px below the tableau's top edge (its top padding),
+    // so the stack height that stays clear of the zone is
+    // clientHeight - 8 (top padding) - 44 (indicator zone) - 4 (margin).
+    // Short columns never notice: their overlap stays at the face-up
+    // value, so the layout at 390x844 is unchanged for normal play.
+    if (_tableauEl && _tableauEl.clientHeight > 80) return _tableauEl.clientHeight - 56;
     return DEFAULT_TABLEAU_H;
   }
 
@@ -16151,7 +16378,16 @@ var BFGame = (function () {
         var chrome = headerH + buttonsH + controlsH + statsH +
           _stylePx(_root, 'paddingTop', 48) +
           _stylePx(_mainEl, 'paddingTop', 2) +
-          _stylePx(_mainEl, 'paddingBottom', 6);
+          _stylePx(_mainEl, 'paddingBottom', 6) +
+          // Indicator-pill reserve (fit-all-phones fix, Nov 14): the
+          // shell's home-indicator pill floats ~20-24px above the
+          // section bottom, and at height-bound sizes the stats row
+          // ends flush with the section bottom, so the pill struck
+          // through the stats values (seen at 360x640). 20px lifts
+          // the values clear of the pill with margin. Width-bound
+          // layouts are unaffected: the reserve only shrinks the
+          // available height, and the width-based board still wins.
+          20;
         var avail = _availableHeight(_root.clientHeight, chrome);
         if (avail > 0) return avail;
       }
@@ -23081,6 +23317,13 @@ var CHSGame = (function () {
   // ------------------------------------------------------------- geometry
   var SCREEN_W = 390;          // logical phone screen width (CSS px)
   var PAD_MIN = 8;             // minimum side padding for the board
+  var MIN_CELL = 24;           // smallest square: the height-aware shrink
+                               // in layoutFor never goes below this, so
+                               // squares stay tappable (see _measureBoardHeight)
+  var STATUS_RESERVE_PX = 20;  // one status line, ALWAYS reserved in the
+                               // height budget (see _measureBoardHeight)
+  var MOVELIST_MIN_BODY_PX = 29; // one move-list line + body padding,
+                               // ALWAYS reserved (see _measureBoardHeight)
   var TAP_SLOP = 10;           // px of movement allowed for a tap
   var TAP_MAX_MS = 500;        // max press duration for a tap
   var DRAG_SLOP = 8;           // px of movement before a press becomes a drag
@@ -23138,6 +23381,10 @@ var CHSGame = (function () {
   var _playerRatingEl = null;
   var _playerClockEl = null;
   var _playerTrayEl = null;
+  var _oppBarEl = null;
+  var _playerBarEl = null;
+  var _controlsEl = null;
+  var _movelistEl = null;
   var _thinkingEl = null;
   var _thinkingTextEl = null;
   var _statusEl = null;
@@ -23240,13 +23487,27 @@ var CHSGame = (function () {
   // 390px root cap first: the board can never be wider than the root,
   // whatever width the caller passes. cellSize is floored so 8 cells
   // exactly fill boardSize; padX centers the board in the capped width.
-  function layoutFor(width) {
+  //
+  // Optional availHeight (from _measureBoardHeight): when given, the
+  // board ALSO fits the available height — cellSize shrinks so the
+  // board fits, never below MIN_CELL, and never grows past the
+  // width-based size. Without it (or with a non-positive value) the
+  // layout is exactly the old width-only layout, so tall screens and
+  // all existing callers are pixel-identical. The height shrink is
+  // what keeps short screens (390x568) from silently clipping the
+  // move list below the fold: the board gives up a few pixels per
+  // square instead of pushing chrome off-screen.
+  function layoutFor(width, availHeight) {
     var w = SCREEN_W;
     if (typeof width === 'number' && isFinite(width) && width > 0) w = width;
     if (w > SCREEN_W) w = SCREEN_W;
     var avail = w - 2 * PAD_MIN;
     var cell = Math.floor(avail / 8);
-    if (cell < 24) cell = 24;
+    if (cell < MIN_CELL) cell = MIN_CELL;
+    if (typeof availHeight === 'number' && isFinite(availHeight) && availHeight > 0) {
+      var maxCell = Math.floor(availHeight / 8);
+      if (maxCell < cell) cell = Math.max(maxCell, MIN_CELL);
+    }
     var boardSize = cell * 8;
     if (boardSize > w) boardSize = w - (w % 8);
     return {
@@ -23365,6 +23626,74 @@ var CHSGame = (function () {
       return Math.min(mountW, SCREEN_W);
     }
     return SCREEN_W;
+  }
+
+  // Height a chrome row needs: the larger of its laid-out height and
+  // its content height, so a row squeezed by an oversized board still
+  // reports the height it needs rather than the squeezed height (the
+  // Blockfall _rowHeight pattern).
+  function _rowHeight(el) {
+    if (!el) return 0;
+    var h = el.offsetHeight || 0;
+    var s = el.scrollHeight || 0;
+    return s > h ? s : h;
+  }
+
+  // A computed pixel value, with a fallback when styles are unreadable
+  // (the fallbacks mirror the CSS values).
+  function _stylePx(el, prop, fallback) {
+    try {
+      if (typeof window !== 'undefined' && window.getComputedStyle && el) {
+        var v = parseFloat(window.getComputedStyle(el)[prop]);
+        if (isFinite(v) && v >= 0) return v;
+      }
+    } catch (err) { /* fall through to the fallback */ }
+    return fallback;
+  }
+
+  // Available board height, measured from the live layout: the game
+  // root's height minus the chrome the column must always show (root
+  // top padding, both bars, the fixed 30px thinking slot, the status
+  // reserve, the controls row, and the move-list chrome plus its
+  // minimum body). Returns 0 when anything is unmeasurable (hidden
+  // section at boot: clientHeight 0; missing chrome) — layoutFor then
+  // falls back to the width-only layout, and the shell's onOpen
+  // re-render re-measures once the section is visible.
+  //
+  // Two contributions are FIXED reserves, deliberately NOT measured,
+  // so the board size is stable across renders at one viewport and
+  // never moves mid-game:
+  //  - Status: the line is display:none when empty but one line (20px)
+  //    whenever a message shows. Reserving one line keeps the board
+  //    identical with and without a message; a longer (wrapped)
+  //    message eats move-list body flex, never the board.
+  //  - Move-list body: the body grows with the game up to its 96px
+  //    max-height, so measuring it would shrink the board as moves
+  //    accumulate. Only one line is reserved; the body flexes into
+  //    leftover space (see .chs-movelist in CSS) and scrolls
+  //    internally, so the toggle is always visible and the board
+  //    never moves as the list grows.
+  // The thinking slot needs no reserve logic: it is a permanent
+  // fixed-height element, so its measured height is 30px whether the
+  // AI is thinking or not, and toggling it can never move the board.
+  function _measureBoardHeight() {
+    if (!_root || !_oppBarEl || !_playerBarEl || !_thinkingEl ||
+        !_controlsEl || !_movelistEl || !_movelistToggleEl) return 0;
+    var rootH = _root.clientHeight;
+    if (!(rootH > 200)) return 0;
+    var chrome = _stylePx(_root, 'paddingTop', 48) +
+      _rowHeight(_oppBarEl) +
+      _rowHeight(_thinkingEl) +
+      _rowHeight(_playerBarEl) +
+      STATUS_RESERVE_PX +
+      _rowHeight(_controlsEl) +
+      _stylePx(_movelistEl, 'marginTop', 6) +
+      _rowHeight(_movelistToggleEl) +
+      _stylePx(_movelistEl, 'borderTopWidth', 1) +
+      _stylePx(_movelistEl, 'borderBottomWidth', 1) +
+      MOVELIST_MIN_BODY_PX;
+    var avail = Math.floor(rootH - chrome);
+    return avail > 0 ? avail : 0;
   }
 
   // Square names. squareName(0) = 'a8', squareName(63) = 'h1'.
@@ -24992,6 +25321,14 @@ var CHSGame = (function () {
     if (!_resizeBound && typeof window !== 'undefined') {
       _resizeBound = true;
       window.addEventListener('resize', _onResize);
+      // Mobile browser toolbars show/hide without a reliable window
+      // resize, but the visual viewport DOES fire — re-measure on it
+      // too, so a toolbar change re-fits the board (shell pattern).
+      try {
+        if (window.visualViewport && window.visualViewport.addEventListener) {
+          window.visualViewport.addEventListener('resize', _onResize);
+        }
+      } catch (err) { /* best-effort; window resize still covers most cases */ }
     }
 
     if (_opts.theme !== undefined && _opts.theme !== null) setTheme(_opts.theme);
@@ -25973,6 +26310,7 @@ var CHSGame = (function () {
 
     // Opponent bar (top).
     var opp = _bar('opp');
+    _oppBarEl = opp.bar;
     _oppNameEl = opp.name;
     _oppRatingEl = opp.rating;
     _oppTrayEl = opp.tray;
@@ -26015,6 +26353,7 @@ var CHSGame = (function () {
 
     // Player bar (bottom).
     var player = _bar('player');
+    _playerBarEl = player.bar;
     _playerNameEl = player.name;
     _playerRatingEl = player.rating;
     _playerTrayEl = player.tray;
@@ -26029,6 +26368,7 @@ var CHSGame = (function () {
 
     // Control row.
     var controls = _el('div', 'chs-controls');
+    _controlsEl = controls;
     _undoBtn = _el('button', 'chs-btn', 'Undo');
     _undoBtn.id = 'chs-undo';
     _undoBtn.type = 'button';
@@ -26070,6 +26410,7 @@ var CHSGame = (function () {
     // Collapsible move list.
     var movelist = _el('div', 'chs-movelist');
     movelist.id = 'chs-movelist';
+    _movelistEl = movelist;
     _movelistToggleEl = _el('button', 'chs-movelist-toggle', 'Moves');
     _movelistToggleEl.type = 'button';
     _movelistToggleEl.addEventListener('click', function () {
@@ -26194,7 +26535,7 @@ var CHSGame = (function () {
   // --------------------------------------------------------------- rendering
   function _render() {
     if (!_root || typeof document === 'undefined') return;
-    var layout = layoutFor(_measureWidth());
+    var layout = layoutFor(_measureWidth(), _measureBoardHeight());
     _lastLayout = layout;
     _root.style.setProperty('--chs-board-size', layout.boardSize + 'px');
     _root.style.setProperty('--chs-cell-size', layout.cellSize + 'px');
