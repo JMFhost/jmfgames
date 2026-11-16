@@ -937,6 +937,22 @@ body {
   font-weight: 700;
 }
 
+/* Panel apps scroll beneath the transparent status bar: the panel
+   title rests 22px below the bar (title top 70px, bar bottom 48px),
+   so any scroll offset over 22px slides the title under the clock
+   and the two collide through the transparent bar (measured and
+   rendered at 360x640, scrollTop 60: the clock struck through the
+   "S" of "Settings"). Top padding cannot fix a scroll-under
+   collision — it only delays the onset — so when a panel app
+   (Settings/About) is open, the bar takes the theme's deep
+   background and scrolled content passes behind an opaque bar.
+   Games and the home screen keep the transparent bar. Browsers
+   without :has() keep the old behavior (no regression). */
+#ph-screen:has(#app-settings.active) #ph-statusbar,
+#ph-screen:has(#app-about.active) #ph-statusbar {
+  background: var(--bz-theme-bg, #0a2436);
+}
+
 /* ---------- Home indicator ---------- */
 
 #ph-home-indicator {
@@ -1737,6 +1753,116 @@ body {
   margin: 10px 0 0;
   font-size: 14px;
   color: var(--bz-theme-muted, #8fb3c7);
+}
+
+/* Game saves section (Settings). Rows follow the .bz-settings-row
+   pattern; every button is a 44px target. The armed state marks a
+   two-tap confirm in progress. The file input is visually hidden
+   but focusable-by-script so the Restore button can open it. */
+.bz-settings-save-copy {
+  color: var(--bz-theme-muted, #8fb3c7);
+}
+
+.bz-settings-save-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 12px;
+}
+
+.bz-settings-save-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 12px;
+  background: var(--bz-theme-well, #123549);
+  border: 1px solid var(--bz-theme-panel-edge, #1d4a63);
+  border-radius: 12px;
+  color: var(--bz-theme-text, #eaf6f6);
+}
+
+.bz-settings-save-row-actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.bz-settings-save-btn {
+  flex: 0 0 auto;
+  min-height: 44px;
+  min-width: 44px;
+  margin-top: 0;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.bz-settings-save-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.bz-settings-save-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bz-settings-save-actions .bz-theme-btn,
+.bz-settings-save-actions .bz-delete-btn {
+  flex: 1 1 140px;
+  margin-top: 0;
+}
+
+.bz-settings-armed {
+  border-color: var(--bz-theme-accent, #ffb703) !important;
+  box-shadow: 0 0 0 2px var(--bz-theme-accent, #ffb703);
+}
+
+/* Armed per-game delete: the confirm button overlays the whole row, so
+   its longer label can never squeeze the game label under the
+   Download button (the 132px cap still clipped single-word names at
+   390px and everything at 360px). The overlay covers the button's
+   original tap point, so a second tap in the same spot confirms;
+   taps outside the row still disarm. Unarmed layout is untouched
+   (the row is position:relative; see .bz-settings-save-row). */
+.bz-settings-save-row .bz-settings-save-btn.bz-settings-armed {
+  position: absolute;
+  inset: 0;
+  max-width: none;
+  border-radius: 12px;
+}
+
+/* Narrow phones: stack the save row (label above actions) so long
+   game names never wrap or run under the buttons, and arming never
+   changes the row height (at 360px "Block Zen" wrapped to two lines
+   unarmed and unwrapped on arm, shifting the rows below 20px). */
+@media (max-width: 375px) {
+  .bz-settings-save-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .bz-settings-save-row-actions {
+    justify-content: flex-end;
+  }
+}
+
+.bz-settings-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* -------------------------------------------------------------- about app */
@@ -5191,6 +5317,366 @@ body {
 })();
 </script>
 <script>
+// source: save-registry.js
+// SaveRegistry — the single directory of game save keys for the phone.
+//
+// Zero dependencies, no DOM, never throws. UMD: global SaveRegistry +
+// module.exports. Each game's SAVE module registers its keys at eval
+// time (guarded, so the module also loads standalone); each game's
+// WIRE module attaches live-game hooks (reinit/reload) at eval time.
+// Settings builds its saves section data-driven from owners(), so a
+// new game appears there by registering — no Settings edit needed.
+//
+// API:
+//   register({id, name, keys}) — validates strictly; an invalid
+//     registration is ignored (returns false). A duplicate id
+//     REPLACES the previous entry in place (registration order is
+//     kept). keys must be a non-empty array of unique strings, each
+//     starting 'jmf-phone-'. Returns true on success.
+//   extend(id, {reinit, reload}) — attaches hook functions to a
+//     registered entry; non-function values are ignored, an unknown
+//     id is ignored. Returns true when at least one hook attached.
+//     Hooks resolve their game/save globals LAZILY when called, so
+//     registration order across files never matters.
+//   owners() — a copy of the entries in registration order. Each
+//     entry is a fresh object ({id, name, keys, reinit, reload}) so
+//     callers can never mutate the registry.
+//   get(id) — a copy of one entry, or null for an unknown id.
+//   allKeys() — every registered key, in registration order.
+//
+// Convention: each game's keys list carries its primary mid-game
+// save key FIRST, then stats/training keys. Restore verification in
+// bz-settings.js relies on that order to find the save key.
+
+var SaveRegistry = (function () {
+  'use strict';
+
+  var KEY_PREFIX = 'jmf-phone-';
+  var _entries = []; // [{id, name, keys, reinit, reload}] in registration order
+  var _index = {}; // id -> position in _entries
+
+  function _isNonEmptyString(v) {
+    return typeof v === 'string' && v.length > 0;
+  }
+
+  function _validKeys(keys) {
+    if (!Array.isArray(keys) || keys.length === 0) return false;
+    var seen = {};
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
+      if (!_isNonEmptyString(k)) return false;
+      if (k.indexOf(KEY_PREFIX) !== 0) return false;
+      if (seen[k]) return false;
+      seen[k] = true;
+    }
+    return true;
+  }
+
+  function _copy(entry) {
+    if (!entry) return null;
+    return {
+      id: entry.id,
+      name: entry.name,
+      keys: entry.keys.slice(),
+      reinit: entry.reinit || null,
+      reload: entry.reload || null
+    };
+  }
+
+  function register(spec) {
+    try {
+      if (!spec || typeof spec !== 'object' || Array.isArray(spec)) return false;
+      if (!_isNonEmptyString(spec.id)) return false;
+      if (!_isNonEmptyString(spec.name)) return false;
+      if (!_validKeys(spec.keys)) return false;
+      var entry = {
+        id: spec.id,
+        name: spec.name,
+        keys: spec.keys.slice(),
+        reinit: null,
+        reload: null
+      };
+      // A re-registration REPLACES the entry in place, keeping its
+      // registration-order position; hooks attached to the old entry
+      // do not carry over (the wire re-extends after re-registering).
+      if (Object.prototype.hasOwnProperty.call(_index, spec.id)) {
+        _entries[_index[spec.id]] = entry;
+      } else {
+        _index[spec.id] = _entries.length;
+        _entries.push(entry);
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function extend(id, hooks) {
+    try {
+      if (!_isNonEmptyString(id)) return false;
+      if (!hooks || typeof hooks !== 'object' || Array.isArray(hooks)) return false;
+      if (!Object.prototype.hasOwnProperty.call(_index, id)) return false;
+      var entry = _entries[_index[id]];
+      var attached = false;
+      if (typeof hooks.reinit === 'function') {
+        entry.reinit = hooks.reinit;
+        attached = true;
+      }
+      if (typeof hooks.reload === 'function') {
+        entry.reload = hooks.reload;
+        attached = true;
+      }
+      return attached;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function owners() {
+    try {
+      var out = [];
+      for (var i = 0; i < _entries.length; i++) out.push(_copy(_entries[i]));
+      return out;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function get(id) {
+    try {
+      if (!_isNonEmptyString(id)) return null;
+      if (!Object.prototype.hasOwnProperty.call(_index, id)) return null;
+      return _copy(_entries[_index[id]]);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function allKeys() {
+    try {
+      var out = [];
+      for (var i = 0; i < _entries.length; i++) {
+        for (var j = 0; j < _entries[i].keys.length; j++) {
+          out.push(_entries[i].keys[j]);
+        }
+      }
+      return out;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  return {
+    register: register,
+    extend: extend,
+    owners: owners,
+    get: get,
+    allKeys: allKeys
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = SaveRegistry;
+if (typeof window !== 'undefined') {
+  try { window.SaveRegistry = SaveRegistry; } catch (e) { /* best-effort */ }
+}
+</script>
+<script>
+// source: save-backup.js
+// SaveBackup — pure backup build/validate helpers for game saves.
+//
+// Zero dependencies, no DOM, never throws. UMD: global SaveBackup +
+// module.exports. bz-settings.js owns the file/blob/download UI and
+// calls these helpers; node tests exercise them directly.
+//
+// Backup format (version 1):
+//   { format: 'jmf-games-saves', version: 1, exportedAt: <ISO string>,
+//     games: { <id>: { <key>: <RAW STRING> } } }
+// Values are the RAW stored strings, never parsed and re-serialized,
+// so a backup round-trips byte-for-byte. Only keys that exist in
+// storage are included; games with no stored keys are omitted.
+//
+// API:
+//   buildBackup(owners, readFn, now) — owners is an array of registry
+//     entries ({id, keys}); readFn(key) returns the stored string or
+//     null. Returns the backup object, or null on bad input.
+//   validateBackup(parsed, owners) — STRICT: returns
+//     {ok, error, games} where games is the list of affected game
+//     ids (in the backup's key order) when ok. Every check runs
+//     before anything is written: parsed is a plain object,
+//     format/version exact, games a non-empty plain object, every
+//     game id registered, every key on that game's registry list,
+//     every value a string, every value JSON-parseable. Unknown
+//     top-level fields are ignored (forward compatibility); unknown
+//     games or keys are rejected — a restore never writes a key it
+//     does not know.
+//   localDateString(date) — 'YYYY-MM-DD' in local time.
+//   filenameFor(id, date) — 'jmf-games-saves-YYYY-MM-DD.json', or
+//     'jmf-games-saves-<id>-YYYY-MM-DD.json' for one game.
+
+var SaveBackup = (function () {
+  'use strict';
+
+  var FORMAT = 'jmf-games-saves';
+  var VERSION = 1;
+
+  function _isPlainObject(v) {
+    return !!v && typeof v === 'object' && !Array.isArray(v);
+  }
+
+  function _pad(n) {
+    return (n < 10 ? '0' : '') + n;
+  }
+
+  function localDateString(date) {
+    try {
+      var d = date;
+      if (!d || typeof d.getFullYear !== 'function') d = new Date();
+      return d.getFullYear() + '-' + _pad(d.getMonth() + 1) + '-' +
+        _pad(d.getDate());
+    } catch (e) {
+      return '1970-01-01';
+    }
+  }
+
+  function filenameFor(id, date) {
+    try {
+      var stamp = localDateString(date);
+      if (typeof id === 'string' && id.length > 0) {
+        return 'jmf-games-saves-' + id + '-' + stamp + '.json';
+      }
+      return 'jmf-games-saves-' + stamp + '.json';
+    } catch (e) {
+      return 'jmf-games-saves.json';
+    }
+  }
+
+  function buildBackup(owners, readFn, now) {
+    try {
+      if (!Array.isArray(owners)) return null;
+      if (typeof readFn !== 'function') return null;
+      var exportedAt = null;
+      try {
+        var when = now;
+        if (!when || typeof when.toISOString !== 'function') when = new Date();
+        exportedAt = when.toISOString();
+      } catch (e) {
+        exportedAt = new Date().toISOString();
+      }
+      var games = {};
+      for (var i = 0; i < owners.length; i++) {
+        var owner = owners[i];
+        if (!_isPlainObject(owner)) continue;
+        if (typeof owner.id !== 'string' || !owner.id) continue;
+        if (!Array.isArray(owner.keys)) continue;
+        var values = {};
+        var found = false;
+        for (var j = 0; j < owner.keys.length; j++) {
+          var key = owner.keys[j];
+          if (typeof key !== 'string') continue;
+          var raw = null;
+          try {
+            raw = readFn(key);
+          } catch (e) {
+            raw = null;
+          }
+          if (typeof raw === 'string') {
+            values[key] = raw;
+            found = true;
+          }
+        }
+        if (found) games[owner.id] = values;
+      }
+      return {
+        format: FORMAT,
+        version: VERSION,
+        exportedAt: exportedAt,
+        games: games
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function validateBackup(parsed, owners) {
+    function fail(reason) {
+      return { ok: false, error: reason, games: [] };
+    }
+    try {
+      if (!_isPlainObject(parsed)) {
+        return fail('The file is not a backup object.');
+      }
+      if (parsed.format !== FORMAT || parsed.version !== VERSION) {
+        return fail('The file is not a JMF Games saves backup (format or version mismatch).');
+      }
+      if (!_isPlainObject(parsed.games)) {
+        return fail('The backup has no games section.');
+      }
+      var ids = Object.keys(parsed.games);
+      if (ids.length === 0) {
+        return fail('The backup contains no games.');
+      }
+      var known = {};
+      if (Array.isArray(owners)) {
+        for (var i = 0; i < owners.length; i++) {
+          var owner = owners[i];
+          if (!_isPlainObject(owner)) continue;
+          if (typeof owner.id !== 'string' || !owner.id) continue;
+          if (!Array.isArray(owner.keys)) continue;
+          var allowed = {};
+          for (var j = 0; j < owner.keys.length; j++) {
+            if (typeof owner.keys[j] === 'string') allowed[owner.keys[j]] = true;
+          }
+          known[owner.id] = allowed;
+        }
+      }
+      for (var g = 0; g < ids.length; g++) {
+        var id = ids[g];
+        if (!Object.prototype.hasOwnProperty.call(known, id)) {
+          return fail('Unknown game in backup: ' + id + '.');
+        }
+        var values = parsed.games[id];
+        if (!_isPlainObject(values)) {
+          return fail('The backup entry for ' + id + ' is not an object.');
+        }
+        var keys = Object.keys(values);
+        for (var k = 0; k < keys.length; k++) {
+          var key = keys[k];
+          if (!Object.prototype.hasOwnProperty.call(known[id], key)) {
+            return fail('Unknown save key in backup: ' + key + '.');
+          }
+          var value = values[key];
+          if (typeof value !== 'string') {
+            return fail('The saved value for ' + key + ' is not a string.');
+          }
+          try {
+            JSON.parse(value);
+          } catch (e) {
+            return fail('The saved value for ' + key + ' is not valid JSON.');
+          }
+        }
+      }
+      return { ok: true, error: null, games: ids };
+    } catch (e) {
+      return fail('The backup could not be checked.');
+    }
+  }
+
+  return {
+    buildBackup: buildBackup,
+    validateBackup: validateBackup,
+    localDateString: localDateString,
+    filenameFor: filenameFor,
+    FORMAT: FORMAT,
+    VERSION: VERSION
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = SaveBackup;
+if (typeof window !== 'undefined') {
+  try { window.SaveBackup = SaveBackup; } catch (e) { /* best-effort */ }
+}
+</script>
+<script>
 // source: shell.js
 /* PhoneShell: lock screen, clock, home screen, app registry, back-to-home.
    Home icons render in a default games-first order and can be rearranged:
@@ -6350,7 +6836,18 @@ body {
           }
         } catch (e) { /* re-render is best-effort; the next move re-renders */ }
       } });
-    PhoneShell.registerApp('settings', { title: 'Settings', el: $('app-settings') });
+    PhoneShell.registerApp('settings', { title: 'Settings', el: $('app-settings'),
+      /* Refresh the Game saves rows on open: Settings builds once at
+         boot, so row statuses would otherwise go stale as games are
+         played. Guarded and settings-scoped; never throws. */
+      onOpen: function () {
+        try {
+          if (typeof window !== 'undefined' && window.BZSettings &&
+              typeof window.BZSettings.refreshSaves === 'function') {
+            window.BZSettings.refreshSaves();
+          }
+        } catch (e) { /* refresh is best-effort; rows keep last state */ }
+      } });
     PhoneShell.registerApp('about', { title: 'About', el: $('app-about') });
 
     /* Render the home grid in the resolved (stored or default) order. */
@@ -8296,6 +8793,21 @@ var BZSave = (function () {
 
 if (typeof module !== 'undefined' && module.exports) module.exports = BZSave;
 if (typeof window !== 'undefined') window.BZSave = BZSave;
+
+// Save registry: advertise this game's storage keys (save key first,
+// then the best-score key) so Settings builds its saves section
+// data-driven. Guarded: the registry may be absent (standalone node
+// use), and registration must never break the save module.
+try {
+  if (typeof SaveRegistry !== 'undefined' && SaveRegistry &&
+      typeof SaveRegistry.register === 'function') {
+    SaveRegistry.register({
+      id: 'blockzen',
+      name: 'Block Zen',
+      keys: [BZSave.SAVE_KEY, BZSave.BEST_KEY]
+    });
+  }
+} catch (e) { /* registration is best-effort */ }
 </script>
 <script>
 // source: bz-ui.js
@@ -11436,8 +11948,13 @@ if (typeof window !== 'undefined') {
 //   #settings-home   — Home-screen section (Sort A–Z / Reset layout),
 //                      wired to PhoneShell.sortHomeAlphabetical /
 //                      PhoneShell.resetHomeOrder
-//   #settings-about  — standalone Block Zen save control
-//                      (delete-save button + status, no About content)
+//   #settings-about  — Game saves section: one row per registered
+//                      game (status + Delete + Download), Download
+//                      all / Delete all / Restore from backup, and a
+//                      status line. Deletes remove game saves only;
+//                      name, theme, music, sound, and home layout
+//                      are kept. The Block Zen row's Delete button
+//                      keeps the id 'bz-settings-delete-save'.
 // About app:
 //   #about-body      — short About text, copyright line, no links
 //
@@ -11468,6 +11985,20 @@ var BZSettings = (function () {
   var _themeListenerAdded = false;
   var _toggleRefreshers = []; // per-toggle re-mark closures (see _buildToggle)
   var _settingsListenerAdded = false;
+
+  // Game-saves section state (see _buildSettingsSave). The section
+  // builds once at boot; refreshSaves() re-reads key presence and
+  // re-marks the rows without rebuilding anything.
+  var _savesBuilt = false;
+  var _saveRows = []; // [{id, name, keys, stateEl, deleteBtn, downloadBtn}]
+  var _savesStatus = null; // aria-live status line element
+  var _downloadAllBtn = null;
+  var _deleteAllBtn = null;
+  var _restoreBtn = null;
+  var _restoreFileInput = null; // hidden file input for Restore
+  var _armed = null; // {button, label, timer} — the one armed control
+  var _docListenerAdded = false;
+  var _restorePending = null; // {backup, games} staged by a valid file
 
   function _global(name) {
     try {
@@ -11857,44 +12388,847 @@ var BZSettings = (function () {
     container.appendChild(status);
   }
 
-  // ------------------------------------------- settings save control
-  // Standalone Block Zen save control: just the delete button + its
-  // status line. The old About section (heading, credit, version)
-  // was removed Nov 14, 2026; the button keeps its id so existing
-  // hooks keep working. The container id stays 'settings-about'
-  // (template-owned); only the rendered content changed.
+  // ------------------------------------------- game saves section
+  // Data-driven from SaveRegistry: one row per registered game,
+  // sorted alphabetically by name. Each row shows whether a save
+  // exists and offers Delete (two-tap confirm) and Download. Below
+  // the rows: Download all saves, Delete all saves (two-tap
+  // confirm), Restore from backup (file picker + two-tap confirm),
+  // and one aria-live status line. The container id stays
+  // 'settings-about' (template-owned); the rendered content is the
+  // saves section, and the first child keeps the 'bz-settings-save'
+  // box class. The Block Zen row's Delete button keeps the id
+  // 'bz-settings-delete-save' so existing hooks keep working.
+  //
+  // Fallback: when SaveRegistry is absent (a partial build, or the
+  // standalone settings tests), the built-in table below stands in
+  // with the same four games and keys, and Block Zen delete/restore
+  // fall back to the legacy inline sequence (BZSave.clearAll +
+  // setBest(0) + newGame + 'bz:delete-save'). In the real build the
+  // registry is always present and the fallback never runs.
+  var FALLBACK_OWNERS = [
+    { id: 'blockzen', name: 'Block Zen',
+      keys: ['jmf-phone-blockzen-save-v1', 'jmf-phone-blockzen-best-v1'] },
+    { id: 'blockfall', name: 'Blockfall',
+      keys: ['jmf-phone-blockfall-save-v1', 'jmf-phone-blockfall-stats-v1'] },
+    { id: 'chess', name: 'Chess',
+      keys: ['jmf-phone-chess-save-v1', 'jmf-phone-chess-stats-v1',
+        'jmf-phone-chess-training-v1'] },
+    { id: 'solitaire', name: 'Solitaire',
+      keys: ['jmf-phone-solitaire-save-v1', 'jmf-phone-solitaire-stats-v1'] }
+  ];
+
+  function _registry() {
+    try {
+      var reg = _global('SaveRegistry');
+      if (reg && typeof reg.owners === 'function') return reg;
+    } catch (e) { /* fall through to the fallback table */ }
+    return null;
+  }
+
+  function _sortedOwners(list) {
+    var copy = list.slice();
+    copy.sort(function (a, b) {
+      var an = (a && a.name) || '';
+      var bn = (b && b.name) || '';
+      return an < bn ? -1 : (an > bn ? 1 : 0);
+    });
+    return copy;
+  }
+
+  function _owners() {
+    try {
+      var reg = _registry();
+      if (reg) {
+        var list = reg.owners();
+        if (Array.isArray(list) && list.length) return _sortedOwners(list);
+      }
+    } catch (e) { /* fall through to the fallback table */ }
+    return _sortedOwners(FALLBACK_OWNERS.map(function (o) {
+      return { id: o.id, name: o.name, keys: o.keys.slice(),
+        reinit: null, reload: null };
+    }));
+  }
+
+  function _keyPresent(key) {
+    try {
+      var store = _store();
+      if (!store) return false;
+      return store.getItem(key) !== null;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function _gameHasSave(owner) {
+    try {
+      var keys = (owner && owner.keys) || [];
+      for (var i = 0; i < keys.length; i++) {
+        if (_keyPresent(keys[i])) return true;
+      }
+    } catch (e) { /* no save */ }
+    return false;
+  }
+
+  function _setSavesStatus(text) {
+    try {
+      if (_savesStatus) _savesStatus.textContent = text;
+    } catch (e) { /* status is best-effort */ }
+  }
+
+  function _removeKeys(keys) {
+    try {
+      var store = _store();
+      if (!store) return;
+      for (var i = 0; i < keys.length; i++) {
+        try {
+          store.removeItem(keys[i]);
+        } catch (e) { /* one failing key must not stop the rest */ }
+      }
+    } catch (e) { /* best-effort */ }
+  }
+
+  // Legacy Block Zen delete, used ONLY when the registry is absent:
+  // the exact sequence the old standalone control ran. In the real
+  // build the registry hook (bz-wire.js) runs instead.
+  function _legacyBZDelete() {
+    try {
+      var save = _global('BZSave');
+      if (save && typeof save.clearAll === 'function') {
+        try { save.clearAll(); } catch (e) { /* best-effort */ }
+      }
+      var game = _global('BZGame');
+      if (game && typeof game.setBest === 'function') {
+        try { game.setBest(0); } catch (e) { /* best-effort */ }
+      }
+      if (game && typeof game.newGame === 'function') {
+        try { game.newGame(); } catch (e) { /* best-effort */ }
+      }
+      _dispatch('bz:delete-save', {});
+    } catch (e) { /* never throw */ }
+  }
+
+  // Legacy Block Zen reload, used ONLY when the registry is absent:
+  // mirrors the wire's boot resume.
+  function _legacyBZReload() {
+    try {
+      var save = _global('BZSave');
+      var game = _global('BZGame');
+      var best = 0;
+      try {
+        if (save && typeof save.loadBest === 'function') best = save.loadBest();
+      } catch (e) { /* 0 stands */ }
+      if (game && typeof game.setBest === 'function') {
+        try { game.setBest(best); } catch (e) { /* best-effort */ }
+      }
+      var restored = false;
+      try {
+        var saved = (save && typeof save.load === 'function') ? save.load() : null;
+        if (saved && !saved.gameOver && game && typeof game.restore === 'function') {
+          game.restore(saved);
+          restored = true;
+        }
+      } catch (e) { /* fall through to a fresh game */ }
+      if (!restored && game && typeof game.newGame === 'function') {
+        try { game.newGame(); } catch (e) { /* best-effort */ }
+      }
+    } catch (e) { /* never throw */ }
+  }
+
+  // Call a registry hook (reinit/reload) for one game, resolving the
+  // entry fresh so hooks attached after Settings built are honored.
+  // Falls back to the legacy Block Zen sequence when the registry
+  // (or the hook) is absent; other games without a hook are no-ops.
+  function _callHook(id, kind) {
+    try {
+      var reg = _registry();
+      if (reg && typeof reg.get === 'function') {
+        var entry = null;
+        try {
+          entry = reg.get(id);
+        } catch (e) {
+          entry = null;
+        }
+        if (entry && typeof entry[kind] === 'function') {
+          try {
+            entry[kind]();
+          } catch (e) { /* a failing hook must never break Settings */ }
+          return;
+        }
+      }
+      if (id === 'blockzen') {
+        if (kind === 'reinit') _legacyBZDelete();
+        else if (kind === 'reload') _legacyBZReload();
+      }
+    } catch (e) { /* never throw */ }
+  }
+
+  // Uniform delete protocol, per game: remove every registry key,
+  // call reinit() (the fresh game must start so stale in-memory
+  // state is never re-saved), then remove every key AGAIN to clear
+  // anything reinit auto-saved. Shell-owned keys (settings, home
+  // order) are never in a registry entry, so they are never touched.
+  function _deleteOwners(owners) {
+    for (var i = 0; i < owners.length; i++) {
+      var owner = owners[i];
+      if (!owner || !Array.isArray(owner.keys)) continue;
+      _removeKeys(owner.keys);
+      _callHook(owner.id, 'reinit');
+      _removeKeys(owner.keys);
+    }
+  }
+
+  // ------------------------------------------- two-tap confirm
+  // One armed control at a time. The first tap arms (label becomes
+  // 'Tap again to confirm', armed class, aria-pressed true); the
+  // second tap executes. Tapping anywhere else disarms (the
+  // document-level listener ignores clicks inside the armed
+  // control), and a 5s timer auto-disarms. Disabled buttons never
+  // arm. Disarming also drops a staged restore: arming and the
+  // staged backup are one state. One tap NEVER deletes anything.
+  function _disarm() {
+    var armed = _armed;
+    _armed = null;
+    _restorePending = null;
+    if (!armed) return;
+    try {
+      if (armed.timer && typeof clearTimeout === 'function') {
+        clearTimeout(armed.timer);
+      }
+    } catch (e) { /* timer cleanup is best-effort */ }
+    try {
+      armed.button.textContent = armed.label;
+      if (armed.button.classList) {
+        armed.button.classList.remove('bz-settings-armed');
+      }
+      armed.button.setAttribute('aria-pressed', 'false');
+    } catch (e) { /* restoring the label is best-effort */ }
+  }
+
+  function _arm(button) {
+    _disarm();
+    if (!button || button.disabled) return false;
+    var label = '';
+    try {
+      label = button.textContent;
+    } catch (e) {
+      label = '';
+    }
+    _armed = { button: button, label: label, timer: 0 };
+    try {
+      button.textContent = 'Tap again to confirm';
+      if (button.classList) button.classList.add('bz-settings-armed');
+      button.setAttribute('aria-pressed', 'true');
+    } catch (e) { /* marking is best-effort */ }
+    try {
+      if (typeof setTimeout === 'function') {
+        var timer = setTimeout(function () { _disarm(); }, 5000);
+        if (timer && typeof timer.unref === 'function') {
+          try {
+            timer.unref();
+          } catch (e2) { /* unref is a node-only nicety */ }
+        }
+        _armed.timer = timer;
+      }
+    } catch (e3) { /* the timer is optional */ }
+    return true;
+  }
+
+  function _contains(el, node) {
+    try {
+      if (el === node) return true;
+      if (el && typeof el.contains === 'function') return el.contains(node);
+      var cur = node;
+      while (cur) {
+        if (cur === el) return true;
+        cur = cur.parentNode;
+      }
+    } catch (e) { /* fall through */ }
+    return false;
+  }
+
+  function _ensureDocListener() {
+    if (_docListenerAdded) return;
+    _docListenerAdded = true;
+    try {
+      if (typeof document !== 'undefined' && document &&
+          typeof document.addEventListener === 'function') {
+        document.addEventListener('click', function (ev) {
+          try {
+            if (!_armed) return;
+            var target = ev && ev.target;
+            if (target && _contains(_armed.button, target)) return;
+            _disarm();
+          } catch (e) { /* never throw */ }
+        });
+      }
+    } catch (e) { /* the listener is optional */ }
+  }
+
+  function _confirmable(button, action) {
+    return function () {
+      try {
+        if (!button || button.disabled) return;
+        if (_armed && _armed.button === button) {
+          _disarm();
+          action();
+          return;
+        }
+        _arm(button);
+      } catch (e) { /* never throw */ }
+    };
+  }
+
+  // ------------------------------------------- download
+  function _triggerDownload(filename, text) {
+    try {
+      var URLApi = null;
+      try {
+        if (typeof URL !== 'undefined' && URL.createObjectURL) URLApi = URL;
+      } catch (e) { /* fall through */ }
+      if (!URLApi) {
+        try {
+          if (typeof window !== 'undefined' && window.URL &&
+              window.URL.createObjectURL) URLApi = window.URL;
+        } catch (e2) { /* fall through */ }
+      }
+      if (!URLApi || typeof Blob === 'undefined' ||
+          typeof document === 'undefined' || !document) return false;
+      var blob = new Blob([text], { type: 'application/json' });
+      var url = URLApi.createObjectURL(blob);
+      var anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      try {
+        if (document.body && document.body.appendChild) {
+          document.body.appendChild(anchor);
+        }
+      } catch (e3) { /* the anchor works detached in most browsers */ }
+      try {
+        if (anchor.click) anchor.click();
+      } catch (e4) { /* a blocked click still revokes below */ }
+      try {
+        if (anchor.remove) anchor.remove();
+        else if (anchor.parentNode) anchor.parentNode.removeChild(anchor);
+      } catch (e5) { /* cleanup is best-effort */ }
+      try {
+        var revoke = function () {
+          try {
+            URLApi.revokeObjectURL(url);
+          } catch (e6) { /* revoke is best-effort */ }
+        };
+        if (typeof setTimeout === 'function') setTimeout(revoke, 1000);
+        else revoke();
+      } catch (e7) { /* revoke is best-effort */ }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function _downloadSaves(owner) {
+    try {
+      var helper = _global('SaveBackup');
+      var subset = owner ? [owner] : _owners();
+      var backup = null;
+      if (helper && typeof helper.buildBackup === 'function') {
+        try {
+          backup = helper.buildBackup(subset, function (key) {
+            try {
+              var store = _store();
+              return store ? store.getItem(key) : null;
+            } catch (e) {
+              return null;
+            }
+          }, new Date());
+        } catch (e) {
+          backup = null;
+        }
+      }
+      _refreshSaves();
+      if (!backup || !backup.games || Object.keys(backup.games).length === 0) {
+        _setSavesStatus(owner ?
+          'No save to download for ' + owner.name + '.' :
+          'No saves to download.');
+        return;
+      }
+      var filename = 'jmf-games-saves.json';
+      try {
+        if (helper && typeof helper.filenameFor === 'function') {
+          filename = helper.filenameFor(owner ? owner.id : null, new Date());
+        }
+      } catch (e) { /* default filename stands */ }
+      var text = JSON.stringify(backup, null, 2);
+      if (_triggerDownload(filename, text)) {
+        _setSavesStatus(owner ?
+          'Save downloaded for ' + owner.name + '.' :
+          'All saves downloaded.');
+      } else {
+        _setSavesStatus('Download is unavailable. Nothing was downloaded.');
+      }
+    } catch (e) {
+      _setSavesStatus('Download is unavailable. Nothing was downloaded.');
+    }
+  }
+
+  // ------------------------------------------- restore
+  // Strict verification for a restored save key: the game's save
+  // loader must return non-null. Stats/training loaders coerce, so
+  // they cannot fail this way — their verification is the
+  // read-back-equality check in _executeRestore. A registered game
+  // with no loader mapped here passes (the raw-equality check still
+  // guards it), so future games keep working.
+  function _verifySaveKey(id) {
+    try {
+      if (id === 'blockzen') {
+        var bz = _global('BZSave');
+        return !!(bz && typeof bz.load === 'function' && bz.load() !== null);
+      }
+      if (id === 'solitaire') {
+        var sol = _global('SolSave');
+        return !!(sol && typeof sol.load === 'function' && sol.load() !== null);
+      }
+      if (id === 'blockfall') {
+        var bf = _global('BFSave');
+        return !!(bf && typeof bf.load === 'function' && bf.load() !== null);
+      }
+      if (id === 'chess') {
+        var chs = _global('CHSSave');
+        return !!(chs && typeof chs.loadGame === 'function' &&
+          chs.loadGame(null) !== null);
+      }
+    } catch (e) {
+      return false;
+    }
+    return true;
+  }
+
+  // Stage a backup file's text: parse + STRICT validation, all
+  // before touching anything. On success the restore is staged and
+  // the Restore button arms — the second tap executes. On failure
+  // the status names the problem and nothing is staged.
+  function _stageRestore(text) {
+    var parsed = null;
+    try {
+      parsed = JSON.parse(text);
+    } catch (e) {
+      _setSavesStatus('Could not restore: the file is not valid JSON. ' +
+        'Nothing was changed.');
+      return;
+    }
+    var helper = _global('SaveBackup');
+    if (!helper || typeof helper.validateBackup !== 'function') {
+      _setSavesStatus('Restore is unavailable. Nothing was changed.');
+      return;
+    }
+    var result = null;
+    try {
+      result = helper.validateBackup(parsed, _owners());
+    } catch (e) {
+      result = null;
+    }
+    if (!result || !result.ok) {
+      var reason = (result && result.error) ||
+        'The backup could not be checked.';
+      _setSavesStatus('Could not restore: ' + reason + ' Nothing was changed.');
+      return;
+    }
+    var owners = _owners();
+    var byId = {};
+    for (var i = 0; i < owners.length; i++) byId[owners[i].id] = owners[i];
+    var names = [];
+    for (var g = 0; g < result.games.length; g++) {
+      names.push(byId[result.games[g]] ? byId[result.games[g]].name :
+        result.games[g]);
+    }
+    // Arm FIRST: _arm disarms (dropping any stale staged backup),
+    // then the new backup is staged under the armed button.
+    _arm(_restoreBtn);
+    _restorePending = { backup: parsed, games: result.games.slice() };
+    _setSavesStatus('Backup ready: ' + names.join(', ') +
+      '. Restoring REPLACES current saves. Tap again to confirm, ' +
+      'or tap elsewhere to cancel.');
+  }
+
+  function _readRestoreFile(file) {
+    try {
+      if (typeof FileReader === 'undefined') {
+        _resetRestoreInput();
+        _setSavesStatus('Restore is unavailable. Nothing was changed.');
+        return;
+      }
+      var reader = new FileReader();
+      reader.onload = function () {
+        // The input is reset only AFTER the read completes: clearing
+        // it earlier can invalidate the File being read.
+        _resetRestoreInput();
+        try {
+          var text = reader.result;
+          if (typeof text !== 'string') {
+            _setSavesStatus('Could not read that file. Nothing was changed.');
+            return;
+          }
+          _stageRestore(text);
+        } catch (e) {
+          _setSavesStatus('Could not read that file. Nothing was changed.');
+        }
+      };
+      reader.onerror = function () {
+        _resetRestoreInput();
+        _setSavesStatus('Could not read that file. Nothing was changed.');
+      };
+      reader.readAsText(file);
+    } catch (e) {
+      _resetRestoreInput();
+      _setSavesStatus('Could not read that file. Nothing was changed.');
+    }
+  }
+
+  // Clear the file input's selection so picking the SAME file again
+  // still fires a change event. Called only after a read completes
+  // (or when no file was chosen), never while a read is in flight.
+  function _resetRestoreInput() {
+    try {
+      if (_restoreFileInput) _restoreFileInput.value = '';
+    } catch (e) { /* resetting is best-effort */ }
+  }
+
+  // Execute a staged restore: snapshot the affected keys, write the
+  // restored values, VERIFY (read-back equality + save-loader
+  // checks), and roll the snapshot back exactly on ANY failure.
+  // Only keys present in the backup are written; absent keys are
+  // left untouched. On success each affected game reloads from
+  // storage and the rows refresh.
+  function _executeRestore() {
+    var pending = _restorePending;
+    _disarm();
+    if (!pending || !pending.backup || !pending.backup.games) {
+      _refreshSaves();
+      _setSavesStatus('Nothing to restore.');
+      return;
+    }
+    var backup = pending.backup;
+    var gameIds = pending.games.slice();
+    var owners = _owners();
+    var byId = {};
+    for (var i = 0; i < owners.length; i++) byId[owners[i].id] = owners[i];
+    var names = [];
+    for (var n = 0; n < gameIds.length; n++) {
+      names.push(byId[gameIds[n]] ? byId[gameIds[n]].name : gameIds[n]);
+    }
+    var store = _store();
+    var snapshot = [];
+    for (var s = 0; s < gameIds.length; s++) {
+      var keys = Object.keys(backup.games[gameIds[s]]);
+      for (var k = 0; k < keys.length; k++) {
+        var raw = null;
+        try {
+          raw = store ? store.getItem(keys[k]) : null;
+        } catch (e) {
+          raw = null;
+        }
+        snapshot.push({ key: keys[k],
+          value: (typeof raw === 'string') ? raw : null });
+      }
+    }
+    function rollback() {
+      for (var r = 0; r < snapshot.length; r++) {
+        try {
+          if (!store) continue;
+          if (snapshot[r].value === null) store.removeItem(snapshot[r].key);
+          else store.setItem(snapshot[r].key, snapshot[r].value);
+        } catch (e) { /* rollback is best-effort per key */ }
+      }
+    }
+    var writeFailed = false;
+    try {
+      if (!store) {
+        writeFailed = true;
+      } else {
+        for (var w = 0; w < gameIds.length && !writeFailed; w++) {
+          var values = backup.games[gameIds[w]];
+          var wkeys = Object.keys(values);
+          for (var wk = 0; wk < wkeys.length; wk++) {
+            try {
+              store.setItem(wkeys[wk], values[wkeys[wk]]);
+            } catch (e) {
+              writeFailed = true;
+              break;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      writeFailed = true;
+    }
+    if (writeFailed) {
+      rollback();
+      _refreshSaves();
+      _setSavesStatus('Restore failed: the saves could not be written. ' +
+        'Nothing was changed.');
+      return;
+    }
+    var failed = false;
+    try {
+      for (var v = 0; v < gameIds.length && !failed; v++) {
+        var vvalues = backup.games[gameIds[v]];
+        var vkeys = Object.keys(vvalues);
+        for (var vk = 0; vk < vkeys.length; vk++) {
+          var back = null;
+          try {
+            back = store.getItem(vkeys[vk]);
+          } catch (e) {
+            back = null;
+          }
+          if (back !== vvalues[vkeys[vk]]) {
+            failed = true;
+            break;
+          }
+        }
+        if (!failed) {
+          var owner = byId[gameIds[v]];
+          var saveKey = owner && owner.keys && owner.keys[0];
+          if (saveKey &&
+              Object.prototype.hasOwnProperty.call(vvalues, saveKey)) {
+            if (!_verifySaveKey(gameIds[v])) failed = true;
+          }
+        }
+      }
+    } catch (e) {
+      failed = true;
+    }
+    if (failed) {
+      rollback();
+      _refreshSaves();
+      _setSavesStatus('Restore failed: the backup did not load cleanly. ' +
+        'Nothing was changed.');
+      return;
+    }
+    for (var ri = 0; ri < gameIds.length; ri++) {
+      _callHook(gameIds[ri], 'reload');
+    }
+    _refreshSaves();
+    _setSavesStatus('Saves restored for ' + names.join(', ') + '.');
+  }
+
+  // Re-read key presence and re-mark every row WITHOUT rebuilding
+  // the section. Refreshing disarms (simpler and safe: a stale
+  // confirm must never survive a state change). Called when
+  // Settings opens (shell onOpen hook) and after every
+  // delete/download/restore action. A no-op until built.
+  function _refreshSaves() {
+    try {
+      if (!_savesBuilt) return;
+      _disarm();
+      var anySave = false;
+      for (var i = 0; i < _saveRows.length; i++) {
+        var row = _saveRows[i];
+        var has = _gameHasSave(row);
+        if (has) anySave = true;
+        try {
+          row.stateEl.textContent = has ? 'Save found' : 'No save';
+        } catch (e) { /* marking is best-effort */ }
+        try {
+          row.deleteBtn.disabled = !has;
+          row.deleteBtn.setAttribute('aria-disabled', has ? 'false' : 'true');
+          row.downloadBtn.disabled = !has;
+          row.downloadBtn.setAttribute('aria-disabled', has ? 'false' : 'true');
+        } catch (e) { /* marking is best-effort */ }
+      }
+      try {
+        if (_downloadAllBtn) {
+          _downloadAllBtn.disabled = !anySave;
+          _downloadAllBtn.setAttribute('aria-disabled', anySave ? 'false' : 'true');
+        }
+        if (_deleteAllBtn) {
+          _deleteAllBtn.disabled = !anySave;
+          _deleteAllBtn.setAttribute('aria-disabled', anySave ? 'false' : 'true');
+        }
+      } catch (e) { /* marking is best-effort */ }
+    } catch (e) { /* refresh must never throw */ }
+  }
+
   function _buildSettingsSave(container) {
     _clear(container);
+    _disarm();
+    _savesBuilt = false;
+    _saveRows = [];
+    _savesStatus = null;
+    _downloadAllBtn = null;
+    _deleteAllBtn = null;
+    _restoreBtn = null;
+    _restoreFileInput = null;
+
     var box = _el('div', 'bz-settings-save');
+    box.appendChild(_el('div', 'bz-settings-heading', 'Game saves'));
+    box.appendChild(_el('p', 'bz-settings-save-copy',
+      'Deleting removes game saves only. Your name, theme, music, ' +
+      'sound, and home screen layout are kept.'));
 
-    var status = _el('p', 'bz-settings-status', '');
-    status.setAttribute('aria-live', 'polite');
+    var owners = _owners();
+    if (owners.length === 0) {
+      var none = _el('p', 'bz-settings-status', 'Game saves are unavailable.');
+      none.setAttribute('aria-live', 'polite');
+      box.appendChild(none);
+      _savesStatus = none;
+      container.appendChild(box);
+      _savesBuilt = true;
+      return;
+    }
 
-    var button = _el('button', 'bz-delete-btn', 'Delete Block Zen save');
-    button.type = 'button';
-    button.id = 'bz-settings-delete-save';
-    button.addEventListener('click', function () {
+    var list = _el('div', 'bz-settings-save-list');
+    for (var i = 0; i < owners.length; i++) {
+      (function (owner) {
+        var row = _el('div', 'bz-settings-save-row');
+        var label = _el('div', 'bz-settings-label');
+        label.appendChild(_el('div', 'bz-settings-title', owner.name));
+        var stateEl = _el('div', 'bz-settings-hint', 'No save');
+        label.appendChild(stateEl);
+        row.appendChild(label);
+
+        var actions = _el('div', 'bz-settings-save-row-actions');
+        var downloadBtn = _el('button',
+          'bz-theme-btn bz-settings-save-btn', 'Download');
+        downloadBtn.type = 'button';
+        downloadBtn.id = 'bz-settings-download-save-' + owner.id;
+        downloadBtn.setAttribute('aria-label',
+          'Download ' + owner.name + ' save');
+        downloadBtn.addEventListener('click', function () {
+          try {
+            if (downloadBtn.disabled) return;
+            _downloadSaves(owner);
+          } catch (e) { /* never throw */ }
+        });
+        actions.appendChild(downloadBtn);
+
+        var deleteBtn = _el('button',
+          'bz-delete-btn bz-settings-save-btn', 'Delete');
+        deleteBtn.type = 'button';
+        // The Block Zen row keeps the historic id; other rows take
+        // the same id with their game id appended.
+        deleteBtn.id = (owner.id === 'blockzen') ?
+          'bz-settings-delete-save' :
+          'bz-settings-delete-save-' + owner.id;
+        deleteBtn.setAttribute('aria-label', 'Delete ' + owner.name + ' save');
+        deleteBtn.setAttribute('aria-pressed', 'false');
+        deleteBtn.addEventListener('click', _confirmable(deleteBtn,
+          function () {
+            _deleteOwners([owner]);
+            _refreshSaves();
+            _setSavesStatus('Save deleted for ' + owner.name +
+              '. A new game has started.');
+          }));
+        actions.appendChild(deleteBtn);
+
+        row.appendChild(actions);
+        list.appendChild(row);
+        _saveRows.push({
+          id: owner.id,
+          name: owner.name,
+          keys: owner.keys.slice(),
+          stateEl: stateEl,
+          deleteBtn: deleteBtn,
+          downloadBtn: downloadBtn
+        });
+      })(owners[i]);
+    }
+    box.appendChild(list);
+
+    var bulk = _el('div', 'bz-settings-save-actions');
+    var downloadAllBtn = _el('button', 'bz-theme-btn', 'Download all saves');
+    downloadAllBtn.type = 'button';
+    downloadAllBtn.id = 'bz-settings-download-all';
+    downloadAllBtn.setAttribute('aria-label', 'Download all saves');
+    downloadAllBtn.addEventListener('click', function () {
       try {
-        var save = _global('BZSave');
-        if (save && typeof save.clearAll === 'function') {
-          try { save.clearAll(); } catch (e) { /* best-effort */ }
+        if (downloadAllBtn.disabled) return;
+        _downloadSaves(null);
+      } catch (e) { /* never throw */ }
+    });
+    bulk.appendChild(downloadAllBtn);
+    _downloadAllBtn = downloadAllBtn;
+
+    var deleteAllBtn = _el('button', 'bz-delete-btn', 'Delete all saves');
+    deleteAllBtn.type = 'button';
+    deleteAllBtn.id = 'bz-settings-delete-all';
+    deleteAllBtn.setAttribute('aria-label', 'Delete all saves');
+    deleteAllBtn.setAttribute('aria-pressed', 'false');
+    deleteAllBtn.addEventListener('click', _confirmable(deleteAllBtn,
+      function () {
+        _deleteOwners(_owners());
+        _refreshSaves();
+        _setSavesStatus('All game saves deleted. New games have started.');
+      }));
+    bulk.appendChild(deleteAllBtn);
+    _deleteAllBtn = deleteAllBtn;
+
+    var restoreBtn = _el('button', 'bz-theme-btn', 'Restore from backup');
+    restoreBtn.type = 'button';
+    restoreBtn.id = 'bz-settings-restore';
+    restoreBtn.setAttribute('aria-label', 'Restore from backup');
+    restoreBtn.setAttribute('aria-pressed', 'false');
+    bulk.appendChild(restoreBtn);
+    _restoreBtn = restoreBtn;
+
+    var fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.id = 'bz-settings-restore-file';
+    fileInput.className = 'bz-settings-file-input';
+    fileInput.setAttribute('accept', '.json,application/json');
+    fileInput.setAttribute('aria-label', 'Choose a saves backup file');
+    fileInput.setAttribute('tabindex', '-1');
+    fileInput.addEventListener('change', function () {
+      try {
+        var files = null;
+        try {
+          files = fileInput.files;
+        } catch (e) {
+          files = null;
         }
-        var game = _global('BZGame');
-        if (game && typeof game.setBest === 'function') {
-          try { game.setBest(0); } catch (e) { /* best-effort */ }
+        var file = (files && files.length) ? files[0] : null;
+        if (!file) {
+          _resetRestoreInput();
+          return;
         }
-        if (game && typeof game.newGame === 'function') {
-          try { game.newGame(); } catch (e) { /* best-effort */ }
-        }
-        _dispatch('bz:delete-save', {});
-        status.textContent = 'Save deleted. A new game has started.';
-      } catch (e) {
-        status.textContent = 'Save deleted. A new game has started.';
+        _readRestoreFile(file);
+      } catch (e3) {
+        _setSavesStatus('Could not read that file. Nothing was changed.');
       }
     });
-    box.appendChild(button);
+    bulk.appendChild(fileInput);
+    _restoreFileInput = fileInput;
+
+    // The Restore button has two jobs: while a valid backup is
+    // staged and the button is armed, a tap CONFIRMS the restore;
+    // otherwise a tap opens the file picker.
+    restoreBtn.addEventListener('click', function () {
+      try {
+        if (restoreBtn.disabled) return;
+        if (_restorePending && _armed && _armed.button === restoreBtn) {
+          _executeRestore();
+          return;
+        }
+        _disarm();
+        try {
+          if (fileInput && typeof fileInput.click === 'function') {
+            fileInput.click();
+          }
+        } catch (e) { /* picker failure is silent */ }
+      } catch (e2) { /* never throw */ }
+    });
+
+    box.appendChild(bulk);
+
+    var status = _el('p', 'bz-settings-status', '');
+    status.id = 'bz-settings-saves-status';
+    status.setAttribute('aria-live', 'polite');
     box.appendChild(status);
+    _savesStatus = status;
+
     container.appendChild(box);
+    _savesBuilt = true;
+    _ensureDocListener();
+    _refreshSaves();
   }
 
   // ------------------------------------------------------------- about app
@@ -11990,6 +13324,7 @@ var BZSettings = (function () {
     sanitizeName: sanitizeName,
     getName: getName,
     setName: setName,
+    refreshSaves: _refreshSaves,
     SETTINGS_KEY: SETTINGS_KEY,
     SETTINGS_CHANGED_EVENT: SETTINGS_CHANGED_EVENT,
     NAME_MAX_LENGTH: NAME_MAX_LENGTH,
@@ -12462,6 +13797,99 @@ if (typeof window !== 'undefined') {
   } catch (e) {
     _log(e);
   }
+})();
+
+// ---- Save-registry hooks (Settings delete/restore) ----
+// Attached at eval time; every global resolves LAZILY when a hook
+// runs, never at registration. Both hooks are best-effort and never
+// throw. reinit() mirrors the wire's own delete-save delegation:
+// best reset, fresh game, overlay hidden, 'bz:delete-save'
+// dispatched (bz-fx.js resets FX and bz-audio.js plays the click on
+// it). reload() mirrors the boot resume: a live saved game restores,
+// anything else starts fresh, and the best display re-reads storage.
+(function () {
+  'use strict';
+
+  function _resolve(name) {
+    try {
+      if (typeof window !== 'undefined' && window && window[name]) return window[name];
+    } catch (e) { /* fall through */ }
+    try {
+      if (typeof globalThis !== 'undefined' && globalThis[name]) return globalThis[name];
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _dispatch(name, detail) {
+    try {
+      if (typeof window === 'undefined' || !window || !window.dispatchEvent) return;
+      var evt = null;
+      if (typeof CustomEvent !== 'undefined') {
+        evt = new CustomEvent(name, { detail: detail });
+      } else if (typeof document !== 'undefined' && document && document.createEvent) {
+        evt = document.createEvent('CustomEvent');
+        if (evt.initCustomEvent) evt.initCustomEvent(name, false, false, detail);
+      }
+      if (evt) window.dispatchEvent(evt);
+    } catch (e) { /* listeners are optional */ }
+  }
+
+  function _hideOverlay() {
+    try {
+      var ui = _resolve('BZUI');
+      if (!ui || typeof ui.hideGameOver !== 'function') return;
+      if (typeof document === 'undefined' || !document) return;
+      var mount = document.getElementById('app-blockzen');
+      if (mount) ui.hideGameOver(mount);
+    } catch (e) { /* best-effort */ }
+  }
+
+  function reinit() {
+    try {
+      var game = _resolve('BZGame');
+      if (game && typeof game.setBest === 'function') {
+        try { game.setBest(0); } catch (e) { /* best-effort */ }
+      }
+      if (game && typeof game.newGame === 'function') {
+        try { game.newGame(); } catch (e) { /* best-effort */ }
+      }
+      _hideOverlay();
+      _dispatch('bz:delete-save', {});
+    } catch (e) { /* never throw */ }
+  }
+
+  function reload() {
+    try {
+      var save = _resolve('BZSave');
+      var game = _resolve('BZGame');
+      var best = 0;
+      try {
+        if (save && typeof save.loadBest === 'function') best = save.loadBest();
+      } catch (e) { /* 0 stands */ }
+      if (game && typeof game.setBest === 'function') {
+        try { game.setBest(best); } catch (e) { /* best-effort */ }
+      }
+      var restored = false;
+      try {
+        var saved = (save && typeof save.load === 'function') ? save.load() : null;
+        if (saved && !saved.gameOver && game && typeof game.restore === 'function') {
+          game.restore(saved);
+          restored = true;
+        }
+      } catch (e) { /* fall through to a fresh game */ }
+      if (!restored && game && typeof game.newGame === 'function') {
+        try { game.newGame(); } catch (e) { /* best-effort */ }
+      }
+      _hideOverlay();
+    } catch (e) { /* never throw */ }
+  }
+
+  try {
+    if (typeof SaveRegistry !== 'undefined' && SaveRegistry &&
+        typeof SaveRegistry.extend === 'function') {
+      SaveRegistry.extend('blockzen', { reinit: reinit, reload: reload });
+    }
+  } catch (e) { /* registration is best-effort */ }
 })();
 </script>
 <script>
@@ -13630,6 +15058,21 @@ var SolSave = (function () {
 
 if (typeof module !== 'undefined' && module.exports) module.exports = SolSave;
 if (typeof window !== 'undefined') window.SolSave = SolSave;
+
+// Save registry: advertise this game's storage keys (save key first,
+// then the stats key) so Settings builds its saves section
+// data-driven. Guarded: the registry may be absent (standalone node
+// use), and registration must never break the save module.
+try {
+  if (typeof SaveRegistry !== 'undefined' && SaveRegistry &&
+      typeof SaveRegistry.register === 'function') {
+    SaveRegistry.register({
+      id: 'solitaire',
+      name: 'Solitaire',
+      keys: [SolSave.SAVE_KEY, SolSave.STATS_KEY]
+    });
+  }
+} catch (e) { /* registration is best-effort */ }
 </script>
 <script>
 // source: sol-ui.js
@@ -16634,6 +18077,105 @@ if (typeof window !== 'undefined') {
     _log(e);
   }
 })();
+
+// ---- Save-registry hooks (Settings delete/restore) ----
+// Attached at eval time; every global resolves LAZILY when a hook
+// runs, never at registration. Both hooks are best-effort and never
+// throw. reinit() calls game.newGame() DIRECTLY — never the wire's
+// _newDeal, which calls recordGameStart() and would corrupt the
+// just-cleared stats. reload() mirrors the boot resume: a valid
+// saved game restores, anything else deals fresh. Both re-render
+// the stats row from storage (the same element lookup and UI call
+// the wire's own _renderStats uses), so the header shows the
+// cleared/restored stats at once instead of waiting for the next
+// deal or win.
+(function () {
+  'use strict';
+
+  function _resolve(name) {
+    try {
+      if (typeof window !== 'undefined' && window && window[name]) return window[name];
+    } catch (e) { /* fall through */ }
+    try {
+      if (typeof globalThis !== 'undefined' && globalThis[name]) return globalThis[name];
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _renderStats() {
+    try {
+      var ui = _resolve('SolUI');
+      var save = _resolve('SolSave');
+      if (!ui || typeof ui.renderStats !== 'function') return;
+      if (typeof document === 'undefined' || !document) return;
+      var mount = null;
+      try {
+        mount = document.getElementById('app-solitaire');
+      } catch (e) {
+        mount = null;
+      }
+      var el = null;
+      try {
+        if (mount && mount.querySelector) el = mount.querySelector('.sol-stats-row');
+      } catch (e) {
+        el = null;
+      }
+      if (!el) {
+        try {
+          el = document.getElementById('sol-stats');
+        } catch (e) {
+          el = null;
+        }
+      }
+      if (!el) return;
+      var stats = null;
+      try {
+        stats = (save && typeof save.loadStats === 'function') ? save.loadStats() : null;
+      } catch (e) {
+        stats = null;
+      }
+      ui.renderStats(el, stats || {
+        played: 0, won: 0, streak: 0, bestStreak: 0, bestScore: 0, bestTime: 0
+      });
+    } catch (e) { /* stats display is best-effort */ }
+  }
+
+  function reinit() {
+    try {
+      var game = _resolve('SolGame');
+      if (game && typeof game.newGame === 'function') {
+        try { game.newGame(); } catch (e) { /* best-effort */ }
+      }
+      _renderStats();
+    } catch (e) { /* never throw */ }
+  }
+
+  function reload() {
+    try {
+      var save = _resolve('SolSave');
+      var game = _resolve('SolGame');
+      var restored = false;
+      try {
+        var saved = (save && typeof save.load === 'function') ? save.load() : null;
+        if (saved && game && typeof game.restore === 'function') {
+          game.restore(saved);
+          restored = true;
+        }
+      } catch (e) { /* fall through to a fresh deal */ }
+      if (!restored && game && typeof game.newGame === 'function') {
+        try { game.newGame(); } catch (e) { /* best-effort */ }
+      }
+      _renderStats();
+    } catch (e) { /* never throw */ }
+  }
+
+  try {
+    if (typeof SaveRegistry !== 'undefined' && SaveRegistry &&
+        typeof SaveRegistry.extend === 'function') {
+      SaveRegistry.extend('solitaire', { reinit: reinit, reload: reload });
+    }
+  } catch (e) { /* registration is best-effort */ }
+})();
 </script>
 <script>
 // source: bf-engine.js
@@ -17754,6 +19296,21 @@ var BFSave = (function () {
 
 if (typeof module !== 'undefined' && module.exports) module.exports = BFSave;
 if (typeof window !== 'undefined') window.BFSave = BFSave;
+
+// Save registry: advertise this game's storage keys (save key first,
+// then the stats key) so Settings builds its saves section
+// data-driven. Guarded: the registry may be absent (standalone node
+// use), and registration must never break the save module.
+try {
+  if (typeof SaveRegistry !== 'undefined' && SaveRegistry &&
+      typeof SaveRegistry.register === 'function') {
+    SaveRegistry.register({
+      id: 'blockfall',
+      name: 'Blockfall',
+      keys: [BFSave.SAVE_KEY, BFSave.STATS_KEY]
+    });
+  }
+} catch (e) { /* registration is best-effort */ }
 </script>
 <script>
 // source: bf-ui.js
@@ -20822,6 +22379,111 @@ if (typeof window !== 'undefined') window.BFWire = BFWire;
   } catch (e) {
     _bootLog(e);
   }
+})();
+
+// ---- Save-registry hooks (Settings delete/restore) ----
+// Attached at eval time; every global resolves LAZILY when a hook
+// runs, never at registration. Both hooks are best-effort and never
+// throw. reinit() starts a fresh game (the house delete pattern: the
+// fresh game must start so stale state is never re-saved), then
+// pauses it: newGame starts the frame loop, and the loop must not
+// run gravity behind Settings. reload() mirrors the boot resume: a
+// valid live save restores, anything else clears the save key and
+// starts fresh; the restored/fresh game is paused the same way when
+// live (pause() itself refuses finished states). Both push the
+// best/stats display from a fresh storage read, so the header shows
+// the cleared/restored numbers at once.
+(function () {
+  'use strict';
+
+  function _resolve(name) {
+    try {
+      if (typeof window !== 'undefined' && window && window[name]) return window[name];
+    } catch (e) { /* fall through */ }
+    try {
+      if (typeof globalThis !== 'undefined' && globalThis[name]) return globalThis[name];
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _pushStats(game, save) {
+    try {
+      if (!game) return;
+      var stats = null;
+      try {
+        stats = (save && typeof save.loadStats === 'function') ? save.loadStats() : null;
+      } catch (e) {
+        stats = null;
+      }
+      stats = stats || { games: 0, best: 0, mostLines: 0, maxLevel: 0, totalClears: 0 };
+      var best = 0;
+      if (typeof stats.best === 'number' && isFinite(stats.best) && stats.best > 0) {
+        best = Math.floor(stats.best);
+      }
+      if (typeof game.setBest === 'function') {
+        try { game.setBest(best); } catch (e) { /* best-effort */ }
+      }
+      if (typeof game.setStats === 'function') {
+        try { game.setStats(stats); } catch (e) { /* best-effort */ }
+      }
+    } catch (e) { /* display push is best-effort */ }
+  }
+
+  function _pause(game) {
+    try {
+      if (game && typeof game.pause === 'function') game.pause();
+    } catch (e) { /* best-effort */ }
+  }
+
+  function reinit() {
+    try {
+      var game = _resolve('BFGame');
+      var save = _resolve('BFSave');
+      if (game && typeof game.newGame === 'function') {
+        try { game.newGame(); } catch (e) { /* best-effort */ }
+      }
+      _pause(game);
+      _pushStats(game, save);
+    } catch (e) { /* never throw */ }
+  }
+
+  function reload() {
+    try {
+      var save = _resolve('BFSave');
+      var game = _resolve('BFGame');
+      var restored = false;
+      var saved = null;
+      try {
+        saved = (save && typeof save.load === 'function') ? save.load() : null;
+      } catch (e) {
+        saved = null;
+      }
+      if (saved && saved.gameOver !== true && game && typeof game.restore === 'function') {
+        try {
+          restored = (game.restore(saved) !== false);
+        } catch (e) {
+          restored = false;
+        }
+      }
+      if (!restored) {
+        try {
+          if (save && typeof save.clearSave === 'function') save.clearSave();
+        } catch (e) { /* best-effort */ }
+        if (game && typeof game.newGame === 'function') {
+          try { game.newGame(); } catch (e) { /* best-effort */ }
+        }
+      }
+      _pause(game);
+      _pushStats(game, save);
+    } catch (e) { /* never throw */ }
+  }
+
+  try {
+    if (typeof SaveRegistry !== 'undefined' && SaveRegistry &&
+        typeof SaveRegistry.extend === 'function') {
+      SaveRegistry.extend('blockfall', { reinit: reinit, reload: reload });
+    }
+  } catch (e) { /* registration is best-effort */ }
 })();
 </script>
 <script>
@@ -24136,6 +25798,21 @@ var CHSSave = (function () {
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CHSSave;
 if (typeof window !== 'undefined') window.CHSSave = CHSSave;
+
+// Save registry: advertise this game's storage keys (save key first,
+// then stats and training keys) so Settings builds its saves section
+// data-driven. Guarded: the registry may be absent (standalone node
+// use), and registration must never break the save module.
+try {
+  if (typeof SaveRegistry !== 'undefined' && SaveRegistry &&
+      typeof SaveRegistry.register === 'function') {
+    SaveRegistry.register({
+      id: 'chess',
+      name: 'Chess',
+      keys: [CHSSave.SAVE_KEY, CHSSave.STATS_KEY, CHSSave.TRAINING_KEY]
+    });
+  }
+} catch (e) { /* registration is best-effort */ }
 </script>
 <script>
 // source: chs-training.js
@@ -25324,6 +27001,36 @@ var CHSTraining = (function () {
       return { completed: completed.slice() };
     }
 
+    // Replace the completed set from a stored progress object (the
+    // shape CHSSave.loadTraining returns, or a bare array of ids).
+    // Lets Settings delete/restore re-sync the runner after the
+    // storage underneath it changes: the game's lesson list unions
+    // stored progress with runner.progress(), so a stale cached set
+    // would keep showing checkmarks for deleted progress. Never
+    // throws; bad input empties the set. The current lesson/step is
+    // untouched — only the completed set is replaced.
+    function setProgress(p) {
+      try {
+        var list = null;
+        if (p && Array.isArray(p.completed)) list = p.completed;
+        else if (Array.isArray(p)) list = p;
+        completed.length = 0;
+        if (list) {
+          for (var i = 0; i < list.length; i++) {
+            if (typeof list[i] === 'string' && list[i].length > 0 &&
+                completed.indexOf(list[i]) === -1) {
+              completed.push(list[i]);
+            }
+          }
+        }
+        if (progress && typeof progress === 'object') {
+          progress.completed = completed.slice();
+        }
+      } catch (e) {
+        /* a progress reset must never throw */
+      }
+    }
+
     function resetLesson() {
       if (!lesson) return;
       stepIndex = 0;
@@ -25335,6 +27042,7 @@ var CHSTraining = (function () {
       current: current,
       attempt: attempt,
       progress: progressOut,
+      setProgress: setProgress,
       resetLesson: resetLesson
     };
   }
@@ -33083,6 +34791,163 @@ if (typeof window !== 'undefined') window.CHSWire = CHSWire;
   } catch (e) {
     _bootLog(e);
   }
+})();
+
+// ---- Save-registry hooks (Settings delete/restore) ----
+// Attached at eval time; every global resolves LAZILY when a hook
+// runs, never at registration. Both hooks are best-effort and never
+// throw.
+//
+// reinit() mirrors the wire's startFreshGame: the current config is
+// read from game.state().config (same field subset) and passed to
+// game.newGame, which cancels AI, stops the clocks, and clears the
+// paused flag. The fresh game is then paused EXPLICITLY: newGame
+// starts the clock loop and the AI think timer, and neither may run
+// behind Settings (the AI's first move would also re-save through
+// the wire's save-on-change, undoing the delete). Pausing leaves
+// the standard Paused badge, tap-to-resume, exactly like the
+// boot-pause for restored games. The training runner's cached
+// completed set is reset too: the lesson list unions stored
+// progress with runner.progress(), so without the reset, deleted
+// checkmarks would keep showing.
+//
+// reload() mirrors the boot resume: a valid saved game restores,
+// anything else takes the fresh-game path. The runner is re-synced
+// from stored training progress (loadTraining coerces, so the read
+// always yields a usable shape), and a live restored game is
+// paused, again mirroring the boot-pause. Stats have no on-screen
+// display in Chess and the wire always reads them fresh from
+// storage when recording, so no stats refresh is needed.
+(function () {
+  'use strict';
+
+  function _resolve(name) {
+    try {
+      if (typeof window !== 'undefined' && window && window[name]) return window[name];
+    } catch (e) { /* fall through */ }
+    try {
+      if (typeof globalThis !== 'undefined' && globalThis[name]) return globalThis[name];
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  // The training runner the wire boot block created and attach()
+  // wrapped, reachable through the verification handle. Null in
+  // node, or when the wire never attached.
+  function _runner() {
+    try {
+      if (typeof window !== 'undefined' && window && window.__CHS__ &&
+          window.__CHS__.wire && window.__CHS__.wire.trainingRunner) {
+        return window.__CHS__.wire.trainingRunner;
+      }
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _currentConfig(game) {
+    var config = {};
+    try {
+      if (!game || typeof game.state !== 'function') return config;
+      var st = game.state();
+      if (st && st.config && typeof st.config === 'object') {
+        var c = st.config;
+        if (c.mode !== undefined) config.mode = c.mode;
+        if (c.opponent !== undefined) config.opponent = c.opponent;
+        if (c.timeControl !== undefined) config.timeControl = c.timeControl;
+        if (c.humanColor !== undefined) config.humanColor = c.humanColor;
+        if (c.boardTheme !== undefined) config.boardTheme = c.boardTheme;
+        if (c.pieceSet !== undefined) config.pieceSet = c.pieceSet;
+        if (c.showCoords !== undefined) config.showCoords = c.showCoords;
+      }
+    } catch (e) { /* a partial config still starts a fresh game */ }
+    return config;
+  }
+
+  function _freshGame(game) {
+    if (!game || typeof game.newGame !== 'function') return;
+    try {
+      game.newGame(_currentConfig(game));
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _pause(game) {
+    try {
+      if (game && typeof game.pause === 'function') game.pause();
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _isLiveUnpaused(game) {
+    try {
+      if (!game || typeof game.state !== 'function') return false;
+      var st = game.state();
+      if (!st || !st.status || st.status.over) return false;
+      if (typeof game.paused === 'function') {
+        try {
+          if (game.paused()) return false;
+        } catch (e) { /* fall through to the state flag */ }
+      }
+      if (st.paused) return false;
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function _syncRunner(save, empty) {
+    try {
+      var runner = _runner();
+      if (!runner || typeof runner.setProgress !== 'function') return;
+      if (empty) {
+        runner.setProgress({ completed: [] });
+        return;
+      }
+      var progress = null;
+      try {
+        if (save && typeof save.loadTraining === 'function') {
+          progress = save.loadTraining(null);
+        }
+      } catch (e) {
+        progress = null;
+      }
+      runner.setProgress(progress || { completed: [] });
+    } catch (e) { /* runner sync is best-effort */ }
+  }
+
+  function reinit() {
+    try {
+      var game = _resolve('CHSGame');
+      var save = _resolve('CHSSave');
+      _freshGame(game);
+      _pause(game);
+      _syncRunner(save, true);
+    } catch (e) { /* never throw */ }
+  }
+
+  function reload() {
+    try {
+      var save = _resolve('CHSSave');
+      var game = _resolve('CHSGame');
+      var restored = false;
+      try {
+        var saved = (save && typeof save.loadGame === 'function')
+          ? save.loadGame(null) : null;
+        if (saved && game && typeof game.restore === 'function') {
+          game.restore(saved);
+          restored = true;
+        }
+      } catch (e) { /* fall through to the fresh-game path */ }
+      if (!restored) _freshGame(game);
+      _syncRunner(save, false);
+      if (_isLiveUnpaused(game)) _pause(game);
+    } catch (e) { /* never throw */ }
+  }
+
+  try {
+    if (typeof SaveRegistry !== 'undefined' && SaveRegistry &&
+        typeof SaveRegistry.extend === 'function') {
+      SaveRegistry.extend('chess', { reinit: reinit, reload: reload });
+    }
+  } catch (e) { /* registration is best-effort */ }
 })();
 </script>
 <script>
