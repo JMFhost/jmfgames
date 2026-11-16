@@ -7784,8 +7784,12 @@ if (typeof window !== 'undefined') {
 <script>
 // source: shell.js
 /* PhoneShell: lock screen, clock, home screen, app registry, back-to-home.
-   Home icons render in a default games-first order and can be rearranged:
-   long-press an icon to enter edit mode, then drag it or use tap-to-move.
+   Home icons render in alphabetical order by display name by default and
+   can be rearranged: long-press an icon to enter edit mode, then drag it
+   or use tap-to-move. A stored order identical to the pre-alphabetical
+   default means the player never reorganized, so the first load migrates
+   it to the alphabetical order; any other stored order is a deliberate
+   arrangement and is preserved exactly.
    The order persists under one dedicated storage key and never touches the
    settings or game-save keys. One registered app is an external link:
    opening it navigates the SAME tab away (no new tab, no section, no
@@ -7811,9 +7815,13 @@ if (typeof window !== 'undefined') {
   /* The player name lives in the shared settings store; the shell only
      reads it to render the lock screen, never writes it. */
   var SETTINGS_KEY = 'jmf-phone-settings-v1';
-  /* Default home order: games alphabetical first, then utilities
-     alphabetical. */
-  var DEFAULT_HOME_ORDER = ['angrymonkeys', 'blockfall', 'blockzen', 'chess', 'chessquest', 'invesim', 'kindlekeep', 'solitaire', 'about', 'settings'];
+  /* Default home order: every icon alphabetical by display name
+     (case-insensitive), games and utilities in one list. This list must
+     match what sortHomeAlphabetical computes from the registered titles. */
+  var DEFAULT_HOME_ORDER = ['about', 'angrymonkeys', 'blockzen', 'blockfall', 'chess', 'chessquest', 'invesim', 'kindlekeep', 'settings', 'solitaire'];
+  /* The pre-alphabetical default (games first, then utilities). A stored
+     order identical to this list means the player never reorganized. */
+  var LEGACY_DEFAULT_HOME_ORDER = ['angrymonkeys', 'blockfall', 'blockzen', 'chess', 'chessquest', 'invesim', 'kindlekeep', 'solitaire', 'about', 'settings'];
   var EXTERNAL_HOME_URL = 'https://invesim.com';
 
   var registry = {};
@@ -8365,10 +8373,39 @@ if (typeof window !== 'undefined') {
     }
   }
 
+  /* Alphabetical comparison for home ordering: the registered title when
+     known, else the id (labelFor's fallback), lowercased for a
+     case-insensitive comparison; the id breaks ties so the order is total
+     and deterministic. Matches the comparator in sortHomeAlphabetical. */
+  function compareHomeOrderIds(a, b) {
+    var la = String(labelFor(a)).toLowerCase();
+    var lb = String(labelFor(b)).toLowerCase();
+    if (la < lb) return -1;
+    if (la > lb) return 1;
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  }
+
+  /* Insert id before the first element greater than it, else at the end:
+     the alphabetical slot among the current list. */
+  function insertHomeOrderId(out, id) {
+    for (var i = 0; i < out.length; i++) {
+      if (compareHomeOrderIds(id, out[i]) < 0) {
+        out.splice(i, 0, id);
+        return;
+      }
+    }
+    out.push(id);
+  }
+
   /* Pure order resolution: keep stored ids that are known (first occurrence
-     wins), drop unknown ids, then append every known id missing from the
-     stored order in default order. Corrupt, empty, or missing storage
-     (anything but an array) resolves to the default order. */
+     wins), drop unknown ids, then insert every known id missing from the
+     stored order at its alphabetical position by display name among the
+     current list, so a newly added app lands in its alphabetical slot
+     whether the stored order is the default or a deliberate arrangement.
+     Corrupt, empty, or missing storage (anything but an array) resolves
+     to the known ids in alphabetical order. */
   function resolveHomeOrder(stored, known) {
     var knownIds = (Array.isArray(known) && known.length) ? known.slice() : DEFAULT_HOME_ORDER.slice();
     var out = [];
@@ -8388,7 +8425,7 @@ if (typeof window !== 'undefined') {
       id = knownIds[i];
       if (!seen[id]) {
         seen[id] = true;
-        out.push(id);
+        insertHomeOrderId(out, id);
       }
     }
     return out;
@@ -8509,8 +8546,30 @@ if (typeof window !== 'undefined') {
     return out;
   }
 
+  function sameIdOrder(a, b) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  }
+
   function renderHomeOrder() {
-    return applyHomeOrder(resolveHomeOrder(loadStoredOrder(), effectiveKnownIds()));
+    var stored = loadStoredOrder();
+    var known = effectiveKnownIds();
+    /* One-time migration: a stored order identical to the pre-alphabetical
+       default means the player never reorganized, so replace it with the
+       alphabetical default and persist it, so later loads treat it as an
+       ordinary stored order. Any other stored order is deliberate and is
+       preserved exactly. */
+    if (stored && sameIdOrder(stored, LEGACY_DEFAULT_HOME_ORDER)) {
+      var migrated = resolveHomeOrder(null, known);
+      var applied = applyHomeOrder(migrated);
+      var finalOrder = applied.length ? applied : migrated;
+      saveHomeOrder(finalOrder);
+      return finalOrder;
+    }
+    return applyHomeOrder(resolveHomeOrder(stored, known));
   }
 
   function setHomeOrder(order) {
@@ -8919,6 +8978,7 @@ if (typeof window !== 'undefined') {
 
     HOME_ORDER_KEY: HOME_ORDER_KEY,
     DEFAULT_HOME_ORDER: DEFAULT_HOME_ORDER.slice(),
+    LEGACY_DEFAULT_HOME_ORDER: LEGACY_DEFAULT_HOME_ORDER.slice(),
     LONG_PRESS_MS: LONG_PRESS_MS,
     SPLASH_MS: SPLASH_MS,
     SPLASH_THEMES: SPLASH_THEMES
