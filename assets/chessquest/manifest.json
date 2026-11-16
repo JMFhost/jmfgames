@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "shards": [
+    {
+      "id": "shard-01",
+      "url": "assets/chessquest/shard-01.json",
+      "bytes": 1900232,
+      "sha": "59f39abb"
+    },
+    {
+      "id": "shard-02",
+      "url": "assets/chessquest/shard-02.json",
+      "bytes": 1106452,
+      "sha": "b5b2973c"
+    },
+    {
+      "id": "shard-03",
+      "url": "assets/chessquest/shard-03.json",
+      "bytes": 1084957,
+      "sha": "a9f5671a"
+    },
+    {
+      "id": "shard-04",
+      "url": "assets/chessquest/shard-04.json",
+      "bytes": 982389,
+      "sha": "a3fde1b1"
+    },
+    {
+      "id": "shard-05",
+      "url": "assets/chessquest/shard-05.json",
+      "bytes": 1735009,
+      "sha": "3da9d7d5"
+    },
+    {
+      "id": "shard-06",
+      "url": "assets/chessquest/shard-06.json",
+      "bytes": 909562,
+      "sha": "9c3e06b4"
+    },
+    {
+      "id": "shard-07",
+      "url": "assets/chessquest/shard-07.json",
+      "bytes": 1929790,
+      "sha": "5f363953"
+    },
+    {
+      "id": "shard-08",
+      "url": "assets/chessquest/shard-08.json",
+      "bytes": 1097290,
+      "sha": "e83b1e15"
+    },
+    {
+      "id": "shard-09",
+      "url": "assets/chessquest/shard-09.json",
+      "bytes": 1783453,
+      "sha": "59c49b72"
+    },
+    {
+      "id": "shard-10",
+      "url": "assets/chessquest/shard-10.json",
+      "bytes": 1045351,
+      "sha": "bb0887cb"
+    },
+    {
+      "id": "shard-11",
+      "url": "assets/chessquest/shard-11.json",
+      "bytes": 1792973,
+      "sha": "32b62329"
+    },
+    {
+      "id": "shard-12",
+      "url": "assets/chessquest/shard-12.json",
+      "bytes": 933228,
+      "sha": "4040f51b"
+    },
+    {
+      "id": "shard-13",
+      "url": "assets/chessquest/shard-13.json",
+      "bytes": 651047,
+      "sha": "c119d9b9"
+    },
+    {
+      "id": "shard-14",
+      "url": "assets/chessquest/shard-14.json",
+      "bytes": 340144,
+      "sha": "2ec258da"
+    }
+  ],
+  "groups": {
+    "launch": [
+      "shard-01"
+    ],
+    "act1": [
+      "shard-02",
+      "shard-03",
+      "shard-04"
+    ],
+    "act2": [
+      "shard-05",
+      "shard-06"
+    ],
+    "act3": [
+      "shard-07",
+      "shard-08"
+    ],
+    "act4": [
+      "shard-09",
+      "shard-10"
+    ],
+    "act5": [
+      "shard-11",
+      "shard-12"
+    ],
+    "endings": [
+      "shard-13"
+    ],
+    "tables": [
+      "shard-14"
+    ]
+  }
+}
