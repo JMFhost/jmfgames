@@ -22648,13 +22648,13 @@ var CHSUI = (function () {
     return out;
   }
 
-  // The default piece set is Medieval (Nov 14, 2026); the first set
-  // in the list is the fallback when no Medieval entry exists. A
+  // The default piece set is Cartoon (Nov 15, 2026); the first set
+  // in the list is the fallback when no Cartoon entry exists. A
   // caller-supplied default always wins (saved preferences are never
   // overwritten by this default).
   function _defaultSetId(sets) {
     for (var i = 0; i < sets.length; i++) {
-      if (sets[i].id === 'medieval') return 'medieval';
+      if (sets[i].id === 'cartoon') return 'cartoon';
     }
     return sets[0].id;
   }
@@ -23225,9 +23225,9 @@ if (typeof window !== 'undefined') window.CHSUI = CHSUI;
 // material) are teaching positions, not finished games, so the engine
 // status is neutralized (see _trainingSafeStatus) and lesson
 // completion shows lesson-complete feedback instead (see
-// _showLessonComplete). The Undo button shows a confirm sheet in
-// 2-player mode only (see _showUndoConfirm); the undo() API itself
-// always performs the take-back immediately.
+// _showLessonComplete). The Undo BUTTON was removed Nov 15, 2026
+// (Jesse: no take-backs, no cheating) — the undo() API itself
+// remains for tests, with no UI path to it.
 //   current() -> null (no lesson), or {lesson, step, stepIndex, fen}.
 //     step is {fen, prompt, hint, explain, solutions}; lesson is
 //     {id, stage, title, steps}. Plain step objects (with fen/prompt
@@ -23299,9 +23299,8 @@ if (typeof window !== 'undefined') window.CHSUI = CHSUI;
 // newGame config accepts humanColor "w"|"b"|"random": "random" (vs AI
 // only) is resolved by a coin flip at game start, and the RESOLVED
 // side is what config — and therefore every save — carries, so a
-// resumed game never re-flips. The default piece set is "medieval";
-// the default board theme is "classic". Saved configs always win
-// over these defaults on restore.
+// resumed game never re-flips. The default pieces are "cartoon" on the "minimal" board;
+// Saved configs always win over these defaults on restore.
 // Clock state shape: {w, b} in milliseconds remaining, or null for no
 // time limit. A clock at exactly 0 has fallen (see flagFallen).
 //
@@ -23390,7 +23389,7 @@ var CHSGame = (function () {
   var _statusEl = null;
   var _movelistBodyEl = null;
   var _movelistToggleEl = null;
-  var _undoBtn = null;
+  var _pauseBtn = null;
   var _drawBtn = null;
   var _resignBtn = null;
   var _setupEl = null;
@@ -23462,7 +23461,7 @@ var CHSGame = (function () {
   var _resizeBound = false;
   var _config = {
     mode: 'ai', opponent: 0, timeControl: 10, humanColor: 'w',
-    boardTheme: 'classic', pieceSet: 'medieval', showCoords: true, seed: 0
+    boardTheme: 'minimal', pieceSet: 'cartoon', showCoords: true, seed: 0
   };
 
   function _clone(value) {
@@ -25357,8 +25356,8 @@ var CHSGame = (function () {
       opponent: _clampOpponent(config.opponent),
       timeControl: _clampTimeControl(config.timeControl),
       humanColor: resolvedColor,
-      boardTheme: typeof config.boardTheme === 'string' ? config.boardTheme : 'classic',
-      pieceSet: typeof config.pieceSet === 'string' ? config.pieceSet : 'medieval',
+      boardTheme: typeof config.boardTheme === 'string' ? config.boardTheme : 'minimal',
+      pieceSet: typeof config.pieceSet === 'string' ? config.pieceSet : 'cartoon',
       showCoords: config.showCoords === undefined ? true : !!config.showCoords,
       seed: seed
     };
@@ -25482,8 +25481,8 @@ var CHSGame = (function () {
         opponent: _clampOpponent(st.config.opponent),
         timeControl: (st.config.timeControl === null) ? null : _clampTimeControl(st.config.timeControl),
         humanColor: st.config.humanColor === 'b' ? 'b' : 'w',
-        boardTheme: typeof st.config.boardTheme === 'string' ? st.config.boardTheme : 'classic',
-        pieceSet: typeof st.config.pieceSet === 'string' ? st.config.pieceSet : 'medieval',
+        boardTheme: typeof st.config.boardTheme === 'string' ? st.config.boardTheme : 'minimal',
+        pieceSet: typeof st.config.pieceSet === 'string' ? st.config.pieceSet : 'cartoon',
         showCoords: st.config.showCoords === undefined ? true : !!st.config.showCoords,
         seed: (typeof st.config.seed === 'number' && isFinite(st.config.seed)) ? (st.config.seed >>> 0) : 0
       };
@@ -26366,14 +26365,22 @@ var CHSGame = (function () {
     _statusEl.id = 'chs-status';
     _root.appendChild(_statusEl);
 
-    // Control row.
+    // Control row. (No Undo button — removed Nov 15, 2026, Jesse:
+    // no take-backs, no cheating.) Pause/Resume first: stops the
+    // clocks so the player can step away and come back (Jesse,
+    // Nov 15, 2026); minimizing auto-pauses via the wire.
     var controls = _el('div', 'chs-controls');
     _controlsEl = controls;
-    _undoBtn = _el('button', 'chs-btn', 'Undo');
-    _undoBtn.id = 'chs-undo';
-    _undoBtn.type = 'button';
-    _undoBtn.addEventListener('click', function () { _onUndoButton(); });
-    controls.appendChild(_undoBtn);
+    _pauseBtn = _el('button', 'chs-btn', 'Pause');
+    _pauseBtn.id = 'chs-pause';
+    _pauseBtn.type = 'button';
+    _pauseBtn.addEventListener('click', function () {
+      // Route through the public api so the wire's wrapped
+      // pause()/resume() fire and the Paused badge syncs (the
+      // internal functions fire no state-change callback).
+      if (_paused) api.resume(); else api.pause();
+    });
+    controls.appendChild(_pauseBtn);
     _drawBtn = _el('button', 'chs-btn', 'Draw');
     _drawBtn.id = 'chs-draw';
     _drawBtn.type = 'button';
@@ -26552,7 +26559,10 @@ var CHSGame = (function () {
     _renderMovelist();
     if (_statusEl) _statusEl.textContent = _statusMsg;
     _setThinkingVisible(_aiThinking);
-    if (_undoBtn) _undoBtn.disabled = !_history.length;
+    if (_pauseBtn) {
+      _pauseBtn.disabled = !_started || _status.over;
+      _pauseBtn.textContent = _paused ? 'Resume' : 'Pause';
+    }
     if (_drawBtn) {
       _drawBtn.disabled = !_started || _status.over ||
         _config.mode === 'training' || _aiThinking ||
