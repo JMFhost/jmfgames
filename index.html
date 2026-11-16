@@ -645,6 +645,230 @@ body {
   animation: ph-splash-tag-in 0.5s ease-out 0.15s both;
 }
 
+.ph-splash-tag {
+  margin-top: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  font-style: italic;
+  opacity: 0.88;
+  animation: ph-splash-tag-in 0.5s ease-out 0.3s both;
+}
+
+.ph-splash-tag:empty {
+  display: none;
+}
+
+/* ---------- Per-game splash themes (Nov 15, 2026) ---------- */
+
+/* Each shipped game gets its own background family and name accent.
+   The house frame (name hero, tagline, credit, 3s, tap to skip) is
+   unchanged; only the dressing is per-game. */
+.ph-splash--blockzen {
+  background: linear-gradient(175deg, #2b3a67 0%, #1b2547 45%, #0e1428 100%);
+}
+.ph-splash--blockzen .ph-splash-game { color: #ffd76a; }
+
+.ph-splash--solitaire {
+  background: linear-gradient(175deg, #1d5c38 0%, #123c24 45%, #081f12 100%);
+}
+.ph-splash--solitaire .ph-splash-game { color: #fff8e1; }
+
+.ph-splash--blockfall {
+  background: linear-gradient(175deg, #3b2a6d 0%, #241743 45%, #100a20 100%);
+}
+.ph-splash--blockfall .ph-splash-game { color: #7dd3fc; }
+
+.ph-splash--chess {
+  background: linear-gradient(175deg, #4a3826 0%, #2c2115 45%, #150f08 100%);
+}
+.ph-splash--chess .ph-splash-game { color: #f0d9b5; }
+
+/* ---------- Splash motifs ---------- */
+
+/* Motif stage: fixed 248x168 box above the game name. Fits the
+   narrowest phone (320px: 32px inner padding each side leaves 256px).
+   All motif motion is transform/opacity keyframes; every piece's
+   final resting state is its natural layout style, so reduced-motion
+   (animations off) shows the settled scene. */
+.ph-splash-motif {
+  position: relative;
+  width: 248px;
+  height: 168px;
+  margin: 0 auto 6px;
+}
+
+.ph-splash-motif:empty {
+  display: none;
+}
+
+/* Block Zen: blocks drop into a 3x3 cluster, then the middle row
+   flashes as if cleared. */
+.ph-splash-block {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 7px;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.25), 0 3px 8px rgba(0, 0, 0, 0.35);
+  animation: ph-splash-block-drop 0.7s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+.ph-splash-block.mc1 { background: #f26d6d; }
+.ph-splash-block.mc2 { background: #f5b942; }
+.ph-splash-block.mc3 { background: #57c785; }
+.ph-splash-block.mc4 { background: #4f9cf9; }
+.ph-splash-block.mc5 { background: #a06cd5; }
+
+.ph-splash-flash {
+  position: absolute;
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.9) 50%, rgba(255, 255, 255, 0));
+  opacity: 0;
+  animation: ph-splash-row-flash 0.6s ease-out both;
+}
+
+/* Solitaire: five cards fan out from a deck, then each flips. The
+   outer card carries the fan-in; the inner carries the flip, so the
+   two motions compose. Faces use backface-visibility for a true flip. */
+.ph-splash-card {
+  position: absolute;
+  width: 52px;
+  height: 72px;
+  perspective: 300px;
+  animation: ph-splash-card-in 0.6s ease-out both;
+}
+.ph-splash-card-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  animation: ph-splash-card-flip 1.5s ease-in-out both;
+}
+.ph-splash-card-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  font-size: 21px;
+  font-weight: 800;
+  backface-visibility: hidden;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+}
+.ph-splash-card-face.front {
+  background: #fdfdf8;
+  color: #1f2937;
+  border: 1px solid #d8d8ce;
+}
+.ph-splash-card-face.front.red { color: #d92b2b; }
+.ph-splash-card-face.back {
+  background:
+    repeating-linear-gradient(45deg, #2f5da8 0 6px, #24497f 6px 12px);
+  border: 2px solid #fdfdf8;
+  transform: rotateY(180deg);
+}
+
+/* Blockfall: pieces rain down and stack into a pile, then the bottom
+   row flashes. Cells are 20px on a 22px pitch inside each piece. */
+.ph-splash-piece {
+  position: absolute;
+  animation: ph-splash-piece-fall 0.75s cubic-bezier(0.3, 1.3, 0.5, 1) both;
+}
+.ph-splash-cell {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+}
+.ph-splash-cell.pc1 { background: #22d3ee; }
+.ph-splash-cell.pc2 { background: #facc15; }
+.ph-splash-cell.pc3 { background: #c084fc; }
+.ph-splash-cell.pc4 { background: #4ade80; }
+.ph-splash-cell.pc5 { background: #fb7185; }
+
+/* Chess: a knight hops L-shaped across a mini board toward the red
+   king; a ring pulses on the king's square as the knight lands. */
+.ph-splash-board {
+  position: absolute;
+  border-radius: 6px;
+  border: 3px solid #8b5a2b;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  background: repeating-conic-gradient(#f0d9b5 0% 25%, #b58863 0% 50%) 0 0 / 32px 32px;
+}
+.ph-splash-knight,
+.ph-splash-king {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  font-size: 30px;
+  line-height: 34px;
+  text-align: center;
+}
+.ph-splash-knight {
+  color: #111111;
+  text-shadow: 0 0 6px #ffffff, 0 2px 4px rgba(0, 0, 0, 0.4);
+  animation: ph-splash-knight-hop 2s ease-in-out both;
+}
+.ph-splash-king {
+  color: #b91c1c;
+  text-shadow: 0 0 6px #ffffff, 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+.ph-splash-ring {
+  position: absolute;
+  border: 3px solid #ef4444;
+  border-radius: 50%;
+  opacity: 0;
+  animation: ph-splash-ring-pulse 0.7s ease-out both;
+}
+
+@keyframes ph-splash-block-drop {
+  0% { opacity: 0; transform: translateY(-180px); }
+  60% { opacity: 1; }
+  82% { transform: translateY(5px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ph-splash-row-flash {
+  0% { opacity: 0; }
+  25% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+@keyframes ph-splash-card-in {
+  from { opacity: 0; transform: translateY(48px) rotate(0deg) scale(0.7); }
+}
+
+@keyframes ph-splash-card-flip {
+  0%, 45% { transform: rotateY(0deg); }
+  70% { transform: rotateY(180deg); }
+  100% { transform: rotateY(360deg); }
+}
+
+@keyframes ph-splash-piece-fall {
+  0% { opacity: 0; transform: translateY(-250px); }
+  65% { opacity: 1; }
+  85% { transform: translateY(7px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ph-splash-knight-hop {
+  0% { transform: translate(-64px, 80px); }
+  10% { transform: translate(-56px, 50px); }
+  20%, 30% { transform: translate(-48px, 48px); }
+  40% { transform: translate(-32px, 26px); }
+  50%, 60% { transform: translate(-16px, 32px); }
+  70% { transform: translate(-8px, 2px); }
+  80%, 100% { transform: translate(0, 0); }
+}
+
+@keyframes ph-splash-ring-pulse {
+  0% { opacity: 0; transform: scale(0.55); }
+  30% { opacity: 0.95; }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+
 .ph-splash-sparkles {
   position: absolute;
   inset: 0;
@@ -695,8 +919,10 @@ body {
     transition: none;
   }
   .ph-splash-game,
+  .ph-splash-tag,
   .ph-splash-tagline,
-  .ph-splash-sparkles i {
+  .ph-splash-sparkles i,
+  .ph-splash-motif * {
     animation: none;
   }
 }
@@ -2766,6 +2992,49 @@ body {
   color: var(--bz-theme-muted, #8fb3c7);
 }
 
+/* Opponent portraits: match header + setup picker rows. The SVG fills
+   the slot; the slot is a rounded square with a thin edge so the
+   portrait reads against any photo background. A hidden slot takes no
+   space. The header slot is 32px so the 44px bar (6px padding top and
+   bottom) keeps its exact height — no layout shift when a portrait
+   appears. The picker slot is 28px. */
+.chs-opp-portrait {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--bz-theme-panel-edge, #1d4a63);
+  background: var(--bz-theme-panel, #123549);
+}
+
+.chs-opp-portrait[hidden] {
+  display: none;
+}
+
+.chs-opp-portrait svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Picker rows: portrait + label on one line, left-aligned. */
+.chs-setup-card [data-chs-group="Opponent"] .chs-btn,
+.chs-setup [data-chs-group="Opponent"] .chs-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.chs-setup-card [data-chs-group="Opponent"] .chs-opp-portrait,
+.chs-setup [data-chs-group="Opponent"] .chs-opp-portrait {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+}
+
 .chs-tray {
   flex: 1 1 auto;
   display: flex;
@@ -3768,7 +4037,9 @@ body {
       <div id="ph-splash" class="ph-splash">
         <div class="ph-splash-sparkles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
         <div class="ph-splash-inner">
+          <div id="ph-splash-motif" class="ph-splash-motif" aria-hidden="true"></div>
           <div id="ph-splash-game" class="ph-splash-game"></div>
+          <div id="ph-splash-tag" class="ph-splash-tag"></div>
           <div class="ph-splash-tagline">Built and owned by JMF Games</div>
         </div>
       </div>
@@ -4031,13 +4302,186 @@ body {
     }
   }
 
+  /* Per-game splash themes (Nov 15, 2026): one shared renderer,
+     config-driven. Every shipped game gets its own background and
+     accent (CSS class), one-line tagline, and animated motif. Motif
+     specs are element descriptors: {c} color class, {x, y} final
+     resting position in px inside the 248x168 motif stage, {d}
+     animation delay in seconds, {text} glyph content, {cells} child
+     cell descriptors for multi-cell pieces, {w, h} for flash bars.
+     The final resting state is each element's natural style and the
+     keyframes animate FROM offsets — so reduced-motion (animations
+     off) shows the settled scene, and flash/ring elements (natural
+     opacity 0) simply stay hidden. Unknown game ids fall back to the
+     plain house splash: no theme class, no tagline, no motif. */
+  var SPLASH_THEME_CLASSES = ['ph-splash--blockzen', 'ph-splash--solitaire',
+    'ph-splash--blockfall', 'ph-splash--chess'];
+  var SPLASH_THEMES = {
+    blockzen: {
+      cls: 'ph-splash--blockzen',
+      tag: 'Fill the grid, clear the lines.',
+      motif: 'blocks',
+      pieces: [
+        { c: 'mc1', x: 64, y: 8, d: 0.05 }, { c: 'mc3', x: 106, y: 8, d: 0.15 },
+        { c: 'mc2', x: 148, y: 8, d: 0.25 }, { c: 'mc4', x: 64, y: 50, d: 0.35 },
+        { c: 'mc5', x: 106, y: 50, d: 0.45 }, { c: 'mc1', x: 148, y: 50, d: 0.55 },
+        { c: 'mc2', x: 64, y: 92, d: 0.65 }, { c: 'mc4', x: 106, y: 92, d: 0.75 },
+        { c: 'mc3', x: 148, y: 92, d: 0.85 },
+        { flash: true, x: 58, y: 50, w: 132, h: 36, d: 1.7 }
+      ]
+    },
+    solitaire: {
+      cls: 'ph-splash--solitaire',
+      tag: 'Stack the suits, clear the table.',
+      motif: 'cards',
+      pieces: [
+        { rank: 'A', suit: '♠', x: 18, y: 56, rot: -18, d: 0.05 },
+        { rank: 'K', suit: '♥', red: true, x: 58, y: 44, rot: -9, d: 0.15 },
+        { rank: 'Q', suit: '♦', red: true, x: 98, y: 38, rot: 0, d: 0.25 },
+        { rank: 'J', suit: '♣', x: 138, y: 44, rot: 9, d: 0.35 },
+        { rank: '10', suit: '♠', x: 178, y: 56, rot: 18, d: 0.45 }
+      ]
+    },
+    blockfall: {
+      cls: 'ph-splash--blockfall',
+      tag: 'Falling pieces, rising stakes.',
+      motif: 'rain',
+      pieces: [
+        { c: 'pc2', x: 58, y: 118, d: 0.1,
+          cells: [[0, 0], [1, 0], [0, 1], [1, 1]] },
+        { c: 'pc4', x: 102, y: 118, d: 0.25,
+          cells: [[0, 0], [1, 0], [2, 0], [1, 1]] },
+        { c: 'pc1', x: 168, y: 74, d: 0.4,
+          cells: [[0, 0], [0, 1], [0, 2], [0, 3]] },
+        { c: 'pc3', x: 190, y: 96, d: 0.55,
+          cells: [[0, 0], [0, 1], [0, 2], [1, 2]] },
+        { c: 'pc5', x: 58, y: 96, d: 0.8, cells: [[0, 0], [1, 0]] },
+        { c: 'pc2', x: 102, y: 74, d: 0.95,
+          cells: [[1, 0], [2, 0], [0, 1], [1, 1]] },
+        { flash: true, x: 52, y: 140, w: 188, h: 22, d: 2.0 }
+      ]
+    },
+    chess: {
+      cls: 'ph-splash--chess',
+      tag: 'Every move matters.',
+      motif: 'knight',
+      pieces: [
+        { board: true, x: 60, y: 14, s: 128 },
+        { knight: true, text: '♞', x: 131, y: 21 },
+        { king: true, text: '♚', x: 147, y: 5 },
+        { ring: true, x: 142, y: 0, s: 44, d: 2.0 }
+      ]
+    }
+  };
+  var SPLASH_DEFAULT = { cls: '', tag: '', motif: '', pieces: [] };
+
+  function _splashEl(tag, cls) {
+    var el = document.createElement(tag || 'div');
+    if (cls) el.className = cls;
+    return el;
+  }
+
+  function _splashPlace(el, p) {
+    el.style.left = p.x + 'px';
+    el.style.top = p.y + 'px';
+    if (p.d) el.style.animationDelay = p.d + 's';
+  }
+
+  /* Build one motif's DOM into the stage from its theme spec. Fresh
+     nodes on every show, so the animations restart. All positioning
+     is layout (left/top); all motion is transform/opacity keyframes
+     in shell.css. Best-effort and fully guarded: a missing DOM (node
+     tests with partial fakes) skips silently. */
+  function renderSplashMotif(theme) {
+    var box = $('ph-splash-motif');
+    if (!box) return;
+    try {
+      while (box.firstChild) box.removeChild(box.firstChild);
+    } catch (e) { /* cosmetic */ }
+    if (!theme || !theme.pieces || !theme.pieces.length) return;
+    try {
+      if (typeof document === 'undefined' || !document ||
+          typeof document.createElement !== 'function') return;
+    } catch (e) { return; }
+    var i, j, p, el, inner, face, cell;
+    for (i = 0; i < theme.pieces.length; i++) {
+      p = theme.pieces[i];
+      try {
+        if (p.flash) {
+          el = _splashEl('div', 'ph-splash-flash');
+          _splashPlace(el, p);
+          el.style.width = p.w + 'px';
+          el.style.height = p.h + 'px';
+        } else if (theme.motif === 'cards') {
+          el = _splashEl('div', 'ph-splash-card');
+          _splashPlace(el, p);
+          el.style.transform = 'rotate(' + (p.rot || 0) + 'deg)';
+          inner = _splashEl('div', 'ph-splash-card-inner');
+          inner.style.animationDelay = ((p.d || 0) + 0.95) + 's';
+          face = _splashEl('div', 'ph-splash-card-face front' + (p.red ? ' red' : ''));
+          face.textContent = p.rank + p.suit;
+          inner.appendChild(face);
+          face = _splashEl('div', 'ph-splash-card-face back');
+          inner.appendChild(face);
+          el.appendChild(inner);
+        } else if (theme.motif === 'rain' && p.cells) {
+          el = _splashEl('div', 'ph-splash-piece');
+          _splashPlace(el, p);
+          for (j = 0; j < p.cells.length; j++) {
+            cell = _splashEl('div', 'ph-splash-cell ' + (p.c || 'pc1'));
+            cell.style.left = (p.cells[j][0] * 22 + 1) + 'px';
+            cell.style.top = (p.cells[j][1] * 22 + 1) + 'px';
+            el.appendChild(cell);
+          }
+        } else if (p.board) {
+          el = _splashEl('div', 'ph-splash-board');
+          _splashPlace(el, p);
+          el.style.width = p.s + 'px';
+          el.style.height = p.s + 'px';
+        } else if (p.knight) {
+          el = _splashEl('div', 'ph-splash-knight');
+          _splashPlace(el, p);
+          el.textContent = p.text;
+        } else if (p.king) {
+          el = _splashEl('div', 'ph-splash-king');
+          _splashPlace(el, p);
+          el.textContent = p.text;
+        } else if (p.ring) {
+          el = _splashEl('div', 'ph-splash-ring');
+          _splashPlace(el, p);
+          el.style.width = p.s + 'px';
+          el.style.height = p.s + 'px';
+        } else {
+          el = _splashEl('div', 'ph-splash-block ' + (p.c || 'mc1'));
+          _splashPlace(el, p);
+        }
+        box.appendChild(el);
+      } catch (e) { /* one bad piece never breaks the splash */ }
+    }
+  }
+
   function showSplash(app) {
     var el = $('ph-splash');
     if (!el) return;
+    var theme = SPLASH_THEMES[(app && app.id) || ''] || SPLASH_DEFAULT;
+    var i;
+    try {
+      if (el.classList) {
+        for (i = 0; i < SPLASH_THEME_CLASSES.length; i++) {
+          el.classList.remove(SPLASH_THEME_CLASSES[i]);
+        }
+        if (theme.cls) el.classList.add(theme.cls);
+      }
+    } catch (e) { /* cosmetic */ }
     var name = $('ph-splash-game');
     if (name) {
       try { name.textContent = (app && app.title) || ''; } catch (e) { /* cosmetic */ }
     }
+    var tag = $('ph-splash-tag');
+    if (tag) {
+      try { tag.textContent = theme.tag || ''; } catch (e) { /* cosmetic */ }
+    }
+    try { renderSplashMotif(theme); } catch (e) { /* cosmetic */ }
     if (splashTimer !== null) _clearTimer(splashTimer);
     // Force a reflow so the entrance animations restart on every
     // show, including a re-show straight after a dismiss.
@@ -4544,6 +4988,7 @@ body {
       opts = opts || {};
       var el = opts.el || $('app-' + id) || null;
       registry[id] = {
+        id: id,
         title: opts.title || id,
         icon: opts.icon || null,
         el: el,
@@ -4651,7 +5096,8 @@ body {
     HOME_ORDER_KEY: HOME_ORDER_KEY,
     DEFAULT_HOME_ORDER: DEFAULT_HOME_ORDER.slice(),
     LONG_PRESS_MS: LONG_PRESS_MS,
-    SPLASH_MS: SPLASH_MS
+    SPLASH_MS: SPLASH_MS,
+    SPLASH_THEMES: SPLASH_THEMES
   };
 
   try {
@@ -19493,8 +19939,18 @@ var CHSEngine = (function () {
     return result;
   }
 
-  function bookMove(state, levelIdx, rng) {
-    var level = LEVELS[levelIdx];
+  // The level spec may be a CURRENT ladder index (a number), an
+  // opponent NAME (a string, case-insensitive), or a level descriptor
+  // object ({name} or {rating}); see resolveLevelIndex. Callers that
+  // persist an opponent must persist the NAME/RATING, never an index:
+  // indices shift when rungs are added (v19: Adrian moved 9 -> 18).
+  // Unlike chooseMove, an UNRESOLVABLE spec returns null (the v18
+  // fail-closed contract): a bad level never silently plays a book
+  // move at another rung's strength.
+  function bookMove(state, levelSpec, rng) {
+    var strictIdx = _strictLevelIndex(levelSpec);
+    if (strictIdx < 0) return null;
+    var level = LEVELS[strictIdx];
     if (!level || !level.book) return null;
     if (state.fullmove > 7) return null; // Book lines run at most 7 moves.
     var cands = bookCandidates(state);
@@ -19517,27 +19973,194 @@ var CHSEngine = (function () {
   }
 
   // ------------------------------------------------------------ the ladder
-  // FROZEN parameters (Phase A). Depth is the iterative-deepening ceiling
-  // in plies; nodeCap/timeMs are the binding budgets in live play, so the
-  // effective depth reached in a complex middlegame is lower than the
-  // ceiling at the top of the ladder (about 5-6 plies for the top level
-  // under its cap). Depth strictly increases, noise and blunder strictly
-  // decrease, down the table. Noise jitters root-move scores in
-  // centipawns; blunder is the probability of playing the 2nd/3rd-best
-  // root move instead of the best. The top level searches deepest with
-  // zero noise and zero blunder.
+  // 19 rungs stepping every 100 rating points (v19, Nov 15, 2026):
+  // the 10 v18 male rungs UNCHANGED (same name/rating/params, verified
+  // against the frozen v18 build) with 9 female rungs interleaved at
+  // the odd 100s. Indices SHIFTED vs v18 (Adrian 9 -> 18): never
+  // persist or assume an index — resolve opponents by NAME or RATING
+  // (levelForName / levelForRating / resolveLevelIndex). Depth is the
+  // iterative-deepening ceiling in plies; nodeCap/timeMs are the
+  // binding budgets in live play, so the effective depth reached in a
+  // complex middlegame is lower than the ceiling at the top of the
+  // ladder (about 5-6 plies for the top level under its cap).
+  //
+  // FEMALE INTERPOLATION (exact, strict between the male neighbors):
+  // each female rung sits strictly between its two male neighbors on
+  // every continuous parameter; depth is integer plies, so a female
+  // rung takes the LOWER neighbor's depth (floor of the midpoint —
+  // she never searches deeper than the male above her) and beats the
+  // male below her on nodeCap, noise, and blunder instead. Depth is
+  // therefore NON-DECREASING down the table (ties with the lower
+  // neighbor), while nodeCap and timeMs STRICTLY increase and noise
+  // and blunder STRICTLY decrease. Formulas, L = lower male neighbor,
+  // U = upper male neighbor:
+  //   depth   = L.depth
+  //   nodeCap = round(sqrt(L.nodeCap * U.nodeCap))   (geometric mean)
+  //   timeMs  = (L.timeMs + U.timeMs) / 2            (arithmetic mean)
+  //   noise   = round((L.noise + U.noise) / 2)       (arithmetic mean,
+  //                                                    halves round up)
+  //   blunder = (L.blunder + U.blunder) / 2          (arithmetic mean)
+  //   book    = true (all rungs)
+  // Noise jitters root-move scores in centipawns; blunder is the
+  // probability of playing the 2nd/3rd-best root move instead of the
+  // best. The top level searches deepest with zero noise and zero
+  // blunder.
   var LEVELS = [
-    { name: 'Ben',     rating: 800,  depth: 1,  nodeCap: 2000,   timeMs: 400,  noise: 120, blunder: 0.30,  book: true },
-    { name: 'Leo',     rating: 1000, depth: 2,  nodeCap: 5000,   timeMs: 600,  noise: 90,  blunder: 0.22,  book: true },
-    { name: 'Max',     rating: 1200, depth: 3,  nodeCap: 12000,  timeMs: 900,  noise: 65,  blunder: 0.16,  book: true },
-    { name: 'Owen',    rating: 1400, depth: 4,  nodeCap: 25000,  timeMs: 1200, noise: 48,  blunder: 0.12,  book: true },
-    { name: 'Felix',   rating: 1600, depth: 5,  nodeCap: 45000,  timeMs: 1600, noise: 35,  blunder: 0.09,  book: true },
-    { name: 'Hugo',    rating: 1800, depth: 6,  nodeCap: 70000,  timeMs: 2000, noise: 25,  blunder: 0.065, book: true },
-    { name: 'Victor',  rating: 2000, depth: 7,  nodeCap: 110000, timeMs: 2500, noise: 17,  blunder: 0.045, book: true },
-    { name: 'Stefan',  rating: 2200, depth: 8,  nodeCap: 170000, timeMs: 3000, noise: 10,  blunder: 0.028, book: true },
-    { name: 'Nikolai', rating: 2400, depth: 9,  nodeCap: 260000, timeMs: 3500, noise: 5,   blunder: 0.012, book: true },
-    { name: 'Adrian',  rating: 2600, depth: 10, nodeCap: 400000, timeMs: 4000, noise: 0,   blunder: 0,     book: true }
+    { name: 'Ben',     rating: 800,  depth: 1,  nodeCap: 2000,   timeMs: 400,  noise: 120, blunder: 0.30,   book: true },
+    { name: 'Clara',   rating: 900,  depth: 1,  nodeCap: 3162,   timeMs: 500,  noise: 105, blunder: 0.26,   book: true },
+    { name: 'Leo',     rating: 1000, depth: 2,  nodeCap: 5000,   timeMs: 600,  noise: 90,  blunder: 0.22,   book: true },
+    { name: 'Daphne',  rating: 1100, depth: 2,  nodeCap: 7746,   timeMs: 750,  noise: 78,  blunder: 0.19,   book: true },
+    { name: 'Max',     rating: 1200, depth: 3,  nodeCap: 12000,  timeMs: 900,  noise: 65,  blunder: 0.16,   book: true },
+    { name: 'Fiona',   rating: 1300, depth: 3,  nodeCap: 17321,  timeMs: 1050, noise: 57,  blunder: 0.14,   book: true },
+    { name: 'Owen',    rating: 1400, depth: 4,  nodeCap: 25000,  timeMs: 1200, noise: 48,  blunder: 0.12,   book: true },
+    { name: 'Greta',   rating: 1500, depth: 4,  nodeCap: 33541,  timeMs: 1400, noise: 42,  blunder: 0.105,  book: true },
+    { name: 'Felix',   rating: 1600, depth: 5,  nodeCap: 45000,  timeMs: 1600, noise: 35,  blunder: 0.09,   book: true },
+    { name: 'Hannah',  rating: 1700, depth: 5,  nodeCap: 56125,  timeMs: 1800, noise: 30,  blunder: 0.0775, book: true },
+    { name: 'Hugo',    rating: 1800, depth: 6,  nodeCap: 70000,  timeMs: 2000, noise: 25,  blunder: 0.065,  book: true },
+    { name: 'Ingrid',  rating: 1900, depth: 6,  nodeCap: 87750,  timeMs: 2250, noise: 21,  blunder: 0.055,  book: true },
+    { name: 'Victor',  rating: 2000, depth: 7,  nodeCap: 110000, timeMs: 2500, noise: 17,  blunder: 0.045,  book: true },
+    { name: 'Karina',  rating: 2100, depth: 7,  nodeCap: 136748, timeMs: 2750, noise: 14,  blunder: 0.0365, book: true },
+    { name: 'Stefan',  rating: 2200, depth: 8,  nodeCap: 170000, timeMs: 3000, noise: 10,  blunder: 0.028,  book: true },
+    { name: 'Nora',    rating: 2300, depth: 8,  nodeCap: 210238, timeMs: 3250, noise: 8,   blunder: 0.02,   book: true },
+    { name: 'Nikolai', rating: 2400, depth: 9,  nodeCap: 260000, timeMs: 3500, noise: 5,   blunder: 0.012,  book: true },
+    { name: 'Valerie', rating: 2500, depth: 9,  nodeCap: 322490, timeMs: 3750, noise: 3,   blunder: 0.006,  book: true },
+    { name: 'Adrian',  rating: 2600, depth: 10, nodeCap: 400000, timeMs: 4000, noise: 0,   blunder: 0,      book: true }
   ];
+
+  // ------------------------------------------- identity resolution (v19)
+  // The ladder is keyed by NAME and RATING; an index is only a
+  // position in the current table. These helpers are the single
+  // identity path for every consumer (shipped game, saves, and the
+  // Chess Quest sync — APEX binds to Adrian through levelForName /
+  // levelForRating, never through an index).
+  function _normName(name) {
+    return (typeof name === 'string') ? name.replace(/^\s+|\s+$/g, '').toLowerCase() : '';
+  }
+
+  // Exact-match index for a name (case-insensitive), or -1.
+  function indexForName(name) {
+    var want = _normName(name);
+    if (!want) return -1;
+    for (var i = 0; i < LEVELS.length; i++) {
+      if (LEVELS[i].name.toLowerCase() === want) return i;
+    }
+    return -1;
+  }
+
+  // Exact-match index for a rating, or -1.
+  function indexForRating(rating) {
+    if (typeof rating !== 'number' || !isFinite(rating)) return -1;
+    for (var i = 0; i < LEVELS.length; i++) {
+      if (LEVELS[i].rating === rating) return i;
+    }
+    return -1;
+  }
+
+  // Nearest-rung index for a rating (ties round toward the stronger
+  // rung); used only when an exact rating is unavailable.
+  function _nearestIndexForRating(rating) {
+    var best = 0;
+    var bestDiff = Infinity;
+    for (var i = 0; i < LEVELS.length; i++) {
+      var d = Math.abs(LEVELS[i].rating - rating);
+      if (d < bestDiff || (d === bestDiff && LEVELS[i].rating > LEVELS[best].rating)) {
+        bestDiff = d;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  function levelForName(name) {
+    var idx = indexForName(name);
+    return idx >= 0 ? LEVELS[idx] : null;
+  }
+
+  function levelForRating(rating) {
+    var idx = indexForRating(rating);
+    return idx >= 0 ? LEVELS[idx] : null;
+  }
+
+  // Resolve ANY opponent spec to a CURRENT ladder index:
+  //   number          -> the index itself, clamped to the table
+  //   string          -> name lookup; unknown names fall back
+  //   {name}          -> name lookup (rating, when also present,
+  //                      must match the named rung or the name wins)
+  //   {rating}        -> exact rating, else the nearest rung
+  //   {levelIdx|index}-> the number path
+  //   anything else   -> the fallback index (default 0)
+  // A name that resolves always wins over a rating in the same spec:
+  // identity is the name; the rating is a cross-check, never a
+  // second identity. Returns a valid index, never -1.
+  function resolveLevelIndex(spec, fallback) {
+    var fb = (typeof fallback === 'number' && isFinite(fallback)) ?
+      Math.round(fallback) : 0;
+    if (fb < 0) fb = 0;
+    if (fb > LEVELS.length - 1) fb = LEVELS.length - 1;
+    if (typeof spec === 'number' && isFinite(spec)) {
+      var n = Math.round(spec);
+      if (n < 0) return 0;
+      if (n > LEVELS.length - 1) return LEVELS.length - 1;
+      return n;
+    }
+    if (typeof spec === 'string') {
+      var byName = indexForName(spec);
+      return byName >= 0 ? byName : fb;
+    }
+    if (spec && typeof spec === 'object') {
+      if (typeof spec.name === 'string') {
+        var named = indexForName(spec.name);
+        if (named >= 0) return named;
+      }
+      if (typeof spec.rating === 'number' && isFinite(spec.rating)) {
+        var exact = indexForRating(spec.rating);
+        if (exact >= 0) return exact;
+        return _nearestIndexForRating(spec.rating);
+      }
+      if (typeof spec.levelIdx === 'number' && isFinite(spec.levelIdx)) {
+        return resolveLevelIndex(spec.levelIdx, fb);
+      }
+      if (typeof spec.index === 'number' && isFinite(spec.index)) {
+        return resolveLevelIndex(spec.index, fb);
+      }
+    }
+    return fb;
+  }
+
+  // Strict resolution for bookMove ONLY: an unresolvable spec
+  // (out-of-range number, unknown name, non-exact rating, garbage)
+  // yields -1 instead of clamping, preserving bookMove's v18
+  // fail-closed contract (bad level -> null, pinned by the engine
+  // suite). chooseMove/drawOfferResponse keep the lenient resolver
+  // (their v18 behavior already clamped).
+  function _strictLevelIndex(spec) {
+    if (typeof spec === 'number' && isFinite(spec)) {
+      var n = Math.round(spec);
+      return (n >= 0 && n <= LEVELS.length - 1) ? n : -1;
+    }
+    if (typeof spec === 'string') return indexForName(spec);
+    if (spec && typeof spec === 'object') {
+      if (typeof spec.name === 'string') {
+        var named = indexForName(spec.name);
+        if (named >= 0) return named;
+      }
+      if (typeof spec.rating === 'number' && isFinite(spec.rating)) {
+        return indexForRating(spec.rating);
+      }
+      if (typeof spec.levelIdx === 'number' && isFinite(spec.levelIdx)) {
+        return _strictLevelIndex(spec.levelIdx);
+      }
+      if (typeof spec.index === 'number' && isFinite(spec.index)) {
+        return _strictLevelIndex(spec.index);
+      }
+    }
+    return -1;
+  }
+
+  // The level entry for ANY opponent spec (see resolveLevelIndex).
+  function levelFor(spec) {
+    return LEVELS[resolveLevelIndex(spec, 0)];
+  }
 
   // ---------------------------------------------------------------- search
   function moveKey(m) {
@@ -19786,11 +20409,11 @@ var CHSEngine = (function () {
   // omitted, createRng(1) is used. Returns null when no legal move
   // exists. Optional 4th argument `overrides` ({depth, nodeCap, timeMs,
   // noise, blunder, book}) lets harnesses run levels under test budgets
-  // without changing the frozen LEVELS table.
-  function chooseMove(state, levelIdx, rng, overrides) {
-    var idx = levelIdx;
-    if (typeof idx !== 'number' || idx < 0) idx = 0;
-    if (idx > LEVELS.length - 1) idx = LEVELS.length - 1;
+  // without changing the LEVELS table. The 2nd argument is ANY level
+  // spec (see resolveLevelIndex): a current index, a name, or a
+  // {name|rating} descriptor. Prefer a name/rating: indices shift.
+  function chooseMove(state, levelSpec, rng, overrides) {
+    var idx = resolveLevelIndex(levelSpec, 0);
     var level = LEVELS[idx];
     var r = rng || createRng(1);
     var o = overrides || {};
@@ -19826,11 +20449,19 @@ var CHSEngine = (function () {
   // unchanged: ahead (>= +120) declines, dead lost (<= -250) accepts,
   // an even late endgame accepts when not ahead. Otherwise the AI
   // sometimes accepts a level-dependent fraction of the time: lower
-  // levels are more agreeable. Pure with respect to the injected rng.
-  function drawOfferResponse(state, levelIdx, rng) {
-    var idx = levelIdx;
-    if (typeof idx !== 'number' || idx < 0) idx = 0;
-    if (idx > LEVELS.length - 1) idx = LEVELS.length - 1;
+  // levels are more agreeable. The agreeability fraction is keyed off
+  // RATING (step = (rating - 800) / 100, 0..18), never the raw index:
+  //   losing middlegame: p = 0.55 - step * 0.015
+  //   even middlegame:   p = 0.30 - step * 0.0125
+  // At the 10 v18 male ratings (even steps) these are EXACTLY the v18
+  // values (0.55 - k*0.03 / 0.30 - k*0.025 for v18 index k); female
+  // rungs sit exactly halfway between their neighbors. Pure with
+  // respect to the injected rng. The 2nd argument is ANY level spec
+  // (see resolveLevelIndex).
+  function drawOfferResponse(state, levelSpec, rng) {
+    var idx = resolveLevelIndex(levelSpec, 0);
+    var level = LEVELS[idx];
+    var step = (level.rating - 800) / 100;
     var r = rng || createRng(1);
     var status = gameStatus(state);
     if (status.over && status.result !== 'checkmate') return true;
@@ -19841,8 +20472,8 @@ var CHSEngine = (function () {
     var lateEndgame = phase <= 8;
     if (lateEndgame) return true; // Even (or worse but not lost) endgame.
     var p;
-    if (score < -100) p = 0.55 - idx * 0.03; // Losing middlegame.
-    else p = 0.30 - idx * 0.025; // Even middlegame.
+    if (score < -100) p = 0.55 - step * 0.015; // Losing middlegame.
+    else p = 0.30 - step * 0.0125; // Even middlegame.
     if (p < 0.05) p = 0.05;
     return r() < p;
   }
@@ -19873,6 +20504,12 @@ var CHSEngine = (function () {
     OPENING_BOOK_NAMES: OPENING_BOOK_NAMES,
     bookMove: bookMove,
     LEVELS: LEVELS,
+    indexForName: indexForName,
+    indexForRating: indexForRating,
+    levelForName: levelForName,
+    levelForRating: levelForRating,
+    resolveLevelIndex: resolveLevelIndex,
+    levelFor: levelFor,
     search: search,
     chooseMove: chooseMove,
     drawOfferResponse: drawOfferResponse
@@ -20576,6 +21213,397 @@ if (typeof window !== 'undefined') {
 }
 </script>
 <script>
+// source: chs-portraits.js
+// CHSPortraits — anime/manga-style opponent portraits for Chess.
+// Data + one parametric SVG generator: every portrait is drawn by the
+// SAME construction (same face geometry, same line work, same manga
+// shading language) with per-character parameters (skin, hair color
+// + style, eye color, expression, accessory, background, clothing),
+// so the 19 portraits read as one consistent set while each
+// character stays distinct at play size (26-36px). No DOM, no I/O.
+// UMD: global CHSPortraits + module.exports, same pattern as
+// chs-pieces.js. Every value is a complete inline <svg> string with
+// a viewBox and no external references; SVGs carry no text nodes, so
+// they never leak a name into surrounding textContent scans.
+//
+// Female names (900/1100/.../2500) are PROPOSED for Jesse's veto:
+// Clara, Daphne, Fiona, Greta, Hannah, Ingrid, Karina, Nora, Valerie.
+// Each was checked against every Chess Quest story name (45-opponent
+// roster + 4 NPCs + default-name chips) with zero collisions.
+
+var CHSPortraits = (function () {
+  'use strict';
+
+  var LINE = '#2b2118'; // single outline color for the whole set
+
+  // Darken a #rrggbb color by factor f (0..1). Used for hair shadow,
+  // skin shadow, and clothing shadow so shading always matches the
+  // base color.
+  function _shade(hex, f) {
+    var n = parseInt(hex.slice(1), 16);
+    var r = Math.round(((n >> 16) & 255) * f);
+    var g = Math.round(((n >> 8) & 255) * f);
+    var b = Math.round((n & 255) * f);
+    function h(v) { var s = v.toString(16); return s.length < 2 ? '0' + s : s; }
+    return '#' + h(r) + h(g) + h(b);
+  }
+
+  // ------------------------------------------------------- parameters
+  // skin/hair/eyes: colors. hairStyle: short|spiky|bob|long|ponytail|
+  // bun|wavy|sidesweep|tails. expression: smile|smirk|calm|focused|
+  // cheerful. accessory: none|glasses|round-glasses|headband|hairclip|
+  // starpin|earring|cap|ribbon. collar: crew|shirt|hood. motif:
+  // checks|dots|stars|rings. brows: normal|thick. beard/freckles/blush:
+  // booleans.
+  var CHARS = {
+    Ben:     { skin: '#ffe3d0', hair: '#e8c268', hairStyle: 'short',     eyes: '#3a6fd8', expression: 'cheerful', accessory: 'cap',         bg1: '#f7b733', bg2: '#e8802e', motif: 'dots',   cloth: '#2e7fb8', collar: 'crew',  blush: true,  freckles: true },
+    Clara:   { skin: '#f7cfae', hair: '#6b4423', hairStyle: 'bob',       eyes: '#3d8b5f', expression: 'smile',    accessory: 'hairclip',    bg1: '#7fc8a9', bg2: '#4d9b7f', motif: 'dots',   cloth: '#c94f6d', collar: 'crew',  blush: true },
+    Leo:     { skin: '#f7cfae', hair: '#8a4b2a', hairStyle: 'spiky',     eyes: '#c07a1e', expression: 'smirk',    accessory: 'none',        bg1: '#f2994a', bg2: '#d95f2b', motif: 'stars',  cloth: '#333a45', collar: 'hood',  brows: 'thick' },
+    Daphne:  { skin: '#e8b48c', hair: '#2b2320', hairStyle: 'long',      eyes: '#7a5cc9', expression: 'calm',     accessory: 'earring',     bg1: '#b39ddb', bg2: '#7e57c2', motif: 'stars',  cloth: '#ece5f3', collar: 'crew',  blush: true },
+    Max:     { skin: '#ffe3d0', hair: '#2b2320', hairStyle: 'short',     eyes: '#5a3a22', expression: 'smile',    accessory: 'glasses',     bg1: '#64b5f6', bg2: '#3f6fb5', motif: 'checks', cloth: '#e8e4da', collar: 'shirt' },
+    Fiona:   { skin: '#ffe3d0', hair: '#b5462a', hairStyle: 'wavy',      eyes: '#3d8b5f', expression: 'cheerful', accessory: 'none',        bg1: '#ff9e7d', bg2: '#e86a5e', motif: 'dots',   cloth: '#2f6e5e', collar: 'crew',  blush: true,  freckles: true },
+    Owen:    { skin: '#f7cfae', hair: '#f2d98c', hairStyle: 'sidesweep', eyes: '#6b7280', expression: 'calm',     accessory: 'none',        bg1: '#90a4ae', bg2: '#607d8b', motif: 'rings',  cloth: '#4a6b8a', collar: 'shirt' },
+    Greta:   { skin: '#ffe3d0', hair: '#d9d9e0', hairStyle: 'bun',       eyes: '#5b7fa6', expression: 'focused',  accessory: 'headband',    bg1: '#b0bec5', bg2: '#78909c', motif: 'checks', cloth: '#37474f', collar: 'crew' },
+    Felix:   { skin: '#e8b48c', hair: '#2c3248', hairStyle: 'spiky',     eyes: '#3a6fd8', expression: 'smirk',    accessory: 'none',        bg1: '#5c6bc0', bg2: '#3949ab', motif: 'stars',  cloth: '#1f2430', collar: 'hood',  brows: 'thick' },
+    Hannah:  { skin: '#f7cfae', hair: '#6b4423', hairStyle: 'ponytail',  eyes: '#7a6a2f', expression: 'smile',    accessory: 'ribbon',      bg1: '#ffcc80', bg2: '#f49d6d', motif: 'dots',   cloth: '#7a4a8c', collar: 'crew',  blush: true },
+    Hugo:    { skin: '#c98d5f', hair: '#2b2320', hairStyle: 'short',     eyes: '#5a3a22', expression: 'focused',  accessory: 'none',        bg1: '#81c784', bg2: '#4a8a4f', motif: 'rings',  cloth: '#5d4037', collar: 'shirt', brows: 'thick', beard: true },
+    Ingrid:  { skin: '#ffe3d0', hair: '#ececf2', hairStyle: 'long',      eyes: '#6fa8d8', expression: 'calm',     accessory: 'hairclip',    bg1: '#a5d6f5', bg2: '#6fa8d8', motif: 'stars',  cloth: '#dfe9f2', collar: 'crew' },
+    Victor:  { skin: '#e8b48c', hair: '#b8bcc4', hairStyle: 'sidesweep', eyes: '#6b7280', expression: 'focused',  accessory: 'none',        bg1: '#c25e5e', bg2: '#8e2f2f', motif: 'checks', cloth: '#23262e', collar: 'shirt', brows: 'thick' },
+    Karina:  { skin: '#c98d5f', hair: '#22333a', hairStyle: 'tails',     eyes: '#2e8b8b', expression: 'smile',    accessory: 'ribbon',      bg1: '#4db6ac', bg2: '#2e7d74', motif: 'stars',  cloth: '#f2e6c9', collar: 'crew',  blush: true },
+    Stefan:  { skin: '#f7cfae', hair: '#2b2320', hairStyle: 'short',     eyes: '#3d8b5f', expression: 'calm',     accessory: 'round-glasses', bg1: '#66bb6a', bg2: '#3d8b4f', motif: 'rings',  cloth: '#3e4a5a', collar: 'shirt' },
+    Nora:    { skin: '#a06a42', hair: '#1e1a18', hairStyle: 'long',      eyes: '#5a3a22', expression: 'smile',    accessory: 'starpin',     bg1: '#a678c2', bg2: '#7a4a8c', motif: 'stars',  cloth: '#e8b48c', collar: 'crew',  blush: true },
+    Nikolai: { skin: '#e8b48c', hair: '#7a6a58', hairStyle: 'wavy',      eyes: '#3a6fd8', expression: 'focused',  accessory: 'none',        bg1: '#3f5a8a', bg2: '#24344f', motif: 'checks', cloth: '#8a6d2f', collar: 'shirt', brows: 'thick', beard: true },
+    Valerie: { skin: '#ffe3d0', hair: '#c9b8e8', hairStyle: 'long',      eyes: '#7a5cc9', expression: 'calm',     accessory: 'starpin',     bg1: '#8e7cc3', bg2: '#5e4b9e', motif: 'stars',  cloth: '#2b2440', collar: 'crew' },
+    Adrian:  { skin: '#f7cfae', hair: '#e8e8f0', hairStyle: 'spiky',     eyes: '#4a5568', expression: 'focused',  accessory: 'none',        bg1: '#4a4e5a', bg2: '#1d1f26', motif: 'checks', cloth: '#c9a227', collar: 'shirt', brows: 'thick' }
+  };
+
+  // Ladder order (ratings ascend 800 -> 2600).
+  var NAMES = ['Ben', 'Clara', 'Leo', 'Daphne', 'Max', 'Fiona', 'Owen',
+    'Greta', 'Felix', 'Hannah', 'Hugo', 'Ingrid', 'Victor', 'Karina',
+    'Stefan', 'Nora', 'Nikolai', 'Valerie', 'Adrian'];
+
+  function _lookup(name) {
+    if (typeof name !== 'string') return null;
+    var want = name.replace(/^\s+|\s+$/g, '').toLowerCase();
+    if (!want) return null;
+    for (var i = 0; i < NAMES.length; i++) {
+      if (NAMES[i].toLowerCase() === want) return CHARS[NAMES[i]];
+    }
+    return null;
+  }
+
+  // Gradient ids are anonymous counters, never names: the same
+  // portrait may render twice on one page (picker + header), and no
+  // name may appear anywhere in the markup.
+  var _gidCounter = 0;
+
+  // ------------------------------------------------------------- pieces
+  function _bg(p, key) {
+    var gid = 'chspbg' + key;
+    var s = '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" stop-color="' + p.bg1 + '"/>' +
+      '<stop offset="1" stop-color="' + p.bg2 + '"/></linearGradient></defs>' +
+      '<rect x="0" y="0" width="120" height="120" fill="url(#' + gid + ')"/>';
+    if (p.motif === 'dots') {
+      s += '<g fill="#ffffff" opacity="0.18">' +
+        '<circle cx="18" cy="18" r="4"/><circle cx="102" cy="14" r="3"/>' +
+        '<circle cx="108" cy="42" r="4"/><circle cx="12" cy="48" r="3"/>' +
+        '<circle cx="100" cy="96" r="3"/></g>';
+    } else if (p.motif === 'stars') {
+      s += '<g fill="#ffffff" opacity="0.35">' +
+        '<path d="M18 12 L20 18 L26 20 L20 22 L18 28 L16 22 L10 20 L16 18 Z"/>' +
+        '<path d="M102 20 L103.5 24 L107 25.5 L103.5 27 L102 31 L100.5 27 L97 25.5 L100.5 24 Z"/>' +
+        '<path d="M106 78 L107 81 L110 82 L107 83 L106 86 L105 83 L102 82 L105 81 Z"/></g>';
+    } else if (p.motif === 'checks') {
+      s += '<g fill="#ffffff" opacity="0.14">' +
+        '<rect x="6" y="6" width="12" height="12"/><rect x="30" y="6" width="12" height="12"/>' +
+        '<rect x="18" y="18" width="12" height="12"/>' +
+        '<rect x="102" y="6" width="12" height="12"/><rect x="90" y="18" width="12" height="12"/>' +
+        '<rect x="102" y="30" width="12" height="12"/></g>' +
+        '<g fill="#000000" opacity="0.10">' +
+        '<rect x="18" y="6" width="12" height="12"/><rect x="6" y="18" width="12" height="12"/>' +
+        '<rect x="90" y="6" width="12" height="12"/><rect x="102" y="18" width="12" height="12"/></g>';
+    } else { // rings
+      s += '<g fill="none" stroke="#ffffff" stroke-width="2" opacity="0.22">' +
+        '<circle cx="16" cy="20" r="9"/><circle cx="104" cy="18" r="7"/>' +
+        '<circle cx="108" cy="88" r="9"/></g>';
+    }
+    return s;
+  }
+
+  // Back hair: the silhouette behind the face. Drawn before the face,
+  // so only the parts sticking out past the face/shoulders show.
+  function _hairBack(p) {
+    var h = p.hair;
+    var dark = _shade(h, 0.72);
+    var s = ' stroke="' + LINE + '" stroke-width="1.6" stroke-linejoin="round"';
+    var style = p.hairStyle;
+    if (style === 'long') {
+      return '<path d="M24 116 C19 62 22 26 60 12 C98 26 101 62 96 116 L78 116 C81 88 80 66 76 52 L44 52 C40 66 39 88 42 116 Z" fill="' + h + '"' + s + '/>' +
+        '<path d="M30 110 C28 70 32 40 44 28" fill="none" stroke="' + dark + '" stroke-width="2" opacity="0.5"/>' +
+        '<path d="M90 110 C92 70 88 40 76 28" fill="none" stroke="' + dark + '" stroke-width="2" opacity="0.5"/>';
+    }
+    if (style === 'bob') {
+      return '<path d="M26 88 C21 52 26 24 60 13 C94 24 99 52 94 88 C86 94 76 96 60 96 C44 96 34 94 26 88 Z" fill="' + h + '"' + s + '/>';
+    }
+    if (style === 'wavy') {
+      return '<path d="M24 108 C18 84 26 66 22 46 C26 24 40 13 60 13 C80 13 94 24 98 46 C94 66 102 84 96 108 C88 112 78 108 74 100 L46 100 C42 108 32 112 24 108 Z" fill="' + h + '"' + s + '/>' +
+        '<path d="M30 96 C34 78 30 60 34 44" fill="none" stroke="' + dark + '" stroke-width="2" opacity="0.5"/>' +
+        '<path d="M90 96 C86 78 90 60 86 44" fill="none" stroke="' + dark + '" stroke-width="2" opacity="0.5"/>';
+    }
+    if (style === 'ponytail') {
+      return '<path d="M27 62 C22 30 38 13 60 13 C82 13 98 30 93 62 L87 62 C88 42 76 30 60 30 C44 30 32 42 33 62 Z" fill="' + h + '"' + s + '/>' +
+        '<path d="M84 26 C100 30 108 48 104 74 C102 88 96 96 90 98 C94 82 92 60 84 44 C80 36 80 30 84 26 Z" fill="' + h + '"' + s + '/>' +
+        '<path d="M92 36 C100 48 102 64 98 82" fill="none" stroke="' + dark + '" stroke-width="2" opacity="0.5"/>';
+    }
+    if (style === 'tails') {
+      return '<path d="M27 62 C22 30 38 13 60 13 C82 13 98 30 93 62 L87 62 C88 42 76 30 60 30 C44 30 32 42 33 62 Z" fill="' + h + '"' + s + '/>' +
+        '<path d="M32 30 C18 34 10 52 14 76 C16 90 22 98 28 100 C24 84 26 62 34 46 C37 38 36 32 32 30 Z" fill="' + h + '"' + s + '/>' +
+        '<path d="M88 30 C102 34 110 52 106 76 C104 90 98 98 92 100 C96 84 94 62 86 46 C83 38 84 32 88 30 Z" fill="' + h + '"' + s + '/>';
+    }
+    if (style === 'bun') {
+      return '<circle cx="60" cy="12" r="11" fill="' + h + '"' + s + '/>' +
+        '<path d="M27 62 C22 30 38 13 60 13 C82 13 98 30 93 62 L87 62 C88 42 76 30 60 30 C44 30 32 42 33 62 Z" fill="' + h + '"' + s + '/>';
+    }
+    // short / spiky / sidesweep: a close cap behind the head.
+    return '<path d="M27 62 C22 30 38 13 60 13 C82 13 98 30 93 62 L87 62 C88 42 76 30 60 30 C44 30 32 42 33 62 Z" fill="' + h + '"' + s + '/>';
+  }
+
+  function _neckShoulders(p) {
+    var skin = p.skin;
+    var shade = _shade(skin, 0.92);
+    var cloth = p.cloth;
+    var dark = _shade(cloth, 0.7);
+    var s = '<path d="M52 86 L52 102 C52 106 68 106 68 102 L68 86 Z" fill="' + shade + '" stroke="' + LINE + '" stroke-width="1.2"/>' +
+      '<path d="M16 120 C16 103 36 94 60 94 C84 94 104 103 104 120 Z" fill="' + cloth + '" stroke="' + LINE + '" stroke-width="1.6" stroke-linejoin="round"/>';
+    if (p.collar === 'shirt') {
+      s += '<path d="M52 94 L60 108 L68 94 L68 100 L60 112 L52 100 Z" fill="' + dark + '" stroke="' + LINE + '" stroke-width="1"/>' +
+        '<path d="M52 94 L46 100 L54 104 Z" fill="' + dark + '" stroke="' + LINE + '" stroke-width="1"/>' +
+        '<path d="M68 94 L74 100 L66 104 Z" fill="' + dark + '" stroke="' + LINE + '" stroke-width="1"/>';
+    } else if (p.collar === 'hood') {
+      s += '<path d="M44 96 C48 108 72 108 76 96 C72 104 48 104 44 96 Z" fill="' + dark + '" stroke="' + LINE + '" stroke-width="1"/>' +
+        '<path d="M54 104 L54 114 M66 104 L66 114" stroke="' + dark + '" stroke-width="2" stroke-linecap="round"/>' +
+        '<circle cx="54" cy="116" r="1.8" fill="' + dark + '"/><circle cx="66" cy="116" r="1.8" fill="' + dark + '"/>';
+    } else { // crew
+      s += '<path d="M48 94 C52 102 68 102 72 94 C68 99 52 99 48 94 Z" fill="' + dark + '" stroke="' + LINE + '" stroke-width="1"/>';
+    }
+    return s;
+  }
+
+  function _face(p) {
+    var skin = p.skin;
+    var shade = _shade(skin, 0.9);
+    var s = '<ellipse cx="33.5" cy="65" rx="4" ry="6" fill="' + skin + '" stroke="' + LINE + '" stroke-width="1.3"/>' +
+      '<ellipse cx="86.5" cy="65" rx="4" ry="6" fill="' + skin + '" stroke="' + LINE + '" stroke-width="1.3"/>' +
+      '<path d="M33 52 C33 76 45 95 60 97 C75 95 87 76 87 52 C87 40 76 31 60 31 C44 31 33 40 33 52 Z" fill="' + skin + '" stroke="' + LINE + '" stroke-width="1.6"/>' +
+      // Manga shading: soft shadow under the fringe + one cheek plane.
+      '<path d="M36 46 C44 36 76 36 84 46 C78 38 42 38 36 46 Z" fill="' + shade + '" opacity="0.55"/>' +
+      '<path d="M82 56 C84 70 80 84 72 91 C79 82 83 68 82 56 Z" fill="' + shade + '" opacity="0.4"/>';
+    if (p.beard) {
+      var h = p.hair;
+      // Jaw beard below the mouth line + sideburns; the mouth stays
+      // clear so the expression still reads.
+      s += '<path d="M35 58 C35 78 46 94 60 96 C74 94 85 78 85 58 C84 72 80 82 74 88 C74 92 70 94 60 94 C50 94 46 92 46 88 C40 82 36 72 35 58 Z" fill="' + h + '" opacity="0.92"/>' +
+        '<path d="M52 78 C56 76 64 76 68 78 C66 81 54 81 52 78 Z" fill="' + h + '"/>';
+    }
+    return s;
+  }
+
+  function _eyes(p) {
+    var ex = p.expression;
+    var s = '';
+    var centers = [[47, 63], [73, 63]];
+    if (ex === 'cheerful') {
+      // Closed happy eyes: upward arcs.
+      s += '<path d="M40 63 Q47 54 54 63" fill="none" stroke="' + LINE + '" stroke-width="2.4" stroke-linecap="round"/>' +
+        '<path d="M66 63 Q73 54 80 63" fill="none" stroke="' + LINE + '" stroke-width="2.4" stroke-linecap="round"/>';
+    } else {
+      var ry = ex === 'focused' ? 7 : 8;
+      for (var i = 0; i < 2; i++) {
+        var cx = centers[i][0];
+        var cy = centers[i][1];
+        s += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="6.5" ry="' + ry + '" fill="#ffffff" stroke="' + LINE + '" stroke-width="1.2"/>' +
+          '<circle cx="' + cx + '" cy="' + (cy + 0.5) + '" r="4.2" fill="' + p.eyes + '"/>' +
+          '<circle cx="' + cx + '" cy="' + (cy + 0.5) + '" r="2.1" fill="' + LINE + '"/>' +
+          '<circle cx="' + (cx - 1.4) + '" cy="' + (cy - 1.8) + '" r="1.6" fill="#ffffff"/>' +
+          '<circle cx="' + (cx + 1.6) + '" cy="' + (cy + 1.6) + '" r="0.8" fill="#ffffff" opacity="0.9"/>';
+      }
+      // Upper lash lines.
+      if (ex === 'focused') {
+        s += '<path d="M40 61 Q47 55 54 58" fill="none" stroke="' + LINE + '" stroke-width="2.4" stroke-linecap="round"/>' +
+          '<path d="M66 58 Q73 55 80 61" fill="none" stroke="' + LINE + '" stroke-width="2.4" stroke-linecap="round"/>';
+      } else {
+        s += '<path d="M40 59 Q47 53 54 59" fill="none" stroke="' + LINE + '" stroke-width="2.4" stroke-linecap="round"/>' +
+          '<path d="M66 59 Q73 53 80 59" fill="none" stroke="' + LINE + '" stroke-width="2.4" stroke-linecap="round"/>';
+      }
+      s += '<path d="M42 70 Q47 72.5 52 70" fill="none" stroke="' + LINE + '" stroke-width="1" opacity="0.45" stroke-linecap="round"/>' +
+        '<path d="M68 70 Q73 72.5 78 70" fill="none" stroke="' + LINE + '" stroke-width="1" opacity="0.45" stroke-linecap="round"/>';
+    }
+    // Brows.
+    var bw = p.brows === 'thick' ? 2.6 : 1.8;
+    if (ex === 'focused') {
+      s += '<path d="M39 54 L55 49" stroke="' + LINE + '" stroke-width="' + bw + '" stroke-linecap="round" fill="none"/>' +
+        '<path d="M65 49 L81 54" stroke="' + LINE + '" stroke-width="' + bw + '" stroke-linecap="round" fill="none"/>';
+    } else if (ex === 'cheerful') {
+      s += '<path d="M40 50 Q47 46 54 50" fill="none" stroke="' + LINE + '" stroke-width="' + bw + '" stroke-linecap="round"/>' +
+        '<path d="M66 50 Q73 46 80 50" fill="none" stroke="' + LINE + '" stroke-width="' + bw + '" stroke-linecap="round"/>';
+    } else {
+      s += '<path d="M40 51 Q47 47.5 54 51" fill="none" stroke="' + LINE + '" stroke-width="' + bw + '" stroke-linecap="round"/>' +
+        '<path d="M66 51 Q73 47.5 80 51" fill="none" stroke="' + LINE + '" stroke-width="' + bw + '" stroke-linecap="round"/>';
+    }
+    // Nose: one small mark.
+    s += '<path d="M60 70 L58.5 75 Q60 76.5 62 75" fill="none" stroke="' + LINE + '" stroke-width="1.2" stroke-linecap="round"/>';
+    if (p.blush) {
+      s += '<ellipse cx="40" cy="74" rx="4.5" ry="2.5" fill="#f2a0a0" opacity="0.4"/>' +
+        '<ellipse cx="80" cy="74" rx="4.5" ry="2.5" fill="#f2a0a0" opacity="0.4"/>';
+    }
+    if (p.freckles) {
+      s += '<g fill="#8a5a3a" opacity="0.7"><circle cx="39" cy="71" r="0.8"/><circle cx="43" cy="73" r="0.8"/><circle cx="40" cy="75" r="0.8"/>' +
+        '<circle cx="77" cy="73" r="0.8"/><circle cx="81" cy="71" r="0.8"/><circle cx="80" cy="75" r="0.8"/></g>';
+    }
+    // Mouth.
+    if (ex === 'cheerful') {
+      s += '<path d="M52 81 Q60 92 68 81 Q60 85 52 81 Z" fill="#8a3b32" stroke="' + LINE + '" stroke-width="1.2" stroke-linejoin="round"/>';
+    } else if (ex === 'smirk') {
+      s += '<path d="M53 82 Q60 87 68 80" fill="none" stroke="' + LINE + '" stroke-width="1.8" stroke-linecap="round"/>';
+    } else if (ex === 'focused') {
+      s += '<path d="M54 83 Q60 84.5 66 83" fill="none" stroke="' + LINE + '" stroke-width="1.8" stroke-linecap="round"/>';
+    } else if (ex === 'calm') {
+      s += '<path d="M55 83 Q60 85.5 65 83" fill="none" stroke="' + LINE + '" stroke-width="1.6" stroke-linecap="round"/>';
+    } else { // smile
+      s += '<path d="M53 82 Q60 88 67 82" fill="none" stroke="' + LINE + '" stroke-width="1.8" stroke-linecap="round"/>';
+    }
+    return s;
+  }
+
+  // Front hair: the fringe + side locks, drawn over the face.
+  function _hairFront(p) {
+    var h = p.hair;
+    var dark = _shade(h, 0.72);
+    var s = ' stroke="' + LINE + '" stroke-width="1.4" stroke-linejoin="round"';
+    var style = p.hairStyle;
+    var out = '';
+    if (style === 'spiky') {
+      out = '<path d="M32 54 L34 40 L41 48 L47 34 L54 44 L60 32 L67 44 L74 35 L80 47 L86 40 L88 54 C84 42 74 34 60 34 C46 34 36 42 32 54 Z" fill="' + h + '"' + s + '/>' +
+        '<path d="M33 54 C31 62 32 68 35 72 L39 66 C37 60 36 56 37 52 Z" fill="' + h + '"' + s + '/>' +
+        '<path d="M87 54 C89 62 88 68 85 72 L81 66 C83 60 84 56 83 52 Z" fill="' + h + '"' + s + '/>';
+    } else if (style === 'bob') {
+      out = '<path d="M32 50 C32 34 44 28 60 28 C76 28 88 34 88 50 C78 43 42 43 32 50 Z" fill="' + h + '"' + s + '/>' +
+        '<path d="M32 50 C30 62 31 74 35 82 L40 78 C37 68 37 58 39 50 Z" fill="' + h + '"' + s + '/>' +
+        '<path d="M88 50 C90 62 89 74 85 82 L80 78 C83 68 83 58 81 50 Z" fill="' + h + '"' + s + '/>';
+    } else if (style === 'sidesweep') {
+      out = '<path d="M32 52 C32 34 44 28 60 28 C76 28 88 34 88 52 C82 40 66 36 50 48 C44 44 36 46 32 52 Z" fill="' + h + '"' + s + '/>' +
+        '<path d="M32 52 C30 60 31 68 34 74 L38 68 C36 61 36 56 38 51 Z" fill="' + h + '"' + s + '/>';
+    } else if (style === 'long' || style === 'ponytail' || style === 'tails' || style === 'bun') {
+      // Center-part fringe with two sweeps.
+      out = '<path d="M32 52 C32 34 44 28 60 28 C76 28 88 34 88 52 C84 41 78 38 74 47 C70 37 64 34 60 41 C56 34 50 37 46 47 C42 38 36 41 32 52 Z" fill="' + h + '"' + s + '/>' +
+        '<path d="M32 52 C30 62 31 72 34 80 L39 74 C36 66 36 58 38 51 Z" fill="' + h + '"' + s + '/>' +
+        '<path d="M88 52 C90 62 89 72 86 80 L81 74 C84 66 84 58 82 51 Z" fill="' + h + '"' + s + '/>';
+    } else if (style === 'wavy') {
+      out = '<path d="M32 52 C32 34 44 28 60 28 C76 28 88 34 88 52 C84 42 78 40 74 48 C68 40 60 38 54 47 C48 39 38 41 32 52 Z" fill="' + h + '"' + s + '/>' +
+        '<path d="M32 52 C28 64 30 78 35 88 L40 82 C36 72 36 60 39 51 Z" fill="' + h + '"' + s + '/>' +
+        '<path d="M88 52 C92 64 90 78 85 88 L80 82 C84 72 84 60 81 51 Z" fill="' + h + '"' + s + '/>';
+    } else { // short: neat side-part fringe
+      out = '<path d="M32 52 C32 36 44 29 60 29 C76 29 88 36 88 52 C84 42 78 41 73 48 C68 40 60 38 54 46 C48 39 38 41 32 52 Z" fill="' + h + '"' + s + '/>' +
+        '<path d="M32 52 C31 58 32 64 34 68 L38 63 C36 58 36 54 37 51 Z" fill="' + h + '"' + s + '/>' +
+        '<path d="M88 52 C89 58 88 64 86 68 L82 63 C84 58 84 54 83 51 Z" fill="' + h + '"' + s + '/>';
+    }
+    // Hair shine + a shadow strand so the fringe reads as hair, not a cap.
+    out += '<path d="M44 24 Q52 18 63 18" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.35"/>' +
+      '<path d="M70 20 Q76 22 80 26" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.3"/>' +
+      '<path d="M40 34 Q48 30 56 30" fill="none" stroke="' + dark + '" stroke-width="1.6" opacity="0.5"/>';
+    return out;
+  }
+
+  function _accessory(p) {
+    var a = p.accessory;
+    if (a === 'glasses') {
+      return '<g fill="#ffffff" opacity="0.12" stroke="' + LINE + '" stroke-width="1.8">' +
+        '<rect x="38" y="55" width="20" height="16" rx="4"/>' +
+        '<rect x="62" y="55" width="20" height="16" rx="4"/></g>' +
+        '<path d="M58 62 L62 62 M38 61 L33 59 M82 61 L87 59" stroke="' + LINE + '" stroke-width="1.8" fill="none"/>';
+    }
+    if (a === 'round-glasses') {
+      return '<g fill="#ffffff" opacity="0.12" stroke="' + LINE + '" stroke-width="1.8">' +
+        '<circle cx="47" cy="63" r="10"/><circle cx="73" cy="63" r="10"/></g>' +
+        '<path d="M57 62 L63 62 M37 61 L32 59 M83 61 L88 59" stroke="' + LINE + '" stroke-width="1.8" fill="none"/>';
+    }
+    if (a === 'headband') {
+      return '<path d="M33 44 C44 34 76 34 87 44 L87 38 C76 29 44 29 33 38 Z" fill="#c94f6d" stroke="' + LINE + '" stroke-width="1.2"/>';
+    }
+    if (a === 'hairclip') {
+      return '<g fill="#f2c94c" stroke="' + LINE + '" stroke-width="1"><rect x="76" y="36" width="12" height="4" rx="2" transform="rotate(24 82 38)"/></g>' +
+        '<circle cx="82" cy="38" r="1.6" fill="#ffffff"/>';
+    }
+    if (a === 'starpin') {
+      return '<path d="M84 34 L86 39 L91 41 L86 43 L84 48 L82 43 L77 41 L82 39 Z" fill="#f2c94c" stroke="' + LINE + '" stroke-width="1"/>';
+    }
+    if (a === 'earring') {
+      return '<circle cx="90" cy="70" r="2.4" fill="#f2c94c" stroke="' + LINE + '" stroke-width="1"/>' +
+        '<path d="M90 67 L90 68" stroke="' + LINE + '" stroke-width="1"/>';
+    }
+    if (a === 'cap') {
+      return '<path d="M33 44 C33 26 44 17 60 17 C76 17 87 26 87 44 C76 36 44 36 33 44 Z" fill="#e84a3f" stroke="' + LINE + '" stroke-width="1.6"/>' +
+        '<path d="M60 17 C60 26 60 34 60 40" stroke="' + _shade('#e84a3f', 0.7) + '" stroke-width="1.6"/>' +
+        '<ellipse cx="60" cy="17" rx="4" ry="2.4" fill="#e84a3f" stroke="' + LINE + '" stroke-width="1.2"/>' +
+        '<path d="M30 44 C44 38 76 38 90 44 C84 50 36 50 30 44 Z" fill="#c23a30" stroke="' + LINE + '" stroke-width="1.4"/>';
+    }
+    if (a === 'ribbon') {
+      if (p.hairStyle === 'tails') {
+        return '<g fill="#e84a6d" stroke="' + LINE + '" stroke-width="1.2">' +
+          '<path d="M30 32 L20 26 L22 38 Z"/><path d="M30 32 L22 40 L34 38 Z"/><circle cx="30" cy="33" r="2.6"/>' +
+          '<path d="M90 32 L100 26 L98 38 Z"/><path d="M90 32 L98 40 L86 38 Z"/><circle cx="90" cy="33" r="2.6"/></g>';
+      }
+      return '<g fill="#e84a6d" stroke="' + LINE + '" stroke-width="1.2">' +
+        '<path d="M84 30 L94 24 L95 36 Z"/><path d="M84 30 L94 38 L82 40 Z"/><circle cx="84" cy="32" r="2.6"/></g>';
+    }
+    return '';
+  }
+
+  // ------------------------------------------------------------- public
+  // Complete inline <svg> for an opponent name (case-insensitive), or
+  // null for an unknown name. No text nodes: the markup never carries
+  // the name, so header/picker text scans see only the adjacent label.
+  function portraitSVG(name) {
+    var p = _lookup(name);
+    if (!p) return null;
+    _gidCounter += 1;
+    var key = String(_gidCounter);
+    var inner = _bg(p, key) + _hairBack(p) + _neckShoulders(p) +
+      _face(p) + _eyes(p) + _hairFront(p) + _accessory(p);
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" aria-hidden="true">' + inner + '</svg>';
+  }
+
+  function hasPortrait(name) {
+    return _lookup(name) !== null;
+  }
+
+  // A copy of one character's parameters (or null): lets harnesses
+  // assert distinctness without reaching into the table.
+  function paramsFor(name) {
+    var p = _lookup(name);
+    if (!p) return null;
+    var out = {};
+    var k;
+    for (k in p) {
+      if (Object.prototype.hasOwnProperty.call(p, k)) out[k] = p[k];
+    }
+    return out;
+  }
+
+  return {
+    portraitSVG: portraitSVG,
+    portraitFor: portraitSVG,
+    hasPortrait: hasPortrait,
+    paramsFor: paramsFor,
+    NAMES: NAMES.slice()
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = CHSPortraits;
+if (typeof window !== 'undefined') window.CHSPortraits = CHSPortraits;
+</script>
+<script>
 // source: chs-save.js
 // CHSSave — save/resume/delete + stats + training progress for Chess.
 // No DOM. UMD: global CHSSave + module.exports. Storage is injected:
@@ -20592,17 +21620,31 @@ if (typeof window !== 'undefined') {
 //   jmf-phone-chess-stats-v1 — records JSON
 //   jmf-phone-chess-training-v1 — lesson checkmarks JSON
 //
-// Saved game shape (written by the game worker, read back verbatim on
-// load — extra keys are preserved so the game worker's settings snapshot
-// and any future fields survive a round-trip). loadGame accepts a save
-// when it is a plain object carrying EITHER a non-empty string `fen`
-// (the preferred shape) OR a 64-square `board` array plus `turn` (the
-// engine-state shape). When present, `moves` must be an array of
-// strings, `clocks` must be {w, b} finite numbers >= 0, `mode` must be
-// "2p", "ai", or "training", and `opponent` must be a string or null;
-// anything else yields null (missing/corrupt -> fresh game).
+// Saved game shape (written by the game worker, read back on load
+// through migrateGameState — see below — so a v18 save restores
+// against the SAME AI under v19. Extra keys are preserved so the game
+// worker's settings snapshot and any future fields survive a
+// round-trip). loadGame accepts a save when it is a plain object
+// carrying EITHER a non-empty string `fen` (the preferred shape) OR a
+// 64-square `board` array plus `turn` (the engine-state shape). When
+// present, `moves` must be an array of strings, `clocks` must be
+// {w, b} finite numbers >= 0, `mode` must be "2p", "ai", or
+// "training", and `opponent` must be a string, null, or a ladder
+// index 0..18; anything else yields null (missing/corrupt -> fresh
+// game).
 //   { fen, mode, opponent, opponentRating, humanColor, timeControl,
-//     clocks: {w, b}, moves: [SAN strings], ...game-owned extras }
+//     clocks: {w, b}, moves: [SAN strings],
+//     config: {opponent, opponentName, opponentRating, ladderVersion,
+//              ...}, ...game-owned extras }
+// MIGRATION (v18 -> v19, Nov 15, 2026): the ladder grew from 10 rungs
+// to 19, so bare indices shifted (Adrian 9 -> 18). migrateGameState
+// is the single migration: a save carrying a KNOWN ladder name
+// restores by identity; a save carrying any v19-era identity marker
+// (ladderVersion, opponentName, opponentRating) keeps its numeric
+// index as a CURRENT index; a save with a bare number and zero
+// markers is a v18 save, and its index maps through the frozen v18
+// names to the current index for the SAME opponent. Stats need no
+// migration: vsAI/bestWin are keyed by opponent NAME already.
 //
 // Stats shape:
 //   { version: 1,
@@ -20624,22 +21666,43 @@ var CHSSave = (function () {
   var STATS_KEY = 'jmf-phone-chess-stats-v1';
   var TRAINING_KEY = 'jmf-phone-chess-training-v1';
 
-  // Ladder ratings from the plan, used ONLY to resolve a best win when
-  // recordResult is called without an explicit rating. The engine owns
-  // LEVELS; this table is a fallback so stats stay correct when the
-  // caller passes just a name.
+  // Ladder ratings, used ONLY to resolve a best win when
+  // recordResult is called without an explicit rating, and to resolve
+  // identities during save migration. The engine owns LEVELS; this
+  // table is a fallback so stats stay correct when the caller passes
+  // just a name. 19 rungs (v19); the 10 v18 male ratings unchanged.
   var LADDER_RATINGS = {
     Ben: 800,
+    Clara: 900,
     Leo: 1000,
+    Daphne: 1100,
     Max: 1200,
+    Fiona: 1300,
     Owen: 1400,
+    Greta: 1500,
     Felix: 1600,
+    Hannah: 1700,
     Hugo: 1800,
+    Ingrid: 1900,
     Victor: 2000,
+    Karina: 2100,
     Stefan: 2200,
+    Nora: 2300,
     Nikolai: 2400,
+    Valerie: 2500,
     Adrian: 2600
   };
+
+  // Ladder order (ratings ascend 800 -> 2600), parallel to
+  // LADDER_RATINGS: indexOf gives the CURRENT index for a name.
+  var LADDER_ORDER = ['Ben', 'Clara', 'Leo', 'Daphne', 'Max', 'Fiona',
+    'Owen', 'Greta', 'Felix', 'Hannah', 'Hugo', 'Ingrid', 'Victor',
+    'Karina', 'Stefan', 'Nora', 'Nikolai', 'Valerie', 'Adrian'];
+
+  // The v18 ladder, FROZEN: the meaning of a bare numeric opponent
+  // index in a save written before v19. Migration-only; never edit.
+  var V18_ORDER = ['Ben', 'Leo', 'Max', 'Owen', 'Felix', 'Hugo',
+    'Victor', 'Stefan', 'Nikolai', 'Adrian'];
 
   var MODES = { '2p': true, pvp: true, ai: true, training: true };
 
@@ -20665,10 +21728,12 @@ var CHSSave = (function () {
       (typeof v === 'number' && isFinite(v) && v >= 0);
   }
 
-  // Opponent as a ladder index (chs-game.js emits 0..9 in config.opponent).
+  // Opponent as a CURRENT ladder index (chs-game.js emits 0..18 in
+  // config.opponent under v19; v18 saves emit 0..9, a subset, and
+  // are migrated by migrateGameState before anyone reads the index).
   function _isOpponentIndex(v) {
     return typeof v === 'number' && isFinite(v) &&
-      Math.floor(v) === v && v >= 0 && v <= 9;
+      Math.floor(v) === v && v >= 0 && v <= 18;
   }
 
   function _count(v) {
@@ -20736,13 +21801,112 @@ var CHSSave = (function () {
     return true;
   }
 
+  // ---- v18 -> v19 migration ----
+
+  function _nameIndex(name) {
+    if (typeof name !== 'string') return -1;
+    var want = name.replace(/^\s+|\s+$/g, '').toLowerCase();
+    if (!want) return -1;
+    for (var i = 0; i < LADDER_ORDER.length; i++) {
+      if (LADDER_ORDER[i].toLowerCase() === want) return i;
+    }
+    return -1;
+  }
+
+  // Pure: returns a NEW state object with the opponent resolved to
+  // the CURRENT ladder (index + name + rating + ladderVersion 19),
+  // or a copy of the input when it carries no opponent information.
+  // The input is never mutated. Rules (mirroring the game's restore
+  // resolution — the two are cross-tested on identical fixtures):
+  //   1. A KNOWN ladder name anywhere wins (identity).
+  //   2. Else, if any v19-era identity marker is present, a numeric
+  //      index is a CURRENT index (a v19-era writer wrote it).
+  //   3. Else (bare number, zero markers): a v18 index, mapped
+  //      through the frozen v18 NAMES to the current index for the
+  //      SAME opponent (v18 k -> v19 2k for the male rungs).
+  // Both save shapes are handled: the game's nested config shape and
+  // the top-level opponent/opponentRating shape. Fields that were
+  // absent stay absent; only opponent fields are normalized, and
+  // every other key (fen, clocks, moves, extras) is preserved.
+  function migrateGameState(s) {
+    if (!_isPlainObject(s)) return s;
+    var hasConfig = _isPlainObject(s.config);
+    var cfg = hasConfig ? s.config : {};
+    var candidates = [cfg.opponentName, cfg.opponent,
+      s.opponentName, s.opponent];
+    var resolved = -1;
+    for (var i = 0; i < candidates.length; i++) {
+      var c = candidates[i];
+      if (typeof c === 'string') {
+        var named = _nameIndex(c);
+        if (named >= 0) { resolved = named; break; }
+      } else if (c && typeof c === 'object' && typeof c.name === 'string') {
+        var onamed = _nameIndex(c.name);
+        if (onamed >= 0) { resolved = onamed; break; }
+      }
+    }
+    var numeric = null;
+    if (typeof cfg.opponent === 'number' && isFinite(cfg.opponent)) {
+      numeric = cfg.opponent;
+    } else if (typeof s.opponent === 'number' && isFinite(s.opponent)) {
+      numeric = s.opponent;
+    }
+    if (resolved < 0 && numeric === null) {
+      // No opponent information at all: return a copy, untouched.
+      var plain = {};
+      var k0;
+      for (k0 in s) {
+        if (Object.prototype.hasOwnProperty.call(s, k0)) plain[k0] = s[k0];
+      }
+      return plain;
+    }
+    if (resolved < 0) {
+      var hasMarker = cfg.ladderVersion !== undefined ||
+        typeof cfg.opponentName === 'string' ||
+        typeof s.opponentName === 'string' ||
+        typeof cfg.opponentRating === 'number' ||
+        typeof s.opponentRating === 'number';
+      if (hasMarker) {
+        resolved = Math.round(numeric);
+        if (resolved < 0) resolved = 0;
+        if (resolved > LADDER_ORDER.length - 1) resolved = LADDER_ORDER.length - 1;
+      } else {
+        var legacy = Math.round(numeric);
+        if (legacy < 0) legacy = 0;
+        if (legacy > V18_ORDER.length - 1) legacy = V18_ORDER.length - 1;
+        resolved = _nameIndex(V18_ORDER[legacy]);
+      }
+    }
+    var name = LADDER_ORDER[resolved];
+    var rating = LADDER_RATINGS[name];
+    var out = {};
+    var k;
+    for (k in s) {
+      if (Object.prototype.hasOwnProperty.call(s, k)) out[k] = s[k];
+    }
+    if (hasConfig) {
+      var cfgOut = {};
+      for (k in cfg) {
+        if (Object.prototype.hasOwnProperty.call(cfg, k)) cfgOut[k] = cfg[k];
+      }
+      cfgOut.opponent = resolved;
+      cfgOut.opponentName = name;
+      cfgOut.opponentRating = rating;
+      cfgOut.ladderVersion = 19;
+      out.config = cfgOut;
+    }
+    if (s.opponent !== undefined) out.opponent = name;
+    if (s.opponentRating !== undefined) out.opponentRating = rating;
+    return out;
+  }
+
   function loadGame(storage) {
     try {
       var raw = _readRaw(storage, SAVE_KEY);
       if (raw === null) return null;
       var parsed = JSON.parse(raw);
       if (!_validGameState(parsed)) return null;
-      return parsed;
+      return migrateGameState(parsed);
     } catch (e) {
       return null;
     }
@@ -20939,6 +22103,7 @@ var CHSSave = (function () {
     saveGame: saveGame,
     loadGame: loadGame,
     deleteGame: deleteGame,
+    migrateGameState: migrateGameState,
     saveStats: saveStats,
     loadStats: loadStats,
     recordResult: recordResult,
@@ -22185,7 +23350,9 @@ if (typeof window !== 'undefined') window.CHSTraining = CHSTraining;
 // them): .chs-setup, .chs-setup-card, .chs-setup-title, .chs-movelist,
 // .chs-result, .chs-sheet, .chs-tray, .chs-picker, .chs-btn,
 // .chs-btn-primary, .chs-menu-toggle, .chs-menu-toggle-label,
-// .chs-menu-toggle-state. Selection state reuses
+// .chs-menu-toggle-state, .chs-opp-portrait (opponent portrait slots
+// in the setup picker and the match header; chs-game.css sizes them).
+// Selection state reuses
 // .chs-btn-primary (selected) vs .chs-btn (unselected), so no extra
 // selection class is needed. Test/state hooks are data-* attributes,
 // not classes: data-chs-group, data-chs-value, data-current="true" on
@@ -22193,15 +23360,18 @@ if (typeof window !== 'undefined') window.CHSTraining = CHSTraining;
 // `.chs-movelist [data-current="true"]` for the current-move highlight.
 // All user-visible text goes through textContent. The ONLY innerHTML
 // use is inserting piece SVGs that arrive via the injected piece data
-// (never user strings); when no SVG is available, piece letters render
-// as text instead.
+// and portrait SVGs that arrive via the injected portraits module
+// (never user strings); when no SVG is available, piece letters /
+// plain labels render as text instead.
 //
 // setupScreen(opts) -> element (.chs-setup). opts:
-//   {levels, boards, pieceSets, document?, onStart, onChange?, defaults?}
+//   {levels, boards, pieceSets, portraits?, document?, onStart, onChange?, defaults?}
 //   levels: [{name, rating}] (engine LEVELS, injected) — plain strings
 //     or {name, elo} entries are normalized defensively; when absent,
-//     the plan's ten-name ladder is used so the screen never renders
-//     empty. boards: [{id, name}] (CHSPieces.BOARDS). pieceSets:
+//     the 19-rung ladder is used so the screen never renders empty.
+//     portraits: the CHSPortraits module (optional) — when present,
+//     each Opponent row shows the portrait + name + rating together.
+//     boards: [{id, name}] (CHSPieces.BOARDS). pieceSets:
 //     [{id, name}] (CHSPieces.SETS). defaults: partial config override
 //     {mode, opponentIndex, timeControl, humanColor, boardTheme,
 //     pieceSet, coordinates}. onStart(config) fires from Start:
@@ -22262,16 +23432,28 @@ if (typeof window !== 'undefined') window.CHSTraining = CHSTraining;
 var CHSUI = (function () {
   'use strict';
 
+  // 19 rungs stepping every 100 (v19): the 10 v18 male rungs
+  // unchanged + 9 proposed female rungs at the odd 100s. Mirrors the
+  // game's OPPONENTS table; the injected levels always win.
   var FALLBACK_LEVELS = [
     { name: 'Ben', rating: 800 },
+    { name: 'Clara', rating: 900 },
     { name: 'Leo', rating: 1000 },
+    { name: 'Daphne', rating: 1100 },
     { name: 'Max', rating: 1200 },
+    { name: 'Fiona', rating: 1300 },
     { name: 'Owen', rating: 1400 },
+    { name: 'Greta', rating: 1500 },
     { name: 'Felix', rating: 1600 },
+    { name: 'Hannah', rating: 1700 },
     { name: 'Hugo', rating: 1800 },
+    { name: 'Ingrid', rating: 1900 },
     { name: 'Victor', rating: 2000 },
+    { name: 'Karina', rating: 2100 },
     { name: 'Stefan', rating: 2200 },
+    { name: 'Nora', rating: 2300 },
     { name: 'Nikolai', rating: 2400 },
+    { name: 'Valerie', rating: 2500 },
     { name: 'Adrian', rating: 2600 }
   ];
 
@@ -22636,6 +23818,22 @@ var CHSUI = (function () {
     return span;
   }
 
+  // Resolve one portrait SVG string from the injected portraits
+  // module (CHSPortraits: portraitSVG/portraitFor), or null when
+  // unavailable. The caller renders the name + rating without a
+  // portrait in that case — the picker never renders empty.
+  function _portraitSVG(portraits, name) {
+    try {
+      if (!portraits) return null;
+      var fn = portraits.portraitSVG || portraits.portraitFor || null;
+      if (typeof fn !== 'function') return null;
+      var svg = fn.call(portraits, name);
+      return (typeof svg === 'string' && svg.indexOf('<svg') === 0) ? svg : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   function _normCapturedList(list) {
     var out = [];
     if (!Array.isArray(list)) return out;
@@ -22742,11 +23940,28 @@ var CHSUI = (function () {
         }
         for (var j = 0; j < choices.length; j++) {
           (function (choice) {
-            var btn = _button(doc, choice.label, 'chs-btn', function () {
+            function onPick() {
               setValue(choice.value);
               paint();
               notifyChange();
-            });
+            }
+            var btn;
+            // Icon choices (the Opponent group): portrait + label
+            // together in one row. The label stays a text node, so
+            // the button's textContent is still exactly the label.
+            if (typeof choice.icon === 'string' && choice.icon.indexOf('<') === 0) {
+              btn = _button(doc, '', 'chs-btn', onPick);
+              var icon = _el(doc, 'span', 'chs-opp-portrait', null);
+              try {
+                icon.innerHTML = choice.icon;
+              } catch (e) {
+                /* the label still renders */
+              }
+              btn.appendChild(icon);
+              btn.appendChild(_el(doc, 'span', null, choice.label));
+            } else {
+              btn = _button(doc, choice.label, 'chs-btn', onPick);
+            }
             _setAttr(btn, 'data-chs-value', String(choice.value));
             buttons.push(btn);
             wrap.appendChild(btn);
@@ -22768,7 +23983,8 @@ var CHSUI = (function () {
         levelChoices.push({
           label: levels[li].name +
             (levels[li].rating !== null ? ' · ' + levels[li].rating : ''),
-          value: li
+          value: li,
+          icon: _portraitSVG(opts.portraits, levels[li].name)
         });
       }
       group('Opponent', levelChoices,
@@ -23340,9 +24556,46 @@ var CHSGame = (function () {
   var PIECE_LETTERS = ['', 'P', 'N', 'B', 'R', 'Q', 'K'];
   var PIECE_VALUES = { 1: 1, 2: 3, 3: 3, 4: 5, 5: 9, 6: 0 };
 
-  // The ladder: names and ratings from the plan. Display labels only;
-  // strength lives in the engine, keyed by opponent index 0..9.
+  // The ladder: names and ratings. 19 rungs stepping every 100
+  // (v19, Nov 15, 2026): the 10 v18 male rungs unchanged, with 9
+  // female rungs interleaved at the odd 100s (PROPOSED names, for
+  // Jesse's veto — checked against every Chess Quest story name with
+  // zero collisions). Strength lives in the engine, resolved by
+  // NAME/RATING through resolveOpponentIndex — never by a persisted
+  // or assumed index, because indices shift (Adrian moved 9 -> 18).
+  // _config.opponent still carries the CURRENT index (the shared
+  // interface with the wire and with Chess Quest), but it is always
+  // derived fresh from identity at config/restore time.
+  var LADDER_VERSION = 19;
   var OPPONENTS = [
+    { name: 'Ben', rating: 800 },
+    { name: 'Clara', rating: 900 },
+    { name: 'Leo', rating: 1000 },
+    { name: 'Daphne', rating: 1100 },
+    { name: 'Max', rating: 1200 },
+    { name: 'Fiona', rating: 1300 },
+    { name: 'Owen', rating: 1400 },
+    { name: 'Greta', rating: 1500 },
+    { name: 'Felix', rating: 1600 },
+    { name: 'Hannah', rating: 1700 },
+    { name: 'Hugo', rating: 1800 },
+    { name: 'Ingrid', rating: 1900 },
+    { name: 'Victor', rating: 2000 },
+    { name: 'Karina', rating: 2100 },
+    { name: 'Stefan', rating: 2200 },
+    { name: 'Nora', rating: 2300 },
+    { name: 'Nikolai', rating: 2400 },
+    { name: 'Valerie', rating: 2500 },
+    { name: 'Adrian', rating: 2600 }
+  ];
+
+  // The v18 ladder, FROZEN. This is the meaning of a bare numeric
+  // opponent index in a save written before v19, and ONLY that:
+  // restore() maps a bare v18 index through this table's NAMES to the
+  // current index (v18 index k -> the same name's v19 index, 2k).
+  // Live config NEVER uses this table — callers pass current indices
+  // or identities. Never edit: it is history, not configuration.
+  var V18_OPPONENTS = [
     { name: 'Ben', rating: 800 },
     { name: 'Leo', rating: 1000 },
     { name: 'Max', rating: 1200 },
@@ -23354,6 +24607,138 @@ var CHSGame = (function () {
     { name: 'Nikolai', rating: 2400 },
     { name: 'Adrian', rating: 2600 }
   ];
+
+  function _indexForName(name) {
+    if (typeof name !== 'string') return -1;
+    var want = name.replace(/^\s+|\s+$/g, '').toLowerCase();
+    if (!want) return -1;
+    for (var i = 0; i < OPPONENTS.length; i++) {
+      if (OPPONENTS[i].name.toLowerCase() === want) return i;
+    }
+    return -1;
+  }
+
+  function _indexForRating(rating) {
+    if (typeof rating !== 'number' || !isFinite(rating)) return -1;
+    for (var i = 0; i < OPPONENTS.length; i++) {
+      if (OPPONENTS[i].rating === rating) return i;
+    }
+    return -1;
+  }
+
+  // Resolve ANY opponent spec to a CURRENT ladder index (0..18):
+  //   number  -> the index itself, clamped (a CURRENT index: live
+  //              callers pass current indices; persisted v18 indices
+  //              go through _resolveRestoreOpponent, never here)
+  //   string  -> name lookup (case-insensitive); unknown -> fallback
+  //   {name}  -> name lookup; the name wins over a rating in the
+  //              same spec (identity is the name)
+  //   {rating}-> exact rating, else the nearest rung
+  //   {opponentIndex|index|levelIdx} -> the number path
+  //   other   -> the fallback index (default 0)
+  // Exported (resolveOpponentIndex) so harnesses and the Quest sync
+  // can resolve identities without duplicating this table.
+  function resolveOpponentIndex(spec, fallback) {
+    var fb = (typeof fallback === 'number' && isFinite(fallback)) ?
+      Math.round(fallback) : 0;
+    if (fb < 0) fb = 0;
+    if (fb > OPPONENTS.length - 1) fb = OPPONENTS.length - 1;
+    if (typeof spec === 'number' && isFinite(spec)) {
+      var n = Math.round(spec);
+      if (n < 0) return 0;
+      if (n > OPPONENTS.length - 1) return OPPONENTS.length - 1;
+      return n;
+    }
+    if (typeof spec === 'string') {
+      var byName = _indexForName(spec);
+      return byName >= 0 ? byName : fb;
+    }
+    if (spec && typeof spec === 'object') {
+      if (typeof spec.name === 'string') {
+        var named = _indexForName(spec.name);
+        if (named >= 0) return named;
+      }
+      if (typeof spec.rating === 'number' && isFinite(spec.rating)) {
+        var exact = _indexForRating(spec.rating);
+        if (exact >= 0) return exact;
+        var best = 0;
+        var bestDiff = Infinity;
+        for (var i = 0; i < OPPONENTS.length; i++) {
+          var d = Math.abs(OPPONENTS[i].rating - spec.rating);
+          if (d < bestDiff) { bestDiff = d; best = i; }
+        }
+        return best;
+      }
+      if (typeof spec.opponentIndex === 'number' && isFinite(spec.opponentIndex)) {
+        return resolveOpponentIndex(spec.opponentIndex, fb);
+      }
+      if (typeof spec.index === 'number' && isFinite(spec.index)) {
+        return resolveOpponentIndex(spec.index, fb);
+      }
+      if (typeof spec.levelIdx === 'number' && isFinite(spec.levelIdx)) {
+        return resolveOpponentIndex(spec.levelIdx, fb);
+      }
+    }
+    return fb;
+  }
+
+  // The config fields for one rung: the current index PLUS its
+  // identity, so every save carries who the opponent IS, not just
+  // where the opponent sits today.
+  function _opponentFields(index) {
+    var idx = resolveOpponentIndex(index, 0);
+    return {
+      opponent: idx,
+      opponentName: OPPONENTS[idx].name,
+      opponentRating: OPPONENTS[idx].rating,
+      ladderVersion: LADDER_VERSION
+    };
+  }
+
+  // Resolve the opponent for a RESTORED save. Persisted state is the
+  // one place a v18 bare index can still arrive, so restore (and
+  // only restore) disambiguates it:
+  //   1. A KNOWN ladder name anywhere (config.opponentName, a string
+  //      config.opponent, a top-level opponent/opponentName string)
+  //      wins: identity, whatever the numeric fields say.
+  //   2. Else, if ANY v19-era identity marker is present
+  //      (ladderVersion, an opponentName even if it is not a ladder
+  //      name — e.g. a Chess Quest story name — or an
+  //      opponentRating), the numeric index is a CURRENT index:
+  //      a v19-era writer wrote it. (Quest snapshots carry story
+  //      names + current indices; rule 2 keeps them exact.)
+  //   3. Else (a bare number, zero identity markers): a v18 index,
+  //      mapped through the frozen V18 table's names to the current
+  //      index — the same AI, not the same slot.
+  function _resolveRestoreOpponent(st, cfg) {
+    cfg = cfg || {};
+    var candidates = [cfg.opponentName, cfg.opponent, st.opponentName, st.opponent];
+    for (var i = 0; i < candidates.length; i++) {
+      var c = candidates[i];
+      if (typeof c === 'string') {
+        var named = _indexForName(c);
+        if (named >= 0) return named;
+      } else if (c && typeof c === 'object' && typeof c.name === 'string') {
+        var onamed = _indexForName(c.name);
+        if (onamed >= 0) return onamed;
+      }
+    }
+    var hasMarker = cfg.ladderVersion !== undefined ||
+      typeof cfg.opponentName === 'string' ||
+      typeof st.opponentName === 'string' ||
+      typeof cfg.opponentRating === 'number' ||
+      typeof st.opponentRating === 'number';
+    var numeric = cfg.opponent;
+    if (typeof numeric !== 'number' || !isFinite(numeric)) {
+      numeric = (typeof st.opponent === 'number') ? st.opponent : 0;
+    }
+    if (hasMarker) return resolveOpponentIndex(numeric, 0);
+    // Bare number, no markers: v18 semantics.
+    var k = Math.round(numeric);
+    if (k < 0) k = 0;
+    if (k > V18_OPPONENTS.length - 1) k = V18_OPPONENTS.length - 1;
+    return _indexForName(V18_OPPONENTS[k].name);
+  }
 
   // Fallback board palette when the pieces module is absent.
   var FALLBACK_BOARD = {
@@ -23374,6 +24759,9 @@ var CHSGame = (function () {
   var _squareEls = [];
   var _oppNameEl = null;
   var _oppRatingEl = null;
+  var _oppPortraitEl = null;
+  var _playerPortraitEl = null;
+  var _portraitMiss = '';
   var _oppClockEl = null;
   var _oppTrayEl = null;
   var _playerNameEl = null;
@@ -23412,6 +24800,7 @@ var CHSGame = (function () {
   var _opts = {};
   var _engine = null;
   var _pieces = null;
+  var _portraits = null;
   var _runner = null;
   var _themeName = 'aurora';
   var _position = null;
@@ -23460,7 +24849,8 @@ var CHSGame = (function () {
   var _lastLayout = null;
   var _resizeBound = false;
   var _config = {
-    mode: 'ai', opponent: 0, timeControl: 10, humanColor: 'w',
+    mode: 'ai', opponent: 0, opponentName: 'Ben', opponentRating: 800,
+    ladderVersion: LADDER_VERSION, timeControl: 10, humanColor: 'w',
     boardTheme: 'minimal', pieceSet: 'cartoon', showCoords: true, seed: 0
   };
 
@@ -23576,29 +24966,62 @@ var CHSGame = (function () {
   }
 
   // Human pacing floor, in milliseconds. Pure and deterministic: the
-  // same level and complexity always give the same floor, so the
+  // same opponent and complexity always give the same floor, so the
   // formula is testable and the AI never plays instantly.
   //
-  // Formula:
-  //   floor = clamp(1000 + 160 * levelIdx
+  // The floor is keyed off RATING, never a raw ladder index:
+  //   step = (rating - 800) / 100          (0..18 across the ladder)
+  //   floor = clamp(1000 + 80 * step
   //                 + 12 * min(legalMoves, 40)
   //                 + 90 * min(captures, 8)
   //                 + (inCheck ? 350 : 0), 700, 6000)
-  // The base beat is ~1s at the bottom of the ladder rising to ~2.4s
-  // at the top; complexity terms add up to ~1.5s more in sharp
-  // positions. The floor is non-decreasing in every input: a stronger
-  // opponent never thinks less than a weaker one in the same position,
-  // and a sharper position never gets a shorter think. The driver adds
-  // a seeded upward-only jitter (up to +25%, still capped at 6000ms)
-  // so repeated quiet moves do not land on an identical beat; the
-  // floor itself is never undercut.
-  function pacingFor(levelIdx, complexity) {
-    var level = 0;
-    if (typeof levelIdx === 'number' && isFinite(levelIdx)) {
-      level = Math.round(levelIdx);
+  // At the 10 v18 male ratings (even steps) this is EXACTLY the v18
+  // formula (1000 + 160 * v18Index); female rungs sit exactly halfway
+  // between their neighbors. The base beat is ~1s at the bottom of
+  // the ladder rising to ~2.4s at the top; complexity terms add up to
+  // ~1.5s more in sharp positions. The floor is non-decreasing in
+  // every input: a stronger opponent never thinks less than a weaker
+  // one in the same position, and a sharper position never gets a
+  // shorter think. The driver adds a seeded upward-only jitter (up to
+  // +25%, still capped at 6000ms) so repeated quiet moves do not land
+  // on an identical beat; the floor itself is never undercut.
+  //
+  // Accepted specs: a RATING (number >= 800), an opponent NAME
+  // (string), or a level object ({rating} or {name}). Numbers below
+  // 800 are the FROZEN v18 legacy overload: a v18 ladder index 0..9
+  // (clamped), mapped through the v18 names to the current step, so
+  // existing pins (pacingFor(0), pacingFor(9), pacingFor(99)) keep
+  // their exact v18 values. New code passes ratings or names; the
+  // legacy overload exists only for the pinned callers.
+  function pacingFor(levelSpec, complexity) {
+    var step = 0;
+    if (typeof levelSpec === 'number' && isFinite(levelSpec)) {
+      if (levelSpec >= 800) {
+        var rating = Math.round(levelSpec);
+        if (rating < 800) rating = 800;
+        if (rating > 2600) rating = 2600;
+        step = Math.round((rating - 800) / 100);
+      } else {
+        var legacy = Math.round(levelSpec);
+        if (legacy < 0) legacy = 0;
+        if (legacy > V18_OPPONENTS.length - 1) legacy = V18_OPPONENTS.length - 1;
+        step = _indexForName(V18_OPPONENTS[legacy].name);
+        if (step < 0) step = 0;
+      }
+    } else if (typeof levelSpec === 'string') {
+      var named = _indexForName(levelSpec);
+      step = named >= 0 ? named : 0;
+    } else if (levelSpec && typeof levelSpec === 'object') {
+      if (typeof levelSpec.rating === 'number' && isFinite(levelSpec.rating)) {
+        return pacingFor(levelSpec.rating, complexity);
+      }
+      if (typeof levelSpec.name === 'string') {
+        var onamed = _indexForName(levelSpec.name);
+        step = onamed >= 0 ? onamed : 0;
+      }
     }
-    if (level < 0) level = 0;
-    if (level > 9) level = 9;
+    if (step < 0) step = 0;
+    if (step > OPPONENTS.length - 1) step = OPPONENTS.length - 1;
     var c = complexity || {};
     var legal = (typeof c.legalMoves === 'number' && isFinite(c.legalMoves) && c.legalMoves > 0)
       ? Math.floor(c.legalMoves) : 0;
@@ -23606,7 +25029,7 @@ var CHSGame = (function () {
       ? Math.floor(c.captures) : 0;
     if (legal > 40) legal = 40;
     if (caps > 8) caps = 8;
-    var ms = 1000 + 160 * level + 12 * legal + 90 * caps + (c.inCheck ? 350 : 0);
+    var ms = 1000 + 80 * step + 12 * legal + 90 * caps + (c.inCheck ? 350 : 0);
     if (ms < PACING_MIN_MS) ms = PACING_MIN_MS;
     if (ms > PACING_MAX_MS) ms = PACING_MAX_MS;
     return ms;
@@ -23944,6 +25367,34 @@ var CHSGame = (function () {
       _pieces = global.CHSPieces;
     }
     return _pieces;
+  }
+
+  // Portraits module (CHSPortraits), resolved like the pieces module:
+  // injected opts first, then the window/global object, fresh on every
+  // call until found so a late-loading module is picked up.
+  function _getPortraits() {
+    if (!_portraits && typeof window !== 'undefined' && window.CHSPortraits) {
+      _portraits = window.CHSPortraits;
+    }
+    if (!_portraits && typeof global !== 'undefined' && global.CHSPortraits) {
+      _portraits = global.CHSPortraits;
+    }
+    return _portraits;
+  }
+
+  // One opponent portrait SVG string, or null when the portraits
+  // module is absent or has no portrait for the name. Never throws.
+  function _portraitSVG(name) {
+    try {
+      var p = _getPortraits();
+      if (!p) return null;
+      var fn = p.portraitSVG || p.portraitFor || null;
+      if (typeof fn !== 'function') return null;
+      var svg = fn.call(p, name);
+      return (typeof svg === 'string' && svg.indexOf('<svg') === 0) ? svg : null;
+    } catch (err) {
+      return null;
+    }
   }
 
   function _pieceSVG(setId, code) {
@@ -25249,7 +26700,10 @@ var CHSGame = (function () {
     var legal = _legalMoves();
     if (!legal.length) return;
     var levelIdx = _config.opponent;
-    var floor = pacingFor(levelIdx, _complexityFor(legal));
+    // Pacing is keyed off the opponent's RATING (see pacingFor); the
+    // index passed to the search is the identity-resolved CURRENT
+    // index, derived fresh from the config at game start / restore.
+    var floor = pacingFor(_opponentRating(), _complexityFor(legal));
     // Seeded upward-only jitter: the pause is the floor plus up to
     // 25% more, still capped — the floor is never undercut, and
     // repeated quiet moves do not land on an identical beat.
@@ -25294,6 +26748,8 @@ var CHSGame = (function () {
     _opts = opts || {};
     _engine = _opts.engine || null;
     _pieces = _opts.pieces || null;
+    _portraits = _opts.portraits || null;
+    _portraitMiss = '';
     _runner = _opts.trainingRunner || null;
     _ui = null;
     _saveMod = null;
@@ -25351,9 +26807,17 @@ var CHSGame = (function () {
     if (config.humanColor === 'random' && resolvedMode === 'ai') {
       resolvedColor = pickRandomColor(_rng);
     }
+    // Opponent identity wins: a known opponentName in the config
+    // resolves the rung even when the numeric opponent disagrees
+    // (the setup screen sends both); otherwise the numeric/config
+    // spec resolves as a CURRENT index or identity spec.
+    var oppFields = _opponentFields(_resolveNewGameOpponent(config));
     _config = {
       mode: resolvedMode,
-      opponent: _clampOpponent(config.opponent),
+      opponent: oppFields.opponent,
+      opponentName: oppFields.opponentName,
+      opponentRating: oppFields.opponentRating,
+      ladderVersion: LADDER_VERSION,
       timeControl: _clampTimeControl(config.timeControl),
       humanColor: resolvedColor,
       boardTheme: typeof config.boardTheme === 'string' ? config.boardTheme : 'minimal',
@@ -25429,12 +26893,27 @@ var CHSGame = (function () {
     _maybeStartAI();
   }
 
+  // Live-config opponent resolution for newGame: an identity in
+  // the config (opponentName, or a name/rating in opponent itself)
+  // wins over a bare number; a bare number is a CURRENT index.
+  function _resolveNewGameOpponent(config) {
+    if (config && typeof config.opponentName === 'string') {
+      var named = _indexForName(config.opponentName);
+      if (named >= 0) return named;
+    }
+    if (config && typeof config.opponentRating === 'number' &&
+        typeof config.opponent !== 'number') {
+      var rated = _indexForRating(config.opponentRating);
+      if (rated >= 0) return rated;
+    }
+    return resolveOpponentIndex(config ? config.opponent : undefined, 0);
+  }
+
+  // Clamp/resolve an opponent value to a CURRENT ladder index. Kept
+  // under its v18 name for callers; numbers clamp to 0..18, names and
+  // descriptors resolve by identity (see resolveOpponentIndex).
   function _clampOpponent(value) {
-    if (typeof value !== 'number' || !isFinite(value)) return 0;
-    var n = Math.round(value);
-    if (n < 0) return 0;
-    if (n > 9) return 9;
-    return n;
+    return resolveOpponentIndex(value, 0);
   }
 
   function _clampTimeControl(value) {
@@ -25476,9 +26955,13 @@ var CHSGame = (function () {
     _selected = -1;
     _selectMoves = [];
     if (st.config && typeof st.config === 'object') {
+      var restoredOpp = _opponentFields(_resolveRestoreOpponent(st, st.config));
       _config = {
         mode: (st.config.mode === 'pvp' || st.config.mode === 'training') ? st.config.mode : 'ai',
-        opponent: _clampOpponent(st.config.opponent),
+        opponent: restoredOpp.opponent,
+        opponentName: restoredOpp.opponentName,
+        opponentRating: restoredOpp.opponentRating,
+        ladderVersion: LADDER_VERSION,
         timeControl: (st.config.timeControl === null) ? null : _clampTimeControl(st.config.timeControl),
         humanColor: st.config.humanColor === 'b' ? 'b' : 'w',
         boardTheme: typeof st.config.boardTheme === 'string' ? st.config.boardTheme : 'minimal',
@@ -25808,12 +27291,16 @@ var CHSGame = (function () {
 
   // Map a setup-screen config (CHSUI.setupScreen shape) onto the
   // game's newGame config. Mode '2p' becomes 'pvp'; coordinates
-  // becomes showCoords; opponentIndex becomes opponent.
+  // becomes showCoords; opponentIndex becomes opponent, and the
+  // setup screen's opponent NAME + rating ride along so newGame
+  // resolves the rung by identity, not by the index alone.
   function _mapSetupConfig(cfg) {
     cfg = cfg || {};
     return {
       mode: cfg.mode === '2p' ? 'pvp' : (cfg.mode === 'training' ? 'training' : 'ai'),
       opponent: typeof cfg.opponentIndex === 'number' ? cfg.opponentIndex : _config.opponent,
+      opponentName: typeof cfg.opponent === 'string' ? cfg.opponent : undefined,
+      opponentRating: typeof cfg.opponentRating === 'number' ? cfg.opponentRating : undefined,
       timeControl: cfg.timeControl === undefined ? _config.timeControl : cfg.timeControl,
       humanColor: cfg.humanColor === 'b' ? 'b' : (cfg.humanColor === 'random' ? 'random' : 'w'),
       boardTheme: typeof cfg.boardTheme === 'string' ? cfg.boardTheme : _config.boardTheme,
@@ -25853,6 +27340,7 @@ var CHSGame = (function () {
           levels: OPPONENTS,
           boards: pieces && pieces.BOARDS,
           pieceSets: pieces && pieces.SETS,
+          portraits: _getPortraits(),
           defaults: {
             mode: _config.mode === 'pvp' ? '2p' : (_config.mode === 'training' ? 'training' : 'ai'),
             opponentIndex: _config.opponent,
@@ -25927,9 +27415,15 @@ var CHSGame = (function () {
         }
       }
       choices.forEach(function (choice) {
-        var btn = _el('button', 'chs-btn', choice.label);
+        var btn = _el('button', 'chs-btn', null);
         btn.type = 'button';
         btn.setAttribute('data-chs-value', String(choice.value));
+        if (typeof choice.icon === 'string' && choice.icon.indexOf('<') === 0) {
+          var icon = _el('span', 'chs-opp-portrait', null);
+          try { icon.innerHTML = choice.icon; } catch (e) { /* label still renders */ }
+          btn.appendChild(icon);
+        }
+        btn.appendChild(_el('span', null, choice.label));
         btn.addEventListener('click', function () {
           set(choice.value);
           paint();
@@ -25947,7 +27441,7 @@ var CHSGame = (function () {
       { label: 'Training', value: 'training' }
     ], function () { return state.mode; }, function (v) { state.mode = v; });
     group('Opponent', OPPONENTS.map(function (opp, idx) {
-      return { label: opp.name + ' · ' + opp.rating, value: idx };
+      return { label: opp.name + ' · ' + opp.rating, value: idx, icon: _portraitSVG(opp.name) };
     }), function () { return state.opponentIndex; },
       function (v) { state.opponentIndex = v; });
     group('Time control', [
@@ -26287,6 +27781,16 @@ var CHSGame = (function () {
 
   function _bar(prefix) {
     var bar = _el('div', 'chs-bar');
+    // Opponent portrait slot (AI mode only; _fillBar fills it for the
+    // AI side and hides it everywhere else). Present in both bars so
+    // the layout is identical; hidden until filled. QUEST NOTE: the
+    // Chess Quest driver must hide/replace .chs-opp-portrait in story
+    // matches — it shows the SHIPPED opponent's face, and Quest must
+    // never display shipped-AI art next to a story name.
+    var portrait = _el('span', 'chs-opp-portrait');
+    portrait.hidden = true;
+    try { portrait.setAttribute('data-chs-portrait', ''); } catch (e) { /* best-effort */ }
+    bar.appendChild(portrait);
     var who = _el('div', 'chs-who');
     var nameEl = _el('span', 'chs-name', '');
     var ratingEl = _el('span', 'chs-rating', '');
@@ -26297,7 +27801,7 @@ var CHSGame = (function () {
     bar.appendChild(tray);
     var clock = _el('div', 'chs-clock', formatClock(null));
     bar.appendChild(clock);
-    return { bar: bar, name: nameEl, rating: ratingEl, tray: tray, clock: clock };
+    return { bar: bar, portrait: portrait, name: nameEl, rating: ratingEl, tray: tray, clock: clock };
   }
 
   function _buildDom(mount) {
@@ -26310,6 +27814,7 @@ var CHSGame = (function () {
     // Opponent bar (top).
     var opp = _bar('opp');
     _oppBarEl = opp.bar;
+    _oppPortraitEl = opp.portrait;
     _oppNameEl = opp.name;
     _oppRatingEl = opp.rating;
     _oppTrayEl = opp.tray;
@@ -26353,6 +27858,7 @@ var CHSGame = (function () {
     // Player bar (bottom).
     var player = _bar('player');
     _playerBarEl = player.bar;
+    _playerPortraitEl = player.portrait;
     _playerNameEl = player.name;
     _playerRatingEl = player.rating;
     _playerTrayEl = player.tray;
@@ -26721,6 +28227,35 @@ var CHSGame = (function () {
     }
     nameEl.textContent = name;
     ratingEl.textContent = rating;
+    // Opponent portrait: AI mode, AI side only, for the WHOLE match
+    // (set on every bar render from the current config, so a restore
+    // or rematch can never show a stale face). 2-player and training
+    // bars never show one. Writes are GUARDED: the Quest driver's
+    // MutationObserver watches this mount, and in this Chromium build
+    // even a no-op innerHTML write queues mutation records and can
+    // re-fire an observer forever — so an unchanged portrait is never
+    // rewritten. A missed portrait (module absent) retries only when
+    // the wanted name changes, so a late-loading module is picked up
+    // on the next new opponent without churning every render.
+    var portraitEl = which === 'top' ? _oppPortraitEl : _playerPortraitEl;
+    if (portraitEl) {
+      var wantName = (_config.mode === 'ai' && side !== _config.humanColor) ? name : '';
+      var svg = wantName ? _portraitSVG(wantName) : null;
+      var wantKey = svg ? wantName : '';
+      var prevKey = '';
+      try {
+        prevKey = portraitEl.getAttribute ? (portraitEl.getAttribute('data-chs-portrait') || '') : '';
+      } catch (e) { /* attribute unreadable: write unconditionally below */ }
+      var missedRetry = wantName && !svg && _portraitMiss !== wantName;
+      if (wantKey !== prevKey || missedRetry) {
+        _portraitMiss = (wantName && !svg) ? wantName : '';
+        try {
+          if (portraitEl.setAttribute) portraitEl.setAttribute('data-chs-portrait', wantKey);
+        } catch (e2) { /* best-effort */ }
+        try { portraitEl.hidden = !svg; } catch (e3) { /* best-effort */ }
+        try { portraitEl.innerHTML = svg || ''; } catch (e4) { /* portrait stays empty */ }
+      }
+    }
     if (trayEl) {
       trayEl.innerHTML = '';
       var captured = side === 'w' ? caps.capturedByWhite : caps.capturedByBlack;
@@ -27496,6 +29031,7 @@ var CHSGame = (function () {
     flagFallen: flagFallen,
     formatClock: formatClock,
     pacingFor: pacingFor,
+    resolveOpponentIndex: resolveOpponentIndex,
     measureWidth: measureWidth,
     pickRandomColor: pickRandomColor,
     captureEffectFor: captureEffectFor,
@@ -27510,6 +29046,8 @@ var CHSGame = (function () {
     thinking: function () { return _aiThinking; },
     paused: function () { return _paused; },
     OPPONENTS: OPPONENTS,
+    V18_OPPONENTS: V18_OPPONENTS,
+    LADDER_VERSION: LADDER_VERSION,
     GEOMETRY: {
       width: SCREEN_W, padMin: PAD_MIN,
       tapSlop: TAP_SLOP, tapMaxMs: TAP_MAX_MS, dragSlop: DRAG_SLOP,
@@ -27723,17 +29261,27 @@ var CHSWire = (function () {
   // game object carries no OPPONENTS table of its own: the game's
   // table always wins, so a ladder change in the game needs no wire
   // change. Stats recording resolves an opponent INDEX (the game's
-  // config.opponent, 0..9) to a name through this table.
+  // config.opponent, 0..18 under v19) to a name through this table.
+  // 19 rungs stepping every 100; the 10 v18 male rungs unchanged.
   var LADDER = [
     { name: 'Ben', rating: 800 },
+    { name: 'Clara', rating: 900 },
     { name: 'Leo', rating: 1000 },
+    { name: 'Daphne', rating: 1100 },
     { name: 'Max', rating: 1200 },
+    { name: 'Fiona', rating: 1300 },
     { name: 'Owen', rating: 1400 },
+    { name: 'Greta', rating: 1500 },
     { name: 'Felix', rating: 1600 },
+    { name: 'Hannah', rating: 1700 },
     { name: 'Hugo', rating: 1800 },
+    { name: 'Ingrid', rating: 1900 },
     { name: 'Victor', rating: 2000 },
+    { name: 'Karina', rating: 2100 },
     { name: 'Stefan', rating: 2200 },
+    { name: 'Nora', rating: 2300 },
     { name: 'Nikolai', rating: 2400 },
+    { name: 'Valerie', rating: 2500 },
     { name: 'Adrian', rating: 2600 }
   ];
 
@@ -28631,7 +30179,7 @@ var CHSWire = (function () {
     }
 
     // Resolve an AI opponent to {name, rating?} from the game's
-    // config (index 0..9, the real shape; or a name string, the
+    // config (index 0..18, the real shape; or a name string, the
     // saved-state shape) or from the end payload. Null when the
     // opponent cannot be determined — recording then skips rather
     // than guessing.
