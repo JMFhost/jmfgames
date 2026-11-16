@@ -24795,6 +24795,7 @@ var CHSGame = (function () {
   var _resultTitleEl = null;
   var _resultReasonEl = null;
   var _sheetEl = null;
+  var _sheetOpenedAt = 0;
   var _sheetCardEl = null;
   var _dragLayer = null;
   var _opts = {};
@@ -27710,7 +27711,7 @@ var CHSGame = (function () {
         _hideSheet();
         _goHome();
       }));
-    _sheetEl.hidden = false;
+    _showSheet();
   }
 
   // Home (lesson-complete sheet): the shell's goHome when present
@@ -27756,7 +27757,7 @@ var CHSGame = (function () {
       }));
     _sheetCardEl.appendChild(_sheetActionButton('Cancel', false,
       'data-chs-undo-confirm', 'no', function () { _hideSheet(); }));
-    _sheetEl.hidden = false;
+    _showSheet();
   }
 
   function _onSheetBackdrop() {
@@ -27942,7 +27943,10 @@ var CHSGame = (function () {
     _sheetCardEl = _el('div', 'chs-sheet-card');
     _sheetEl.appendChild(_sheetCardEl);
     _sheetEl.addEventListener('click', function (e) {
-      if (e.target === _sheetEl) _onSheetBackdrop();
+      // Ignore the trailing click of the tap that opened the sheet:
+      // it dispatches after pointerup and hit-tests the newly-visible
+      // backdrop, which used to cancel the promotion picker instantly.
+      if (e.target === _sheetEl && _now() - _sheetOpenedAt > 350) _onSheetBackdrop();
     });
     _root.appendChild(_sheetEl);
 
@@ -28736,7 +28740,7 @@ var CHSGame = (function () {
     cancel.type = 'button';
     cancel.addEventListener('click', function () { _cancelPromotion(); });
     _sheetCardEl.appendChild(cancel);
-    _sheetEl.hidden = false;
+    _showSheet();
   }
 
   function _choosePromotion(promo) {
@@ -28770,6 +28774,13 @@ var CHSGame = (function () {
     if (_sheetEl) _sheetEl.hidden = true;
     _pendingPromotion = null;
     _sheetKind = null;
+  }
+
+  // Every sheet opens through here so the backdrop guard knows when
+  // the sheet appeared (see the backdrop listener).
+  function _showSheet() {
+    _sheetOpenedAt = _now();
+    if (_sheetEl) _sheetEl.hidden = false;
   }
 
   // ------------------------------------------------------------------- input
