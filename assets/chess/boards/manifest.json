@@ -1,0 +1,25 @@
+{
+  "board": "boards",
+  "files": [
+    {
+      "file": "medieval-terrain.jpg",
+      "bytes": 258682,
+      "md5": "672f4b90f5bb1548f9fe969eee8db612"
+    },
+    {
+      "file": "fantasy-terrain.jpg",
+      "bytes": 146502,
+      "md5": "8f106b14b6e5e623abdc5540b24ea370"
+    },
+    {
+      "file": "classic-wood.jpg",
+      "bytes": 107270,
+      "md5": "f26e207f2d5d03a1dc418d533beba707"
+    },
+    {
+      "file": "walnut-wood.jpg",
+      "bytes": 167628,
+      "md5": "7143fb81fd5c783da676555c11e548d5"
+    }
+  ]
+}
