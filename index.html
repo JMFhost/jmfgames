@@ -84647,6 +84647,20 @@ var MRAudio = (function () {
     }
   }
 
+  /* Best-effort resume of the shell's shared music module. Math
+     Realms SFX run on this module's own context, so without this
+     an OS audio interruption leaves the shared music context
+     suspended with no in-game recovery path. BZAudio.unlock() is
+     safe to call often: a no-op when running/looping, and it
+     starts music only when the shared setting is on and the
+     timer is dead. Writes no settings. */
+  function _resumeSharedMusic() {
+    try {
+      var shared = _global('BZAudio');
+      if (shared && typeof shared.unlock === 'function') shared.unlock();
+    } catch (e) { /* shared resume is best-effort */ }
+  }
+
   /* Unlock on a user gesture only. Safe to call often; after the
      first unlock it only resumes a suspended context. */
   function unlock() {
@@ -84654,6 +84668,7 @@ var MRAudio = (function () {
       try {
         if (_ctx && _ctx.state === 'suspended') _ctx.resume();
       } catch (e) { /* resume is best-effort */ }
+      _resumeSharedMusic();
       return;
     }
     var ctx = _ensureCtx();
@@ -84662,6 +84677,7 @@ var MRAudio = (function () {
       if (ctx.state === 'suspended') ctx.resume();
     } catch (e) { /* resume is best-effort */ }
     _unlocked = true;
+    _resumeSharedMusic();
   }
 
   function _tone(opts) {
@@ -90403,6 +90419,17 @@ var MRWire = (function () {
         game.measureAndClampContainer();
       }
       if (typeof game.resume === 'function') game.resume();
+      /* AM-wire precedent: restart the shared music shuffle if the
+         setting is on. Never stops music; a no-op when looping or
+         when the setting is off. Covers app-open recovery after an
+         OS audio interruption suspended the shared context. */
+      try {
+        var audio = _global('BZAudio');
+        if (audio && typeof audio.isMusicOn === 'function' &&
+            typeof audio.startMusic === 'function' && audio.isMusicOn()) {
+          audio.startMusic();
+        }
+      } catch (e) { /* music restart is best-effort */ }
       return true;
     } catch (e) {
       return false;
