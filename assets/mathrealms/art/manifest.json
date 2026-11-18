@@ -1,0 +1,205 @@
+{
+  "base": "assets/mathrealms/art/",
+  "files": {
+    "backdrop_depths": {
+      "bytes": 175890,
+      "file": "backdrop_depths.webp",
+      "sha256": "d6493767ff86ba4d7433f3d60e5c3847ba4e011f84d1d2e194064026e726cbca"
+    },
+    "backdrop_fortress": {
+      "bytes": 179752,
+      "file": "backdrop_fortress.webp",
+      "sha256": "2b56398bc324dfd7cfadf0983980a0a1aed09ca87e43f58b693a4dab08ef1abe"
+    },
+    "backdrop_mountains": {
+      "bytes": 177588,
+      "file": "backdrop_mountains.webp",
+      "sha256": "ae83dd3ab736661e1cc55a35c6e5ee4c975a542893ac825f6311ddf79c794290"
+    },
+    "backdrop_rapids": {
+      "bytes": 198332,
+      "file": "backdrop_rapids.webp",
+      "sha256": "a9be509e30b04f53ea4719f29588df35caa7aeae13605b5400e30ff8bc45469f"
+    },
+    "backdrop_starfield": {
+      "bytes": 147436,
+      "file": "backdrop_starfield.webp",
+      "sha256": "ee1e8d9e4e5b4c938e32571e4f49a179e2df9569b824085acc7ece6120ce1442"
+    },
+    "backdrop_woods": {
+      "bytes": 237524,
+      "file": "backdrop_woods.webp",
+      "sha256": "51e58ae0d9e5615d4a52b94c6a5ae1bab72a30ad675bdd3f9e2859dd5457b8a7"
+    },
+    "boss_brambleback": {
+      "bytes": 150942,
+      "file": "boss_brambleback.webp",
+      "sha256": "17971c1afae6f853fff253225b80a0e0b1fbdd56a779d556658e35d99eac3545"
+    },
+    "boss_frost_factor": {
+      "bytes": 139498,
+      "file": "boss_frost_factor.webp",
+      "sha256": "2933784928d45d1f077259eef058c9721b1ca01d99ab1b0e5e1381f1930b8ce6"
+    },
+    "boss_gatekeeper_prime": {
+      "bytes": 131306,
+      "file": "boss_gatekeeper_prime.webp",
+      "sha256": "f1327312b3da6868594566dcb46915077056129877ea3905404ff9ccd2f78e5a"
+    },
+    "boss_gloom_p1": {
+      "bytes": 79146,
+      "file": "boss_gloom_p1.webp",
+      "sha256": "edac1a318bd711a7a349d28b7300a5b392752e01b49a165da50b445c481e8745"
+    },
+    "boss_gloom_p2": {
+      "bytes": 90150,
+      "file": "boss_gloom_p2.webp",
+      "sha256": "44f3177eb72614c8572eac2a79cd299596238d56fb7671854f925567bb1ef1f2"
+    },
+    "boss_gloom_p3": {
+      "bytes": 163554,
+      "file": "boss_gloom_p3.webp",
+      "sha256": "4a33758001264c7fcb8e9b675439577e70c6b7224ae04e9d6531930660295a7d"
+    },
+    "boss_muddle_moth": {
+      "bytes": 110576,
+      "file": "boss_muddle_moth.webp",
+      "sha256": "dc0d6bb2abcbefa312067401f804a198ca871f953cddbe1e3d00ca4348f13937"
+    },
+    "boss_undertow_twins": {
+      "bytes": 172190,
+      "file": "boss_undertow_twins.webp",
+      "sha256": "460f8ae083a936a5bc3b8d5d3d4c9f8d7ff99c7a71d6d275c99c85b3c79dd79f"
+    },
+    "companion_blaze_determined": {
+      "bytes": 74622,
+      "file": "companion_blaze_determined.webp",
+      "sha256": "1ccb0fc9fbb3585255288e0e1f1c90f0f7f9d357d3309ba94155b6ee3ae0f4ae"
+    },
+    "companion_blaze_happy": {
+      "bytes": 71770,
+      "file": "companion_blaze_happy.webp",
+      "sha256": "99d0641b9e5e36c367babe8356515484a8bcf60afec33239cec3f637d0c5ea6b"
+    },
+    "companion_blaze_worried": {
+      "bytes": 74650,
+      "file": "companion_blaze_worried.webp",
+      "sha256": "5356a7dd5f8aff9dd0cad0a5cdccddcca09a3a7b2cc772c79fb487c4fc4176bb"
+    },
+    "companion_fenn_determined": {
+      "bytes": 89218,
+      "file": "companion_fenn_determined.webp",
+      "sha256": "087532893db986aa6d2f144fa3b5bb4bd0400bc353cc7afa1a03fa0bd4a7bfa3"
+    },
+    "companion_fenn_happy": {
+      "bytes": 87340,
+      "file": "companion_fenn_happy.webp",
+      "sha256": "b69ee52d0c408902d3dc906152801ec715b77272445df70ff4cdff151a36dbe3"
+    },
+    "companion_fenn_worried": {
+      "bytes": 89054,
+      "file": "companion_fenn_worried.webp",
+      "sha256": "b01c984403dbb34d68ca4705ef75c28b1215e5ce770d2bdd2aa533b70d75a4c2"
+    },
+    "companion_opal_determined": {
+      "bytes": 62652,
+      "file": "companion_opal_determined.webp",
+      "sha256": "c13e3941d80f189457fc7ed3ca1b160a20ac1e91b1620d7c4d50e00aa38ec033"
+    },
+    "companion_opal_happy": {
+      "bytes": 60014,
+      "file": "companion_opal_happy.webp",
+      "sha256": "323b2396b0a6629aea81a4d86d4f678bf347d7bec3a756b5d0834a7c2b28a3c0"
+    },
+    "companion_opal_worried": {
+      "bytes": 63052,
+      "file": "companion_opal_worried.webp",
+      "sha256": "34b0488ca4496a3d06180a2f6792431115c847bcd9cfe9ed7c2ce423a77f39b8"
+    },
+    "gear_outfit_forest": {
+      "bytes": 18030,
+      "file": "gear_outfit_forest.webp",
+      "sha256": "ebbeac7efcef4597a086da305ee9831f677a53e197993043113d473b3456e024"
+    },
+    "gear_outfit_ocean": {
+      "bytes": 17878,
+      "file": "gear_outfit_ocean.webp",
+      "sha256": "c853e58f69bdb838edb899e64d5abd35708007744ed970866b407f8cf2c3d846"
+    },
+    "gear_outfit_star": {
+      "bytes": 16264,
+      "file": "gear_outfit_star.webp",
+      "sha256": "b495e136c4d6c8b1d204629857d16ea2f45ce94b8ee1bff873a96b763070f330"
+    },
+    "gear_wand_crystal": {
+      "bytes": 5432,
+      "file": "gear_wand_crystal.webp",
+      "sha256": "55e1d957bcf76e35de9e163922a42efb0133f49aeb7bfcf7126e8c63d5fd6fbb"
+    },
+    "gear_wand_moon": {
+      "bytes": 3978,
+      "file": "gear_wand_moon.webp",
+      "sha256": "d46f77c8682f30ca5a03fc3fe1a5816bc30a927da41e51c15b62629523d90d5f"
+    },
+    "gear_wand_star": {
+      "bytes": 5866,
+      "file": "gear_wand_star.webp",
+      "sha256": "40dcbdb6894051495a589b394679d16f59c901eebc2f02c0e74f6bf19396e470"
+    },
+    "hero_female_determined": {
+      "bytes": 105884,
+      "file": "hero_female_determined.webp",
+      "sha256": "383ee8f9cf084840efaac21aa0a5b571af4c6ea03b801510ea2e16d91a623388"
+    },
+    "hero_female_happy": {
+      "bytes": 103070,
+      "file": "hero_female_happy.webp",
+      "sha256": "842cf622681d17e7035966f0c0aeff525c3ea6d60d9fa464a399cf43718c45f1"
+    },
+    "hero_female_worried": {
+      "bytes": 105660,
+      "file": "hero_female_worried.webp",
+      "sha256": "f7c526cc9109e77f86fd58c1f8cb3ec53206cc2cbcf7c54cd2261f7342b6f824"
+    },
+    "hero_male_determined": {
+      "bytes": 115510,
+      "file": "hero_male_determined.webp",
+      "sha256": "62eb76a45cd4b5a435d4841ed5164196501ff256a2117f217fe2fdc9feebcbc5"
+    },
+    "hero_male_happy": {
+      "bytes": 106120,
+      "file": "hero_male_happy.webp",
+      "sha256": "c48827c028b068bc4014b9fcab2b9bf263bab8cbf155270e82345ba61c1ca0ca"
+    },
+    "hero_male_worried": {
+      "bytes": 113442,
+      "file": "hero_male_worried.webp",
+      "sha256": "64dcc8dfbb33e68f7fe8eb19af621cfbfb4f0bfbc5e9c7e976e8b7e38a24f2da"
+    },
+    "sprite_blaze": {
+      "bytes": 50360,
+      "file": "sprite_blaze.webp",
+      "sha256": "e096f867ce2bd46c9f4b9734ee314aa700655d49f7b915a963fa4b8414c333b0"
+    },
+    "sprite_fenn": {
+      "bytes": 43202,
+      "file": "sprite_fenn.webp",
+      "sha256": "75cb0b262cc00505bab003e175b9d27b6d83d140a9ea26277b8ed70505435d90"
+    },
+    "sprite_hero_female": {
+      "bytes": 76046,
+      "file": "sprite_hero_female.webp",
+      "sha256": "3fccda5f9d5f1ab1790fde1ab4ec2d20d228d86060f3801b8c9fac91528c6e85"
+    },
+    "sprite_hero_male": {
+      "bytes": 66404,
+      "file": "sprite_hero_male.webp",
+      "sha256": "0be3add762010431b3cae2b572dadcb8b4659f8e1782e97b2ca324ba12186b89"
+    },
+    "sprite_opal": {
+      "bytes": 41474,
+      "file": "sprite_opal.webp",
+      "sha256": "42729c702ffe6235852e7a83e7d93b0454cab7ddc625a7808b0cf9401550ee78"
+    }
+  }
+}
