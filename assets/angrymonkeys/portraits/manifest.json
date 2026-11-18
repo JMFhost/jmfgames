@@ -1,0 +1,537 @@
+{
+  "version": 1,
+  "namespace": "am",
+  "base": "assets/angrymonkeys/portraits/",
+  "count": 93,
+  "total_bytes": 4100336,
+  "characters": {
+    "monkeys": [
+      "rocco",
+      "zippy",
+      "poppy",
+      "bongo",
+      "gordo",
+      "lulu",
+      "nitro"
+    ],
+    "bandits": [
+      "slink",
+      "hider",
+      "climber",
+      "dasher",
+      "shielder",
+      "digger",
+      "mimic"
+    ],
+    "bosses": [
+      "brambletail",
+      "barnaclewhiskers",
+      "galeclaw",
+      "shadowsnout",
+      "magmatail",
+      "frostwhisker",
+      "sandclaw",
+      "briarfang",
+      "ironhide",
+      "goldentail"
+    ],
+    "rivals": [
+      "nibbles",
+      "ziggy",
+      "trixie",
+      "captain_coconut",
+      "professor_peel",
+      "madame_mango",
+      "champ"
+    ]
+  },
+  "expressions": {
+    "monkeys": [
+      "neutral",
+      "happy",
+      "determined"
+    ],
+    "bandits": [
+      "neutral",
+      "taunting",
+      "dazed"
+    ],
+    "bosses": [
+      "neutral",
+      "taunting",
+      "dazed"
+    ],
+    "rivals": [
+      "neutral",
+      "taunting",
+      "dazed"
+    ]
+  },
+  "files": {
+    "am-barnaclewhiskers-dazed": {
+      "file": "barnaclewhiskers-dazed.webp",
+      "bytes": 56900,
+      "sha256": "d5f7f2ab2e391600531782088f74eff34166434b2b26d9b1484f61c9eee5f3e8"
+    },
+    "am-barnaclewhiskers-neutral": {
+      "file": "barnaclewhiskers-neutral.webp",
+      "bytes": 53136,
+      "sha256": "d8e4beaa9f6688b743f0e2a359eed95f78acd44ce26e6dc8c65a6e752937484b"
+    },
+    "am-barnaclewhiskers-taunting": {
+      "file": "barnaclewhiskers-taunting.webp",
+      "bytes": 53296,
+      "sha256": "d3dbfc54fed5c6c7a6c5c65cba541a034be54d647d1952d5167921d8cf8e5de8"
+    },
+    "am-bongo-determined": {
+      "file": "bongo-determined.webp",
+      "bytes": 38834,
+      "sha256": "31766c04e1ae6e4c19a8e1698dfbe1e877ae4f345879dab193f04247a424d388"
+    },
+    "am-bongo-happy": {
+      "file": "bongo-happy.webp",
+      "bytes": 40602,
+      "sha256": "85f669b034c1edb9698832a08c4d794ad91352b803dfe708f212bd0a7e69c3ee"
+    },
+    "am-bongo-neutral": {
+      "file": "bongo-neutral.webp",
+      "bytes": 38008,
+      "sha256": "c119ebba8926424fb57ebb4fd33fe74fff191c55a7fc80e5d076231fe772210c"
+    },
+    "am-brambletail-dazed": {
+      "file": "brambletail-dazed.webp",
+      "bytes": 46314,
+      "sha256": "4167a92ffef803eadce7e249e02e322dd8e93e1dc335e6027bcf3363158c3dcc"
+    },
+    "am-brambletail-neutral": {
+      "file": "brambletail-neutral.webp",
+      "bytes": 43334,
+      "sha256": "8bd1eebdf2dd521661c21d77f4b7fed536a24e20ec3e2a3d6b004774a4f99ff2"
+    },
+    "am-brambletail-taunting": {
+      "file": "brambletail-taunting.webp",
+      "bytes": 44482,
+      "sha256": "92a51f9bc05a7c2ba8177655d58d1cb2717c941c7e4a952bd90ae2700af407c7"
+    },
+    "am-briarfang-dazed": {
+      "file": "briarfang-dazed.webp",
+      "bytes": 35372,
+      "sha256": "a24384e01dbd2b8527b1bb10bac2ddd1a09750d9b4c7ad22a1c473ff8c516ad2"
+    },
+    "am-briarfang-neutral": {
+      "file": "briarfang-neutral.webp",
+      "bytes": 32512,
+      "sha256": "cb1ed4f53a363ad74de8c099fa93931e02ea5383405c8a0db86db8ad5484dcc8"
+    },
+    "am-briarfang-taunting": {
+      "file": "briarfang-taunting.webp",
+      "bytes": 33634,
+      "sha256": "9adae95750aedeb942fb00e1afca8d1a3b44620b2d229b299ad8886f62280448"
+    },
+    "am-captain_coconut-dazed": {
+      "file": "captain_coconut-dazed.webp",
+      "bytes": 38534,
+      "sha256": "6b8ff4fff7134e19ce09e6f56cbaf8523207d8fd16694c14aeafc271af5c8709"
+    },
+    "am-captain_coconut-neutral": {
+      "file": "captain_coconut-neutral.webp",
+      "bytes": 35564,
+      "sha256": "ac27baa17b0cab9e7066be0657d9713646b43bb9482e659c32a43261a9d5e95f"
+    },
+    "am-captain_coconut-taunting": {
+      "file": "captain_coconut-taunting.webp",
+      "bytes": 35634,
+      "sha256": "cd0b650476df73d39a5958c5dec10b082e43c42826ea9e37cea481b2e7ff1314"
+    },
+    "am-champ-dazed": {
+      "file": "champ-dazed.webp",
+      "bytes": 35550,
+      "sha256": "59acdf581b3a5ccc94873d71b9000437ee23cc9ffc485727456d7ecb94d63bf0"
+    },
+    "am-champ-neutral": {
+      "file": "champ-neutral.webp",
+      "bytes": 31826,
+      "sha256": "a5c2881a98b32b0c743dee71d065cccf854676c08f652def68f38f6ec1593f5d"
+    },
+    "am-champ-taunting": {
+      "file": "champ-taunting.webp",
+      "bytes": 32678,
+      "sha256": "7973e086343340d28279b4650c5122b840cf0314c90f31fd05695930c1fcc499"
+    },
+    "am-climber-dazed": {
+      "file": "climber-dazed.webp",
+      "bytes": 49856,
+      "sha256": "769c5992d5ca165f0fcdee5f6750dc7b2058d9c9e4c0d250b7a48b953d34a2cd"
+    },
+    "am-climber-neutral": {
+      "file": "climber-neutral.webp",
+      "bytes": 45262,
+      "sha256": "cb8840c027f289e84d46c01a369c7dbfbc61e6197dfe3276a8d45471498ae92b"
+    },
+    "am-climber-taunting": {
+      "file": "climber-taunting.webp",
+      "bytes": 47280,
+      "sha256": "ce25c54ee30bf361c6a9adf579c8bea77e0f9d9b4b9aecbb8304f94357d9de3e"
+    },
+    "am-dasher-dazed": {
+      "file": "dasher-dazed.webp",
+      "bytes": 36072,
+      "sha256": "4b043012ba9e59dbef52afb6c083aed5aa96c8b6f227b6b7fabd4742925e76b3"
+    },
+    "am-dasher-neutral": {
+      "file": "dasher-neutral.webp",
+      "bytes": 33706,
+      "sha256": "28b795c0cc4c4e944b54c1358b54c58e206f3f88d616c4d3532cd8d597ea801c"
+    },
+    "am-dasher-taunting": {
+      "file": "dasher-taunting.webp",
+      "bytes": 33856,
+      "sha256": "ce3cc96540c1f263db8bcca9ad2d6cdff520f0ab8db6935dd77b5f23e0c83a23"
+    },
+    "am-digger-dazed": {
+      "file": "digger-dazed.webp",
+      "bytes": 28822,
+      "sha256": "69418c3f0d49e68528190d80e321de6563f99bc62a98760bc0321ebefe66f475"
+    },
+    "am-digger-neutral": {
+      "file": "digger-neutral.webp",
+      "bytes": 25812,
+      "sha256": "ba9a4f15ac447b0a4cac541a27c58311b34caf9abf60c22126fb21d6276f5f23"
+    },
+    "am-digger-taunting": {
+      "file": "digger-taunting.webp",
+      "bytes": 26550,
+      "sha256": "33c33fa6efa0ac035f4bcba6a60b63bfd0141310b839c1dcf19052c9e8bc086a"
+    },
+    "am-frostwhisker-dazed": {
+      "file": "frostwhisker-dazed.webp",
+      "bytes": 57362,
+      "sha256": "e84cfcdfd36d20e169df4b987786c5337f5149b5dd41494546ef2827e9a7cad8"
+    },
+    "am-frostwhisker-neutral": {
+      "file": "frostwhisker-neutral.webp",
+      "bytes": 54588,
+      "sha256": "deb0b348618262a55fc916497152c56e81c1789869b0fa9c651795c439f5c882"
+    },
+    "am-frostwhisker-taunting": {
+      "file": "frostwhisker-taunting.webp",
+      "bytes": 55744,
+      "sha256": "1509bd0cae071a892b20fb20792b016b57ecbcfdc96cf72c64c11f03b0c010cb"
+    },
+    "am-galeclaw-dazed": {
+      "file": "galeclaw-dazed.webp",
+      "bytes": 47778,
+      "sha256": "9f892ca42df85e8e08a4eff2346d68d4d39a3cffcc0898e4e6c975895fdcde1b"
+    },
+    "am-galeclaw-neutral": {
+      "file": "galeclaw-neutral.webp",
+      "bytes": 44290,
+      "sha256": "738129dcd96fabb94243909c83e7c1abef2a40f338cbd4b92447f652010fe639"
+    },
+    "am-galeclaw-taunting": {
+      "file": "galeclaw-taunting.webp",
+      "bytes": 45274,
+      "sha256": "bc1e8a820f622db4456182905a8a18d54d8bbfd012501abc6d6c87d1cdec939e"
+    },
+    "am-goldentail-dazed": {
+      "file": "goldentail-dazed.webp",
+      "bytes": 60858,
+      "sha256": "c7365d37c87ec0cd81bee3b50d3cfa1e32d20074be4b9c41ea79b5426b89c40f"
+    },
+    "am-goldentail-neutral": {
+      "file": "goldentail-neutral.webp",
+      "bytes": 58580,
+      "sha256": "40068008ec90b6dd5ecdd1b91dda1855f5724117d28457be96589221d0516f3e"
+    },
+    "am-goldentail-taunting": {
+      "file": "goldentail-taunting.webp",
+      "bytes": 59664,
+      "sha256": "d6d621d0add33e42716b392e9bbbd757c8035c6de02be3eba2807d904590f1f7"
+    },
+    "am-gordo-determined": {
+      "file": "gordo-determined.webp",
+      "bytes": 26422,
+      "sha256": "fb133c95e8617d33a36e3989cefda09354abbed5b1f9c9e490f20cf802b01556"
+    },
+    "am-gordo-happy": {
+      "file": "gordo-happy.webp",
+      "bytes": 28494,
+      "sha256": "4018a0d6c398203d986aac61ef1f220ae11c7c13d84b59d15830dbad02a78132"
+    },
+    "am-gordo-neutral": {
+      "file": "gordo-neutral.webp",
+      "bytes": 26326,
+      "sha256": "871d8dfac905450029ec7591c2adb20ad6ebbec48aa0dcc8d5d8863e38c52946"
+    },
+    "am-hider-dazed": {
+      "file": "hider-dazed.webp",
+      "bytes": 33220,
+      "sha256": "fead5857cb59b4ae1f4cbd1910c95f37bb781d11151b13cf5b7d5676f0e25c5c"
+    },
+    "am-hider-neutral": {
+      "file": "hider-neutral.webp",
+      "bytes": 29772,
+      "sha256": "309fa0a4106276c5aafe4e697c106ef0ac09a9fb2c495bd2b921045ade637b86"
+    },
+    "am-hider-taunting": {
+      "file": "hider-taunting.webp",
+      "bytes": 29020,
+      "sha256": "074851630e421391c578ad29f6f094d292c8b7ce0d56ac167069dfdfabe45a41"
+    },
+    "am-ironhide-dazed": {
+      "file": "ironhide-dazed.webp",
+      "bytes": 45934,
+      "sha256": "0bc88a04d36370727f9a74765f47f240b6ce635a1884bb38c778f7c9e01056dc"
+    },
+    "am-ironhide-neutral": {
+      "file": "ironhide-neutral.webp",
+      "bytes": 43430,
+      "sha256": "65fa3d32b5e920497b66a05c922faec9b49f6a4c2bc45cabe993a375b51945c9"
+    },
+    "am-ironhide-taunting": {
+      "file": "ironhide-taunting.webp",
+      "bytes": 44186,
+      "sha256": "dd232f509ada99d3c2878876ae1d7e80e85c44a5a213f0f32744c798edcf3b3a"
+    },
+    "am-lulu-determined": {
+      "file": "lulu-determined.webp",
+      "bytes": 35020,
+      "sha256": "a89da2574ee373464e938d8087734fd0a9971b407939a248b0b78c58dafe109c"
+    },
+    "am-lulu-happy": {
+      "file": "lulu-happy.webp",
+      "bytes": 35782,
+      "sha256": "00808b3a62f9c85a6706668b009b44e3b34c7d687badf1cfa724d58eedb8f595"
+    },
+    "am-lulu-neutral": {
+      "file": "lulu-neutral.webp",
+      "bytes": 34616,
+      "sha256": "664ac4a055dfc8f026fcca5ee64fc7962c5f72d4e35aa913337193b2fa7b7237"
+    },
+    "am-madame_mango-dazed": {
+      "file": "madame_mango-dazed.webp",
+      "bytes": 44748,
+      "sha256": "c7b68b019fabdec99957927c3f05f55c31a8ad768c78aef4b8c87d6546f4374e"
+    },
+    "am-madame_mango-neutral": {
+      "file": "madame_mango-neutral.webp",
+      "bytes": 41440,
+      "sha256": "02468814cec2853abfdbcecc52927e5d76116deff0f79629e7ece88258e1ad0c"
+    },
+    "am-madame_mango-taunting": {
+      "file": "madame_mango-taunting.webp",
+      "bytes": 40322,
+      "sha256": "961e8e89b14e50ca3fc7fcd5c1547a6826995adebd6eba3f103233d19f379df8"
+    },
+    "am-magmatail-dazed": {
+      "file": "magmatail-dazed.webp",
+      "bytes": 54806,
+      "sha256": "5cb29dd93adf39593c4653858e08940d56f51cf14192372ed3f6f073efdc2855"
+    },
+    "am-magmatail-neutral": {
+      "file": "magmatail-neutral.webp",
+      "bytes": 50828,
+      "sha256": "5e2df4e1630f58bf7aa606445e69671a1a737e2376e6f8c2b3a8b160dc74d8e4"
+    },
+    "am-magmatail-taunting": {
+      "file": "magmatail-taunting.webp",
+      "bytes": 52284,
+      "sha256": "4108fcc1ac1d90a83176cfb6a398afa3d6aad942c6172e61987f904bd0df2af2"
+    },
+    "am-mimic-dazed": {
+      "file": "mimic-dazed.webp",
+      "bytes": 73132,
+      "sha256": "bf9d65f8189bf50b419ed63b722795da8c7340d1b6853337dcfbbb03b8103f7c"
+    },
+    "am-mimic-neutral": {
+      "file": "mimic-neutral.webp",
+      "bytes": 66344,
+      "sha256": "5431596209743773fc1aecbc524e7591e2baaaae0e6aad5dee0b0504742780c8"
+    },
+    "am-mimic-taunting": {
+      "file": "mimic-taunting.webp",
+      "bytes": 68772,
+      "sha256": "b3a768dce56de912939a5c925bf2578b9d9882d5516b21af0e4d3f4f8224721c"
+    },
+    "am-nibbles-dazed": {
+      "file": "nibbles-dazed.webp",
+      "bytes": 33786,
+      "sha256": "0c66c4c0d5d2569b3066d35ce64fcbccaab1751ba2f056005a196cb74114aa9d"
+    },
+    "am-nibbles-neutral": {
+      "file": "nibbles-neutral.webp",
+      "bytes": 29860,
+      "sha256": "1d9a137478d6183194ba79f87e1c7afd247a6d0874385b2445f937a9d9bb162e"
+    },
+    "am-nibbles-taunting": {
+      "file": "nibbles-taunting.webp",
+      "bytes": 30514,
+      "sha256": "c653acd150a3cbbb57ab3d14cd8774afa38f8af9b61c6fd9e797c843398cae2f"
+    },
+    "am-nitro-determined": {
+      "file": "nitro-determined.webp",
+      "bytes": 42792,
+      "sha256": "3651dc9a410e57fc6756dce4e3d7f0b351adbea075cc6410b58adcaf8ca63cc4"
+    },
+    "am-nitro-happy": {
+      "file": "nitro-happy.webp",
+      "bytes": 44154,
+      "sha256": "c73d3a2f359bca379f390380749a7d23b408068536887494e223cb10579ab281"
+    },
+    "am-nitro-neutral": {
+      "file": "nitro-neutral.webp",
+      "bytes": 42652,
+      "sha256": "f0d3909004dde559d931db7b4bf38ca8628a71cd5e097104e00faa1965f93e24"
+    },
+    "am-poppy-determined": {
+      "file": "poppy-determined.webp",
+      "bytes": 64218,
+      "sha256": "6f39e747fddfeed298584c20d0682e73ea728bd36d6ebaf992ebb11d8f810a97"
+    },
+    "am-poppy-happy": {
+      "file": "poppy-happy.webp",
+      "bytes": 64614,
+      "sha256": "88b255b763e5bc03108d6d6f87b2010a2b76d9be7cb0203236e9bcc79ac8ef4d"
+    },
+    "am-poppy-neutral": {
+      "file": "poppy-neutral.webp",
+      "bytes": 61736,
+      "sha256": "d63add411440508f3de0a89e7f04892d7fbdb59a73079f4abd72ed06e5bfb7dd"
+    },
+    "am-professor_peel-dazed": {
+      "file": "professor_peel-dazed.webp",
+      "bytes": 36328,
+      "sha256": "53797515684c4dc5053dd9e71b894aa1e1ad52ddcd88a6c6f162310ea3dba62d"
+    },
+    "am-professor_peel-neutral": {
+      "file": "professor_peel-neutral.webp",
+      "bytes": 32280,
+      "sha256": "8a850198f805ca61931e9e646f70660539d306796208988f4c0d4f540e8821bb"
+    },
+    "am-professor_peel-taunting": {
+      "file": "professor_peel-taunting.webp",
+      "bytes": 33382,
+      "sha256": "8795dd92f370c633a849ed1c82d68cc9aac014aed35d6856b805bba9fc27af7d"
+    },
+    "am-rocco-determined": {
+      "file": "rocco-determined.webp",
+      "bytes": 71404,
+      "sha256": "3f7c8f7ad4360256becbf308be951cde647faf8bd81f34900c9a72e809fe1e42"
+    },
+    "am-rocco-happy": {
+      "file": "rocco-happy.webp",
+      "bytes": 72334,
+      "sha256": "4747e63a398cb270f54b060b8e13aad405f8ef23698d2a7be7f70f778767c053"
+    },
+    "am-rocco-neutral": {
+      "file": "rocco-neutral.webp",
+      "bytes": 69216,
+      "sha256": "a738f432a872418f2e7d285860ba306687d5a02277fd4def92ff2bc0696ffa2e"
+    },
+    "am-sandclaw-dazed": {
+      "file": "sandclaw-dazed.webp",
+      "bytes": 60502,
+      "sha256": "b396a805d39d086a95f2dabea07c6fd22f980560a1b3c9f135eefa9d6b47ab23"
+    },
+    "am-sandclaw-neutral": {
+      "file": "sandclaw-neutral.webp",
+      "bytes": 56566,
+      "sha256": "12f6aa1d8adab51fa4ac4220f15953415cc1d9d712ecc5298115328a7906c3e4"
+    },
+    "am-sandclaw-taunting": {
+      "file": "sandclaw-taunting.webp",
+      "bytes": 57180,
+      "sha256": "3050c7030fd4053c1d79ee990b74e806898276b58b195c7d8a770bf48797019e"
+    },
+    "am-shadowsnout-dazed": {
+      "file": "shadowsnout-dazed.webp",
+      "bytes": 33980,
+      "sha256": "a03f0ecc09d09c13a1d3e2ba282f0cf354c81f45e65061c60d183fcd54af24d5"
+    },
+    "am-shadowsnout-neutral": {
+      "file": "shadowsnout-neutral.webp",
+      "bytes": 30446,
+      "sha256": "f7f9852658a2e11b8ab71225369f42f14950653819329c20dee4b80e838ca843"
+    },
+    "am-shadowsnout-taunting": {
+      "file": "shadowsnout-taunting.webp",
+      "bytes": 32012,
+      "sha256": "8e4c481a30f832b5fc210d8104fc9d1d58b0d3f0c167f38dd7df6f636bb2e673"
+    },
+    "am-shielder-dazed": {
+      "file": "shielder-dazed.webp",
+      "bytes": 69150,
+      "sha256": "1e278a02ed121989dbeac7736682cb37270154bb5fec18e6980b9c2b8f6d60a9"
+    },
+    "am-shielder-neutral": {
+      "file": "shielder-neutral.webp",
+      "bytes": 66676,
+      "sha256": "3ea56bcaf8185cd288ac34f359a10f8722f48bd25493faf968e2d21fe2e460b7"
+    },
+    "am-shielder-taunting": {
+      "file": "shielder-taunting.webp",
+      "bytes": 68632,
+      "sha256": "5349a52c62fc4fd9ec786bd0dc8f59a83fc6d3bea9deeb52f35405202a0924dc"
+    },
+    "am-slink-dazed": {
+      "file": "slink-dazed.webp",
+      "bytes": 36856,
+      "sha256": "2c127cdac51aca23360b69a9b54b6cf062b6f2ab70de2c4703358bcfeb77498f"
+    },
+    "am-slink-neutral": {
+      "file": "slink-neutral.webp",
+      "bytes": 33540,
+      "sha256": "c19f006fee68887ef5ce34ca44090bbfd2ac0c447e7c38b1ccf96b14fec2110c"
+    },
+    "am-slink-taunting": {
+      "file": "slink-taunting.webp",
+      "bytes": 34498,
+      "sha256": "8366bcc69650b87a181da713361bfbc5ddbfc7db9e77b226e15647a3f6c8cc94"
+    },
+    "am-trixie-dazed": {
+      "file": "trixie-dazed.webp",
+      "bytes": 38728,
+      "sha256": "5edbb2ff80fb1dc44e064ed143dd1c72f134a25719b9f78c5adcc8038e0853f6"
+    },
+    "am-trixie-neutral": {
+      "file": "trixie-neutral.webp",
+      "bytes": 33970,
+      "sha256": "70a7c6e20e40881626c7e052bbbe80e756ed2c25b77c26b3ef38fe01a43d8980"
+    },
+    "am-trixie-taunting": {
+      "file": "trixie-taunting.webp",
+      "bytes": 34336,
+      "sha256": "88a0f13fd4f1808a2bc7f7dd0b37ef0debf93bad99e2ddea9bc6b029856dec4b"
+    },
+    "am-ziggy-dazed": {
+      "file": "ziggy-dazed.webp",
+      "bytes": 46886,
+      "sha256": "cc6be2e782fcbcb64817b15666258e50b15982cfd59d4d9b4a88d479d14198c8"
+    },
+    "am-ziggy-neutral": {
+      "file": "ziggy-neutral.webp",
+      "bytes": 42890,
+      "sha256": "490dcc9a07fad04dfcd6cbf63a6d8c893a8f16fdddab74f7570d09bc0fdae06c"
+    },
+    "am-ziggy-taunting": {
+      "file": "ziggy-taunting.webp",
+      "bytes": 43746,
+      "sha256": "b02985d07abcd8a2b76fb6ffeda8a8f03838dbbb9498ae1213cd77b06fe61b4a"
+    },
+    "am-zippy-determined": {
+      "file": "zippy-determined.webp",
+      "bytes": 35680,
+      "sha256": "8e8505aa813fb256036419ed007a77f963ce0281d2efd620bb076591d65d053b"
+    },
+    "am-zippy-happy": {
+      "file": "zippy-happy.webp",
+      "bytes": 36854,
+      "sha256": "ceb90ba25f267e41251efdc7524203d63e963136527e4d4ddeb7258a95893c8f"
+    },
+    "am-zippy-neutral": {
+      "file": "zippy-neutral.webp",
+      "bytes": 35476,
+      "sha256": "3d0070f9a5a0e8e24c862c7f94229b730994f6e9a689703d335f5a637c8db9a4"
+    }
+  }
+}
