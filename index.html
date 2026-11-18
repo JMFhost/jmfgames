@@ -40266,8 +40266,19 @@ var TUNING = {
   buffChillMult: 0.6, buffChillDuration: 3.0,
   buffChainRadius: 90, buffChainFrac: 0.5, buffDazeTime: 0.5,
   buffKnockVx: 120, buffKnockVy: -160, buffKnockCd: 0.5,
-  buffRubberReduction: 0.7, buffRubberReflect: 0.5
+  buffRubberReduction: 0.7, buffRubberReflect: 0.5,
   /* /BUFFS */
+  /* AMAI: bandit gravity + smart-enemy + smart-tracking tuning
+   * (AMAI-DESIGN.md §4.1). No other TUNING value changes. */
+  banditFeet: 24, banditStepUp: 16, banditSnapTol: 2,
+  crownSlamTrigger: 80, mimicRevealRange: 90,
+  diggerLowHpFrac: 0.5, diggerHoleFightRange: 150,
+  perchAmbushRange: 250, perchWaitTime: 2.0, dropMaxFighterVx: 200,
+  retreatHpFrac: 0.3, retreatCoverRange: 120,
+  flipCooldown: 1.0, engageSpacing: 36,
+  autoJumpReach: 110, autoJumpCooldown: 0.25, targetAboveDy: 45,
+  targetHysteresis: 25, stallBlacklistLong: 5.0, smashMaxSwings: 3
+  /* /AMAI */
 };
 /* COMBAT: dashSpeed alias — old readers (suites, harness) keep working. */
 TUNING.dashSpeed = TUNING.fightSpeed;
@@ -40461,7 +40472,9 @@ function newMatch(level, opts) {
     score: 0, combo: 0, fightElapsed: 0, bonusApplied: false,
     events: [], stats: { shots: 0, bonks: 0, blocksBroken: 0, barrelsExploded: 0, bananas: 0, fights: 0, cracks: 0 },
     chain: { count: 0, until: -1 },
-    fight: { redirect: null, redirectUntil: -1, lastKnown: null, blockedId: null, blockedUntil: -1 },
+    fight: { redirect: null, redirectUntil: -1, lastKnown: null, blockedId: null, blockedUntil: -1,
+      /* AMAI: stall escalation (§3.6). */
+      stallCount: 0, stallTarget: null, structureUntil: -1 },
     /* /COMBAT */
     projSeq: 0
   };
@@ -40517,6 +40530,12 @@ function newMatch(level, opts) {
       ambushArmed: false, tunnelAmbushArmed: false, dropSlamArmed: false,
       lastDamageAt: -1, lastHitMonkeyAt: -1,
       /* /COMBAT */
+      /* AMAI: grounded + decision/perch timers (§4.2). tunnelExit is
+       * already initialized below (pre-existing); tunnelHole/perchY
+       * are the defensive inits (shape stability, no behavior change). */
+      grounded: false, lastFlipAt: -1, perchFarSince: -1, perchedAt: -1,
+      tunnelHole: null, perchY: null,
+      /* /AMAI */
       vx: 0, vy: 0, airborne: false, bonkCd: 0, pinnedUntil: -1,
       /* BUFFS: elemental statuses (design §(e.2)). chillUntil is absolute
        * sim time (-1 = never chilled); the name MUST NOT be `frozen`
@@ -40577,7 +40596,9 @@ function launch(st, velocity) {
   st.currentMonkey = type;
   st.combo = 0;
   st.chain = { count: 0, until: -1 };
-  st.fight = { redirect: null, redirectUntil: -1, lastKnown: null, blockedId: null, blockedUntil: -1 };
+  st.fight = { redirect: null, redirectUntil: -1, lastKnown: null, blockedId: null, blockedUntil: -1,
+    /* AMAI: stall escalation reset (§3.6). */
+    stallCount: 0, stallTarget: null, structureUntil: -1 };
   /* BUFFS: per-shot orb reset (design §(c.1)) — every shot faces fresh
    * orbs. Deliberate deviation from the banana pattern (bananas stay
    * taken for the match; buffs are per-shot loadout choices). */
@@ -40600,6 +40621,9 @@ function launch(st, velocity) {
     attackCd: 0, skillCd: 0, razeLeft: 0, focusId: null,
     moveTarget: null, moveUntil: -1, staggerT: 0, skyDrop: null,
     /* /COMBAT */
+    /* AMAI: chase hysteresis + jump/smash timers (§4.2). */
+    chaseId: null, lastJumpAt: -1, lastSmashAt: -1,
+    /* /AMAI */
     restT: 0, inContact: false, grounded: false, mushroomCd: 0,
     isFighter: false, jumpAvailable: true, sniffT: 0, stallT: 0, stallX: st.sling.x,
     holdUntil: -1, blockedX: false, thornInside: false, active: true
@@ -40682,6 +40706,8 @@ function redirect(st, point) {
   st.fight.redirectUntil = st.time + 0.35;
   var m = fighter(st) || ghostProj(st);
   if (m) m.holdUntil = -1;
+  /* AMAI: a redirect clears the autonomous chase (§3.8). */
+  if (m) m.chaseId = null;
   return true;
 }
 function jump(st) {
@@ -40689,6 +40715,8 @@ function jump(st) {
   var m = fighter(st);
   if (!m || !m.grounded || !m.jumpAvailable) return false;
   m.vy = TUNING.jumpVy; m.grounded = false; m.jumpAvailable = false; m.restT = 0;
+  /* AMAI: every jump (player or auto) stamps the shared cooldown (§3.1). */
+  m.lastJumpAt = st.time;
   emit(st, { t: 'jump', monkey: m.type });
   return true;
 }
@@ -40701,12 +40729,13 @@ function setFocus(st, banditId) {
   if (st.phase !== 'fight') return false;
   var m = fighter(st);
   if (!m) return false;
-  if (banditId === null || banditId === undefined) { m.focusId = null; return true; }
+  if (banditId === null || banditId === undefined) { m.focusId = null; m.chaseId = null; /* AMAI §3.8 */ return true; }
   var found = null;
   st.bandits.forEach(function (b) { if (b.id === banditId) found = b; });
   if (!found || !found.alive) return false;
   m.focusId = banditId;
   m.moveTarget = null; m.moveUntil = -1;
+  m.chaseId = null; /* AMAI: focus IS the chase (§3.8). */
   return true;
 }
 /* Tap empty ground = MOVE toward that point (dodge / reposition). The
@@ -40719,6 +40748,7 @@ function moveOrder(st, point) {
   m.moveTarget = { x: point.x, y: point.y };
   m.moveUntil = st.time + 1.5;
   st.fight.redirect = null;
+  m.chaseId = null; /* AMAI: a move order clears the chase (§3.8). */
   return true;
 }
 /* ★ button override: fire the fight skill immediately when off cooldown.
@@ -40777,7 +40807,9 @@ function hashState(st) {
   var fr = st.fight || {};
   parts.push(fr.redirect ? (num(fr.redirect.x) + ':' + num(fr.redirect.y)) : '-', Math.round((fr.redirectUntil || -1) * 1000),
     fr.lastKnown ? (num(fr.lastKnown.x) + ':' + num(fr.lastKnown.y) + ':' + (fr.lastKnown.banditId || '-')) : '-',
-    fr.blockedId || '-', Math.round((fr.blockedUntil || -1) * 1000));
+    fr.blockedId || '-', Math.round((fr.blockedUntil || -1) * 1000),
+    /* AMAI: stall escalation (§4.2.1). */
+    fr.stallCount || 0, fr.stallTarget || '-', Math.round((fr.structureUntil || -1) * 1000));
   st.projectiles.forEach(function (p) {
     parts.push(p.id, p.type, num(p.x), num(p.y), num(p.vx), num(p.vy), p.active ? 1 : 0, p.isFighter ? 1 : 0, p.ghost ? 1 : 0, p.flying ? 1 : 0,
       /* COMBAT: fighter HP + combat timers + orders. */
@@ -40787,7 +40819,10 @@ function hashState(st) {
       p.skyDrop ? (num(p.skyDrop.x) + ':' + num(p.skyDrop.y)) : '-',
       p.moveTarget ? (num(p.moveTarget.x) + ':' + num(p.moveTarget.y)) : '-', Math.round((p.moveUntil || -1) * 1000),
       /* BUFFS: per-shot buff slots (design §(h)). */
-      p.buffHp || 0, num(p.buffSpeed || 1), num(p.buffDmg || 1), p.buffElement || '-');
+      p.buffHp || 0, num(p.buffSpeed || 1), num(p.buffDmg || 1), p.buffElement || '-',
+      /* AMAI: chase hysteresis + jump/smash timers (§4.2.1). */
+      p.chaseId || '-', Math.round((p.lastJumpAt === undefined ? -1 : p.lastJumpAt) * 1000),
+      Math.round((p.lastSmashAt === undefined ? -1 : p.lastSmashAt) * 1000));
       /* /BUFFS */
   });
   (st.rockets || []).forEach(function (r) {
@@ -40822,7 +40857,17 @@ function hashState(st) {
        * affects a future tick is hashed (the dazed-unhashed precedent
        * is deliberately rejected). */
       Math.round((b.burnT || 0) * 1000), Math.round((b.burnAcc || 0) * 1000),
-      Math.round((b.chillUntil || -1) * 1000), b.shieldBroken ? 1 : 0, Math.round((b.windCd || 0) * 1000));
+      Math.round((b.chillUntil || -1) * 1000), b.shieldBroken ? 1 : 0, Math.round((b.windCd || 0) * 1000),
+      /* AMAI: fall state + new fields (§4.2.1). tunnelHole/tunnelExit
+       * carry no id (obstacle/exit objects), so coordinates are hashed.
+       * dazed/bonkCd gaps stay (AMAI-D18, out of scope). */
+      num(b.vx || 0), num(b.vy || 0), b.airborne ? 1 : 0, Math.round((b.tunnelT === undefined ? -1 : b.tunnelT) * 1000),
+      b.grounded ? 1 : 0, Math.round((b.lastFlipAt === undefined ? -1 : b.lastFlipAt) * 1000),
+      Math.round((b.perchFarSince === undefined ? -1 : b.perchFarSince) * 1000),
+      Math.round((b.perchedAt === undefined ? -1 : b.perchedAt) * 1000),
+      b.tunnelHole ? (num(b.tunnelHole.x) + ':' + num(b.tunnelHole.y)) : '-',
+      b.tunnelExit ? (num(b.tunnelExit.x) + ':' + num(b.tunnelExit.y)) : '-',
+      (b.perchY === undefined || b.perchY === null) ? '-' : num(b.perchY));
       /* /BUFFS */
   });
   parts.push('breach:' + Object.keys(st.fortBreach || {}).sort().map(function (k) { return k + ':' + Math.round(st.fortBreach[k] * 1000); }).join(','));
@@ -41176,6 +41221,8 @@ function breachFort(st, fortId, why) {
     if (!b.alive || !b.sheltered || b.shelterFort !== fortId) return;
     b.sheltered = false; b.shelterFort = null; b.spotId = null;
     b.state = 'alert'; b.alertT = 0.12;
+    /* AMAI: breach exits settle y (§1.9) — no exit float. */
+    settleBanditY(st, b);
   });
 }
 /* Flee-spot pick: preferred spot if unbroken and not in a
@@ -41246,7 +41293,11 @@ function flushSpot(st, spot, why) {
     if (b.state === 'hide' || b.state === 'peek' || b.state === 'shelter' || b.sheltered) {
       b.hidden = false; b.state = 'dazed'; b.dazed = 1.2; b.spotId = null;
       b.sheltered = false; b.shelterFort = null;
-      b.x = spot.x; b.y = b.baseY;
+      b.x = spot.x;
+      /* AMAI: flush exits settle y (baseY retired, §1.4); daze
+       * interrupts the wind-up and clears a stale climb (§2.5/§1.11). */
+      settleBanditY(st, b);
+      b.climbing = false; b.windupT = 0; b.windupKind = null;
       emit(st, { t: 'flush', bandit: b.id, spot: spot.id, why: why });
     }
   });
@@ -41370,12 +41421,13 @@ function explodeBarrel(st, brl) {
     if (b.hidden || b.state === 'hide' || b.state === 'peek') {
       var spot = st.spots.filter(function (s) { return s.id === b.spotId; })[0];
       if (spot) flushSpot(st, spot, 'blast');
-      else { b.hidden = false; b.state = 'dazed'; b.dazed = 1.2; }
+      else { b.hidden = false; b.state = 'dazed'; b.dazed = 1.2; b.windupT = 0; b.windupKind = null; b.climbing = false; /* AMAI §2.5/§1.11 */ }
       return;
     }
     if (d < R * 0.7) defeatBandit(st, b, 'blast');
     else {
       b.state = 'dazed'; b.dazed = 1.2;
+      b.windupT = 0; b.windupKind = null; b.climbing = false; /* AMAI: daze interrupts (§2.5/§1.11). */
       b.airborne = true; b.vy = -160; b.vx = (b.x < brl.x ? -1 : 1) * 120;
       emit(st, { t: 'dazed', bandit: b.id, why: 'blast' });
     }
@@ -41438,6 +41490,8 @@ function tryBonk(st, m, b, source, ranged) {
   }
   if (b.type === 'bigboss' && b.hits === 0) {
     b.hits = 1; b.state = 'dazed'; b.dazed = 1.5; b.spotId = null; b.bonkCd = 0.5;
+    /* AMAI: flight crown-pop is a daze setter too — interrupt (§2.5). */
+    b.windupT = 0; b.windupKind = null; b.climbing = false; /* AMAI §1.11 */
     /* COMBAT: sync the combat crown armor — a flight crown-pop also
      * removes the 40 armor for later fight damage. */
     b.crownArmorLeft = 0;
@@ -41489,16 +41543,24 @@ function damageBandit(st, b, dmg, source, attacker, opts) {
     amount -= absorbed;
     if (b.crownArmorLeft <= 0) {
       crownBroke = true; b.hits = 1; b.state = 'dazed'; b.dazed = 1.5; b.bonkCd = 0.5;
+      /* AMAI: crown-pop daze interrupts the wind-up (§2.5). */
+      b.windupT = 0; b.windupKind = null; b.climbing = false; /* AMAI §1.11 */
       emit(st, { t: 'bonk', bandit: b.id, type: 'bigboss', source: source, crown: true, points: 0, score: st.score });
     }
     if (amount <= 0) {
       b.aggroed = true; b.lastDamageAt = st.time;
+      /* AMAI: immediate re-eval + face the attacker (§2.5). */
+      b.aggroEvalT = 0;
+      if (attacker && attacker.x !== b.x) { var nf0 = attacker.x > b.x ? 1 : -1; if (b.facing !== nf0) b.facing = nf0; }
       emit(st, { t: 'damage', bandit: b.id, type: b.type, amount: 0, hp: Math.max(0, Math.round(b.hp)), maxHp: b.maxHp, source: source, killed: false, absorbed: true, score: st.score });
       return crownBroke ? 'crown' : 'absorbed';
     }
   }
   b.hp -= amount;
   b.aggroed = true; b.lastDamageAt = st.time;
+  /* AMAI: immediate re-eval + face the attacker (§2.5). */
+  b.aggroEvalT = 0;
+  if (attacker && attacker.x !== b.x) { var nf1 = attacker.x > b.x ? 1 : -1; if (b.facing !== nf1) b.facing = nf1; }
   st.score += Math.round(amount * TUNING.damagePointScore);
   var killed = b.hp <= 0;
   emit(st, { t: 'damage', bandit: b.id, type: b.type, amount: amount, hp: Math.max(0, Math.round(b.hp)), maxHp: b.maxHp, source: source, killed: killed, absorbed: false, score: st.score });
@@ -41950,10 +42012,11 @@ function fireQuake(st, m) {
       var spot = null;
       st.spots.forEach(function (s) { if (s.id === b.spotId) spot = s; });
       if (spot) flushSpot(st, spot, 'quake');
-      else { b.hidden = false; b.state = 'dazed'; b.dazed = TUNING.quakeFlushDaze; }
+      else { b.hidden = false; b.state = 'dazed'; b.dazed = TUNING.quakeFlushDaze; b.windupT = 0; b.windupKind = null; b.climbing = false; /* AMAI §2.5/§1.11 */ }
       if (b.state === 'dazed') b.dazed = Math.max(b.dazed, TUNING.quakeFlushDaze);
     } else {
       b.state = 'dazed'; b.dazed = TUNING.quakeDaze;
+      b.windupT = 0; b.windupKind = null; b.climbing = false; /* AMAI: daze interrupts (§2.5/§1.11). */
       emit(st, { t: 'dazed', bandit: b.id, why: 'quake' });
     }
   });
@@ -42090,7 +42153,7 @@ function explodeRocket(st, rk) {
       var spot = null;
       st.spots.forEach(function (s) { if (s.id === b.spotId) spot = s; });
       if (spot) flushSpot(st, spot, 'rocket');
-      else { b.hidden = false; b.state = 'dazed'; b.dazed = 1.2; }
+      else { b.hidden = false; b.state = 'dazed'; b.dazed = 1.2; b.windupT = 0; b.windupKind = null; b.climbing = false; /* AMAI §2.5/§1.11 */ }
       flushed++;
       return;
     }
@@ -42106,11 +42169,13 @@ function explodeRocket(st, rk) {
         damageBandit(st, b, TUNING.rocketFightOuter, 'rocket', null, { bypass: true });
         if (b.alive) {
           b.state = 'dazed'; b.dazed = TUNING.rocketFightDaze;
+          b.windupT = 0; b.windupKind = null; b.climbing = false; /* AMAI: daze interrupts (§2.5/§1.11). */
           b.airborne = true; b.vy = -160; b.vx = (b.x < rk.x ? -1 : 1) * 120;
           emit(st, { t: 'dazed', bandit: b.id, why: 'rocket' });
         }
       } else {
         b.state = 'dazed'; b.dazed = 1.2;
+        b.windupT = 0; b.windupKind = null; b.climbing = false; /* AMAI: daze interrupts (§2.5/§1.11). */
         b.airborne = true; b.vy = -160; b.vx = (b.x < rk.x ? -1 : 1) * 120;
         emit(st, { t: 'dazed', bandit: b.id, why: 'rocket' });
       }
@@ -42301,6 +42366,8 @@ function applyElement(st, attacker, victim, hitAmount) {
     if (victim.alive) {
       victim.dazed = Math.max(victim.dazed || 0, TUNING.buffDazeTime);
       victim.state = 'dazed';
+      /* AMAI: lightning daze interrupts the wind-up (§2.5). */
+      victim.windupT = 0; victim.windupKind = null; victim.climbing = false; /* AMAI §1.11 */
     }
     var best = null, bestD = Infinity;
     st.bandits.forEach(function (b) {
@@ -42316,6 +42383,8 @@ function applyElement(st, attacker, victim, hitAmount) {
        * are the existing crown-pop values in damageBandit/tryBonk. */
       victim.crownArmorLeft = 0; victim.hits = 1;
       victim.state = 'dazed'; victim.dazed = 1.5; victim.bonkCd = 0.5;
+      /* AMAI: magma crown-pop is a daze setter — interrupt (§2.5). */
+      victim.windupT = 0; victim.windupKind = null; victim.climbing = false; /* AMAI §1.11 */
       emit(st, { t: 'bonk', bandit: victim.id, type: 'bigboss', source: 'fight', crown: true, points: 0, score: st.score });
       emit(st, { t: 'armorBreak', bandit: victim.id, type: 'crown' });
     } else if (victim.type === 'shielder' && !victim.shieldBroken) {
@@ -42362,15 +42431,36 @@ function spawnFightRocket(st, m, target) {
   });
   emit(st, { t: 'rocketLaunch', monkey: m.type, x: Math.round(m.x), y: Math.round(m.y), fight: true });
 }
+/* AMAI: buffed swing damage for the finisher test (§3.2 class 3) —
+ * power-buffed swing only; the pinned amp is deliberately excluded
+ * (conservative: avoids flip-flopping as pins expire). Shared by
+ * pickFightTarget and the §3.4 skill gates. */
+function buffedSwingDamage(m) {
+  var base = TUNING.attackDamage[m.type] || 20;
+  if (!m.buffElement && (m.buffDmg || 1) === TUNING.buffPowerMult)
+    return Math.round(base * TUNING.buffPowerMult);
+  return base;
+}
+function isFinisherTarget(m, b) {
+  return b.hp <= buffedSwingDamage(m);
+}
+/* /AMAI */
 function pickNetTarget(st, m, priorityOnly) {
   var best = null, bestD = Infinity, pri = null, priD = Infinity;
+  /* AMAI: winding-up skill users are TOP priority (§3.4). */
+  var wind = null, windD = Infinity;
   st.bandits.forEach(function (b) {
     if (!b.alive || b.hidden) return;
+    /* AMAI: never target a PINNED bandit, on ANY path (§3.4). */
+    if ((b.pinnedUntil || -1) > st.time) return;
     var d = dist(m.x, m.y, b.x, b.y);
     if (d < bestD) { bestD = d; best = b; }
-    if ((b.type === 'bigboss' || b.type === 'shielder') && (b.pinnedUntil || -1) <= st.time && d < priD) { priD = d; pri = b; }
+    if (b.state === 'attack' && (b.windupT || 0) > 0 &&
+        (b.windupKind === 'bash' || b.windupKind === 'slam') && d < windD) { windD = d; wind = b; }
+    if ((b.type === 'bigboss' || b.type === 'shielder') && d < priD) { priD = d; pri = b; }
   });
-  return priorityOnly ? pri : (pri || best);
+  var top = wind || pri;
+  return priorityOnly ? top : (top || best);
 }
 function spawnFightNet(st, m, target) {
   var dx = target.x - m.x, dy = target.y - m.y;
@@ -42401,15 +42491,24 @@ function resolveSkyDrop(st, m) {
     if (!b.alive || b.hidden) return;
     if (dist(m.x, m.y, b.x, b.y) <= R) {
       damageBandit(st, b, TUNING.skyDropDamage, 'skyDrop', m, { bypass: true });
-      if (b.alive) { b.state = 'dazed'; b.dazed = Math.max(b.dazed, TUNING.skyDropDaze); }
+      if (b.alive) { b.state = 'dazed'; b.dazed = Math.max(b.dazed, TUNING.skyDropDaze); b.windupT = 0; b.windupKind = null; b.climbing = false; /* AMAI §2.5/§1.11 */ }
     }
   });
   m.skyDrop = null;
 }
 /* Auto-use conditions (DESIGN.md §2 table), pure functions of state. */
-function rocketAutoCondition(st) {
+function rocketAutoCondition(st, m) {
   var vis = [];
   st.bandits.forEach(function (b) { if (b.alive && !b.hidden) vis.push(b); });
+  /* AMAI: finisher gate — never spend a rocket on a one-swing kill in
+   * melee range (§3.4). m is optional (old callers pass st only). */
+  if (m && vis.length === 1) {
+    var only = vis[0];
+    var mr = TUNING.bonkRadius + (only.type === 'bigboss' ? 6 : 0);
+    if (isFinisherTarget(m, only) && dist(m.x, m.y, only.x, only.y) <= mr) return false;
+  }
+  /* AMAI: a perched climber is a single-target rocket case (§3.4). */
+  for (var k = 0; k < vis.length; k++) if (vis[k].perched) return true;
   for (var i = 0; i < vis.length; i++) {
     if (vis[i].type === 'bigboss') return true;
     for (var j = i + 1; j < vis.length; j++)
@@ -42417,12 +42516,21 @@ function rocketAutoCondition(st) {
   }
   return false;
 }
-function skyDropAutoCondition(st) {
+function skyDropAutoCondition(st, m) {
   var vis = [];
   st.bandits.forEach(function (b) { if (b.alive && !b.hidden) vis.push(b); });
+  /* AMAI: finisher gate (§3.4) — single grounded finisher in melee. */
+  if (m && vis.length === 1) {
+    var onlyS = vis[0];
+    var mrS = TUNING.bonkRadius + (onlyS.type === 'bigboss' ? 6 : 0);
+    if (!onlyS.perched && isFinisherTarget(m, onlyS) && dist(m.x, m.y, onlyS.x, onlyS.y) <= mrS) return false;
+  }
   for (var i = 0; i < vis.length; i++)
     for (var j = i + 1; j < vis.length; j++)
       if (dist(vis[i].x, vis[i].y, vis[j].x, vis[j].y) <= TUNING.skyDropRadius) return true;
+  /* AMAI: boss-visible and perched-visible cases (§3.4). */
+  for (var k = 0; k < vis.length; k++)
+    if (vis[k].type === 'bigboss' || vis[k].perched) return true;
   return false;
 }
 function razeAdjacent(st, m) {
@@ -42438,6 +42546,18 @@ function razeAdjacent(st, m) {
     var r = rectOf(ob);
     if (circleRect(m.x, m.y, m.r + 4, r.x + r.w / 2, r.y + r.h / 2, r.w / 2, r.h / 2)) return true;
   }
+  /* AMAI: boss within 60px, or 2+ visible bandits within 60px (§3.4).
+   * No hold-back: cooldowns are per-shot. */
+  var nearCount = 0, bossNear = false;
+  for (i = 0; i < st.bandits.length; i++) {
+    var nb = st.bandits[i];
+    if (!nb.alive || nb.hidden) continue;
+    if (dist(m.x, m.y, nb.x, nb.y) <= 60) {
+      nearCount++;
+      if (nb.type === 'bigboss') bossNear = true;
+    }
+  }
+  if (bossNear || nearCount >= 2) return true;
   return false;
 }
 function fireFightSkill(st, m, via) {
@@ -42495,6 +42615,9 @@ function startFight(st, m) {
   if (m.buffHp) { m.maxHp += m.buffHp; m.hp = m.maxHp; }
   /* /BUFFS */
   m.focusId = null; m.moveTarget = null; m.moveUntil = -1; m.staggerT = 0; m.skyDrop = null;
+  /* AMAI: chase + stall state reset for the new fight (§3.3/§3.6). */
+  m.chaseId = null;
+  st.fight.stallCount = 0; st.fight.stallTarget = null; st.fight.structureUntil = -1;
   st.phase = 'fight'; st.phaseT = 0; st.fightElapsed = 0;
   st.combo = 0; st.stats.fights++;
   emit(st, { t: 'fightStart', monkey: m.type, x: Math.round(m.x), y: Math.round(m.y) });
@@ -42557,6 +42680,201 @@ function beginSettle(st) {
   (st.nets || []).forEach(function (n) { n.active = false; });
   st.gun = null;
 }
+/* AMAI: fight-target priority class (§3.2). Lexicographic: class, then
+ * 2D distance, then bandit array order (single pass, strict <). Drop
+ * wind-ups are EXCLUDED from class 1 (the climber is perched and
+ * unreachable; answering a drop means waiting at the base, §3.7) and
+ * fall through to the remaining classes. */
+function fightTargetClass(st, m, b, swing) {
+  if (b.state === 'attack' && (b.windupT || 0) > 0) {
+    if (b.windupKind === 'bash' || b.windupKind === 'slam') return 1;
+    if (b.windupKind !== 'drop') return 2;
+  }
+  if (b.hp <= swing) return 3;
+  if (b.lastHitMonkeyAt !== undefined && b.lastHitMonkeyAt >= 0 &&
+      st.time - b.lastHitMonkeyAt <= 1.0) return 4;
+  if (!b.perched && b.type !== 'bigboss') return 5;
+  if (!b.perched) return 6;
+  return 7;
+}
+/* AMAI: steering selection, extracted from updateFight (§3.2–3.3).
+ * Player overrides keep class-0 precedence; the autonomous list is the
+ * §3.2 priority list with §3.3 hysteresis against m.chaseId. The
+ * lastKnown/spot/hunt tail is the old chain, preserved verbatim.
+ * Returns {target, mode, targetBandit}. */
+function pickFightTarget(st, m) {
+  var focusBandit = null;
+  /* Class 0: player move order (tap ground). */
+  if (m.moveTarget && st.time < m.moveUntil) {
+    if (dist(m.x, m.y, m.moveTarget.x, m.moveTarget.y) < 20) { m.moveTarget = null; }
+    else {
+      if (m.chaseId !== null) m.chaseId = null;
+      return { target: m.moveTarget, mode: 'move', targetBandit: null };
+    }
+  } else if (m.moveTarget) { m.moveTarget = null; }
+  /* Class 0: redirect nudge. */
+  if (st.fight.redirect && st.time < st.fight.redirectUntil) {
+    var rd = st.fight.redirect;
+    if (dist(m.x, m.y, rd.x, rd.y) < 20) { st.fight.redirect = null; }
+    else {
+      if (m.chaseId !== null) m.chaseId = null;
+      return { target: rd, mode: 'redirect', targetBandit: null };
+    }
+  }
+  /* Class 0: focus target (tap a bandit): alive + visible only. */
+  if (m.focusId) {
+    st.bandits.forEach(function (b) { if (b.id === m.focusId) focusBandit = b; });
+    if (!focusBandit || !focusBandit.alive || focusBandit.hidden) { m.focusId = null; focusBandit = null; }
+  }
+  if (focusBandit) {
+    if (m.chaseId !== null) m.chaseId = null;
+    st.fight.lastKnown = { x: focusBandit.x, y: focusBandit.y, banditId: focusBandit.id };
+    return { target: { x: focusBandit.x, y: focusBandit.y }, mode: 'focus', targetBandit: focusBandit };
+  }
+  /* Autonomous list: best candidate ignoring hysteresis, plus the
+   * chased bandit's live class/distance for the hysteresis test. */
+  var swing = buffedSwingDamage(m);
+  var best = null, bestClass = 99, bestD = Infinity;
+  var chased = null, chasedClass = 99, chasedD = Infinity;
+  st.bandits.forEach(function (b) {
+    if (!b.alive || b.hidden) return;
+    var cls = fightTargetClass(st, m, b, swing);
+    var d = dist(m.x, m.y, b.x, b.y);
+    if (m.chaseId === b.id) { chased = b; chasedClass = cls; chasedD = d; }
+    /* Blacklist excludes classes 3–7; wind-ups (1–2) are never skipped. */
+    if (cls >= 3 && st.fight.blockedId === b.id && st.time < st.fight.blockedUntil) return;
+    if (cls < bestClass || (cls === bestClass && d < bestD)) { best = b; bestClass = cls; bestD = d; }
+  });
+  var picked = best;
+  if (chased) {
+    var chasedBlacklisted = chasedClass >= 3 &&
+      st.fight.blockedId === chased.id && st.time < st.fight.blockedUntil;
+    if (chasedBlacklisted) {
+      /* Switch condition 1: the chase is blacklisted — use best (or none). */
+    } else if (!best || best === chased) {
+      picked = chased;
+    } else if (bestClass < chasedClass) {
+      /* Switch condition 2: higher-priority class. */
+    } else if (bestClass === chasedClass && bestD + TUNING.targetHysteresis < chasedD) {
+      /* Switch condition 3: same class, >25px closer. */
+    } else {
+      picked = chased;
+    }
+  }
+  if (picked) {
+    m.chaseId = picked.id;
+    st.fight.lastKnown = { x: picked.x, y: picked.y, banditId: picked.id };
+    return { target: { x: picked.x, y: picked.y }, mode: 'bandit', targetBandit: picked };
+  }
+  if (m.chaseId !== null) m.chaseId = null;
+  /* Last-known hunt, then occupied spot, then any spot, then hold. */
+  if (st.fight.lastKnown) {
+    if (dist(m.x, m.y, st.fight.lastKnown.x, st.fight.lastKnown.y) > 14) {
+      return { target: st.fight.lastKnown, mode: 'lastKnown', targetBandit: null };
+    }
+    st.fight.lastKnown = null;
+  }
+  var bestSpot = null, bestSD = Infinity;
+  st.spots.forEach(function (s) {
+    if (s.broken) return;
+    var occupied = st.bandits.some(function (b) { return b.alive && b.spotId === s.id; });
+    if (!occupied) return;
+    var d = dist(m.x, m.y, s.x, s.y);
+    if (d < bestSD) { bestSD = d; bestSpot = s; }
+  });
+  if (!bestSpot) {
+    st.spots.forEach(function (s) {
+      if (s.broken) return;
+      var d = dist(m.x, m.y, s.x, s.y);
+      if (d < bestSD) { bestSD = d; bestSpot = s; }
+    });
+  }
+  if (bestSpot && bestSD > 18) {
+    return { target: { x: bestSpot.x, y: bestSpot.y }, mode: 'hunt', targetBandit: null };
+  }
+  return { target: null, mode: 'hold', targetBandit: null };
+}
+/* AMAI: narrow deterministic traversal-only auto-jump (§3.1). Shared
+ * gates + J1 (jumpable barrier) / J2 (target above) / J3 (shielder
+ * jump-over). Calls the existing jump() — same gates, same (silent)
+ * event as player jumps. No auto-dodge: dodging stays player skill.
+ * Called after collisions (blockedX/grounded fresh) and before stall
+ * detection. Structure mode suppresses J1/J2 (J3 still allowed). */
+function autoJumpCheck(st, m, dir, target, targetBandit, mode) {
+  if (mode === 'redirect') return;
+  if (!m.grounded || !m.jumpAvailable) return;
+  if (st.time - (m.lastJumpAt === undefined ? -1 : m.lastJumpAt) < TUNING.autoJumpCooldown) return;
+  if ((m.staggerT || 0) > 0) return;
+  if (isRazeActive(st, m)) return;
+  var structureMode = (st.fight.structureUntil || -1) > st.time;
+  /* J3 — shielder jump-over: shield intact, melee range, frontal. */
+  for (var i = 0; i < st.bandits.length; i++) {
+    var sh = st.bandits[i];
+    if (!sh.alive || sh.hidden || sh.type !== 'shielder' || sh.shieldBroken) continue;
+    if (dist(m.x, m.y, sh.x, sh.y) > TUNING.bonkRadius) continue;
+    var sdx = m.x - sh.x;
+    if ((sdx * sh.facing > 0) || Math.abs(sdx) < 4) { jump(st); return; }
+  }
+  if (structureMode) return;
+  /* J1 — jumpable barrier in the way. */
+  if (dir !== 0 && m.blockedX && target) {
+    var feetY = m.y + m.r;
+    var nearTop = null, nearFarEdge = 0, nearIsBlock = false, nearBlock = null, nearD = Infinity;
+    var scanBlocker = function (cx, cy, hw, hh, blk) {
+      /* AMAI-B27: +2px contact tolerance. collideFightSolids resolves
+       * penetration to exact touch (d == r) before this scan runs, and
+       * circleRect's strict d2 < r*r returns null at exact touch — the
+       * re-scan would never find the blocker blockedX flagged, making
+       * J1 a floating-point coin flip (ledge 0/600 ticks, stonewall 1
+       * jump in 90 ticks, plate 2 jumps — same geometry class, different
+       * fixed-point rounding). The tolerance restores the §3.1
+       * assumption that the re-scan finds the flagged blocker; a solid
+       * within 2px is contacted next tick anyway. Normal, direction,
+       * and top computations are unaffected. */
+      var hit = circleRect(m.x, m.y, m.r + 2, cx, cy, hw, hh);
+      if (!hit || Math.abs(hit.nx) <= 0.5) return;
+      if (hit.nx * dir >= 0) return; /* not in the drive direction */
+      var d = dist(m.x, m.y, cx, cy);
+      if (d >= nearD) return;
+      nearD = d; nearTop = cy - hh; nearIsBlock = !!blk; nearBlock = blk || null;
+      nearFarEdge = dir > 0 ? (cx + hw) : (cx - hw);
+    };
+    for (var bi = 0; bi < st.blocks.length; bi++) {
+      var blk = st.blocks[bi];
+      if (blk.broken) continue;
+      var e = rotExtents(blk), c = blockCenter(blk);
+      scanBlocker(c.x, c.y, e.hw, e.hh, blk);
+    }
+    for (var oi = 0; oi < st.obstacles.length; oi++) {
+      var ob = st.obstacles[oi];
+      if (!isSolidForMonkey(ob)) continue;
+      var r = rectOf(ob);
+      scanBlocker(r.x + r.w / 2, r.y + r.h / 2, r.w / 2, r.h / 2, null);
+    }
+    if (nearTop !== null && nearTop >= feetY - TUNING.autoJumpReach) {
+      var beyond = dir > 0 ? (target.x > nearFarEdge) : (target.x < nearFarEdge);
+      var above = (m.y - target.y) > TUNING.targetAboveDy;
+      if (beyond || above) {
+        /* Smash rule (§3.5): <=3 swings -> smash, don't jump. Steel
+         * is never smashed (jump instead); obstacles aren't smashed. */
+        var smash = false;
+        if (nearIsBlock && nearBlock && nearBlock.mat !== 'steel') {
+          var swings = Math.ceil(nearBlock.hp / (TUNING.attackDamage[m.type] || 20));
+          if (swings <= TUNING.smashMaxSwings) smash = true;
+        }
+        if (!smash) { jump(st); return; }
+      }
+    }
+  }
+  /* J2 — target above: >45px and <=150px above, within 150px across. */
+  if (target) {
+    var dyUp = m.y - target.y;
+    if (dyUp > TUNING.targetAboveDy && dyUp <= 150 && Math.abs(target.x - m.x) <= 150) {
+      jump(st); return;
+    }
+  }
+}
+/* /AMAI */
 /* COMBAT: updateFight replaces updateDash (heavily rewritten function —
  * see the engine report for the function list). The movement model is
  * the old dash steering loop, extended: no life countdown (45s
@@ -42592,10 +42910,36 @@ function updateFight(st, m, dt) {
     var skWeapon = TUNING.weapons[m.type];
     var autoFire = false;
     if (skWeapon === 'gun') autoFire = !!nearestVisibleBandit(st, m.x, m.y, TUNING.gunRange);
-    else if (skWeapon === 'quake') autoFire = true;
-    else if (skWeapon === 'rocket') autoFire = rocketAutoCondition(st);
-    else if (skWeapon === 'net') autoFire = !!pickNetTarget(st, m, true);
-    else if (skWeapon === 'fly') autoFire = skyDropAutoCondition(st);
+    else if (skWeapon === 'quake') {
+      /* AMAI: no more empty stomps (§3.4) — fire only with a bandit
+       * (visible OR hidden) in radius, or structure value while
+       * blocked/stalling. The fight-start quake in startFight stays
+       * unconditional (landing skill, not the re-stomp). */
+      for (var qi = 0; qi < st.bandits.length; qi++) {
+        var qb = st.bandits[qi];
+        if (qb.alive && dist(m.x, m.y, qb.x, qb.y) < TUNING.quakeRadius) { autoFire = true; break; }
+      }
+      if (!autoFire && (m.blockedX || (st.fight.stallCount || 0) > 0)) {
+        for (var qj = 0; qj < st.blocks.length; qj++) {
+          var qblk = st.blocks[qj];
+          if (qblk.broken) continue;
+          var qc = blockCenter(qblk);
+          if (dist(m.x, m.y, qc.x, qc.y) < TUNING.quakeRadius) { autoFire = true; break; }
+        }
+      }
+    }
+    else if (skWeapon === 'rocket') autoFire = rocketAutoCondition(st, m);
+    else if (skWeapon === 'net') {
+      /* AMAI: finisher gate lives HERE (auto path only) so ★ still
+       * bypasses conditions (§3.4 header). pickNetTarget carries the
+       * targeting rules (unpinned, wind-up priority). */
+      var netPri = pickNetTarget(st, m, true);
+      if (netPri) {
+        var netMr = TUNING.bonkRadius + (netPri.type === 'bigboss' ? 6 : 0);
+        autoFire = !(isFinisherTarget(m, netPri) && dist(m.x, m.y, netPri.x, netPri.y) <= netMr);
+      }
+    }
+    else if (skWeapon === 'fly') autoFire = skyDropAutoCondition(st, m);
     else if (skWeapon === 'raze') autoFire = razeAdjacent(st, m);
     if (autoFire) fireFightSkill(st, m, 'auto');
     if (st.phase !== 'fight') return; /* a skill cleared the level */
@@ -42627,84 +42971,11 @@ function updateFight(st, m, dt) {
     m.fightTarget = m.skyDrop ? { x: Math.round(m.skyDrop.x), y: Math.round(m.skyDrop.y) } : null;
     return;
   }
-  /* Steering, recomputed EVERY tick: move order -> redirect -> focus ->
-   * attackers -> nearest visible -> last-known -> spot -> hold. */
-  var target = null, mode = 'hold', targetBandit = null;
-  /* Player move order (tap ground): wins over AI steering until it
-   * expires or the fighter arrives. */
-  if (m.moveTarget && st.time < m.moveUntil) {
-    if (dist(m.x, m.y, m.moveTarget.x, m.moveTarget.y) < 20) { m.moveTarget = null; }
-    else { target = m.moveTarget; mode = 'move'; }
-  } else if (m.moveTarget) { m.moveTarget = null; }
-  if (!target && st.fight.redirect && st.time < st.fight.redirectUntil) {
-    target = st.fight.redirect; mode = 'redirect';
-    if (dist(m.x, m.y, target.x, target.y) < 20) { st.fight.redirect = null; }
-  }
-  /* Focus target (tap a bandit): alive + visible only. A dead/hidden
-   * focus is cleared here (and by defeatBandit). */
-  var focusBandit = null;
-  if (m.focusId) {
-    st.bandits.forEach(function (b) { if (b.id === m.focusId) focusBandit = b; });
-    if (!focusBandit || !focusBandit.alive || focusBandit.hidden) { m.focusId = null; focusBandit = null; }
-  }
-  if (!target && focusBandit) {
-    targetBandit = focusBandit;
-    target = { x: targetBandit.x, y: targetBandit.y }; mode = 'focus';
-    st.fight.lastKnown = { x: targetBandit.x, y: targetBandit.y, banditId: targetBandit.id };
-  }
-  /* Attackers first: winding up, or damaged the fighter in the last 1s. */
-  if (!target) {
-    var attBest = Infinity, attacker = null;
-    st.bandits.forEach(function (b) {
-      if (!b.alive || b.hidden) return;
-      var winding = (b.state === 'attack' && (b.windupT || 0) > 0);
-      var recent = (b.lastHitMonkeyAt !== undefined && b.lastHitMonkeyAt >= 0 && st.time - b.lastHitMonkeyAt <= 1.0);
-      if (!winding && !recent) return;
-      var d = dist(m.x, m.y, b.x, b.y);
-      if (d < attBest) { attBest = d; attacker = b; }
-    });
-    if (attacker) {
-      targetBandit = attacker;
-      target = { x: attacker.x, y: attacker.y }; mode = 'bandit';
-      st.fight.lastKnown = { x: attacker.x, y: attacker.y, banditId: attacker.id };
-    }
-  }
-  if (!target) {
-    var best = Infinity;
-    st.bandits.forEach(function (b) {
-      if (!b.alive || b.hidden) return;
-      if (st.fight.blockedId === b.id && st.time < st.fight.blockedUntil) return;
-      var d = dist(m.x, m.y, b.x, b.y);
-      if (d < best) { best = d; targetBandit = b; }
-    });
-    if (targetBandit) {
-      target = { x: targetBandit.x, y: targetBandit.y }; mode = 'bandit';
-      st.fight.lastKnown = { x: targetBandit.x, y: targetBandit.y, banditId: targetBandit.id };
-    }
-  }
-  if (!target && st.fight.lastKnown) {
-    if (dist(m.x, m.y, st.fight.lastKnown.x, st.fight.lastKnown.y) > 14) {
-      target = st.fight.lastKnown; mode = 'lastKnown';
-    } else st.fight.lastKnown = null;
-  }
-  if (!target) {
-    var bestSpot = null, bestD = Infinity;
-    st.spots.forEach(function (s) {
-      if (s.broken) return;
-      var occupied = st.bandits.some(function (b) { return b.alive && b.spotId === s.id; });
-      if (!occupied) return;
-      var d = dist(m.x, m.y, s.x, s.y);
-      if (d < bestD) { bestD = d; bestSpot = s; }
-    });
-    if (!bestSpot) {
-      st.spots.forEach(function (s) {
-        if (s.broken) return;
-        var d = dist(m.x, m.y, s.x, s.y);
-        if (d < bestD) { bestD = d; bestSpot = s; }
-      });
-    }
-    if (bestSpot && bestD > 18) { target = { x: bestSpot.x, y: bestSpot.y }; mode = 'hunt'; }
-  }
+  /* AMAI: steering selection extracted to pickFightTarget (§3.2–3.3):
+   * player overrides (class 0) > priority list + hysteresis > lastKnown
+   * > spot hunt > hold. The old inline chain is preserved inside it. */
+  var sel = pickFightTarget(st, m);
+  var target = sel.target, mode = sel.mode, targetBandit = sel.targetBandit;
   var dir = 0;
   if (target && st.time >= m.holdUntil) {
     var dx = target.x - m.x;
@@ -42762,14 +43033,38 @@ function updateFight(st, m, dt) {
   if (hitSomething) m.blockedX = true;
   if (m.x < m.r) { m.x = m.r; if (dir < 0) m.blockedX = true; }
   if (m.x > st.worldW - m.r) { m.x = st.worldW - m.r; if (dir > 0) m.blockedX = true; }
+  /* AMAI: traversal auto-jump (§3.1) — after collisions (fresh
+   * blockedX/grounded), before stall detection. */
+  autoJumpCheck(st, m, dir, target, targetBandit, mode);
   /* Stall detection: <5px progress over 100ms while driving -> re-target/hold.
    * COMBAT: a stalled fighter still swings at a blocking block/spot in
-   * range (see the melee block below) instead of only holding. */
+   * range (see the melee block below) instead of only holding.
+   * AMAI: escalation (§3.6) — 1st stall: blacklist/hold; 2nd vs the
+   * same target: 3s structure mode (no blacklist, smash through); 3rd:
+   * 5s abandon. Productive smashing is not a stall (§3.5). */
   m.stallT += dt;
   if (m.stallT >= 0.1) {
     var moved = Math.abs(m.x - m.stallX);
-    if (dir !== 0 && moved < 5) {
-      if (mode === 'bandit' && targetBandit) {
+    var stallKey = (mode === 'bandit' && targetBandit) ? targetBandit.id : ('mode:' + mode);
+    if (moved > 20) {
+      st.fight.stallCount = 0; st.fight.stallTarget = null; st.fight.structureUntil = -1;
+    }
+    var smashExempt = (st.time - (m.lastSmashAt === undefined ? -1 : m.lastSmashAt)) < 1.0;
+    var inStructure = (st.fight.structureUntil || -1) > st.time;
+    if (dir !== 0 && moved < 5 && !smashExempt && !inStructure) {
+      if (st.fight.stallTarget !== stallKey) { st.fight.stallCount = 0; st.fight.stallTarget = stallKey; }
+      st.fight.stallCount++;
+      if (st.fight.stallCount === 2) {
+        st.fight.structureUntil = st.time + 3.0;
+      } else if (st.fight.stallCount >= 3) {
+        if (mode === 'bandit' && targetBandit) {
+          st.fight.blockedId = targetBandit.id; st.fight.blockedUntil = st.time + TUNING.stallBlacklistLong;
+          st.fight.lastKnown = null;
+        } else {
+          m.holdUntil = st.time + 0.3;
+        }
+        st.fight.stallCount = 0;
+      } else if (mode === 'bandit' && targetBandit) {
         st.fight.blockedId = targetBandit.id; st.fight.blockedUntil = st.time + 0.5;
         st.fight.lastKnown = null;
       } else {
@@ -42851,6 +43146,8 @@ function updateFight(st, m, dt) {
       for (i = 0; i < st.blocks.length; i++) {
         var blk2 = st.blocks[i];
         if (blk2.broken) continue;
+        /* AMAI: steel is never smashed — explicit mat check (§3.5). */
+        if (blk2.mat === 'steel') continue;
         var e2 = rotExtents(blk2), c2 = blockCenter(blk2);
         var hit2 = circleRect(m.x, m.y, m.r + 4, c2.x, c2.y, e2.hw, e2.hh);
         if (hit2 && Math.abs(hit2.nx) > 0.5) {
@@ -42862,6 +43159,7 @@ function updateFight(st, m, dt) {
         m.attackCd = TUNING.attackInterval[m.type] || 0.5;
         emit(st, { t: 'monkeySwing', monkey: m.type, kind: 'block', block: blkT.id, x: Math.round(m.x), y: Math.round(m.y) });
         damageBlock(st, blkT, TUNING.attackDamage[m.type] || 20, dir * 100, 'fight');
+        m.lastSmashAt = st.time; /* AMAI: productive-smash stamp (§3.5). */
       } else {
         var spotT = null, spotD = Infinity;
         st.spots.forEach(function (s) {
@@ -42875,6 +43173,7 @@ function updateFight(st, m, dt) {
           m.attackCd = TUNING.attackInterval[m.type] || 0.5;
           emit(st, { t: 'monkeySwing', monkey: m.type, kind: 'spot', spot: spotT.id, x: Math.round(m.x), y: Math.round(m.y) });
           damageSpot(st, spotT, TUNING.attackDamage[m.type] || 20);
+          m.lastSmashAt = st.time; /* AMAI: productive-smash stamp (§3.5). */
         }
       }
     }
@@ -42931,6 +43230,77 @@ function collideFightSolids(st, m) {
   }
   return hitAny;
 }
+/* AMAI: the shared vertical pass (§1.3) — gravity, swept landing, and
+ * support tracking for one bandit. Runs for every alive bandit in the
+ * updateBandits preamble (exemptions below). Deterministic: pure
+ * function of state + dt. */
+function applyBanditVertical(st, b, dt) {
+  if (!b.alive) return;
+  /* AMAI §1.11: stale-climbing assertion — a bandit that flipped out
+   * of flee mid-climb cannot carry a stale flag into the exempt path.
+   * Guarded write: only writes when stale. */
+  if (b.climbing && b.state !== 'flee') b.climbing = false;
+  /* Exemptions: a perched climber's pin, a mid-climb slide, a hidden
+   * bandit, and a sheltered bandit are not subject to gravity. */
+  if (b.perched) return;
+  if (b.climbing && b.state === 'flee') return;
+  if (b.hidden) return;
+  if (b.sheltered) return;
+  var feet = b.y + TUNING.banditFeet;
+  var sup = banditSupport(st, b, feet, feet).stand;
+  if (b.airborne || feet < sup.top - TUNING.banditSnapTol) {
+    /* FALLING (unsupported, or already airborne from knockback/drop). */
+    var prevFeet = feet;
+    b.vy += TUNING.gravity * dt;
+    feet += b.vy * dt;
+    b.x = clamp(b.x + b.vx * dt, 14, st.worldW - 14);
+    var crossed = banditSupport(st, b, feet, prevFeet).crossed;
+    if (crossed) {
+      b.y = crossed.top - TUNING.banditFeet; b.vy = 0; b.vx = 0;
+      b.airborne = false; b.grounded = true;
+      onBanditLand(st, b, crossed);
+    } else {
+      b.y = feet - TUNING.banditFeet; b.airborne = true; b.grounded = false;
+    }
+  } else {
+    /* SUPPORTED: snap to the surface, ride it (platform carry). */
+    if (sup.kind === 'platform' && sup.ref)
+      b.x = clamp(b.x + sup.ref.dx, 14, st.worldW - 14);
+    b.y = sup.top - TUNING.banditFeet; b.vy = 0; b.vx = 0;
+    b.airborne = false; b.grounded = true;
+  }
+}
+/* AMAI: landing effects (§1.3) — the Drop Slam resolution moved
+ * VERBATIM from the old baseY landing branch (§1.7). Resolution ONLY:
+ * the drop wind-up starts in the engage perched branch, and
+ * resolveEnemyStrike arms dropSlamArmed on wind-up expiry. */
+function onBanditLand(st, b, landing) {
+  /* COMBAT: Drop Slam resolves on landing. */
+  if (b.dropSlamArmed) {
+    b.dropSlamArmed = false;
+    var f = fighter(st);
+    var slamHit = !!(f && f.active && st.phase === 'fight' &&
+      dist(b.x, b.y, f.x, f.y) <= TUNING.climberDropRadius);
+    var slamDmg = Math.round((TUNING.banditDamage[b.type] || 6) * TUNING.climberDropMult);
+    emit(st, { t: 'dropSlam', bandit: b.id, x: Math.round(b.x), y: Math.round(b.y), damage: slamHit ? slamDmg : 0, hit: slamHit });
+    if (slamHit) damageMonkey(st, f, slamDmg, b, 'drop');
+  }
+}
+/* AMAI: force a bandit onto its first support (§1.9) — used at every
+ * exit point (flush, tunnel pop, breach, flee arrival, peek entry,
+ * engage entry from hide/shelter). Snap-to-ground when nothing is
+ * underfoot. Zeroes fall velocity and clears airborne. */
+function settleBanditY(st, b) {
+  var feet = b.y + TUNING.banditFeet;
+  var first = null;
+  var cands = banditSupportCandidates(st, b);
+  for (var i = 0; i < cands.length; i++) {
+    if (cands[i].top > feet && (first === null || cands[i].top < first.top)) first = cands[i];
+  }
+  b.y = (first ? first.top : st.groundY) - TUNING.banditFeet;
+  b.vy = 0; b.vx = 0; b.airborne = false; b.grounded = true;
+}
+/* /AMAI */
 
 /* ---------------- Bandit AI ---------------------------------------------- */
 function nearestSpot(st, b) {
@@ -42976,6 +43346,63 @@ function banditBlockedX(st, b, nx) {
   }
   return false;
 }
+/* AMAI: candidate support surfaces under a bandit (§1.2). One scan over
+ * blocks + perches + obstacles; returns {top, kind, ref} for every
+ * surface whose x-range contains b.x. Ground is handled by the callers
+ * (always qualifies). Excluded: hiding spots, barrels, gates, tunnels,
+ * mushrooms, gusts, decoys, zones. Small per-call allocation, bounded
+ * by the level's surface count (the engine allocates rotExtents /
+ * blockCenter objects per tick throughout). */
+function banditSupportCandidates(st, b) {
+  var out = [];
+  var i;
+  for (i = 0; i < st.blocks.length; i++) {
+    var blk = st.blocks[i];
+    if (blk.broken) continue;
+    var e = rotExtents(blk), c = blockCenter(blk);
+    if (b.x >= c.x - e.hw && b.x <= c.x + e.hw)
+      out.push({ top: c.y - e.hh, kind: 'block', ref: blk });
+  }
+  for (i = 0; i < st.perches.length; i++) {
+    var p = st.perches[i];
+    if (b.x >= p.x && b.x <= p.x + p.w)
+      out.push({ top: p.y, kind: 'perch', ref: p });
+  }
+  for (i = 0; i < st.obstacles.length; i++) {
+    var ob = st.obstacles[i];
+    if (ob.broken) continue;
+    if (ob.kind === 'moving_platform') {
+      if (b.x >= ob.cx - 4 && b.x <= ob.cx + ob.w + 4)
+        out.push({ top: ob.cy, kind: 'platform', ref: ob });
+    } else if (ob.kind === 'stone_wall' || ob.kind === 'steel_plate' || ob.kind === 'tall_ledge') {
+      var r = rectOf(ob);
+      if (b.x >= r.x && b.x <= r.x + r.w)
+        out.push({ top: r.y, kind: 'obstacle', ref: ob });
+    }
+  }
+  return out;
+}
+/* AMAI: the support model (§1.2). Returns {stand, crossed}: stand is
+ * the surface the bandit STANDS on (minimum top >= feetY - stepUp,
+ * else ground); crossed is the surface a fall swept through this tick
+ * (minimum top in [prevFeetY, feetY], else null). */
+function banditSupport(st, b, feetY, prevFeetY) {
+  var stand = { top: st.groundY, kind: 'ground', ref: null };
+  var crossed = null;
+  var cands = banditSupportCandidates(st, b);
+  for (var i = 0; i < cands.length; i++) {
+    var cd = cands[i];
+    if (cd.top >= feetY - TUNING.banditStepUp && cd.top < stand.top) stand = cd;
+    if (prevFeetY < feetY && prevFeetY <= cd.top && cd.top <= feetY &&
+        (crossed === null || cd.top < crossed.top)) crossed = cd;
+  }
+  /* Ground can itself be the crossed surface (a fall through groundY). */
+  if (prevFeetY < feetY && prevFeetY <= st.groundY && st.groundY <= feetY &&
+      (crossed === null || st.groundY < crossed.top))
+    crossed = { top: st.groundY, kind: 'ground', ref: null };
+  return { stand: stand, crossed: crossed };
+}
+/* /AMAI */
 /* BUFFS: chilled while sim time is before chillUntil (absolute-time
  * pattern, cf. pinnedUntil). Missing chillUntil (old snapshots) = not chilled. */
 function isChilled(st, b) {
@@ -43014,10 +43441,55 @@ function startFlee(st, b) {
     var hole = nearestHole(st, b);
     if (hole && dist(b.x, b.y, hole.x, hole.y) < 300 && hole.exits.length) {
       b.targetSpotId = null; b.tunnelHole = hole; b.tunnelExit = hole.exits[0];
+      /* AMAI: in the fight phase the digger picks the hole whose best
+       * exit is nearest the fighter (§2.4) — the exit choice itself
+       * is re-made at pop time. */
+      if (st.phase === 'fight') {
+        var fH = fighter(st);
+        if (fH && fH.active) {
+          var bestExitD = Infinity, bestHoleD = Infinity, holePick = hole;
+          hole.exits.forEach(function (ex) {
+            var ed0 = dist(ex.x, ex.y, fH.x, fH.y);
+            if (ed0 < bestExitD) bestExitD = ed0;
+          });
+          bestHoleD = dist(b.x, b.y, hole.x, hole.y);
+          st.obstacles.forEach(function (ob) {
+            if (ob.kind !== 'hidey_hole' || !ob.exits || !ob.exits.length) return;
+            if (dist(b.x, b.y, ob.x, ob.y) >= 300) return;
+            var exitBest = Infinity;
+            ob.exits.forEach(function (ex) {
+              var ed = dist(ex.x, ex.y, fH.x, fH.y);
+              if (ed < exitBest) exitBest = ed;
+            });
+            var hd = dist(b.x, b.y, ob.x, ob.y);
+            /* Score = best exit distance; ties: nearest hole, then
+             * array order (strict < keeps the earlier hole). */
+            if (exitBest < bestExitD || (exitBest === bestExitD && hd < bestHoleD)) {
+              bestExitD = exitBest; bestHoleD = hd; holePick = ob;
+            }
+          });
+          b.tunnelHole = holePick; b.tunnelExit = holePick.exits[0];
+        }
+      }
       return;
     }
   }
   var sp = pickFleeSpot(st, b);
+  /* AMAI: in the fight phase, with the fighter near, prefer a fort
+   * spot (§2.4) — shelter beats hiding when the fight is close. */
+  if (st.phase === 'fight') {
+    var fS = fighter(st);
+    if (fS && fS.active && dist(b.x, b.y, fS.x, fS.y) <= 200) {
+      var fortBest = null, fortD = Infinity;
+      st.spots.forEach(function (s) {
+        if (s.broken || !s.fortId) return;
+        if (fortRecentlyBreached(st, s.fortId)) return;
+        var sd = dist(b.x, b.y, s.x, s.y);
+        if (sd <= 200 && sd < fortD) { fortD = sd; fortBest = s; }
+      });
+      if (fortBest) sp = fortBest;
+    }
+  }
   b.targetSpotId = sp ? sp.id : null;
   b.tunnelHole = null;
 }
@@ -43051,18 +43523,100 @@ function decideFight(st, b, m) {
 }
 /* Aggro gate + decision evaluation. Returns 'fight' | 'flee' | null
  * (null = not eligible: wrong phase, no fighter, hidden, or out of
- * aggro range and never damaged). Damaged bandits are always aggroed. */
+ * aggro range and never damaged). Damaged bandits are always aggroed.
+ * AMAI (§2.1): RAZE hold, mimic reveal gate, retreat / re-tunnel
+ * break-offs, and a 1s flip cooldown wrap the UNCHANGED decideFight
+ * utility. The cooldown applies LAST, to the final decision. */
 function evaluateCombat(st, b) {
   if (st.phase !== 'fight') return null;
   var f = fighter(st);
   if (!f || !f.active || !b.alive || b.hidden) return null;
   var d = dist(b.x, b.y, f.x, f.y);
   if (d > (TUNING.spookRadius[b.type] || 170) && !b.aggroed) return null;
+  /* RAZE hold: an unaggroed bandit beyond melee range does not even
+   * evaluate while RAZE is active. Returns null BEFORE touching
+   * fightDecision/aggroEvalT, like the eligibility nulls above. */
+  var atkRange = TUNING.bonkRadius + (b.type === 'bigboss' ? 6 : 0);
+  if ((f.razeLeft || 0) > 0 && !b.aggroed && d > atkRange) return null;
+  /* Mimic reveal gate: a frozen mimic reveals only when damaged, or
+   * when the fighter is close/weak AND not overhead (the overhead
+   * fighter is about to land on it — stay disguised). Sets
+   * fightDecision=false so the cached-decision read in the mimic
+   * branch stays consistent. Bypasses the flip cooldown: a frozen
+   * mimic holds no combat decision to flip. */
+  if (b.type === 'mimic' && b.frozen) {
+    var weakF = (f.hp / f.maxHp) < TUNING.weakHpFrac;
+    var overhead = (f.y + f.r) < b.y - 84;
+    var revealOk = b.aggroed || ((d <= TUNING.mimicRevealRange || weakF) && !overhead);
+    if (!revealOk) {
+      b.aggroEvalT = TUNING.aggroReeval;
+      b.fightDecision = false;
+      return 'flee';
+    }
+  }
+  var decision = decideFight(st, b, f);
+  /* Break-offs: a fight decision can still break off to cover.
+   * cornered/weak/tier are recomputed locally — decideFight itself
+   * is untouched (§2.1). */
+  if (decision) {
+    var tier = TUNING.aggression[b.type] || 0;
+    if (b.type !== 'bigboss') {
+      for (var i = 0; i < st.bandits.length; i++) {
+        var o = st.bandits[i];
+        if (o.alive && o.type === 'bigboss' && dist(b.x, b.y, o.x, o.y) <= TUNING.rallyRadius) {
+          tier = Math.min(2, tier + 1);
+          break;
+        }
+      }
+    }
+    var cornered = true, nearSpot = false;
+    st.spots.forEach(function (s) {
+      if (s.broken) return;
+      var sd = dist(b.x, b.y, s.x, s.y);
+      if (sd <= TUNING.corneredSpotRange) cornered = false;
+      if (sd <= TUNING.retreatCoverRange) nearSpot = true;
+    });
+    var weak = (f.hp / f.maxHp) < TUNING.weakHpFrac;
+    /* Retreat: low tier + low HP + cover nearby, not cornered, and
+     * the fighter is not weak (a weak fighter is finished, not fled). */
+    if (tier <= 1 && (b.hp / b.maxHp) < TUNING.retreatHpFrac && nearSpot && !cornered && !weak) {
+      decision = false;
+    }
+    /* Digger re-tunnel: low HP + a usable hole nearby, same guards. */
+    if (decision && b.type === 'digger' && (b.hp / b.maxHp) < TUNING.diggerLowHpFrac && !cornered && !weak) {
+      for (var h = 0; h < st.obstacles.length; h++) {
+        var hole = st.obstacles[h];
+        if (hole.kind === 'hidey_hole' && hole.exits && hole.exits.length &&
+            dist(b.x, b.y, hole.x, hole.y) <= TUNING.diggerHoleFightRange) {
+          decision = false;
+          break;
+        }
+      }
+    }
+  }
+  /* Flip cooldown (LAST): a changed decision inside 1s of the last
+   * flip is held — the cached decision is returned and only
+   * aggroEvalT is set. Damage since the last flip bypasses. */
+  var prev = !!b.fightDecision;
+  var cooled = (st.time - (b.lastFlipAt === undefined ? -1 : b.lastFlipAt)) < TUNING.flipCooldown;
+  var damageBypass = (b.lastDamageAt || -1) > (b.lastFlipAt === undefined ? -1 : b.lastFlipAt);
   b.aggroEvalT = TUNING.aggroReeval;
-  b.fightDecision = decideFight(st, b, f);
-  return b.fightDecision ? 'fight' : 'flee';
+  if (decision !== prev && cooled && !damageBypass) return prev ? 'fight' : 'flee';
+  if (decision !== prev) b.lastFlipAt = st.time;
+  b.fightDecision = decision;
+  return decision ? 'fight' : 'flee';
+}
+/* AMAI: predicted fighter x after `seconds` at current vx (§2.2),
+ * clamped to the world. Pure function of state. */
+function predictFighterX(st, f, seconds) {
+  return clamp(f.x + (f.vx || 0) * seconds, 14, st.worldW - 14);
 }
 function enterEngage(st, b) {
+  /* AMAI: mid-climb flips clear the climb (§1.7); engaging out of a
+   * hide/shelter settles y (§1.9). Sheltered y is already grounded,
+   * so the settle is idempotent there. */
+  if (b.climbing) b.climbing = false;
+  if (b.hidden || b.sheltered) settleBanditY(st, b);
   b.state = 'engage';
   b.sheltered = false; b.shelterFort = null; b.spotId = null;
 }
@@ -43074,7 +43628,8 @@ function resolveEnemyStrike(st, b, m, kind) {
   var d = dist(b.x, b.y, m.x, m.y);
   if (kind === 'drop') {
     /* Climber Drop Slam: the strike IS the drop; damage resolves on
-     * landing (see the airborne branch in updateBandits). */
+     * landing (see onBanditLand, called by the vertical pass).
+     * AMAI: comment updated — the old airborne branch is gone (§1.3). */
     b.perched = false; b.airborne = true; b.vy = 0;
     b.vx = clamp((m.x - b.x) * 2, -120, 120);
     b.dropSlamArmed = true;
@@ -43141,30 +43696,16 @@ function updateBandits(st, dt) {
     if (b.attackCd > 0) b.attackCd = Math.max(0, b.attackCd - dt);
     if (b.skillCd > 0) b.skillCd = Math.max(0, b.skillCd - dt);
     if (b.aggroEvalT > 0) b.aggroEvalT = Math.max(0, b.aggroEvalT - dt);
-    /* Airborne knockback (explosions). */
-    if (b.airborne) {
-      b.vy += TUNING.gravity * dt;
-      b.x = clamp(b.x + b.vx * dt, 14, st.worldW - 14);
-      b.y += b.vy * dt;
-      if (b.y >= b.baseY) {
-        b.y = b.baseY; b.vy = 0; b.vx = 0; b.airborne = false;
-        /* COMBAT: Drop Slam resolves on landing. */
-        if (b.dropSlamArmed) {
-          b.dropSlamArmed = false;
-          var f = fighter(st);
-          var slamHit = !!(f && f.active && st.phase === 'fight' &&
-            dist(b.x, b.y, f.x, f.y) <= TUNING.climberDropRadius);
-          var slamDmg = Math.round((TUNING.banditDamage[b.type] || 6) * TUNING.climberDropMult);
-          emit(st, { t: 'dropSlam', bandit: b.id, x: Math.round(b.x), y: Math.round(b.y), damage: slamHit ? slamDmg : 0, hit: slamHit });
-          if (slamHit) damageMonkey(st, f, slamDmg, b, 'drop');
-        }
-      }
+    /* AMAI: the shared vertical pass (§1.3) replaces the old baseY
+     * landing branch and the old platform-carry block. It runs before
+     * the net-pin/daze early returns so falls, platform carry, and
+     * landings proceed while dazed/pinned/taunting (riders ride). */
+    if (b.state !== 'attack' && (b.windupT !== 0 || b.windupKind !== null)) {
+      /* Stale wind-up assertion (§2.5): a wind-up outside the attack
+       * state is dead state — clear it (guarded write: only when stale). */
+      b.windupT = 0; b.windupKind = null;
     }
-    /* Platform carry applies even while dazed/taunting: riders ride. */
-    if (!b.airborne) {
-      var plat0 = standingOnPlatform(st, b.x, b.y + 20, b.y + 20);
-      if (plat0) { b.x += plat0.dx; b.y += plat0.dy; b.baseY += plat0.dy; }
-    }
+    applyBanditVertical(st, b, dt);
     /* NET pin: frozen in place, visible, bonkable. Daze keeps ticking
      * underneath; on expiry the bandit returns to idle. */
     if (b.pinnedUntil !== undefined && b.pinnedUntil > 0) {
@@ -43212,7 +43753,7 @@ function updateBandits(st, dt) {
           b.frozen = true; b.ambushArmed = true;
           var d = dist(th.x, th.y, b.x, b.y);
           b.tremble = clamp(1 - d / 95, 0, 1);
-          if (d < 40) { /* too close: the disguise fails, it bolts slowly */
+          if (d < 40 && !b.airborne /* AMAI: no bolt mid-fall */) { /* too close: the disguise fails, it bolts slowly */
             b.frozen = false;
             moveBanditX(st, b, b.x < th.x ? -1 : 1, 45, dt);
           }
@@ -43234,9 +43775,9 @@ function updateBandits(st, dt) {
         /* Walk back toward spawn if displaced, else patrol.
          * Perched climbers stay on the perch until spooked. */
         if (b.perched) { b.y = b.perchY; }
-        else if (Math.abs(b.x - b.spawnX) > 30) {
+        else if (!b.airborne /* AMAI */ && Math.abs(b.x - b.spawnX) > 30) {
           moveBanditX(st, b, b.x < b.spawnX ? 1 : -1, 30, dt);
-        } else if (b.patrolRange) {
+        } else if (!b.airborne /* AMAI */ && b.patrolRange) {
           var lo = b.patrolRange[0], hi = b.patrolRange[1];
           if (b.x <= lo) b.patrolDir = 1;
           if (b.x >= hi) b.patrolDir = -1;
@@ -43276,15 +43817,18 @@ function updateBandits(st, dt) {
           st.perches.forEach(function (p) { if (p.id === b.perchId) perch = p; });
           if (perch) {
             var pdx = perch.x + perch.w / 2 - b.x;
-            if (Math.abs(pdx) > 8) { moveBanditX(st, b, pdx > 0 ? 1 : -1, speed, dt); }
+            if (Math.abs(pdx) > 8) { if (!b.airborne /* AMAI */) moveBanditX(st, b, pdx > 0 ? 1 : -1, speed, dt); }
             else {
               /* Climb: real y-movement at climb speed. */
-              b.climbing = true;
+              /* AMAI: climb-start clears fall state (§1.7); arrival
+               * stamps the perch timers (§2.3). */
+              if (!b.climbing) { b.climbing = true; b.airborne = false; b.vy = 0; b.vx = 0; }
               var dy = perch.y - b.y;
               var stepY = TUNING.climbSpeed * dt;
               if (Math.abs(dy) <= stepY) {
                 b.y = perch.y; b.perched = true; b.perchY = perch.y;
                 b.state = 'idle'; b.climbing = false;
+                b.perchedAt = st.time; b.perchFarSince = -1;
                 emit(st, { t: 'perch', bandit: b.id, perch: perch.id });
               } else b.y += (dy > 0 ? stepY : -stepY);
             }
@@ -43295,7 +43839,7 @@ function updateBandits(st, dt) {
           var hole = b.tunnelHole;
           var hdx = hole.x - b.x;
           if (Math.abs(hdx) > 10 || Math.abs(hole.y - b.y) > 30) {
-            moveBanditX(st, b, hdx > 0 ? 1 : -1, speed, dt);
+            if (!b.airborne /* AMAI */) moveBanditX(st, b, hdx > 0 ? 1 : -1, speed, dt);
           } else {
             /* Enter the tunnel: hidden, pops out at the exit. */
             b.hidden = true; b.tunnelT = 0.4; b.state = 'hide'; b.spotId = null;
@@ -43321,6 +43865,8 @@ function updateBandits(st, dt) {
             break;
           }
           b.x = spot.x; b.spotId = spot.id;
+          /* AMAI: flee arrival settles y (§1.9) — no arrival float. */
+          settleBanditY(st, b);
           /* COMBAT: reaching cover disengages (aggro clears). */
           b.aggroed = false; b.fightDecision = false;
           if (spot.fortId) {
@@ -43335,7 +43881,8 @@ function updateBandits(st, dt) {
           }
         } else {
           var dir = dx > 0 ? 1 : -1;
-          if (b.type === 'dasher') {
+          if (b.airborne) { /* AMAI: no voluntary movement mid-fall. */ }
+          else if (b.type === 'dasher') {
             /* Zigzag: net forward progress with lateral weave. */
             b.weave += dt * 6;
             var weaveOff = Math.sin(b.weave) * 26;
@@ -43381,7 +43928,23 @@ function updateBandits(st, dt) {
           b.tunnelT -= dt;
           if (b.tunnelT < 0) {
             b.tunnelT = -1; b.hidden = false;
-            if (b.tunnelExit) { b.x = b.tunnelExit.x; b.y = b.baseY; }
+            /* AMAI: fight-phase pops choose the exit nearest the
+             * fighter's CURRENT position (§2.4); otherwise the
+             * pre-chosen exit. Then settle y (§1.9). */
+            var popExit = b.tunnelExit;
+            if (st.phase === 'fight' && b.tunnelHole && b.tunnelHole.exits && b.tunnelHole.exits.length) {
+              var fAt = fighter(st);
+              if (fAt && fAt.active) {
+                var popBest = Infinity;
+                for (var ei = 0; ei < b.tunnelHole.exits.length; ei++) {
+                  var ex = b.tunnelHole.exits[ei];
+                  var ed = dist(ex.x, ex.y, fAt.x, fAt.y);
+                  if (ed < popBest) { popBest = ed; popExit = ex; }
+                }
+              }
+            }
+            if (popExit) { b.x = popExit.x; }
+            settleBanditY(st, b);
             b.tunnelHole = null;
             emit(st, { t: 'tunnelPop', bandit: b.id });
             /* COMBAT: tunnel ambush — a pop within 60px of the fighter
@@ -43412,7 +43975,7 @@ function updateBandits(st, dt) {
         var intervalDue = b.hideT >= b.peekInterval;
         if (firstPeekDue || intervalDue) {
           b.state = 'peek'; b.hidden = false; b.peekT = 0; b.peekedOnce = true;
-          if (mySpot) { b.x = mySpot.x; }
+          if (mySpot) { b.x = mySpot.x; settleBanditY(st, b); /* AMAI §1.9 */ }
           emit(st, { t: 'peek', bandit: b.id });
         }
         break;
@@ -43452,32 +44015,64 @@ function updateBandits(st, dt) {
         var fdx = fEng.x - b.x;
         var fdist = dist(b.x, b.y, fEng.x, fEng.y);
         var atkRange = TUNING.bonkRadius + (b.type === 'bigboss' ? 6 : 0);
-        /* Perched climber: drop-slam the fighter below, else descend. */
+        /* AMAI: perched climber discipline (§2.3) — descend when
+         * damaged on the perch, drop only when ALL gates hold, wait
+         * out a far fighter for 2s before descending. No immediate
+         * descend: the perch is an ambush post, not a delay. */
         if (b.perched) {
-          if (Math.abs(fdx) <= 40 && fEng.y > b.y) {
-            if (b.attackCd <= 0 && b.windupT <= 0) {
-              b.state = 'attack'; b.windupKind = 'drop'; b.windupT = 0.3;
-              emit(st, { t: 'enemyWindup', bandit: b.id, type: b.type, kind: 'drop', dur: 0.3, x: Math.round(b.x), y: Math.round(b.y) });
-            }
+          if ((b.lastDamageAt || -1) > (b.perchedAt === undefined ? -1 : b.perchedAt)) {
+            b.perched = false; b.airborne = true; b.vy = 0; b.vx = 0;
             break;
           }
-          b.perched = false; b.airborne = true; b.vy = 0; b.vx = 0;
+          var dropOk = Math.abs(fdx) <= 40 && fEng.y > b.y &&
+            Math.abs(fEng.vx || 0) < TUNING.dropMaxFighterVx && (fEng.vy || 0) >= -50 &&
+            b.attackCd <= 0 && b.windupT <= 0;
+          if (dropOk) {
+            b.perchFarSince = -1; /* AMAI: fighter closed — far timer clears (§2.2). */
+            b.state = 'attack'; b.windupKind = 'drop'; b.windupT = 0.3;
+            emit(st, { t: 'enemyWindup', bandit: b.id, type: b.type, kind: 'drop', dur: 0.3, x: Math.round(b.x), y: Math.round(b.y) });
+            break;
+          }
+          if (Math.abs(fdx) > TUNING.perchAmbushRange) {
+            if (b.perchFarSince === undefined || b.perchFarSince < 0) b.perchFarSince = st.time;
+            else if (st.time - b.perchFarSince >= TUNING.perchWaitTime) {
+              b.perched = false; b.airborne = true; b.vy = 0; b.vx = 0;
+            }
+          } else {
+            b.perchFarSince = -1;
+          }
           break;
         }
-        if (b.attackCd <= 0) {
+        /* AMAI: skill wind-ups start only while grounded (§1.10) —
+         * a falling bandit never begins a telegraph. Wind-ups already
+         * running tick while falling (attack case, unguarded). */
+        if (b.attackCd <= 0 && !b.airborne) {
           /* Choose basic strike vs skill (telegraphed, on cooldown).
            * Skills trigger at their OWN ranges, beyond melee range.
            * Face the fighter when winding up: the bash frontal cone
            * is judged from facing at strike time, so a stale facing
            * (e.g. spawn default) must not whiff a point-blank bash.
            * The fighter can still dodge behind/out of range DURING
-           * the wind-up — the strike-time check still applies. */
+           * the wind-up — the strike-time check still applies.
+           * AMAI (§2.2): skill gates — the gates gate the SKILL only;
+           * a failed gate falls through to the (ungated) basic strike
+           * when in melee range. The bash front test uses the CURRENT
+           * facing, before the turn-on-windup below. */
           var skind = null, swt = 0;
           if (b.type === 'shielder' && b.skillCd <= 0 && fdist <= TUNING.shieldBash.range) {
-            skind = 'bash'; swt = TUNING.shieldBash.telegraph;
-          } else if (b.type === 'bigboss' && b.skillCd <= 0 && fdist <= TUNING.crownSlam.radius) {
-            skind = 'slam'; swt = TUNING.crownSlam.telegraph;
-          } else if (fdist <= atkRange) {
+            var bashFront = (fdx * b.facing > 0) || Math.abs(fdx) < 4;
+            var bashFeet = (fEng.y + fEng.r) >= b.y - TUNING.banditFeet;
+            var bashPred = Math.abs(predictFighterX(st, fEng, 0.4) - b.x) <= TUNING.shieldBash.range;
+            if (bashFront && bashFeet && bashPred) { skind = 'bash'; swt = TUNING.shieldBash.telegraph; }
+          } else if (b.type === 'bigboss' && b.skillCd <= 0 && fdist <= TUNING.crownSlamTrigger) {
+            var predXSlam = predictFighterX(st, fEng, 0.6);
+            var predDSlam = dist(predXSlam, fEng.y, b.x, b.y);
+            var risingAway = (fEng.vy || 0) < -50 && predDSlam > 60;
+            if (predDSlam <= TUNING.crownSlam.radius && !risingAway) {
+              skind = 'slam'; swt = TUNING.crownSlam.telegraph;
+            }
+          }
+          if (!skind && fdist <= atkRange) {
             skind = 'strike'; swt = TUNING.windupTime;
           }
           if (skind) {
@@ -43488,16 +44083,41 @@ function updateBandits(st, dt) {
           }
         }
         /* Close to attack range (hold position once in range). Dashers
-         * zigzag (approach identity). */
+         * zigzag (approach identity).
+         * AMAI (§2.2): spacing queue + pack hold gate movement only —
+         * the bandit still faces the fighter. No movement mid-fall. */
         if (fdist > atkRange) {
           b.facing = fdx >= 0 ? 1 : -1;
           var esp = TUNING.fleeSpeed[b.type] || 70;
+          var spacingHold = false;
+          var myIdx = st.bandits.indexOf(b);
+          var myFx = Math.abs(b.x - fEng.x);
+          for (var si = 0; si < st.bandits.length; si++) {
+            var so = st.bandits[si];
+            if (so === b || !so.alive || (so.state !== 'engage' && so.state !== 'attack')) continue;
+            if (Math.abs(so.x - b.x) >= TUNING.engageSpacing) continue;
+            var soFx = Math.abs(so.x - fEng.x);
+            if (soFx < myFx || (soFx === myFx && si < myIdx)) { spacingHold = true; break; }
+          }
+          var packHold = false;
+          if (b.type !== 'bigboss' && !b.aggroed && fdist > TUNING.corneredSpotRange) {
+            for (var pi2 = 0; pi2 < st.bandits.length; pi2++) {
+              var boss = st.bandits[pi2];
+              if (boss.alive && boss.type === 'bigboss' && dist(b.x, b.y, boss.x, boss.y) <= TUNING.rallyRadius) {
+                packHold = true; break;
+              }
+            }
+          }
+          /* Dasher weave aim is computed first; the hold overrides
+           * movement, not aim (§2.6). */
+          var moveDir = fdx > 0 ? 1 : -1;
           if (b.type === 'dasher') {
             b.weave += dt * 6;
             var wAim = fEng.x + Math.sin(b.weave) * 26 * 0.4;
-            moveBanditX(st, b, wAim - b.x > 0 ? 1 : -1, esp, dt);
-          } else {
-            moveBanditX(st, b, fdx > 0 ? 1 : -1, esp, dt);
+            moveDir = wAim - b.x > 0 ? 1 : -1;
+          }
+          if (!b.airborne && !spacingHold && !packHold) {
+            moveBanditX(st, b, moveDir, esp, dt);
           }
         } else {
           b.facing = fdx >= 0 ? 1 : -1;
