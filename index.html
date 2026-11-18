@@ -4790,7 +4790,7 @@ body {
 .am-menu-strip {
   display: flex; justify-content: center; gap: 4px; margin: 6px 0 10px; flex-wrap: wrap;
 }
-.am-menu-rival { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--am-panel-edge); background: #0a2e22; }
+.am-menu-rival { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--am-panel-edge); background: #0a2e22; object-fit: cover; object-position: 50% 35%; }
 .am-menu-progress { font-size: 12px; color: var(--am-muted); margin-bottom: 10px; font-variant-numeric: tabular-nums; }
 .am-menu-btns { display: flex; flex-direction: column; gap: 2px; max-width: 320px; margin: 0 auto; }
 .am-menu-foot { margin-top: 14px; font-size: 11px; color: var(--am-muted); }
@@ -4842,12 +4842,116 @@ body {
 .am-intro-medal { width: 30px; height: 30px; }
 .am-intro-lineup { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
 .am-intro-monkey { width: 64px; text-align: center; }
-.am-intro-monkey img { width: 56px; height: 56px; border-radius: 50%; background: #0a2e22; border: 2px solid var(--am-panel-edge); }
+.am-intro-monkey img { width: 56px; height: 56px; border-radius: 50%; background: #0a2e22; border: 2px solid var(--am-panel-edge); object-fit: cover; object-position: 50% 35%; }
 .am-intro-monkey-name { font-size: 12px; font-weight: 700; }
 .am-intro-monkey-ability { font-size: 10px; color: var(--am-accent); letter-spacing: 0.06em; }
 .am-intro-banter { font-size: 13px; font-style: italic; color: var(--am-muted); margin: 6px 0; line-height: 1.4; }
 .am-intro-best { font-size: 13px; font-weight: 700; margin-bottom: 6px; font-variant-numeric: tabular-nums; }
 .am-intro-rule { font-size: 12px; color: var(--am-accent); margin-bottom: 10px; line-height: 1.4; }
+
+/* LEAD-PICK (D1/D4/D10): lead-picker surfaces — intro cells + game strip.
+   Selection never shifts layout: rings are box-shadow (no border-width
+   change) and FIRST badges reserve their space via visibility (never
+   display:none), so tapping cannot move the Play button or other cells. */
+button.am-intro-monkey {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 2px;
+  border-radius: 12px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+button.am-intro-monkey:focus-visible { outline: 2px solid var(--am-accent); outline-offset: 2px; }
+.am-intro-monkey.am-selected { box-shadow: 0 0 0 2px var(--am-accent); }
+.am-intro-monkey.am-selected img { border-color: var(--am-accent); }
+.am-intro-monkey.am-lead-current { box-shadow: 0 0 0 1px rgba(255, 209, 102, 0.55); }
+.am-intro-first {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  white-space: nowrap;
+  color: #231303;
+  background: var(--am-accent);
+  border-radius: 999px;
+  padding: 1px 6px;
+  margin-top: 2px;
+  min-height: 14px;
+}
+.am-intro-first.am-first-off { visibility: hidden; }
+.am-intro-lead-caption { font-size: 12px; color: var(--am-muted); margin: 0 0 8px; line-height: 1.4; }
+.am-lead-strip {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  z-index: 4;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+  pointer-events: none;
+  padding: 4px 6px;
+}
+.am-lead-strip[hidden] { display: none; }
+.am-lead-label {
+  align-self: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--am-text);
+  background: rgba(6, 26, 19, 0.78);
+  border-radius: 999px;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+.am-lead-chip {
+  pointer-events: auto;
+  appearance: none;
+  border: 1px solid var(--am-panel-edge);
+  background: rgba(6, 26, 19, 0.78);
+  color: var(--am-text);
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 4px 6px;
+  border-radius: 12px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.am-lead-chip img { width: 32px; height: 32px; border-radius: 50%; background: #0a2e22; }
+.am-lead-chip-name { font-size: 10px; font-weight: 700; line-height: 1.1; white-space: nowrap; }
+.am-lead-chip.am-selected { border-color: var(--am-accent); box-shadow: 0 0 0 2px var(--am-accent); }
+.am-lead-chip.am-lead-current { box-shadow: 0 0 0 1px rgba(255, 209, 102, 0.55); }
+.am-lead-first {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+  white-space: nowrap;
+  color: #231303;
+  background: var(--am-accent);
+  border-radius: 999px;
+  padding: 1px 5px;
+  min-height: 12px;
+}
+.am-lead-first.am-first-off { visibility: hidden; }
+@media (max-width: 374px) {
+  /* LEAD-PICK: tight sizing so 5-6 chips fit 320px without wrapping;
+     the label drops (chips + FIRST badge teach the affordance). */
+  .am-lead-label { display: none; }
+  .am-lead-strip { gap: 4px; padding: 4px 2px; left: 4px; right: 4px; }
+  .am-lead-chip { padding: 3px 3px; }
+  .am-lead-chip img { width: 30px; height: 30px; }
+  .am-lead-chip-name { font-size: 9px; }
+}
+/* /LEAD-PICK */
 
 /* ------------------------------------------------------------ results */
 .am-results-stars { display: flex; justify-content: center; gap: 6px; margin-bottom: 4px; }
@@ -4878,12 +4982,12 @@ body {
 }
 .am-rival-card:active { transform: scale(0.98); }
 .am-rival-card.am-locked { opacity: 0.55; }
-.am-rival-img { width: 56px; height: 56px; border-radius: 50%; background: #0a2e22; border: 2px solid var(--am-panel-edge); flex: 0 0 auto; }
+.am-rival-img { width: 56px; height: 56px; border-radius: 50%; background: #0a2e22; border: 2px solid var(--am-panel-edge); flex: 0 0 auto; object-fit: cover; object-position: 50% 35%; }
 .am-rival-info { min-width: 0; }
 .am-rival-name { font-size: 16px; font-weight: 800; }
 .am-rival-title { font-size: 12px; color: var(--am-muted); }
 .am-rival-record { font-size: 12px; font-variant-numeric: tabular-nums; }
-.am-rival-big { width: 110px; height: 110px; border-radius: 50%; border: 3px solid var(--am-accent); background: #0a2e22; }
+.am-rival-big { width: 110px; height: 110px; border-radius: 50%; border: 3px solid var(--am-accent); background: #0a2e22; object-fit: cover; object-position: 50% 35%; }
 
 /* -------------------------------------------------- tournament / daily */
 .am-bracket { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
@@ -4901,7 +5005,7 @@ body {
   font-size: 18px; font-weight: 800;
 }
 .am-trophy-img { width: 40px; height: 40px; flex: 0 0 auto; }
-.am-bracket-rival { width: 48px; height: 48px; border-radius: 50%; background: #0a2e22; border: 2px solid var(--am-panel-edge); flex: 0 0 auto; }
+.am-bracket-rival { width: 48px; height: 48px; border-radius: 50%; background: #0a2e22; border: 2px solid var(--am-panel-edge); flex: 0 0 auto; object-fit: cover; object-position: 50% 35%; }
 .am-bracket-round { font-size: 14px; font-weight: 800; }
 .am-bracket-detail { font-size: 12px; color: var(--am-muted); }
 .am-tourney-outcome {
@@ -4930,6 +5034,23 @@ body {
 .am-help-row { display: flex; gap: 10px; margin-bottom: 12px; text-align: left; }
 .am-help-term { flex: 0 0 92px; font-size: 13px; font-weight: 800; color: var(--am-accent); }
 .am-help-def { flex: 1; font-size: 13px; line-height: 1.45; color: var(--am-text); }
+
+/* -------------------------------------------------------------- codex */
+/* Portrait slots: the default am-portrait-img class (intro lineup)
+ * carries the same face-biased crop as the named slot rules above;
+ * slot geometry never changes. Codex rows reuse the help-row
+ * structure (flex row, text left) with a 56px circular portrait
+ * in place of the help term column. */
+.am-portrait-img { object-fit: cover; object-position: 50% 35%; }
+.am-codex { max-width: 360px; margin: 0 auto; }
+.am-codex-heading { font-size: 15px; margin: 16px 0 8px; color: var(--am-accent); }
+.am-codex-heading:first-of-type { margin-top: 6px; }
+.am-codex-row { display: flex; gap: 10px; margin-bottom: 12px; text-align: left; align-items: center; }
+.am-codex-img { width: 56px; height: 56px; border-radius: 50%; background: #0a2e22; border: 2px solid var(--am-panel-edge); flex: 0 0 auto; object-fit: cover; object-position: 50% 35%; }
+.am-codex-info { flex: 1; min-width: 0; }
+.am-codex-name { font-size: 16px; font-weight: 800; }
+.am-codex-detail { font-size: 12px; color: var(--am-muted); line-height: 1.4; }
+.am-codex-desc { font-size: 13px; line-height: 1.45; color: var(--am-text); }
 
 /* -------------------------------------------------------------- toast */
 .am-toast {
@@ -8532,6 +8653,56 @@ body {
 
 .mr-setup-gender .mr-btn { flex: 1 1 0; max-width: 170px; }
 
+/* Hero-look picker: two labeled 3-portrait groups (setup + the
+   change-hero sheet). Portraits only; the picked ring is the
+   existing .mr-setup-preview.is-picked style. Rows wrap so a
+   narrow viewport degrades to 2+1 instead of overflowing. */
+.mr-setup-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mr-setup-group-label {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #7dd3fc;
+  margin-bottom: 6px;
+}
+
+.mr-setup-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+button.mr-setup-preview {
+  appearance: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  padding: 6px 4px 2px;
+  cursor: pointer;
+}
+
+button.mr-setup-preview:focus-visible {
+  outline: 3px solid #fde68a;
+  outline-offset: 2px;
+}
+
+.mr-setup-row .mr-sprite {
+  width: 72px;
+  height: 72px;
+}
+
+/* 320px viewports: shrink picker portraits so 3-across still fits
+   (3 x 64 + padding/borders + gaps = ~258px < 296px of content). */
+@media (max-width: 340px) {
+  .mr-setup-row .mr-sprite { width: 64px; height: 64px; }
+}
+
 .mr-field-label {
   font-size: 14px;
   font-weight: 700;
@@ -8599,6 +8770,11 @@ body {
   margin-top: 6px;
   color: #fde68a;
 }
+
+/* The hub hero card opens the change-hero sheet on tap. */
+.mr-hero-card[data-action] { cursor: pointer; }
+
+.mr-hero-change { margin-top: 8px; }
 
 .mr-menu-grid {
   display: grid;
@@ -9532,6 +9708,12 @@ body {
   gap: 8px;
   justify-content: center;
   flex-wrap: wrap;
+}
+
+.mr-change-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .mr-scratch-canvas {
@@ -41922,6 +42104,455 @@ return {
 });
 </script>
 <script>
+// source: am-portraits.js
+// AMPortraits — anime/manga portraits for Angry Monkeys.
+//
+// 31 portrait characters in 4 groups, each with 3 expressions
+// (93 files at 480x600 webp):
+//   monkeys (7):  rocco, zippy, poppy, bongo, gordo, lulu, nitro
+//                 expressions neutral / happy / determined
+//   bandits (7):  slink, hider, climber, dasher, shielder, digger, mimic
+//                 expressions neutral / taunting / dazed
+//   bosses (10):  one per world, expressions neutral / taunting / dazed
+//   rivals (7):   nibbles, ziggy, trixie, captain_coconut,
+//                 professor_peel, madame_mango, champ
+//                 expressions neutral / taunting / dazed
+//
+// The art ships as asset files under assets/angrymonkeys/portraits/
+// with a manifest.json — the chess-portrait pattern (see
+// chs-portraits.js) — and is NEVER embedded in the built page. This
+// module builds <img> markup pointing straight at the asset files;
+// the images load asynchronously and lazily by the browser, and a
+// failed load degrades gracefully (see onImgError), never a broken
+// icon and never a throw.
+//
+// Namespace: every key is prefixed `am-` (am-rocco-neutral) and the
+// art lives under assets/angrymonkeys/portraits/, a subdirectory of
+// the shard dir that never collides with am-manifest.json or the
+// am-shard-*.json files. Manifest keys carry the prefix; file names
+// do not (the directory provides the namespace), exactly as the
+// chess precedent does.
+//
+// Lookup is keyed by character ID (lowercase, exact; case-insensitive
+// + whitespace-tolerant like the chess precedent), never by roster
+// index and never by display name: "Big Boss" is not an id, and the
+// rival ids captain_coconut / professor_peel / madame_mango keep
+// their underscores exactly as the shard data spells them. Unknown
+// ids return null everywhere. Expressions default to neutral; an
+// unknown expression falls back to neutral and never fails a lookup.
+//
+// bigboss has NO portrait in this run: the 10 world bosses replace
+// the single Big Boss portrait, so hasPortrait('bigboss') is false,
+// keyFor/urlFor/portraitHTML return null for it, and no bigboss
+// entry exists in the table below. Do not add one without a new
+// decision: the bosses render in battle as the bigboss sprite, but
+// their portraits are the 10 named world bosses.
+//
+// The CHARS table is the identity specification the generated art
+// follows (name, role/species/title, palette, gear, weapon/behavior
+// per character) and the paramsFor() data source; it draws nothing.
+// Monkey + rival + world values are verbatim from shard-001
+// characters data. Bandit body/secondary colors are the RENDERED
+// palettes measured from the shipped SVG art (AUDIT section 2.4),
+// NOT the shard body/belly/mask fields, which appear nowhere in the
+// rendered art; the bandit `accent` field keeps the shard value and
+// only Shielder's renders (Mimic's renders as the eye tell only).
+// Nitro's identity comes from the approved destroyer design: fur
+// #D8D3C8 / #F5F2EA / #8A8578, muzzle #FFF8E7, accent #76FF03, gear
+// fuse_bandolier, role Demolition Ace, ability RAZE. Nitro has no
+// shard entry yet, so scale/mass/dashSpeed/quote are absent here by
+// design (undecided at build time) — never invent them. Boss ids
+// (brambletail, barnaclewhiskers, ...) are the portrait-run ids for
+// the shard worlds' bossName values; boss body/secondary/crown are
+// the shared rendered Big Boss palette (all 10 bosses render as
+// that one sprite in battle) and `accent` is each world's own accent.
+//
+// Fallbacks (AUDIT section 5.4): monkeys + rivals pass their
+// existing SVG data URI via opts.fallbackSrc, and onImgError swaps
+// to it on failure (handler detached first; if the fallback itself
+// fails, the image hides — belt and braces). Bandits + bosses have
+// no DOM SVG fallback, so onImgError swaps to the glowing
+// placeholder (gold circle + initial, jungle palette, the KK-art
+// pattern). A failed manifest fetch warns once, resolves null, and
+// the <img> tags still load directly.
+//
+// UMD: global AMPortraits + module.exports, same pattern as
+// chs-portraits.js. No DOM, no network at load: the manifest is
+// fetched lazily, at most once, only when markup is first built,
+// and markup never waits on it.
+
+var AMPortraits = (function () {
+  'use strict';
+
+  var ART_BASE = 'assets/angrymonkeys/portraits/';
+  var MANIFEST_FILE = 'manifest.json';
+
+  // ------------------------------------------------------- parameters
+  // Identity specification for the generated art. All values are
+  // scalars, so paramsFor() can hand out a defensive shallow copy.
+  // Monkeys: shard palette + gear + weapon. Bandits: RENDERED
+  // body/secondary (see header), shard accent, verbatim desc/counter.
+  // Bosses: world data + shared rendered Big Boss palette. Rivals:
+  // shard title/tier/favMonkey/avatarColor/crewName.
+  var CHARS = {
+    // --- monkeys (shard-001 characters.monkeys, verbatim) ---
+    rocco:   { group: 'monkeys', name: 'Rocco', role: 'Heavy Bruiser', abilityName: 'GUNS', abilityDesc: 'On landing, twin guns fire 3 shots at the nearest visible bandits while Rocco keeps dashing.', furMain: '#6B3E26', furLight: '#A66A46', furDark: '#3E2111', muzzle: '#E8C39E', accent: '#FF5722', eyeColor: '#1A0D00', gear: 'scarf_brawler', scale: 1.05, mass: 1.85, dashSpeed: 340, quote: 'Stand back! Rocco smash fort into toothpicks!', weapon: 'gun', weaponTrigger: 'auto-dash' },
+    zippy:   { group: 'monkeys', name: 'Zippy', role: 'Speedster', abilityName: 'ROCKET', abilityDesc: 'Tap in flight to launch a homing rocket that chases the nearest visible bandit and explodes, flushing hidden bandits nearby.', furMain: '#D99B26', furLight: '#F5C754', furDark: '#8C5E0A', muzzle: '#FFF0C2', accent: '#00E5FF', eyeColor: '#0D2B3E', gear: 'goggles_pilot', scale: 0.92, mass: 0.95, dashSpeed: 430, quote: 'Blink and you missed me! Where are the bananas?!', weapon: 'rocket', weaponTrigger: 'tap' },
+    poppy:   { group: 'monkeys', name: 'Poppy', role: 'Trickster', abilityName: 'GHOST', abilityDesc: 'If her dash runs out with bandits left, Poppy rises as a ghost for 2 seconds, drifting through walls to hunt bandits.', furMain: '#C85A90', furLight: '#EC8AB8', furDark: '#7D2B54', muzzle: '#FFE0EE', accent: '#FFEB3B', eyeColor: '#2E091E', gear: 'hibiscus_crown', scale: 0.9, mass: 0.9, dashSpeed: 400, quote: 'You can\'t bonk a ghost \u2014 but a ghost can bonk YOU! Tee-hee!', weapon: 'ghost', weaponTrigger: 'auto-death' },
+    bongo:   { group: 'monkeys', name: 'Bongo', role: 'Show-Off', abilityName: 'NET', abilityDesc: 'Tap in flight to hurl a snare net that pins the first visible bandit it touches in place for 3 seconds.', furMain: '#2E7D6B', furLight: '#58B09C', furDark: '#16463B', muzzle: '#D8F4EC', accent: '#FF9800', eyeColor: '#082922', gear: 'bandana_groove', scale: 1, mass: 1.15, dashSpeed: 380, quote: 'Step right up, folks! Nobody escapes Bongo\'s net!', weapon: 'net', weaponTrigger: 'tap' },
+    gordo:   { group: 'monkeys', name: 'Gordo', role: 'Strongman', abilityName: 'QUAKE', abilityDesc: 'On landing, a mighty stomp cracks nearby blocks and flushes hidden bandits out of their spots.', furMain: '#8D4E2A', furLight: '#BF764B', furDark: '#4F2711', muzzle: '#F2CFAF', accent: '#9C27B0', eyeColor: '#1F0D05', gear: 'strongman_belt', scale: 1, mass: 1.95, dashSpeed: 330, quote: 'Feel the ground shake! Gordo\'s quake is coming!', weapon: 'quake', weaponTrigger: 'auto-dash' },
+    lulu:    { group: 'monkeys', name: 'Lulu', role: 'Acrobat', abilityName: 'FLY', abilityDesc: 'Tap in flight for 3 seconds of powered level flight before gravity takes over again.', furMain: '#7E57C2', furLight: '#B085F5', furDark: '#4D2C91', muzzle: '#EDE7F6', accent: '#69F0AE', eyeColor: '#1A093B', gear: 'leaf_cape', scale: 0.95, mass: 0.88, dashSpeed: 370, quote: 'Up, up, and over the wall! No perch is too high!', weapon: 'fly', weaponTrigger: 'tap' },
+    nitro:   { group: 'monkeys', name: 'Nitro', role: 'Demolition Ace', abilityName: 'RAZE', abilityDesc: 'On landing, Nitro razes everything he touches for 1 second \u2014 anything his body contacts crumbles instantly while he keeps dashing.', furMain: '#D8D3C8', furLight: '#F5F2EA', furDark: '#8A8578', muzzle: '#FFF8E7', accent: '#76FF03', eyeColor: '#1A1A12', gear: 'fuse_bandolier', weapon: 'raze', weaponTrigger: 'auto-dash' },
+    // --- bandits (desc/counter verbatim; body/secondary RENDERED) ---
+    slink:    { group: 'bandits', name: 'Slink', species: 'masked raccoon-bandit', behavior: 'flee_nearest', desc: 'Basic masked raccoon-bandit. Flees to the nearest hiding spot when spooked.', counter: 'Land close and dash fast before he reaches cover.', body: '#33503E', secondary: '#8FAE9A', accent: '#FFB300', hp: 1, basePoints: 1000 },
+    hider:    { group: 'bandits', name: 'Hider', species: 'timid bush-lemur bandit', behavior: 'hide_early', desc: 'Timid bush-lemur bandit. Ducks into cover early, stays hidden long, and peeks rarely.', counter: 'Smash its hiding spot structure with a monkey or debris to flush it out dazed.', body: '#42581F', secondary: '#A3C46B', accent: '#FF7043', hp: 1, basePoints: 1200 },
+    climber:  { group: 'bandits', name: 'Climber', species: 'agile gecko-critter bandit', behavior: 'scramble_high', desc: 'Agile gecko-critter bandit. Scrambles up onto high perches and upper ledges.', counter: 'Use Lulu\'s leaf float, bounce off mushrooms, or aim a direct high-arc launch.', body: '#9C5A12', secondary: '#F5B95E', accent: '#FFEB3B', hp: 1, basePoints: 1400 },
+    dasher:   { group: 'bandits', name: 'Dasher', species: 'hyperactive hare-bandit', behavior: 'zigzag_flee', desc: 'Hyperactive hare-bandit. Sprints at high speed and zigzags wildly when fleeing.', counter: 'Corner it against a stone wall or intercept it at a tunnel exit.', body: '#0F4C4C', secondary: '#4FBDBD', accent: '#00E676', hp: 1, basePoints: 1300 },
+    shielder: { group: 'bandits', name: 'Shielder', species: 'armadillo-bandit', behavior: 'front_shield', desc: 'Armadillo-bandit carrying a heavy pot-lid shield \u2014 immune to bonks from the front.', counter: 'Jump over to bonk from behind or above, or flush with falling debris.', body: '#35424E', secondary: '#93A5B5', accent: '#29B6F6', hp: 1, basePoints: 1500 },
+    digger:   { group: 'bandits', name: 'Digger', species: 'mole-bandit', behavior: 'tunnel_dive', desc: 'Mole-bandit who dives into hidey-hole tunnels and pops out at marked exits.', counter: 'Camp the marked tunnel exit or bonk it mid-scurry before it burrows.', body: '#5A3F22', secondary: '#B99268', accent: '#FFD54F', hp: 1, basePoints: 1300 },
+    mimic:    { group: 'bandits', name: 'Mimic', species: 'chameleon-bandit', behavior: 'prop_disguise', desc: 'Chameleon-bandit that freezes and disguises itself as a rock or crate until a monkey gets close.', counter: 'Watch for the tell \u2014 it trembles slightly and its shifty eyes track the monkey.', body: '#6B4F26', secondary: '#C9A96E', accent: '#76FF03', hp: 1, basePoints: 1600 },
+    // --- world bosses (world order; name/title = shard bossName) ---
+    brambletail:      { group: 'bosses', name: 'Baron Brambletail', title: 'Baron Brambletail', world: 1, worldName: 'Jungle Jamboree', role: 'World Boss', behavior: 'boss_multi', body: '#4A1E6B', secondary: '#A96FD0', crown: '#FFD700', accent: '#FFD166', skyTop: '#0D3B2E', skyMid: '#1E6F50', skyBot: '#76C893', groundTop: '#3B7A2A', groundBot: '#244718' },
+    barnaclewhiskers: { group: 'bosses', name: 'Captain Barnacle Whiskers', title: 'Captain Barnacle Whiskers', world: 2, worldName: 'Sunny Shores', role: 'World Boss', behavior: 'boss_multi', body: '#4A1E6B', secondary: '#A96FD0', crown: '#FFD700', accent: '#EE9B00', skyTop: '#005F73', skyMid: '#0A9396', skyBot: '#94D2BD', groundTop: '#E9D8A6', groundBot: '#CA9E5A' },
+    galeclaw:         { group: 'bosses', name: 'Duke Gale-Claw', title: 'Duke Gale-Claw', world: 3, worldName: 'Misty Mountains', role: 'World Boss', behavior: 'boss_multi', body: '#4A1E6B', secondary: '#A96FD0', crown: '#FFD700', accent: '#FF9F1C', skyTop: '#2B2D42', skyMid: '#5C677D', skyBot: '#B8C0FF', groundTop: '#6C757D', groundBot: '#343A40' },
+    shadowsnout:      { group: 'bosses', name: 'Count Shadow-Snout', title: 'Count Shadow-Snout', world: 4, worldName: 'Midnight Caves', role: 'World Boss', behavior: 'boss_multi', body: '#4A1E6B', secondary: '#A96FD0', crown: '#FFD700', accent: '#00F5D4', skyTop: '#10002B', skyMid: '#240046', skyBot: '#5A189A', groundTop: '#3C096C', groundBot: '#19002E' },
+    magmatail:        { group: 'bosses', name: 'Emperor Magma-Tail', title: 'Emperor Magma-Tail', world: 5, worldName: 'Volcano Vale', role: 'World Boss', behavior: 'boss_multi', body: '#4A1E6B', secondary: '#A96FD0', crown: '#FFD700', accent: '#FFE600', skyTop: '#2B0909', skyMid: '#6A1B09', skyBot: '#D94E1F', groundTop: '#3D231E', groundBot: '#1C0D0A' },
+    frostwhisker:     { group: 'bosses', name: 'Marquis Frostwhisker', title: 'Marquis Frostwhisker', world: 6, worldName: 'Glimmer Glacier', role: 'World Boss', behavior: 'boss_multi', body: '#4A1E6B', secondary: '#A96FD0', crown: '#FFD700', accent: '#7DF9FF', skyTop: '#0A2540', skyMid: '#2166A0', skyBot: '#BDE0F5', groundTop: '#8FB8D8', groundBot: '#3E6390' },
+    sandclaw:         { group: 'bosses', name: 'Sultan Sandclaw', title: 'Sultan Sandclaw', world: 7, worldName: 'Cactus Canyon', role: 'World Boss', behavior: 'boss_multi', body: '#4A1E6B', secondary: '#A96FD0', crown: '#FFD700', accent: '#2EC4B6', skyTop: '#4A1E0B', skyMid: '#A34A1E', skyBot: '#F4A259', groundTop: '#BC6C25', groundBot: '#6B3410' },
+    briarfang:        { group: 'bosses', name: 'Queen Briarfang', title: 'Queen Briarfang', world: 8, worldName: 'Thornwood Thicket', role: 'World Boss', behavior: 'boss_multi', body: '#4A1E6B', secondary: '#A96FD0', crown: '#FFD700', accent: '#FF5D8F', skyTop: '#1E0F2E', skyMid: '#4A2B5C', skyBot: '#9B7EDE', groundTop: '#4E6B2F', groundBot: '#243318' },
+    ironhide:         { group: 'bosses', name: 'Overlord Ironhide', title: 'Overlord Ironhide', world: 9, worldName: 'Ironpeak Foundry', role: 'World Boss', behavior: 'boss_multi', body: '#4A1E6B', secondary: '#A96FD0', crown: '#FFD700', accent: '#FF6B35', skyTop: '#141414', skyMid: '#3A3A3A', skyBot: '#8A8A8A', groundTop: '#555555', groundBot: '#262626' },
+    goldentail:       { group: 'bosses', name: 'King Goldentail', title: 'King Goldentail', world: 10, worldName: 'Golden Citadel', role: 'World Boss', behavior: 'boss_multi', body: '#4A1E6B', secondary: '#A96FD0', crown: '#FFD700', accent: '#FFF3B0', skyTop: '#101A3A', skyMid: '#2B3A8F', skyBot: '#8FA0FF', groundTop: '#C9A227', groundBot: '#7A5C00' },
+    // --- rivals (shard-001 characters.rivals, verbatim; ids keep underscores) ---
+    nibbles:          { group: 'rivals', name: 'Nibbles', title: 'Rookie Flinger', tier: 1, favMonkey: 'rocco', avatarColor: '#8BC34A', crewName: 'Acorn Sprinters' },
+    ziggy:            { group: 'rivals', name: 'Ziggy', title: 'Casual Slinger', tier: 2, favMonkey: 'zippy', avatarColor: '#29B6F6', crewName: 'Breeze Runners' },
+    trixie:           { group: 'rivals', name: 'Trixie', title: 'Trickster Ace', tier: 3, favMonkey: 'poppy', avatarColor: '#EC407A', crewName: 'Triple Blossom Crew' },
+    captain_coconut:  { group: 'rivals', name: 'Captain Coconut', title: 'Steady Veteran', tier: 4, favMonkey: 'bongo', avatarColor: '#FFA726', crewName: 'Lagoon Buccaneers' },
+    professor_peel:   { group: 'rivals', name: 'Professor Peel', title: 'Tactical Architect', tier: 5, favMonkey: 'gordo', avatarColor: '#AB47BC', crewName: 'Quantum Canopy Lab' },
+    madame_mango:     { group: 'rivals', name: 'Madame Mango', title: 'Grandmaster Slinger', tier: 6, favMonkey: 'lulu', avatarColor: '#FF7043', crewName: 'Velvet Horizon Guild' },
+    champ:            { group: 'rivals', name: 'Champ', title: 'Undisputed Jungle Legend', tier: 7, favMonkey: 'rocco', avatarColor: '#FFD600', crewName: 'Golden Crown Syndicate' }
+  };
+
+  // Group order: shard order for monkeys/bandits/rivals, world order
+  // for bosses. No bigboss entry anywhere: see the header.
+  var MONKEYS = ['rocco', 'zippy', 'poppy', 'bongo', 'gordo', 'lulu', 'nitro'];
+  var BANDITS = ['slink', 'hider', 'climber', 'dasher', 'shielder', 'digger', 'mimic'];
+  var BOSSES = ['brambletail', 'barnaclewhiskers', 'galeclaw', 'shadowsnout',
+    'magmatail', 'frostwhisker', 'sandclaw', 'briarfang', 'ironhide', 'goldentail'];
+  var RIVALS = ['nibbles', 'ziggy', 'trixie', 'captain_coconut',
+    'professor_peel', 'madame_mango', 'champ'];
+
+  // Split expression sets: monkeys are heroes (happy/determined);
+  // bandits, bosses, and rivals taunt and get dazed — `taunt` and
+  // `dazed` are literal bandit poses/states in the engine. Default
+  // is neutral for every group. EXPRESSIONS is the union, for
+  // generic use only — no single group uses all five.
+  var EXPRESSIONS_MONKEYS = ['neutral', 'happy', 'determined'];
+  var EXPRESSIONS_BANDITS = ['neutral', 'taunting', 'dazed'];
+  var EXPRESSIONS_BOSSES = ['neutral', 'taunting', 'dazed'];
+  var EXPRESSIONS_RIVALS = ['neutral', 'taunting', 'dazed'];
+  var EXPRESSIONS = ['neutral', 'happy', 'determined', 'taunting', 'dazed'];
+
+  // Canonical id for a lookup (case-insensitive, whitespace-
+  // tolerant), or null for an unknown id. Identity by id, never by
+  // index and never by display name: 'Big Boss' and 'bigboss' both
+  // resolve to null, and 'Captain Coconut' (space) does not resolve
+  // to captain_coconut (underscore) — call sites pass r.id.
+  function _canonicalId(id) {
+    if (typeof id !== 'string') return null;
+    var want = id.replace(/^\s+|\s+$/g, '').toLowerCase();
+    if (!want) return null;
+    if (Object.prototype.hasOwnProperty.call(CHARS, want)) return want;
+    return null;
+  }
+
+  function _expressionsFor(canonical) {
+    if (!canonical) return EXPRESSIONS_MONKEYS;
+    var group = CHARS[canonical].group;
+    if (group === 'bandits') return EXPRESSIONS_BANDITS;
+    if (group === 'bosses') return EXPRESSIONS_BOSSES;
+    if (group === 'rivals') return EXPRESSIONS_RIVALS;
+    return EXPRESSIONS_MONKEYS;
+  }
+
+  // A shipped expression for this character's group, or 'neutral'
+  // for anything else (missing, unknown, non-string, or an
+  // expression from another group's set). Expressions never fail
+  // a lookup.
+  function _normExpression(id, expression) {
+    var canonical = _canonicalId(id);
+    var set = _expressionsFor(canonical);
+    if (typeof expression !== 'string') return 'neutral';
+    var want = expression.replace(/^\s+|\s+$/g, '').toLowerCase();
+    for (var i = 0; i < set.length; i++) {
+      if (set[i] === want) return want;
+    }
+    return 'neutral';
+  }
+
+  function _escapeAttr(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function _escapeXml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  // Placeholder initial: the caller's explicit initial wins (first
+  // character, uppercased); otherwise the character's name initial.
+  function _initialFor(canonical, initial) {
+    if (typeof initial === 'string' && initial) {
+      var c = initial.charAt(0);
+      if (c) return c.toUpperCase();
+    }
+    var name = canonical && CHARS[canonical] ? CHARS[canonical].name : '';
+    if (name) return name.charAt(0).toUpperCase();
+    return '?';
+  }
+
+  /* Inline-SVG data URI: a glowing gold circle with the initial, in
+     the game's jungle palette (the KK-art placeholder pattern, AM
+     colors). Scales to any slot size via the viewBox. */
+  function _placeholderUri(initial) {
+    var letter = (typeof initial === 'string' && initial) ? initial.charAt(0).toUpperCase() : '?';
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+      '<rect width="64" height="64" fill="#0d3b2e"/>' +
+      '<circle cx="32" cy="32" r="28" fill="#123f31" stroke="#ffd166" stroke-width="2"/>' +
+      '<circle cx="32" cy="32" r="24" fill="none" stroke="#ffe38f" stroke-width="1" opacity="0.5"/>' +
+      '<text x="32" y="42" font-family="Georgia,serif" font-size="28" font-weight="bold" fill="#ffe38f" text-anchor="middle">' +
+      _escapeXml(letter) + '</text></svg>';
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+
+  // Belt-and-braces hide: used only when a fallback swap itself
+  // fails. The display write is guarded (only when not already
+  // hidden), so an observer watching the mount never sees a no-op
+  // write. Never throws.
+  function _hideImg(img) {
+    try {
+      if (!img || img.tagName !== 'IMG') return;
+      img.onerror = null;
+      if (img.style && img.style.display !== 'none') img.style.display = 'none';
+    } catch (e) { /* hide is best-effort */ }
+  }
+
+  // ------------------------------------------------------------ manifest
+  // Lazy, at most once, never rejecting: failure resolves to null
+  // and the <img> tags still load directly from the asset files.
+  // Only ever kicked from markup-building paths — never at load.
+  var _manifest = null;
+  var _ensurePromise = null;
+  var _warned = false;
+  var _readyResolve = null;
+  var _ready = new Promise(function (resolve) { _readyResolve = resolve; });
+
+  function ensureArt() {
+    if (_ensurePromise) return _ensurePromise;
+    _ensurePromise = new Promise(function (resolve) {
+      var done = function (value) {
+        _manifest = value;
+        try { if (_readyResolve) _readyResolve(value); } catch (e) { /* ignore */ }
+        resolve(value);
+      };
+      try {
+        if (typeof fetch !== 'function') { done(null); return; }
+        fetch(ART_BASE + MANIFEST_FILE).then(function (res) {
+          if (!res || !res.ok) throw new Error('am-portraits: manifest HTTP ' + (res && res.status));
+          return res.json();
+        }).then(function (man) {
+          if (!man || typeof man !== 'object' || !man.files ||
+              typeof man.files !== 'object' || man.namespace !== 'am') {
+            throw new Error('am-portraits: malformed manifest');
+          }
+          done(man);
+        }).catch(function (err) {
+          if (!_warned) {
+            _warned = true;
+            try { if (typeof console !== 'undefined' && console.warn) console.warn('[am-portraits] manifest unavailable; art images still load directly.', err); } catch (e) { /* ignore */ }
+          }
+          done(null);
+        });
+      } catch (err) {
+        done(null);
+      }
+    });
+    return _ensurePromise;
+  }
+
+  function _kickEnsure() {
+    try {
+      var p = ensureArt();
+      if (p && typeof p.catch === 'function') p.catch(function () { /* never rejects; belt-and-braces */ });
+    } catch (e) { /* ignore */ }
+  }
+
+  // ------------------------------------------------------------- public
+  // Namespaced art key for an id + expression, or null for an
+  // unknown id. The `am-` prefix keeps these keys disjoint from
+  // every other game's art keys and from the shard store.
+  function keyFor(id, expression) {
+    var canonical = _canonicalId(id);
+    if (!canonical) return null;
+    return 'am-' + canonical + '-' + _normExpression(canonical, expression);
+  }
+
+  // Asset URL for an id + expression, or null for an unknown id.
+  // The file name is the unprefixed key; the directory + prefixed
+  // key are what keep the namespace separate.
+  function urlFor(id, expression) {
+    var canonical = _canonicalId(id);
+    if (!canonical) return null;
+    return ART_BASE + canonical + '-' + _normExpression(canonical, expression) + '.webp';
+  }
+
+  // Complete <img> markup for an id + expression (neutral default),
+  // or null for an unknown id. Pure string building: same input,
+  // same markup, every time. Shape follows the chess precedent:
+  // data-am-key, loading="lazy", decoding="async",
+  // draggable="false", inline onerror handler. The image is
+  // decorative by default (empty alt + aria-hidden) because every
+  // wired surface carries the name as adjacent text; pass
+  // opts.alt to keep an accessible name on a surface with no
+  // adjacent label (the menu rival strip). opts.cls (or
+  // opts.className) sets the slot class; the default is
+  // am-portrait-img. opts.fallbackSrc carries the SVG data URI the
+  // error handler swaps to (monkeys + rivals); without it the
+  // handler swaps to the glowing placeholder (bandits + bosses).
+  // opts.initial overrides the placeholder initial letter.
+  function portraitHTML(id, expression, opts) {
+    var canonical = _canonicalId(id);
+    if (!canonical) return null;
+    var o = opts || {};
+    var expr = _normExpression(canonical, expression);
+    _kickEnsure();
+    var cls = o.cls || o.className || 'am-portrait-img';
+    var altAttr;
+    if (typeof o.alt === 'string' && o.alt) {
+      altAttr = ' alt="' + _escapeAttr(o.alt) + '"';
+    } else {
+      altAttr = ' alt="" aria-hidden="true"';
+    }
+    var fbAttr = '';
+    if (typeof o.fallbackSrc === 'string' && o.fallbackSrc) {
+      fbAttr = ' data-am-fallback="' + _escapeAttr(o.fallbackSrc) + '"';
+    }
+    return '<img class="' + _escapeAttr(cls) + '"' +
+      ' src="' + _escapeAttr(urlFor(canonical, expr)) + '"' +
+      altAttr +
+      ' data-am-key="' + _escapeAttr(keyFor(canonical, expr)) + '"' +
+      ' data-am-initial="' + _escapeAttr(_initialFor(canonical, o.initial)) + '"' +
+      fbAttr +
+      ' loading="lazy" decoding="async" draggable="false"' +
+      ' onerror="AMPortraits.onImgError(this)">';
+  }
+
+  function hasPortrait(id) {
+    return _canonicalId(id) !== null;
+  }
+
+  // A copy of one character's identity parameters (or null): lets
+  // harnesses assert distinctness without reaching into the table.
+  // All values are scalars, so the shallow copy is fully defensive:
+  // mutating the result can never corrupt the table.
+  function paramsFor(id) {
+    var canonical = _canonicalId(id);
+    if (!canonical) return null;
+    var p = CHARS[canonical];
+    var out = {};
+    var k;
+    for (k in p) {
+      if (Object.prototype.hasOwnProperty.call(p, k)) out[k] = p[k];
+    }
+    return out;
+  }
+
+  // Group name for an id ('monkeys' | 'bandits' | 'bosses' |
+  // 'rivals'), or null for an unknown id.
+  function groupOf(id) {
+    var canonical = _canonicalId(id);
+    if (!canonical) return null;
+    return CHARS[canonical].group;
+  }
+
+  // Boss id for a world number (1..10), or null for anything else.
+  function bossForWorld(worldId) {
+    var n = Number(worldId);
+    if (!isFinite(n)) return null;
+    for (var i = 0; i < BOSSES.length; i++) {
+      if (CHARS[BOSSES[i]].world === n) return BOSSES[i];
+    }
+    return null;
+  }
+
+  // Global error handler referenced by the inline onerror
+  // attribute. Two paths, by surface kind (AUDIT section 5.4):
+  //   - With a data-am-fallback (monkeys + rivals): swap src to the
+  //     SVG data URI (the art that already fills the slot today).
+  //     The handler detaches first; a closure hides the image if
+  //     the fallback itself fails, so the swap can never loop.
+  //   - Without one (bandits + bosses): swap to the glowing
+  //     placeholder for the data-am-initial letter, with the same
+  //     hide-on-second-failure closure as belt and braces.
+  // Never throws. Never leaves a broken-image icon.
+  function onImgError(img) {
+    try {
+      if (!img || img.tagName !== 'IMG') return;
+      img.onerror = null;
+      var hide = function () { _hideImg(img); };
+      var fb = null;
+      try { fb = img.getAttribute('data-am-fallback'); } catch (e) { /* no fallback */ }
+      if (fb) {
+        try { img.removeAttribute('data-am-fallback'); } catch (e2) { /* one-shot */ }
+        img.onerror = hide;
+        img.src = fb;
+        return;
+      }
+      var initial = '?';
+      try { initial = img.getAttribute('data-am-initial') || '?'; } catch (e4) { /* default */ }
+      img.onerror = hide;
+      img.src = _placeholderUri(initial);
+    } catch (e6) { /* error handling never breaks the page */ }
+  }
+
+  function manifest() { return _manifest; }
+
+  return {
+    ART_BASE: ART_BASE,
+    MONKEYS: MONKEYS.slice(),
+    BANDITS: BANDITS.slice(),
+    BOSSES: BOSSES.slice(),
+    RIVALS: RIVALS.slice(),
+    EXPRESSIONS: EXPRESSIONS.slice(),
+    EXPRESSIONS_MONKEYS: EXPRESSIONS_MONKEYS.slice(),
+    EXPRESSIONS_BANDITS: EXPRESSIONS_BANDITS.slice(),
+    EXPRESSIONS_BOSSES: EXPRESSIONS_BOSSES.slice(),
+    EXPRESSIONS_RIVALS: EXPRESSIONS_RIVALS.slice(),
+    portraitHTML: portraitHTML,
+    hasPortrait: hasPortrait,
+    paramsFor: paramsFor,
+    groupOf: groupOf,
+    bossForWorld: bossForWorld,
+    keyFor: keyFor,
+    urlFor: urlFor,
+    ensureArt: ensureArt,
+    ready: _ready,
+    manifest: manifest,
+    onImgError: onImgError,
+    placeholderUri: _placeholderUri
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = AMPortraits;
+if (typeof window !== 'undefined') window.AMPortraits = AMPortraits;
+</script>
+<script>
 // source: am-modes.js
 'use strict';
 /* Angry Monkeys — modes + progression logic (M5/M9/M10/M11).
@@ -43919,7 +44550,8 @@ if (typeof window !== 'undefined') window.AMSave = AMSave;
  *   art.bandits[id][pose][10 frames] — _drawBandits (pose machine)
  *     + _drawBonkedGhosts (full 0-9 bonked cycle)
  *   art.rivals[id][pose] single SVG  — rival list/match/tournament
- *     avatars + menu strip (DOM <img> data URIs via _rivalImg)
+ *     avatars + menu strip + codex rival entries (SVG fallback behind
+ *     AMPortraits webp art, via _portraitImg/_rivalImg)
  *   art.worlds[world_N][6 layers]    — _drawParallax (far→near bands,
  *     anchored to the ground line, parallax x-offsets)
  *   art.props[25 keys][4 frames]     — _drawProps: block faces by
@@ -44045,6 +44677,13 @@ var _resultShown = false, _resultTimer = 0;
 var _rival = null;            /* rival-turn driver state */
 var _flow = null;             /* duel / rival-match / tournament runtime */
 var _introLevel = null;       /* level awaiting Play on the intro sheet */
+/* LEAD-PICK (D2/D6): player-chosen lead monkey. _leadChoice is an index
+ * into the ORIGINAL lineup, or null = default order. Per-attempt only:
+ * reset in _startMatch, never persisted, never written to any save. */
+var _leadChoice = null;
+var _leadStripEl = null;      /* game-screen lead strip element (E4) */
+var _leadStripState = { visible: null, sel: null, top: null }; /* guarded-write cache */
+/* /LEAD-PICK */
 var _toastTimer = 0;
 var _resizeBound = false, _vvBound = false;
 var _ambient = [];            /* drifting sky dots, seeded per level */
@@ -44275,6 +44914,46 @@ function _monkeyImg(id, pose, frameIdx) {
   var p = m && (m[pose || 'idle'] || m.idle);
   if (!p || !p.length) return '';
   return _svgUri(p[_clamp(frameIdx || 0, 0, p.length - 1)]);
+}
+/* Portrait <img> elements (AMPortraits wiring). When the portraits
+ * module is present and knows the id, the element comes from
+ * AMPortraits.portraitHTML (webp file + lazy load + error handler);
+ * otherwise it is the plain SVG data-URI <img> the screens used
+ * before portraits existed, so every surface degrades to today's
+ * rendering when the module or art is missing. fallbackSrc is the
+ * surface's original SVG pose (monkeys + rivals); bandits + bosses
+ * pass '' and get the module's glowing placeholder on failure.
+ * Rival expression mapping (portrait sets have no confident /
+ * aiming / shocked poses): menu + list -> neutral, rivalIntro ->
+ * taunting, bracket done -> dazed else neutral. The SVG fallback
+ * keeps each surface's ORIGINAL pose, so degradation matches the
+ * pre-portrait rendering. alt is used only on surfaces with no
+ * adjacent name text (the menu strip); every other surface names
+ * the character in adjacent text, so the portrait stays decorative
+ * (empty alt + aria-hidden, the chess precedent). */
+function _portraitImg(id, expr, cls, fallbackSrc, alt) {
+  var P = null;
+  try {
+    if (typeof AMPortraits !== 'undefined' && AMPortraits) P = AMPortraits;
+    else if (typeof window !== 'undefined' && window && window.AMPortraits) P = window.AMPortraits;
+  } catch (e) { /* module absent */ }
+  if (P && typeof P.portraitHTML === 'function' &&
+      typeof P.hasPortrait === 'function' && P.hasPortrait(id)) {
+    try {
+      var html = P.portraitHTML(id, expr, { cls: cls, fallbackSrc: fallbackSrc || undefined, alt: alt || undefined });
+      if (html) {
+        var tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        var built = tmp.firstChild;
+        if (built && built.tagName === 'IMG') return built;
+      }
+    } catch (e2) { /* fall through to the SVG img */ }
+  }
+  var img = document.createElement('img');
+  if (fallbackSrc) img.src = fallbackSrc;
+  if (alt) img.alt = alt; else img.alt = '';
+  if (cls) img.className = cls;
+  return img;
 }
 function _warmSprites() {
   _warmKeys = [];
@@ -44756,6 +45435,192 @@ function _rivalRematch(match) {
   n.seed = _nextSeed(match.seed);
   return n;
 }
+/* LEAD-PICK (D1/D2/D7/D10): lead-choice helpers. One mechanism: rotate
+ * _state.queue from the ORIGINAL lineup, index-based, in place. Every
+ * consumer reads the live queue, so no engine/mode/save change is needed.
+ * All DOM writes here are guarded (check-then-write) per the house rule:
+ * in this Chromium build even no-op writes queue mutation records. */
+function _leadOriginalLineup() {
+  /* Priority (DESIGN §6.1): duel turn -> shared match.lineup; else the
+   * lineup this match was built from (_turnMonkeys, covers harness /
+   * direct callers and the rival AI turn); else the level lineup. The
+   * rival match object has no lineup field, so the duel-kind check is
+   * load-bearing: never read _flow.match.lineup for a rival flow. */
+  if (_flow && _flow.kind === 'duel' && _flow.match && _flow.match.lineup) return _flow.match.lineup.slice();
+  if (_turnMonkeys) return _turnMonkeys.slice();
+  if (_level && _level.monkeys) return _level.monkeys.slice();
+  return ['zippy'];
+}
+function _leadEffectiveIndex() {
+  return (_leadChoice === null || _leadChoice === undefined) ? 0 : _leadChoice;
+}
+function _leadChoiceAllowed() {
+  if (!_state || _state.phase !== 'aim') return false;
+  if (!_state.stats || _state.stats.shots !== 0) return false;
+  if (_paused || _resultShown) return false;
+  /* Rival AI turn: _rival.active is set AFTER _startMatch installs the
+   * state, so the _flow.side check is the guard that holds from the
+   * first tick (_startRivalTurn sets side='rival' before _startMatch). */
+  if (_rival && _rival.active) return false;
+  if (_flow && _flow.kind === 'rival' && _flow.side === 'rival') return false;
+  /* Adaptation to DESIGN §3.3 (documented): the picker surfaces exist
+   * only on the intro and game screens; requiring one of them makes a
+   * stale-DOM rotation impossible. Strictly more restrictive. */
+  if (_screen !== 'intro' && _screen !== 'game') return false;
+  return _leadOriginalLineup().length > 1;
+}
+function _applyLeadChoice(idx) {
+  if (!_leadChoiceAllowed()) return;
+  var orig = _leadOriginalLineup();
+  if (typeof idx !== 'number' || idx < 0 || idx >= orig.length) return;
+  _leadChoice = idx;
+  /* Coordinator refinement to DESIGN §3.1 step 5, applied conditionally
+   * (correctness requires it): tapping index 0 (the identity rotation)
+   * leaves the queue array untouched when it already holds the original
+   * order — the pristine newMatch array object stays intact. But if a
+   * previous choice rotated the queue, tapping 0 MUST rebuild the
+   * original order; skipping the rebuild there would leave a rotated
+   * queue behind a "default lead" display. The no-choice path never
+   * calls this helper at all, so the default queue is never touched. */
+  if (idx === 0) {
+    var same = (_state.queue.length === orig.length);
+    for (var i = 0; same && i < orig.length; i++) {
+      if (_state.queue[i] !== orig[i]) same = false;
+    }
+    if (!same) _state.queue = orig.slice();
+  } else {
+    var q = orig.slice();
+    var lead = q.splice(idx, 1)[0];
+    q.unshift(lead);
+    _state.queue = q;
+  }
+  _emitAudio('am:ui_tap');
+  _markLeadSelection();
+  _syncLeadStrip();
+}
+function _leadSetClass(el, cls, on) {
+  if (!el || !el.classList) return;
+  var has = el.classList.contains(cls);
+  if (on && !has) el.classList.add(cls);
+  else if (!on && has) el.classList.remove(cls);
+}
+function _leadSetHidden(el, val) {
+  if (!el) return;
+  if (el.hidden !== val) el.hidden = val;
+}
+function _leadSetText(el, txt) {
+  if (!el) return;
+  if (el.textContent !== txt) el.textContent = txt;
+}
+function _leadCaptionText() {
+  if (_leadChoice === null || _leadChoice === undefined) return 'Tap a monkey to choose who shoots first';
+  var orig = _leadOriginalLineup();
+  var spec = _monkeySpec(orig[_leadChoice]);
+  return spec.name + ' shoots first — tap another monkey to change';
+}
+function _markLeadSelection() {
+  /* Surgical selection sync for BOTH surfaces. Never rebuilds any
+   * card or chip: class/badge/aria updates only, every write guarded. */
+  var eff = _leadEffectiveIndex();
+  var chosen = (_leadChoice !== null && _leadChoice !== undefined);
+  var badgeTxt = chosen ? '★ FIRST' : 'FIRST';
+  var i, el, idx, isLead, badge;
+  if (_root) {
+    var cells = _root.querySelectorAll('.am-intro-monkey[data-lead-idx]');
+    for (i = 0; i < cells.length; i++) {
+      el = cells[i];
+      idx = parseInt(el.getAttribute('data-lead-idx'), 10);
+      isLead = (idx === eff);
+      _leadSetClass(el, 'am-selected', isLead && chosen);
+      _leadSetClass(el, 'am-lead-current', isLead && !chosen);
+      if (el.getAttribute('aria-pressed') !== (isLead ? 'true' : 'false')) el.setAttribute('aria-pressed', isLead ? 'true' : 'false');
+      badge = el.querySelector('.am-intro-first');
+      if (badge) { _leadSetText(badge, badgeTxt); _leadSetClass(badge, 'am-first-off', !isLead); }
+    }
+    var cap = _root.querySelector('.am-intro-lead-caption');
+    if (cap) _leadSetText(cap, _leadCaptionText());
+  }
+  if (_leadStripEl) {
+    var chips = _leadStripEl.querySelectorAll('.am-lead-chip[data-lead-idx]');
+    for (i = 0; i < chips.length; i++) {
+      el = chips[i];
+      idx = parseInt(el.getAttribute('data-lead-idx'), 10);
+      isLead = (idx === eff);
+      _leadSetClass(el, 'am-selected', isLead && chosen);
+      _leadSetClass(el, 'am-lead-current', isLead && !chosen);
+      if (el.getAttribute('aria-pressed') !== (isLead ? 'true' : 'false')) el.setAttribute('aria-pressed', isLead ? 'true' : 'false');
+      badge = el.querySelector('.am-lead-first');
+      if (badge) { _leadSetText(badge, badgeTxt); _leadSetClass(badge, 'am-first-off', !isLead); }
+    }
+  }
+}
+function _buildLeadStrip() {
+  /* Chips are (re)built once per match — never per tick. The strip
+   * element itself is created once in _buildDom (E4). */
+  if (!_leadStripEl) return;
+  _leadStripEl.innerHTML = '';
+  var orig = _leadOriginalLineup();
+  _leadStripEl.appendChild(_el('span', 'am-lead-label', 'Shoot first:'));
+  orig.forEach(function (id, idx) {
+    var ms = _monkeySpec(id);
+    var chip = _el('button', 'am-lead-chip');
+    chip.type = 'button';
+    chip.setAttribute('data-lead-idx', String(idx));
+    chip.setAttribute('aria-label', ms.name + ', ' + ms.abilityName + ' — tap to shoot first');
+    chip.setAttribute('aria-pressed', 'false');
+    /* CHIP-PORTRAIT: render the anime webp portrait via the same
+     * _portraitImg call the intro cells use (neutral expression, SVG
+     * sprite fallback for ids without a portrait). The portrait img
+     * carries .am-portrait-img (object-fit/object-position); size and
+     * shape come from .am-lead-chip img, unchanged. */
+    chip.appendChild(_portraitImg(id, 'neutral', '', _monkeyImg(id, 'idle', 0)));
+    /* /CHIP-PORTRAIT */
+    chip.appendChild(_el('span', 'am-lead-chip-name', ms.name));
+    var badge = _el('span', 'am-lead-first', 'FIRST');
+    badge.classList.add('am-first-off');
+    chip.appendChild(badge);
+    chip.addEventListener('click', function () { _applyLeadChoice(idx); });
+    _leadStripEl.appendChild(chip);
+  });
+  _leadStripState.visible = null;
+  _leadStripState.sel = null;
+  _markLeadSelection();
+}
+function _syncLeadStrip() {
+  /* Called from _updateHud (every tick) and _startMatch. Writes DOM
+   * only on visibility/selection transitions — steady-state ticks
+   * must produce zero mutations (DESIGN P14). */
+  if (!_leadStripEl) return;
+  var visible = (_screen === 'game' && _leadChoiceAllowed());
+  var sel = _leadEffectiveIndex();
+  var becameVisible = (visible && _leadStripState.visible !== true);
+  if (_leadStripState.visible !== visible) {
+    _leadStripState.visible = visible;
+    _leadSetHidden(_leadStripEl, !visible);
+  }
+  if (visible && (becameVisible || _leadStripState.sel !== sel)) {
+    _leadStripState.sel = sel;
+    _markLeadSelection();
+  } else if (!visible) {
+    _leadStripState.sel = sel;
+  }
+}
+function _positionLeadStrip() {
+  /* Top-anchored via live measurement (house pattern): canvas top
+   * relative to .am-game + 6px. Guarded write (>0.5px change). */
+  if (!_leadStripEl || !_canvas || !_root) return;
+  var top = 144;
+  try {
+    var cr = _canvas.getBoundingClientRect();
+    var rr = _root.getBoundingClientRect();
+    if (cr.height > 0 && rr.height > 0) top = Math.round((cr.top - rr.top) + 6);
+  } catch (e) { /* keep the fallback */ }
+  if (typeof _leadStripState.top !== 'number' || Math.abs(_leadStripState.top - top) > 0.5) {
+    _leadStripState.top = top;
+    _leadStripEl.style.top = top + 'px';
+  }
+}
+/* /LEAD-PICK */
 function _rivalLineup(level, rival) {
   if (_modes) { try { return _modes.rivalLineup(level, rival); } catch (e) { /* fall through */ } }
   var lineup = (level.monkeys || ['zippy']).slice();
@@ -44846,6 +45711,9 @@ function _refit() {
   /* Re-stratify the sky dots for the new height (void guarantee). */
   if (_level) _seedAmbient();
   _updateCamera(true);
+  /* LEAD-PICK (D10): re-anchor the strip to the live canvas top. */
+  _positionLeadStrip();
+  /* /LEAD-PICK */
   _render(0);
 }
 function _onResize() { _refit(); }
@@ -45018,6 +45886,15 @@ function _buildDom(mount) {
   _actionBar.appendChild(_jumpBtn);
   _root.appendChild(_actionBar);
 
+  /* LEAD-PICK (D1/D10): game-screen lead strip. Created once; chips are
+   * built per match in _buildLeadStrip. Absolutely positioned (never in
+   * flex flow) so _refit canvas math stays byte-identical. */
+  _leadStripEl = _el('div', 'am-lead-strip');
+  _leadStripEl.id = 'am-lead-strip';
+  _leadStripEl.hidden = true;
+  _root.appendChild(_leadStripEl);
+  /* /LEAD-PICK */
+
   /* Screens container + toast. */
   _screensEl = _el('div', 'am-screens');
   _root.appendChild(_screensEl);
@@ -45085,6 +45962,7 @@ function _buildScreens() {
   _screenEl('tournament', 'am-screen-opaque');
   _screenEl('daily', 'am-screen-opaque');
   _screenEl('help', 'am-screen-opaque');
+  _screenEl('codex', 'am-screen-opaque');
 }
 function _showScreen(name) {
   _screen = name;
@@ -45120,11 +45998,7 @@ var _screenRenderers = {
     wrap.appendChild(_el('div', 'am-menu-sub', 'Smash the forts. Bonk the bandits. One second to dash.'));
     var strip = _el('div', 'am-menu-strip');
     ((_data.characters && _data.characters.rivals) || []).forEach(function (r) {
-      var img = document.createElement('img');
-      img.src = _rivalImg(r.id, 'confident');
-      img.alt = r.name;
-      img.className = 'am-menu-rival';
-      strip.appendChild(img);
+      strip.appendChild(_portraitImg(r.id, 'neutral', 'am-menu-rival', _rivalImg(r.id, 'confident'), r.name));
     });
     wrap.appendChild(strip);
     var prog = _el('div', 'am-menu-progress',
@@ -45234,19 +46108,34 @@ var _screenRenderers = {
       stars.appendChild(row);
     });
     card.appendChild(stars);
+    /* LEAD-PICK (D1/D4): lineup cells are tappable lead-picker buttons.
+     * Display order is NEVER re-sorted; the FIRST badge + ring + caption
+     * show the choice. Taps rotate the live queue in place via
+     * _applyLeadChoice; the card is never rebuilt on tap. Banter, stars,
+     * best line, rule text, and Play/Back handlers are untouched. */
+    var leadEff = _leadEffectiveIndex();
+    var leadChosen = (_leadChoice !== null && _leadChoice !== undefined);
     var lineup = _el('div', 'am-intro-lineup');
-    (l.monkeys || []).forEach(function (id) {
+    (l.monkeys || []).forEach(function (id, idx) {
       var ms = _monkeySpec(id);
-      var cell = _el('div', 'am-intro-monkey');
-      var img = document.createElement('img');
-      img.src = _monkeyImg(id, 'idle', 0);
-      img.alt = ms.name;
-      cell.appendChild(img);
+      var cell = _el('button', 'am-intro-monkey');
+      cell.type = 'button';
+      cell.setAttribute('data-lead-idx', String(idx));
+      cell.setAttribute('aria-label', ms.name + ', ' + ms.abilityName + ' — tap to shoot first');
+      cell.setAttribute('aria-pressed', idx === leadEff ? 'true' : 'false');
+      cell.appendChild(_portraitImg(id, 'neutral', '', _monkeyImg(id, 'idle', 0)));
       cell.appendChild(_el('div', 'am-intro-monkey-name', ms.name));
       cell.appendChild(_el('div', 'am-intro-monkey-ability', ms.abilityName));
+      var badge = _el('span', 'am-intro-first', leadChosen ? '★ FIRST' : 'FIRST');
+      if (idx !== leadEff) badge.classList.add('am-first-off');
+      cell.appendChild(badge);
+      if (idx === leadEff) cell.classList.add(leadChosen ? 'am-selected' : 'am-lead-current');
+      cell.addEventListener('click', function () { _applyLeadChoice(idx); });
       lineup.appendChild(cell);
     });
     card.appendChild(lineup);
+    card.appendChild(_el('div', 'am-intro-lead-caption', _leadCaptionText()));
+    /* /LEAD-PICK */
     (l.banter || []).slice(0, 2).forEach(function (b) {
       card.appendChild(_el('p', 'am-intro-banter', b.speaker + ': “' + b.line + '”'));
     });
@@ -45398,11 +46287,10 @@ var _screenRenderers = {
       var card = _el('button', 'am-rival-card' + (locked ? ' am-locked' : ''));
       card.type = 'button';
       card.setAttribute('data-rival', r.id);
-      var img = document.createElement('img');
-      img.src = _rivalImg(r.id, locked ? 'shocked' : 'confident');
-      img.alt = r.name;
-      img.className = 'am-rival-img';
-      card.appendChild(img);
+      /* Portrait: neutral for locked + unlocked alike; the card's
+       * lock styling carries the locked state. The SVG fallback
+       * keeps the original shocked/confident pose. */
+      card.appendChild(_portraitImg(r.id, 'neutral', 'am-rival-img', _rivalImg(r.id, locked ? 'shocked' : 'confident')));
       var info = _el('div', 'am-rival-info');
       info.appendChild(_el('div', 'am-rival-name', (locked ? '🔒 ' : '') + r.name));
       info.appendChild(_el('div', 'am-rival-title', 'Tier ' + r.tier + ' — ' + r.title + ' • ' + r.crewName));
@@ -45429,11 +46317,7 @@ var _screenRenderers = {
     _rivalLevelIdx = _clamp(_rivalLevelIdx, 0, unlocked.length - 1);
     var lv = unlocked[_rivalLevelIdx];
     var card = _el('div', 'am-sheet-card');
-    var img = document.createElement('img');
-    img.src = _rivalImg(r.id, 'taunting');
-    img.alt = r.name;
-    img.className = 'am-rival-big';
-    card.appendChild(img);
+    card.appendChild(_portraitImg(r.id, 'taunting', 'am-rival-big', _rivalImg(r.id, 'taunting')));
     card.appendChild(_el('h2', 'am-sheet-title', r.name + ' — ' + r.title));
     card.appendChild(_el('p', 'am-sheet-sub', '“' + (r.taunts && r.taunts[0] || '') + '”'));
     var picker = _el('div', 'am-picker');
@@ -45484,11 +46368,10 @@ var _screenRenderers = {
       } else {
         row.appendChild(_el('span', 'am-bracket-num', String(i + 1)));
       }
-      var img = document.createElement('img');
-      img.src = _rivalImg(info.rivals[i], done ? 'shocked' : 'aiming');
-      img.alt = r ? r.name : '';
-      img.className = 'am-bracket-rival';
-      row.appendChild(img);
+      /* Portrait mapping: a won round shows the rival dazed, an open
+       * round shows neutral (portrait sets have no shocked/aiming
+       * poses; the SVG fallback keeps the original poses). */
+      row.appendChild(_portraitImg(info.rivals[i], done ? 'dazed' : 'neutral', 'am-bracket-rival', _rivalImg(info.rivals[i], done ? 'shocked' : 'aiming')));
       var info2 = _el('div', 'am-bracket-info');
       info2.appendChild(_el('div', 'am-bracket-round', roundNames[i] + (done ? ' — WON ✓' : current ? ' — YOUR ROUND' : '')));
       info2.appendChild(_el('div', 'am-bracket-detail', 'vs ' + (r ? r.name : '?') + '  •  ' + (lv ? lv.id + ' ' + lv.title : '')));
@@ -45576,6 +46459,92 @@ var _screenRenderers = {
       row.appendChild(_el('div', 'am-help-def', it[1]));
       wrap.appendChild(row);
     });
+    wrap.appendChild(_mkBtn('📖 Character Codex', 'am-btn-big', function () { _showScreen('codex'); }));
+    s.appendChild(wrap);
+  },
+
+  /* Character codex: the bandits, world bosses, and rivals, each
+   * with a portrait + NAME AS TEXT (a codex must name its entries).
+   * Monkeys are NOT listed here — they have the intro lineup.
+   * Bandit desc/counter text is read from the loaded data (the
+   * module's identity table is the fallback when data has not
+   * landed); rival lines carry title + favorite monkey name; boss
+   * lines carry world number + world name under the boss's title
+   * name. Portrait slots use the same cover/35% crop as the other
+   * portrait surfaces; missing art degrades to the module's
+   * glowing placeholder (bandits/bosses) or the SVG fallback
+   * (rivals). Entered from Help; Back returns to Help. */
+  codex: function (s) {
+    s.innerHTML = '';
+    var wrap = _el('div', 'am-codex');
+    wrap.appendChild(_mkBtn('‹ Back', 'am-btn-small', function () { _showScreen('help'); }));
+    wrap.appendChild(_el('h2', 'am-sheet-title', 'Character Codex'));
+    wrap.appendChild(_el('p', 'am-sheet-sub', 'The bandits, world bosses, and rivals of Angry Monkeys.'));
+    var P = null;
+    try {
+      if (typeof AMPortraits !== 'undefined' && AMPortraits) P = AMPortraits;
+      else if (typeof window !== 'undefined' && window && window.AMPortraits) P = window.AMPortraits;
+    } catch (e) { /* module absent: data order + params fallbacks below */ }
+    function section(title) {
+      wrap.appendChild(_el('h3', 'am-codex-heading', title));
+    }
+    function entry(imgEl, nameText, detailText, descText) {
+      var row = _el('div', 'am-codex-row');
+      row.appendChild(imgEl);
+      var info = _el('div', 'am-codex-info');
+      info.appendChild(_el('div', 'am-codex-name', nameText));
+      if (detailText) info.appendChild(_el('div', 'am-codex-detail', detailText));
+      if (descText) info.appendChild(_el('div', 'am-codex-desc', descText));
+      row.appendChild(info);
+      wrap.appendChild(row);
+    }
+    /* Bandits: shard order, Big Boss excluded — the 10 world bosses
+     * below replace the single Big Boss portrait. */
+    section('Banana Bandits');
+    var banditIds = (P && P.BANDITS) || ['slink', 'hider', 'climber', 'dasher', 'shielder', 'digger', 'mimic'];
+    banditIds.forEach(function (id) {
+      var spec = _banditSpec(id);
+      var params = (P && typeof P.paramsFor === 'function') ? P.paramsFor(id) : null;
+      var name = spec.name || (params && params.name) || id;
+      var desc = spec.desc || (params && params.desc) || '';
+      var counter = spec.counter || (params && params.counter) || '';
+      entry(_portraitImg(id, 'neutral', 'am-codex-img', ''), name, desc, counter ? 'Counter: ' + counter : '');
+    });
+    /* World bosses: world order. Names + world names read from the
+     * loaded world data; the module table is the fallback. */
+    section('World Bosses');
+    var worlds = ((_data && _data.characters && _data.characters.worlds) || []).slice().sort(function (a, b) { return a.id - b.id; });
+    var bossIds = (P && P.BOSSES) || [];
+    if (worlds.length) {
+      worlds.forEach(function (w, i) {
+        var id = (P && typeof P.bossForWorld === 'function') ? P.bossForWorld(w.id) : bossIds[i];
+        if (!id) return;
+        var params = (P && typeof P.paramsFor === 'function') ? P.paramsFor(id) : null;
+        var name = w.bossName || (params && params.name) || id;
+        entry(_portraitImg(id, 'neutral', 'am-codex-img', ''), name, 'World ' + w.id + ' — ' + w.name, '');
+      });
+    } else if (P) {
+      bossIds.forEach(function (id) {
+        var params = P.paramsFor(id);
+        if (!params) return;
+        entry(_portraitImg(id, 'neutral', 'am-codex-img', ''), params.name, 'World ' + params.world + ' — ' + params.worldName, '');
+      });
+    }
+    /* Rivals: shard order. Title + favorite monkey name, as on the
+     * rival cards. Rivals keep the SVG fallback (see _portraitImg). */
+    section('Rivals');
+    var rivals = (_data && _data.characters && _data.characters.rivals) || [];
+    if (rivals.length) {
+      rivals.forEach(function (r) {
+        entry(_portraitImg(r.id, 'neutral', 'am-codex-img', _rivalImg(r.id, 'confident')), r.name, r.title, 'Favorite: ' + _monkeySpec(r.favMonkey).name);
+      });
+    } else if (P) {
+      P.RIVALS.forEach(function (id) {
+        var params = P.paramsFor(id);
+        if (!params) return;
+        entry(_portraitImg(id, 'neutral', 'am-codex-img', ''), params.name, params.title, 'Favorite: ' + _monkeySpec(params.favMonkey).name);
+      });
+    }
     s.appendChild(wrap);
   }
 };
@@ -45696,6 +46665,10 @@ function _openIntro(level, context) {
 var _turnSeed = 0, _turnMonkeys = null;
 function _startMatch(level, context, opts) {
   opts = opts || {};
+  /* LEAD-PICK (D6): per-attempt choice resets at the single choke point
+   * for all five modes + restarts. _turnMonkeys keeps the originals. */
+  _leadChoice = null;
+  /* /LEAD-PICK */
   _level = level;
   _context = context || _context || { kind: 'adventure' };
   var seed = (opts.seed !== undefined) ? opts.seed :
@@ -45725,6 +46698,10 @@ function _startMatch(level, context, opts) {
   _warmSprites();
   _updateCamera(true);
   _updateHud(true);
+  /* LEAD-PICK (D1): build this match's strip chips, then sync visibility. */
+  _buildLeadStrip();
+  _syncLeadStrip();
+  /* /LEAD-PICK */
   _call('onStateChange', state());
 }
 function _restartMatch() {
@@ -46477,6 +47454,9 @@ function _updateHud(force) {
     _setText(_hudTurn, 'turn', _screen === 'menu' ? 'Pick a mode to play' : '');
     if (_hudDash) _hudDash.hidden = true;
     if (_hudCombo) _hudCombo.hidden = true;
+    /* LEAD-PICK: no state -> strip must hide (covers quit-to-menu). */
+    _syncLeadStrip();
+    /* /LEAD-PICK */
     return;
   }
   var s = _engine.summary(_state);
@@ -46570,6 +47550,9 @@ function _updateHud(force) {
     _jumpBtn.disabled = !(s.phase === 'dash');
   }
   if (_pauseBtn) _pauseBtn.disabled = !(_state && _screen === 'game');
+  /* LEAD-PICK (D1): per-tick strip visibility sync (guarded writes only). */
+  _syncLeadStrip();
+  /* /LEAD-PICK */
 }
 
 /* -------------------------------------------------------------- render */
@@ -79770,39 +80753,39 @@ var MRData = (function () {
   ];
 
   // ------------------------------------------------------------------
-  // Bestiary (one friendly line per enemy)
+  // Bestiary (one menacing line per enemy — foes to outsmart with math)
   // ------------------------------------------------------------------
   var ENEMIES = [
-    { id: 'w1-sprite', worldId: 'w1', name: 'Twinkle Sprite', line: 'A tiny star who giggles when you count just right.' },
-    { id: 'w1-cloud', worldId: 'w1', name: 'Sleepy Cloud', line: 'It naps on numbers and wakes up smiling.' },
-    { id: 'w1-wobbly', worldId: 'w1', name: 'Wobbly Star', line: 'It wobbles until you help it find its place.' },
-    { id: 'w1-moon', worldId: 'w1', name: 'Giggle Moon', line: 'It loves patterns and laughs at every one you finish.' },
-    { id: 'w1-comet', worldId: 'w1', name: 'Lost Comet', line: 'It zoomed too far and needs counting to find home.' },
-    { id: 'w2-acorn', worldId: 'w2', name: 'Acorn Imp', line: 'It hides acorns in sums and cheers when you find them.' },
-    { id: 'w2-turtle', worldId: 'w2', name: 'Mossy Turtle', line: 'Slow and steady, it carries tens on its shell.' },
-    { id: 'w2-frog', worldId: 'w2', name: 'Creek Frog', line: 'It hops from lily pad to lily pad, one hour at a time.' },
-    { id: 'w2-bunny', worldId: 'w2', name: 'Bramble Bunny', line: 'It measures the brambles and nibbles the longest leaf.' },
-    { id: 'w2-pixie', worldId: 'w2', name: 'Pinecone Pixie', line: 'It splits pinecones into halves and quarters for tea.' },
-    { id: 'w3-frost', worldId: 'w3', name: 'Frost Sprite', line: 'It sparkles on the trail and melts a little at every right answer.' },
-    { id: 'w3-hare', worldId: 'w3', name: 'Snow Hare', line: 'It skip-counts across the snow in perfect hops.' },
-    { id: 'w3-icicle', worldId: 'w3', name: 'Icicle Imp', line: 'It jingles like a clock and loves five-minute chimes.' },
-    { id: 'w3-shepherd', worldId: 'w3', name: 'Cloud Shepherd', line: 'It herds clouds into neat arrays above the peak.' },
-    { id: 'w3-goat', worldId: 'w3', name: 'Summit Goat', line: 'It knows every coin in the mountain market by heart.' },
-    { id: 'w4-fish', worldId: 'w4', name: 'Ripple Fish', line: 'It multiplies ripples every time you answer.' },
-    { id: 'w4-otter', worldId: 'w4', name: 'Rapid Otter', line: 'It slides down the rapids shouting times tables.' },
-    { id: 'w4-crab', worldId: 'w4', name: 'Pebble Crab', line: 'It builds rectangles out of pebbles on the bank.' },
-    { id: 'w4-eel', worldId: 'w4', name: 'Current Eel', line: 'It swims in fractions and shares the current fairly.' },
-    { id: 'w4-lily', worldId: 'w4', name: 'Water Lily Sprite', line: 'It opens one petal for every minute you count.' },
-    { id: 'w5-golem', worldId: 'w5', name: 'Gate Golem', line: 'It only steps aside for heroes who know their factors.' },
-    { id: 'w5-imp', worldId: 'w5', name: 'Brick Imp', line: 'It stacks bricks into long multiplication towers.' },
-    { id: 'w5-keeper', worldId: 'w5', name: 'Key Keeper', line: 'It keeps the remainders and returns them politely.' },
-    { id: 'w5-sentinel', worldId: 'w5', name: 'Stone Sentinel', line: 'It stands at perfect right angles, always.' },
-    { id: 'w5-wisp', worldId: 'w5', name: 'Torch Wisp', line: 'It lights the way with decimal lanterns.' },
-    { id: 'w6-angler', worldId: 'w6', name: 'Deep Angler', line: 'Its lantern glows brighter with every volume you find.' },
-    { id: 'w6-squid', worldId: 'w6', name: 'Ink Squid', line: 'It writes coordinates in the water with eight arms.' },
-    { id: 'w6-wisp', worldId: 'w6', name: 'Gloom Wisp', line: 'A small shadow that would rather be a light.' },
-    { id: 'w6-crab', worldId: 'w6', name: 'Crystal Crab', line: 'It sorts crystals by shape and never makes a mistake.' },
-    { id: 'w6-ray', worldId: 'w6', name: 'Silent Ray', line: 'It glides in perfect patterns through the deep.' }
+    { id: 'w1-sprite', worldId: 'w1', name: 'Twinkle Sprite', line: 'It snuffs out stars one by one — count them back before the sky goes dark.' },
+    { id: 'w1-cloud', worldId: 'w1', name: 'Sleepy Cloud', line: 'It hides numbers in its fog and dares you to tell which pile is bigger.' },
+    { id: 'w1-wobbly', worldId: 'w1', name: 'Wobbly Star', line: 'It shakes the sky loose. Finish the pattern, or the stars fall out of order.' },
+    { id: 'w1-moon', worldId: 'w1', name: 'Giggle Moon', line: 'It laughs while it scrambles the patterns. Outsmart it, and the laugh stops.' },
+    { id: 'w1-comet', worldId: 'w1', name: 'Lost Comet', line: 'It streaks through the dark, stealing numbers as it goes. Count fast, or it takes them all.' },
+    { id: 'w2-acorn', worldId: 'w2', name: 'Acorn Imp', line: 'It steals acorns and buries the sums. Dig them up before it hides them all.' },
+    { id: 'w2-turtle', worldId: 'w2', name: 'Mossy Turtle', line: 'It lumbers over the trail, crushing tens under its shell. Stand your ground and count the tens.' },
+    { id: 'w2-frog', worldId: 'w2', name: 'Creek Frog', line: 'It snaps the clock hands out of order. Read the hour, or time slips away.' },
+    { id: 'w2-bunny', worldId: 'w2', name: 'Bramble Bunny', line: 'It tangles the trail in thorns. Measure true, or the brambles close in.' },
+    { id: 'w2-pixie', worldId: 'w2', name: 'Pinecone Pixie', line: 'It splits everything it touches into pieces. Take back the halves before it takes the whole.' },
+    { id: 'w3-frost', worldId: 'w3', name: 'Frost Sprite', line: 'Its cold creeps over the trail, freezing every sum in place. Warm the numbers back with right answers.' },
+    { id: 'w3-hare', worldId: 'w3', name: 'Snow Hare', line: 'It races across the snow, erasing the trail behind it. Skip-count fast, or lose the path.' },
+    { id: 'w3-icicle', worldId: 'w3', name: 'Icicle Imp', line: 'It chimes a warning with every five minutes it steals. Catch the time before it freezes.' },
+    { id: 'w3-shepherd', worldId: 'w3', name: 'Cloud Shepherd', line: 'It drives storm clouds into ranks above the peak. Break the arrays, or the storm holds.' },
+    { id: 'w3-goat', worldId: 'w3', name: 'Summit Goat', line: 'It hoards every coin in the mountain market and guards the pile. Count the coins, or pay the price.' },
+    { id: 'w4-fish', worldId: 'w4', name: 'Ripple Fish', line: 'Its ripples multiply and drag the river down. Break them with products and quotients.' },
+    { id: 'w4-otter', worldId: 'w4', name: 'Rapid Otter', line: 'It rides the rapids, churning every times table into foam. Hold your facts steady, or be swept away.' },
+    { id: 'w4-crab', worldId: 'w4', name: 'Pebble Crab', line: 'It snaps its claws and walls off the riverbank, stone by stone. Measure the walls, or stay walled out.' },
+    { id: 'w4-eel', worldId: 'w4', name: 'Current Eel', line: 'It twists the current into unequal shares. Make the fractions fair, or the river stays split.' },
+    { id: 'w4-lily', worldId: 'w4', name: 'Water Lily Sprite', line: 'It closes its petals over the minutes, one by one. Read the clock before the light runs out.' },
+    { id: 'w5-golem', worldId: 'w5', name: 'Gate Golem', line: 'It bars the gate with stone fists. Only heroes who know every factor get through.' },
+    { id: 'w5-imp', worldId: 'w5', name: 'Brick Imp', line: 'It stacks brick upon brick into a tower that blocks the sun. Multiply fast, or climb in the dark.' },
+    { id: 'w5-keeper', worldId: 'w5', name: 'Key Keeper', line: 'It locks the remainders away and swallows the keys. Divide true, or the gate stays shut.' },
+    { id: 'w5-sentinel', worldId: 'w5', name: 'Stone Sentinel', line: 'It stands guard at perfect right angles, and it does not blink. Prove the angles, or turn back.' },
+    { id: 'w5-wisp', worldId: 'w5', name: 'Torch Wisp', line: 'Its lantern burns with stolen decimals. Take them back, digit by digit, before the light dies.' },
+    { id: 'w6-angler', worldId: 'w6', name: 'Deep Angler', line: 'Its lantern lures heroes into the deep. Find the volume, or follow the light down.' },
+    { id: 'w6-squid', worldId: 'w6', name: 'Ink Squid', line: 'It clouds the water with ink and hides the coordinates. Plot true, or lose your way in the dark.' },
+    { id: 'w6-wisp', worldId: 'w6', name: 'Gloom Wisp', line: 'A shadow of the Gloom itself, hungry for every number it can swallow. Outsmart it, or be forgotten.' },
+    { id: 'w6-crab', worldId: 'w6', name: 'Crystal Crab', line: 'It guards the crystal caves with claws sharp as cut crystal and never makes a mistake. Make none either.' },
+    { id: 'w6-ray', worldId: 'w6', name: 'Silent Ray', line: 'It glides through the deep without a sound, watching. One wrong pattern, and it closes in.' }
   ];
 
   // ------------------------------------------------------------------
@@ -83729,7 +84712,8 @@ if (typeof globalThis !== 'undefined') {
 // Save shape (version 1; normalizeSave fills every missing or bad
 // field with its default, so older or partial saves keep working):
 //   { version: 1,
-//     hero: { name: string, choice: 'male' | 'female' },
+//     hero: { name: string, choice: 'male' | 'female',
+//             design: null | 'ember' | 'frost' | 'jade' | 'rose' },
 //     companionRole: 'fox' | 'owl' | 'dragon' | null,
 //     unlockedCompanions: [roles],
 //     clearedStages: [stage ids], stars: { stageId: 1..3 },
@@ -83775,6 +84759,22 @@ var MRSave = (function () {
   var WORLD_IDS = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6'];
   var COMPANION_ROLES = ['fox', 'owl', 'dragon'];
   var HERO_CHOICES = ['male', 'female'];
+  /* Hero looks, per gender. design null = the shipped default look
+     for that gender. The same lists live in mr-ui.js (art keys) and
+     mr-game.js (draft/validation fallback); keep all three in sync.
+     Designs are looks only — no gameplay effect, no preset names. */
+  var HERO_DESIGNS = {
+    male: ['ember', 'frost'],
+    female: ['jade', 'rose']
+  };
+
+  /* Quest-style validation: a design is valid only for its own
+     gender's list. Anything else (missing, unknown, cross-gender)
+     normalizes to null = shipped default. */
+  function validHeroDesign(choice, design) {
+    var list = HERO_DESIGNS[choice] || [];
+    return (typeof design === 'string' && list.indexOf(design) >= 0) ? design : null;
+  }
 
   var lastNotice = '';
 
@@ -83812,7 +84812,7 @@ var MRSave = (function () {
   function createDefaultSave() {
     return {
       version: SAVE_VERSION,
-      hero: { name: 'Hero', choice: 'male' },
+      hero: { name: 'Hero', choice: 'male', design: null },
       companionRole: null,
       unlockedCompanions: [],
       clearedStages: [],
@@ -83863,11 +84863,13 @@ var MRSave = (function () {
     out.version = SAVE_VERSION;
     var hero = parsed.hero;
     if (!hero || typeof hero !== 'object' || Array.isArray(hero)) {
-      out.hero = { name: 'Hero', choice: 'male' };
+      out.hero = { name: 'Hero', choice: 'male', design: null };
     } else {
+      var choice = HERO_CHOICES.indexOf(hero.choice) >= 0 ? hero.choice : 'male';
       out.hero = {
         name: (typeof hero.name === 'string' && hero.name.length > 0) ? hero.name.slice(0, 12) : 'Hero',
-        choice: HERO_CHOICES.indexOf(hero.choice) >= 0 ? hero.choice : 'male'
+        choice: choice,
+        design: validHeroDesign(choice, hero.design)
       };
     }
     out.companionRole = COMPANION_ROLES.indexOf(parsed.companionRole) >= 0 ? parsed.companionRole : null;
@@ -83960,6 +84962,10 @@ var MRSave = (function () {
       if (!obj.hero || typeof obj.hero !== 'object') return false;
       if (HERO_CHOICES.indexOf(obj.hero.choice) < 0) return false;
       if (typeof obj.hero.name !== 'string' || obj.hero.name.length === 0) return false;
+      /* design is additive: absent or null (old saves) is valid;
+         a non-null design must belong to the hero's gender list. */
+      if (obj.hero.design !== undefined && obj.hero.design !== null &&
+          validHeroDesign(obj.hero.choice, obj.hero.design) !== obj.hero.design) return false;
       if (!Array.isArray(obj.clearedStages) || !Array.isArray(obj.badges)) return false;
       if (!obj.stars || typeof obj.stars !== 'object') return false;
       if (!_isInt(obj.shards) || obj.shards < 0) return false;
@@ -84405,6 +85411,8 @@ var MRSave = (function () {
       normalizeSave: normalizeSave,
       normalizeStats: normalizeStats,
       validateSave: validateSave,
+      validHeroDesign: validHeroDesign,
+      HERO_DESIGNS: HERO_DESIGNS,
       applyBattleResult: applyBattleResult,
       dailyCompleted: dailyCompleted,
       dailyStreakFor: dailyStreakFor,
@@ -84455,6 +85463,8 @@ var MRSave = (function () {
     normalizeSave: normalizeSave,
     normalizeStats: normalizeStats,
     validateSave: validateSave,
+    validHeroDesign: validHeroDesign,
+    HERO_DESIGNS: HERO_DESIGNS,
     applyBattleResult: applyBattleResult,
     dailyCompleted: dailyCompleted,
     dailyStreakFor: dailyStreakFor,
@@ -84834,8 +85844,8 @@ if (typeof globalThis !== 'undefined') {
  * hero_female_<expression>, companion_fenn_<expression>,
  * companion_opal_<expression>, companion_blaze_<expression>,
  * sprite_fenn, sprite_opal, sprite_blaze, boss_<id>,
- * enemy_<id>, world_<id>. Expressions: happy, determined, worried.
- * Until the art delivery lands, every key degrades to the
+ * enemy_<id>, world_<id>. Expressions: happy, determined, worried,
+ * victorious, hurt. Until the art delivery lands, every key degrades to the
  * placeholder and the game stays fully playable with its styled
  * SVG sprites (see mr-ui.js).
  *
@@ -85023,7 +86033,8 @@ var MRLoader = (function () {
   }
 
   function expressionKey(base, expression) {
-    var exp = (expression === 'determined' || expression === 'worried') ? expression : 'happy';
+    var exp = (expression === 'determined' || expression === 'worried' ||
+      expression === 'victorious' || expression === 'hurt') ? expression : 'happy';
     return String(base) + '_' + exp;
   }
 
@@ -85305,49 +86316,50 @@ var MRGame = (function () {
   ];
 
   /* Bestiary fallback (mirrors MRData.ENEMIES names/lines; palettes
-     are UI-side — the data table carries no palette). */
+     are UI-side — the data table carries no palette). artKey is the
+     foe portrait key: 'enemy_' + id with dashes to underscores. */
   var ENEMIES = {
     w1: [
-      { id: 'w1-sprite', name: 'Twinkle Sprite', line: 'A tiny star who giggles when you count just right.', palette: { bg1: '#fde68a', bg2: '#d97706', accent: '#fffbeb' } },
-      { id: 'w1-cloud', name: 'Sleepy Cloud', line: 'It naps on numbers and wakes up smiling.', palette: { bg1: '#e0f2fe', bg2: '#0284c7', accent: '#ffffff' } },
-      { id: 'w1-wobbly', name: 'Wobbly Star', line: 'It wobbles until you help it find its place.', palette: { bg1: '#ddd6fe', bg2: '#7c3aed', accent: '#fef3c7' } },
-      { id: 'w1-moon', name: 'Giggle Moon', line: 'It loves patterns and laughs at every one you finish.', palette: { bg1: '#fef9c3', bg2: '#ca8a04', accent: '#ffffff' } },
-      { id: 'w1-comet', name: 'Lost Comet', line: 'It zoomed too far and needs counting to find home.', palette: { bg1: '#bfdbfe', bg2: '#1d4ed8', accent: '#eff6ff' } }
+      { id: 'w1-sprite', name: 'Twinkle Sprite', line: 'It snuffs out stars one by one — count them back before the sky goes dark.', artKey: 'enemy_w1_sprite', palette: { bg1: '#fde68a', bg2: '#d97706', accent: '#fffbeb' } },
+      { id: 'w1-cloud', name: 'Sleepy Cloud', line: 'It hides numbers in its fog and dares you to tell which pile is bigger.', artKey: 'enemy_w1_cloud', palette: { bg1: '#e0f2fe', bg2: '#0284c7', accent: '#ffffff' } },
+      { id: 'w1-wobbly', name: 'Wobbly Star', line: 'It shakes the sky loose. Finish the pattern, or the stars fall out of order.', artKey: 'enemy_w1_wobbly', palette: { bg1: '#ddd6fe', bg2: '#7c3aed', accent: '#fef3c7' } },
+      { id: 'w1-moon', name: 'Giggle Moon', line: 'It laughs while it scrambles the patterns. Outsmart it, and the laugh stops.', artKey: 'enemy_w1_moon', palette: { bg1: '#fef9c3', bg2: '#ca8a04', accent: '#ffffff' } },
+      { id: 'w1-comet', name: 'Lost Comet', line: 'It streaks through the dark, stealing numbers as it goes. Count fast, or it takes them all.', artKey: 'enemy_w1_comet', palette: { bg1: '#bfdbfe', bg2: '#1d4ed8', accent: '#eff6ff' } }
     ],
     w2: [
-      { id: 'w2-acorn', name: 'Acorn Imp', line: 'It hides acorns in sums and cheers when you find them.', palette: { bg1: '#fdba74', bg2: '#9a3412', accent: '#fef3c7' } },
-      { id: 'w2-turtle', name: 'Mossy Turtle', line: 'Slow and steady, it carries tens on its shell.', palette: { bg1: '#a7f3d0', bg2: '#047857', accent: '#fef3c7' } },
-      { id: 'w2-frog', name: 'Creek Frog', line: 'It hops from lily pad to lily pad, one hour at a time.', palette: { bg1: '#bef264', bg2: '#4d7c0f', accent: '#fffbeb' } },
-      { id: 'w2-bunny', name: 'Bramble Bunny', line: 'It measures the brambles and nibbles the longest leaf.', palette: { bg1: '#fbcfe8', bg2: '#be185d', accent: '#fff7ed' } },
-      { id: 'w2-pixie', name: 'Pinecone Pixie', line: 'It splits pinecones into halves and quarters for tea.', palette: { bg1: '#d9f99d', bg2: '#3f6212', accent: '#fefce8' } }
+      { id: 'w2-acorn', name: 'Acorn Imp', line: 'It steals acorns and buries the sums. Dig them up before it hides them all.', artKey: 'enemy_w2_acorn', palette: { bg1: '#fdba74', bg2: '#9a3412', accent: '#fef3c7' } },
+      { id: 'w2-turtle', name: 'Mossy Turtle', line: 'It lumbers over the trail, crushing tens under its shell. Stand your ground and count the tens.', artKey: 'enemy_w2_turtle', palette: { bg1: '#a7f3d0', bg2: '#047857', accent: '#fef3c7' } },
+      { id: 'w2-frog', name: 'Creek Frog', line: 'It snaps the clock hands out of order. Read the hour, or time slips away.', artKey: 'enemy_w2_frog', palette: { bg1: '#bef264', bg2: '#4d7c0f', accent: '#fffbeb' } },
+      { id: 'w2-bunny', name: 'Bramble Bunny', line: 'It tangles the trail in thorns. Measure true, or the brambles close in.', artKey: 'enemy_w2_bunny', palette: { bg1: '#fbcfe8', bg2: '#be185d', accent: '#fff7ed' } },
+      { id: 'w2-pixie', name: 'Pinecone Pixie', line: 'It splits everything it touches into pieces. Take back the halves before it takes the whole.', artKey: 'enemy_w2_pixie', palette: { bg1: '#d9f99d', bg2: '#3f6212', accent: '#fefce8' } }
     ],
     w3: [
-      { id: 'w3-frost', name: 'Frost Sprite', line: 'It sparkles on the trail and melts a little at every right answer.', palette: { bg1: '#e0f2fe', bg2: '#0369a1', accent: '#ffffff' } },
-      { id: 'w3-hare', name: 'Snow Hare', line: 'It skip-counts across the snow in perfect hops.', palette: { bg1: '#f1f5f9', bg2: '#64748b', accent: '#e0f2fe' } },
-      { id: 'w3-icicle', name: 'Icicle Imp', line: 'It jingles like a clock and loves five-minute chimes.', palette: { bg1: '#cffafe', bg2: '#0e7490', accent: '#ffffff' } },
-      { id: 'w3-shepherd', name: 'Cloud Shepherd', line: 'It herds clouds into neat arrays above the peak.', palette: { bg1: '#e2e8f0', bg2: '#475569', accent: '#f8fafc' } },
-      { id: 'w3-goat', name: 'Summit Goat', line: 'It knows every coin in the mountain market by heart.', palette: { bg1: '#fef3c7', bg2: '#b45309', accent: '#fffbeb' } }
+      { id: 'w3-frost', name: 'Frost Sprite', line: 'Its cold creeps over the trail, freezing every sum in place. Warm the numbers back with right answers.', artKey: 'enemy_w3_frost', palette: { bg1: '#e0f2fe', bg2: '#0369a1', accent: '#ffffff' } },
+      { id: 'w3-hare', name: 'Snow Hare', line: 'It races across the snow, erasing the trail behind it. Skip-count fast, or lose the path.', artKey: 'enemy_w3_hare', palette: { bg1: '#f1f5f9', bg2: '#64748b', accent: '#e0f2fe' } },
+      { id: 'w3-icicle', name: 'Icicle Imp', line: 'It chimes a warning with every five minutes it steals. Catch the time before it freezes.', artKey: 'enemy_w3_icicle', palette: { bg1: '#cffafe', bg2: '#0e7490', accent: '#ffffff' } },
+      { id: 'w3-shepherd', name: 'Cloud Shepherd', line: 'It drives storm clouds into ranks above the peak. Break the arrays, or the storm holds.', artKey: 'enemy_w3_shepherd', palette: { bg1: '#e2e8f0', bg2: '#475569', accent: '#f8fafc' } },
+      { id: 'w3-goat', name: 'Summit Goat', line: 'It hoards every coin in the mountain market and guards the pile. Count the coins, or pay the price.', artKey: 'enemy_w3_goat', palette: { bg1: '#fef3c7', bg2: '#b45309', accent: '#fffbeb' } }
     ],
     w4: [
-      { id: 'w4-fish', name: 'Ripple Fish', line: 'It multiplies ripples every time you answer.', palette: { bg1: '#99f6e4', bg2: '#0f766e', accent: '#ffffff' } },
-      { id: 'w4-otter', name: 'Rapid Otter', line: 'It slides down the rapids shouting times tables.', palette: { bg1: '#a5f3fc', bg2: '#0e7490', accent: '#fef9c3' } },
-      { id: 'w4-crab', name: 'Pebble Crab', line: 'It builds rectangles out of pebbles on the bank.', palette: { bg1: '#fda4af', bg2: '#be123c', accent: '#fff1f2' } },
-      { id: 'w4-eel', name: 'Current Eel', line: 'It swims in fractions and shares the current fairly.', palette: { bg1: '#c4b5fd', bg2: '#6d28d9', accent: '#ede9fe' } },
-      { id: 'w4-lily', name: 'Water Lily Sprite', line: 'It opens one petal for every minute you count.', palette: { bg1: '#f9a8d4', bg2: '#be185d', accent: '#fdf2f8' } }
+      { id: 'w4-fish', name: 'Ripple Fish', line: 'Its ripples multiply and drag the river down. Break them with products and quotients.', artKey: 'enemy_w4_fish', palette: { bg1: '#99f6e4', bg2: '#0f766e', accent: '#ffffff' } },
+      { id: 'w4-otter', name: 'Rapid Otter', line: 'It rides the rapids, churning every times table into foam. Hold your facts steady, or be swept away.', artKey: 'enemy_w4_otter', palette: { bg1: '#a5f3fc', bg2: '#0e7490', accent: '#fef9c3' } },
+      { id: 'w4-crab', name: 'Pebble Crab', line: 'It snaps its claws and walls off the riverbank, stone by stone. Measure the walls, or stay walled out.', artKey: 'enemy_w4_crab', palette: { bg1: '#fda4af', bg2: '#be123c', accent: '#fff1f2' } },
+      { id: 'w4-eel', name: 'Current Eel', line: 'It twists the current into unequal shares. Make the fractions fair, or the river stays split.', artKey: 'enemy_w4_eel', palette: { bg1: '#c4b5fd', bg2: '#6d28d9', accent: '#ede9fe' } },
+      { id: 'w4-lily', name: 'Water Lily Sprite', line: 'It closes its petals over the minutes, one by one. Read the clock before the light runs out.', artKey: 'enemy_w4_lily', palette: { bg1: '#f9a8d4', bg2: '#be185d', accent: '#fdf2f8' } }
     ],
     w5: [
-      { id: 'w5-golem', name: 'Gate Golem', line: 'It only steps aside for heroes who know their factors.', palette: { bg1: '#d6d3d1', bg2: '#57534e', accent: '#fde68a' } },
-      { id: 'w5-imp', name: 'Brick Imp', line: 'It stacks bricks into long multiplication towers.', palette: { bg1: '#fdba74', bg2: '#9a3412', accent: '#fffbeb' } },
-      { id: 'w5-keeper', name: 'Key Keeper', line: 'It keeps the remainders and returns them politely.', palette: { bg1: '#fde68a', bg2: '#a16207', accent: '#fffbeb' } },
-      { id: 'w5-sentinel', name: 'Stone Sentinel', line: 'It stands at perfect right angles, always.', palette: { bg1: '#cbd5e1', bg2: '#334155', accent: '#fde68a' } },
-      { id: 'w5-wisp', name: 'Torch Wisp', line: 'It lights the way with decimal lanterns.', palette: { bg1: '#fed7aa', bg2: '#c2410c', accent: '#fff7ed' } }
+      { id: 'w5-golem', name: 'Gate Golem', line: 'It bars the gate with stone fists. Only heroes who know every factor get through.', artKey: 'enemy_w5_golem', palette: { bg1: '#d6d3d1', bg2: '#57534e', accent: '#fde68a' } },
+      { id: 'w5-imp', name: 'Brick Imp', line: 'It stacks brick upon brick into a tower that blocks the sun. Multiply fast, or climb in the dark.', artKey: 'enemy_w5_imp', palette: { bg1: '#fdba74', bg2: '#9a3412', accent: '#fffbeb' } },
+      { id: 'w5-keeper', name: 'Key Keeper', line: 'It locks the remainders away and swallows the keys. Divide true, or the gate stays shut.', artKey: 'enemy_w5_keeper', palette: { bg1: '#fde68a', bg2: '#a16207', accent: '#fffbeb' } },
+      { id: 'w5-sentinel', name: 'Stone Sentinel', line: 'It stands guard at perfect right angles, and it does not blink. Prove the angles, or turn back.', artKey: 'enemy_w5_sentinel', palette: { bg1: '#cbd5e1', bg2: '#334155', accent: '#fde68a' } },
+      { id: 'w5-wisp', name: 'Torch Wisp', line: 'Its lantern burns with stolen decimals. Take them back, digit by digit, before the light dies.', artKey: 'enemy_w5_wisp', palette: { bg1: '#fed7aa', bg2: '#c2410c', accent: '#fff7ed' } }
     ],
     w6: [
-      { id: 'w6-angler', name: 'Deep Angler', line: 'Its lantern glows brighter with every volume you find.', palette: { bg1: '#a5b4fc', bg2: '#3730a3', accent: '#e0e7ff' } },
-      { id: 'w6-squid', name: 'Ink Squid', line: 'It writes coordinates in the water with eight arms.', palette: { bg1: '#c4b5fd', bg2: '#4c1d95', accent: '#e0e7ff' } },
-      { id: 'w6-wisp', name: 'Gloom Wisp', line: 'A small shadow that would rather be a light.', palette: { bg1: '#94a3b8', bg2: '#1e293b', accent: '#fde68a' } },
-      { id: 'w6-crab', name: 'Crystal Crab', line: 'It sorts crystals by shape and never makes a mistake.', palette: { bg1: '#99f6e4', bg2: '#0f766e', accent: '#f0fdfa' } },
-      { id: 'w6-ray', name: 'Silent Ray', line: 'It glides in perfect patterns through the deep.', palette: { bg1: '#bfdbfe', bg2: '#1e40af', accent: '#eff6ff' } }
+      { id: 'w6-angler', name: 'Deep Angler', line: 'Its lantern lures heroes into the deep. Find the volume, or follow the light down.', artKey: 'enemy_w6_angler', palette: { bg1: '#a5b4fc', bg2: '#3730a3', accent: '#e0e7ff' } },
+      { id: 'w6-squid', name: 'Ink Squid', line: 'It clouds the water with ink and hides the coordinates. Plot true, or lose your way in the dark.', artKey: 'enemy_w6_squid', palette: { bg1: '#c4b5fd', bg2: '#4c1d95', accent: '#e0e7ff' } },
+      { id: 'w6-wisp', name: 'Gloom Wisp', line: 'A shadow of the Gloom itself, hungry for every number it can swallow. Outsmart it, or be forgotten.', artKey: 'enemy_w6_wisp', palette: { bg1: '#94a3b8', bg2: '#1e293b', accent: '#fde68a' } },
+      { id: 'w6-crab', name: 'Crystal Crab', line: 'It guards the crystal caves with claws sharp as cut crystal and never makes a mistake. Make none either.', artKey: 'enemy_w6_crab', palette: { bg1: '#99f6e4', bg2: '#0f766e', accent: '#f0fdfa' } },
+      { id: 'w6-ray', name: 'Silent Ray', line: 'It glides through the deep without a sound, watching. One wrong pattern, and it closes in.', artKey: 'enemy_w6_ray', palette: { bg1: '#bfdbfe', bg2: '#1e40af', accent: '#eff6ff' } }
     ]
   };
 
@@ -85644,6 +86656,29 @@ var MRGame = (function () {
     return GEAR.slice();
   }
 
+  /* Foe portrait key: 'enemy_' + the foe id with dashes to
+     underscores (e.g. w2-acorn -> enemy_w2_acorn), matching the
+     boss key convention in _bossArtKey. */
+  function _enemyArtKey(enemyId) {
+    return 'enemy_' + String(enemyId || '').replace(/-/g, '_');
+  }
+
+  /* Hero looks, per gender (mirrors MRSave.HERO_DESIGNS and the
+     MRUI list; keep all three in sync). null = shipped default. */
+  var HERO_DESIGNS = {
+    male: ['ember', 'frost'],
+    female: ['jade', 'rose']
+  };
+
+  function _validHeroDesign(choice, design) {
+    var mod = _saveModule();
+    if (mod && typeof mod.validHeroDesign === 'function') {
+      try { return mod.validHeroDesign(choice, design); } catch (e) { /* local check below */ }
+    }
+    var list = HERO_DESIGNS[choice] || [];
+    return (typeof design === 'string' && list.indexOf(design) >= 0) ? design : null;
+  }
+
   function _enemyDef(enemyId) {
     var d = _data();
     if (d && typeof d.enemyById === 'function') {
@@ -85657,6 +86692,7 @@ var MRGame = (function () {
           }
           return {
             id: e.id, worldId: e.worldId, name: e.name, line: e.line,
+            artKey: _enemyArtKey(e.id),
             palette: foes[idx] ? foes[idx].palette : ENEMY_PALETTES[idx % ENEMY_PALETTES.length]
           };
         }
@@ -85669,7 +86705,7 @@ var MRGame = (function () {
         if (list[j].id === enemyId) return list[j];
       }
     }
-    return { id: enemyId, name: 'Mystery Friend', line: 'A new friend to meet.', palette: ENEMY_PALETTES[0] };
+    return { id: enemyId, name: 'Mystery Friend', line: 'A new friend to meet.', artKey: null, palette: ENEMY_PALETTES[0] };
   }
 
   function _createRng(seed) {
@@ -86198,7 +87234,7 @@ var MRGame = (function () {
 
   /* ------------------------------------------------- save + stats
      Shape is MRSave's version-1 shape (see mr-save.js): hero
-     {name, choice}, companionRole, unlockedCompanions,
+     {name, choice, design}, companionRole, unlockedCompanions,
      clearedStages, stars {stageId: 1..3}, badges [worldIds],
      shards, xp, gearOwned, equippedOutfit, equippedWand,
      towerBest, daily {completed}, recentMisses, battleSnapshot.
@@ -86218,7 +87254,7 @@ var MRGame = (function () {
     }
     return {
       version: 1,
-      hero: { name: 'Hero', choice: 'male' },
+      hero: { name: 'Hero', choice: 'male', design: null },
       companionRole: null,
       unlockedCompanions: [],
       clearedStages: [],
@@ -86269,9 +87305,11 @@ var MRGame = (function () {
     var base = _defaultSave();
     var out = base;
     if (raw.hero && typeof raw.hero === 'object' && typeof raw.hero.name === 'string') {
+      var fbChoice = raw.hero.choice === 'female' ? 'female' : 'male';
       out.hero = {
         name: String(raw.hero.name).slice(0, 12) || 'Hero',
-        choice: raw.hero.choice === 'female' ? 'female' : 'male'
+        choice: fbChoice,
+        design: _validHeroDesign(fbChoice, raw.hero.design)
       };
     }
     if (typeof raw.companionRole === 'string') out.companionRole = raw.companionRole;
@@ -86571,6 +87609,7 @@ var MRGame = (function () {
   var _deleteArmed = false;
   var _draftName = '';
   var _draftGender = 'male';
+  var _draftDesign = null;
   var _selectedWorldId = '';
   var _encourageIndex = 0;
   var _attemptCounter = 0;
@@ -87592,6 +88631,7 @@ var MRGame = (function () {
       _result = {
         title: title, line: line, stars: award.stars, xp: award.xp,
         shards: award.shards, badge: award.badge, unlockLine: award.unlockLine,
+        won: true, heroExpression: 'victorious',
         nextAction: nextAction, nextLabel: nextLabel, nextParams: nextParams
       };
       _showSheet('result');
@@ -87603,6 +88643,7 @@ var MRGame = (function () {
           line: 'You cleared ' + b.correctCount + ' floors in ' + b.world.name + '. Your best (' + (_save.towerBest[b.world.id] || b.correctCount) + ' floors) is kept — try the climb again!' +
             (loss.shards > 0 ? ' +' + loss.shards + ' Star Shards.' : ''),
           stars: 0, xp: loss.xp, shards: loss.shards, badge: '', unlockLine: '',
+          won: false, heroExpression: 'hurt',
           nextAction: 'start-tower', nextLabel: 'Climb Again',
           nextParams: { world: b.world.id }
         };
@@ -87613,6 +88654,7 @@ var MRGame = (function () {
           line: 'Score ' + b.score + ' · ' + b.correctCount + ' right. A fresh set arrives tomorrow.' +
             (loss.xp > 0 ? ' +' + loss.xp + ' XP kept.' : ''),
           stars: 0, xp: loss.xp, shards: 0, badge: '', unlockLine: '',
+          won: false, heroExpression: 'hurt',
           nextAction: null, nextLabel: '', nextParams: {}
         };
         _showSheet('result');
@@ -87621,6 +88663,7 @@ var MRGame = (function () {
           title: 'Practice Complete',
           line: b.correctCount + ' right out of ' + b.questionsAsked + '. Every try makes the next one easier.',
           stars: 0, xp: 0, shards: 0, badge: '', unlockLine: '',
+          won: false, heroExpression: 'happy',
           nextAction: 'start-den', nextLabel: 'Keep Practicing',
           nextParams: { world: b.world.id, skill: b.skillId || '' }
         };
@@ -87632,6 +88675,7 @@ var MRGame = (function () {
           title: 'Let\u2019s Try Again',
           line: 'Out of hearts — but heroes never lose progress here. The same stage restarts with fresh problems, and the tricky ones will come back in gentler forms.',
           stars: 0, xp: 0, shards: 0, badge: '', unlockLine: '',
+          won: false, heroExpression: 'hurt',
           nextAction: 'start-stage', nextLabel: 'Retry This Stage',
           nextParams: { world: b.world.id, stage: b.stage }
         };
@@ -88151,6 +89195,7 @@ var MRGame = (function () {
       _result = {
         title: title, line: line, stars: stars, xp: result.xp,
         shards: result.shards, badge: badge, unlockLine: unlockLines.join(' '),
+        won: true, heroExpression: 'victorious',
         nextAction: nextAction, nextLabel: nextLabel, nextParams: nextParams
       };
       _showSheet('result');
@@ -88161,6 +89206,7 @@ var MRGame = (function () {
           line: 'You cleared ' + result.correct + ' floors in ' + b.world.name + '. Your best (' + (_save.towerBest[b.world.id] || result.correct) + ' floors) is kept — try the climb again!' +
             (result.shards > 0 ? ' +' + result.shards + ' Star Shards.' : ''),
           stars: 0, xp: result.xp, shards: result.shards, badge: '', unlockLine: '',
+          won: false, heroExpression: 'hurt',
           nextAction: 'start-tower', nextLabel: 'Climb Again',
           nextParams: { world: b.world.id }
         };
@@ -88170,6 +89216,7 @@ var MRGame = (function () {
           line: 'Score ' + result.dailyScore + ' · ' + result.correct + ' right. A fresh set arrives tomorrow.' +
             (result.xp > 0 ? ' +' + result.xp + ' XP kept.' : ''),
           stars: 0, xp: result.xp, shards: 0, badge: '', unlockLine: '',
+          won: false, heroExpression: 'hurt',
           nextAction: null, nextLabel: '', nextParams: {}
         };
       } else {
@@ -88177,6 +89224,9 @@ var MRGame = (function () {
           title: 'Practice Complete',
           line: result.correct + ' right out of ' + (result.correct + result.wrong) + '. Every try makes the next one easier.',
           stars: 0, xp: result.xp, shards: 0, badge: '', unlockLine: '',
+          /* This branch serves the Practice Den (no defeat: happy)
+             and any other non-tower/non-daily loss (hurt). */
+          won: false, heroExpression: b.mode === 'den' ? 'happy' : 'hurt',
           nextAction: 'start-den', nextLabel: 'Keep Practicing',
           nextParams: { world: b.world.id, skill: b.skillId || '' }
         };
@@ -88422,6 +89472,7 @@ var MRGame = (function () {
     var viewSave = {
       hero: _save.hero ? {
         name: _save.hero.name, choice: _save.hero.choice,
+        design: _validHeroDesign(_save.hero.choice, _save.hero.design),
         gender: _save.hero.choice, level: level, xp: _save.xp
       } : null,
       companionId: _save.companionRole,
@@ -88555,6 +89606,7 @@ var MRGame = (function () {
       deleteArmed: _deleteArmed,
       draftName: _draftName,
       draftGender: _draftGender,
+      draftDesign: _draftDesign,
       selectedWorld: _selectedWorldId ? _worldById(_selectedWorldId) : null,
       battle: _battle,
       result: _result,
@@ -88688,6 +89740,29 @@ var MRGame = (function () {
     render();
   }
 
+  /* Change-hero: swap ONLY the hero's look (choice + design).
+     Name and every scrap of progress (XP, shards, stars, badges,
+     gear, companions, bestiary, stats) are untouched. An unknown
+     or cross-gender design is ignored and the sheet stays open. */
+  function _changeHeroDesign(gender, design) {
+    if (!_save || !_save.hero) return;
+    var g = gender === 'female' ? 'female' : 'male';
+    var valid = _validHeroDesign(g, design);
+    if (design && !valid) return;
+    if (_save.hero.choice === g && _save.hero.design === valid) {
+      _sheet = null;
+      render();
+      return;
+    }
+    _save.hero.choice = g;
+    _save.hero.design = valid;
+    _persistSave(_save);
+    _sheet = null;
+    _sfx('tap');
+    _toastMsg('Your hero has a new look!');
+    render();
+  }
+
   function _handleAction(action, target) {
     var d = target.getAttribute ? function (k) { return target.getAttribute('data-' + k); } : function () { return null; };
     switch (action) {
@@ -88695,6 +89770,17 @@ var MRGame = (function () {
       case 'toggle-sound': _onToggleSound(); return;
       case 'pick-gender': {
         _draftGender = d('gender') === 'female' ? 'female' : 'male';
+        _draftDesign = _validHeroDesign(_draftGender, _draftDesign);
+        _sfx('tap');
+        render();
+        return;
+      }
+      case 'pick-design': {
+        /* Tapping a setup portrait sets gender + design together. */
+        var pickGender = d('gender') === 'female' ? 'female' : 'male';
+        var pickDesign = d('design') || null;
+        _draftGender = pickGender;
+        _draftDesign = _validHeroDesign(pickGender, pickDesign);
         _sfx('tap');
         render();
         return;
@@ -88702,7 +89788,7 @@ var MRGame = (function () {
       case 'create-hero': {
         var name = (_draftName || '').trim();
         if (!name) return;
-        _save.hero = { name: name.slice(0, 12), choice: _draftGender };
+        _save.hero = { name: name.slice(0, 12), choice: _draftGender, design: _validHeroDesign(_draftGender, _draftDesign) };
         _save.companionRole = null;
         _persistSave(_save);
         _sfx('unlock');
@@ -88721,6 +89807,16 @@ var MRGame = (function () {
       case 'open-gear': _screen = 'gear'; render(); return;
       case 'open-bestiary': _screen = 'bestiary'; render(); return;
       case 'open-parent': _screen = 'parent'; render(); return;
+      case 'open-change-hero': {
+        if (!_save || !_save.hero) return;
+        _showSheet('changehero');
+        render();
+        return;
+      }
+      case 'change-hero-design': {
+        _changeHeroDesign(d('gender'), d('design') || null);
+        return;
+      }
       case 'select-world': {
         _selectedWorldId = d('world') || '';
         render();
@@ -88852,6 +89948,7 @@ var MRGame = (function () {
         _deleteArmed = false;
         _draftName = '';
         _draftGender = 'male';
+        _draftDesign = null;
         _selectedWorldId = '';
         _screen = 'setup';
         render();
@@ -88982,6 +90079,7 @@ var MRGame = (function () {
     if (_hasProgress() && _save.hero) {
       _draftName = _save.hero.name;
       _draftGender = _save.hero.choice;
+      _draftDesign = _validHeroDesign(_save.hero.choice, _save.hero.design);
     }
     _bind();
     measureAndClampContainer();
@@ -89010,6 +90108,7 @@ var MRGame = (function () {
     _sheet = null;
     _draftName = '';
     _draftGender = 'male';
+    _draftDesign = null;
     _screen = 'setup';
     render();
   }
@@ -89397,23 +90496,133 @@ var MRUI = (function () {
   }
 
   /* Expression-aware art keys (ANIMATION-SPEC.md: happy / determined /
-     worried per hero and companion). */
-  function heroPortraitKey(gender, expression) {
-    var base = gender === 'female' ? 'hero_female' : 'hero_male';
-    var loader = _loader();
-    if (loader && typeof loader.expressionKey === 'function') return loader.expressionKey(base, expression);
-    return base + '_' + (expression || 'happy');
+     worried per hero and companion, plus victorious / hurt for
+     result states). Hero looks: null = the shipped default look for
+     the gender; 'ember'/'frost' (male), 'jade'/'rose' (female). The
+     design lists mirror MRSave.HERO_DESIGNS and mr-game.js — keep
+     all three in sync. Unknown, missing, or cross-gender designs
+     fall back to the shipped default keys. */
+  var HERO_DESIGNS = {
+    male: ['ember', 'frost'],
+    female: ['jade', 'rose']
+  };
+
+  function _normalizeExpression(expression) {
+    return (expression === 'determined' || expression === 'worried' ||
+      expression === 'victorious' || expression === 'hurt') ? expression : 'happy';
   }
 
+  function _validDesign(gender, design) {
+    var list = HERO_DESIGNS[gender === 'female' ? 'female' : 'male'] || [];
+    return (typeof design === 'string' && list.indexOf(design) >= 0) ? design : null;
+  }
+
+  function _heroBase(gender, design) {
+    var base = gender === 'female' ? 'hero_female' : 'hero_male';
+    var valid = _validDesign(gender, design);
+    return valid ? base + '_' + valid : base;
+  }
+
+  /* heroPortraitKey(gender, design, expression). Two-argument calls
+     heroPortraitKey(gender, expression) keep working: when the
+     second argument names an expression (or is missing) it is read
+     as the expression with the default design. */
+  function heroPortraitKey(gender, design, expression) {
+    if (typeof expression === 'undefined' &&
+        (design === 'happy' || design === 'determined' || design === 'worried' ||
+         design === 'victorious' || design === 'hurt' || design == null)) {
+      expression = design;
+      design = null;
+    }
+    var base = _heroBase(gender, design);
+    var loader = _loader();
+    if (loader && typeof loader.expressionKey === 'function') return loader.expressionKey(base, expression);
+    return base + '_' + _normalizeExpression(expression);
+  }
+
+  /* Companion portrait keys flow through the loader's allowlist, so
+     the new victorious/hurt expressions work with no special case. */
   function companionPortraitKey(id, expression) {
     var base = 'companion_' + id;
     var loader = _loader();
     if (loader && typeof loader.expressionKey === 'function') return loader.expressionKey(base, expression);
-    return base + '_' + (expression || 'happy');
+    return base + '_' + _normalizeExpression(expression);
   }
 
-  function heroSpriteKey(gender) {
-    return gender === 'female' ? 'sprite_hero_female' : 'sprite_hero_male';
+  function heroSpriteKey(gender, design) {
+    var base = gender === 'female' ? 'sprite_hero_female' : 'sprite_hero_male';
+    var valid = _validDesign(gender, design);
+    return valid ? base + '_' + valid : base;
+  }
+
+  /* Designs per gender, default look first: [null, ...designs]. */
+  function heroDesignsFor(gender) {
+    var list = HERO_DESIGNS[gender === 'female' ? 'female' : 'male'] || [];
+    return [null].concat(list);
+  }
+
+  /* Battle-arena expressions (single derivation point for the
+     fallback, engine, and resume battle paths):
+       1 heart left  -> worried (hero + companion; most urgent)
+       boss charging -> determined (hero + companion brace)
+       otherwise     -> the battle state's own expression
+         (determined while asking, happy after a right answer,
+         worried after a wrong one). */
+  function _battleHeroExpression(b) {
+    if (b && b.maxHearts > 0 && b.hearts === 1 && !b.over) return 'worried';
+    if (b && b.charging) return 'determined';
+    return (b && b.heroExpression) || 'determined';
+  }
+
+  function _battleCompanionExpression(b) {
+    if (b && b.maxHearts > 0 && b.hearts === 1 && !b.over) return 'worried';
+    if (b && b.charging) return 'determined';
+    return (b && b.companionExpression) || 'happy';
+  }
+
+  /* Hero-look picker: two labeled 3-portrait groups (Male/Female),
+     portraits only — no design labels. Each portrait is a button;
+     tapping one fires `action` with data-gender + data-design
+     ('' = shipped default). The picked portrait gets the existing
+     .is-picked ring. Shared by setup and the change-hero sheet. */
+  function heroPickerGroups(pickedGender, pickedDesign, action) {
+    var groups = el('div', 'mr-setup-groups');
+    var genders = ['male', 'female'];
+    for (var gi = 0; gi < genders.length; gi++) {
+      (function (gender) {
+        var group = el('div', 'mr-setup-group');
+        group.appendChild(el('div', 'mr-setup-group-label', gender === 'female' ? 'Female' : 'Male'));
+        var row = el('div', 'mr-setup-row');
+        var designs = heroDesignsFor(gender);
+        for (var di = 0; di < designs.length; di++) {
+          (function (design, index) {
+            var pick = document.createElement('button');
+            pick.type = 'button';
+            var isPicked = pickedGender === gender &&
+              (pickedDesign || null) === (design || null);
+            pick.className = 'mr-setup-preview' + (isPicked ? ' is-picked' : '');
+            pick.setAttribute('data-action', action);
+            pick.setAttribute('data-gender', gender);
+            pick.setAttribute('data-design', design || '');
+            pick.setAttribute('aria-pressed', isPicked ? 'true' : 'false');
+            pick.setAttribute('aria-label', (gender === 'female' ? 'Female' : 'Male') + ' hero, look ' + (index + 1) + ' of 3');
+            pick.appendChild(sprite({
+              kind: 'hero',
+              artKey: heroPortraitKey(gender, design, 'happy'),
+              frame: 'circle',
+              role: 'picker-' + gender + '-' + (design || 'default'),
+              label: '',
+              expression: 'happy',
+              palette: gender === 'female' ? { bg1: '#f9a8d4', bg2: '#be185d', accent: '#fde68a' } : null
+            }));
+            row.appendChild(pick);
+          })(designs[di], di);
+        }
+        group.appendChild(row);
+        groups.appendChild(group);
+      })(genders[gi]);
+    }
+    return groups;
   }
 
   /* ------------------------------------------------------------ widgets */
@@ -89486,22 +90695,7 @@ var MRUI = (function () {
     root.appendChild(el('p', 'mr-setup-copy',
       'The Gloom of Forgetting has stolen the realm\u2019s numbers. ' +
       'A hero who loves numbers can win them back — one spell at a time.'));
-    var previews = el('div', 'mr-setup-previews');
-    var maleWrap = el('div', 'mr-setup-preview' + (vm.draftGender === 'male' ? ' is-picked' : ''));
-    maleWrap.appendChild(sprite({ kind: 'hero', artKey: heroPortraitKey('male', 'happy'), frame: 'circle', role: 'setup-male', label: 'Male', expression: 'happy' }));
-    previews.appendChild(maleWrap);
-    var femaleWrap = el('div', 'mr-setup-preview' + (vm.draftGender === 'female' ? ' is-picked' : ''));
-    femaleWrap.appendChild(sprite({ kind: 'hero', artKey: heroPortraitKey('female', 'happy'), frame: 'circle', role: 'setup-female', label: 'Female', expression: 'happy', palette: { bg1: '#f9a8d4', bg2: '#be185d', accent: '#fde68a' } }));
-    previews.appendChild(femaleWrap);
-    root.appendChild(previews);
-    var genderRow = el('div', 'mr-setup-gender');
-    var maleBtn = btn('Male', 'pick-gender', 'mr-btn--choice' + (vm.draftGender === 'male' ? ' is-picked' : ''), { gender: 'male' });
-    maleBtn.setAttribute('aria-pressed', vm.draftGender === 'male' ? 'true' : 'false');
-    var femaleBtn = btn('Female', 'pick-gender', 'mr-btn--choice' + (vm.draftGender === 'female' ? ' is-picked' : ''), { gender: 'female' });
-    femaleBtn.setAttribute('aria-pressed', vm.draftGender === 'female' ? 'true' : 'false');
-    genderRow.appendChild(maleBtn);
-    genderRow.appendChild(femaleBtn);
-    root.appendChild(genderRow);
+    root.appendChild(heroPickerGroups(vm.draftGender, vm.draftDesign, 'pick-design'));
     var nameLabel = el('label', 'mr-field-label', 'Your hero\u2019s name');
     nameLabel.setAttribute('for', 'mr-hero-name');
     root.appendChild(nameLabel);
@@ -89531,9 +90725,11 @@ var MRUI = (function () {
     var root = el('div', 'mr-screen mr-screen--hub');
     root.appendChild(header(vm, 'The Math Realms', null));
     var heroCard = el('div', 'mr-hero-card');
+    heroCard.setAttribute('data-action', 'open-change-hero');
+    heroCard.setAttribute('title', 'Change hero look');
     heroCard.appendChild(sprite({
       kind: 'hero',
-      artKey: heroPortraitKey(save.hero.gender, 'happy'),
+      artKey: heroPortraitKey(save.hero.gender, save.hero.design, 'happy'),
       frame: 'circle',
       role: 'hero',
       expression: 'happy',
@@ -89545,6 +90741,7 @@ var MRUI = (function () {
     heroInfo.appendChild(barHtml('mr-bar--xp', vm.xpPct || 0, 'Experience progress'));
     heroInfo.appendChild(el('div', 'mr-hero-meta',
       '★ ' + vm.totalStars + ' stars · ✦ ' + save.shards + ' Star Shards'));
+    heroInfo.appendChild(btn('Change Hero Look', 'open-change-hero', 'mr-btn--small mr-btn--ghost mr-hero-change'));
     heroCard.appendChild(heroInfo);
     root.appendChild(heroCard);
     var t = toast(vm);
@@ -89683,8 +90880,8 @@ var MRUI = (function () {
     enemySide.appendChild(barHtml('mr-bar--hp', (b.enemyHp / b.enemyMaxHp) * 100, 'Enemy health'));
     enemySide.appendChild(sprite({
       kind: b.isBoss ? 'boss' : 'enemy',
-      artKey: b.isBoss ? b.enemy.artKey : null,
-      frame: b.isBoss ? 'rounded' : null,
+      artKey: b.enemy.artKey,
+      frame: 'rounded',
       role: 'enemy',
       label: '',
       expression: b.enemyExpression || 'happy',
@@ -89698,11 +90895,11 @@ var MRUI = (function () {
     var heroSide = el('div', 'mr-arena-side mr-arena-side--hero');
     heroSide.appendChild(sprite({
       kind: 'hero',
-      artKey: heroSpriteKey(vm.save.hero.gender),
+      artKey: heroSpriteKey(vm.save.hero.gender, vm.save.hero.design),
       frame: 'tile',
       role: 'hero',
       label: vm.save.hero.name,
-      expression: b.heroExpression || 'determined',
+      expression: _battleHeroExpression(b),
       palette: vm.save.hero.gender === 'female' ? { bg1: '#f9a8d4', bg2: '#be185d', accent: '#fde68a' } : null,
       anim: (b.over && b.hearts <= 0) ? 'is-defeated' : null
     }));
@@ -89713,7 +90910,7 @@ var MRUI = (function () {
         frame: 'tile',
         role: 'companion',
         label: b.companion.name,
-        expression: b.companionExpression || 'happy',
+        expression: _battleCompanionExpression(b),
         float: b.companion.kind === 'owl' || b.companion.kind === 'dragon'
       }));
     }
@@ -89867,7 +91064,7 @@ var MRUI = (function () {
     var root = el('div', 'mr-screen mr-screen--list');
     root.appendChild(header(vm, 'Bestiary', 'open-hub'));
     root.appendChild(el('p', 'mr-list-intro',
-      'A sticker book of every creature you meet. The Gloom\u2019s creatures are grumpy, never scary — and every one of them can be won over with good math.'));
+      'A sticker book of every creature you meet. The creatures of the Gloom are real foes \u2014 sharp, sly, and waiting to be outsmarted. Only brave math wins them over.'));
     for (var w = 0; w < vm.worlds.length; w++) {
       (function (world) {
         root.appendChild(el('h3', 'mr-best-world', world.name));
@@ -89878,7 +91075,7 @@ var MRUI = (function () {
             var met = !!vm.save.bestiary[foe.id];
             var card = el('div', 'mr-best-card' + (met ? '' : ' is-unknown'));
             if (met) {
-              card.appendChild(sprite({ kind: foe.isBoss ? 'boss' : 'enemy', artKey: foe.isBoss ? foe.artKey : null, frame: foe.isBoss ? 'circle' : null, role: 'best-' + foe.id, label: '', expression: 'happy', palette: foe.palette }));
+              card.appendChild(sprite({ kind: foe.isBoss ? 'boss' : 'enemy', artKey: foe.artKey, frame: 'circle', role: 'best-' + foe.id, label: '', expression: 'happy', palette: foe.palette }));
             } else {
               var q = el('div', 'mr-best-unknown', '?');
               card.appendChild(q);
@@ -90081,9 +91278,13 @@ var MRUI = (function () {
     var r = vm.result;
     var content = el('div', 'mr-result');
     if (vm.save.hero) {
+      /* Expression by outcome: victorious on a win, hurt on a
+         defeat-restart, happy for a practice finish. The game sets
+         heroExpression on every result; the won flag is the fallback. */
+      var resultExpr = r.heroExpression || (r.won ? 'victorious' : 'happy');
       content.appendChild(sprite({
-        kind: 'hero', artKey: heroPortraitKey(vm.save.hero.gender, 'happy'),
-        frame: 'circle', role: 'hero', label: '', expression: 'happy',
+        kind: 'hero', artKey: heroPortraitKey(vm.save.hero.gender, vm.save.hero.design, resultExpr),
+        frame: 'circle', role: 'hero', label: '', expression: resultExpr,
         palette: vm.save.hero.gender === 'female' ? { bg1: '#f9a8d4', bg2: '#be185d', accent: '#fde68a' } : null
       }));
     }
@@ -90102,11 +91303,31 @@ var MRUI = (function () {
     return sheetShell('result', content);
   }
 
+  /* Change-hero sheet, opened from the hub hero card. It reuses the
+     guarded sheet-open pattern (MRGame._showSheet stamps the open
+     time; backdrop taps inside 350ms are ignored), the same picker
+     as setup, and the same .is-picked ring. Tapping a portrait
+     applies that look at once — name and progress are preserved
+     (see MRGame._changeHeroDesign). */
+  function buildChangeHero(vm) {
+    var content = el('div', 'mr-change-hero');
+    content.appendChild(el('h3', 'mr-sheet-title', 'Change Hero Look'));
+    content.appendChild(el('p', 'mr-sheet-sub',
+      'Pick a new look. Your hero keeps their name and all progress.'));
+    var hero = vm.save.hero || { gender: 'male', design: null };
+    content.appendChild(heroPickerGroups(hero.gender, hero.design, 'change-hero-design'));
+    var row = el('div', 'mr-sheet-row');
+    row.appendChild(btn('Keep Current Look', 'close-sheet', 'mr-btn--small mr-btn--ghost'));
+    content.appendChild(row);
+    return sheetShell('changehero', content);
+  }
+
   function buildSheet(vm) {
     if (!vm.sheet) return null;
     if (vm.sheet === 'scratch') return buildScratchSheet(vm);
     if (vm.sheet === 'bossintro') return buildBossIntro(vm);
     if (vm.sheet === 'result') return buildResult(vm);
+    if (vm.sheet === 'changehero') return buildChangeHero(vm);
     return null;
   }
 
@@ -90136,6 +91357,9 @@ var MRUI = (function () {
     heroPortraitKey: heroPortraitKey,
     companionPortraitKey: companionPortraitKey,
     heroSpriteKey: heroSpriteKey,
+    heroDesignsFor: heroDesignsFor,
+    heroDesigns: HERO_DESIGNS,
+    heroPickerGroups: heroPickerGroups,
     heartsHtml: heartsHtml,
     starsHtml: starsHtml,
     barHtml: barHtml,
