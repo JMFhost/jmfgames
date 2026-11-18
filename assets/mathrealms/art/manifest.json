@@ -62,14 +62,14 @@
       "sha256": "4a33758001264c7fcb8e9b675439577e70c6b7224ae04e9d6531930660295a7d"
     },
     "boss_muddle_moth": {
-      "bytes": 110576,
+      "bytes": 141274,
       "file": "boss_muddle_moth.webp",
-      "sha256": "dc0d6bb2abcbefa312067401f804a198ca871f953cddbe1e3d00ca4348f13937"
+      "sha256": "b8687378f748efe0fac628ee247731a885beb783fb3bccdd8589e126dd78c85c"
     },
     "boss_undertow_twins": {
-      "bytes": 172190,
+      "bytes": 156714,
       "file": "boss_undertow_twins.webp",
-      "sha256": "460f8ae083a936a5bc3b8d5d3d4c9f8d7ff99c7a71d6d275c99c85b3c79dd79f"
+      "sha256": "8d18394afc10396f6413a3efa0a007f3b0ed1d8bffc0714a74f4b8a34c596d1e"
     },
     "companion_blaze_determined": {
       "bytes": 74622,
@@ -80,6 +80,16 @@
       "bytes": 71770,
       "file": "companion_blaze_happy.webp",
       "sha256": "99d0641b9e5e36c367babe8356515484a8bcf60afec33239cec3f637d0c5ea6b"
+    },
+    "companion_blaze_hurt": {
+      "bytes": 80420,
+      "file": "companion_blaze_hurt.webp",
+      "sha256": "d1a9b5553312d1ffbb7621bdf7a87a35c099bc8241a813caa1fbe6a28b6dadc9"
+    },
+    "companion_blaze_victorious": {
+      "bytes": 98446,
+      "file": "companion_blaze_victorious.webp",
+      "sha256": "394ed64c733e43a987c9020e46ba84dd09abee1a24bda9c6273acbec5a78e631"
     },
     "companion_blaze_worried": {
       "bytes": 74650,
@@ -96,6 +106,16 @@
       "file": "companion_fenn_happy.webp",
       "sha256": "b69ee52d0c408902d3dc906152801ec715b77272445df70ff4cdff151a36dbe3"
     },
+    "companion_fenn_hurt": {
+      "bytes": 95122,
+      "file": "companion_fenn_hurt.webp",
+      "sha256": "6b0908d216e764d1cacdb6ff1749ee88666df790c18acc0ea1e57fac4cc165f1"
+    },
+    "companion_fenn_victorious": {
+      "bytes": 107416,
+      "file": "companion_fenn_victorious.webp",
+      "sha256": "7e23e6a635340caf707c70547f2076d8e7106ba0fc1a5752fec17a35d04ebbbb"
+    },
     "companion_fenn_worried": {
       "bytes": 89054,
       "file": "companion_fenn_worried.webp",
@@ -111,10 +131,170 @@
       "file": "companion_opal_happy.webp",
       "sha256": "323b2396b0a6629aea81a4d86d4f678bf347d7bec3a756b5d0834a7c2b28a3c0"
     },
+    "companion_opal_hurt": {
+      "bytes": 70954,
+      "file": "companion_opal_hurt.webp",
+      "sha256": "20e5fa17192beca55bfa0c88bdd5bf33a138c5ee0bd0443a8a7ab5e51c65136f"
+    },
+    "companion_opal_victorious": {
+      "bytes": 75844,
+      "file": "companion_opal_victorious.webp",
+      "sha256": "e0dbbc903c445c0f329e6089bebe2fb0d266f114cf6d97be2baea4f31ceb3a96"
+    },
     "companion_opal_worried": {
       "bytes": 63052,
       "file": "companion_opal_worried.webp",
       "sha256": "34b0488ca4496a3d06180a2f6792431115c847bcd9cfe9ed7c2ce423a77f39b8"
+    },
+    "enemy_w1_cloud": {
+      "bytes": 61806,
+      "file": "enemy_w1_cloud.webp",
+      "sha256": "34af5d56709baa2d8fc50b39ee73d7a58b8be9376ffc25b26c5498df35117f32"
+    },
+    "enemy_w1_comet": {
+      "bytes": 124892,
+      "file": "enemy_w1_comet.webp",
+      "sha256": "3f7649c38a1610c48eb97ef3d95a7e7cd7584b3b0c2985ac185463e60bea8538"
+    },
+    "enemy_w1_moon": {
+      "bytes": 88994,
+      "file": "enemy_w1_moon.webp",
+      "sha256": "fe62666cca3e9087461012a7f90f5f4c9abd10c6946bdc98a3bcdc2c1f15e5c1"
+    },
+    "enemy_w1_sprite": {
+      "bytes": 85452,
+      "file": "enemy_w1_sprite.webp",
+      "sha256": "d4fc0b246b708868b328f1ec6d722959c9a1eebb1aab18a6556b796db8163bfd"
+    },
+    "enemy_w1_wobbly": {
+      "bytes": 103540,
+      "file": "enemy_w1_wobbly.webp",
+      "sha256": "4344ed50742a3e79b6f6e9f37f9012c3dea769332619c2b4c292141c7cb4b97a"
+    },
+    "enemy_w2_acorn": {
+      "bytes": 133192,
+      "file": "enemy_w2_acorn.webp",
+      "sha256": "e38258eed1fbe9ae2a6a4ba681ae52fd32ac9ed86340077cb45820d89d04f111"
+    },
+    "enemy_w2_bunny": {
+      "bytes": 96906,
+      "file": "enemy_w2_bunny.webp",
+      "sha256": "fa50d49b424f377ab2332d8c207d267e4a9399a08de82a5699d31bba16222b24"
+    },
+    "enemy_w2_frog": {
+      "bytes": 124710,
+      "file": "enemy_w2_frog.webp",
+      "sha256": "7332d0a136718305229f35c2a3c4e9b9c42aec27502a9bd12823c8291e1af5f8"
+    },
+    "enemy_w2_pixie": {
+      "bytes": 136230,
+      "file": "enemy_w2_pixie.webp",
+      "sha256": "44d3f5493a1547d6878c90c0d26dc87f04478748747f4424dc1673f7e4e7a0e4"
+    },
+    "enemy_w2_turtle": {
+      "bytes": 126318,
+      "file": "enemy_w2_turtle.webp",
+      "sha256": "8f53889aea67e179760c49d7205273d1aae502cf671ab3a4b02fc3f910a48bba"
+    },
+    "enemy_w3_frost": {
+      "bytes": 132298,
+      "file": "enemy_w3_frost.webp",
+      "sha256": "f5227add40c53494d056ec528e6ea34238f49b9c3173e5b927f54a5f04044280"
+    },
+    "enemy_w3_goat": {
+      "bytes": 152848,
+      "file": "enemy_w3_goat.webp",
+      "sha256": "54a7f5c484e2a38c4dfc016aa520ac1bbffb272e3aed90c58868e9d7b7dc3b21"
+    },
+    "enemy_w3_hare": {
+      "bytes": 97692,
+      "file": "enemy_w3_hare.webp",
+      "sha256": "465727e8c6ec9420b0ee5553f6da89bee4fa2916194006af8e6b53592a564e06"
+    },
+    "enemy_w3_icicle": {
+      "bytes": 113942,
+      "file": "enemy_w3_icicle.webp",
+      "sha256": "60a57a1d2f03304b25147201d50d102170b566ba668772c81f7e48301e902958"
+    },
+    "enemy_w3_shepherd": {
+      "bytes": 94120,
+      "file": "enemy_w3_shepherd.webp",
+      "sha256": "1f42d49a4de099ef681978d681f30e84b9f8da3e119afd45937427bf4fde1f1f"
+    },
+    "enemy_w4_crab": {
+      "bytes": 161804,
+      "file": "enemy_w4_crab.webp",
+      "sha256": "52d47cb46a634b32ca0ecc5ef543a071b0694340c9c20d89e826dc2e3677a6b5"
+    },
+    "enemy_w4_eel": {
+      "bytes": 181820,
+      "file": "enemy_w4_eel.webp",
+      "sha256": "f824b0d5e1e86e4cf29c3d5e0323885ac0388fb54d3892b40a27eef782c37208"
+    },
+    "enemy_w4_fish": {
+      "bytes": 177188,
+      "file": "enemy_w4_fish.webp",
+      "sha256": "a9c949ae3b0639d4f0c5bdf79f51b71d9b29ea90d82b3cf5c627e8907233cfad"
+    },
+    "enemy_w4_lily": {
+      "bytes": 140428,
+      "file": "enemy_w4_lily.webp",
+      "sha256": "ded3cd49ef6944649c7a28997cf0b4823645bb4837ac3250e378e7bd2cd5d5d9"
+    },
+    "enemy_w4_otter": {
+      "bytes": 196824,
+      "file": "enemy_w4_otter.webp",
+      "sha256": "13898c3a3091aac882d189d45079ebf207ff18f55daf5bb7a277cd175727be6f"
+    },
+    "enemy_w5_golem": {
+      "bytes": 164580,
+      "file": "enemy_w5_golem.webp",
+      "sha256": "635f1f0d10894710f324c5b35ebf74f254f6158d11c981db958466cddc5279e7"
+    },
+    "enemy_w5_imp": {
+      "bytes": 157704,
+      "file": "enemy_w5_imp.webp",
+      "sha256": "e6ff0b03fcf12c726169420447ce3732111c4b36da0191c2643c0758971c2d79"
+    },
+    "enemy_w5_keeper": {
+      "bytes": 174246,
+      "file": "enemy_w5_keeper.webp",
+      "sha256": "0e174df30f1440b7fef03a4497b972b180ecfdce2dd467dfc2c9d36e6d4ce65b"
+    },
+    "enemy_w5_sentinel": {
+      "bytes": 125932,
+      "file": "enemy_w5_sentinel.webp",
+      "sha256": "b04d924dcdb24fff3672f9623df48f6344a825a0effc50aa6500db407c532132"
+    },
+    "enemy_w5_wisp": {
+      "bytes": 151936,
+      "file": "enemy_w5_wisp.webp",
+      "sha256": "8ecb5bc238dd60b679ebc87bbe97df88cae50c433dc1f4474ea882444f923b6b"
+    },
+    "enemy_w6_angler": {
+      "bytes": 124230,
+      "file": "enemy_w6_angler.webp",
+      "sha256": "ee0b4a024b15787693c619619046e322d82ce0619bae17eb176ee627c28d6978"
+    },
+    "enemy_w6_crab": {
+      "bytes": 177368,
+      "file": "enemy_w6_crab.webp",
+      "sha256": "35a1ab8daf277888159e34e68d347b02ae5729fe1b876252e5d38d5245e37536"
+    },
+    "enemy_w6_ray": {
+      "bytes": 102608,
+      "file": "enemy_w6_ray.webp",
+      "sha256": "e89d793e17eebd919298d5b64070fedf9f46e2cebdf72754ce8fa7a354a2a190"
+    },
+    "enemy_w6_squid": {
+      "bytes": 121416,
+      "file": "enemy_w6_squid.webp",
+      "sha256": "243a55caa76e5c3098e4efebf383c881d6332121609f371f0312584f00b019b4"
+    },
+    "enemy_w6_wisp": {
+      "bytes": 105212,
+      "file": "enemy_w6_wisp.webp",
+      "sha256": "2e3a2098e39bbefeb97272bfb411b38c34f157f295cc577f723fceec102a9f1c"
     },
     "gear_outfit_forest": {
       "bytes": 18030,
@@ -156,6 +336,66 @@
       "file": "hero_female_happy.webp",
       "sha256": "842cf622681d17e7035966f0c0aeff525c3ea6d60d9fa464a399cf43718c45f1"
     },
+    "hero_female_hurt": {
+      "bytes": 102646,
+      "file": "hero_female_hurt.webp",
+      "sha256": "9128c23c6a58da3984c8a5804478e71a4356d5a2d7b9125da34ec5ccdf14b349"
+    },
+    "hero_female_jade_determined": {
+      "bytes": 127738,
+      "file": "hero_female_jade_determined.webp",
+      "sha256": "d76bcb447f893d31a38c49713f685b5de717f9f2478832c6b9a48cab73f28d95"
+    },
+    "hero_female_jade_happy": {
+      "bytes": 124230,
+      "file": "hero_female_jade_happy.webp",
+      "sha256": "c4666df5cd8045ee14b1ef1b564a69fc90180fecdbd4477fb0d38390f626a9e1"
+    },
+    "hero_female_jade_hurt": {
+      "bytes": 133284,
+      "file": "hero_female_jade_hurt.webp",
+      "sha256": "f86aca04aed22bdeec8e30179fa1b383f5ea9610b8a2878b90cd19f8be6dbeb9"
+    },
+    "hero_female_jade_victorious": {
+      "bytes": 130572,
+      "file": "hero_female_jade_victorious.webp",
+      "sha256": "02f6fffc32b6a0cf99e2fc802246757df8ed7597f9046e7ed7f93412eef19931"
+    },
+    "hero_female_jade_worried": {
+      "bytes": 126524,
+      "file": "hero_female_jade_worried.webp",
+      "sha256": "be9b779a2c78f091cfeafbc82482ec9c249127c7984fb20b79e7f483116132ee"
+    },
+    "hero_female_rose_determined": {
+      "bytes": 127598,
+      "file": "hero_female_rose_determined.webp",
+      "sha256": "ebe876c9cc62813dc36710c76207056ff99990cf99539266db0e2e7f684666ab"
+    },
+    "hero_female_rose_happy": {
+      "bytes": 122398,
+      "file": "hero_female_rose_happy.webp",
+      "sha256": "73711ea4020a94e2cbbc08b02d47e1d17954ee0cf1cd7f643c1dac0135f64ba6"
+    },
+    "hero_female_rose_hurt": {
+      "bytes": 129946,
+      "file": "hero_female_rose_hurt.webp",
+      "sha256": "6627b741855c24dc30242338cf25ab2b1316529c3c0448dfc028938ed55f05dd"
+    },
+    "hero_female_rose_victorious": {
+      "bytes": 124302,
+      "file": "hero_female_rose_victorious.webp",
+      "sha256": "51e67ab7cc24790df7a29e27a776272653e0276f5ad1cefbf6131a40b902000a"
+    },
+    "hero_female_rose_worried": {
+      "bytes": 127962,
+      "file": "hero_female_rose_worried.webp",
+      "sha256": "12b39f29fb29bff418a70728f01066de80ee3fe4343af966a92bc17aeeba3ef1"
+    },
+    "hero_female_victorious": {
+      "bytes": 122912,
+      "file": "hero_female_victorious.webp",
+      "sha256": "39d8996ebbbbf2202d2030071590a018837339569ddafc54bbf4230da03010e6"
+    },
     "hero_female_worried": {
       "bytes": 105660,
       "file": "hero_female_worried.webp",
@@ -166,10 +406,70 @@
       "file": "hero_male_determined.webp",
       "sha256": "62eb76a45cd4b5a435d4841ed5164196501ff256a2117f217fe2fdc9feebcbc5"
     },
+    "hero_male_ember_determined": {
+      "bytes": 132130,
+      "file": "hero_male_ember_determined.webp",
+      "sha256": "bf70476b3ff0f11affa55c0acf7aca90678d334f6525b244f815053215917277"
+    },
+    "hero_male_ember_happy": {
+      "bytes": 125250,
+      "file": "hero_male_ember_happy.webp",
+      "sha256": "fb64eef0cfddf072df799d0759f6f5692d2a5f68903355a483deb90010f7d8b0"
+    },
+    "hero_male_ember_hurt": {
+      "bytes": 131860,
+      "file": "hero_male_ember_hurt.webp",
+      "sha256": "25c1bf9dc99218a192c78897c83482e0867ba7b3da1bf29f1549a32c9b1f4465"
+    },
+    "hero_male_ember_victorious": {
+      "bytes": 133252,
+      "file": "hero_male_ember_victorious.webp",
+      "sha256": "830ac4cde4e6d57ead267b40f782c09e6c24441eebbb1b277ccafabd72ad0523"
+    },
+    "hero_male_ember_worried": {
+      "bytes": 130504,
+      "file": "hero_male_ember_worried.webp",
+      "sha256": "6caddd0a57b4fe23768525c3c23c38cd8500a10662b7d4c5c1c8cd4b1e941e0e"
+    },
+    "hero_male_frost_determined": {
+      "bytes": 99060,
+      "file": "hero_male_frost_determined.webp",
+      "sha256": "e610e7d30c60047a0496e3767ffa2ce60c6bcf536d2e0e136e4cc9778a3e0e83"
+    },
+    "hero_male_frost_happy": {
+      "bytes": 93556,
+      "file": "hero_male_frost_happy.webp",
+      "sha256": "b974bd3607ca29ef3afa16b720043c5116eb252e3b079509ac57bf7fb552944e"
+    },
+    "hero_male_frost_hurt": {
+      "bytes": 101464,
+      "file": "hero_male_frost_hurt.webp",
+      "sha256": "19e8a4c22ff56f81092d35c5ea05c78a99a517313a9e697d21a471e736efe8ce"
+    },
+    "hero_male_frost_victorious": {
+      "bytes": 103256,
+      "file": "hero_male_frost_victorious.webp",
+      "sha256": "f34cb1b64ef8285430c799446ddf5abab56b02d24a6d8be39eff3ae2fd511476"
+    },
+    "hero_male_frost_worried": {
+      "bytes": 99478,
+      "file": "hero_male_frost_worried.webp",
+      "sha256": "d7f95472174a3ecf4bd16513743c634c8db6a3d5f4e36eac67faecf2a271edbf"
+    },
     "hero_male_happy": {
       "bytes": 106120,
       "file": "hero_male_happy.webp",
       "sha256": "c48827c028b068bc4014b9fcab2b9bf263bab8cbf155270e82345ba61c1ca0ca"
+    },
+    "hero_male_hurt": {
+      "bytes": 113514,
+      "file": "hero_male_hurt.webp",
+      "sha256": "a2b980e1d1e6b3fc49c635264404d6603fc5498463a1a3855d16bc3f89a09e9a"
+    },
+    "hero_male_victorious": {
+      "bytes": 152600,
+      "file": "hero_male_victorious.webp",
+      "sha256": "888f5e642c6e2785c43ab4d21dfae14e8f39311a2dfa415b07d167d8e3ae6d76"
     },
     "hero_male_worried": {
       "bytes": 113442,
@@ -191,10 +491,30 @@
       "file": "sprite_hero_female.webp",
       "sha256": "3fccda5f9d5f1ab1790fde1ab4ec2d20d228d86060f3801b8c9fac91528c6e85"
     },
+    "sprite_hero_female_jade": {
+      "bytes": 70754,
+      "file": "sprite_hero_female_jade.webp",
+      "sha256": "b8f44a015414537e981dfacf82e222758cddc2579f94644265a3e65c63d31ce7"
+    },
+    "sprite_hero_female_rose": {
+      "bytes": 86148,
+      "file": "sprite_hero_female_rose.webp",
+      "sha256": "fe4e8af2b9e29cd20bce8be02aa719edd8cdc39eeb71e9c5e3b244bce06b165f"
+    },
     "sprite_hero_male": {
       "bytes": 66404,
       "file": "sprite_hero_male.webp",
       "sha256": "0be3add762010431b3cae2b572dadcb8b4659f8e1782e97b2ca324ba12186b89"
+    },
+    "sprite_hero_male_ember": {
+      "bytes": 78892,
+      "file": "sprite_hero_male_ember.webp",
+      "sha256": "28d9c1a208cd31ce7a02af84832130cd18d8827c8a03649f3819ceaaa80c7bee"
+    },
+    "sprite_hero_male_frost": {
+      "bytes": 66662,
+      "file": "sprite_hero_male_frost.webp",
+      "sha256": "5e25ff1a2cbeb809c743318cd2aaa223d32b3077a27a215ec855839ba0d3ef93"
     },
     "sprite_opal": {
       "bytes": 41474,
