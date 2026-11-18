@@ -9399,6 +9399,19 @@ button.mr-setup-preview:focus-visible {
   white-space: nowrap;
 }
 
+/* MRSHAPES BEGIN: shape visuals for Math Realms problems (SHAPES-DESIGN.md §D). */
+.mr-figure { display: flex; justify-content: center; align-items: center; margin-top: 6px; }
+.mr-figure svg { display: block; height: 72px; width: auto; max-width: 100%; }
+.mr-figure--sequence { gap: 6px; }
+.mr-figure--sequence svg { height: 44px; }
+.mr-seq-slot { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 2px dashed rgba(253, 230, 138, 0.6); border-radius: 10px; color: #fde68a; font-size: 20px; font-weight: 800; }
+.mr-choice.has-figure { display: flex; align-items: center; gap: 8px; padding: 6px 10px; text-align: left; }
+.mr-choice-fig { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; }
+.mr-choice-fig svg { width: 30px; height: 30px; }
+.mr-choice-label { flex: 1 1 auto; min-width: 0; }
+.mr-figure text { font-family: inherit; font-weight: 800; }
+/* MRSHAPES END */
+
 /* World tints for the battle backdrop. */
 .mr-world-bg--meadow { background: linear-gradient(180deg, #232a52 0%, #131b33 55%, #0d1226 100%); }
 .mr-world-bg--woods { background: linear-gradient(180deg, #1d3a2a 0%, #14261c 55%, #0d1226 100%); }
@@ -9782,6 +9795,18 @@ button.mr-setup-preview:focus-visible {
   line-height: 1.45;
 }
 
+/* MRSHAPES: fix round 2, change A — medium-height feedback-figure shrink.
+   At heights above the compact tier and up to ~760px (412x720-class
+   phones), the feedback stem figure renders at 48px instead of 72px,
+   recovering 24px for the Next button (worst case 24.9px -> ~49px
+   visible). Placed BEFORE the compact/640px blocks: the .mr-compact
+   rules (higher specificity) and the 640px/568px blocks (later, same
+   specificity) still win at short heights, and tall sizes are
+   unaffected. Never below 44px in this band without re-escalating. */
+@media (max-height: 760px) {
+  .mr-battle--feedback .mr-figure--stem svg { height: 48px; } /* MRSHAPES: fix round 2, change A */
+}
+
 /* ---------- Compact / short viewports ---------- */
 
 .mr-compact .mr-arena { min-height: 64px; }
@@ -9793,6 +9818,11 @@ button.mr-setup-preview:focus-visible {
 .mr-compact .mr-prompt-card { padding: 8px 12px; }
 .mr-compact .mr-feedback-answer,
 .mr-compact .mr-feedback-why { font-size: 12px; }
+.mr-compact .mr-figure svg { height: 44px; } /* MRSHAPES: ladder step 1 */
+.mr-compact .mr-figure--sequence svg, .mr-compact .mr-seq-slot { height: 32px; } /* MRSHAPES: ladder step 2 */
+.mr-compact .mr-seq-slot { width: 36px; font-size: 17px; } /* MRSHAPES */
+.mr-compact .mr-choice-fig, .mr-compact .mr-choice-fig svg { width: 24px; height: 24px; } /* MRSHAPES: ladder step 2 */
+.mr-compact .mr-battle--feedback .mr-figure--stem svg { height: 36px; } /* MRSHAPES: ladder step 1 */
 
 @media (max-height: 640px) {
   .mr-game { padding-top: 50px; padding-bottom: 48px; }
@@ -9803,6 +9833,61 @@ button.mr-setup-preview:focus-visible {
   .mr-prompt-text { font-size: 18px; }
   .mr-choice { min-height: 44px; font-size: 16px; }
   .mr-prompt-card { padding: 8px 12px; }
+  .mr-figure svg { height: 44px; } /* MRSHAPES: ladder step 1 */
+  .mr-figure--sequence svg, .mr-seq-slot { height: 32px; } /* MRSHAPES: ladder step 2 */
+  .mr-seq-slot { width: 36px; font-size: 17px; } /* MRSHAPES */
+  .mr-choice-fig, .mr-choice-fig svg { width: 24px; height: 24px; } /* MRSHAPES: ladder step 2 */
+  .mr-battle--feedback .mr-figure--stem svg { height: 36px; } /* MRSHAPES: ladder step 1 */
+}
+
+/* MRSHAPES: shortest phones (568px design floor). */
+@media (max-height: 568px) {
+  .mr-figure svg { height: 44px; }
+  .mr-figure--sequence svg, .mr-seq-slot { height: 32px; }
+  .mr-seq-slot { width: 32px; font-size: 16px; }
+  .mr-choice-fig, .mr-choice-fig svg { width: 24px; height: 24px; }
+  /* MRSHAPES: ladder step 3 (floor: 32px). The .mr-compact variant is
+     required: without it this rule loses specificity to the .mr-compact
+     block above and the floor tier never applies (measured 40px at
+     320x568 pre-fix). The other rules above now equal the compact values
+     after ladder steps 1-2, so only the feedback rule needs the variant. */
+  .mr-battle--feedback .mr-figure--stem svg, .mr-compact .mr-battle--feedback .mr-figure--stem svg { height: 32px; }
+  /* MRSHAPES: fix round 2, change B — feedback-phase arena strip.
+     Feedback ONLY (reuses the existing .mr-battle--feedback root class;
+     asking is untouched). The arena compresses to a status strip: foe
+     name + HP bar + shrunken 24px portraits in one row, hero portraits
+     shrunken to 24px. Portraits are SHRUNK, never hidden: attack/hit/
+     cheer/explain animations play on the feedback DOM (mr-game.js
+     re-applies _playAnim after the feedback render; probe-verified),
+     so hiding would remove visible animation. Measured facts driving
+     this shape: (1) the arena sits pinned at its 64px min-height in
+     feedback with content spilling, so shrinking portraits alone gains
+     exactly 0px — the min-height MUST drop for the box to compress
+     (injection probe: +44.0px on every sample at min-height 20px);
+     (2) a column layout cannot keep portraits visible above the card
+     at that box height, so the enemy side becomes a row (name + bar +
+     portrait), which also ends the pre-existing name/timer-chip
+     collision in Tower/Daily. Names + HP bar are never hidden; the
+     charge banner wraps to its own row when present. Dual selectors:
+     .mr-compact governs at 320x568 (measured) and its 4-class
+     companion rule ties the unprefixed strip rule, so the prefixed
+     variant (later in file) is required. */
+  .mr-battle--feedback .mr-arena, .mr-compact .mr-battle--feedback .mr-arena { min-height: 20px; } /* MRSHAPES: fix round 2, change B */
+  .mr-battle--feedback .mr-arena-side--enemy, .mr-compact .mr-battle--feedback .mr-arena-side--enemy { flex-direction: row; align-items: center; gap: 6px; flex-wrap: wrap; } /* MRSHAPES: fix round 2, change B */
+  .mr-battle--feedback .mr-foe-name, .mr-compact .mr-battle--feedback .mr-foe-name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* MRSHAPES: fix round 2, change B */
+  .mr-battle--feedback .mr-arena-side--enemy .mr-bar, .mr-compact .mr-battle--feedback .mr-arena-side--enemy .mr-bar { width: 72px; flex-shrink: 0; } /* MRSHAPES: fix round 2, change B */
+  .mr-battle--feedback .mr-arena .mr-sprite, .mr-compact .mr-battle--feedback .mr-arena .mr-sprite { width: 24px; height: 24px; } /* MRSHAPES: fix round 2, change B */
+  .mr-battle--feedback .mr-arena-side--hero .mr-sprite + .mr-sprite, .mr-compact .mr-battle--feedback .mr-arena-side--hero .mr-sprite + .mr-sprite { margin-left: 2px; } /* MRSHAPES: fix round 2, change B */
+  .mr-battle--feedback .mr-charge-banner, .mr-compact .mr-battle--feedback .mr-charge-banner { flex-basis: 100%; } /* MRSHAPES: fix round 2, change B */
+  /* MRSHAPES: fix round 2, change B (companion label). At 24px sprites
+     the hero + companion name pills (~47px each, centers 26px apart)
+     overlap and the companion pill clips at the screen edge — a
+     broken-looking strip. The companion PORTRAIT stays visible (and
+     animated); only its redundant name pill is hidden, feedback-only
+     at <=568px. The hero pill, foe name, and HP bar are retained, and
+     the companion pill still shows while asking and at all larger
+     sizes. Judgment call within Change B; one-line revert. */
+  .mr-battle--feedback .mr-arena-side--hero .mr-sprite + .mr-sprite .mr-sprite-label, .mr-compact .mr-battle--feedback .mr-arena-side--hero .mr-sprite + .mr-sprite .mr-sprite-label { display: none; } /* MRSHAPES: fix round 2, change B */
 }
 
 /* ---------- Home icon ---------- */
@@ -84134,7 +84219,7 @@ var MREngine = (function () {
     var f = rngPick(rng, forms);
     var pool = (notch <= -1) ? SHAPE_NAMES_2D : SHAPE_NAMES;
     return textProblem(rng, 'k-shapes', notch, f.q, f.a, pool, f.why,
-      { kind: 'name', operands: [] });
+      { kind: 'name', operands: [], figure: { v: 1, mode: 'options', map: 'shape-names' } /* MRSHAPES */ });
   }
 
   function genKPatterns(rng, notch) {
@@ -84160,7 +84245,7 @@ var MREngine = (function () {
       return textProblem(rng, 'k-patterns', notch,
         'What comes next? ' + seq2.join(', ') + ', ___',
         s1, shapes.concat(['Star']), 'The pattern repeats ' + s1 + ', ' + s2 + ', so ' + s1 + ' comes next.',
-        { kind: 'shapes', operands: [] });
+        { kind: 'shapes', operands: [], figure: { v: 1, mode: 'sequence', shapes: [s1.toLowerCase(), s2.toLowerCase()] } /* MRSHAPES */ });
     }
     var steps = notch <= -2 ? [1] : (notch === -1 ? [1, 2] : (notch === 0 ? [1, 2, 5] : [2, 5, 10]));
     var step = rngPick(rng, steps);
@@ -84522,14 +84607,14 @@ var MREngine = (function () {
       return textProblem(rng, 'g1-shapeattr', notch,
         'Which shape has ' + target.sides + ' sides?',
         target.name, names, 'A ' + target.name.toLowerCase() + ' has ' + target.sides + ' sides.',
-        { kind: 'which', operands: [target.sides] });
+        { kind: 'which', operands: [target.sides], figure: { v: 1, mode: 'options', map: 'shape-names', marks: ['dots'] } /* MRSHAPES */ });
     }
     var shape = rngPick(rng, pool);
     if (form === 'corners') {
       return numProblem(rng, 'g1-shapeattr', notch,
         'How many corners does a ' + shape.name.toLowerCase() + ' have?',
         shape.sides, [shape.sides + 1, shape.sides + 2], 'A ' + shape.name.toLowerCase() + ' has ' + shape.sides + ' corners.',
-        { kind: 'corners', operands: [shape.sides] }, { min: 0, max: 8 });
+        { kind: 'corners', operands: [shape.sides], figure: { v: 1, mode: 'single', shape: shape.name.toLowerCase(), symmetry: false } /* MRSHAPES */ }, { min: 0, max: 8 });
     }
     return numProblem(rng, 'g1-shapeattr', notch,
       shape.name === 'Circle'
@@ -84537,7 +84622,7 @@ var MREngine = (function () {
         : 'How many sides does a ' + shape.name.toLowerCase() + ' have?',
       shape.sides, [shape.sides + 1, shape.sides + 2],
       shape.name === 'Circle' ? 'A circle is round, so it has 0 straight sides.' : 'A ' + shape.name.toLowerCase() + ' has ' + shape.sides + ' sides.',
-      { kind: 'sides', operands: [shape.sides] }, { min: 0, max: 8 });
+      { kind: 'sides', operands: [shape.sides], figure: { v: 1, mode: 'single', shape: shape.name.toLowerCase(), symmetry: false } /* MRSHAPES */ }, { min: 0, max: 8 });
   }
 
   function genG1Halves(rng, notch) {
@@ -85022,7 +85107,7 @@ var MREngine = (function () {
         'A ' + shape + ' is cut into ' + d + ' equal parts. What fraction is one part?',
         1, d, [[1, d + 1], [2, d], [1, d - 1 > 0 ? d - 1 : 2]],
         'One part out of ' + d + ' equal parts is 1/' + d + '.',
-        { kind: 'onepart', operands: [d] });
+        { kind: 'onepart', operands: [d], figure: { v: 1, mode: 'partition', shape: shape, parts: d, shaded: null } /* MRSHAPES */ });
     }
     var s = rngInt(rng, 1, d - 1);
     if (form === 'unshaded') {
@@ -85031,13 +85116,13 @@ var MREngine = (function () {
         'A ' + shape + ' is cut into ' + d + ' equal parts. ' + s + ' part' + (s === 1 ? ' is' : 's are') + ' shaded. What fraction is left unshaded?',
         left, d, [[s, d], [left + 1, d], [left, d + 1]],
         d + ' parts take away ' + s + ' shaded leaves ' + left + ' unshaded, so ' + fmtFrac(left, d) + ' is unshaded.',
-        { kind: 'unshaded', operands: [d, s] });
+        { kind: 'unshaded', operands: [d, s], figure: { v: 1, mode: 'partition', shape: shape, parts: d, shaded: s } /* MRSHAPES */ });
     }
     return fracProblem(rng, 'g2-fractions', notch,
       'A ' + shape + ' is cut into ' + d + ' equal parts. ' + s + ' part' + (s === 1 ? ' is' : 's are') + ' shaded. What fraction is shaded?',
       s, d, [[s + 1, d], [s, d + 1], [d - s, d]],
       s + ' shaded parts out of ' + d + ' equal parts is ' + fmtFrac(s, d) + '.',
-      { kind: 'shaded', operands: [d, s] });
+      { kind: 'shaded', operands: [d, s], figure: { v: 1, mode: 'partition', shape: shape, parts: d, shaded: s } /* MRSHAPES */ });
   }
 
   // ==================================================================
@@ -85274,18 +85359,18 @@ var MREngine = (function () {
       return numProblem(rng, 'g3-areaperim', notch,
         'A rectangle has a perimeter of ' + perim + ' units and a length of ' + len + ' units. What is its width?',
         wid, [len, perim - len, wid + 1], 'Perimeter is length + length + width + width. The width must be ' + wid + ' units.',
-        { kind: 'missing', operands: [len, wid] }, { min: 0, max: 20 });
+        { kind: 'missing', operands: [len, wid], figure: { v: 1, mode: 'measure-rect', length: len, width: wid, missing: 'width' } /* MRSHAPES */ }, { min: 0, max: 20 });
     }
     if (form === 'perim') {
       return numProblem(rng, 'g3-areaperim', notch,
         'A rectangle is ' + len + ' units long and ' + wid + ' units wide. What is its perimeter?',
         perim, [area, perim + 2, len + wid], 'Add all four sides: ' + len + ' + ' + wid + ' + ' + len + ' + ' + wid + ' = ' + perim + '.',
-        { kind: 'perim', operands: [len, wid] }, { min: 0, max: 60 });
+        { kind: 'perim', operands: [len, wid], figure: { v: 1, mode: 'measure-rect', length: len, width: wid, missing: null } /* MRSHAPES */ }, { min: 0, max: 60 });
     }
     return numProblem(rng, 'g3-areaperim', notch,
       'A rectangle is ' + len + ' units long and ' + wid + ' units wide. What is its area in square units?',
       area, [perim, area + len, area + wid], 'Area is length times width: ' + len + ' × ' + wid + ' = ' + area + ' square units.',
-      { kind: 'area', operands: [len, wid] }, { min: 0, max: 150 });
+      { kind: 'area', operands: [len, wid], figure: { v: 1, mode: 'measure-rect', length: len, width: wid, missing: null } /* MRSHAPES */ }, { min: 0, max: 150 });
   }
 
   function genG3Time(rng, notch) {
@@ -85459,7 +85544,7 @@ var MREngine = (function () {
       return numProblem(rng, 'g3-quads', notch,
         'How many sides does a quadrilateral have?',
         4, [3, 5], 'Quad means four: a quadrilateral has 4 sides.',
-        { kind: 'how-many-sides', operands: [] }, { min: 0, max: 8 });
+        { kind: 'how-many-sides', operands: [], figure: { v: 1, mode: 'single', shape: 'quadrilateral', symmetry: false } /* MRSHAPES */ }, { min: 0, max: 8 });
     }
     if (form === 'is-quad') {
       var quads = ['Square', 'Rectangle', 'Rhombus', 'Parallelogram', 'Trapezoid'];
@@ -85468,34 +85553,34 @@ var MREngine = (function () {
       return textProblem(rng, 'g3-quads', notch,
         'Which of these shapes is a quadrilateral?',
         ans, pool, 'A ' + ans.toLowerCase() + ' has 4 sides, so it is a quadrilateral.',
-        { kind: 'is-quad', operands: [] });
+        { kind: 'is-quad', operands: [], figure: { v: 1, mode: 'options', map: 'shape-names', marks: ['dots'] } /* MRSHAPES */ });
     }
     if (form === 'square') {
       return textProblem(rng, 'g3-quads', notch,
         'Which quadrilateral has 4 equal sides and 4 right angles?',
         'Square', ['Square', 'Rectangle', 'Rhombus', 'Trapezoid'],
         'A square has 4 equal sides and 4 right angles.',
-        { kind: 'square', operands: [] });
+        { kind: 'square', operands: [], figure: { v: 1, mode: 'options', map: 'shape-names', marks: ['right', 'equal'] } /* MRSHAPES */ });
     }
     if (form === 'trapezoid') {
       return textProblem(rng, 'g3-quads', notch,
         'Which shape has exactly one pair of parallel sides?',
         'Trapezoid', ['Trapezoid', 'Square', 'Rectangle', 'Parallelogram'],
         'A trapezoid has exactly one pair of parallel sides.',
-        { kind: 'trapezoid', operands: [] });
+        { kind: 'trapezoid', operands: [], figure: { v: 1, mode: 'options', map: 'shape-names', marks: ['parallel1'] } /* MRSHAPES */ });
     }
     if (form === 'rhombus') {
       return textProblem(rng, 'g3-quads', notch,
         'Which shape has 4 equal sides but no right angles?',
         'Rhombus', ['Rhombus', 'Square', 'Rectangle', 'Trapezoid'],
         'A rhombus has 4 equal sides, but its angles are not right angles.',
-        { kind: 'rhombus', operands: [] });
+        { kind: 'rhombus', operands: [], figure: { v: 1, mode: 'options', map: 'shape-names', marks: ['equal'] } /* MRSHAPES */ });
     }
     return textProblem(rng, 'g3-quads', notch,
       'Which quadrilateral has 4 right angles but not all sides equal?',
       'Rectangle', ['Rectangle', 'Square', 'Rhombus', 'Trapezoid'],
       'A rectangle has 4 right angles, with long sides and short sides.',
-      { kind: 'rectangle', operands: [] });
+      { kind: 'rectangle', operands: [], figure: { v: 1, mode: 'options', map: 'shape-names', marks: ['right'] } /* MRSHAPES */ });
   }
 
   // ==================================================================
@@ -85805,13 +85890,13 @@ var MREngine = (function () {
       return numProblem(rng, 'g4-angles', notch,
         'How many degrees are in a right angle?',
         90, [45, 180, 360], 'A right angle is a square corner: 90 degrees.',
-        { kind: 'right-degrees', operands: [] }, { min: 0, max: 360 });
+        { kind: 'right-degrees', operands: [], figure: { v: 1, mode: 'angle', angle: 'right', degrees: null } /* MRSHAPES */ }, { min: 0, max: 360 });
     }
     if (form === 'straight-degrees') {
       return numProblem(rng, 'g4-angles', notch,
         'How many degrees are in a straight angle?',
         180, [90, 360, 45], 'A straight angle is a straight line: 180 degrees.',
-        { kind: 'straight-degrees', operands: [] }, { min: 0, max: 360 });
+        { kind: 'straight-degrees', operands: [], figure: { v: 1, mode: 'angle', angle: 'straight', degrees: null } /* MRSHAPES */ }, { min: 0, max: 360 });
     }
     if (form === 'angle-kind') {
       var kinds = [
@@ -85826,15 +85911,22 @@ var MREngine = (function () {
         'What kind of angle measures ' + deg + ' degrees?',
         kind.name, ['Acute', 'Right', 'Obtuse', 'Straight'],
         deg + ' degrees is ' + kind.why + ', so it is a ' + kind.name.toLowerCase() + ' angle.',
-        { kind: 'angle-kind', operands: [deg] });
+        { kind: 'angle-kind', operands: [deg], figure: { v: 1, mode: 'angle', angle: 'kind', degrees: deg } /* MRSHAPES */ });
     }
     if (form === 'parallel') {
       return textProblem(rng, 'g4-angles', notch,
         'Which lines never meet, no matter how far they go?',
         'Parallel lines', ['Parallel lines', 'Perpendicular lines', 'Intersecting lines', 'Curved lines'],
         'Parallel lines stay the same distance apart and never meet.',
-        { kind: 'parallel', operands: [] });
+        { kind: 'parallel', operands: [], figure: { v: 1, mode: 'options', map: 'line-pairs' } /* MRSHAPES */ });
     }
+    /* MRSHAPES BEGIN */
+    var SYM_FIGURE_KEYS = {
+      'square': 'square', 'rectangle': 'rectangle',
+      'equilateral triangle': 'triangle', 'regular hexagon': 'hexagon',
+      'isosceles triangle': 'triangle-isosceles'
+    };
+    /* MRSHAPES END */
     var symShapes = [
       { name: 'square', lines: 4 },
       { name: 'rectangle', lines: 2 },
@@ -85847,7 +85939,7 @@ var MREngine = (function () {
       'How many lines of symmetry does a ' + sym.name + ' have?',
       sym.lines, [sym.lines + 1, sym.lines + 2, Math.max(0, sym.lines - 1)],
       'A ' + sym.name + ' folds in half in ' + sym.lines + ' way' + (sym.lines === 1 ? '' : 's') + '.',
-      { kind: 'symmetry', operands: [sym.lines] }, { min: 0, max: 8 });
+      { kind: 'symmetry', operands: [sym.lines], figure: { v: 1, mode: 'single', shape: SYM_FIGURE_KEYS[sym.name], symmetry: true } /* MRSHAPES */ }, { min: 0, max: 8 });
   }
 
   function genG4AreaForm(rng, notch) {
@@ -85861,24 +85953,24 @@ var MREngine = (function () {
       return numProblem(rng, 'g4-areaform', notch,
         'A rectangle has an area of ' + area + ' square units and a length of ' + len + ' units. What is its width?',
         wid, [len, area - len, wid + 1], 'Area is length times width, so width is area divided by length: ' + area + ' ÷ ' + len + ' = ' + wid + '.',
-        { kind: 'missing-area', operands: [len, wid] }, { min: 0, max: 30 });
+        { kind: 'missing-area', operands: [len, wid], figure: { v: 1, mode: 'measure-rect', length: len, width: wid, missing: 'width' } /* MRSHAPES */ }, { min: 0, max: 30 });
     }
     if (form === 'missing-perim') {
       return numProblem(rng, 'g4-areaform', notch,
         'A rectangle has a perimeter of ' + perim + ' units and a length of ' + len + ' units. What is its width?',
         wid, [len, perim - len, wid + 1], 'Perimeter is 2 × (length + width). Half the perimeter is ' + (perim / 2) + ', take away the length ' + len + ' to get ' + wid + '.',
-        { kind: 'missing-perim', operands: [len, wid] }, { min: 0, max: 30 });
+        { kind: 'missing-perim', operands: [len, wid], figure: { v: 1, mode: 'measure-rect', length: len, width: wid, missing: 'width' } /* MRSHAPES */ }, { min: 0, max: 30 });
     }
     if (form === 'perim') {
       return numProblem(rng, 'g4-areaform', notch,
         'A rectangle is ' + len + ' units long and ' + wid + ' units wide. What is its perimeter? Use P = 2 × (length + width).',
         perim, [area, perim + 2, len + wid], 'P = 2 × (' + len + ' + ' + wid + ') = 2 × ' + (len + wid) + ' = ' + perim + '.',
-        { kind: 'perim', operands: [len, wid] }, { min: 0, max: 100 });
+        { kind: 'perim', operands: [len, wid], figure: { v: 1, mode: 'measure-rect', length: len, width: wid, missing: null } /* MRSHAPES */ }, { min: 0, max: 100 });
     }
     return numProblem(rng, 'g4-areaform', notch,
       'A rectangle is ' + len + ' units long and ' + wid + ' units wide. What is its area? Use A = length × width.',
       area, [perim, area + len, area + wid], 'A = ' + len + ' × ' + wid + ' = ' + area + ' square units.',
-      { kind: 'area', operands: [len, wid] }, { min: 0, max: 450 });
+      { kind: 'area', operands: [len, wid], figure: { v: 1, mode: 'measure-rect', length: len, width: wid, missing: null } /* MRSHAPES */ }, { min: 0, max: 450 });
   }
 
   var G4_CONVERSIONS = [
@@ -86134,19 +86226,19 @@ var MREngine = (function () {
       return numProblem(rng, 'g5-volume', notch,
         'A box has a volume of ' + vol + ' cubic units. Its base is ' + len + ' units long and ' + wid + ' units wide. What is its height?',
         hei, [len, wid, hei + 1], 'Volume is length × width × height. ' + len + ' × ' + wid + ' = ' + (len * wid) + ', and ' + vol + ' ÷ ' + (len * wid) + ' = ' + hei + '.',
-        { kind: 'missing', operands: [len, wid, hei] }, { min: 0, max: 20 });
+        { kind: 'missing', operands: [len, wid, hei], figure: { v: 1, mode: 'measure-box', length: len, width: wid, height: hei, missing: 'height' } /* MRSHAPES */ }, { min: 0, max: 20 });
     }
     var surface = 2 * (len * wid + len * hei + wid * hei);
     if (form === 'cubes') {
       return numProblem(rng, 'g5-volume', notch,
         'How many unit cubes fill a box that is ' + len + ' units long, ' + wid + ' units wide, and ' + hei + ' units high?',
         vol, [len * wid, surface, vol + len], 'Count the cubes: ' + len + ' × ' + wid + ' × ' + hei + ' = ' + vol + ' unit cubes.',
-        { kind: 'cubes', operands: [len, wid, hei] }, { min: 0 });
+        { kind: 'cubes', operands: [len, wid, hei], figure: { v: 1, mode: 'measure-box', length: len, width: wid, height: hei, missing: null } /* MRSHAPES */ }, { min: 0 });
     }
     return numProblem(rng, 'g5-volume', notch,
       'A box is ' + len + ' units long, ' + wid + ' units wide, and ' + hei + ' units high. What is its volume in cubic units?',
       vol, [len * wid, surface, vol + len], 'Volume is length × width × height: ' + len + ' × ' + wid + ' × ' + hei + ' = ' + vol + '.',
-      { kind: 'volume', operands: [len, wid, hei] }, { min: 0 });
+      { kind: 'volume', operands: [len, wid, hei], figure: { v: 1, mode: 'measure-box', length: len, width: wid, height: hei, missing: null } /* MRSHAPES */ }, { min: 0 });
   }
 
   function coordStr(x, y) {
@@ -86204,7 +86296,7 @@ var MREngine = (function () {
         'Which shape is always a parallelogram?',
         ans, [ans, 'Trapezoid', 'Triangle', 'Pentagon'],
         'A ' + ans.toLowerCase() + ' always has two pairs of parallel sides, so it is always a parallelogram.',
-        { kind: 'always-parallelogram', operands: [] });
+        { kind: 'always-parallelogram', operands: [], figure: { v: 1, mode: 'options', map: 'shape-names', marks: ['parallel2'] } /* MRSHAPES */ });
     }
     if (form === 'square-is') {
       var ans2 = rngPick(rng, ['Rectangle', 'Rhombus', 'Parallelogram']);
@@ -86212,7 +86304,7 @@ var MREngine = (function () {
         'A square is always a ___?',
         ans2, [ans2, 'Trapezoid', 'Triangle', 'Pentagon'],
         'A square has everything a ' + ans2.toLowerCase() + ' has, and more.',
-        { kind: 'square-is', operands: [] });
+        { kind: 'square-is', operands: [], figure: { v: 1, mode: 'options', map: 'shape-names' } /* MRSHAPES */ });
     }
     if (form === 'equal-sides') {
       var ans3 = rngPick(rng, ['Square', 'Rhombus']);
@@ -86220,7 +86312,7 @@ var MREngine = (function () {
         'Which quadrilateral has 4 equal sides?',
         ans3, [ans3, 'Rectangle', 'Parallelogram', 'Trapezoid'],
         'A ' + ans3.toLowerCase() + ' has 4 sides that are all the same length.',
-        { kind: 'equal-sides', operands: [] });
+        { kind: 'equal-sides', operands: [], figure: { v: 1, mode: 'options', map: 'shape-names', marks: ['equal'] } /* MRSHAPES */ });
     }
     if (form === 'right-angles') {
       var ans4 = rngPick(rng, ['Square', 'Rectangle']);
@@ -86228,7 +86320,7 @@ var MREngine = (function () {
         'Which quadrilateral has 4 right angles?',
         ans4, [ans4, 'Rhombus', 'Parallelogram', 'Trapezoid'],
         'A ' + ans4.toLowerCase() + ' has 4 right angles.',
-        { kind: 'right-angles', operands: [] });
+        { kind: 'right-angles', operands: [], figure: { v: 1, mode: 'options', map: 'shape-names', marks: ['right'] } /* MRSHAPES */ });
     }
     if (form === 'two-pairs') {
       var ans5 = rngPick(rng, ['Square', 'Rectangle', 'Rhombus', 'Parallelogram']);
@@ -86236,14 +86328,14 @@ var MREngine = (function () {
         'Which shape has exactly two pairs of parallel sides?',
         ans5, [ans5, 'Trapezoid', 'Triangle', 'Pentagon'],
         'A ' + ans5.toLowerCase() + ' has two pairs of parallel sides.',
-        { kind: 'two-pairs', operands: [] });
+        { kind: 'two-pairs', operands: [], figure: { v: 1, mode: 'options', map: 'shape-names', marks: ['parallel2'] } /* MRSHAPES */ });
     }
     var ans6 = rngPick(rng, ['Pentagon', 'Hexagon']);
     return textProblem(rng, 'g5-classify', notch,
       'Which shape has more than 4 sides?',
       ans6, [ans6, 'Square', 'Triangle', 'Trapezoid'],
       'A ' + ans6.toLowerCase() + ' has ' + (ans6 === 'Pentagon' ? 5 : 6) + ' sides, which is more than 4.',
-      { kind: 'more-sides', operands: [] });
+      { kind: 'more-sides', operands: [], figure: { v: 1, mode: 'options', map: 'shape-names', marks: ['dots'] } /* MRSHAPES */ });
   }
 
   function genG5OrderOps(rng, notch) {
@@ -89268,6 +89360,88 @@ var MRGame = (function () {
     return _hashSeed(String(dateStr) + '|' + String(worldId));
   }
 
+  /* MRSHAPES BEGIN: validate + normalize a meta.figure into a fresh
+     object containing only known fields, or null on ANY failure.
+     The renderer never trusts question.figure blindly, and old
+     snapshots without a figure resume text-only (figure: null). */
+  function _validFigure(fig) {
+    if (!fig || typeof fig !== 'object' || Array.isArray(fig)) return null;
+    if (fig.v !== 1) return null;
+    var i;
+    var mode = fig.mode;
+    if (mode === 'single') {
+      var singleKeys = ['circle', 'triangle', 'triangle-isosceles', 'square',
+        'rectangle', 'pentagon', 'hexagon', 'trapezoid', 'parallelogram',
+        'rhombus', 'quadrilateral', 'star', 'cube', 'sphere', 'cone', 'cylinder'];
+      if (singleKeys.indexOf(fig.shape) === -1) return null;
+      var sym = (fig.symmetry === undefined) ? false : fig.symmetry;
+      if (typeof sym !== 'boolean') return null;
+      if (sym && ['square', 'rectangle', 'triangle', 'triangle-isosceles',
+          'hexagon'].indexOf(fig.shape) === -1) return null;
+      return { v: 1, mode: 'single', shape: fig.shape, symmetry: sym };
+    }
+    if (mode === 'options') {
+      if (fig.map !== 'shape-names' && fig.map !== 'line-pairs') return null;
+      var marks = (fig.marks === undefined) ? [] : fig.marks;
+      if (!Array.isArray(marks) || marks.length > 2) return null;
+      var markKeys = ['right', 'equal', 'parallel1', 'parallel2', 'dots'];
+      var seen = {};
+      for (i = 0; i < marks.length; i++) {
+        if (markKeys.indexOf(marks[i]) === -1) return null;
+        if (seen[marks[i]]) return null;
+        seen[marks[i]] = true;
+      }
+      return { v: 1, mode: 'options', map: fig.map, marks: marks.slice() };
+    }
+    if (mode === 'sequence') {
+      var seqKeys = ['circle', 'square', 'triangle'];
+      if (!Array.isArray(fig.shapes) || fig.shapes.length !== 2) return null;
+      if (seqKeys.indexOf(fig.shapes[0]) === -1) return null;
+      if (seqKeys.indexOf(fig.shapes[1]) === -1) return null;
+      if (fig.shapes[0] === fig.shapes[1]) return null;
+      return { v: 1, mode: 'sequence', shapes: [fig.shapes[0], fig.shapes[1]] };
+    }
+    if (mode === 'partition') {
+      if (fig.shape !== 'circle' && fig.shape !== 'square' && fig.shape !== 'strip') return null;
+      if (typeof fig.parts !== 'number' || !isFinite(fig.parts) ||
+          Math.floor(fig.parts) !== fig.parts || fig.parts < 2 || fig.parts > 4) return null;
+      if (fig.shaded !== null && (typeof fig.shaded !== 'number' || !isFinite(fig.shaded) ||
+          Math.floor(fig.shaded) !== fig.shaded || fig.shaded < 1 || fig.shaded >= fig.parts)) return null;
+      return { v: 1, mode: 'partition', shape: fig.shape, parts: fig.parts, shaded: fig.shaded };
+    }
+    if (mode === 'measure-rect') {
+      if (typeof fig.length !== 'number' || !isFinite(fig.length) ||
+          Math.floor(fig.length) !== fig.length || fig.length < 2 || fig.length > 20) return null;
+      if (typeof fig.width !== 'number' || !isFinite(fig.width) ||
+          Math.floor(fig.width) !== fig.width || fig.width < 2 || fig.width > 20) return null;
+      if (fig.missing !== null && fig.missing !== 'width') return null;
+      return { v: 1, mode: 'measure-rect', length: fig.length, width: fig.width, missing: fig.missing };
+    }
+    if (mode === 'measure-box') {
+      if (typeof fig.length !== 'number' || !isFinite(fig.length) ||
+          Math.floor(fig.length) !== fig.length || fig.length < 2 || fig.length > 20) return null;
+      if (typeof fig.width !== 'number' || !isFinite(fig.width) ||
+          Math.floor(fig.width) !== fig.width || fig.width < 2 || fig.width > 20) return null;
+      if (typeof fig.height !== 'number' || !isFinite(fig.height) ||
+          Math.floor(fig.height) !== fig.height || fig.height < 2 || fig.height > 20) return null;
+      if (fig.missing !== null && fig.missing !== 'height') return null;
+      return { v: 1, mode: 'measure-box', length: fig.length, width: fig.width,
+        height: fig.height, missing: fig.missing };
+    }
+    if (mode === 'angle') {
+      if (fig.angle !== 'right' && fig.angle !== 'straight' && fig.angle !== 'kind') return null;
+      var deg = (fig.degrees === undefined) ? null : fig.degrees;
+      if (fig.angle === 'kind') {
+        if ([30, 45, 60, 90, 120, 135, 150, 180].indexOf(deg) === -1) return null;
+      } else if (deg !== null) {
+        return null;
+      }
+      return { v: 1, mode: 'angle', angle: fig.angle, degrees: deg };
+    }
+    return null;
+  }
+  /* MRSHAPES END */
+
   function _validProblem(p, skillId) {
     if (!p || typeof p !== 'object') return null;
     var prompt = p.prompt;
@@ -89290,7 +89464,8 @@ var MRGame = (function () {
       answerIndex: ai,
       explanation: typeof p.explanation === 'string' ? p.explanation : '',
       skillId: typeof p.skillId === 'string' ? p.skillId : skillId,
-      notch: typeof p.notch === 'number' ? p.notch : 0
+      notch: typeof p.notch === 'number' ? p.notch : 0,
+      figure: _validFigure(p.meta ? p.meta.figure : null) /* MRSHAPES */
     };
   }
 
@@ -89417,8 +89592,10 @@ var MRGame = (function () {
       case 'shapes': {
         var shapes = [['triangle', 3], ['square', 4], ['rectangle', 4], ['pentagon', 5], ['hexagon', 6], ['circle', 0]];
         var shape = _pick(rng, shapes);
-        return _numQ(rng, shape[1], 'How many sides does a ' + shape[0] + ' have?',
-          'A ' + shape[0] + ' has ' + shape[1] + ' sides.', skillId, n, 2);
+        var shapeQ = _numQ(rng, shape[1], 'How many sides does a ' + shape[0] + ' have?',
+          'A ' + shape[0] + ' has ' + shape[1] + ' sides.', skillId, n, 2); /* MRSHAPES */
+        shapeQ.figure = _validFigure({ v: 1, mode: 'single', shape: shape[0], symmetry: false }); /* MRSHAPES */
+        return shapeQ;
       }
       case 'patterns': {
         var start = _ri(rng, 1, 8);
@@ -89559,11 +89736,15 @@ var MRGame = (function () {
         var w = _ri(rng, 2, 9);
         var hgt = _ri(rng, 2, 9);
         if (rng() < 0.5) {
-          return _numQ(rng, w * hgt, 'A rectangle is ' + w + ' units long and ' + hgt + ' units wide. What is its area?',
-            'Area is length times width: ' + w + ' × ' + hgt + ' = ' + (w * hgt) + '.', skillId, n, 4);
+          var areaQ = _numQ(rng, w * hgt, 'A rectangle is ' + w + ' units long and ' + hgt + ' units wide. What is its area?',
+            'Area is length times width: ' + w + ' × ' + hgt + ' = ' + (w * hgt) + '.', skillId, n, 4); /* MRSHAPES */
+          areaQ.figure = _validFigure({ v: 1, mode: 'measure-rect', length: w, width: hgt, missing: null }); /* MRSHAPES */
+          return areaQ;
         }
-        return _numQ(rng, 2 * (w + hgt), 'A rectangle is ' + w + ' units long and ' + hgt + ' units wide. What is its perimeter?',
-          'Perimeter is the distance around: ' + w + ' + ' + hgt + ' + ' + w + ' + ' + hgt + ' = ' + (2 * (w + hgt)) + '.', skillId, n, 4);
+        var perimQ = _numQ(rng, 2 * (w + hgt), 'A rectangle is ' + w + ' units long and ' + hgt + ' units wide. What is its perimeter?',
+          'Perimeter is the distance around: ' + w + ' + ' + hgt + ' + ' + w + ' + ' + hgt + ' = ' + (2 * (w + hgt)) + '.', skillId, n, 4); /* MRSHAPES */
+        perimQ.figure = _validFigure({ v: 1, mode: 'measure-rect', length: w, width: hgt, missing: null }); /* MRSHAPES */
+        return perimQ;
       }
       case 'rounding': {
         num = _ri(rng, 12, 98);
@@ -89653,7 +89834,9 @@ var MRGame = (function () {
           ['How many degrees are in a right angle?', '90', ['45', '90', '180', '360']]
         ];
         var af = _pick(rng, angleForms);
-        return _strQ(rng, af[1], af[2], af[0], 'A right angle is 90 degrees — like the corner of a book.', skillId, n);
+        var angleQ = _strQ(rng, af[1], af[2], af[0], 'A right angle is 90 degrees — like the corner of a book.', skillId, n); /* MRSHAPES */
+        if (af === angleForms[2]) angleQ.figure = _validFigure({ v: 1, mode: 'angle', angle: 'right', degrees: null }); /* MRSHAPES */
+        return angleQ;
       }
       case 'fracunlike': {
         var dens = [2, 3, 4, 5, 6, 8, 10, 12];
@@ -89728,8 +89911,10 @@ var MRGame = (function () {
         var l = _ri(rng, 2, 6);
         var wid = _ri(rng, 2, 6);
         var dep = _ri(rng, 2, 6);
-        return _numQ(rng, l * wid * dep, 'A box is ' + l + ' units long, ' + wid + ' units wide, and ' + dep + ' units tall. What is its volume?',
-          'Volume is length × width × height: ' + l + ' × ' + wid + ' × ' + dep + ' = ' + (l * wid * dep) + '.', skillId, n, 6);
+        var volumeQ = _numQ(rng, l * wid * dep, 'A box is ' + l + ' units long, ' + wid + ' units wide, and ' + dep + ' units tall. What is its volume?',
+          'Volume is length × width × height: ' + l + ' × ' + wid + ' × ' + dep + ' = ' + (l * wid * dep) + '.', skillId, n, 6); /* MRSHAPES */
+        volumeQ.figure = _validFigure({ v: 1, mode: 'measure-box', length: l, width: wid, height: dep, missing: null }); /* MRSHAPES */
+        return volumeQ;
       }
       case 'coordinate': {
         var x = _ri(rng, 1, 6);
@@ -91470,7 +91655,8 @@ var MRGame = (function () {
     q = {
       prompt: q.prompt, choices: q.choices.slice(), answerIndex: q.answerIndex,
       explanation: q.explanation || '', skillId: q.skillId, notch: q.notch,
-      skillLabel: _skillLabel(b.world.id, q.skillId)
+      skillLabel: _skillLabel(b.world.id, q.skillId),
+      figure: _validFigure(q.meta ? q.meta.figure : null) /* MRSHAPES */
     };
     b.question = q;
     b.phase = 'asking';
@@ -93376,11 +93562,515 @@ var MRUI = (function () {
     return root;
   }
 
+  /* MRSHAPES BEGIN: shape visuals for Math Realms problems (SHAPES-DESIGN.md §C).
+     Inline SVG only, no asset files, no <defs>/gradients/ids. Every builder
+     returns '' on anything unexpected (fail-safe: text-only question). The
+     renderer dispatches on question.figure.mode ONLY, never skillId/kind. */
+
+  var MRSHAPE_FILL = 'rgba(253,230,138,0.22)';
+  var MRSHAPE_STROKE = '#fde68a';
+  var MRSHAPE_FACE_FRONT = 'rgba(253,230,138,0.35)';
+  var MRSHAPE_FACE_TOP = 'rgba(251,191,36,0.5)';
+  var MRSHAPE_FACE_SIDE = 'rgba(217,119,6,0.55)';
+  var MRSHAPE_SKY = '#38bdf8';
+  var MRSHAPE_PINK = '#f472b6';
+  var MRSHAPE_LABEL = '#f8fafc';
+  var MRSVG_ATTRS = 'preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false" class="mr-figure-svg"';
+
+  /* Polygon point strings, EXACT per SHAPES-DESIGN.md §C.2 (circle/rect/3D
+     keys are built by mrShapeBase, not from this table). */
+  var MRSHAPE_POINTS = {
+    'triangle': '50,12 88,78 12,78',
+    'triangle-isosceles': '50,10 78,82 22,82',
+    'pentagon': '50,12 86.1,38.3 72.3,80.7 27.7,80.7 13.9,38.3',
+    'hexagon': '50,12 82.9,31 82.9,69 50,88 17.1,69 17.1,31',
+    'trapezoid': '30,26 70,26 84,74 16,74',
+    'parallelogram': '30,26 78,26 62,74 14,74',
+    'rhombus': '50,22 88,50 50,78 12,50',
+    'quadrilateral': '28,22 74,30 80,72 18,66',
+    'star': '50,12 58.8,37.9 86.1,38.3 64.3,54.6 72.3,80.7 50,65 27.7,80.7 35.7,54.6 13.9,38.3 41.2,37.9'
+  };
+
+  /* Numeric vertices in the same §C.2 point order (rect corners included);
+     used for vertex dots and property marks. Circle/3D keys have none. */
+  var MRSHAPE_VERTICES = {
+    'triangle': [[50, 12], [88, 78], [12, 78]],
+    'triangle-isosceles': [[50, 10], [78, 82], [22, 82]],
+    'square': [[14, 14], [86, 14], [86, 86], [14, 86]],
+    'rectangle': [[10, 26], [90, 26], [90, 74], [10, 74]],
+    'pentagon': [[50, 12], [86.1, 38.3], [72.3, 80.7], [27.7, 80.7], [13.9, 38.3]],
+    'hexagon': [[50, 12], [82.9, 31], [82.9, 69], [50, 88], [17.1, 69], [17.1, 31]],
+    'trapezoid': [[30, 26], [70, 26], [84, 74], [16, 74]],
+    'parallelogram': [[30, 26], [78, 26], [62, 74], [14, 74]],
+    'rhombus': [[50, 22], [88, 50], [50, 78], [12, 50]],
+    'quadrilateral': [[28, 22], [74, 30], [80, 72], [18, 66]],
+    'star': [[50, 12], [58.8, 37.9], [86.1, 38.3], [64.3, 54.6], [72.3, 80.7], [50, 65], [27.7, 80.7], [35.7, 54.6], [13.9, 38.3], [41.2, 37.9]]
+  };
+
+  var MRSHAPE_KEYS = ['circle', 'triangle', 'triangle-isosceles', 'square',
+    'rectangle', 'pentagon', 'hexagon', 'trapezoid', 'parallelogram',
+    'rhombus', 'quadrilateral', 'star', 'cube', 'sphere', 'cone', 'cylinder'];
+  var MRMARK_KEYS = ['right', 'equal', 'parallel1', 'parallel2', 'dots'];
+
+  var MRSHAPE_CHOICE_MAP = { 'Circle': 'circle', 'Triangle': 'triangle',
+    'Square': 'square', 'Rectangle': 'rectangle', 'Pentagon': 'pentagon',
+    'Hexagon': 'hexagon', 'Cube': 'cube', 'Sphere': 'sphere', 'Cone': 'cone',
+    'Cylinder': 'cylinder', 'Rhombus': 'rhombus', 'Parallelogram': 'parallelogram',
+    'Trapezoid': 'trapezoid', 'Star': 'star' };
+  var MRLINE_CHOICE_MAP = { 'Parallel lines': 'parallel',
+    'Perpendicular lines': 'perpendicular', 'Intersecting lines': 'intersecting',
+    'Curved lines': 'curved' };
+
+  /* Symmetry-line directions (degrees, §C.5). Rectangle: 2 lines only —
+     NEVER diagonals. */
+  var MRSYMMETRY_LINES = { 'square': [0, 90, 45, 135], 'rectangle': [0, 90],
+    'triangle': [90, 30, 150], 'hexagon': [0, 30, 60, 90, 120, 150],
+    'triangle-isosceles': [90] };
+
+  function mrNum(n) {
+    var r = Math.round(n * 100) / 100;
+    return String(r);
+  }
+
+  /* Base shape markup for one key. mode: 'full' (fill+stroke), 'fill'
+     (fill only), 'outline' (stroke only). 3D keys always render full
+     (symmetry fill/outline is only ever requested for 2D keys). */
+  function mrShapeBase(key, sw, mode, size) {
+    var fill = (mode === 'outline') ? 'none' : MRSHAPE_FILL;
+    var stroke = (mode === 'fill') ? 'none' : MRSHAPE_STROKE;
+    var swAttr = ' stroke-width="' + sw + '"';
+    var join = ' stroke-linejoin="round"';
+    if (key === 'circle') {
+      return '<circle cx="50" cy="50" r="38" fill="' + fill + '" stroke="' + stroke + '"' + swAttr + '/>';
+    }
+    if (key === 'square') {
+      return '<rect x="14" y="14" width="72" height="72" fill="' + fill + '" stroke="' + stroke + '"' + swAttr + join + '/>';
+    }
+    if (key === 'rectangle') {
+      return '<rect x="10" y="26" width="80" height="48" fill="' + fill + '" stroke="' + stroke + '"' + swAttr + join + '/>';
+    }
+    if (key === 'cube') {
+      return '<polygon points="18,30 34,14 82,14 66,30" fill="' + MRSHAPE_FACE_TOP + '" stroke="' + MRSHAPE_STROKE + '"' + swAttr + join + '/>' +
+        '<polygon points="66,30 82,14 82,62 66,78" fill="' + MRSHAPE_FACE_SIDE + '" stroke="' + MRSHAPE_STROKE + '"' + swAttr + join + '/>' +
+        '<rect x="18" y="30" width="48" height="48" fill="' + MRSHAPE_FACE_FRONT + '" stroke="' + MRSHAPE_STROKE + '"' + swAttr + join + '/>';
+    }
+    if (key === 'sphere') {
+      var s = '<circle cx="50" cy="50" r="34" fill="' + MRSHAPE_FACE_FRONT + '" stroke="' + MRSHAPE_STROKE + '"' + swAttr + '/>';
+      if (size === 'stem') s += '<ellipse cx="38" cy="36" rx="10" ry="7" fill="#ffffff" opacity="0.5"/>';
+      return s;
+    }
+    if (key === 'cone') {
+      return '<polygon points="50,14 20,76 80,76" fill="' + MRSHAPE_FACE_FRONT + '" stroke="' + MRSHAPE_STROKE + '"' + swAttr + join + '/>' +
+        '<ellipse cx="50" cy="76" rx="30" ry="9" fill="' + MRSHAPE_FACE_SIDE + '" stroke="' + MRSHAPE_STROKE + '"' + swAttr + '/>';
+    }
+    if (key === 'cylinder') {
+      return '<ellipse cx="50" cy="76" rx="24" ry="8" fill="' + MRSHAPE_FACE_SIDE + '" stroke="' + MRSHAPE_STROKE + '"' + swAttr + '/>' +
+        '<rect x="26" y="24" width="48" height="52" fill="' + MRSHAPE_FACE_FRONT + '" stroke="' + MRSHAPE_STROKE + '"' + swAttr + join + '/>' +
+        '<ellipse cx="50" cy="24" rx="24" ry="8" fill="' + MRSHAPE_FACE_TOP + '" stroke="' + MRSHAPE_STROKE + '"' + swAttr + '/>';
+    }
+    var pts = MRSHAPE_POINTS[key];
+    if (typeof pts !== 'string') return '';
+    return '<polygon points="' + pts + '" fill="' + fill + '" stroke="' + stroke + '"' + swAttr + join + '/>';
+  }
+
+  /* Feedback-only annotations for one shape key (§C.5). Each mark is
+     refused on keys it would be geometrically false for. */
+  function mrShapeMarks(key, marks, dotsFlag) {
+    var verts = MRSHAPE_VERTICES[key] || null;
+    if (!verts) return '';
+    if (!Array.isArray(marks)) marks = [];
+    var out = '';
+    var i, e;
+    var n = verts.length;
+    if (dotsFlag || marks.indexOf('dots') !== -1) {
+      for (i = 0; i < n; i++) {
+        out += '<circle cx="' + mrNum(verts[i][0]) + '" cy="' + mrNum(verts[i][1]) + '" r="3.5" fill="' + MRSHAPE_SKY + '"/>';
+      }
+    }
+    var unitTo = function (from, to) {
+      var dx = to[0] - from[0], dy = to[1] - from[1];
+      var len = Math.sqrt(dx * dx + dy * dy) || 1;
+      return [dx / len, dy / len];
+    };
+    var edgeMid = function (ei) {
+      var a = verts[ei], b = verts[(ei + 1) % n];
+      return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    };
+    var edgeUnit = function (ei) {
+      return unitTo(verts[ei], verts[(ei + 1) % n]);
+    };
+    var chevron = function (cx, cy, ex, ey) {
+      var px = -ey, py = ex;
+      var ax = cx - 2.5 * ex + 2.5 * px, ay = cy - 2.5 * ey + 2.5 * py;
+      var tx = cx + 2.5 * ex, ty = cy + 2.5 * ey;
+      var bx = cx - 2.5 * ex - 2.5 * px, by = cy - 2.5 * ey - 2.5 * py;
+      return '<polyline points="' + mrNum(ax) + ',' + mrNum(ay) + ' ' + mrNum(tx) + ',' + mrNum(ty) + ' ' + mrNum(bx) + ',' + mrNum(by) + '" fill="none" stroke="' + MRSHAPE_SKY + '" stroke-width="2.5"/>';
+    };
+    if (marks.indexOf('right') !== -1 && (key === 'square' || key === 'rectangle')) {
+      for (i = 0; i < n; i++) {
+        var V = verts[i];
+        var u1 = unitTo(V, verts[(i + 1) % n]);
+        var u2 = unitTo(V, verts[(i + n - 1) % n]);
+        var p1x = V[0] + 9 * u1[0], p1y = V[1] + 9 * u1[1];
+        var p2x = V[0] + 9 * u1[0] + 9 * u2[0], p2y = V[1] + 9 * u1[1] + 9 * u2[1];
+        var p3x = V[0] + 9 * u2[0], p3y = V[1] + 9 * u2[1];
+        out += '<polyline points="' + mrNum(p1x) + ',' + mrNum(p1y) + ' ' + mrNum(p2x) + ',' + mrNum(p2y) + ' ' + mrNum(p3x) + ',' + mrNum(p3y) + '" fill="none" stroke="' + MRSHAPE_SKY + '" stroke-width="2.5"/>';
+      }
+    }
+    if (marks.indexOf('equal') !== -1 && (key === 'square' || key === 'rhombus')) {
+      for (e = 0; e < n; e++) {
+        var mid = edgeMid(e), ev = edgeUnit(e);
+        var px = -ev[1], py = ev[0];
+        out += '<line x1="' + mrNum(mid[0] - 3 * px) + '" y1="' + mrNum(mid[1] - 3 * py) + '" x2="' + mrNum(mid[0] + 3 * px) + '" y2="' + mrNum(mid[1] + 3 * py) + '" stroke="' + MRSHAPE_SKY + '" stroke-width="2.5"/>';
+      }
+    }
+    if (marks.indexOf('parallel1') !== -1 && key === 'trapezoid') {
+      var pair1 = [0, 2];
+      for (e = 0; e < pair1.length; e++) {
+        var m1 = edgeMid(pair1[e]), d1 = edgeUnit(pair1[e]);
+        out += chevron(m1[0], m1[1], d1[0], d1[1]);
+      }
+    }
+    if (marks.indexOf('parallel2') !== -1 && (key === 'square' || key === 'rectangle' || key === 'rhombus' || key === 'parallelogram')) {
+      var pairA = [0, 2], pairB = [1, 3];
+      for (e = 0; e < pairA.length; e++) {
+        var ma = edgeMid(pairA[e]), da = edgeUnit(pairA[e]);
+        out += chevron(ma[0], ma[1], da[0], da[1]);
+      }
+      for (e = 0; e < pairB.length; e++) {
+        var mb = edgeMid(pairB[e]), db = edgeUnit(pairB[e]);
+        out += chevron(mb[0] - 2 * db[0], mb[1] - 2 * db[1], db[0], db[1]);
+        out += chevron(mb[0] + 2 * db[0], mb[1] + 2 * db[1], db[0], db[1]);
+      }
+    }
+    return out;
+  }
+
+  function mrShapeInner(key, size, opts) {
+    try {
+      if (MRSHAPE_KEYS.indexOf(key) === -1) return '';
+      var sw = (size === 'option') ? 5 : 3;
+      var o = opts || {};
+      var rawMarks = Array.isArray(o.marks) ? o.marks : [];
+      var marks = [];
+      for (var mi = 0; mi < rawMarks.length; mi++) {
+        if (MRMARK_KEYS.indexOf(rawMarks[mi]) !== -1 && marks.indexOf(rawMarks[mi]) === -1) marks.push(rawMarks[mi]);
+      }
+      var out = '';
+      var symLines = null;
+      if (Array.isArray(o.symmetryLines) && MRSYMMETRY_LINES[key]) symLines = o.symmetryLines;
+      if (symLines) {
+        var fillPart = mrShapeBase(key, sw, 'fill', size);
+        if (!fillPart) return '';
+        out += fillPart;
+        for (var i = 0; i < symLines.length; i++) {
+          var phi = symLines[i] * Math.PI / 180;
+          var dx = 42 * Math.cos(phi), dy = 42 * Math.sin(phi);
+          out += '<line x1="' + mrNum(50 - dx) + '" y1="' + mrNum(50 - dy) + '" x2="' + mrNum(50 + dx) + '" y2="' + mrNum(50 + dy) + '" stroke="' + MRSHAPE_PINK + '" stroke-width="2.5" stroke-dasharray="5 4"/>';
+        }
+        out += mrShapeBase(key, sw, 'outline', size);
+      } else {
+        var fullPart = mrShapeBase(key, sw, 'full', size);
+        if (!fullPart) return '';
+        out += fullPart;
+      }
+      out += mrShapeMarks(key, marks, !!o.dots);
+      return out;
+    } catch (err) { return ''; }
+  }
+
+  function mrShapeSvg(key, size, opts) {
+    var inner = mrShapeInner(key, size, opts);
+    if (!inner) return '';
+    return '<svg viewBox="0 0 100 100" ' + MRSVG_ATTRS + '>' + inner + '</svg>';
+  }
+
+  function mrPartitionSvg(figure, phase) {
+    try {
+      if (!figure || typeof figure !== 'object') return '';
+      var shape = figure.shape, parts = figure.parts, shaded = figure.shaded;
+      if (shape !== 'circle' && shape !== 'square' && shape !== 'strip') return '';
+      if (typeof parts !== 'number' || Math.floor(parts) !== parts || parts < 2 || parts > 4) return '';
+      if (shaded !== null && shaded !== undefined &&
+          (typeof shaded !== 'number' || Math.floor(shaded) !== shaded || shaded < 1 || shaded >= parts)) return '';
+      var shadeCount = 0;
+      if (phase === 'feedback') shadeCount = (shaded === null || shaded === undefined) ? 1 : shaded;
+      var out = '';
+      var i, k;
+      if (shape === 'circle') {
+        out += '<circle cx="50" cy="50" r="38" fill="' + MRSHAPE_FILL + '" stroke="' + MRSHAPE_STROKE + '" stroke-width="3"/>';
+        for (i = 0; i < shadeCount; i++) {
+          var a1 = (-90 + 360 * i / parts) * Math.PI / 180;
+          var a2 = (-90 + 360 * (i + 1) / parts) * Math.PI / 180;
+          out += '<path d="M50,50 L' + mrNum(50 + 38 * Math.cos(a1)) + ',' + mrNum(50 + 38 * Math.sin(a1)) +
+            ' A38,38 0 0,1 ' + mrNum(50 + 38 * Math.cos(a2)) + ',' + mrNum(50 + 38 * Math.sin(a2)) +
+            ' Z" fill="' + MRSHAPE_SKY + '" fill-opacity="0.75"/>';
+        }
+        if (parts === 2) {
+          out += '<line x1="50" y1="12" x2="50" y2="88" stroke="' + MRSHAPE_STROKE + '" stroke-width="2"/>';
+        } else {
+          for (k = 0; k < parts; k++) {
+            var ak = (-90 + 360 * k / parts) * Math.PI / 180;
+            out += '<line x1="50" y1="50" x2="' + mrNum(50 + 38 * Math.cos(ak)) + '" y2="' + mrNum(50 + 38 * Math.sin(ak)) + '" stroke="' + MRSHAPE_STROKE + '" stroke-width="2"/>';
+          }
+        }
+        out += '<circle cx="50" cy="50" r="38" fill="none" stroke="' + MRSHAPE_STROKE + '" stroke-width="3"/>';
+        return '<svg viewBox="0 0 100 100" ' + MRSVG_ATTRS + '>' + out + '</svg>';
+      }
+      if (shape === 'square') {
+        out += '<rect x="14" y="14" width="72" height="72" fill="' + MRSHAPE_FILL + '" stroke="' + MRSHAPE_STROKE + '" stroke-width="3" stroke-linejoin="round"/>';
+        for (i = 0; i < shadeCount; i++) {
+          out += '<rect x="' + mrNum(14 + 72 * i / parts) + '" y="14" width="' + mrNum(72 / parts) + '" height="72" fill="' + MRSHAPE_SKY + '" fill-opacity="0.75"/>';
+        }
+        for (k = 1; k < parts; k++) {
+          var dx = 14 + 72 * k / parts;
+          out += '<line x1="' + mrNum(dx) + '" y1="14" x2="' + mrNum(dx) + '" y2="86" stroke="' + MRSHAPE_STROKE + '" stroke-width="2"/>';
+        }
+        out += '<rect x="14" y="14" width="72" height="72" fill="none" stroke="' + MRSHAPE_STROKE + '" stroke-width="3" stroke-linejoin="round"/>';
+        return '<svg viewBox="0 0 100 100" ' + MRSVG_ATTRS + '>' + out + '</svg>';
+      }
+      out += '<rect x="8" y="36" width="104" height="28" fill="' + MRSHAPE_FILL + '" stroke="' + MRSHAPE_STROKE + '" stroke-width="3" stroke-linejoin="round"/>';
+      for (i = 0; i < shadeCount; i++) {
+        out += '<rect x="' + mrNum(8 + 104 * i / parts) + '" y="36" width="' + mrNum(104 / parts) + '" height="28" fill="' + MRSHAPE_SKY + '" fill-opacity="0.75"/>';
+      }
+      for (k = 1; k < parts; k++) {
+        var sx = 8 + 104 * k / parts;
+        out += '<line x1="' + mrNum(sx) + '" y1="36" x2="' + mrNum(sx) + '" y2="64" stroke="' + MRSHAPE_STROKE + '" stroke-width="2"/>';
+      }
+      out += '<rect x="8" y="36" width="104" height="28" fill="none" stroke="' + MRSHAPE_STROKE + '" stroke-width="3" stroke-linejoin="round"/>';
+      return '<svg viewBox="0 0 120 100" ' + MRSVG_ATTRS + '>' + out + '</svg>';
+    } catch (err) { return ''; }
+  }
+
+  function mrMeasureRectSvg(figure, phase) {
+    try {
+      if (!figure || typeof figure !== 'object') return '';
+      var len = figure.length, wid = figure.width, missing = figure.missing;
+      if (typeof len !== 'number' || !isFinite(len) || typeof wid !== 'number' || !isFinite(wid)) return '';
+      if (missing !== null && missing !== undefined && missing !== 'width') return '';
+      var askMissing = (missing === 'width' && phase === 'asking');
+      var widthText = askMissing ? '?' : String(Math.floor(wid));
+      var widthFill = askMissing ? MRSHAPE_STROKE : MRSHAPE_LABEL;
+      var inner = '<rect x="24" y="22" width="80" height="48" fill="' + MRSHAPE_FILL + '" stroke="' + MRSHAPE_STROKE + '" stroke-width="3" stroke-linejoin="round"/>' +
+        '<text x="64" y="14" text-anchor="middle" fill="' + MRSHAPE_LABEL + '" font-size="13" font-weight="800">' + String(Math.floor(len)) + '</text>' +
+        '<text x="118" y="48" dy=".35em" text-anchor="middle" fill="' + widthFill + '" font-size="13" font-weight="800">' + widthText + '</text>';
+      return '<svg viewBox="0 0 140 100" ' + MRSVG_ATTRS + '>' + inner + '</svg>';
+    } catch (err) { return ''; }
+  }
+
+  function mrMeasureBoxSvg(figure, phase) {
+    try {
+      if (!figure || typeof figure !== 'object') return '';
+      var len = figure.length, wid = figure.width, hei = figure.height, missing = figure.missing;
+      if (typeof len !== 'number' || !isFinite(len) || typeof wid !== 'number' || !isFinite(wid) ||
+          typeof hei !== 'number' || !isFinite(hei)) return '';
+      if (missing !== null && missing !== undefined && missing !== 'height') return '';
+      var askMissing = (missing === 'height' && phase === 'asking');
+      var heightText = askMissing ? '?' : String(Math.floor(hei));
+      var heightFill = askMissing ? MRSHAPE_STROKE : MRSHAPE_LABEL;
+      var inner = '<polygon points="20,34 38,18 90,18 72,34" fill="' + MRSHAPE_FACE_TOP + '" stroke="' + MRSHAPE_STROKE + '" stroke-width="3" stroke-linejoin="round"/>' +
+        '<polygon points="72,34 90,18 90,62 72,78" fill="' + MRSHAPE_FACE_SIDE + '" stroke="' + MRSHAPE_STROKE + '" stroke-width="3" stroke-linejoin="round"/>' +
+        '<rect x="20" y="34" width="52" height="44" fill="' + MRSHAPE_FACE_FRONT + '" stroke="' + MRSHAPE_STROKE + '" stroke-width="3" stroke-linejoin="round"/>' +
+        '<text x="46" y="92" text-anchor="middle" fill="' + MRSHAPE_LABEL + '" font-size="13" font-weight="800">' + String(Math.floor(len)) + '</text>' +
+        '<text x="64" y="12" text-anchor="middle" fill="' + MRSHAPE_LABEL + '" font-size="13" font-weight="800">' + String(Math.floor(wid)) + '</text>' +
+        '<text x="104" y="58" dy=".35em" text-anchor="middle" fill="' + heightFill + '" font-size="13" font-weight="800">' + heightText + '</text>';
+      return '<svg viewBox="0 0 140 100" ' + MRSVG_ATTRS + '>' + inner + '</svg>';
+    } catch (err) { return ''; }
+  }
+
+  function mrAngleSvg(figure, phase) {
+    try {
+      if (!figure || typeof figure !== 'object') return '';
+      var kind = figure.angle;
+      if (kind === 'right') {
+        return '<svg viewBox="0 0 100 100" ' + MRSVG_ATTRS + '>' +
+          '<line x1="30" y1="70" x2="82" y2="70" stroke="' + MRSHAPE_STROKE + '" stroke-width="3.5" stroke-linecap="round"/>' +
+          '<line x1="30" y1="70" x2="30" y2="18" stroke="' + MRSHAPE_STROKE + '" stroke-width="3.5" stroke-linecap="round"/>' +
+          '<polyline points="30,58 42,58 42,70" fill="none" stroke="' + MRSHAPE_STROKE + '" stroke-width="2.5"/>' +
+          '</svg>';
+      }
+      if (kind === 'straight') {
+        return '<svg viewBox="0 0 120 60" ' + MRSVG_ATTRS + '>' +
+          '<line x1="14" y1="30" x2="106" y2="30" stroke="' + MRSHAPE_STROKE + '" stroke-width="3.5" stroke-linecap="round"/>' +
+          '<circle cx="60" cy="30" r="4" fill="' + MRSHAPE_STROKE + '"/>' +
+          '</svg>';
+      }
+      if (kind === 'kind') {
+        /* E-ANG suppression: no visual while asking (§B.7). */
+        if (phase !== 'feedback') return '';
+        var deg = figure.degrees;
+        if ([30, 45, 60, 90, 120, 135, 150, 180].indexOf(deg) === -1) return '';
+        var th = deg * Math.PI / 180;
+        var ex = 60 + 46 * Math.cos(th), ey = 78 - 46 * Math.sin(th);
+        var ax = 60 + 22 * Math.cos(th), ay = 78 - 22 * Math.sin(th);
+        var inner = '<line x1="60" y1="78" x2="106" y2="78" stroke="' + MRSHAPE_STROKE + '" stroke-width="3.5" stroke-linecap="round"/>' +
+          '<line x1="60" y1="78" x2="' + mrNum(ex) + '" y2="' + mrNum(ey) + '" stroke="' + MRSHAPE_STROKE + '" stroke-width="3.5" stroke-linecap="round"/>' +
+          '<path d="M82,78 A22,22 0 0,0 ' + mrNum(ax) + ',' + mrNum(ay) + '" fill="none" stroke="' + MRSHAPE_STROKE + '" stroke-width="2.5"/>';
+        if (deg === 90) inner += '<polyline points="60,66 72,66 72,78" fill="none" stroke="' + MRSHAPE_STROKE + '" stroke-width="2.5"/>';
+        return '<svg viewBox="0 0 120 100" ' + MRSVG_ATTRS + '>' + inner + '</svg>';
+      }
+      return '';
+    } catch (err) { return ''; }
+  }
+
+  function mrLinePairSvg(glyphKey, size) {
+    try {
+      var sw = (size === 'option') ? 5 : 3.5;
+      var markW = (size === 'option') ? 3.5 : 2.5;
+      var cap = ' stroke-linecap="round"';
+      var inner = '';
+      if (glyphKey === 'parallel') {
+        inner = '<line x1="14" y1="20" x2="86" y2="20" stroke="' + MRSHAPE_STROKE + '" stroke-width="' + sw + '"' + cap + '/>' +
+          '<line x1="14" y1="44" x2="86" y2="44" stroke="' + MRSHAPE_STROKE + '" stroke-width="' + sw + '"' + cap + '/>';
+      } else if (glyphKey === 'perpendicular') {
+        inner = '<line x1="14" y1="32" x2="86" y2="32" stroke="' + MRSHAPE_STROKE + '" stroke-width="' + sw + '"' + cap + '/>' +
+          '<line x1="50" y1="10" x2="50" y2="54" stroke="' + MRSHAPE_STROKE + '" stroke-width="' + sw + '"' + cap + '/>' +
+          '<polyline points="50,24 58,24 58,32" fill="none" stroke="' + MRSHAPE_STROKE + '" stroke-width="' + markW + '"/>';
+      } else if (glyphKey === 'intersecting') {
+        inner = '<line x1="16" y1="46" x2="84" y2="14" stroke="' + MRSHAPE_STROKE + '" stroke-width="' + sw + '"' + cap + '/>' +
+          '<line x1="16" y1="14" x2="84" y2="46" stroke="' + MRSHAPE_STROKE + '" stroke-width="' + sw + '"' + cap + '/>';
+      } else if (glyphKey === 'curved') {
+        inner = '<path d="M14,44 Q50,8 86,44" fill="none" stroke="' + MRSHAPE_STROKE + '" stroke-width="' + sw + '"' + cap + '/>' +
+          '<path d="M14,16 Q50,52 86,16" fill="none" stroke="' + MRSHAPE_STROKE + '" stroke-width="' + sw + '"' + cap + '/>';
+      } else {
+        return '';
+      }
+      return '<svg viewBox="0 0 100 60" ' + MRSVG_ATTRS + '>' + inner + '</svg>';
+    } catch (err) { return ''; }
+  }
+
+  function mrChoiceGlyph(choiceText, map) {
+    if (map === 'shape-names') {
+      var key = MRSHAPE_CHOICE_MAP[choiceText];
+      if (typeof key === 'string') return { kind: 'shape', key: key };
+      return null;
+    }
+    if (map === 'line-pairs') {
+      var gk = MRLINE_CHOICE_MAP[choiceText];
+      if (typeof gk === 'string') return { kind: 'lines', key: gk };
+      return null;
+    }
+    return null;
+  }
+
+  function mrFigureNode(question, phase) {
+    try {
+      if (!question || typeof question !== 'object') return null;
+      var figure = question.figure;
+      if (!figure || typeof figure !== 'object') return null;
+      var mode = figure.mode;
+      var node = null;
+      var svg = '';
+      if (mode === 'single') {
+        if (MRSHAPE_KEYS.indexOf(figure.shape) === -1) return null;
+        var opts = { dots: false, symmetryLines: null, marks: [] };
+        if (phase === 'feedback') {
+          if (figure.symmetry === true && MRSYMMETRY_LINES[figure.shape]) {
+            opts.symmetryLines = MRSYMMETRY_LINES[figure.shape];
+          } else if (figure.symmetry !== true) {
+            opts.dots = true;
+          }
+        }
+        svg = mrShapeSvg(figure.shape, 'stem', opts);
+        if (!svg) return null;
+        node = el('div', 'mr-figure mr-figure--stem');
+        node.innerHTML = svg;
+      } else if (mode === 'options') {
+        if (phase !== 'feedback') return null;
+        if (!Array.isArray(question.choices)) return null;
+        var ai = question.answerIndex;
+        if (typeof ai !== 'number' || ai < 0 || ai >= question.choices.length) return null;
+        var glyph = mrChoiceGlyph(question.choices[ai], figure.map);
+        if (!glyph) return null;
+        var marks = Array.isArray(figure.marks) ? figure.marks : [];
+        if (glyph.kind === 'shape') {
+          svg = mrShapeSvg(glyph.key, 'stem', { dots: false, symmetryLines: null, marks: marks });
+        } else {
+          svg = mrLinePairSvg(glyph.key, 'stem');
+        }
+        if (!svg) return null;
+        node = el('div', 'mr-figure mr-figure--stem');
+        node.innerHTML = svg;
+      } else if (mode === 'sequence') {
+        var shapes = figure.shapes;
+        if (!Array.isArray(shapes) || shapes.length !== 2) return null;
+        var ok0 = (shapes[0] === 'circle' || shapes[0] === 'square' || shapes[0] === 'triangle');
+        var ok1 = (shapes[1] === 'circle' || shapes[1] === 'square' || shapes[1] === 'triangle');
+        if (!ok0 || !ok1 || shapes[0] === shapes[1]) return null;
+        var seq = [shapes[0], shapes[1], shapes[0], shapes[1]];
+        var html = '';
+        for (var i = 0; i < 4; i++) {
+          var s = mrShapeSvg(seq[i], 'option', {});
+          if (!s) return null;
+          html += s;
+        }
+        if (phase === 'feedback') {
+          var last = mrShapeSvg(shapes[0], 'option', {});
+          if (!last) return null;
+          html += last;
+        } else {
+          html += '<div class="mr-seq-slot">?</div>';
+        }
+        node = el('div', 'mr-figure mr-figure--sequence');
+        node.innerHTML = html;
+      } else if (mode === 'partition') {
+        svg = mrPartitionSvg(figure, phase);
+        if (!svg) return null;
+        node = el('div', 'mr-figure mr-figure--stem');
+        node.innerHTML = svg;
+      } else if (mode === 'measure-rect') {
+        svg = mrMeasureRectSvg(figure, phase);
+        if (!svg) return null;
+        node = el('div', 'mr-figure mr-figure--stem');
+        node.innerHTML = svg;
+      } else if (mode === 'measure-box') {
+        svg = mrMeasureBoxSvg(figure, phase);
+        if (!svg) return null;
+        node = el('div', 'mr-figure mr-figure--stem');
+        node.innerHTML = svg;
+      } else if (mode === 'angle') {
+        svg = mrAngleSvg(figure, phase);
+        if (!svg) return null;
+        node = el('div', 'mr-figure mr-figure--stem');
+        node.innerHTML = svg;
+      } else {
+        return null;
+      }
+      node.setAttribute('aria-hidden', 'true');
+      return node;
+    } catch (err) { return null; }
+  }
+
+  function mrDecorateChoice(buttonEl, choiceText, figure) {
+    try {
+      if (!buttonEl || !figure || typeof figure !== 'object') return false;
+      var map = null;
+      if (figure.mode === 'sequence') map = 'shape-names';
+      else if (figure.mode === 'options') map = figure.map;
+      else return false;
+      var glyph = mrChoiceGlyph(choiceText, map);
+      if (!glyph) return false;
+      var svg = (glyph.kind === 'shape') ? mrShapeSvg(glyph.key, 'option', {}) : mrLinePairSvg(glyph.key, 'option');
+      if (!svg) return false;
+      clear(buttonEl);
+      var fig = el('span', 'mr-choice-fig');
+      fig.setAttribute('aria-hidden', 'true');
+      fig.innerHTML = svg;
+      buttonEl.appendChild(fig);
+      buttonEl.appendChild(el('span', 'mr-choice-label', choiceText));
+      buttonEl.classList.add('has-figure');
+      return true;
+    } catch (err) { return false; }
+  }
+
+  /* MRSHAPES END */
+
   function buildBattle(vm) {
     var b = vm.battle;
     var world = b.world;
     var root = el('div', 'mr-screen mr-screen--battle mr-world-bg--' + world.id);
     root.setAttribute('data-mr-battle', '1');
+    /* MRSHAPES */ if (b.phase === 'feedback') root.classList.add('mr-battle--feedback');
     /* Backdrop vista (cover, drifting) + readability shade. Sprites
        are framed tiles, never composited over this layer. */
     var loader = _loader();
@@ -93460,6 +94150,8 @@ var MRUI = (function () {
     var promptCard = el('div', 'mr-prompt-card');
     promptCard.appendChild(el('div', 'mr-prompt-skill', b.question.skillLabel || 'Number magic'));
     promptCard.appendChild(el('div', 'mr-prompt-text', b.question.prompt));
+    /* MRSHAPES */ var figNode = mrFigureNode(b.question, b.phase);
+    /* MRSHAPES */ if (figNode) promptCard.appendChild(figNode);
     if (b.phase === 'feedback') {
       var fb = el('div', 'mr-feedback' + (b.lastCorrect ? ' is-good' : ' is-gentle'));
       fb.appendChild(el('div', 'mr-feedback-line', b.feedbackLine || ''));
@@ -93475,6 +94167,17 @@ var MRUI = (function () {
     root.appendChild(promptCard);
     /* Choices. */
     var choices = el('div', 'mr-choices');
+    /* MRSHAPES: all-or-nothing option-icon pre-check (modes options/sequence
+       only; if ANY choice fails to map, decorate NONE). */
+    var mrFigure = b.question.figure;
+    var mrChoiceGlyphs = false;
+    if (mrFigure && (mrFigure.mode === 'options' || mrFigure.mode === 'sequence')) {
+      var mrMap = (mrFigure.mode === 'sequence') ? 'shape-names' : mrFigure.map;
+      mrChoiceGlyphs = true;
+      for (var mrCi = 0; mrCi < b.question.choices.length; mrCi++) {
+        if (!mrChoiceGlyph(b.question.choices[mrCi], mrMap)) { mrChoiceGlyphs = false; break; }
+      }
+    }
     for (var i = 0; i < b.question.choices.length; i++) {
       (function (idx) {
         var cls = 'mr-choice';
@@ -93484,6 +94187,7 @@ var MRUI = (function () {
           else if (idx === b.pickedIndex) cls += ' is-wrong';
         }
         var c = btn(b.question.choices[idx], 'answer', cls, { choice: idx });
+        /* MRSHAPES */ if (mrChoiceGlyphs) mrDecorateChoice(c, b.question.choices[idx], mrFigure);
         c.disabled = (b.phase !== 'asking') ||
           !!(b.eliminated && b.eliminated.indexOf(idx) !== -1);
         c.setAttribute('aria-label', 'Answer: ' + b.question.choices[idx]);
