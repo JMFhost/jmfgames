@@ -1,0 +1,320 @@
+{
+  "version": 1,
+  "namespace": "chs",
+  "base": "assets/chess/portraits/",
+  "count": 57,
+  "total_bytes": 1770026,
+  "characters": [
+    "Ben",
+    "Clara",
+    "Leo",
+    "Daphne",
+    "Max",
+    "Fiona",
+    "Owen",
+    "Greta",
+    "Felix",
+    "Hannah",
+    "Hugo",
+    "Ingrid",
+    "Victor",
+    "Karina",
+    "Stefan",
+    "Nora",
+    "Nikolai",
+    "Valerie",
+    "Adrian"
+  ],
+  "expressions": [
+    "neutral",
+    "happy",
+    "determined"
+  ],
+  "files": {
+    "chs-ben-neutral": {
+      "file": "ben-neutral.webp",
+      "bytes": 27972,
+      "md5": "5e47f9c448e72ffe9162e64940a873c2"
+    },
+    "chs-ben-happy": {
+      "file": "ben-happy.webp",
+      "bytes": 28228,
+      "md5": "2cb5df5121a9be5797dd76a2fff2ac4b"
+    },
+    "chs-ben-determined": {
+      "file": "ben-determined.webp",
+      "bytes": 27744,
+      "md5": "c12796cfed465d396ffa231fec844914"
+    },
+    "chs-clara-neutral": {
+      "file": "clara-neutral.webp",
+      "bytes": 22786,
+      "md5": "0e63e0955e2e40897ebb841e7c17689b"
+    },
+    "chs-clara-happy": {
+      "file": "clara-happy.webp",
+      "bytes": 23144,
+      "md5": "5a8795b3bb4b72680c8110b003797063"
+    },
+    "chs-clara-determined": {
+      "file": "clara-determined.webp",
+      "bytes": 22904,
+      "md5": "0ee927777b99269bb3f110b81798c433"
+    },
+    "chs-leo-neutral": {
+      "file": "leo-neutral.webp",
+      "bytes": 34022,
+      "md5": "ed8185f19ba98118402b295937d81550"
+    },
+    "chs-leo-happy": {
+      "file": "leo-happy.webp",
+      "bytes": 34002,
+      "md5": "711363993b4691c377c0c6b655d48456"
+    },
+    "chs-leo-determined": {
+      "file": "leo-determined.webp",
+      "bytes": 33906,
+      "md5": "54e3f370702bd340dd7174f7b3604024"
+    },
+    "chs-daphne-neutral": {
+      "file": "daphne-neutral.webp",
+      "bytes": 33910,
+      "md5": "ce03fc7356b5d8badf3e6efed6dfff90"
+    },
+    "chs-daphne-happy": {
+      "file": "daphne-happy.webp",
+      "bytes": 34202,
+      "md5": "3a378d83035100835a30e9e90fb5b2db"
+    },
+    "chs-daphne-determined": {
+      "file": "daphne-determined.webp",
+      "bytes": 34034,
+      "md5": "556f7a7e482c43543b11a5c55c66edfb"
+    },
+    "chs-max-neutral": {
+      "file": "max-neutral.webp",
+      "bytes": 28122,
+      "md5": "06c4172a4a9f226f3dac81ae33c92853"
+    },
+    "chs-max-happy": {
+      "file": "max-happy.webp",
+      "bytes": 29736,
+      "md5": "9275e02afa1eda38bfc7e6b43c5e049f"
+    },
+    "chs-max-determined": {
+      "file": "max-determined.webp",
+      "bytes": 29692,
+      "md5": "df17359e7ebba602cb2f780e65ba8d04"
+    },
+    "chs-fiona-neutral": {
+      "file": "fiona-neutral.webp",
+      "bytes": 42696,
+      "md5": "2e8ac73cc7c61b64032f4affe6c28965"
+    },
+    "chs-fiona-happy": {
+      "file": "fiona-happy.webp",
+      "bytes": 43070,
+      "md5": "2582cfa24640b97de9b10d1eee155149"
+    },
+    "chs-fiona-determined": {
+      "file": "fiona-determined.webp",
+      "bytes": 42474,
+      "md5": "f619e18763ad84e30a10d5f847b57e6c"
+    },
+    "chs-owen-neutral": {
+      "file": "owen-neutral.webp",
+      "bytes": 27180,
+      "md5": "c71334267a1067bfdeabb59d9da79719"
+    },
+    "chs-owen-happy": {
+      "file": "owen-happy.webp",
+      "bytes": 27722,
+      "md5": "0c0c06a50d4c6181716025b90f680fd0"
+    },
+    "chs-owen-determined": {
+      "file": "owen-determined.webp",
+      "bytes": 27416,
+      "md5": "594907ba6218917b96206b1520cefbe3"
+    },
+    "chs-greta-neutral": {
+      "file": "greta-neutral.webp",
+      "bytes": 28378,
+      "md5": "46b40298c978b7eca721346c5751e4cc"
+    },
+    "chs-greta-happy": {
+      "file": "greta-happy.webp",
+      "bytes": 28728,
+      "md5": "28aed077856c58c490c57611f60dab1b"
+    },
+    "chs-greta-determined": {
+      "file": "greta-determined.webp",
+      "bytes": 28982,
+      "md5": "d834f4ec188122002b2a4a2a46974bad"
+    },
+    "chs-felix-neutral": {
+      "file": "felix-neutral.webp",
+      "bytes": 22064,
+      "md5": "d5904d3e16b077dc48cda20f2c60b2bb"
+    },
+    "chs-felix-happy": {
+      "file": "felix-happy.webp",
+      "bytes": 23148,
+      "md5": "a7336008903ce743f4b9665e13c9a857"
+    },
+    "chs-felix-determined": {
+      "file": "felix-determined.webp",
+      "bytes": 22892,
+      "md5": "fd2f25a8d1f74daa09417d31e5ab002c"
+    },
+    "chs-hannah-neutral": {
+      "file": "hannah-neutral.webp",
+      "bytes": 28046,
+      "md5": "c224ba952be9cf7e5565a5dc1ac41eb1"
+    },
+    "chs-hannah-happy": {
+      "file": "hannah-happy.webp",
+      "bytes": 29038,
+      "md5": "900906c8e975a04f78764c399cea907d"
+    },
+    "chs-hannah-determined": {
+      "file": "hannah-determined.webp",
+      "bytes": 28502,
+      "md5": "f5b241e48874f7039057cbf2d48cfd4a"
+    },
+    "chs-hugo-neutral": {
+      "file": "hugo-neutral.webp",
+      "bytes": 30984,
+      "md5": "abe5ba836ecc53f4d67335fed8715c49"
+    },
+    "chs-hugo-happy": {
+      "file": "hugo-happy.webp",
+      "bytes": 31592,
+      "md5": "bd010e77b38a461560af151d007774be"
+    },
+    "chs-hugo-determined": {
+      "file": "hugo-determined.webp",
+      "bytes": 31330,
+      "md5": "a5131ed57cc29ebd18dc605e207406f4"
+    },
+    "chs-ingrid-neutral": {
+      "file": "ingrid-neutral.webp",
+      "bytes": 27640,
+      "md5": "0dad5b8c0957d2ad04b170ea48cd3de5"
+    },
+    "chs-ingrid-happy": {
+      "file": "ingrid-happy.webp",
+      "bytes": 27862,
+      "md5": "ff5ab2e879b585cfa869b16e5928b2c7"
+    },
+    "chs-ingrid-determined": {
+      "file": "ingrid-determined.webp",
+      "bytes": 27766,
+      "md5": "4b388f80f33a2eab3c760a2c5080b2df"
+    },
+    "chs-victor-neutral": {
+      "file": "victor-neutral.webp",
+      "bytes": 33016,
+      "md5": "8029d9e5912f98d8b6767ef79ad4b834"
+    },
+    "chs-victor-happy": {
+      "file": "victor-happy.webp",
+      "bytes": 35844,
+      "md5": "a70180d3b1afaf01c8486324a4343796"
+    },
+    "chs-victor-determined": {
+      "file": "victor-determined.webp",
+      "bytes": 33942,
+      "md5": "4e9a2fab68d81286cee9cef8e16cd3c0"
+    },
+    "chs-karina-neutral": {
+      "file": "karina-neutral.webp",
+      "bytes": 33590,
+      "md5": "0a4c0d574bf9af0f197ca5dcc8c81086"
+    },
+    "chs-karina-happy": {
+      "file": "karina-happy.webp",
+      "bytes": 34366,
+      "md5": "2559b2d3d740141af97c401b1609fd91"
+    },
+    "chs-karina-determined": {
+      "file": "karina-determined.webp",
+      "bytes": 34134,
+      "md5": "1cb60894f2635ca5c8a659b96aef0e62"
+    },
+    "chs-stefan-neutral": {
+      "file": "stefan-neutral.webp",
+      "bytes": 27532,
+      "md5": "59e5ee2f4ea77b0576e62d76c7ec0b70"
+    },
+    "chs-stefan-happy": {
+      "file": "stefan-happy.webp",
+      "bytes": 28068,
+      "md5": "f126c4ab3734a60e1e2c3b21f473756a"
+    },
+    "chs-stefan-determined": {
+      "file": "stefan-determined.webp",
+      "bytes": 27522,
+      "md5": "2849a09f4a64529217fa52f9c9e3acf0"
+    },
+    "chs-nora-neutral": {
+      "file": "nora-neutral.webp",
+      "bytes": 23816,
+      "md5": "79c106ed15785936f1c123c2b871cd9a"
+    },
+    "chs-nora-happy": {
+      "file": "nora-happy.webp",
+      "bytes": 24758,
+      "md5": "fd07e456a5c21fdc6e6960cd51d52ce2"
+    },
+    "chs-nora-determined": {
+      "file": "nora-determined.webp",
+      "bytes": 24242,
+      "md5": "cc4049708282839423ce02bc92a5f39e"
+    },
+    "chs-nikolai-neutral": {
+      "file": "nikolai-neutral.webp",
+      "bytes": 42538,
+      "md5": "dfe1f8e9343ae5ec36df919812493603"
+    },
+    "chs-nikolai-happy": {
+      "file": "nikolai-happy.webp",
+      "bytes": 43382,
+      "md5": "bf1e56898cac326089ca6ec849fddb22"
+    },
+    "chs-nikolai-determined": {
+      "file": "nikolai-determined.webp",
+      "bytes": 42388,
+      "md5": "c363fc0359a9851db305b5806a6beda4"
+    },
+    "chs-valerie-neutral": {
+      "file": "valerie-neutral.webp",
+      "bytes": 35500,
+      "md5": "73b8ad908536cf41b26b0815d8d7d8f5"
+    },
+    "chs-valerie-happy": {
+      "file": "valerie-happy.webp",
+      "bytes": 35730,
+      "md5": "992ba24cdc64f9f0f2b41a21aa3ad9b7"
+    },
+    "chs-valerie-determined": {
+      "file": "valerie-determined.webp",
+      "bytes": 35154,
+      "md5": "0304a107c596b585df3cb66c334f059a"
+    },
+    "chs-adrian-neutral": {
+      "file": "adrian-neutral.webp",
+      "bytes": 33486,
+      "md5": "1f6a71b5c6ef27a4db87c4d094ac1f29"
+    },
+    "chs-adrian-happy": {
+      "file": "adrian-happy.webp",
+      "bytes": 34624,
+      "md5": "82c65d6a3f4f6e00be04a98cbccf2ecc"
+    },
+    "chs-adrian-determined": {
+      "file": "adrian-determined.webp",
+      "bytes": 34480,
+      "md5": "c5700ceddf501389e66874e78f9ef957"
+    }
+  }
+}
