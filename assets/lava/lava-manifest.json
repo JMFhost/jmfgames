@@ -1,0 +1,98 @@
+{
+  "arenas": [
+    "volcano",
+    "livingroom",
+    "playground",
+    "kitchen",
+    "candyland"
+  ],
+  "files": {
+    "arenas/candyland.jpg": "931d55216d09f49e982ce49b525745fb3004fc1954d03e5b380df5557edc022b",
+    "arenas/kitchen.jpg": "0ef4fb74fc098771494d9c695ce27eb9b19f1f9503c4a17da0486f1054e35ee6",
+    "arenas/livingroom.jpg": "46379cd5bb967799a8f14b0abb053fd7e7aa2bd55cacca5915f7bfc2866d84b2",
+    "arenas/playground.jpg": "e9f5178101380de28dc7294e84cbc32ac4a6df8fa40d7fe8665e32e9f8992985",
+    "arenas/volcano.jpg": "16c141474c0c16a3ad7626b61fd29c6ccdfc5d5612833a35e1ecd44f4f52d1fe",
+    "player/female-ivy-defeated.webp": "91c187ba9356b69528283b20f6b38041705c500355041b1df15b4791bd13a7da",
+    "player/female-ivy-determined.webp": "94ec09a6ebd07d45281a74f8fdda93a5df42e093d690c09f2c65683f75e3fb59",
+    "player/female-ivy-neutral.webp": "d5531cb71921b6eb4169ea0d4ecc11b7350ff94707ec7952562a9cda7f45cf76",
+    "player/female-lark-defeated.webp": "8f6b3f8aff0ecff972495ec19fcc0d562607f75501d9e64618633f5211b39652",
+    "player/female-lark-determined.webp": "360b9ae8e86f0889e694d2aa5912fe5ffb0609e4941537f86446ff1b51ed58e3",
+    "player/female-lark-neutral.webp": "e2250354e5f3b568f2558a24bdee772a6b6563e5ad2f6100f468e79b81789af9",
+    "player/female-maren-defeated.webp": "88adbb8929a4d5f15c9c1065fb9a91f6042fc299345143d85a1fd40bd662a42a",
+    "player/female-maren-determined.webp": "53c783e845a7546c4baf373c1ec7acc3434513dc97f3fc206d5f9e9b8f05742e",
+    "player/female-maren-neutral.webp": "b9d4f9b8ad55284af9d71980291fe798d26a009fa4bc71a8a13c492ce4457174",
+    "player/male-ash-defeated.webp": "4b15479cb8ede19a009ab30b464bc6971eec89e8218c11ad29b319f65ff0f660",
+    "player/male-ash-determined.webp": "3b605d6d892aca07784c126c816461f735bf0eba9a2e300de5852195590ddc76",
+    "player/male-ash-neutral.webp": "07ee899b3535c56f654a7747c590e7f221ea6b340a8484625bd649016e882fda",
+    "player/male-brook-defeated.webp": "91836986d5d54dda27e81a1ee2e1fd74c7e8f31f1e8a98e23bb3dcf1383c879c",
+    "player/male-brook-determined.webp": "578ca8e2a94f5f712da6f99b4c43d352d47e432df0e20d789d7a9fed8cd035ab",
+    "player/male-brook-neutral.webp": "1e8b07a0ad41cb57eb499cece077ef7562655a120c6c99df3731343387b38c16",
+    "player/male-cedar-defeated.webp": "577dc4dbfb71e20978f8039c260a38b55467d90f7898529627556a9d059fc67a",
+    "player/male-cedar-determined.webp": "108b346387ea886d173dc93fcb7f18ab21adc52fc673e290359f1a7b9725b81f",
+    "player/male-cedar-neutral.webp": "0b2b82dbb66455215189ff9e7af5e5882bbb408b0a6a01c4627fc0cf54d4664c",
+    "rivals/kaito-defeated.webp": "7e002b1a2e3fa11f2791f3c1b2770e06efdfa32f442212bc5258096922fb83b9",
+    "rivals/kaito-determined.webp": "bdd48cd715a5ca9101bc411e4ea72a836644aa23425b185e3c96e9ab5a5e1b40",
+    "rivals/kaito-neutral.webp": "b8fed111131588c5f4dad1a4a4c2646f02b8f1d15869ec907057744cbdcbcc84",
+    "rivals/momo-defeated.webp": "ec5c305c88335ca91486953781a1fc68e470dd886e65f89c7a620c627ddda3db",
+    "rivals/momo-determined.webp": "eaaa254b9653ceaba9ff8bb699e4a4dc5b594815f2485d493e937ce1c53e1e5d",
+    "rivals/momo-neutral.webp": "c8004d25f9b459c02d116734c8647f08ece9d75bdd8c3f5f47a356cdf025c049",
+    "rivals/pip-defeated.webp": "5afbf0862d3c50e51b6593cd1190f39014cf0b9f4df4c905d6bdba839b45aeb3",
+    "rivals/pip-determined.webp": "088efa6015ed398c954528c42b45c889a67a1acd836596073afee1f216611856",
+    "rivals/pip-neutral.webp": "f9e62716942b8d6f67d84a36971c6053859b6437bae2e3c74e8a43618a6d26a7",
+    "rivals/rin-defeated.webp": "ddd1c1012cfa70c67c08296e80863006bd87c24261e4e65157f8b90bdd6f9905",
+    "rivals/rin-determined.webp": "df6ef8ac3848294b22343c23a03b50615cd66aed71d219c2f815fe29f9f1ae2d",
+    "rivals/rin-neutral.webp": "d882fe39c1959773550170487a4c32fabc30d2251ea6b9c09e19b2e5a9951fd5",
+    "rivals/sable-defeated.webp": "08c7c405379f9f53d0d6940a18dd28e5c6f8be87af427d6022c3feae4d9e0afc",
+    "rivals/sable-determined.webp": "7a973efd6b8d3cf03d9eb5c8cb0493403f090e815e5345878eb441c86c5c8672",
+    "rivals/sable-neutral.webp": "65a4d4b3349352a6a071067a396b79d9ffaf957d3fd0c15446ea9e34eea8b72a",
+    "rivals/yuki-defeated.webp": "30aeefcb705334858d09a2dd000c2b9854716b3b66c4cb95e5e7d6a85022b35a",
+    "rivals/yuki-determined.webp": "33eed92412df06fcdd8aac660964c23c4efaf2f6f63855e2b2e3193a2a20f7cb",
+    "rivals/yuki-neutral.webp": "fee6af532f42902a462d10210fc1f02a768e3abbcb6fb34811a0871d9dd2fd7d",
+    "splash.webp": "649c402fffc2e8127f08d4d23e56a907a66b524ed15b9ed56cd47ed7b64d8b21"
+  },
+  "playerAvatars": {
+    "female": [
+      "female-ivy",
+      "female-lark",
+      "female-maren"
+    ],
+    "male": [
+      "male-ash",
+      "male-brook",
+      "male-cedar"
+    ]
+  },
+  "rivals": {
+    "kaito": [
+      "neutral",
+      "determined",
+      "defeated"
+    ],
+    "momo": [
+      "neutral",
+      "determined",
+      "defeated"
+    ],
+    "pip": [
+      "neutral",
+      "determined",
+      "defeated"
+    ],
+    "rin": [
+      "neutral",
+      "determined",
+      "defeated"
+    ],
+    "sable": [
+      "neutral",
+      "determined",
+      "defeated"
+    ],
+    "yuki": [
+      "neutral",
+      "determined",
+      "defeated"
+    ]
+  },
+  "version": 1
+}
