@@ -718,6 +718,12 @@ body {
 .ph-splash--lava .ph-splash-game { color: #ffb347; }
 /* /LAVA */
 
+/* CASINO (Nov 20, 2026): Felt & Cards — green felt, gold name. */
+.ph-splash--casino {
+  background: radial-gradient(120% 90% at 50% 0%, #1a5c31 0%, #0d3a1e 55%, #071009 100%);
+}
+.ph-splash--casino .ph-splash-game { color: #f0d878; }
+
 /* ---------- Splash motifs ---------- */
 
 /* Motif stage: fixed 248x168 box above the game name. Fits the
@@ -801,6 +807,31 @@ body {
     repeating-linear-gradient(45deg, #2f5da8 0 6px, #24497f 6px 12px);
   border: 2px solid #fdfdf8;
   transform: rotateY(180deg);
+}
+
+/* Casino: poker chips drop into stacks at the stage corners and
+   dice tumble. Chips reuse the block-drop entrance; dice bounce
+   gently until dismissal. Reduced-motion (animations off on
+   .ph-splash-motif *) shows them settled. */
+.ph-splash-chip {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 4px dashed rgba(255, 255, 255, 0.85);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+  animation: ph-splash-block-drop 0.7s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+.ph-splash-chip.gold { background: #d4af37; }
+.ph-splash-chip.red { background: #c0392b; }
+.ph-splash-chip.green { background: #127a44; }
+.ph-splash-chip.black { background: #222222; }
+
+.ph-splash-dice {
+  position: absolute;
+  font-size: 28px;
+  line-height: 1;
+  animation: ph-splash-dice-bounce 1.2s ease-in-out infinite;
 }
 
 /* Blockfall: pieces rain down and stack into a pile, then the bottom
@@ -1067,6 +1098,11 @@ body {
   0%, 45% { transform: rotateY(0deg); }
   70% { transform: rotateY(180deg); }
   100% { transform: rotateY(360deg); }
+}
+
+@keyframes ph-splash-dice-bounce {
+  0%, 100% { transform: translateY(0) rotate(-6deg); }
+  50% { transform: translateY(-12px) rotate(8deg); }
 }
 
 @keyframes ph-splash-piece-fall {
@@ -11292,39 +11328,12 @@ button.mr-setup-preview:focus-visible {
 .cl-btn.sel { border-color: var(--cl-gold); color: var(--cl-gold-soft); box-shadow: 0 0 0 1px var(--cl-gold); }
 
 /* ----------------------------------------------------------- splash */
-.cl-splash {
-  position: absolute;
-  inset: 0;
-  z-index: 40;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 24px;
-  text-align: center;
-  background: radial-gradient(120% 90% at 50% 0%, #1a5c31 0%, #071009 70%);
-  cursor: pointer;
-}
-
-.cl-splash-dice { font-size: 64px; line-height: 1; animation: cl-bounce 1.2s ease-in-out infinite; }
-.cl-splash-title {
-  font-size: 40px;
-  font-weight: 900;
-  letter-spacing: 4px;
-  color: var(--cl-gold-soft);
-  text-shadow: 0 2px 0 var(--cl-gold-deep), 0 6px 18px rgba(0, 0, 0, 0.6);
-  animation: cl-fadeup 0.8s ease both;
-}
-.cl-splash-sub { font-size: 14px; color: var(--cl-muted); animation: cl-fadeup 0.8s 0.3s ease both; }
-.cl-splash-skip { margin-top: 18px; font-size: 13px; color: var(--cl-muted); animation: cl-fadeup 0.8s 0.6s ease both; }
+/* CL SPLASH retired Nov 20, 2026: the shell shows the Felt & Cards
+   theme (SPLASH_THEMES.casino) — one splash, not two. The rules
+   below were the in-game dice splash. cl-bounce is kept: the
+   crowning screen (.cl-crown-emoji) uses it. */
 
 @keyframes cl-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-@keyframes cl-fadeup { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-
-@media (prefers-reduced-motion: reduce) {
-  .cl-splash-dice, .cl-splash-title, .cl-splash-sub, .cl-splash-skip { animation: none; }
-}
 
 /* ------------------------------------------------------------ floor */
 .cl-floor { display: flex; flex-direction: column; gap: 10px; }
@@ -11915,7 +11924,6 @@ button.mr-setup-preview:focus-visible {
   .cl-bank-val { font-size: 19px; }
   .cl-symbol { height: 44px; font-size: 24px; }
   .cl-card { width: 38px; height: 54px; font-size: 15px; }
-  .cl-splash-title { font-size: 32px; }
   .cl-rocket-mult { font-size: 36px; }
 }
 
@@ -11923,7 +11931,6 @@ button.mr-setup-preview:focus-visible {
   .cl-game-tile { min-height: 70px; padding: 6px 4px; }
   .cl-tile-icon { font-size: 24px; }
   .cl-symbol { height: 44px; }
-  .cl-splash-dice { font-size: 48px; }
 }
 </style>
 </head>
@@ -12686,7 +12693,7 @@ if (typeof window !== 'undefined') {
   var SPLASH_THEME_CLASSES = ['ph-splash--blockzen', 'ph-splash--solitaire',
     'ph-splash--blockfall', 'ph-splash--chess', 'ph-splash--angrymonkeys',
     'ph-splash--kindlekeep', 'ph-splash--chessquest', 'ph-splash--mathrealms',
-    'ph-splash--lava'];
+    'ph-splash--lava', 'ph-splash--casino'];
   var SPLASH_THEMES = {
     blockzen: {
       cls: 'ph-splash--blockzen',
@@ -12837,6 +12844,32 @@ if (typeof window !== 'undefined') {
       ]
     }
     /* /LAVA */
+    /* CASINO (Nov 20, 2026): Felt & Cards — green felt, five cards
+       fanning out (same fan as Solitaire), chip stacks at the
+       corners, tumbling dice. Motif 'felt' reuses the 'cards'
+       renderer branch; chip/dice are their own piece flags. This
+       replaces the plain fallback Casino Life showed before (it was
+       the only game with no theme) and the in-game .cl-splash, which
+       ran on the same 3s clock and was mostly spent before the shell
+       splash faded — one splash now, not two. */
+    , casino: {
+      cls: 'ph-splash--casino',
+      tag: 'Nine tables. One champion.',
+      motif: 'felt',
+      pieces: [
+        { rank: 'A', suit: '♠', x: 18, y: 56, rot: -18, d: 0.05 },
+        { rank: 'K', suit: '♥', red: true, x: 58, y: 44, rot: -9, d: 0.15 },
+        { rank: 'Q', suit: '♦', red: true, x: 98, y: 38, rot: 0, d: 0.25 },
+        { rank: 'J', suit: '♣', x: 138, y: 44, rot: 9, d: 0.35 },
+        { rank: '10', suit: '♠', x: 178, y: 56, rot: 18, d: 0.45 },
+        { chip: true, c: 'gold', x: 6, y: 136, d: 0.6 },
+        { chip: true, c: 'red', x: 22, y: 136, d: 0.7 },
+        { chip: true, c: 'green', x: 38, y: 136, d: 0.8 },
+        { chip: true, c: 'black', x: 202, y: 136, d: 0.65 },
+        { chip: true, c: 'gold', x: 218, y: 136, d: 0.75 },
+        { dice: true, text: '🎲🎲', x: 182, y: 8, d: 0.5 }
+      ]
+    }
   };
   var SPLASH_DEFAULT = { cls: '', tag: '', motif: '', pieces: [] };
 
@@ -12897,11 +12930,25 @@ if (typeof window !== 'undefined') {
           _splashPlace(el, p);
           el.style.width = p.w + 'px';
           el.style.height = p.h + 'px';
-        } else if (theme.motif === 'cards') {
+        } else if (p.chip) {
+          el = _splashEl('div', 'ph-splash-chip ' + (p.c || 'gold'));
+          _splashPlace(el, p);
+        } else if (p.dice) {
+          el = _splashEl('div', 'ph-splash-dice');
+          _splashPlace(el, p);
+          el.textContent = p.text || '🎲';
+        } else if (theme.motif === 'cards' || theme.motif === 'felt') {
           el = _splashEl('div', 'ph-splash-card');
           _splashPlace(el, p);
           el.style.transform = 'rotate(' + (p.rot || 0) + 'deg)';
           inner = _splashEl('div', 'ph-splash-card-inner');
+          /* CASINO 'felt' (Nov 20, 2026): no flip — the approved
+             Felt & Cards mockup fans the cards in face-up. The shared
+             flip (delay d+0.95s, 1.5s) ends at 2.50–2.90s, so the
+             face-up fan would exist only ~0.1s before the 3s dismiss
+             and the player would mostly see card backs. Solitaire
+             ('cards') keeps its flip. */
+          if (theme.motif === 'felt') inner.style.animation = 'none';
           inner.style.animationDelay = ((p.d || 0) + 0.95) + 's';
           face = _splashEl('div', 'ph-splash-card-face front' + (p.red ? ' red' : ''));
           face.textContent = p.rank + p.suit;
@@ -109913,12 +109960,6 @@ var CLGame = (function () {
     if (!_mount || typeof document === 'undefined') return false;
     _mount.innerHTML =
       '<div class="cl-root" id="cl-root">' +
-        '<div class="cl-splash" id="cl-splash">' +
-          '<div class="cl-splash-dice">\uD83C\uDFB2\uD83C\uDFB2</div>' +
-          '<div class="cl-splash-title">CASINO LIFE</div>' +
-          '<div class="cl-splash-sub">Built and owned by JMF Games</div>' +
-          '<div class="cl-splash-skip">Tap to skip</div>' +
-        '</div>' +
         '<header class="cl-topbar">' +
           '<button class="cl-back" type="button" data-cl-action="back" aria-label="Back">&lsaquo; Back</button>' +
           '<div class="cl-bank"><span class="cl-bank-label">Bankroll</span>' +
@@ -109943,13 +109984,6 @@ var CLGame = (function () {
     _goalTextEl = _doc().getElementById('cl-goal-text');
     _musicBtn = _doc().getElementById('cl-music-btn');
     _soundBtn = _doc().getElementById('cl-sound-btn');
-    var splash = _doc().getElementById('cl-splash');
-    if (_reducedMotion() && splash) {
-      try { splash.style.animation = 'none'; } catch (e) { /* cosmetic */ }
-    }
-    if (splash) {
-      splash.addEventListener('click', function () { _dismissSplash(); });
-    }
     if (_root) {
       _root.addEventListener('click', _onClick);
       _root.addEventListener('input', _onInput);
@@ -110123,12 +110157,15 @@ var CLGame = (function () {
     }
   }
 
+  /* CL SPLASH (Nov 20, 2026): retired — the shell now shows the
+     Felt & Cards theme (SPLASH_THEMES.casino), so there is one
+     splash, not two. The in-game dice splash ran on the same 3s
+     clock and was mostly spent before the shell splash faded.
+     _showSplash now goes straight to the floor/picker underneath
+     the shell splash. _dismissSplash is kept: it is the shared
+     post-open path (and guards a missing splash node). */
   function _showSplash() {
-    _screen = 'splash';
-    var win = _win();
-    if (win) {
-      _splashTimer = win.setTimeout(function () { _dismissSplash(); }, SPLASH_MS);
-    }
+    _dismissSplash();
   }
 
   /* ------------------------------------------------------------ picker */
