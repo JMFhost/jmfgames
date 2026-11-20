@@ -10364,11 +10364,11 @@ button.mr-setup-preview:focus-visible {
   background: #2b120a;
   color: #ffe9d6;
   font-size: 15px;
-  /* LAVA2B fix (Nov 20): the Mode option text ("Quick Race —
-     4-player survival: last one standing wins") makes this select
-     447px wide — wider than a 320px screen (pre-existing). Let the
-     flex row shrink it to fit; the native dropdown still shows the
-     full text. */
+  /* FL FIX (Nov 20): mode/difficulty option labels are short
+     (widest ~155px) so the selected option renders fully in the
+     closed select at 390 and 320; the native dropdown still shows
+     the full text, and the full mode descriptions live in How to
+     Play. Let the flex row shrink the select to fit. */
   flex: 1;
   min-width: 0;
   max-width: 100%;
@@ -11361,6 +11361,28 @@ if (typeof window !== 'undefined') {
      order identical to this list means the player never reorganized. */
   var LEGACY_DEFAULT_HOME_ORDER = ['angrymonkeys', 'blockfall', 'blockzen', 'chess', 'chessquest', 'invesim', 'kindlekeep', 'solitaire', 'about', 'settings'];
   var EXTERNAL_HOME_URL = 'https://invesim.com';
+
+  /* DEEPLINK (Nov 20): one short shareable link per game, as a URL hash
+     (jmfgames.com/#angry-monkeys). Slugs are stable public strings; the
+     app ids are internal. The external same-tab redirect app is not a
+     game — it gets no slug and keeps its existing behavior. Settings
+     and About are utilities, not games — no slugs. */
+  var GAME_SLUGS = {
+    angrymonkeys: 'angry-monkeys',
+    blockzen: 'block-zen',
+    blockfall: 'blockfall',
+    chess: 'chess',
+    chessquest: 'chess-quest',
+    lava: 'floor-is-lava',
+    kindlekeep: 'kindlekeep',
+    mathrealms: 'math-realms',
+    solitaire: 'solitaire'
+  };
+  var SLUG_TO_APP = {};
+  (function () {
+    var ids = Object.keys(GAME_SLUGS);
+    for (var i = 0; i < ids.length; i++) SLUG_TO_APP[GAME_SLUGS[ids[i]]] = ids[i];
+  })();
 
   var registry = {};
   var currentApp = null;
@@ -12470,6 +12492,63 @@ if (typeof window !== 'undefined') {
     if (icon) PhoneShell.openApp(icon.getAttribute('data-app'));
   }
 
+  /* ------------------------------------------------------- DEEPLINK (Nov 20) */
+
+  /* The current URL hash, lowercased and decoded, without the '#'.
+     '' means the plain home URL. Never throws. */
+  function _readHashSlug() {
+    try {
+      if (typeof window === 'undefined' || !window || !window.location) return '';
+      var h = window.location.hash || '';
+      if (h.charAt(0) === '#') h = h.slice(1);
+      try { h = decodeURIComponent(h); } catch (e) { /* keep raw */ }
+      return String(h).toLowerCase();
+    } catch (e) {
+      return '';
+    }
+  }
+
+  /* Write a game slug with pushState: Back returns to the previous
+     hash state. pushState fires no hashchange/popstate, so no loop.
+     Skips the write when the hash is already that slug. */
+  function _writeHash(slug) {
+    try {
+      if (typeof window === 'undefined' || !window || !window.history ||
+          typeof window.history.pushState !== 'function') return;
+      if (_readHashSlug() === slug) return;
+      window.history.pushState(null, '', '#' + slug);
+    } catch (e) { /* URL update is best-effort */ }
+  }
+
+  /* Clear the hash with replaceState: going home reflects the current
+     state without adding a history entry. No event fires, so no loop. */
+  function _clearHash() {
+    try {
+      if (typeof window === 'undefined' || !window || !window.history ||
+          typeof window.history.replaceState !== 'function') return;
+      if (!_readHashSlug()) return;
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    } catch (e) { /* URL update is best-effort */ }
+  }
+
+  /* Browser navigation (Back / forward / manual hash edit) routes
+     through here. Guards make a repeat event (popstate + hashchange
+     both firing for one Back press) a no-op: opening the already-open
+     app or going home from home. An unknown hash mid-session leaves
+     the player where they are; only a fresh load with an unknown hash
+     cleans itself (see init). */
+  function _onHashChange() {
+    var slug = _readHashSlug();
+    if (!slug) {
+      if (currentApp) PhoneShell.goHome();
+      return;
+    }
+    var appId = SLUG_TO_APP[slug];
+    if (!appId || !registry[appId]) return;
+    if (currentApp === appId) return;
+    PhoneShell.openApp(appId, true);
+  }
+
   /* ------------------------------------------------------------- registry */
 
   var PhoneShell = {
@@ -12492,7 +12571,7 @@ if (typeof window !== 'undefined') {
       return registry[id];
     },
 
-    openApp: function (id) {
+    openApp: function (id, _viaHash) {
       var app = registry[id];
       if (!app) return false;
       /* External-link app: navigate the same tab away. No section, no
@@ -12512,7 +12591,16 @@ if (typeof window !== 'undefined') {
       }
       /* Games brand on launch; non-games never splash. The game is
          already mounted underneath; the overlay is presentation only. */
-      if (app.game) showSplash(app);
+      if (app.game) {
+        showSplash(app);
+        /* DEEPLINK (Nov 20): a game open writes its shareable hash,
+           unless we are already here because of the hash. */
+        if (!_viaHash && GAME_SLUGS[id]) _writeHash(GAME_SLUGS[id]);
+      } else {
+        /* DEEPLINK (Nov 20): a non-game app is not a game link — the
+           hash names the open game, so leaving all games clears it. */
+        _clearHash();
+      }
       return true;
     },
 
@@ -12531,6 +12619,9 @@ if (typeof window !== 'undefined') {
       closeCurrent();
       hideApps();
       showHome();
+      /* DEEPLINK (Nov 20): home is the plain URL — clear the game
+         hash without adding a history entry. */
+      _clearHash();
     },
 
     setStatusClock: setStatusClock,
@@ -12585,6 +12676,9 @@ if (typeof window !== 'undefined') {
     HOME_ORDER_KEY: HOME_ORDER_KEY,
     DEFAULT_HOME_ORDER: DEFAULT_HOME_ORDER.slice(),
     LEGACY_DEFAULT_HOME_ORDER: LEGACY_DEFAULT_HOME_ORDER.slice(),
+    /* DEEPLINK (Nov 20): the slug table, for probes and for any
+       future caller that needs the shareable link of a game. */
+    GAME_SLUGS: GAME_SLUGS,
     LONG_PRESS_MS: LONG_PRESS_MS,
     SPLASH_MS: SPLASH_MS,
     SPLASH_THEMES: SPLASH_THEMES
@@ -12944,6 +13038,34 @@ if (typeof window !== 'undefined') {
         startY = null;
       });
     }
+
+    /* DEEPLINK (Nov 20): Back / forward / manual hash edits. */
+    try {
+      if (typeof window !== 'undefined' && window && typeof window.addEventListener === 'function') {
+        window.addEventListener('hashchange', _onHashChange);
+      }
+    } catch (e) { /* hash routing is best-effort */ }
+
+    /* DEEPLINK (Nov 20): a game link lands straight in the game — the
+       visitor arrived with intent, so the lock screen is skipped (the
+       game's own splash still plays as normal). An unknown hash cleans
+       itself and lands on home normally; an empty hash is the plain
+       home. Runs last in init, after every app is registered. */
+    (function () {
+      var slug = _readHashSlug();
+      if (!slug) return;
+      var appId = SLUG_TO_APP[slug];
+      if (appId && registry[appId] && registry[appId].game) {
+        unlock();
+        var lock = $('ph-lock');
+        if (lock && lock.classList) {
+          try { lock.classList.add('ph-lock-hidden'); } catch (e) { /* cosmetic */ }
+        }
+        PhoneShell.openApp(appId, true);
+      } else {
+        _clearHash();
+      }
+    })();
   }
 
   try {
@@ -97074,9 +97196,25 @@ var FLEngine = (function () {
     // the human up without a ceiling; CAMERA_MAX_Y is only the
     // bottom clamp at the start line.
     _updatePositions(state);
-    var human = state.players[0];
-    if (human) {
-      var hp = _livePos(state, human);
+    // FL FIX (Nov 20): while the human is alive the camera follows
+    // them; once eliminated it follows the highest alive racer so
+    // the human spectates the finish (design §A.3) instead of
+    // staring at the lava where they died.
+    var _camFocus = null;
+    var _camHuman = state.players[0];
+    if (_camHuman && _camHuman.alive) {
+      _camFocus = _camHuman;
+    } else {
+      var _camBestY = Infinity;
+      for (var _camFi = 0; _camFi < state.players.length; _camFi++) {
+        var _camFp = state.players[_camFi];
+        if (!_camFp.alive) continue;
+        var _camFy = _livePos(state, _camFp).y;
+        if (_camFy < _camBestY) { _camBestY = _camFy; _camFocus = _camFp; }
+      }
+    }
+    if (_camFocus) {
+      var hp = _livePos(state, _camFocus);
       var target = Math.min(hp.y - CAMERA_OFFSET_Y, CAMERA_MAX_Y);
       state.cameraY += (target - state.cameraY) * CAMERA_LERP;
     }
@@ -99106,9 +99244,9 @@ var FLGame = (function () {
     sel.id = 'fl-difficulty';
     sel.setAttribute('aria-label', 'Difficulty');
     var opts = [
-      ['chill', 'Chill — mostly Rookie rivals'],
-      ['normal', 'Normal — mixed rivals'],
-      ['spicy', 'Spicy — Skilled + Pro rivals']
+      ['chill', 'Chill — Rookie rivals'],
+      ['normal', 'Normal — mixed'],
+      ['spicy', 'Spicy — Skilled + Pro']
     ];
     for (var di = 0; di < opts.length; di++) {
       var o = _el('option', null, opts[di][1]);
@@ -99134,11 +99272,15 @@ var FLGame = (function () {
     modeSel.id = 'fl-mode';
     modeSel.setAttribute('aria-label', 'Game mode');
     var modeOpts = [
-      /* LAVA2 */ ['quick', 'Quick Race — 4-player survival: last one standing wins'],
-      ['league', 'Lava League — climb Ember Cup to Legend Cup'],
-      ['endless', 'Endless Climb — solo score attack: climb as high as you can'],
-      ['daily', 'Daily Challenge — one fresh arena a day'],
-      ['practice', 'Practice — empty arena, lava paused']
+      /* FL FIX (Nov 20): labels shortened so the selected option
+         renders fully in the closed select at 390 and 320 — the
+         old labels (up to 418px) clipped in the 291px/221px
+         select. The full descriptions live in How to Play. */
+      ['quick', 'Quick Race — survival'],
+      ['league', 'Lava League — cups'],
+      ['endless', 'Endless Climb — solo'],
+      ['daily', 'Daily Challenge'],
+      ['practice', 'Practice']
     ];
     for (var mi = 0; mi < modeOpts.length; mi++) {
       var mo = _el('option', null, modeOpts[mi][1]);
@@ -101204,8 +101346,21 @@ var FLGame = (function () {
     if (courseEl) {
       var camTarget = st.cameraY;
       if (_reducedMotion()) {
-        var human = st.players[0];
-        var hy = human ? human.y : 2900;
+        // FL FIX (Nov 20): same spectate rule as the engine — follow
+        // the highest alive racer once the human is eliminated.
+        var _specFocus = null;
+        var _specHuman = st.players[0];
+        if (_specHuman && _specHuman.alive) {
+          _specFocus = _specHuman;
+        } else {
+          var _specBestY = Infinity;
+          for (var _specRi = 0; _specRi < st.players.length; _specRi++) {
+            var _specRp = st.players[_specRi];
+            if (!_specRp.alive) continue;
+            if (_specRp.y < _specBestY) { _specBestY = _specRp.y; _specFocus = _specRp; }
+          }
+        }
+        var hy = _specFocus ? _specFocus.y : 2900;
         // /* LAVA2 */ M2: no lower bound — the camera follows the
         // human past y=350 into the endless course (negative
         // cameraY), same as the engine's lerped target.
