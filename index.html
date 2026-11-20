@@ -4700,18 +4700,23 @@ body {
   bottom: 0;
   z-index: 4;
   transition: bottom 0.15s ease-out;
-}
-/* Flight only: clear the home-indicator strip (#ph-home-indicator,
-   shell.css, 44px) so the bar never strikes through the ability
-   button's text and the hit-span never covers the button's right edge
-   at 320px. */
-.am-actions.am-flight { bottom: 44px; }
+  /* AM FIX (Nov 20, fix3): the flex/padding/pointer-events declarations
+     below were ORPHANED by the fix2 edit, which closed this rule early
+     and left them in a bare block the browser drops — so the bar lost
+     its 10px side padding and the ability button sat flush at x=0
+     (pill + ★ tip at the screen edge) and the bar swallowed taps.
+     Merged back into this rule; .am-flight stays a separate rule. */
   display: flex;
   justify-content: space-between;
   gap: 8px;
   padding: 6px 10px calc(8px + env(safe-area-inset-bottom, 0px));
   pointer-events: none;
 }
+/* Flight only: clear the home-indicator strip (#ph-home-indicator,
+   shell.css, 44px) so the bar never strikes through the ability
+   button's text and the hit-span never covers the button's right edge
+   at 320px. */
+.am-actions.am-flight { bottom: 44px; }
 .am-actions .am-btn {
   pointer-events: auto;
   background: rgba(18, 63, 49, 0.92);
@@ -49002,14 +49007,16 @@ function _drawSling(ctx) {
       ctx.fillStyle = '#FFD166';
       ctx.strokeStyle = 'rgba(0,0,0,0.6)';
       ctx.lineWidth = 3;
-      var slabel = spw.glyph + ' ' + spw.name;
-      /* AM FIX (Nov 20): clamp the label inside the canvas — the pouch
-         sits near the left edge, so the centered label's glyph was cut
-         off-screen. Margin is 14, not 4: measureText reports the
-         advance, but the rendered ink overhangs it (leading glyph ~1px
-         + the 3px stroke ~1.5px), so a 4px margin still left live ink
-         at x=1 on narrow screens and the first letter read as clipped.
-         14px keeps rendered ink >= ~11px from the edge at all sizes. */
+      var slabel = spw.name;
+      /* AM FIX (Nov 20, fix3): glyph dropped from the sling label —
+         name only. The ↻/🪨 glyph's rendered ink overhangs its
+         measureText advance by more than the margin-14 clamp covered,
+         and it renders wider in the cloud browser's font than in the
+         sandbox Chromium, so the leading glyph stayed half-clipped at
+         the left edge even after fix2. The plain name measures
+         accurately in system-ui; the glyph adds nothing functional —
+         the queue already shows the glyph above each monkey, and the
+         full name still shows in the intro card. Clamp kept at 14. */
       var shw = ctx.measureText(slabel).width / 2;
       var sx = _clamp(spp.x, shw + 14, _canvas.clientWidth - shw - 14);
       ctx.strokeText(slabel, sx, spp.y);
