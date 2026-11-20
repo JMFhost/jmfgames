@@ -49005,9 +49005,13 @@ function _drawSling(ctx) {
       var slabel = spw.glyph + ' ' + spw.name;
       /* AM FIX (Nov 20): clamp the label inside the canvas — the pouch
          sits near the left edge, so the centered label's glyph was cut
-         off-screen. */
+         off-screen. Margin is 14, not 4: measureText reports the
+         advance, but the rendered ink overhangs it (leading glyph ~1px
+         + the 3px stroke ~1.5px), so a 4px margin still left live ink
+         at x=1 on narrow screens and the first letter read as clipped.
+         14px keeps rendered ink >= ~11px from the edge at all sizes. */
       var shw = ctx.measureText(slabel).width / 2;
-      var sx = _clamp(spp.x, shw + 4, _canvas.clientWidth - shw - 4);
+      var sx = _clamp(spp.x, shw + 14, _canvas.clientWidth - shw - 14);
       ctx.strokeText(slabel, sx, spp.y);
       ctx.fillText(slabel, sx, spp.y);
       ctx.restore();
