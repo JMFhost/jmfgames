@@ -11553,6 +11553,7 @@ button.mr-setup-preview:focus-visible {
   line-height: 1.05;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
   user-select: none;
+  transition: transform .15s ease;
 }
 .cl-card .cl-suit { font-size: 19px; }
 .cl-card.red { color: #c0392b; }
@@ -11591,6 +11592,7 @@ button.mr-setup-preview:focus-visible {
 .cl-opp-row .cl-initials { font-size: 13px; }
 .cl-opp-row .cl-opp-name { font-weight: 700; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cl-opp-row .cl-opp-state { color: var(--cl-muted); white-space: nowrap; }
+.cl-opp-cards { display: inline-flex; gap: 4px; align-items: center; flex: 0 0 auto; }
 
 /* ------------------------------------------------------------ slots */
 .cl-slots-grid {
@@ -11917,6 +11919,71 @@ button.mr-setup-preview:focus-visible {
   transition: opacity 0.2s ease;
 }
 .cl-toast.show { opacity: 1; }
+
+/* ------------------------------------------- CL animations (Nov 2026) */
+/* Mount-only CSS entrance animations (DESIGN.md §0-§1): every animation
+   runs on the final, already-computed state; outcomes/bankroll are
+   applied synchronously in the same task as the tap. Keyframes end at
+   identity so settled layout is byte-identical to the static build.
+   Gated at render time by _reducedMotion() in cl-game.js; the
+   prefers-reduced-motion block below is belt-and-braces (scoped to
+   .cl-anim* only — cl-bounce / cl-ring are NOT touched). */
+@keyframes cl-deal-in { from { transform: translateY(-14px) scale(.92); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+@keyframes cl-flip-in { from { transform: rotateY(90deg); opacity: 0; } to { transform: rotateY(0deg); opacity: 1; } }
+@keyframes cl-reel-settle { from { transform: translateY(-46px); filter: blur(2px); opacity: 0; } to { transform: translateY(0); filter: blur(0); opacity: 1; } }
+@keyframes cl-win-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes cl-result-pop { 0% { transform: scale(.88); } 60% { transform: scale(1.06); } 100% { transform: scale(1); } }
+@keyframes cl-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+@keyframes cl-ball-orbit { from { transform: rotate(0deg) translateX(58px) rotate(0deg); } to { transform: rotate(calc(1080deg + var(--ball-angle, 0deg))) translateX(58px) rotate(calc(-1080deg - var(--ball-angle, 0deg))); } }
+@keyframes cl-rocket-flame { from { transform: scaleY(1); opacity: .9; } to { transform: scaleY(1.35); opacity: .6; } }
+@keyframes cl-crash-burst { from { transform: scale(1); opacity: 1; } to { transform: scale(1.7); opacity: 0; } }
+@keyframes cl-scratch-wipe { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 0 100%); } }
+@keyframes cl-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cl-play-in { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.cl-anim-deal { animation: cl-deal-in 280ms ease-out both; }
+.cl-anim-reel { animation: cl-reel-settle 420ms ease-out both; }
+.cl-anim-flip { animation: cl-flip-in 380ms ease-out both; }
+.cl-anim-win { animation: cl-win-pulse 600ms ease-in-out 2; }
+.cl-anim-pop { animation: cl-result-pop 300ms ease-out both; }
+.cl-anim-shake { animation: cl-shake 300ms ease-in-out both; }
+.cl-anim-ball { animation: cl-ball-orbit 900ms cubic-bezier(.2,.7,.3,1) both; }
+.cl-anim-flame { animation: cl-rocket-flame 180ms ease-in-out infinite alternate; }
+.cl-anim-burst { animation: cl-crash-burst 450ms ease-out both; }
+.cl-anim-wipe { animation: cl-scratch-wipe 300ms ease-in forwards; }
+.cl-anim-fade { animation: cl-fade-in 250ms ease-out both; }
+.cl-anim-play { animation: cl-play-in 260ms ease-out both; }
+
+/* Card flip wrapper (blackjack hole card, hold'em showdown, baccarat
+   third cards): two faces, front shown unless .show-back. */
+.cl-flip { display: inline-block; position: relative; width: 44px; height: 62px; transform-style: preserve-3d; vertical-align: middle; }
+.cl-flip-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.cl-flip-face.front { transform: rotateY(0deg); }
+.cl-flip-face.back { transform: rotateY(180deg); }
+.cl-flip.show-back .cl-flip-face.front { transform: rotateY(180deg); }
+.cl-flip.show-back .cl-flip-face.back { transform: rotateY(0deg); }
+.cl-flip.small { width: 34px; height: 48px; }
+.cl-flip.small .cl-card { width: 34px; height: 48px; font-size: 14px; }
+.cl-flip.small .cl-card .cl-suit { font-size: 15px; }
+
+/* Roulette wheel visual: CSS ring above the number grid; the ball is a
+   visual only — the drawn number + payout logic are untouched. */
+.cl-wheel-visual { position: relative; width: 150px; height: 150px; margin: 2px auto 0; border-radius: 50%; background: conic-gradient(#b01e1e 0 9.7%, #1c1c1c 9.7% 19.4%, #b01e1e 19.4% 29.1%, #1c1c1c 29.1% 38.8%, #b01e1e 38.8% 48.6%, #1c1c1c 48.6% 58.3%, #b01e1e 58.3% 68%, #1c1c1c 68% 77.7%, #b01e1e 77.7% 87.4%, #1c1c1c 87.4% 97.3%, #0d7a3a 97.3% 100%); border: 3px solid var(--cl-gold-deep); }
+.cl-wheel-visual::after { content: ''; position: absolute; inset: 14px; border-radius: 50%; background: var(--cl-felt-deep); border: 2px solid var(--cl-gold-deep); }
+.cl-wheel-ball { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #fdfbf5; border: 1px solid #999; z-index: 2; }
+.cl-wheel-hub { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1; font-size: 26px; font-weight: 900; color: var(--cl-gold-soft); }
+
+/* Rocket flame under the ship while flying. */
+.cl-rocket-flame { font-size: 22px; line-height: 1; display: block; }
+
+/* Scratch foil: gold cover over each unrevealed cell; wiped away on tap. */
+.cl-scratch-cell { position: relative; overflow: hidden; }
+.cl-scratch-foil { position: absolute; inset: 0; background: linear-gradient(135deg, #e8c832, #c9a227 60%, #a8871f); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #7a5a00; pointer-events: none; }
+.cl-scratch-foil::after { content: '\2726 \2726 \2726'; letter-spacing: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cl-anim, .cl-anim *, [class*="cl-anim-"] { animation: none !important; transition: none !important; }
+}
 
 /* --------------------------------------------------------- narrow fit */
 @media (max-width: 340px) {
@@ -109377,6 +109444,9 @@ var CLGame = (function () {
   var _shiftTimer = 0;
   var _shiftState = null;
   var _rocketTimer = 0;
+  var _scratchTimer = 0;
+  var _scratchPending = {};
+  var _scratchDragging = false;
   var _picker = { gender: 'female', name: '', avatar: 'f1', expr: 'calm' };
   var _coachStep = 0;
   var _coachGame = null;
@@ -109987,6 +110057,10 @@ var CLGame = (function () {
     if (_root) {
       _root.addEventListener('click', _onClick);
       _root.addEventListener('input', _onInput);
+      _root.addEventListener('pointerdown', _onScratchPointer);
+      _root.addEventListener('pointermove', _onScratchPointer);
+      _root.addEventListener('pointerup', _onScratchPointer);
+      _root.addEventListener('pointercancel', _onScratchPointer);
     }
     return !!_root;
   }
@@ -110045,6 +110119,42 @@ var CLGame = (function () {
     _rocketTimer = _clearTimer(_rocketTimer);
     _shiftTimer = _clearTimer(_shiftTimer);
     _splashTimer = _clearTimer(_splashTimer);
+    _scratchTimer = _clearTimer(_scratchTimer);
+    _scratchPending = {};
+    _scratchDragging = false;
+  }
+
+  /* Animation helpers (DESIGN.md §0-§1): mount-only CSS classes.
+     _anim() returns '' under reduced motion (settled state at once).
+     _takeAnim(g, flag) consumes a one-shot render flag set by the
+     action that just happened, so re-renders (e.g. card-select taps)
+     do not replay the deal. */
+  function _anim(cls) {
+    if (_reducedMotion()) return '';
+    return ' cl-anim ' + cls;
+  }
+  function _takeAnim(g, flag) {
+    if (!g || !g[flag] || _reducedMotion()) { if (g) g[flag] = false; return false; }
+    g[flag] = false;
+    return true;
+  }
+  function _delayAttr(ms) {
+    if (_reducedMotion() || !ms) return '';
+    return ' style="animation-delay:' + ms + 'ms"';
+  }
+  function _animCardHTML(card, delay) {
+    var h = _cardHTML(card);
+    if (_reducedMotion()) return h;
+    return h.replace('<span class="cl-card', '<span' + _delayAttr(delay) + ' class="cl-card cl-anim cl-anim-deal"');
+  }
+  function _flipCardHTML(card, animate) {
+    var cls = 'cl-flip' + ((!_reducedMotion() && animate) ? ' cl-anim cl-anim-flip' : '');
+    return '<span class="' + cls + '"><span class="cl-flip-face front">' + _cardHTML(card) +
+      '</span><span class="cl-flip-face back">' + _cardBackHTML() + '</span></span>';
+  }
+  function _flipBackHTML() {
+    return '<span class="cl-flip show-back"><span class="cl-flip-face front">' + _cardBackHTML() +
+      '</span><span class="cl-flip-face back">' + _cardBackHTML() + '</span></span>';
   }
 
   /* ------------------------------------------------------ audio / toggles */
@@ -111039,7 +111149,8 @@ var CLGame = (function () {
 
   function _setResult(el, kind, text) {
     if (!el) return;
-    el.className = 'cl-result' + (kind ? ' ' + kind : '');
+    el.className = 'cl-result' + (kind ? ' ' + kind : '') +
+      ((kind === 'win' && !_reducedMotion()) ? ' cl-anim cl-anim-pop' : '');
     el.textContent = text;
   }
 
@@ -111132,6 +111243,7 @@ var CLGame = (function () {
     if (!_screenEl) return;
     var g = _game;
     var grid = g.grid || null;
+    var spun = _takeAnim(g, '_slotsSpun');
     var gridHtml = '';
     for (var reel = 0; reel < 5; reel++) {
       var cells = '';
@@ -111139,9 +111251,9 @@ var CLGame = (function () {
         var sym = grid ? grid[reel][row] : -1;
         var winCell = g.winCells && g.winCells[reel] && g.winCells[reel][row];
         var glyph = (typeof sym === 'string') ? sym : (sym >= 0 ? SLOT_SYMBOLS[sym] : '\u2753');
-        cells += '<div class="cl-symbol' + (winCell ? ' win' : '') + '">' + glyph + '</div>';
+        cells += '<div class="cl-symbol' + (winCell ? ' win' + (spun ? ' cl-anim cl-anim-win' : '') : '') + '">' + glyph + '</div>';
       }
-      gridHtml += '<div class="cl-reel">' + cells + '</div>';
+      gridHtml += '<div class="cl-reel' + (spun ? ' cl-anim cl-anim-reel' : '') + '"' + (spun ? ' style="animation-delay:' + (reel * 90) + 'ms"' : '') + '>' + cells + '</div>';
     }
     var fs = g.freeSpins > 0 ? '<div class="cl-note">Free spins left: ' + g.freeSpins + ' — all wins doubled (2x).</div>' : '';
     _screenEl.innerHTML =
@@ -111254,6 +111366,7 @@ var CLGame = (function () {
     g.grid = grid;
     g.winCells = winCells;
     g.spinning = false;
+    g._slotsSpun = true;
     var net = payout - (isFree ? 0 : bet);
     g.resultText = (freeSpinsWon > 0 ? 'Bonus! 10 free spins at 2x. ' : '') +
       (payout > 0 ? 'Win ' + _fmt(payout) + (isFree ? ' (free spin, 2x)' : ' — net ' + (net >= 0 ? '+' : '') + _fmt(net)) : (isFree ? 'Free spin — no win.' : 'No win this spin.'));
@@ -111286,23 +111399,36 @@ var CLGame = (function () {
   function _renderBlackjack() {
     if (!_screenEl) return;
     var g = _game;
+    var bjAnim = _takeAnim(g, '_bjDealt');
+    var bjDelay = 0;
     var dealerHtml = '';
     if (g.dealer) {
+      var dealerCards = '';
+      for (var di = 0; di < g.dealer.length; di++) {
+        var dc = g.dealer[di];
+        if (di === 1 && g.dealerHoleHidden) dealerCards += _flipBackHTML();
+        else if (di === 1 && !g.dealerHoleHidden) dealerCards += _flipCardHTML(dc, bjAnim);
+        else dealerCards += bjAnim ? _animCardHTML(dc, bjDelay) : _cardHTML(dc);
+        bjDelay += 70;
+      }
       dealerHtml = '<div class="cl-hand-box"><div class="cl-hand-label">Dealer — <b>' +
         (g.dealerHoleHidden ? _bjValue([g.dealer[0]]).total + ' + ?' : _bjValue(g.dealer).total) + '</b></div>' +
-        '<div class="cl-cards">' + g.dealer.map(function (c, i) {
-          return (i === 1 && g.dealerHoleHidden) ? _cardBackHTML() : _cardHTML(c);
-        }).join('') + '</div></div>';
+        '<div class="cl-cards">' + dealerCards + '</div></div>';
     }
     var handsHtml = '';
     if (g.hands) {
       for (var h = 0; h < g.hands.length; h++) {
         var hand = g.hands[h];
         var v = _bjValue(hand.cards);
-        handsHtml += '<div class="cl-hand-box' + (g.phase === 'play' && g.activeHand === h ? ' active' : '') + '">' +
+        var hCards = '';
+        for (var hi = 0; hi < hand.cards.length; hi++) {
+          hCards += bjAnim ? _animCardHTML(hand.cards[hi], bjDelay) : _cardHTML(hand.cards[hi]);
+          bjDelay += 70;
+        }
+        handsHtml += '<div class="cl-hand-box' + (g.phase === 'play' && g.activeHand === h ? ' active' : '') + (v.bust && !_reducedMotion() ? ' cl-anim cl-anim-shake' : '') + '">' +
           '<div class="cl-hand-label">Hand ' + (h + 1) + ' — <b>' + v.total + (v.soft ? ' soft' : '') + '</b> \u2022 bet ' + _fmt(hand.bet) +
           (hand.doubled ? ' (doubled)' : '') + (hand.done ? ' \u2022 done' : '') + '</div>' +
-          '<div class="cl-cards">' + hand.cards.map(_cardHTML).join('') + '</div></div>';
+          '<div class="cl-cards">' + hCards + '</div></div>';
       }
     }
     var hintHtml = '';
@@ -111378,7 +111504,7 @@ var CLGame = (function () {
       return;
     }
     var rng = _nextRng('bj-deal');
-    if (!g.shoe || g.shoe.length < 52) {
+    if (!g.shoe || g.shoe.length < 60) {
       g.shoe = _shuffle(_newShoe(6), rng);
     }
     var shoe = g.shoe;
@@ -111389,6 +111515,7 @@ var CLGame = (function () {
     g.dealerHoleHidden = true;
     g.resultText = '';
     g.resultKind = '';
+    g._bjDealt = true;
     var pv = _bjValue(g.hands[0].cards);
     var dv = _bjValue(g.dealer);
     if (dv.blackjack) {
@@ -111442,6 +111569,7 @@ var CLGame = (function () {
   function _bjDealerPlay() {
     var g = _game;
     g.dealerHoleHidden = false;
+    g._bjDealt = true;
     var shoe = g.shoe;
     var dv = _bjValue(g.dealer);
     while (dv.total < 17) {
@@ -111483,6 +111611,7 @@ var CLGame = (function () {
     if (!g || g.phase !== 'play') return;
     var hand = g.hands[g.activeHand];
     hand.cards.push(g.shoe.pop());
+    g._bjDealt = true;
     var v = _bjValue(hand.cards);
     if (v.bust || v.total === 21) {
       hand.done = true;
@@ -111510,6 +111639,7 @@ var CLGame = (function () {
     hand.bet *= 2;
     hand.doubled = true;
     hand.cards.push(g.shoe.pop());
+    g._bjDealt = true;
     hand.done = true;
     _bjAdvance();
   }
@@ -111525,6 +111655,7 @@ var CLGame = (function () {
     var second = hand.cards.pop();
     hand.cards.push(g.shoe.pop());
     g.hands.splice(g.activeHand + 1, 0, { cards: [second, g.shoe.pop()], bet: hand.bet, doubled: false, done: false });
+    g._bjDealt = true;
     _renderBlackjack();
   }
 
@@ -111543,11 +111674,22 @@ var CLGame = (function () {
     var tableHtml = '';
     if (g.hand) {
       var h = g.hand;
+      var heDeal = _takeAnim(g, '_heDealt');
+      var heStreet = _takeAnim(g, '_heStreet');
+      var heShow = !!g._heShowdown;
       var oppRows = '';
       for (var i = 0; i < h.opponents.length; i++) {
         var o = h.opponents[i];
-        oppRows += '<div class="cl-opp-row">' + _portraitHTML(_rivalPortraitFile(o.rival), o.rival.name) +
-          '<span class="cl-opp-name">' + _esc(o.rival.name) + (o.folded ? ' — folded' : o.allIn ? ' — all in' : '') + '</span>' +
+        var oppCards = '';
+        if (heShow && !o.folded && o.cards) {
+          oppCards = '<span class="cl-opp-cards">' + _flipCardHTML(o.cards[0], true) + _flipCardHTML(o.cards[1], true) + '</span>';
+        } else if (o.cards) {
+          oppCards = '<span class="cl-opp-cards">' +
+            (heDeal ? _animCardHTML(null, i * 70) : _cardBackHTML()) +
+            (heDeal ? _animCardHTML(null, i * 70 + 35) : _cardBackHTML()) + '</span>';
+        }
+        oppRows += '<div class="cl-opp-row' + ((heShow && g._heWinner === o.rival.id && !_reducedMotion()) ? ' cl-anim cl-anim-win' : '') + '">' + _portraitHTML(_rivalPortraitFile(o.rival), o.rival.name) +
+          '<span class="cl-opp-name">' + _esc(o.rival.name) + (o.folded ? ' — folded' : o.allIn ? ' — all in' : '') + '</span>' + oppCards +
           '<span class="cl-opp-state">' + _fmt(o.stack) + (o.bet > 0 ? ' \u2022 bet ' + _fmt(o.bet) : '') + '</span></div>';
       }
       var hintHtml = '';
@@ -111568,12 +111710,22 @@ var CLGame = (function () {
       } else if (g.phase === 'done') {
         actions = '<button type="button" class="cl-btn gold big" data-cl-action="holdem-next">Next hand</button>';
       }
+      var heNewComm = g._heNewComm || 0;
+      var heCommStart = heStreet ? Math.max(0, h.community.length - heNewComm) : (heDeal ? 0 : h.community.length);
+      var heCommHtml = '';
+      for (var ci = 0; ci < h.community.length; ci++) {
+        heCommHtml += (ci >= heCommStart && (heDeal || heStreet)) ? _animCardHTML(h.community[ci], (ci - heCommStart) * 80) : _cardHTML(h.community[ci]);
+      }
+      var heHoleHtml = '';
+      for (var hi2 = 0; hi2 < h.myCards.length; hi2++) {
+        heHoleHtml += heDeal ? _animCardHTML(h.myCards[hi2], hi2 * 70) : _cardHTML(h.myCards[hi2]);
+      }
       tableHtml =
-        '<div class="cl-hand-box"><div class="cl-hand-label">Community \u2022 <span class="cl-pot">Pot ' + _fmt(h.pot) + '</span></div>' +
-        '<div class="cl-cards">' + h.community.map(_cardHTML).join('') +
+        '<div class="cl-hand-box' + ((g.phase === 'done' && g.resultKind === 'win' && !_reducedMotion()) ? ' cl-anim cl-anim-win' : '') + '"><div class="cl-hand-label">Community \u2022 <span class="cl-pot">Pot ' + _fmt(h.pot) + '</span></div>' +
+        '<div class="cl-cards">' + heCommHtml +
         (h.community.length < 5 ? '<span class="cl-muted"> &nbsp;' + (5 - h.community.length) + ' to come</span>' : '') + '</div>' +
         '<div class="cl-hand-label">Your cards \u2022 stack ' + _fmt(h.myStack) + '</div>' +
-        '<div class="cl-cards">' + h.myCards.map(_cardHTML).join('') + '</div></div>' +
+        '<div class="cl-cards">' + heHoleHtml + '</div></div>' +
         oppRows + hintHtml + actions;
     }
     _screenEl.innerHTML =
@@ -111625,6 +111777,10 @@ var CLGame = (function () {
     g.phase = 'act';
     g.resultText = '';
     g.resultKind = '';
+    g._heDealt = true;
+    g._heShowdown = false;
+    g._heWinner = null;
+    g._heNewComm = 0;
     _renderHoldem();
   }
 
@@ -111711,12 +111867,15 @@ var CLGame = (function () {
     if (h.stage === 'preflop') {
       h.community.push(h.deck.pop(), h.deck.pop(), h.deck.pop());
       h.stage = 'flop';
+      g._heNewComm = 3;
     } else if (h.stage === 'flop') {
       h.community.push(h.deck.pop());
       h.stage = 'turn';
+      g._heNewComm = 1;
     } else if (h.stage === 'turn') {
       h.community.push(h.deck.pop());
       h.stage = 'river';
+      g._heNewComm = 1;
     } else {
       _holdemShowdown();
       return;
@@ -111724,6 +111883,7 @@ var CLGame = (function () {
     h.toCall = 0;
     h.myBet = 0;
     for (var i = 0; i < h.opponents.length; i++) h.opponents[i].bet = 0;
+    g._heStreet = true;
     _renderHoldem();
   }
 
@@ -111739,6 +111899,8 @@ var CLGame = (function () {
       var ev = _evalHoldem(o.cards.concat(h.community));
       if (_compareHoldem(ev, best) > 0) { best = ev; winner = o.rival.id; }
     }
+    g._heShowdown = true;
+    g._heWinner = winner;
     if (winner === 'player') {
       _holdemEndHand(true, 'Showdown — your ' + myBest.name + ' wins the pot, ' + _fmt(h.pot) + '.');
     } else {
@@ -111788,14 +111950,16 @@ var CLGame = (function () {
     if (!_screenEl) return;
     var g = _game;
     var mult = g.mult || 1;
+    var shipLift = _reducedMotion() ? 0 : Math.min(120, Math.log(Math.max(1, mult)) * 40);
     var area = '';
     if (g.phase === 'flying') {
-      area = '<div class="cl-rocket-area"><div class="cl-rocket-ship">\uD83D\uDE80</div>' +
+      area = '<div class="cl-rocket-area"><div class="cl-rocket-ship" style="transform:translateY(-' + shipLift.toFixed(0) + 'px)">\uD83D\uDE80</div>' +
+        '<span class="cl-rocket-flame' + (_reducedMotion() ? '' : ' cl-anim cl-anim-flame') + '">\uD83D\uDD25</span>' +
         '<div class="cl-rocket-mult">' + mult.toFixed(2) + 'x</div>' +
         '<div class="cl-muted">Cash-out value: ' + _fmt(Math.floor(g.bet * mult)) + '</div></div>' +
         '<button type="button" class="cl-btn gold big" data-cl-action="rocket-cashout">Cash out ' + _fmt(Math.floor(g.bet * mult)) + '</button>';
     } else if (g.phase === 'crashed') {
-      area = '<div class="cl-rocket-area"><div class="cl-rocket-ship">\uD83D\uDCA5</div>' +
+      area = '<div class="cl-rocket-area"><div class="cl-rocket-ship' + (_reducedMotion() ? '' : ' cl-anim cl-anim-burst') + '">\uD83D\uDCA5</div>' +
         '<div class="cl-rocket-mult crashed">' + (g.crash || 1).toFixed(2) + 'x — crashed</div>' +
         '<div class="cl-muted">The rocket came down at ' + (g.crash || 1).toFixed(2) + 'x.</div></div>' +
         '<button type="button" class="cl-btn gold big" data-cl-action="rocket-launch">Launch again</button>';
@@ -111885,6 +112049,10 @@ var CLGame = (function () {
     }
     var multEl = _doc() ? _doc().querySelector('.cl-rocket-mult') : null;
     if (multEl) multEl.textContent = mult.toFixed(2) + 'x';
+    if (!_reducedMotion()) {
+      var shipEl = _doc() ? _doc().querySelector('.cl-rocket-ship') : null;
+      if (shipEl) shipEl.style.transform = 'translateY(-' + Math.min(120, Math.log(Math.max(1, mult)) * 40).toFixed(0) + 'px)';
+    }
     var btn = _doc() ? _doc().querySelector('[data-cl-action="rocket-cashout"]') : null;
     if (btn) btn.textContent = 'Cash out ' + _fmt(Math.floor(g.bet * mult));
   }
@@ -111951,8 +112119,20 @@ var CLGame = (function () {
     for (var i = 0; i < nums.length; i++) {
       var v = nums[i];
       var cls = 'cl-wheel-num' + (v === 0 ? ' green zero' : ROULETTE_RED.indexOf(v) >= 0 ? ' red' : ' black') +
-        (g.lastSpin === v ? ' hit' : '');
+        (g.lastSpin === v ? ' hit' + (g._rouletteSpun && !_reducedMotion() ? ' cl-anim cl-anim-win' : '') : '');
       wheel += '<button type="button" class="' + cls + '" data-cl-action="roulette-pick" data-num="' + v + '">' + v + '</button>';
+    }
+    var wheelVisual = '';
+    if (typeof g.lastSpin === 'number') {
+      var ballAngle = ((g.lastSpin / 37) * 360).toFixed(1);
+      wheelVisual = '<div class="cl-wheel-visual">' +
+        (g._rouletteSpun && !_reducedMotion()
+          ? '<div class="cl-wheel-ball cl-anim cl-anim-ball" style="--ball-angle:' + ballAngle + 'deg"></div>'
+          : '<div class="cl-wheel-ball" style="--ball-angle:' + ballAngle + 'deg; transform: rotate(' + ballAngle + 'deg) translateX(58px) rotate(-' + ballAngle + 'deg)"></div>') +
+        '<div class="cl-wheel-hub">' + g.lastSpin + '</div></div>';
+      g._rouletteSpun = false;
+    } else {
+      wheelVisual = '<div class="cl-wheel-visual"><div class="cl-wheel-hub">?</div></div>';
     }
     var bets = [
       ['red', 'Red 1:1'], ['black', 'Black 1:1'], ['odd', 'Odd 1:1'],
@@ -111970,6 +112150,7 @@ var CLGame = (function () {
       : '<button type="button" class="cl-btn' + (g.betType === 'straight' ? ' sel' : '') + '" data-cl-action="roulette-type" data-type="straight">Straight up — pick a number (35:1)</button>';
     _screenEl.innerHTML =
       '<div class="cl-game">' + _gameHeadHTML('roulette', _practiceBanner()) +
+      wheelVisual +
       '<div class="cl-wheel">' + wheel + '</div>' +
       '<div class="cl-bet-grid">' + betGrid + '</div>' + straightNote +
       _betRowHTML('roulette', g.bet, 1, 500, [1, 5, 25, 50, 100, 500]) +
@@ -112002,6 +112183,7 @@ var CLGame = (function () {
       n = Math.floor(rng() * 37);
     }
     g.lastSpin = n;
+    g._rouletteSpun = true;
     var mult = _roulettePayout(g.betType || 'red', n, g.pick);
     var winAmt = mult > 0 ? g.bet * mult : 0;
     if (winAmt > 0) _pay(winAmt);
@@ -112066,10 +112248,19 @@ var CLGame = (function () {
     var tableHtml = '';
     if (g.lastHand) {
       var h = g.lastHand;
-      tableHtml = '<div class="cl-hand-box"><div class="cl-hand-label">Player — <b>' + h.playerTotal + '</b></div>' +
-        '<div class="cl-cards">' + h.player.map(_cardHTML).join('') + '</div>' +
+      var bacAnim = _takeAnim(g, '_bacDealt');
+      var bacCard = function (card, order, isThird) {
+        if (!bacAnim) return _cardHTML(card);
+        if (isThird) return _flipCardHTML(card, true);
+        return _animCardHTML(card, order * 90);
+      };
+      var pCards = '', bCards = '';
+      for (var pi = 0; pi < h.player.length; pi++) pCards += bacCard(h.player[pi], pi * 2, pi >= 2);
+      for (var bi = 0; bi < h.banker.length; bi++) bCards += bacCard(h.banker[bi], bi * 2 + 1, bi >= 2);
+      tableHtml = '<div class="cl-hand-box' + ((h.winner !== 'tie' && !_reducedMotion()) ? ' cl-anim cl-anim-win' : '') + '"><div class="cl-hand-label">Player — <b>' + h.playerTotal + '</b></div>' +
+        '<div class="cl-cards">' + pCards + '</div>' +
         '<div class="cl-hand-label">Banker — <b>' + h.bankerTotal + '</b></div>' +
-        '<div class="cl-cards">' + h.banker.map(_cardHTML).join('') + '</div></div>';
+        '<div class="cl-cards">' + bCards + '</div></div>';
     }
     var bets = [['player', 'Player 1:1'], ['banker', 'Banker 1:1*'], ['tie', 'Tie 8:1']];
     var betBtns = '';
@@ -112103,6 +112294,7 @@ var CLGame = (function () {
     var deck = _shuffle(_newShoe(6), rng);
     var hand = _baccaratDeal(deck);
     g.lastHand = hand;
+    g._bacDealt = true;
     var winAmt = 0;
     var side = g.bacBet || 'banker';
     if (hand.winner === side) {
@@ -112286,15 +112478,29 @@ var CLGame = (function () {
           '<span class="cl-opp-name">' + _esc(o.rival.name) + (o.out ? ' — out' : '') + '</span>' +
           '<span class="cl-opp-state">' + o.hand.length + ' cards' + (h.leader === i + 1 ? ' \u2022 leading' : '') + '</span></div>';
       }
+      var tlDeal = _takeAnim(g, '_tlDealt');
+      var tlPlayed = _takeAnim(g, '_tlPlayed');
+      var tlPassed = _takeAnim(g, '_tlPassed');
+      var ledCards = '';
+      if (h.led) {
+        for (var lc = 0; lc < h.led.cards.length; lc++) {
+          var lch = _cardHTML(h.led.cards[lc]);
+          if (tlPlayed && !_reducedMotion()) {
+            lch = lch.replace('<span class="cl-card', '<span style="animation-delay:' + Math.min(lc * 60, 540) + 'ms" class="cl-card cl-anim cl-anim-play"');
+          }
+          ledCards += lch;
+        }
+      }
       var ledHtml = '<div class="cl-hand-box"><div class="cl-hand-label">Table — ' +
         (h.led ? _esc(h.ledBy || 'lead') + ' played ' + _esc(_tlComboLabel(h.led)) : 'no play yet — you lead with any combination') + '</div>' +
-        '<div class="cl-cards">' + (h.led ? h.led.cards.map(_cardHTML).join('') : '<span class="cl-muted">Waiting for a lead.</span>') + '</div></div>';
+        '<div class="cl-cards">' + (h.led ? ledCards : '<span class="cl-muted">Waiting for a lead.</span>') + '</div></div>' +
+        (tlPassed ? '<div class="cl-note cl-anim cl-anim-fade">You passed — rivals play on.</div>' : '');
       var myCards = '';
       var sorted = _tlSortHand(h.myHand);
       for (var c = 0; c < sorted.length; c++) {
         var card = sorted[c];
         var sel = g.selected && g.selected.indexOf(card) >= 0;
-        myCards += '<button type="button" class="cl-card' + ((card.s === 'H' || card.s === 'D') ? ' red' : '') + (sel ? ' sel' : '') + ' playable" data-cl-action="tl-toggle-card" data-r="' + card.r + '" data-s="' + card.s + '">' +
+        myCards += '<button type="button" class="cl-card' + ((card.s === 'H' || card.s === 'D') ? ' red' : '') + (sel ? ' sel' : '') + ' playable' + ((tlDeal && !_reducedMotion()) ? ' cl-anim cl-anim-deal' : '') + '"' + (tlDeal ? ' style="animation-delay:' + (c * 35) + 'ms"' : '') + ' data-cl-action="tl-toggle-card" data-r="' + card.r + '" data-s="' + card.s + '">' +
           '<span>' + _esc(RANK_LABEL[card.r] || String(card.r)) + '</span><span class="cl-suit">' + SUIT_SYMBOL[card.s] + '</span></button>';
       }
       var hintHtml = '';
@@ -112399,6 +112605,7 @@ var CLGame = (function () {
       variant: variant, myHand: myHand, opponents: opponents,
       led: null, ledBy: null, leader: 0, pot: 40, passes: 0, turn: 0
     };
+    g._tlDealt = true;
     // 3 of spades leads the first hand (south); north: lowest hand leads.
     g.selected = [];
     g.phase = 'play';
@@ -112508,6 +112715,7 @@ var CLGame = (function () {
       h.ledBy = null;
       h.passes = 0;
     }
+    g._tlPlayed = true;
     _renderTienLen();
   }
 
@@ -112517,6 +112725,7 @@ var CLGame = (function () {
     if (!g || !h || g.phase !== 'play' || !h.led) return;
     h.passes++;
     g.selected = [];
+    g._tlPassed = true;
     _tlRivalsTurn();
   }
 
@@ -112602,7 +112811,7 @@ var CLGame = (function () {
         var sym = t.cells[i];
         var match = t.done && t.winSymbol !== null && sym === t.winSymbol;
         cells += '<button type="button" class="cl-scratch-cell' + (revealed ? ' revealed' : '') + (match ? ' match' : '') + '" data-cl-action="scratch-reveal" data-cell="' + i + '">' +
-          (revealed ? sym : '?') + '</button>';
+          (revealed ? sym : '?') + (revealed ? '' : '<span class="cl-scratch-foil">\u2726</span>') + '</button>';
       }
       cardHtml = '<div class="cl-scratch-card"><h3>' + _esc(_scratchTheme(g.bet)) + ' — ' + _fmt(g.bet) + '</h3>' +
         '<div class="cl-muted" style="color:#241a00;">Match 3 of a kind to win. Tap the panels to reveal.</div>' +
@@ -112694,6 +112903,77 @@ var CLGame = (function () {
     g.resultText = '';
     g.resultKind = '';
     _renderScratch();
+  }
+
+  /* Scratch wipe (DESIGN.md §8): the foil plays a 300 ms wipe, then the
+     cell reveals. Reduced motion reveals instantly. One timer per wipe,
+     registered in _stopRoundTimers via _scratchTimer. */
+  function _scratchWipeReveal(idx) {
+    var g = _game;
+    if (!g || !g.ticket || g.ticket.done) return;
+    var t = g.ticket;
+    if (t.revealed[idx] || _scratchPending[idx]) return;
+    if (_reducedMotion()) { _scratchReveal(idx, false); return; }
+    _scratchPending[idx] = true;
+    var doc = _doc();
+    var btn = doc ? doc.querySelector('.cl-scratch-cell[data-cell="' + idx + '"]') : null;
+    var foil = btn ? btn.querySelector('.cl-scratch-foil') : null;
+    if (foil) foil.classList.add('cl-anim', 'cl-anim-wipe');
+    var win = _win();
+    if (win) {
+      _scratchTimer = win.setTimeout(function () {
+        delete _scratchPending[idx];
+        if (_game && _game.ticket && !_game.ticket.revealed[idx]) _scratchReveal(idx, false);
+      }, 300);
+    } else {
+      delete _scratchPending[idx];
+      _scratchReveal(idx, false);
+    }
+  }
+  function _scratchRevealAllStaggered() {
+    var g = _game;
+    if (!g || !g.ticket || g.ticket.done) return;
+    if (_reducedMotion()) { _scratchReveal(0, true); return; }
+    var pending = [];
+    for (var i = 0; i < 9; i++) {
+      if (!g.ticket.revealed[i]) pending.push(i);
+    }
+    var step = 0;
+    var win = _win();
+    var next = function () {
+      if (!_game || !_game.ticket || _game.ticket.done) return;
+      if (step >= pending.length) return;
+      var idx = pending[step++];
+      _scratchWipeReveal(idx);
+      if (step < pending.length) {
+        var w2 = _win();
+        if (w2) _scratchTimer = w2.setTimeout(next, 60);
+      }
+    };
+    if (win) _scratchTimer = win.setTimeout(next, 0);
+    else next();
+  }
+  function _scratchCellFromEvent(e) {
+    try {
+      var el = e.target;
+      while (el && el !== _root) {
+        if (el.classList && el.classList.contains('cl-scratch-cell')) return el;
+        el = el.parentNode;
+      }
+    } catch (err) { /* ignore */ }
+    return null;
+  }
+  function _onScratchPointer(e) {
+    if (!_game || _game.id !== 'scratch' || !_game.ticket) return;
+    var cell = _scratchCellFromEvent(e);
+    if (e.type === 'pointerdown') {
+      _scratchDragging = !!cell;
+      if (cell) _scratchWipeReveal(parseInt(cell.getAttribute('data-cell'), 10));
+    } else if (e.type === 'pointermove') {
+      if (_scratchDragging && cell) _scratchWipeReveal(parseInt(cell.getAttribute('data-cell'), 10));
+    } else if (e.type === 'pointerup' || e.type === 'pointercancel') {
+      _scratchDragging = false;
+    }
   }
 
   function _scratchReveal(idx, all) {
@@ -112907,8 +113187,8 @@ var CLGame = (function () {
           if (_game) { _game.bet = parseInt(el.getAttribute('data-amt'), 10) || 5; _game.ticket = null; _game.resultText = ''; _renderScratch(); }
           break;
         case 'scratch-buy': _scratchBuy(); break;
-        case 'scratch-reveal': _scratchReveal(parseInt(el.getAttribute('data-cell'), 10), false); break;
-        case 'scratch-reveal-all': _scratchReveal(0, true); break;
+        case 'scratch-reveal': _scratchWipeReveal(parseInt(el.getAttribute('data-cell'), 10)); break;
+        case 'scratch-reveal-all': _scratchRevealAllStaggered(); break;
         case 'tourn-enter': _enterTournament(el.getAttribute('data-tourn')); break;
         case 'tourn-next-hand':
           if (_tourn && _tourn.active) _playTournHand();
