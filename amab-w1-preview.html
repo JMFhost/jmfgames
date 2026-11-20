@@ -43217,11 +43217,7 @@ if (typeof window !== 'undefined') window.AMPortraits = AMPortraits;
  *   state = modes.newRivalState(level, rival, seed)
  *   plan  = modes.planRivalTurn(level, rival, rng, {monkey: state.queue[0]})
  *   render the aim from plan.aimPull, then launch(plan.launchVelocity);
- *   fire the ability when flight time reaches plan.abilityAtSec;
- *   during the fight, apply plan.fightDecisions at their fight-relative
- *   `at` times (focus points via the engine focus input, star timing
- *   via the skill input, jumps via the jump input). [COMBAT: was the
- *   dash contract; plan.dashDecisions stays as a compat alias.]
+ *   fire the ability when flight time reaches plan.abilityAtSec.
  *   simulateRivalLevel runs the same contract
  *   headlessly through the same engine and scoring.
  * - Duel fairness: both players in a round get FRESH engine states
@@ -43256,57 +43252,8 @@ if (typeof window !== 'undefined') window.AMPortraits = AMPortraits;
 var LEVEL_COUNT = 110;
 var WORLDS = 10;
 var RIVAL_COUNT = 7;
-var SAVE_VERSION = 1; /* must match AMSave.SAVE_VERSION */
+var SAVE_VERSION = 2; /* must match AMSave.SAVE_VERSION */
 var ROUND_NAMES = ['quarterfinal', 'semifinal', 'final'];
-var OBSTACLE_ALIASES = {
-  hidey_tunnel: 'hidey_hole', bouncy_mushroom: 'mushroom',
-  wind: 'wind_gust', decoy: 'decoy_banana', ledge: 'tall_ledge'
-};
-
-/* BUFFS: rival-planner buff-aim TUNING (BUFFS-DESIGN.md §(g)) — planner
- * POLICY, not sim rules. Nothing here changes the engine: orbs, the
- * pickup test, and buff effects all live in am-engine.js. */
-var BUFF_AIM_MAX_ERROR = 0.15; /* Skill gate: rivals with aimError <=
-  this attempt buff lines; rivals above it use fort-aims and collect
-  buffs only by accident. NO new skill field — aimError is one of the
-  exactly-4 fields checked by checkRivalSkills. Trixie (0.15) is the
-  boundary case: gated IN. */
-var BUFF_AIM_ANGLES = [40, 52, 64]; /* Solver ballistic() pattern
-  (solver.js:123-140): vacuum arcs through the buff point. */
-var BUFF_AIM_MIN_SPEED = 60; /* Solver ballistic() speed floor. */
-/* Buff value table (planner policy): elements 3, power 2,
- * health/speed/fly 1. Unknown kinds score 0 and are never
- * deliberately aimed at (the engine still consumes them on
- * accidental contact). */
-var BUFF_ELEMENT_KINDS = ['fire', 'ice', 'lightning', 'magma', 'gale', 'rubber'];
-function buffKindValue(kind) {
-  if (BUFF_ELEMENT_KINDS.indexOf(kind) >= 0) return 3;
-  if (kind === 'power') return 2;
-  if (kind === 'health' || kind === 'speed' || kind === 'fly') return 1;
-  return 0;
-}
-/* Skill weight: sharper rivals value buff lines more. 1.0 at the gate
- * edge (aimError 0.15) rising to 2.0 at aimError 0. Score =
- * buffValue * skillWeight - landingDistance/100; a candidate
- * qualifies only by beating the fort-aim baseline score of 0 (no
- * buff, lands on the standard aim point by construction). */
-function buffSkillWeight(aimError) {
-  return 1 + (BUFF_AIM_MAX_ERROR - aimError) / BUFF_AIM_MAX_ERROR;
-}
-/* Point-to-segment distance (collectBuffs segment-sweep geometry). */
-function pointSegDist(px, py, ax, ay, bx, by) {
-  var dx = bx - ax, dy = by - ay;
-  var len2 = dx * dx + dy * dy;
-  var t = 0;
-  if (len2 > 0) {
-    t = ((px - ax) * dx + (py - ay) * dy) / len2;
-    if (t < 0) t = 0; else if (t > 1) t = 1;
-  }
-  var cx = ax + t * dx, cy = ay + t * dy;
-  var ex = px - cx, ey = py - cy;
-  return Math.sqrt(ex * ex + ey * ey);
-}
-/* /BUFFS */
 
 /* ---------------- small helpers (no randomness here) -------------------- */
 function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
@@ -43382,7 +43329,8 @@ function freshSaveShape() {
     scores: {},
     records: {},
     tournament: { trophies: [], titles: [], wins: 0, runs: {} },
-    daily: { attempts: {} }
+    daily: { attempts: {} },
+    legacy: { classicStars: 0, acknowledged: false }
   };
 }
 function ensureSave(save) {
@@ -43412,9 +43360,19 @@ function ensureSave(save) {
   if (isPlainObject(c.daily) && isPlainObject(c.daily.attempts)) {
     out.daily.attempts = c.daily.attempts;
   }
+  /* legacy: classicStars is a non-negative int, acknowledged a
+   * boolean; bad values fall back to 0 / false (mirrors AMSave). */
+  if (isPlainObject(c.legacy)) {
+    var ls = c.legacy;
+    out.legacy = {
+      classicStars: (typeof ls.classicStars === 'number' && isFinite(ls.classicStars) &&
+        ls.classicStars >= 0) ? Math.floor(ls.classicStars) : 0,
+      acknowledged: ls.acknowledged === true
+    };
+  }
   // Carry unknown top-level fields through, like AMSave does.
   var known = ['version', 'progress', 'stars', 'scores', 'records',
-    'tournament', 'daily'];
+    'tournament', 'daily', 'legacy'];
   for (var k in c) {
     if (has(c, k) && known.indexOf(k) < 0) out[k] = c[k];
   }
@@ -43607,7 +43565,7 @@ function create(engine, data, opts) {
     return -1;
   }
   function checkRivalSkills(rival) {
-    var fields = ['aimError', 'dashReaction', 'jumpSkill', 'abilityTiming'];
+    var fields = ['aimError', 'abilityTiming'];
     var missing = fields.filter(function (f) {
       return typeof rival[f] !== 'number' || !isFinite(rival[f]);
     });
@@ -43946,10 +43904,6 @@ function create(engine, data, opts) {
     }
     return lineup;
   }
-  function normObstacleKind(o) {
-    var k = o.kind || o.type || '';
-    return OBSTACLE_ALIASES[k] || k;
-  }
   function aimPointFor(level) {
     var T = engine.TUNING;
     var gy = (level && level.groundY !== undefined) ? level.groundY : T.groundY;
@@ -44010,92 +43964,15 @@ function create(engine, data, opts) {
     fail('planRivalTurn: rng must be a function (engine.createRng) or a seed integer');
   }
 
-  /* BUFFS: buff-aim candidate generation (BUFFS-DESIGN.md §(g)).
-   * For each buff in the level, generate candidate arcs through the
-   * buff point using the SOLVER's ballistic() pattern (aim at the
-   * point from the sling at angles {40, 52, 64} degrees, vacuum
-   * ballistics — solver.js:123-140), then verify each arc by
-   * forward-simulating it with engine.aim (the visible driver's
-   * fallback planner pattern, which scans trajectories via
-   * _engine.aim) on a fixed-seed probe state. A candidate is
-   * accepted ONLY if BOTH hold: (1) the simulated landing falls
-   * within the fort zone [fortFront - 40, worldW - 60] — the rival
-   * must still land in the fight; (2) the simulated arc passes
-   * within the engine's pickup radius (buffRadius + 6 = 36px) of
-   * the buff point under a collectBuffs-style segment sweep — so an
-   * accepted candidate actually threads the orb under wind/gusts,
-   * not just in the vacuum solve. PURE: no rng draws, no planner
-   * state touched; any failure degrades to no candidates (the
-   * caller falls back to the standard fort-aim). Buffs are
-   * per-shot loadout choices (the engine resets taken at launch),
-   * so every buff in the level is a candidate on every shot. */
-  function buffAimCandidates(level, target, monkey) {
-    var buffs = Array.isArray(level.buffs) ? level.buffs : [];
-    if (!buffs.length) return [];
-    /* Without engine.aim there is no trajectory verification: degrade
-     * to fort-aims (accidental pickups only), never crash. */
-    if (typeof engine.aim !== 'function') return [];
-    var T = engine.TUNING;
-    var sling = (level && level.slingshot) || { x: 125, y: 330 };
-    var gy = (level && level.groundY !== undefined) ? level.groundY : T.groundY;
-    var worldW = (level && level.worldW) || T.worldW || 1150;
-    var g = T.gravity, vmax = T.maxPull * T.launchScale;
-    var radius = (T.radius && T.radius[monkey]) || 17;
-    var collectR = ((T.buffRadius !== undefined ? T.buffRadius : 30) + 6);
-    var probe = engine.newMatch(level, { seed: 1, monkeys: [monkey] });
-    var out = [];
-    buffs.forEach(function (bf, bi) {
-      if (!isFinite(bf.x) || !isFinite(bf.y)) return;
-      var dx = bf.x - sling.x, dy = bf.y - sling.y;
-      if (dx < 20) return;
-      BUFF_AIM_ANGLES.forEach(function (ad) {
-        var th = ad * Math.PI / 180, c = Math.cos(th), tn = Math.tan(th);
-        var den = 2 * c * c * (dy + dx * tn);
-        if (!(den > 0)) return;
-        var v2 = g * dx * dx / den;
-        if (!(v2 > 0)) return;
-        var v = Math.sqrt(v2);
-        if (!isFinite(v) || v > vmax || v < BUFF_AIM_MIN_SPEED) return;
-        var vx = v * c, vy = -v * Math.sin(th);
-        var pull = { x: -vx / T.launchScale, y: -vy / T.launchScale };
-        var res;
-        try { res = engine.aim(probe, pull); } catch (e) { return; }
-        var pts = res && res.points;
-        if (!pts || !pts.length) return;
-        var landing = pts[pts.length - 1];
-        if (!isFinite(landing.x) || !isFinite(landing.y)) return;
-        if (landing.x < target.fortFront - 40 || landing.x > worldW - 60) return;
-        var px = sling.x, py = sling.y, minD = Infinity;
-        for (var i = 0; i < pts.length; i++) {
-          var dd = pointSegDist(bf.x, bf.y, px, py, pts[i].x, pts[i].y);
-          if (dd < minD) minD = dd;
-          px = pts[i].x; py = pts[i].y;
-        }
-        if (!isFinite(minD) || minD > collectR) return;
-        var disc = vy * vy + 2 * g * (gy - radius - sling.y);
-        var ft = disc < 0 ? 1.4 : (-vy + Math.sqrt(disc)) / g;
-        out.push({
-          buff: bf, buffIndex: bi, angleDeg: ad,
-          vx: vx, vy: vy, speed: v, flightTime: ft,
-          landing: { x: landing.x, y: landing.y }, minDist: minD
-        });
-      });
-    });
-    return out;
-  }
-  /* /BUFFS */
-
   /* One renderable AI shot plan. Draw order from the rng is FIXED
-   * (angle, speed, ability?, ability time, focus jitter, jump?,
-   * buff-choice?) so the same seed always yields the same plan.
-   * [COMBAT: 'focus jitter' was 'dash jitter'; the draw itself is
-   * unchanged.] [BUFFS: 'buff-choice?' is APPENDED AFTER the
-   * existing draws, consumed only when a skill-gated rival
-   * (aimError <= BUFF_AIM_MAX_ERROR) has >= 2 qualifying buff-aim
-   * candidates; with 0-1 qualifiers, or for a gated-out rival, or
-   * on a buff-free level, no extra draw is consumed. Plans stay
-   * deterministic; bytes change only where the buff choice alters
-   * the aim.] */
+   * (angle, speed, ability?, ability time) so the same seed always
+   * yields the same plan.
+   * Draw-stream change vs the retired planner (M3): the retired
+   * extra draws (one jitter draw and one conditional draw, plus
+   * the appended choice draw) are all gone, so the angle / speed /
+   * ability / ability-time draws keep their stream positions and
+   * values — the aim and ability timing of a plan are identical
+   * to the old planner's for the same seed. */
   function planRivalTurn(level, rival, rngOrSeed, opts2) {
     if (!isPlainObject(level)) fail('planRivalTurn: level required');
     var r = rivalOf(rival);
@@ -44108,18 +43985,6 @@ function create(engine, data, opts) {
     var monkey = opts2.monkey || lineup[0];
     var target = aimPointFor(level);
     var solved = solveVelocity(level, target);
-    /* BUFFS: buff-aim candidates (BUFFS-DESIGN.md §(g)). PURE — no
-     * rng draws here, so generating candidates can never shift the
-     * fixed draw order below. Attempted ONLY by skill-gated rivals
-     * (aimError <= BUFF_AIM_MAX_ERROR); every other rival skips this
-     * block entirely and can never deliberately buff-aim. Any
-     * failure degrades to the standard fort-aim (no candidates). */
-    var buffCands = [];
-    if (r.aimError <= BUFF_AIM_MAX_ERROR && Array.isArray(level.buffs) && level.buffs.length) {
-      try { buffCands = buffAimCandidates(level, target, monkey); }
-      catch (e) { buffCands = []; }
-    }
-    /* /BUFFS */
     /* Skill-scaled error: angle error up to aimError * 1.2 radians and
      * speed error up to aimError * 60%. Nibbles (0.30) whiffs by up to
      * ~20 degrees; Champ (0.02) stays within ~1.4 degrees. */
@@ -44143,154 +44008,21 @@ function create(engine, data, opts) {
       vy: Math.round(vel.vy * 100) / 100
     };
     /* Ability: used when the timing draw beats abilityTiming.
-     * Weapon-aware timing (WEAPONS.md §5): FLY fires EARLY (10–20%
-     * of flight time) — a mid-flight fly overshoots the ballistic aim
-     * point, and the skill-gap sims prove the early window (late/never
-     * both collapse the #7 rival's edge on W1_L1). Other tap weapons
-     * keep the mid-flight window; auto weapons (gun/quake/ghost) fire
-     * on their own triggers and ignore the scheduled time. RNG draw
-     * order/count is UNCHANGED: the ability? draw, then exactly one
-     * timing draw — so every non-lulu plan is byte-identical. */
+     * Lulu's glide fires EARLY (10–20% of flight time) — a
+     * mid-flight glide overshoots the ballistic aim point. Other
+     * powers keep the mid-flight window (35–70%). RNG draw order is
+     * the ability? draw, then exactly one timing draw. */
     var abilityAtSec = null;
-    var abilityFrac = null; /* BUFFS: hoisted so a buff-aimed plan can
-     * re-time the ability to the buff arc's flight time with the SAME
-     * frac draw; stays null when no ability was scheduled. */
     if (rng() < r.abilityTiming) {
       var fracDraw = rng();
       var frac = (monkey === 'lulu') ? (0.10 + 0.10 * fracDraw) : (0.35 + 0.35 * fracDraw);
-      abilityFrac = frac; /* BUFFS */
       abilityAtSec = Math.round(solved.flightTime * frac * 100) / 100;
       abilityAtSec = clamp(abilityAtSec, 0.1, solved.flightTime);
     }
-    /* COMBAT: fight decisions. The RNG draw order/count is UNCHANGED
-     * (the jitter draw below, then the jump draw), so the aim/ability
-     * portion of every plan is byte-identical to before. No new rival
-     * skill fields: dashReaction -> focus-tap reaction, abilityTiming
-     * -> star timing, jumpSkill -> fight jumps. Focus taps chase the
-     * 3 bandit spawns nearest the aim point, re-focusing every 2s as
-     * targets fall or hide; one star decision is scheduled for rivals
-     * with abilityTiming >= 0.5 (earlier for sharper rivals); a jump
-     * is planned when a barrier stands between the landing zone and
-     * the fort and the jump draw beats jumpSkill. Times are
-     * fight-relative seconds (fights run until HP decides them). */
-    var firstAt = Math.min(0.92, r.dashReaction + rng() * 0.06);
-    var decisions = [];
-    var spots = ((level && level.bandits) || []).slice().sort(function (a, b) {
-      var da = Math.abs(a.x - target.x), db = Math.abs(b.x - target.x);
-      return da - db;
-    }).slice(0, 3);
-    for (var i = 0; i < spots.length; i++) {
-      var at = Math.round((firstAt + i * 2.0) * 1000) / 1000;
-      decisions.push({
-        at: at, action: 'focus',
-        point: { x: Math.round(spots[i].x), y: Math.round(spots[i].y) }
-      });
-    }
-    if (r.abilityTiming >= 0.5) {
-      var skillAt = Math.round((firstAt + 0.8 + (1 - r.abilityTiming) * 3.0) * 1000) / 1000;
-      decisions.push({ at: skillAt, action: 'skill' });
-    }
-    var barrier = false;
-    ((level && level.obstacles) || []).forEach(function (o) {
-      var k = normObstacleKind(o);
-      if ((k === 'tall_ledge' || k === 'stone_wall' || k === 'steel_plate') &&
-          o.x >= target.fortFront - 120 && o.x <= target.fortBack) {
-        barrier = true;
-      }
-    });
-    if (barrier && rng() < r.jumpSkill) {
-      var jumpAt = Math.round((firstAt + 0.12) * 1000) / 1000;
-      decisions.push({ at: jumpAt, action: 'jump' });
-    }
-    decisions.sort(function (a, b) { return a.at - b.at; });
-    /* /COMBAT */
-    /* BUFFS: standard-plan values the buff-choice block below may
-     * overwrite; identical to the pre-buff return expressions. */
-    var flightTimeEst = Math.round(solved.flightTime * 100) / 100;
-    var solvedFlag = solved.solved;
-    var buffAimDesc = null;
-    /* /BUFFS */
-    /* BUFFS: buff-aim choice + aim recompute (BUFFS-DESIGN.md §(g)).
-     * Placed AFTER every pre-existing draw: the buff-choice draw
-     * below is the LAST draw in planRivalTurn's fixed order, so the
-     * angle/speed/ability/focus/jump draws above keep their stream
-     * positions and values. A gated-out rival, a buff-free level, or
-     * a level with no qualifying candidate consumes NO extra draw
-     * and returns a byte-identical plan. Choice: each candidate
-     * scores buffValue * skillWeight - landingDistance/100 against
-     * the fort-aim baseline of 0 (no buff, lands on the standard aim
-     * point); only candidates scoring above 0 qualify. With exactly
-     * one qualifier it is taken with no draw; with several, ONE
-     * buff-choice draw picks uniformly among them (scoring gates
-     * qualification; the draw varies the line under the seeded
-     * stream). When a buff-aim IS chosen, the SAME dAngle/fSpeed
-     * error values are re-applied to the buff-arc velocity (the
-     * skill-error model is unchanged; only the base arc changes),
-     * the ability is re-timed to the buff arc's flight time with
-     * the SAME frac draw, and fightDecisions are left exactly as
-     * computed from the standard aim point (buffs add no fight
-     * inputs; the landing stays in the fort zone, near the standard
-     * aim). No fightDecisions schedule-format change. */
-    var buffChoice = null, buffChoiceScore = 0;
-    if (buffCands.length) {
-      var skillW = buffSkillWeight(r.aimError);
-      var scored = [];
-      for (var ci = 0; ci < buffCands.length; ci++) {
-        var cd = buffCands[ci];
-        var landDx = cd.landing.x - target.x, landDy = cd.landing.y - target.y;
-        var landD = Math.sqrt(landDx * landDx + landDy * landDy);
-        var sc = buffKindValue(cd.buff.kind) * skillW - landD / 100;
-        if (sc > 0) scored.push({ cand: cd, score: sc });
-      }
-      /* Highest score first; ties by buff array order, then angle —
-       * the draw below indexes this deterministic order. */
-      scored.sort(function (a, b) {
-        if (b.score !== a.score) return b.score - a.score;
-        if (a.cand.buffIndex !== b.cand.buffIndex) return a.cand.buffIndex - b.cand.buffIndex;
-        return a.cand.angleDeg - b.cand.angleDeg;
-      });
-      if (scored.length === 1) {
-        buffChoice = scored[0].cand; buffChoiceScore = scored[0].score;
-      } else if (scored.length > 1) {
-        /* BUFFS: the buff-choice draw — WHICH qualifying buff-aim.
-         * Appended after all pre-existing draws (see the draw-order
-         * comment above planRivalTurn). */
-        var pick = Math.floor(rng() * scored.length);
-        buffChoice = scored[pick].cand; buffChoiceScore = scored[pick].score;
-      }
-    }
-    if (buffChoice) {
-      var bAngle = Math.atan2(buffChoice.vy, buffChoice.vx);
-      var bSpeed = clamp(buffChoice.speed * fSpeed, 100, T.maxPull * T.launchScale);
-      bAngle += dAngle;
-      var bvx = Math.cos(bAngle) * bSpeed, bvy = Math.sin(bAngle) * bSpeed;
-      pull = {
-        x: Math.round((-bvx / T.launchScale) * 100) / 100,
-        y: Math.round((-bvy / T.launchScale) * 100) / 100
-      };
-      var bvel = engine.velocityFromPull(pull);
-      launchVelocity = {
-        vx: Math.round(bvel.vx * 100) / 100,
-        vy: Math.round(bvel.vy * 100) / 100
-      };
-      flightTimeEst = Math.round(buffChoice.flightTime * 100) / 100;
-      solvedFlag = true;
-      if (abilityFrac !== null) {
-        abilityAtSec = Math.round(buffChoice.flightTime * abilityFrac * 100) / 100;
-        abilityAtSec = clamp(abilityAtSec, 0.1, buffChoice.flightTime);
-      }
-      buffAimDesc = {
-        buffId: buffChoice.buff.id !== undefined ? buffChoice.buff.id : ('buff_' + buffChoice.buffIndex),
-        kind: buffChoice.buff.kind,
-        x: buffChoice.buff.x, y: buffChoice.buff.y,
-        angleDeg: buffChoice.angleDeg,
-        score: Math.round(buffChoiceScore * 1000) / 1000,
-        landingX: Math.round(buffChoice.landing.x * 10) / 10,
-        minDist: Math.round(buffChoice.minDist * 10) / 10
-      };
-    }
-    /* /BUFFS */
-    var plan = {
+    /* Flight-only plan: aim + power timing. The game driver
+     * (am-game.js _planRivalShot) consumes aimPull and
+     * abilityAtSec only; the remaining fields are diagnostics. */
+    return {
       rivalId: r.id,
       rivalTier: r.tier,
       monkey: monkey,
@@ -44298,26 +44030,14 @@ function create(engine, data, opts) {
       aimPull: pull,
       launchVelocity: launchVelocity,
       abilityAtSec: abilityAtSec,
-      flightTimeEst: flightTimeEst, /* BUFFS: was solved.flightTime inline */
+      flightTimeEst: Math.round(solved.flightTime * 100) / 100,
       target: { x: Math.round(target.x), y: Math.round(target.y) },
-      solved: solvedFlag, /* BUFFS: was solved.solved inline */
+      solved: solved.solved,
       aimErrorApplied: {
         angleRad: Math.round(dAngle * 1000) / 1000,
         speedFactor: Math.round(fSpeed * 1000) / 1000
-      },
-      dashReaction: r.dashReaction,
-      /* COMBAT: fight-schedule fields; dashDecisions stays as the alias. */
-      focusReaction: r.dashReaction, skillTiming: r.abilityTiming,
-      fightDecisions: decisions,
-      /* /COMBAT */
-      dashDecisions: decisions
+      }
     };
-    /* BUFFS: additive descriptor, present ONLY on buff-aimed plans,
-     * so every other plan is byte-identical to the pre-buff planner
-     * (no new key, no new draw). */
-    if (buffAimDesc) plan.buffAim = buffAimDesc;
-    /* /BUFFS */
-    return plan;
   }
 
   function newRivalState(level, rival, seed) {
@@ -44332,9 +44052,10 @@ function create(engine, data, opts) {
 
   /* Headless full-level AI run through the real engine and scoring:
    * plans each shot with planRivalTurn on one rng stream, launches,
-   * fires abilities and fight decisions at their planned times, and
-   * plays to won/lost. Same level + rival + seed = identical result.
-   * [COMBAT: the legacy 'dash' branch is kept for the old engine.] */
+   * fires the power at its planned mid-flight time, and plays to
+   * won/lost. Same level + rival + seed = identical result. The
+   * flight-only engine takes no other input: step() accepts
+   * { ability } only. */
   function simulateRivalLevel(level, rival, seed, opts2) {
     var r = rivalOf(rival);
     if (!r) fail('simulateRivalLevel: unknown rival');
@@ -44347,8 +44068,7 @@ function create(engine, data, opts) {
     var st = newRivalState(level, r, seed);
     var plans = [];
     var plan = null, launchT = 0, abilityDone = false;
-    var dashStart = -1, dashIdx = 0, steps = 0;
-    /* COMBAT */ var fightStart = -1, fightIdx = 0; /* /COMBAT */
+    var steps = 0;
     while (steps < maxSteps) {
       var ph = engine.phase(st);
       if (ph === 'won' || ph === 'lost') break;
@@ -44359,71 +44079,13 @@ function create(engine, data, opts) {
         engine.launch(st, plan.launchVelocity);
         launchT = st.time;
         abilityDone = false;
-        dashStart = -1;
-        dashIdx = 0;
-        /* COMBAT */ fightStart = -1; fightIdx = 0; /* /COMBAT */
       } else if (ph === 'flight') {
         if (plan && plan.abilityAtSec !== null && !abilityDone &&
             st.time - launchT >= plan.abilityAtSec) {
           input = { ability: true };
           abilityDone = true;
         }
-      } else if (ph === 'dash') {
-        if (dashStart < 0) dashStart = st.time;
-        if (plan) {
-          var rel = st.time - dashStart;
-          var decs0 = plan.dashDecisions || [];
-          while (dashIdx < decs0.length &&
-                 decs0[dashIdx].at <= rel) {
-            var dec = decs0[dashIdx++];
-            /* COMBAT: 'focus' decisions steer as redirects on the old engine. */
-            if ((dec.action === 'redirect' || dec.action === 'focus') && dec.point) {
-              input = { redirect: dec.point };
-            } else if (dec.action === 'jump') {
-              input = { jump: true };
-            }
-          }
-        }
       }
-      /* COMBAT: fight branch — mirrors the dash branch on fight-relative
-       * time. step() inputs per API-CONTRACT.md §5: {focus: banditId}
-       * (an id, never a point), {skill: true}, {redirect}, {jump}.
-       * The planner emits spawn points; the twin resolves each to the
-       * nearest live visible bandit id, exactly like the visible
-       * driver. An engine that ignores unknown input keys still
-       * completes the run on AI-only fights. */
-      else if (ph === 'fight') {
-        if (fightStart < 0) fightStart = st.time;
-        if (plan) {
-          var relF = st.time - fightStart;
-          var decsF = plan.fightDecisions || plan.dashDecisions || [];
-          while (fightIdx < decsF.length &&
-                 decsF[fightIdx].at <= relF) {
-            var decF = decsF[fightIdx++];
-            if (decF.action === 'focus' && decF.point) {
-              var fid = null, bestD = Infinity, fallbackId = null, bestFd = Infinity;
-              var bds = st.bandits || [];
-              for (var bi = 0; bi < bds.length; bi++) {
-                var bb = bds[bi];
-                if (!bb.alive) continue;
-                var dd = (bb.x - decF.point.x) * (bb.x - decF.point.x) +
-                  (bb.y - decF.point.y) * (bb.y - decF.point.y);
-                if (!bb.hidden) { if (dd < bestD) { bestD = dd; fid = bb.id; } }
-                else if (dd < bestFd) { bestFd = dd; fallbackId = bb.id; }
-              }
-              if (fid === null) fid = fallbackId;
-              if (fid !== null) input = { focus: fid };
-            } else if (decF.action === 'skill') {
-              input = { skill: true };
-            } else if (decF.action === 'redirect' && decF.point) {
-              input = { redirect: decF.point };
-            } else if (decF.action === 'jump') {
-              input = { jump: true };
-            }
-          }
-        }
-      }
-      /* /COMBAT */
       engine.step(st, DT, input || undefined);
       steps++;
     }
@@ -44723,7 +44385,7 @@ function create(engine, data, opts) {
       dayOfYear: dayOfYear(when),
       levelIndex: levelIndexOf(level.id),
       levelId: level.id,
-      title: 'Daily Jungle Fight #' + dayOfYear(when) /* COMBAT */
+      title: 'Daily Jungle Challenge #' + dayOfYear(when)
     };
   }
   function startDaily(save, now) {
@@ -44781,6 +44443,7 @@ function create(engine, data, opts) {
     /* setup */
     setData: setData,
     getData: getData,
+    checkEngine: checkEngine,
     /* calendar */
     resolveNow: function (now) { return nowOf(now); },
     dateKey: dateKey,
@@ -44806,6 +44469,7 @@ function create(engine, data, opts) {
     /* M5 progression */
     canEnter: canEnter,
     requireEnter: requireEnter,
+    starsForScore: starsForScore,
     recordAdventureResult: recordAdventureResult,
     adventureProgress: adventureProgress,
     /* M9 duel */
@@ -44853,13 +44517,13 @@ function configure(engine, data, opts) {
   _default = create(engine, data, opts);
   return _default;
 }
-var DELEGATED = ['setData', 'getData', 'levelCount', 'worldCount',
+var DELEGATED = ['setData', 'getData', 'checkEngine', 'levelCount', 'worldCount',
   'worldFirstIndex', 'resolveNow', 'dateKey', 'dateSeed',
   'dayOfYear', 'isoWeek', 'weekKeyOf', 'levelIndexOf', 'levelByIndex',
   'levelById', 'levelByGlobalIndex', 'rivalById', 'rivalByTier', 'rivalOf',
   'rivalTierOf', 'worldIdOf', 'freshSaveShape', 'ensureSave',
   'unlockedIndexOf', 'unlockedRivalTierOf', 'canEnter', 'requireEnter',
-  'recordAdventureResult', 'adventureProgress', 'startMatch',
+  'starsForScore', 'recordAdventureResult', 'adventureProgress', 'startMatch',
   'duelTurnSeed', 'newTurnState', 'submitTurn', 'matchResult', 'rematch',
   'rivalLineup', 'planRivalTurn', 'newRivalState', 'simulateRivalLevel',
   'startRivalMatch', 'submitRivalTurn', 'rivalMatchResult', 'rematchRival',
@@ -44897,13 +44561,19 @@ return exported;
 // the only outside contact; a throwing callback is swallowed.
 //
 // Keys (exact, per contract section 8; no other storage key is touched):
-//   jmf-phone-angrymonkeys-save-v1 — progress, stars, scores, records,
-//     tournament, daily (schema below)
-//   jmf-phone-angrymonkeys-stats-v1 — aggregate counters
+//   jmf-phone-angrymonkeys-save-v2 — progress, stars, scores, records,
+//     tournament, daily, legacy (schema below)
+//   jmf-phone-angrymonkeys-stats-v2 — aggregate counters
+//   jmf-phone-angrymonkeys-save-v1 / -stats-v1 — LEGACY keys. load()
+//     reads the v1 save key ONLY to migrate it (v1 -> v2) when no v2
+//     save exists, and NEVER writes to or deletes the v1 keys during
+//     migration, so the migration is reversible. deleteAll() is the
+//     one place that removes the v1 keys: it must, or the next load
+//     would re-migrate the v1 save and resurrect "deleted" progress.
 // Settings stay in the phone settings key; this module never touches it.
 //
-// Save shape (version 1; JSON-serializable, plain data only):
-//   { version: 1,
+// Save shape (version 2; JSON-serializable, plain data only):
+//   { version: 2,
 //     progress: { unlockedIndex: 0..(levelCount-1),
 //                 unlockedRivalTier: 1..7,
 //                 completedCount: <recomputed from stars> },
@@ -44919,11 +44589,16 @@ return exported;
 //                   runs: { <YYYYWW>: { roundIndex: 0..3, eliminated,
 //                     won, trophy, title, scores: [], rivalIds: [],
 //                     levelIndices: [] } } },
-//     daily: { attempts: { <YYYY-MM-DD>: { score, completed, levelId } } } }
+//     daily: { attempts: { <YYYY-MM-DD>: { score, completed, levelId } } },
+//     legacy: { classicStars: <total stars earned under the v1 save>,
+//               acknowledged: <true once the menu badge was dismissed> } }
 // completedCount is derived (levels with stars > 0), never trusted
 // from storage. Tournament runs are pruned to the newest 104 weeks
 // and daily attempts to the newest 400 dates on every write, so the
-// save stays small forever.
+// save stays small forever. Migration (migrateV1): unlocks carry over
+// exactly, stars/scores/rival records reset to empty, tournament +
+// daily history is kept as-is (read-only record, pruned to the same
+// caps), and legacy.classicStars is the sum of the v1 stars values.
 //
 // Stats shape: all non-negative integers; loadStats() fills each
 // missing or bad field with 0, so older or partial records still
@@ -44932,9 +44607,11 @@ return exported;
 var AMSave = (function () {
   'use strict';
 
-  var SAVE_KEY = 'jmf-phone-angrymonkeys-save-v1';
-  var STATS_KEY = 'jmf-phone-angrymonkeys-stats-v1';
-  var SAVE_VERSION = 1;
+  var SAVE_KEY = 'jmf-phone-angrymonkeys-save-v2';
+  var STATS_KEY = 'jmf-phone-angrymonkeys-stats-v2';
+  var SAVE_KEY_V1 = 'jmf-phone-angrymonkeys-save-v1';
+  var STATS_KEY_V1 = 'jmf-phone-angrymonkeys-stats-v1';
+  var SAVE_VERSION = 2;
   /* Data-driven level count (see header): default = shipped data. */
   var LEVEL_COUNT = 110;
   var RIVAL_TIERS = 7;
@@ -44982,8 +44659,27 @@ var AMSave = (function () {
       scores: {},
       records: {},
       tournament: { trophies: [], titles: [], wins: 0, runs: {} },
-      daily: { attempts: {} }
+      daily: { attempts: {} },
+      legacy: { classicStars: 0, acknowledged: false }
     };
+  }
+
+  /* Fresh v1-shaped save (migration input only; never stored as v2). */
+  function _freshSaveV1() {
+    var s = freshSave();
+    s.version = 1;
+    delete s.legacy;
+    return s;
+  }
+
+  /* legacy field: classicStars is a non-negative int, acknowledged a
+   * boolean; bad values fall back to 0 / false. Never throws. */
+  function _sanitizeLegacy(v) {
+    var out = { classicStars: 0, acknowledged: false };
+    if (!_isPlainObject(v)) return out;
+    out.classicStars = _nonNegInt(v.classicStars, 0);
+    out.acknowledged = v.acknowledged === true;
+    return out;
   }
 
   /* Data-driven level count: the wire layer calls setLevelCount with
@@ -45001,18 +44697,21 @@ var AMSave = (function () {
     return out;
   }
 
-  // Repair a stored object into the canonical shape. Never throws.
-  // Unknown top-level fields are carried through (forward growth);
-  // unknown nested fields are dropped. A non-object, or an object
-  // whose version is present but not 1, becomes a fresh save.
-  function sanitizeSave(input) {
+  // Repair a stored object into the canonical shape for the given
+  // schema version. Never throws. Unknown top-level fields are
+  // carried through (forward growth); unknown nested fields are
+  // dropped. A non-object, or an object whose version is present but
+  // not `version`, becomes a fresh save of that version. The v2
+  // shape carries the `legacy` field; the v1 shape does not.
+  function _sanitizeShape(input, version) {
     try {
       var clean = _jsonClone(input);
-      if (!_isPlainObject(clean)) return freshSave();
-      if (_has(clean, 'version') && clean.version !== SAVE_VERSION) {
-        return freshSave();
+      var freshFor = version === 2 ? freshSave : _freshSaveV1;
+      if (!_isPlainObject(clean)) return freshFor();
+      if (_has(clean, 'version') && clean.version !== version) {
+        return freshFor();
       }
-      var out = freshSave();
+      var out = freshFor();
       var i, k, v;
 
       if (_isPlainObject(clean.progress)) {
@@ -45125,12 +44824,54 @@ var AMSave = (function () {
           };
         }
       }
+      if (version === 2) out.legacy = _sanitizeLegacy(clean.legacy);
       // Carry unknown top-level fields through for forward growth.
       var known = ['version', 'progress', 'stars', 'scores', 'records',
-        'tournament', 'daily'];
+        'tournament', 'daily', 'legacy'];
       for (k in clean) {
         if (_has(clean, k) && known.indexOf(k) < 0) out[k] = clean[k];
       }
+      return out;
+    } catch (e) {
+      return version === 2 ? freshSave() : _freshSaveV1();
+    }
+  }
+
+  // Public v2 sanitizer: a version-1 object passed directly here is
+  // NOT silently accepted as v2 — the version guard above turns it
+  // into a fresh save. Migration goes through migrateV1 only.
+  function sanitizeSave(input) {
+    return _sanitizeShape(input, SAVE_VERSION);
+  }
+
+  // Migrate a sanitized (or raw) v1 save object to the v2 shape.
+  // Pure function, never throws: unlocks carry over exactly, stars /
+  // scores / rival records reset to empty, tournament + daily history
+  // is kept as-is (pruned to the MAX_RUNS / MAX_DAILY caps by the
+  // v1 sanitize pass), and legacy.classicStars is the sum of the v1
+  // stars values with acknowledged false. Tournament trophies /
+  // titles / wins are part of the kept history. This function touches
+  // no storage; load() is the only caller that writes the result.
+  function migrateV1(v1obj) {
+    try {
+      var v1 = _sanitizeShape(v1obj, 1);
+      var out = freshSave();
+      out.progress.unlockedIndex = v1.progress.unlockedIndex;
+      out.progress.unlockedRivalTier = v1.progress.unlockedRivalTier;
+      out.progress.completedCount = 0;
+      out.stars = {};
+      out.scores = {};
+      out.records = {};
+      out.tournament = v1.tournament;
+      out.daily = v1.daily;
+      var total = 0;
+      var k;
+      for (k in v1.stars) {
+        if (Object.prototype.hasOwnProperty.call(v1.stars, k)) {
+          total += v1.stars[k];
+        }
+      }
+      out.legacy = { classicStars: total, acknowledged: false };
       return out;
     } catch (e) {
       return freshSave();
@@ -45180,6 +44921,11 @@ var AMSave = (function () {
       if (!_isPlainObject(obj.daily) || !_isPlainObject(obj.daily.attempts)) {
         return false;
       }
+      if (!_isPlainObject(obj.legacy) ||
+          !_isInt(obj.legacy.classicStars) || obj.legacy.classicStars < 0 ||
+          typeof obj.legacy.acknowledged !== 'boolean') {
+        return false;
+      }
       return true;
     } catch (e) {
       return false;
@@ -45227,30 +44973,79 @@ var AMSave = (function () {
 
     // Always returns a valid save: missing or corrupt storage yields
     // a fresh save (onCorrupt fires for present-but-unreadable data).
+    // If the v2 key is absent or unreadable and a v1 key is present
+    // and parses to a valid v1-shaped object, the v1 save is migrated
+    // (migrateV1), the migrated v2 save is WRITTEN under the v2 key,
+    // and the migrated save is returned. The v1 key is NEVER written
+    // to, deleted, or otherwise modified here — it stays untouched on
+    // disk so the migration is reversible. If the v2 key is present
+    // (parses to an object), the v1 key is ignored entirely.
     function load() {
       try {
         var store = resolveStore();
         if (!store) return freshSave();
         var raw = store.getItem(SAVE_KEY);
-        if (raw === null || raw === undefined) return freshSave();
+        if (raw === null || raw === undefined) return _loadV1OrFresh(store);
         if (typeof raw !== 'string') {
           _call(hooks.onCorrupt, { key: SAVE_KEY, reason: 'not-a-string' });
-          return freshSave();
+          return _loadV1OrFresh(store);
         }
         var parsed;
         try {
           parsed = JSON.parse(raw);
         } catch (e) {
           _call(hooks.onCorrupt, { key: SAVE_KEY, reason: 'bad-json' });
-          return freshSave();
+          return _loadV1OrFresh(store);
         }
         if (!_isPlainObject(parsed)) {
           _call(hooks.onCorrupt, { key: SAVE_KEY, reason: 'not-an-object' });
-          return freshSave();
+          return _loadV1OrFresh(store);
         }
         var clean = sanitizeSave(parsed);
         _call(hooks.onLoad, { key: SAVE_KEY });
         return clean;
+      } catch (e) {
+        return freshSave();
+      }
+    }
+
+    // v1 fallback for load(): migrate a present, valid v1 save and
+    // persist the result under the v2 key; anything else yields a
+    // fresh v2 save (onCorrupt fires for present-but-unusable v1
+    // data). Never touches the v1 key.
+    function _loadV1OrFresh(store) {
+      try {
+        var raw1 = store.getItem(SAVE_KEY_V1);
+        if (raw1 === null || raw1 === undefined) return freshSave();
+        if (typeof raw1 !== 'string') {
+          _call(hooks.onCorrupt, { key: SAVE_KEY_V1, reason: 'not-a-string' });
+          return freshSave();
+        }
+        var parsed1;
+        try {
+          parsed1 = JSON.parse(raw1);
+        } catch (e) {
+          _call(hooks.onCorrupt, { key: SAVE_KEY_V1, reason: 'bad-json' });
+          return freshSave();
+        }
+        if (!_isPlainObject(parsed1)) {
+          _call(hooks.onCorrupt, { key: SAVE_KEY_V1, reason: 'not-an-object' });
+          return freshSave();
+        }
+        if (_has(parsed1, 'version') && parsed1.version !== 1) {
+          _call(hooks.onCorrupt, { key: SAVE_KEY_V1, reason: 'bad-version' });
+          return freshSave();
+        }
+        if (!_isPlainObject(parsed1.progress) && !_isPlainObject(parsed1.stars) &&
+            !_isPlainObject(parsed1.scores) && !_isPlainObject(parsed1.records) &&
+            !_isPlainObject(parsed1.tournament) && !_isPlainObject(parsed1.daily)) {
+          _call(hooks.onCorrupt, { key: SAVE_KEY_V1, reason: 'not-a-v1-save' });
+          return freshSave();
+        }
+        var migrated = migrateV1(parsed1);
+        save(migrated);
+        _call(hooks.onLoad, { key: SAVE_KEY, migratedFrom: SAVE_KEY_V1 });
+        return migrated;
       } catch (e) {
         return freshSave();
       }
@@ -45333,10 +45128,28 @@ var AMSave = (function () {
       }
     }
 
+    function _removeKey(key) {
+      try {
+        var store = resolveStore();
+        if (!store) return false;
+        store.removeItem(key);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    // Removes ALL FOUR keys: the v2 save + stats AND the v1 save +
+    // stats. The v1 keys MUST go here: if delete left them in place,
+    // the next load() would re-migrate the v1 save and resurrect the
+    // "deleted" progress. Migration itself never deletes v1 — only
+    // this explicit user delete does.
     function deleteAll() {
       var a = clearSave();
       var b = clearStats();
-      return a && b;
+      var c = _removeKey(SAVE_KEY_V1);
+      var d = _removeKey(STATS_KEY_V1);
+      return a && b && c && d;
     }
 
     return {
@@ -45350,12 +45163,15 @@ var AMSave = (function () {
       deleteAll: deleteAll,
       validateSave: validateSave,
       sanitizeSave: sanitizeSave,
+      migrateV1: migrateV1,
       freshSave: freshSave,
       freshStats: freshStats,
       levelCount: levelCount,
       setLevelCount: setLevelCount,
       SAVE_KEY: SAVE_KEY,
       STATS_KEY: STATS_KEY,
+      SAVE_KEY_V1: SAVE_KEY_V1,
+      STATS_KEY_V1: STATS_KEY_V1,
       SAVE_VERSION: SAVE_VERSION
     };
   }
@@ -45396,12 +45212,15 @@ var AMSave = (function () {
     deleteAll: _defaultApi.deleteAll,
     validateSave: validateSave,
     sanitizeSave: sanitizeSave,
+    migrateV1: migrateV1,
     freshSave: freshSave,
     freshStats: freshStats,
     levelCount: levelCount,
     setLevelCount: setLevelCount,
     SAVE_KEY: SAVE_KEY,
     STATS_KEY: STATS_KEY,
+    SAVE_KEY_V1: SAVE_KEY_V1,
+    STATS_KEY_V1: STATS_KEY_V1,
     SAVE_VERSION: SAVE_VERSION
   };
 })();
@@ -45959,7 +45778,9 @@ function _spritesReady() {
  *     completedCount }, stars: { levelId: n }, scores: { levelId: n },
  *     records: { rivalId: { wins, losses } },
  *     tournament: { trophies: [], titles: [], wins: 0, runs: {} },
- *     daily: { attempts: {} } }
+ *     daily: { attempts: {} },
+ *     legacy: { classicStars: <total stars earned under the v1 save>,
+ *       acknowledged: <true once the menu badge was dismissed> } }
  * _modes is a real AMModes instance (created at init from the AMModes
  * factory) or null. Every helper below prefers the real instance and
  * falls back to an internal implementation with IDENTICAL semantics
@@ -45971,11 +45792,12 @@ function _freshSave() {
   if (_modes && typeof _modes.freshSaveShape === 'function') {
     try { return _modes.freshSaveShape(); } catch (e) { /* fall through */ }
   }
-  return { version: 1,
+  return { version: 2,
     progress: { unlockedIndex: 0, unlockedRivalTier: 1, completedCount: 0 },
     stars: {}, scores: {}, records: {},
     tournament: { trophies: [], titles: [], wins: 0, runs: {} },
-    daily: { attempts: {} } };
+    daily: { attempts: {} },
+    legacy: { classicStars: 0, acknowledged: false } };
 }
 function _migrateSave(p) {
   if (!p || typeof p !== 'object') return null;
@@ -46007,6 +45829,15 @@ function _fillSaveShape(p) {
   if (p.stars && typeof p.stars === 'object') n.stars = p.stars;
   if (p.scores && typeof p.scores === 'object') n.scores = p.scores;
   if (p.records && typeof p.records === 'object') n.records = p.records;
+  if (!n.legacy || typeof n.legacy !== 'object') {
+    n.legacy = { classicStars: 0, acknowledged: false };
+  }
+  if (p.legacy && typeof p.legacy === 'object') {
+    var cs = p.legacy.classicStars;
+    n.legacy.classicStars = (typeof cs === 'number' && isFinite(cs) && cs >= 0)
+      ? Math.floor(cs) : 0;
+    n.legacy.acknowledged = p.legacy.acknowledged === true;
+  }
   if (p.tournament && typeof p.tournament === 'object') {
     n.tournament.trophies = p.tournament.trophies || [];
     n.tournament.titles = p.tournament.titles || [];
@@ -46376,23 +46207,86 @@ function _rivalLineup(level, rival) {
   return lineup;
 }
 
+/* v1 -> v2 migration for the local-storage fallback adapter (same
+ * rules as AMSave.migrateV1): unlocks carry over exactly, stars /
+ * scores / rival records reset to empty, tournament + daily history
+ * is kept as-is (pruned to the newest 104 runs / 400 daily attempts),
+ * legacy.classicStars is the sum of the v1 stars values with
+ * acknowledged false. Pure in-memory transform — it never writes
+ * storage, and the v1 record is never modified. */
+function _migrateV1InMemory(p) {
+  var n = _fillSaveShape(p);
+  var total = 0;
+  if (p && p.stars && typeof p.stars === 'object') {
+    Object.keys(p.stars).forEach(function (k) {
+      var v = p.stars[k];
+      if (typeof v === 'number' && isFinite(v) && v > 0) {
+        total += Math.min(3, Math.floor(v));
+      }
+    });
+  }
+  n.version = 2;
+  n.stars = {};
+  n.scores = {};
+  n.records = {};
+  n.progress.completedCount = 0;
+  n.legacy = { classicStars: total, acknowledged: false };
+  if (n.tournament && n.tournament.runs &&
+      typeof n.tournament.runs === 'object') {
+    var rkeys = Object.keys(n.tournament.runs).sort();
+    if (rkeys.length > 104) {
+      var keepR = {};
+      rkeys.slice(rkeys.length - 104).forEach(function (k) {
+        keepR[k] = n.tournament.runs[k];
+      });
+      n.tournament.runs = keepR;
+    }
+  }
+  if (n.daily && n.daily.attempts && typeof n.daily.attempts === 'object') {
+    var dkeys = Object.keys(n.daily.attempts).sort();
+    if (dkeys.length > 400) {
+      var keepD = {};
+      dkeys.slice(dkeys.length - 400).forEach(function (k) {
+        keepD[k] = n.daily.attempts[k];
+      });
+      n.daily.attempts = keepD;
+    }
+  }
+  return n;
+}
+
 function _localSaveAdapter() {
-  var key = (_data && _data.meta && _data.meta.saveKey) ||
-    'jmf-phone-angrymonkeys-save-v1';
+  var SAVE_KEY_V2 = 'jmf-phone-angrymonkeys-save-v2';
+  var SAVE_KEY_V1 = 'jmf-phone-angrymonkeys-save-v1';
+  var metaKey = (_data && _data.meta && _data.meta.saveKey) || null;
+  /* Read order: the v2 key first, then the shard's saveKey if it is a
+   * different key, then the v1 key. The v1 key is only ever read when
+   * no v2 record exists, and its contents are migrated in memory. */
+  var readKeys = [SAVE_KEY_V2];
+  if (metaKey && readKeys.indexOf(metaKey) < 0) readKeys.push(metaKey);
+  if (readKeys.indexOf(SAVE_KEY_V1) < 0) readKeys.push(SAVE_KEY_V1);
   return {
     load: function () {
       try {
-        var raw = window.localStorage.getItem(key);
-        if (!raw) return null;
-        var p = JSON.parse(raw);
-        return (p && typeof p === 'object') ? p : null;
+        for (var i = 0; i < readKeys.length; i++) {
+          var raw = window.localStorage.getItem(readKeys[i]);
+          if (!raw) continue;
+          var p;
+          try { p = JSON.parse(raw); } catch (e) { continue; }
+          if (!p || typeof p !== 'object') continue;
+          if (readKeys[i] === SAVE_KEY_V1 || p.version === 1) {
+            return _migrateV1InMemory(p);
+          }
+          return p;
+        }
+        return null;
       } catch (e) { return null; }
     },
     save: function (p) {
-      try { window.localStorage.setItem(key, JSON.stringify(p)); } catch (e) { /* ignore */ }
+      try { window.localStorage.setItem(SAVE_KEY_V2, JSON.stringify(p)); } catch (e) { /* ignore */ }
     },
     clear: function () {
-      try { window.localStorage.removeItem(key); } catch (e) { /* ignore */ }
+      try { window.localStorage.removeItem(SAVE_KEY_V2); } catch (e) { /* ignore */ }
     }
   };
 }
@@ -46712,6 +46606,24 @@ var _screenRenderers = {
       'Levels cleared: ' + _clearedCount() + ' / ' + _levelCount() + '   •   Stars: ' +
       _totalStars() + ' / ' + (_levelCount() * 3) + '   •   Rival tier: ' + _unlockedRivalTier() + ' / 7');
     wrap.appendChild(prog);
+    /* Legacy badge: shown once, only when the migrated v1 save earned
+     * stars. Tapping it acknowledges (legacy.acknowledged = true) and
+     * persists the save; it never appears again after that, and never
+     * appears when classicStars is 0. */
+    var leg = _progress && _progress.legacy;
+    if (leg && leg.classicStars > 0 && !leg.acknowledged) {
+      var badge = _mkBtn('You earned ' + leg.classicStars + '★ in the classic game',
+        'am-btn-big', function () {
+          if (!_progress.legacy) {
+            _progress.legacy = { classicStars: 0, acknowledged: true };
+          } else {
+            _progress.legacy.acknowledged = true;
+          }
+          _persistProgress();
+          _renderScreen('menu');
+        });
+      wrap.appendChild(badge);
+    }
     var btns = _el('div', 'am-menu-btns');
     btns.appendChild(_mkBtn('▶ Adventure', 'am-btn-big am-btn-primary', function () {
       _mapWorld = _worldOfIndex(_unlockedIndex());
