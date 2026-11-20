@@ -4691,8 +4691,21 @@ body {
   position: absolute;
   left: 0;
   right: 0;
+  /* AM FIX (Nov 20): the bar sits at bottom:0 by default. Raising it
+     permanently to bottom:44px to clear the 44px shell home-indicator
+     strip put the ability button over the sling pouch and the on-deck
+     monkeys, blocking drag-to-shoot — so the reserve applies ONLY
+     while a monkey is flying (.am-flight, toggled per frame in _loop),
+     when nothing is draggable and the queue is display-only. */
   bottom: 0;
   z-index: 4;
+  transition: bottom 0.15s ease-out;
+}
+/* Flight only: clear the home-indicator strip (#ph-home-indicator,
+   shell.css, 44px) so the bar never strikes through the ability
+   button's text and the hit-span never covers the button's right edge
+   at 320px. */
+.am-actions.am-flight { bottom: 44px; }
   display: flex;
   justify-content: space-between;
   gap: 8px;
@@ -48990,8 +49003,13 @@ function _drawSling(ctx) {
       ctx.strokeStyle = 'rgba(0,0,0,0.6)';
       ctx.lineWidth = 3;
       var slabel = spw.glyph + ' ' + spw.name;
-      ctx.strokeText(slabel, spp.x, spp.y);
-      ctx.fillText(slabel, spp.x, spp.y);
+      /* AM FIX (Nov 20): clamp the label inside the canvas — the pouch
+         sits near the left edge, so the centered label's glyph was cut
+         off-screen. */
+      var shw = ctx.measureText(slabel).width / 2;
+      var sx = _clamp(spp.x, shw + 4, _canvas.clientWidth - shw - 4);
+      ctx.strokeText(slabel, sx, spp.y);
+      ctx.fillText(slabel, sx, spp.y);
       ctx.restore();
     }
   }
@@ -49088,9 +49106,16 @@ function _drawQueue(ctx) {
     ctx.fillStyle = '#FFD166';
     ctx.strokeStyle = 'rgba(0,0,0,0.6)';
     ctx.lineWidth = 3;
-    var qlabel = pw.glyph + ' ' + pw.name;
-    ctx.strokeText(qlabel, qp.x, qp.y);
-    ctx.fillText(qlabel, qp.x, qp.y);
+    /* AM FIX (Nov 20): glyph only above queued monkeys — the full
+       "glyph + name" labels are 64–94px wide but sit only ~27px apart,
+       so they collided into unreadable mush. One glyph (~10px) fits the
+       spacing; the full name still shows above the sling monkey and in
+       the intro card. Clamped inside the canvas like the sling label. */
+    var qlabel = pw.glyph;
+    var qhw = ctx.measureText(qlabel).width / 2;
+    var qx = _clamp(qp.x, qhw + 2, _canvas.clientWidth - qhw - 2);
+    ctx.strokeText(qlabel, qx, qp.y);
+    ctx.fillText(qlabel, qx, qp.y);
     ctx.restore();
     x += size * 1.08 + 4;
   }
@@ -49266,6 +49291,13 @@ function _loop(t) {
     if (_shake < 0.2) _shake = 0;
   }
   _tickDriver(dt);
+  /* AM FIX (Nov 20): raise the action bar only while a monkey is
+     flying. At bottom:0 the bar overlaps the home-indicator strip, but
+     raised permanently it covers the sling pouch and the on-deck
+     monkeys and blocks drag-to-shoot. During flight nothing is
+     draggable and the queue is display-only, so the bar clears the
+     indicator exactly when the ability button is live. */
+  if (_actionBar) _actionBar.classList.toggle('am-flight', !!(_state && _state.phase === 'flight'));
   if (_resultShown && _pendingResult && _now() >= _resultAt) {
     /* MERGE FIX (Nov 20): a result may only ever deliver on the game
        screen (or its pause overlay). If the player has left the match
