@@ -318,6 +318,76 @@ body {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
+/* Home audio row (Nov 21, 2026): Music/Sound toggles on the app screen,
+   right-aligned above the icon grid. Slim by design (32px buttons) so
+   the 4th icon row still clears the home indicator at short heights. */
+
+/* Compact home tier (Nov 21, 2026): at short viewports the icon labels
+   wrap to two lines, so the live grid already ends 8px past the
+   indicator top at 320x568 — and the 40px audio row pushed it 48px
+   past. This tier (the same compact-tier pattern the sibling phone
+   uses at max-height 590px) buys back ~68px
+   at max-height 600px: tighter top padding, 28px audio buttons,
+   12px row gaps, 56px icons. Tall screens are untouched. */
+@media (max-height: 600px) {
+  #ph-home { padding-top: 52px; }
+  .ph-home-audio { margin-bottom: 6px; }
+  .ph-home-audio .ph-audio-toggle { min-height: 28px; font-size: 12px; }
+  .ph-home-grid { gap: 12px 12px; }
+  .ph-app-icon { min-height: 80px; gap: 5px; }
+  .ph-icon { width: 56px; height: 56px; }
+}
+.ph-home-audio {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+/* Shared Music/Sound toggles (Nov 21, 2026): one look everywhere — the
+   home row and every game's top bar. Same language as Casino Life's
+   topbar pills: dark pill, gold when on, dimmed when off. */
+.ph-audio-toggle {
+  appearance: none;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(245, 197, 66, 0.55);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #f5c542;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  white-space: nowrap;
+}
+
+.ph-audio-toggle.on {
+  background: rgba(245, 197, 66, 0.22);
+  color: #ffd94d;
+  border-color: #f5c542;
+}
+
+.ph-audio-toggle:not(.on) {
+  opacity: 0.55;
+}
+
+.ph-audio-toggle--compact {
+  min-width: 36px;
+  padding: 0 8px;
+  font-size: 15px;
+}
+
+.ph-audio-toggle:active {
+  transform: scale(0.96);
+}
+
+.ph-audio-toggle:focus-visible {
+  outline: 2px solid #f5c542;
+  outline-offset: 2px;
+}
+
 /* Block game icon: small original block pattern on a teal tile. */
 .ph-icon-blocks {
   background: linear-gradient(150deg, #2fae8f 0%, #1d7f74 100%);
@@ -6884,8 +6954,23 @@ body {
 
 #app-chessquest .chq-screen-head {
   flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   text-align: center;
 }
+
+/* Nov 21, 2026 (music resume): Quest headers carry the shared audio
+   toggles in the title row (not a row of their own) so the header stays
+   one row tall and the toggles meet the 44px tap-target bar the fit
+   gate enforces on every Quest button. The spacer balances the toggle
+   row so the centered title stays centered; the subtitle (when
+   present) takes its own line. */
+#app-chessquest .chq-head-spacer { flex: 0 0 81px; order: 0; }
+#app-chessquest .chq-screen-title { flex: 1 1 0; min-width: 0; order: 1; }
+#app-chessquest .chq-screen-sub { flex: 1 1 100%; order: 3; }
+#app-chessquest .chq-audio-row { display: flex; gap: 8px; flex: 0 0 auto; order: 2; }
+#app-chessquest .chq-audio-row .ph-audio-toggle { min-height: 44px; }
 
 #app-chessquest .chq-screen-title {
   margin: 2px 0 0;
@@ -12211,8 +12296,23 @@ button.mr-setup-preview:focus-visible {
   display: flex; align-items: center; justify-content: space-between;
   gap: 8px; margin-bottom: 10px;
 }
-.oath-topbar-title { font-weight: 700; font-size: 15px; text-align: center; flex: 1; }
+.oath-topbar-title { font-weight: 700; font-size: 15px; text-align: center; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .oath-topbar-spacer { width: 64px; }
+
+/* Topbar Music/Sound toggles (Nov 21, 2026): the right-hand pair in
+   every sub-screen topbar and in the battle topbar. Glyph buttons on
+   the existing toggle-music/toggle-sound actions; dimmed when off.
+   The title truncates (above) so a long battle title never collides
+   with the buttons at 320px. */
+.oath-topbar-toggles { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.oath-toggle--top {
+  min-width: 36px;
+  min-height: 32px;
+  padding: 0 8px;
+  font-size: 15px;
+  line-height: 1;
+}
+.oath-toggle--top.is-off { opacity: 0.5; }
 
 .oath-btn {
   border: 1px solid var(--oath-line); background: var(--oath-panel); color: var(--oath-text);
@@ -12530,6 +12630,7 @@ button.mr-setup-preview:focus-visible {
         </div>
       </div>
       <main id="ph-home">
+        <div id="ph-home-audio" class="ph-home-audio"></div>
         <div class="ph-home-grid">
           <button type="button" class="ph-app-icon" data-app="angrymonkeys" aria-label="Angry Monkeys">
             <span class="ph-icon" style="background:linear-gradient(150deg,#e8912d 0%,#b45a1b 100%)" aria-hidden="true"><svg viewBox="0 0 48 48" width="38" height="38" aria-hidden="true" focusable="false"><circle cx="10" cy="20" r="7" fill="#6b4423"/><circle cx="10" cy="20" r="3.5" fill="#d9a066"/><circle cx="38" cy="20" r="7" fill="#6b4423"/><circle cx="38" cy="20" r="3.5" fill="#d9a066"/><circle cx="24" cy="26" r="15" fill="#7a4a21"/><ellipse cx="24" cy="28" rx="10" ry="9" fill="#e8b57d"/><circle cx="20" cy="25" r="2" fill="#2b1a0e"/><circle cx="28" cy="25" r="2" fill="#2b1a0e"/><ellipse cx="24" cy="32.5" rx="6" ry="4.5" fill="#f2cf9e"/><ellipse cx="24" cy="30.5" rx="2" ry="1.4" fill="#5d3a17"/><path d="M20 34.5 Q24 37.5 28 34.5" stroke="#5d3a17" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg></span>
@@ -12617,6 +12718,7 @@ button.mr-setup-preview:focus-visible {
           <div id="settings-name"></div>
           <div id="settings-sound"></div>
           <div id="settings-music"></div>
+          <div id="settings-music-theme"></div>
           <div id="settings-theme"></div>
           <div id="settings-home"></div>
           <div id="settings-about"></div>
@@ -13172,6 +13274,168 @@ if (typeof window !== 'undefined') {
     try {
       if (el.classList) el.classList.toggle('ph-lock-name-empty', !name);
     } catch (e) { /* cosmetic */ }
+  }
+
+  /* Shared Music/Sound toggles (Nov 21, 2026): one look and one wiring
+     everywhere — the home-screen row and every game's top bar. The two
+     buttons drive the SAME persisted settings as the Settings rows
+     (BZAudio + BZSettings), and re-mark live on 'bz:settings-changed'
+     whenever any of them is flipped, so a toggle on home updates the
+     game buttons and vice versa. Never throws; with no audio module,
+     no document, or an already-injected pair, it quietly does nothing.
+     opts: { before, compact, musicId, soundId }. compact renders
+     icon-only buttons ("♪" / "🔊") for cramped headers. */
+  function _resolveAudio() {
+    try {
+      if (typeof window !== 'undefined' && window && window.BZAudio) return window.BZAudio;
+    } catch (e) { /* fall through */ }
+    try {
+      if (typeof BZAudio !== 'undefined' && BZAudio) return BZAudio;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _resolveSettings() {
+    try {
+      if (typeof window !== 'undefined' && window && window.BZSettings) return window.BZSettings;
+    } catch (e) { /* fall through */ }
+    try {
+      if (typeof BZSettings !== 'undefined' && BZSettings) return BZSettings;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _resolveShellWindow() {
+    try {
+      if (typeof window !== 'undefined' && window) return window;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function injectAudioToggles(container, opts) {
+    try {
+      if (!container || typeof container.querySelector !== 'function') return false;
+      if (typeof document === 'undefined' || !document ||
+          typeof document.createElement !== 'function') return false;
+      opts = opts || {};
+      var audio = _resolveAudio();
+      var settings = _resolveSettings();
+      var win = _resolveShellWindow();
+      var eventName = 'bz:settings-changed';
+      try {
+        if (settings && typeof settings.SETTINGS_CHANGED_EVENT === 'string') {
+          eventName = settings.SETTINGS_CHANGED_EVENT;
+        }
+      } catch (e) { /* default event name stands */ }
+      function readState(key) {
+        try {
+          if (settings && typeof settings.readSettings === 'function') {
+            var value = settings.readSettings()[key];
+            if (typeof value === 'boolean') return value;
+          }
+        } catch (e) { /* fall through to the audio getter */ }
+        try {
+          if (audio) {
+            if (key === 'music' && typeof audio.isMusicOn === 'function') return !!audio.isMusicOn();
+            if (key === 'sound' && typeof audio.isSoundOn === 'function') return !!audio.isSoundOn();
+          }
+        } catch (e) { /* fall through to the default */ }
+        return true;
+      }
+      function make(key) {
+        var existing = null;
+        try {
+          existing = container.querySelector('[data-ph-audio-toggle="' + key + '"]');
+        } catch (e) { existing = null; }
+        if (existing) return existing;
+        var setter = key === 'music' ? 'setMusic' : 'setSound';
+        var available = !!(audio && typeof audio[setter] === 'function');
+        var btn = document.createElement('button');
+        try { btn.type = 'button'; } catch (e) { /* silent */ }
+        var cls = 'ph-audio-toggle ph-audio-toggle--' + key;
+        if (opts.compact) cls += ' ph-audio-toggle--compact';
+        try { btn.className = cls; } catch (e) { /* silent */ }
+        var label = key === 'music' ? '\u266A Music' : 'Sound';
+        var glyph = key === 'music' ? '\u266A' : '\uD83D\uDD0A';
+        try {
+          btn.setAttribute('data-ph-audio-toggle', key);
+          btn.setAttribute('role', 'switch');
+          btn.setAttribute('aria-label', key === 'music' ? 'Music' : 'Sound');
+          if (key === 'music' && opts.musicId) btn.id = opts.musicId;
+          if (key === 'sound' && opts.soundId) btn.id = opts.soundId;
+        } catch (e) { /* silent */ }
+        function mark(on) {
+          try { btn.textContent = opts.compact ? glyph : label; } catch (e) { /* silent */ }
+          try {
+            if (btn.classList) btn.classList.toggle('on', !!on);
+          } catch (e) { /* silent */ }
+          try { btn.setAttribute('aria-checked', on ? 'true' : 'false'); } catch (e) { /* silent */ }
+        }
+        mark(readState(key));
+        if (!available) {
+          try { btn.disabled = true; } catch (e) { /* silent */ }
+          try { btn.setAttribute('aria-disabled', 'true'); } catch (e) { /* silent */ }
+        }
+        try {
+          if (btn.addEventListener) {
+            btn.addEventListener('click', function () {
+              try {
+                if (!available) return;
+                // Flip from the stored truth, not a stale closure, so
+                // a missed sync event can never double-flip.
+                var next = !readState(key);
+                try { audio[setter](next); } catch (e) { /* audio failure: still persist */ }
+                try {
+                  if (settings && typeof settings.writeSettings === 'function') {
+                    var patch = {};
+                    patch[key] = next;
+                    settings.writeSettings(patch);
+                  }
+                } catch (e2) { /* persistence failure must not break the button */ }
+                mark(next);
+              } catch (e3) {
+                /* a click handler must never throw */
+              }
+            });
+          }
+        } catch (e) { /* a button without listeners still renders */ }
+        // Two-way live sync: any settings write dispatches the event
+        // and the button re-marks from the stored truth. The listener
+        // self-removes once the button disconnects.
+        try {
+          if (win && typeof win.addEventListener === 'function') {
+            var onSettingsChanged = function () {
+              try {
+                if (typeof btn.isConnected === 'boolean' && !btn.isConnected) {
+                  try {
+                    if (typeof win.removeEventListener === 'function') {
+                      win.removeEventListener(eventName, onSettingsChanged);
+                    }
+                  } catch (e2) { /* silent */ }
+                  return;
+                }
+                mark(readState(key));
+              } catch (e3) { /* never throw */ }
+            };
+            win.addEventListener(eventName, onSettingsChanged);
+          }
+        } catch (e) { /* the button works without the sync listener */ }
+        try {
+          if (opts.before && opts.before.parentNode === container &&
+              typeof container.insertBefore === 'function') {
+            container.insertBefore(btn, opts.before);
+          } else if (typeof container.appendChild === 'function') {
+            container.appendChild(btn);
+          }
+        } catch (e) { /* silent */ }
+        return btn;
+      }
+      make('music');
+      make('sound');
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   /* Scale the 414x868 phone frame to fit the viewport, centered. */
@@ -14379,6 +14643,10 @@ if (typeof window !== 'undefined') {
 
     fitPhone: fitPhone,
 
+    /* Shared Music/Sound toggles (Nov 21, 2026): one look and one wiring
+       for the home row and every game's top bar. */
+    injectAudioToggles: injectAudioToggles,
+
     appInfo: function (id) {
       var app = registry[id];
       if (!app) return null;
@@ -14717,6 +14985,10 @@ if (typeof window !== 'undefined') {
 
     /* Render the home grid in the resolved (stored or default) order. */
     try { renderHomeOrder(); } catch (e) { /* home order is best-effort */ }
+
+    /* Home audio row (Nov 21, 2026): Music/Sound toggles on the app
+       screen, not just in Settings. Same shared toggles as the games. */
+    try { injectAudioToggles($('ph-home-audio'), {}); } catch (e) { /* best-effort */ }
 
     setStatusClock();
     _setInterval(setStatusClock, 30000);
@@ -17110,8 +17382,320 @@ var BZAudio = (function () {
         [174.61, 220.00, 261.63]  // F major: F3 A3 C4
       ],
       melody: [392.00, 0, 466.16, 349.23, 0, 311.13],
-      velocity: [0.9, 0.85, 1.0, 0.9] }
+      velocity: [0.9, 0.85, 1.0, 0.9] },
+
+    // ------------------------------------------------------------ themes
+    // Songs below carry a `themes` list; songs without one (the ten
+    // above) belong to Classic. A melody bar is a list of up to four
+    // notes played evenly across the 4-second bar (0 = rest); the
+    // originals keep the one-note-per-bar form. Same soft levels:
+    // triangle pad + sine melody on the music bus, nothing louder.
+    //
+    // CHRISTMAS — public-domain carols only. Jingle Bells (Pierpont,
+    // 1857), Deck the Halls (traditional Welsh), We Wish You a Merry
+    // Christmas (traditional English), Silent Night (Gruber/Mohr,
+    // 1818), Auld Lang Syne (Burns, 1788). Never a copyrighted
+    // Christmas song.
+    { name: 'Jingle Bells', themes: ['christmas'], // C major
+      progression: [
+        [130.81, 164.81, 196.00], // C major: C3 E3 G3
+        [174.61, 220.00, 261.63], // F major: F3 A3 C4
+        [98.00, 146.83, 196.00],  // G open fifth: G2 D3 G3
+        [130.81, 164.81, 196.00]  // C major: C3 E3 G3
+      ],
+      melody: [
+        [329.63, 329.63, 329.63, 0], [329.63, 329.63, 329.63, 0],
+        [329.63, 392.00, 523.25, 587.33, 659.25],
+        [698.46, 698.46, 698.46, 698.46], [698.46, 659.25, 659.25, 659.25, 659.25],
+        [329.63, 329.63, 329.63, 0], [329.63, 329.63, 329.63, 0],
+        [329.63, 392.00, 523.25, 587.33, 659.25],
+        [698.46, 698.46, 698.46, 698.46], [698.46, 659.25, 659.25, 659.25, 659.25],
+        [392.00, 392.00, 349.23, 293.66, 261.63], [329.63]
+      ],
+      velocity: [1.0, 0.95, 0.9, 0.95] },
+    { name: 'Deck the Halls', themes: ['christmas'], // C major
+      progression: [
+        [130.81, 164.81, 196.00], // C major: C3 E3 G3
+        [174.61, 220.00, 261.63], // F major: F3 A3 C4
+        [98.00, 146.83, 196.00],  // G open fifth: G2 D3 G3
+        [130.81, 164.81, 196.00]  // C major: C3 E3 G3
+      ],
+      melody: [
+        [392.00, 349.23, 329.63, 293.66], [261.63, 293.66, 329.63, 261.63],
+        [293.66, 329.63, 349.23, 293.66, 329.63], [293.66, 261.63, 246.94, 261.63],
+        [392.00, 440.00, 392.00, 349.23, 329.63, 293.66], [329.63, 349.23, 329.63, 293.66, 261.63],
+        [392.00, 440.00, 493.88, 523.25, 493.88, 440.00], [392.00, 349.23, 329.63, 349.23, 392.00, 440.00],
+        [392.00, 349.23, 329.63, 293.66, 329.63, 349.23], [392.00, 329.63, 349.23, 392.00, 440.00, 349.23],
+        [392.00, 440.00, 493.88, 392.00], [329.63, 293.66, 261.63]
+      ],
+      velocity: [1.0, 0.95, 0.9, 0.95] },
+    { name: 'We Wish You a Merry Christmas', themes: ['christmas'], // C major
+      progression: [
+        [130.81, 164.81, 196.00], // C major: C3 E3 G3
+        [174.61, 220.00, 261.63], // F major: F3 A3 C4
+        [98.00, 146.83, 196.00],  // G open fifth: G2 D3 G3
+        [130.81, 164.81, 196.00]  // C major: C3 E3 G3
+      ],
+      melody: [
+        [392.00, 523.25, 523.25, 587.33], [523.25, 493.88, 440.00, 440.00],
+        [440.00, 587.33, 587.33, 659.25], [587.33, 523.25, 493.88, 392.00, 392.00],
+        [392.00, 659.25, 659.25, 698.46], [659.25, 587.33, 523.25, 440.00, 440.00],
+        [440.00, 392.00, 392.00, 440.00], [392.00, 369.99, 329.63, 293.66],
+        [293.66, 293.66, 329.63, 293.66], [261.63, 246.94, 261.63, 261.63]
+      ],
+      velocity: [1.0, 0.95, 0.9, 0.95] },
+    { name: 'Silent Night', themes: ['christmas'], // C major, slow lullaby
+      progression: [
+        [130.81, 164.81, 196.00], // C major: C3 E3 G3
+        [98.00, 146.83, 196.00],  // G open fifth: G2 D3 G3
+        [130.81, 164.81, 196.00], // C major: C3 E3 G3
+        [174.61, 220.00, 261.63]  // F major: F3 A3 C4
+      ],
+      melody: [
+        [392.00, 440.00, 392.00, 329.63], [392.00, 440.00, 392.00, 329.63],
+        [587.33, 587.33, 493.88], [523.25, 523.25, 392.00],
+        [440.00, 440.00, 523.25, 493.88, 440.00], [392.00, 440.00, 392.00, 329.63],
+        [440.00, 440.00, 523.25, 493.88, 440.00], [392.00, 440.00, 392.00, 329.63],
+        [587.33, 587.33, 698.46, 587.33, 493.88], [523.25, 523.25, 659.25],
+        [523.25, 392.00, 440.00, 392.00, 349.23, 293.66], [349.23, 293.66, 246.94],
+        [523.25, 523.25, 659.25], [523.25, 392.00, 440.00, 392.00, 349.23, 293.66],
+        [349.23, 293.66, 246.94], [523.25, 523.25, 392.00, 349.23, 293.66]
+      ],
+      velocity: [0.95, 0.9, 0.95, 0.85] },
+    { name: 'Auld Lang Syne', themes: ['christmas', 'newyear'], // C major
+      progression: [
+        [130.81, 164.81, 196.00], // C major: C3 E3 G3
+        [174.61, 220.00, 261.63], // F major: F3 A3 C4
+        [130.81, 164.81, 196.00], // C major: C3 E3 G3
+        [98.00, 123.47, 146.83]   // G major: G2 B2 D3
+      ],
+      melody: [
+        [261.63, 349.23, 349.23, 349.23, 329.63, 293.66], [329.63, 349.23, 392.00, 329.63],
+        [349.23, 392.00, 440.00, 349.23], [392.00, 440.00, 392.00, 329.63],
+        [293.66, 329.63, 349.23, 293.66], [329.63, 293.66, 261.63],
+        [261.63, 349.23, 349.23, 349.23, 329.63, 293.66], [329.63, 349.23, 392.00, 329.63],
+        [349.23, 392.00, 440.00, 349.23], [392.00, 440.00, 392.00, 329.63],
+        [293.66, 329.63, 349.23, 293.66], [329.63, 293.66, 261.63],
+        [261.63, 349.23, 349.23, 349.23, 329.63, 293.66], [329.63, 293.66, 261.63]
+      ],
+      // 14-bar melody, 4-bar progression: cycle 28; velocity length 7
+      // divides 28, so the feel repeats cleanly at the boundary.
+      velocity: [1.0, 0.95, 0.9, 0.95, 0.9, 0.95, 1.0] },
+
+    // NEW YEAR — Auld Lang Syne (public domain, shared with Christmas)
+    // plus two originals. No copyrighted material.
+    { name: 'Midnight Countdown', themes: ['newyear'], // C major, original
+      progression: [
+        [130.81, 164.81, 196.00], // C major: C3 E3 G3
+        [174.61, 220.00, 261.63], // F major: F3 A3 C4
+        [98.00, 146.83, 196.00],  // G open fifth: G2 D3 G3
+        [130.81, 164.81, 196.00]  // C major: C3 E3 G3
+      ],
+      melody: [
+        [523.25, 0, 659.25, 0], [783.99, 0, 659.25, 0],
+        [880.00, 783.99, 659.25, 523.25], [587.33, 0, 0, 0],
+        [659.25, 0, 783.99, 0], [880.00, 0, 783.99, 0],
+        [659.25, 587.33, 523.25, 0], [392.00, 0, 0, 0]
+      ],
+      velocity: [1.0, 0.95, 0.9, 0.95] },
+    { name: 'First Light of the Year', themes: ['newyear'], // G major, original
+      progression: [
+        [98.00, 123.47, 146.83],  // G major: G2 B2 D3
+        [130.81, 164.81, 196.00], // C major: C3 E3 G3
+        [164.81, 196.00, 246.94], // E minor: E3 G3 B3
+        [146.83, 185.00, 220.00]  // D major: D3 F#3 A3
+      ],
+      melody: [
+        [392.00, 0, 493.88, 0], [587.33, 0, 493.88, 0],
+        [659.25, 587.33, 493.88, 392.00], [440.00, 0, 0, 0],
+        [493.88, 0, 587.33, 0], [783.99, 0, 659.25, 0],
+        [587.33, 493.88, 392.00, 0], [392.00, 0, 0, 0]
+      ],
+      velocity: [1.0, 0.95, 0.9, 0.95] },
+
+    // CHILDREN — public-domain nursery rhymes plus two originals.
+    // Never a copyrighted children's song.
+    { name: 'Twinkle Twinkle Little Star', themes: ['children'], // C major
+      progression: [
+        [130.81, 164.81, 196.00], // C major: C3 E3 G3
+        [174.61, 220.00, 261.63], // F major: F3 A3 C4
+        [98.00, 146.83, 196.00],  // G open fifth: G2 D3 G3
+        [130.81, 164.81, 196.00]  // C major: C3 E3 G3
+      ],
+      melody: [
+        [261.63, 261.63, 392.00, 392.00], [440.00, 440.00, 392.00, 0],
+        [349.23, 349.23, 329.63, 329.63], [293.66, 293.66, 261.63, 0],
+        [392.00, 392.00, 349.23, 349.23], [329.63, 329.63, 293.66, 0],
+        [392.00, 392.00, 349.23, 349.23], [329.63, 329.63, 293.66, 0],
+        [261.63, 261.63, 392.00, 392.00], [440.00, 440.00, 392.00, 0],
+        [349.23, 349.23, 329.63, 329.63], [293.66, 293.66, 261.63, 0]
+      ],
+      velocity: [1.0, 0.95, 0.9, 0.95] },
+    { name: 'Mary Had a Little Lamb', themes: ['children'], // C major
+      progression: [
+        [130.81, 164.81, 196.00], // C major: C3 E3 G3
+        [98.00, 123.47, 146.83],  // G major: G2 B2 D3
+        [130.81, 164.81, 196.00], // C major: C3 E3 G3
+        [174.61, 220.00, 261.63]  // F major: F3 A3 C4
+      ],
+      melody: [
+        [329.63, 293.66, 261.63, 293.66], [329.63, 329.63, 329.63, 0],
+        [293.66, 293.66, 293.66, 0], [329.63, 392.00, 392.00, 0],
+        [329.63, 293.66, 261.63, 293.66], [329.63, 329.63, 329.63, 329.63],
+        [293.66, 293.66, 329.63, 293.66], [261.63, 0, 0, 0]
+      ],
+      velocity: [1.0, 0.95, 0.9, 0.95] },
+    { name: 'Sunny Day Parade', themes: ['children'], // C major, original
+      progression: [
+        [130.81, 164.81, 196.00], // C major: C3 E3 G3
+        [174.61, 220.00, 261.63], // F major: F3 A3 C4
+        [98.00, 146.83, 196.00],  // G open fifth: G2 D3 G3
+        [130.81, 164.81, 196.00]  // C major: C3 E3 G3
+      ],
+      melody: [
+        [261.63, 329.63, 392.00, 329.63], [440.00, 392.00, 329.63, 261.63],
+        [293.66, 349.23, 440.00, 349.23], [392.00, 329.63, 261.63, 0],
+        [261.63, 329.63, 392.00, 523.25], [440.00, 392.00, 329.63, 293.66],
+        [329.63, 293.66, 261.63, 0], [392.00, 0, 0, 0]
+      ],
+      velocity: [1.0, 0.95, 0.9, 0.95] },
+    { name: 'Bunny Hop', themes: ['children'], // G major, original
+      progression: [
+        [98.00, 123.47, 146.83],  // G major: G2 B2 D3
+        [130.81, 164.81, 196.00], // C major: C3 E3 G3
+        [146.83, 185.00, 220.00], // D major: D3 F#3 A3
+        [98.00, 123.47, 146.83]   // G major: G2 B2 D3
+      ],
+      melody: [
+        [392.00, 493.88, 587.33, 493.88], [440.00, 392.00, 329.63, 0],
+        [392.00, 493.88, 587.33, 783.99], [659.25, 587.33, 493.88, 0],
+        [587.33, 493.88, 392.00, 493.88], [440.00, 523.25, 493.88, 440.00],
+        [392.00, 0, 0, 0], [587.33, 0, 0, 0]
+      ],
+      velocity: [1.0, 0.95, 0.9, 0.95] },
+
+    // MOVIES — original compositions in a film-score style (sweeping,
+    // adventurous, emotional). No actual film score is quoted or
+    // copied; every melody here was written for this game.
+    { name: "Hero's Dawn", themes: ['movies'], // C major, original
+      progression: [
+        [130.81, 164.81, 196.00], // C major: C3 E3 G3
+        [174.61, 220.00, 261.63], // F major: F3 A3 C4
+        [110.00, 130.81, 164.81], // A minor: A2 C3 E3
+        [98.00, 123.47, 146.83]   // G major: G2 B2 D3
+      ],
+      melody: [
+        [261.63, 0, 329.63, 0], [392.00, 0, 523.25, 0],
+        [440.00, 392.00, 329.63, 293.66], [261.63, 0, 0, 0],
+        [349.23, 0, 440.00, 0], [523.25, 0, 440.00, 0],
+        [392.00, 0, 329.63, 0], [293.66, 0, 392.00, 0]
+      ],
+      velocity: [1.0, 0.95, 0.9, 0.95] },
+    { name: 'Starlit Journey', themes: ['movies'], // D minor, original
+      progression: [
+        [146.83, 174.61, 220.00], // D minor: D3 F3 A3
+        [116.54, 146.83, 174.61], // Bb major: Bb2 D3 F3
+        [174.61, 220.00, 261.63], // F major: F3 A3 C4
+        [130.81, 164.81, 196.00]  // C major: C3 E3 G3
+      ],
+      melody: [
+        [293.66, 0, 349.23, 0], [440.00, 0, 587.33, 0],
+        [523.25, 440.00, 349.23, 293.66], [329.63, 0, 349.23, 0],
+        [392.00, 0, 466.16, 0], [440.00, 0, 349.23, 0],
+        [329.63, 0, 293.66, 0], [293.66, 0, 0, 0]
+      ],
+      velocity: [1.0, 0.95, 0.9, 0.95] },
+    { name: 'Quest of Light', themes: ['movies'], // G major, original
+      progression: [
+        [98.00, 123.47, 146.83],  // G major: G2 B2 D3
+        [164.81, 196.00, 246.94], // E minor: E3 G3 B3
+        [130.81, 164.81, 196.00], // C major: C3 E3 G3
+        [146.83, 185.00, 220.00]  // D major: D3 F#3 A3
+      ],
+      melody: [
+        [392.00, 493.88, 587.33, 783.99], [659.25, 587.33, 493.88, 392.00],
+        [440.00, 523.25, 659.25, 880.00], [783.99, 659.25, 587.33, 493.88],
+        [523.25, 659.25, 783.99, 659.25], [587.33, 493.88, 392.00, 0],
+        [329.63, 0, 392.00, 0], [293.66, 0, 0, 0]
+      ],
+      velocity: [1.0, 0.95, 0.9, 0.95] },
+
+    // ADVENTURE — originals, bright and on the move.
+    { name: 'Mountain Trail', themes: ['adventure'], // D major, original
+      progression: [
+        [146.83, 185.00, 220.00], // D major: D3 F#3 A3
+        [196.00, 246.94, 293.66], // G major: G3 B3 D4
+        [110.00, 138.59, 164.81], // A major: A2 C#3 E3
+        [146.83, 185.00, 220.00]  // D major: D3 F#3 A3
+      ],
+      melody: [
+        [293.66, 369.99, 440.00, 587.33], [554.37, 440.00, 369.99, 293.66],
+        [329.63, 392.00, 493.88, 659.25], [587.33, 493.88, 392.00, 329.63],
+        [369.99, 440.00, 587.33, 739.99], [659.25, 587.33, 493.88, 440.00],
+        [392.00, 0, 493.88, 0], [440.00, 0, 0, 0]
+      ],
+      velocity: [1.0, 0.95, 0.9, 0.95] },
+    { name: 'River Crossing', themes: ['adventure'], // A minor, original
+      progression: [
+        [110.00, 130.81, 164.81], // A minor: A2 C3 E3
+        [174.61, 220.00, 261.63], // F major: F3 A3 C4
+        [130.81, 164.81, 196.00], // C major: C3 E3 G3
+        [98.00, 123.47, 146.83]   // G major: G2 B2 D3
+      ],
+      melody: [
+        [440.00, 523.25, 659.25, 880.00], [783.99, 659.25, 523.25, 440.00],
+        [349.23, 440.00, 523.25, 698.46], [659.25, 523.25, 440.00, 349.23],
+        [293.66, 349.23, 440.00, 587.33], [523.25, 440.00, 349.23, 293.66],
+        [329.63, 0, 0, 0], [440.00, 0, 0, 0]
+      ],
+      velocity: [1.0, 0.95, 0.9, 0.95] },
+
+    // CALM — originals, slow and sparse, in the library's own idiom.
+    { name: 'Evening Rain', themes: ['calm'], // Eb major, original
+      progression: [
+        [155.56, 196.00, 233.08], // Eb major: Eb3 G3 Bb3
+        [207.65, 261.63, 311.13], // Ab major: Ab3 C4 Eb4
+        [116.54, 146.83, 174.61], // Bb major: Bb2 D3 F3
+        [155.56, 196.00, 233.08]  // Eb major: Eb3 G3 Bb3
+      ],
+      melody: [
+        [311.13, 0, 0, 0], [392.00, 0, 466.16, 0],
+        [415.30, 0, 0, 0], [392.00, 0, 0, 0],
+        [349.23, 0, 0, 0], [311.13, 0, 0, 0],
+        [293.66, 0, 0, 0], [311.13, 0, 0, 0]
+      ],
+      velocity: [0.9, 0.85, 0.9, 0.85] },
+    { name: 'Moon Garden', themes: ['calm'], // C major, original
+      progression: [
+        [130.81, 164.81, 196.00], // C major: C3 E3 G3
+        [110.00, 130.81, 164.81], // A minor: A2 C3 E3
+        [174.61, 220.00, 261.63], // F major: F3 A3 C4
+        [98.00, 123.47, 146.83]   // G major: G2 B2 D3
+      ],
+      melody: [
+        [523.25, 0, 0, 0], [329.63, 0, 392.00, 0],
+        [440.00, 0, 0, 0], [392.00, 0, 329.63, 0],
+        [349.23, 0, 440.00, 0], [293.66, 0, 0, 0],
+        [329.63, 0, 0, 0], [261.63, 0, 0, 0]
+      ],
+      velocity: [0.9, 0.85, 0.9, 0.85] }
   ];
+
+  // Music themes (Nov 21, 2026): the Settings picker offers one list.
+  // Christmas is the default (Jesse: Christmas + New Year as default).
+  // A song belongs to every theme in its `themes` list; songs without
+  // the field belong to Classic. Auld Lang Syne is in both Christmas
+  // and New Year. Adding a theme = one line here + songs carrying it.
+  var MUSIC_THEMES = [
+    { id: 'christmas', label: 'Christmas' },
+    { id: 'newyear', label: 'New Year' },
+    { id: 'children', label: 'Children' },
+    { id: 'movies', label: 'Movies' },
+    { id: 'adventure', label: 'Adventure' },
+    { id: 'calm', label: 'Calm' },
+    { id: 'classic', label: 'Classic' }
+  ];
+  var DEFAULT_MUSIC_THEME = 'christmas';
 
   // Song 1 values, kept under their original names: the shipped
   // pattern is unchanged, and anything pinned to these names holds.
@@ -17153,36 +17737,58 @@ var BZAudio = (function () {
   var _defaultRng = Math.random;
   var _rng = _defaultRng;
 
-  // Pick the next song index: uniform over all songs except the
-  // current one, so the same song never plays twice in a row. `rng`
-  // is an optional override (used by tests); otherwise _rng is used.
-  // Never throws: a bad random source falls back to the next song in
-  // order.
-  function _pickNextSong(current, rng) {
-    var n = SONGS.length;
-    var cur = 0;
-    if (typeof current === 'number' && isFinite(current)) {
-      cur = Math.floor(current);
-      if (cur < 0) cur = 0;
-      if (cur >= n) cur = n - 1;
+  // Pick the next song index: uniform over the CURRENT THEME's songs
+  // except the current one, so the same song never plays twice in a
+  // row and the shuffle never leaves the theme. `rng` is an optional
+  // override (used by tests); otherwise _rng is used. Never throws:
+  // a bad random source falls back to the next song in theme order.
+  function _themeSongs() {
+    try {
+      var out = [];
+      for (var i = 0; i < SONGS.length; i++) {
+        var t = SONGS[i] && SONGS[i].themes;
+        if (!t || !t.length) { if (_theme === 'classic') out.push(i); continue; }
+        for (var j = 0; j < t.length; j++) if (t[j] === _theme) { out.push(i); break; }
+      }
+      if (!out.length) for (var k = 0; k < SONGS.length; k++) out.push(k);
+      return out;
+    } catch (e) {
+      return [0];
     }
-    if (n <= 1) return 0;
+  }
+
+  function _isValidTheme(id) {
+    try {
+      for (var i = 0; i < MUSIC_THEMES.length; i++) if (MUSIC_THEMES[i].id === id) return true;
+    } catch (e) { /* fall through */ }
+    return false;
+  }
+
+  function _pickNextSong(current, rng) {
+    var list = _themeSongs();
+    var n = list.length;
+    var cur = (typeof current === 'number' && isFinite(current)) ? Math.floor(current) : -1;
+    if (n <= 1) return list[0];
     try {
       var src = (typeof rng === 'function') ? rng : _rng;
       var r = src();
       if (typeof r !== 'number' || !isFinite(r)) r = 0;
       if (r < 0) r = 0;
       if (r >= 1) r = 1 - 1e-9;
-      var pick = Math.floor(r * (n - 1));
-      if (pick >= cur) pick += 1;
-      return pick;
+      var at = list.indexOf(cur);
+      var pick;
+      if (at < 0) pick = Math.floor(r * n);
+      else { pick = Math.floor(r * (n - 1)); if (pick >= at) pick += 1; }
+      return list[pick % n];
     } catch (e) {
-      return (cur + 1) % n;
+      var pos = list.indexOf(cur);
+      return list[(pos + 1) % n];
     }
   }
 
   var _soundOn = true;
   var _musicOn = true;
+  var _theme = DEFAULT_MUSIC_THEME; // current music theme; _loadToggles may override from storage
   var _ctx = null;
   var _master = null;
   var _sfxBus = null;
@@ -17247,6 +17853,14 @@ var BZAudio = (function () {
     var s = _readStoredSettings();
     _soundOn = (typeof s.sound === 'boolean') ? s.sound : true;
     _musicOn = (typeof s.music === 'boolean') ? s.music : true;
+    // A stored theme wins; a fresh profile (or a bad value) gets the
+    // Christmas default. The first song of the theme plays first.
+    _theme = (typeof s.musicTheme === 'string' && _isValidTheme(s.musicTheme))
+      ? s.musicTheme : DEFAULT_MUSIC_THEME;
+    try {
+      var first = _themeSongs();
+      _songIndex = first.length ? first[0] : 0;
+    } catch (e) { _songIndex = 0; }
   }
 
   // Merge with the stored object so unrelated settings (theme, ...) kept
@@ -17258,10 +17872,33 @@ var BZAudio = (function () {
       var s = _readStoredSettings();
       s.sound = _soundOn;
       s.music = _musicOn;
+      s.musicTheme = _theme;
       store.setItem(SETTINGS_KEY, JSON.stringify(s));
     } catch (e) {
       /* storage errors are silent: audio must never break the game */
     }
+  }
+
+  // Tell every bound control that an audio setting changed — the same
+  // 'bz:settings-changed' event BZSettings.writeSettings dispatches,
+  // so home toggles, game toggles and Settings rows all re-mark live.
+  // Listeners only re-mark; they never write, so this cannot loop.
+  // A double dispatch (a caller that also calls writeSettings) is
+  // harmless: re-marking twice reads the same stored truth.
+  function _dispatchSettingsChanged() {
+    try {
+      var w = _win();
+      if (!w || typeof w.dispatchEvent !== 'function') return;
+      var detail = { settings: { sound: _soundOn, music: _musicOn, musicTheme: _theme } };
+      var evt = null;
+      if (typeof CustomEvent !== 'undefined') {
+        evt = new CustomEvent('bz:settings-changed', { detail: detail });
+      } else if (w.document && typeof w.document.createEvent === 'function') {
+        evt = w.document.createEvent('CustomEvent');
+        if (evt.initCustomEvent) evt.initCustomEvent('bz:settings-changed', false, false, detail);
+      }
+      if (evt) w.dispatchEvent(evt);
+    } catch (e) { /* dispatch is best-effort */ }
   }
 
   // --- audio graph (lazy) ---
@@ -19039,8 +19676,22 @@ var BZAudio = (function () {
       }
       var mel = song.melody[bar % song.melody.length];
       if (mel) {
-        _tone({ freq: mel, at: 1.0, dur: 1.6, type: 'sine',
-                peak: 0.09 * vel, attack: 0.08, bus: _musicBus });
+        if (typeof mel === 'number') {
+          // Legacy one-note bar (the ten Classic songs): a single note
+          // on beat 2, exactly as shipped.
+          _tone({ freq: mel, at: 1.0, dur: 1.6, type: 'sine',
+                  peak: 0.09 * vel, attack: 0.08, bus: _musicBus });
+        } else if (mel && typeof mel.length === 'number') {
+          // A bar's notes (carols and other real tunes): played evenly
+          // across the bar, same soft sine voice and level. 0 = rest.
+          var n = mel.length;
+          for (var j = 0; j < n; j++) {
+            var f = mel[j];
+            if (!f || typeof f !== 'number') continue;
+            _tone({ freq: f, at: 0.5 + (j * BAR_LEN) / n, dur: (BAR_LEN / n) * 0.9,
+                    type: 'sine', peak: 0.09 * vel, attack: 0.08, bus: _musicBus });
+          }
+        }
       }
       _musicBar++;
       // Cycle boundary: advance to the next song only here, never
@@ -19057,6 +19708,15 @@ var BZAudio = (function () {
   function startMusic() {
     try {
       if (_musicTimer !== null) return; // already looping
+      // Belt-and-braces: never start on a song outside the theme
+      // (e.g. the theme changed while the music was off).
+      try {
+        if (_themeSongs().indexOf(_songIndex) < 0) {
+          _musicBar = 0;
+          var first = _themeSongs();
+          _songIndex = first.length ? first[0] : 0;
+        }
+      } catch (e) { /* theme guard is best-effort */ }
       var ctx = _ensureCtx();
       if (!ctx) return; // unlock() retries after a gesture
       _resume();
@@ -19126,6 +19786,7 @@ var BZAudio = (function () {
     try {
       _soundOn = !!on;
       _persist();
+      _dispatchSettingsChanged();
     } catch (e) {
       /* never throw */
     }
@@ -19136,12 +19797,40 @@ var BZAudio = (function () {
     try {
       _musicOn = !!on;
       _persist();
+      _dispatchSettingsChanged();
       if (_musicOn) startMusic();
       else stopMusic();
     } catch (e) {
       /* never throw */
     }
     return _musicOn;
+  }
+
+  function musicTheme() { return _theme; }
+
+  // Switch the music theme now: the current track changes immediately
+  // (no reload), the choice is persisted, and every bound control
+  // re-marks. An unknown id or the current theme is a no-op. When the
+  // music is off, only the stored theme changes — the next startMusic
+  // plays the new theme's first song.
+  function setMusicTheme(id) {
+    try {
+      if (!_isValidTheme(id)) return _theme;
+      if (id === _theme) return _theme;
+      _theme = id;
+      _persist();
+      _dispatchSettingsChanged();
+      _musicBar = 0;
+      var first = _themeSongs();
+      _songIndex = first.length ? first[0] : 0;
+      if (_musicOn) {
+        try { stopMusic(); } catch (e) { /* best-effort */ }
+        try { startMusic(); } catch (e) { /* best-effort */ }
+      }
+    } catch (e) {
+      /* never throw */
+    }
+    return _theme;
   }
 
   function isSoundOn() { return _soundOn; }
@@ -19671,6 +20360,9 @@ var BZAudio = (function () {
     setMusic: setMusic,
     isSoundOn: isSoundOn,
     isMusicOn: isMusicOn,
+    setMusicTheme: setMusicTheme,
+    musicTheme: musicTheme,
+    themes: MUSIC_THEMES,
     toggleSound: toggleSound,
     toggleMusic: toggleMusic,
     tick: tick,
@@ -19780,6 +20472,10 @@ var BZAudio = (function () {
       pickNext: _pickNextSong,
       currentSong: function () { return _songIndex; },
       currentBar: function () { return _musicBar; },
+      themes: MUSIC_THEMES,
+      themeSongs: _themeSongs,
+      musicTheme: function () { return _theme; },
+      setMusicTheme: setMusicTheme,
       setRng: function (fn) {
         try { if (typeof fn === 'function') _rng = fn; } catch (e) { /* ignore */ }
       },
@@ -20730,6 +21426,18 @@ var BZSettings = (function () {
   var _booted = false;
   var _themeButtons = []; // [{name, button}] for re-marking the current theme
   var _themeListenerAdded = false;
+  // Music-theme picker (Nov 21, 2026): the same module-level state as
+  // the visual theme picker, keyed by theme id.
+  var FALLBACK_MUSIC_THEMES = [
+    { id: 'christmas', label: 'Christmas' },
+    { id: 'newyear', label: 'New Year' },
+    { id: 'children', label: 'Children' },
+    { id: 'movies', label: 'Movies' },
+    { id: 'adventure', label: 'Adventure' },
+    { id: 'calm', label: 'Calm' },
+    { id: 'classic', label: 'Classic' }
+  ];
+  var _musicThemeButtons = []; // [{id, button}] for re-marking the current music theme
   var _toggleRefreshers = []; // per-toggle re-mark closures (see _buildToggle)
   var _settingsListenerAdded = false;
 
@@ -21102,6 +21810,98 @@ var BZSettings = (function () {
         }
       } catch (e) { /* listener is optional */ }
     }
+  }
+
+  // --------------------------------------------- music theme picker
+  // Mirrors the visual theme picker above, one button per music theme.
+  // The list comes from BZAudio.themes (id + label); the fallback list
+  // matches it, so the picker still renders if the audio module is
+  // absent (buttons disabled). The default is Christmas: a stored
+  // musicTheme wins, a fresh profile (or a bad value) gets Christmas.
+  // A tap switches the music immediately — BZAudio.setMusicTheme
+  // restarts the current track in the new theme — and persists the
+  // choice, so it survives reload.
+  function _markMusicTheme(id) {
+    for (var i = 0; i < _musicThemeButtons.length; i++) {
+      var entry = _musicThemeButtons[i];
+      var active = entry.id === id;
+      try {
+        if (entry.button.classList) {
+          entry.button.classList.toggle('bz-theme-active', active);
+        }
+      } catch (e) { /* class toggle is cosmetic */ }
+      try {
+        entry.button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      } catch (e) { /* aria state is best-effort */ }
+    }
+  }
+
+  function _buildMusicThemePicker(container) {
+    _clear(container);
+    _musicThemeButtons = [];
+    var audio = _global('BZAudio');
+    var available = !!(audio && typeof audio.setMusicTheme === 'function');
+    var list = FALLBACK_MUSIC_THEMES.slice();
+    if (audio && Array.isArray(audio.themes) && audio.themes.length) {
+      try {
+        var listed = audio.themes;
+        var ok = true;
+        for (var k = 0; k < listed.length; k++) {
+          if (!listed[k] || typeof listed[k].id !== 'string' || typeof listed[k].label !== 'string') {
+            ok = false;
+            break;
+          }
+        }
+        if (ok) list = listed.slice();
+      } catch (e) { /* fall back to the built-in list */ }
+    }
+    var current = readSettings().musicTheme;
+    if (typeof current !== 'string') current = 'christmas';
+    if (audio && typeof audio.musicTheme === 'function') {
+      try {
+        var live = audio.musicTheme();
+        if (typeof live === 'string' && live) current = live;
+      } catch (e) { /* stored value stands */ }
+    }
+
+    container.appendChild(_el('div', 'bz-settings-heading', 'Music theme'));
+    var picker = _el('div', 'bz-theme-picker');
+    for (var i = 0; i < list.length; i++) {
+      (function (entry) {
+        var button = _el('button', 'bz-theme-btn', entry.label);
+        button.type = 'button';
+        button.setAttribute('aria-pressed', 'false');
+        button.setAttribute('aria-label', 'Music theme: ' + entry.label);
+        if (!available) button.disabled = true;
+        button.addEventListener('click', function () {
+          try {
+            var liveAudio = _global('BZAudio');
+            if (!liveAudio || typeof liveAudio.setMusicTheme !== 'function') return;
+            var switched = liveAudio.setMusicTheme(entry.id);
+            if (typeof switched === 'string' && switched) _markMusicTheme(switched);
+          } catch (e) { /* theme switch failure must not break Settings */ }
+        });
+        _musicThemeButtons.push({ id: entry.id, button: button });
+        picker.appendChild(button);
+      })(list[i]);
+    }
+    container.appendChild(picker);
+    _markMusicTheme(current);
+
+    // Re-mark if the theme changes elsewhere (setMusicTheme dispatches
+    // 'bz:settings-changed', which _ensureSettingsListener already
+    // routes to _toggleRefreshers).
+    (function () {
+      function refresh() {
+        try {
+          var fresh = readSettings().musicTheme;
+          if (typeof fresh !== 'string') fresh = 'christmas';
+          _markMusicTheme(fresh);
+        } catch (e) { /* re-marking must never throw */ }
+      }
+      _toggleRefreshers.push(refresh);
+    })();
+    _ensureSettingsListener();
   }
 
   // -------------------------------------------------------- home screen
@@ -22091,6 +22891,7 @@ var BZSettings = (function () {
         _buildToggle(el, 'music', 'Music', 'Background music', 'setMusic');
       }],
       ['settings-theme', _buildThemePicker],
+      ['settings-music-theme', _buildMusicThemePicker],
       ['settings-home', _buildHomeSection],
       ['settings-about', _buildSettingsSave],
       ['about-body', _buildAbout]
@@ -22244,7 +23045,48 @@ if (typeof window !== 'undefined') {
   // a glance; the header stats spacing (bz-game.css) leaves room
   // for it. Never throws; with no header, no document.createElement,
   // or an already-injected button, it quietly does nothing.
+  // Nov 21, 2026: the header carries the shared Music/Sound toggles
+  // (PhoneShell.injectAudioToggles) — same look, same wiring, same
+  // persisted settings as the home row and the other games. Compact
+  // (icon-only) so the header keeps its fit. The music button keeps
+  // the id 'bz-music' the fit gate probes. Falls back to the local
+  // music button below if PhoneShell is absent.
   function _injectMusicButton(mount) {
+    try {
+      if (!mount || typeof mount.querySelector !== 'function') return;
+      var header = null;
+      try {
+        header = mount.querySelector('.bz-header');
+      } catch (e) {
+        header = null;
+      }
+      if (!header) return;
+      var shell = null;
+      try {
+        if (typeof window !== 'undefined' && window && window.PhoneShell) shell = window.PhoneShell;
+      } catch (e) { shell = null; }
+      if (shell && typeof shell.injectAudioToggles === 'function') {
+        var restart = null;
+        try {
+          var kids = header.children || [];
+          for (var i = 0; i < kids.length; i++) {
+            if (kids[i].id === 'bz-restart') { restart = kids[i]; break; }
+          }
+        } catch (e) { restart = null; }
+        var opts = { compact: true, musicId: 'bz-music' };
+        if (restart) opts.before = restart;
+        try {
+          shell.injectAudioToggles(header, opts);
+        } catch (e) {
+          _injectMusicButtonLegacy(mount);
+        }
+        return;
+      }
+      _injectMusicButtonLegacy(mount);
+    } catch (e) { /* never throw */ }
+  }
+
+  function _injectMusicButtonLegacy(mount) {
     try {
       if (!mount || typeof mount.querySelector !== 'function') return;
       var header = null;
@@ -25301,6 +26143,16 @@ var SolGame = (function () {
     menuBtn.setAttribute('aria-label', 'Game menu');
     menuBtn.setAttribute('data-sol-deal-sheet', '');
     actions.appendChild(menuBtn);
+    // Nov 21, 2026: Music/Sound toggles in the actions row (shared
+    // PhoneShell helper — same look, same persisted settings, two-way
+    // live sync as the home row and the other games). Compact
+    // (icon-only): the row already holds five buttons.
+    try {
+      if (typeof window !== 'undefined' && window.PhoneShell &&
+          typeof window.PhoneShell.injectAudioToggles === 'function') {
+        window.PhoneShell.injectAudioToggles(actions, { compact: true });
+      }
+    } catch (e) { /* audio toggles are best-effort */ }
     header.appendChild(actions);
 
     // Stats row placeholder: filled by the wire via SolUI.renderStats
@@ -29285,6 +30137,18 @@ var BFGame = (function () {
     _levelEl = els.level;
     _bestEl = els.best;
     header.appendChild(stats);
+    // Nov 21, 2026: Music/Sound toggles in the header (shared
+    // PhoneShell helper — same look, same persisted settings, two-way
+    // live sync as the home row and the other games). Compact
+    // (icon-only): the header already holds Home + 4 stats. render()
+    // rebuilds the header on every render, so the injection lives
+    // here, not in the wire.
+    try {
+      if (typeof window !== 'undefined' && window.PhoneShell &&
+          typeof window.PhoneShell.injectAudioToggles === 'function') {
+        window.PhoneShell.injectAudioToggles(header, { compact: true });
+      }
+    } catch (e) { /* audio toggles are best-effort */ }
     _root.appendChild(header);
     _headerEl = header;
 
@@ -40014,6 +40878,18 @@ var CHSGame = (function () {
     menuBtn.setAttribute('aria-label', 'Game menu');
     menuBtn.setAttribute('data-chs-menu', '');
     controls.appendChild(menuBtn);
+    // Nov 21, 2026: Music/Sound toggles in the controls row (shared
+    // PhoneShell helper — same look, same persisted settings, two-way
+    // live sync as the home row and the other games). Compact
+    // (icon-only): the row already holds six buttons. Chess Quest
+    // matches play inside this same UI, so its matches get the
+    // toggles here too.
+    try {
+      if (typeof window !== 'undefined' && window.PhoneShell &&
+          typeof window.PhoneShell.injectAudioToggles === 'function') {
+        window.PhoneShell.injectAudioToggles(controls, { compact: true });
+      }
+    } catch (e) { /* audio toggles are best-effort */ }
     _root.appendChild(controls);
 
     // Collapsible move list.
@@ -52516,6 +53392,24 @@ var AMWire = (function () {
   }
 
   // -------------------------------------------------------------- game
+  // Nov 21, 2026: Music/Sound toggles in the game header (shared
+  // PhoneShell helper — same look, same persisted settings, two-way
+  // live sync as the home row and the other games). Compact
+  // (icon-only) so the header keeps its fit. Idempotent: the helper
+  // skips when the pair is already present.
+  function _injectHeaderToggles() {
+    try {
+      if (!_mount || typeof _mount.querySelector !== 'function') return;
+      var header = null;
+      try { header = _mount.querySelector('.am-header'); } catch (e) { header = null; }
+      if (!header) return;
+      var shell = _global('PhoneShell');
+      if (shell && typeof shell.injectAudioToggles === 'function') {
+        shell.injectAudioToggles(header, { compact: true });
+      }
+    } catch (e) { /* audio toggles are best-effort */ }
+  }
+
   function _initGame() {
     if (_inited && _game) return true;
     var game = _resolveGame();
@@ -52535,6 +53429,7 @@ var AMWire = (function () {
     _refreshHook();
     _bindMenuObserver();
     _ensureDeleteButton();
+    _injectHeaderToggles();
     return true;
   }
 
@@ -52543,6 +53438,7 @@ var AMWire = (function () {
       try {
         if (typeof _game.onOpen === 'function') _game.onOpen();
       } catch (e) { /* re-render is best-effort */ }
+      _injectHeaderToggles();
       _startMusicIfEnabled();
       return Promise.resolve(true);
     }
@@ -60673,6 +61569,20 @@ var KKGameMethods = {
       this.reducedMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
       this.buildDomStructure();
+      // Nov 21, 2026: Music/Sound toggles in the battle topbar's right
+      // button group (shared PhoneShell helper — same look, same
+      // persisted settings, two-way live sync as the home row and the
+      // other games). Compact (icon-only): the topbar already holds the
+      // lumen pill, wave label, captain and speed/pause. The pause
+      // modal keeps its own Music/Sound rows (same settings).
+      try {
+        var _speedBtn = this.rootEl.querySelector('#td-btn-speed');
+        var _audioGroup = _speedBtn && _speedBtn.parentNode;
+        if (_audioGroup && typeof window !== 'undefined' && window.PhoneShell &&
+            typeof window.PhoneShell.injectAudioToggles === 'function') {
+          window.PhoneShell.injectAudioToggles(_audioGroup, { compact: true });
+        }
+      } catch (e) { /* audio toggles are best-effort */ }
       this.bindEvents();
       this.measureAndClampContainer();
 
@@ -72774,6 +73684,24 @@ var CHQUI = (function () {
     var head = _el(doc, 'div', 'chq-screen-head');
     head.appendChild(_el(doc, 'h2', 'chq-screen-title', title));
     if (subtitle) head.appendChild(_el(doc, 'p', 'chq-screen-sub', subtitle));
+    // Nov 21, 2026: Music/Sound toggles in the screen header (shared
+    // PhoneShell helper — same look, same persisted settings, two-way
+    // live sync as the home row and the other games). Compact
+    // (icon-only). Every Quest screen builds its header through here;
+    // Chess Quest matches play inside the Chess UI, whose controls
+    // row carries the toggles too.
+    try {
+      var shell = _global('PhoneShell');
+      if (shell && typeof shell.injectAudioToggles === 'function') {
+        var audioRow = _el(doc, 'div', 'chq-audio-row');
+        head.appendChild(audioRow);
+        if (shell.injectAudioToggles(audioRow, { compact: true })) {
+          // Balance the toggle row so the centered title stays centered
+          // (the head is a flex row: spacer | title | toggles).
+          try { head.insertBefore(_el(doc, 'div', 'chq-head-spacer'), head.firstChild); } catch (e2) { /* best-effort */ }
+        }
+      }
+    } catch (e) { /* audio toggles are best-effort */ }
     return head;
   }
 
@@ -103566,6 +104494,10 @@ var FLGame = (function () {
   }
 
   function refreshToggles() {
+    // Nov 21, 2026: the header Music/Sound buttons are the shared
+    // PhoneShell toggles, which re-mark themselves on
+    // 'bz:settings-changed'. Kept as a no-op for the exported API;
+    // the legacy #fl-music-btn no longer exists.
     try {
       var doc = _doc();
       if (!doc || !_root) return;
@@ -103588,14 +104520,6 @@ var FLGame = (function () {
     var header = _el('div', 'fl-header');
     var row = _el('div', 'fl-header-row');
     row.appendChild(_el('div', 'fl-title', 'Floor Is Lava'));
-    var musicBtn = _el('button', 'fl-icon-btn', 'Music: On');
-    musicBtn.type = 'button';
-    musicBtn.id = 'fl-music-btn';
-    musicBtn.setAttribute('aria-label', 'Toggle music');
-    musicBtn.addEventListener('click', function () {
-      try { setMusic(!isMusicOn()); } catch (e) { /* never throw */ }
-    });
-    row.appendChild(musicBtn);
     var helpBtn = _el('button', 'fl-icon-btn', '?');
     helpBtn.type = 'button';
     helpBtn.id = 'fl-help-btn';
@@ -103603,6 +104527,17 @@ var FLGame = (function () {
     helpBtn.addEventListener('click', function () {
       try { _showHowToPlay(); } catch (e) { /* never throw */ }
     });
+    // Nov 21, 2026: Music/Sound toggles in the header row, shared
+    // with the home screen and the other games (same look, same
+    // persisted settings, two-way live sync). Full variant: the row
+    // has room. Falls back silently if PhoneShell is absent — the
+    // Settings rows still drive the same settings.
+    try {
+      var shell = _global('PhoneShell');
+      if (shell && typeof shell.injectAudioToggles === 'function') {
+        shell.injectAudioToggles(row, { before: helpBtn });
+      }
+    } catch (e) { /* audio toggles are best-effort */ }
     row.appendChild(helpBtn);
     header.appendChild(row);
     var score = _el('div', 'fl-score');
@@ -122086,6 +123021,7 @@ var OathGame = (function () {
   'use strict';
 
   var SPLASH_MS = 3000;
+  var _settingsListenerAdded = false; // one 'bz:settings-changed' listener, added in init
 
   function _win() {
     try { if (typeof window !== 'undefined' && window) return window; } catch (e) { /* ignore */ }
@@ -122269,11 +123205,19 @@ var OathGame = (function () {
   }
 
   function _topbar(title, back) {
+    // Nov 21, 2026: Music/Sound toggles in every sub-screen's topbar
+    // (the right spacer becomes the toggle pair). Glyph buttons on the
+    // existing toggle-music/toggle-sound actions; _markOathToggles
+    // keeps them live on 'bz:settings-changed'. The hub keeps its
+    // existing text toggles too.
     return '<div class="oath-topbar">' +
       (back ? '<button type="button" class="oath-btn oath-btn--ghost" data-act="nav" data-screen="' + back + '">\u2039 Bastion</button>'
         : '<span class="oath-topbar-spacer"></span>') +
       '<span class="oath-topbar-title">' + _esc(title) + '</span>' +
-      '<span class="oath-topbar-spacer"></span></div>';
+      '<span class="oath-topbar-toggles">' +
+      '<button type="button" class="oath-toggle oath-toggle--top' + (_isMusicOn() ? '' : ' is-off') + '" data-act="toggle-music" role="switch" aria-checked="' + (_isMusicOn() ? 'true' : 'false') + '" aria-label="Music">\u266A</button>' +
+      '<button type="button" class="oath-toggle oath-toggle--top' + (_isSoundOn() ? '' : ' is-off') + '" data-act="toggle-sound" role="switch" aria-checked="' + (_isSoundOn() ? 'true' : 'false') + '" aria-label="Sound">\uD83D\uDD0A</button>' +
+      '</span></div>';
   }
 
   function _resourceRow() {
@@ -123071,7 +124015,11 @@ var OathGame = (function () {
     var html = '<div class="oath-screen oath-battle">' +
       '<div class="oath-topbar"><button type="button" class="oath-btn oath-btn--ghost" data-act="battle-flee">Flee</button>' +
       '<span class="oath-topbar-title">' + _esc(U.descriptor.title || 'Battle') + '</span>' +
-      '<button type="button" class="oath-btn oath-btn--ghost' + (U.auto ? ' is-on' : '') + '" data-act="battle-auto">AUTO ' + (U.auto ? 'ON' : 'OFF') + '</button></div>' +
+      '<span class="oath-topbar-toggles">' +
+      '<button type="button" class="oath-btn oath-btn--ghost' + (U.auto ? ' is-on' : '') + '" data-act="battle-auto">AUTO ' + (U.auto ? 'ON' : 'OFF') + '</button>' +
+      '<button type="button" class="oath-toggle oath-toggle--top' + (_isMusicOn() ? '' : ' is-off') + '" data-act="toggle-music" role="switch" aria-checked="' + (_isMusicOn() ? 'true' : 'false') + '" aria-label="Music">\u266A</button>' +
+      '<button type="button" class="oath-toggle oath-toggle--top' + (_isSoundOn() ? '' : ' is-off') + '" data-act="toggle-sound" role="switch" aria-checked="' + (_isSoundOn() ? 'true' : 'false') + '" aria-label="Sound">\uD83D\uDD0A</button>' +
+      '</span></div>' +
       '<div class="oath-turn-order">' + order.map(function (id) {
         var f = fighterById(id);
         if (!f) return '';
@@ -123561,6 +124509,44 @@ var OathGame = (function () {
     _render();
   }
 
+  // Nov 21, 2026: re-mark the Music/Sound toggle buttons in place from
+  // the stored truth, without re-rendering the screen (a full _render
+  // would wipe transient overlays such as an open battle card). Called
+  // after every render and on 'bz:settings-changed', so a flip on home,
+  // in Settings or in another game updates Oath's buttons live. Handles
+  // both the topbar glyph buttons and the hub's text buttons.
+  function _markOathToggles() {
+    try {
+      if (!G || !G.mount || typeof G.mount.querySelectorAll !== 'function') return;
+      var music = _isMusicOn();
+      var sound = _isSoundOn();
+      var mBtns = G.mount.querySelectorAll('[data-act="toggle-music"]');
+      for (var i = 0; i < mBtns.length; i++) {
+        var b = mBtns[i];
+        try {
+          if (b.classList && b.classList.contains('oath-toggle--top')) {
+            b.classList.toggle('is-off', !music);
+            b.setAttribute('aria-checked', music ? 'true' : 'false');
+          } else {
+            b.textContent = 'Music: ' + (music ? 'On' : 'Off');
+          }
+        } catch (e) { /* best-effort */ }
+      }
+      var sBtns = G.mount.querySelectorAll('[data-act="toggle-sound"]');
+      for (var j = 0; j < sBtns.length; j++) {
+        var s = sBtns[j];
+        try {
+          if (s.classList && s.classList.contains('oath-toggle--top')) {
+            s.classList.toggle('is-off', !sound);
+            s.setAttribute('aria-checked', sound ? 'true' : 'false');
+          } else {
+            s.textContent = 'Sound: ' + (sound ? 'On' : 'Off');
+          }
+        } catch (e) { /* best-effort */ }
+      }
+    } catch (e) { /* never throw */ }
+  }
+
   /* ------------------------------------------------------------ render + events */
   function _render() {
     if (!G || !G.mount) return;
@@ -123588,6 +124574,7 @@ var OathGame = (function () {
     else if (G.screen === 'gauntlet-clear') html = _renderGauntletClear();
     else html = _renderHub();
     try { G.mount.innerHTML = html; } catch (e) { /* best-effort */ }
+    _markOathToggles();
     var input = null;
     try { input = G.mount.querySelector('#oath-name-input'); } catch (e) { input = null; }
     if (input && G.screen === 'create') {
@@ -123885,6 +124872,21 @@ var OathGame = (function () {
     G.screen = G.save.summoner ? 'hub' : 'create';
     try { mount.classList.add('oath-root'); } catch (e) { /* ignore */ }
     try { mount.addEventListener('click', _onClick); } catch (e) { /* ignore */ }
+    // Two-way live sync for the topbar/hub toggles: a flip anywhere
+    // (home, Settings, another game) re-marks Oath's buttons in place.
+    // Added once; _markOathToggles never re-renders, so transient
+    // overlays (an open battle card, a summon animation) are safe.
+    if (!_settingsListenerAdded) {
+      _settingsListenerAdded = true;
+      try {
+        var w = _win();
+        if (w && typeof w.addEventListener === 'function') {
+          w.addEventListener('bz:settings-changed', function () {
+            try { _markOathToggles(); } catch (e) { /* never throw */ }
+          });
+        }
+      } catch (e) { /* listener is optional */ }
+    }
     _render();
     return true;
   }
@@ -123938,13 +124940,11 @@ var OathWire = (function () {
   var APP_ID = 'oath';
   var TITLE = 'The Summoner\u2019s Oath';
   var MOUNT_ID = 'app-oath';
-  var SETTINGS_EVENT = 'bz:settings-changed';
 
   var _booted = false;
   var _bootResult = false;
   var _mount = null;
   var _game = null;
-  var _settingsBound = false;
 
   function _win() {
     try {
@@ -124010,20 +125010,16 @@ var OathWire = (function () {
       if (!game || typeof game.init !== 'function') { _bootResult = false; return false; }
       _bootResult = !!game.init(mount, {});
       _verifyHook();
-      if (!_settingsBound) {
-        _settingsBound = true;
-        try {
-          var win = _win();
-          if (win && win.addEventListener) {
-            win.addEventListener(SETTINGS_EVENT, function () {
-              try {
-                if (_game) _game.reinit();
-                else if (typeof _gameModule() !== 'undefined' && _gameModule() && typeof _gameModule().reinit === 'function') _gameModule().reinit();
-              } catch (e) { /* never throws */ }
-            });
-          }
-        } catch (e) { /* best-effort */ }
-      }
+      /* No 'bz:settings-changed' listener here, deliberately (Nov 21,
+         2026): an earlier version of this wire called game.reinit() on
+         every settings change, which reset the whole game to the hub
+         and dropped the current screen, battle and summon state — so
+         flipping Music from any Oath topbar kicked the player home.
+         The other wires re-mark in place (CL/MR refreshToggles, KK
+         syncFromShared); OathGame does the same through its own
+         listener, which re-marks the topbar/hub toggles without
+         re-rendering (_markOathToggles in oath-game.js). Nothing else
+         in Oath reads settings except at render time, live. */
       return _bootResult;
     } catch (e) {
       _bootResult = false;
