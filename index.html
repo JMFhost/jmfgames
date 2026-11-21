@@ -109465,6 +109465,7 @@ var CLGame = (function () {
   var _rocketTimer = 0;
   var _scratchTimer = 0;
   var _rouletteTimer = 0; /* settle timer for the 2000ms wheel spin */
+  var _bankrollHold = null; /* displayed bankroll while a result is held (roulette spin); null = show _profile.bankroll */
   var _scratchPending = {};
   var _scratchDragging = false;
   var _picker = { gender: 'female', name: '', avatar: 'f1', expr: 'calm' };
@@ -110088,13 +110089,17 @@ var CLGame = (function () {
   function _updateBankroll() {
     if (!_profile) return;
     try {
-      if (_bankEl) _bankEl.textContent = _fmt(_profile.bankroll);
+      /* While a result is held (roulette spin), the topbar + goal bar keep
+         showing the pre-spin value: the bankroll is already settled
+         internally, but the display must not leak the outcome early. */
+      var shown = (_bankrollHold !== null && _bankrollHold !== undefined) ? _bankrollHold : _profile.bankroll;
+      if (_bankEl) _bankEl.textContent = _fmt(shown);
       var start = _startBankroll();
       var goal = _goal();
-      var pct = goal > start ? _clamp((_profile.bankroll - start) / (goal - start) * 100, 0, 100) : 100;
+      var pct = goal > start ? _clamp((shown - start) / (goal - start) * 100, 0, 100) : 100;
       if (_goalFillEl) _goalFillEl.style.width = pct.toFixed(1) + '%';
       if (_goalTextEl) {
-        _goalTextEl.textContent = _fmt(_profile.bankroll) + ' \u2192 ' + _fmt(goal) +
+        _goalTextEl.textContent = _fmt(shown) + ' \u2192 ' + _fmt(goal) +
           (_profile.tournamentsUnlocked ? '  \u2022  Tournaments open' : '');
       }
     } catch (e) { /* cosmetic */ }
@@ -110159,6 +110164,11 @@ var CLGame = (function () {
     g.resultKind = g._roulettePending.kind;
     g._roulettePending = null;
     g._rouletteSpinning = false;
+    /* The held bankroll resolves with the result — every path through
+       here (settle timer, back/coach/pause via _stopRoundTimers) shows
+       the true value, so the display can never get stuck held. */
+    _bankrollHold = null;
+    _updateBankroll();
   }
 
   function _rouletteSettle() {
@@ -112250,7 +112260,15 @@ var CLGame = (function () {
       _showToast('Tap a number on the wheel for a straight-up bet.');
       return;
     }
+    /* Hold the bankroll DISPLAY at its pre-spin value for the whole spin:
+       _placeBet/_pay below settle the bankroll internally at once, but the
+       topbar + goal bar must not move until the wheel settles (2000ms),
+       or the balance would leak win/lose while the result is still
+       hidden. Reduced motion settles in the same tick, so no hold. */
+    var holdBankroll = !_reducedMotion();
+    if (holdBankroll) _bankrollHold = _profile ? _profile.bankroll : null;
     if (!_placeBet(g.bet)) {
+      _bankrollHold = null;
       _showToast('Not enough bankroll for that bet.');
       return;
     }
