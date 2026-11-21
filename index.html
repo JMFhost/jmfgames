@@ -11633,18 +11633,19 @@ button.mr-setup-preview:focus-visible {
   background: var(--cl-felt-deep);
   border: 2px solid var(--cl-gold-deep);
   border-radius: 14px;
-  padding: 10px;
+  padding: 8px;
 }
 .cl-wheel-num {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
+  min-height: 0;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   font-weight: 800;
-  font-size: 15px;
+  font-size: 14px;
   color: #fff;
   background: #222;
 }
@@ -11652,9 +11653,9 @@ button.mr-setup-preview:focus-visible {
 .cl-wheel-num.black { background: #1c1c1c; border: 1px solid #555; }
 .cl-wheel-num.green { background: #0d7a3a; }
 .cl-wheel-num.hit { outline: 3px solid var(--cl-gold); }
-.cl-wheel-num.zero { width: 84px; border-radius: 20px; }
+.cl-wheel-num.zero { width: 72px; border-radius: 20px; }
 .cl-bet-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.cl-rbet { font-size: 13px; padding: 8px 4px; }
+.cl-rbet { font-size: 13px; padding: 5px 4px; min-height: 0; }
 .cl-rbet.sel { border-color: var(--cl-gold); color: var(--cl-gold-soft); box-shadow: 0 0 0 1px var(--cl-gold); }
 
 /* -------------------------------------------------------- baccarat */
@@ -11934,7 +11935,8 @@ button.mr-setup-preview:focus-visible {
 @keyframes cl-win-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 @keyframes cl-result-pop { 0% { transform: scale(.88); } 60% { transform: scale(1.06); } 100% { transform: scale(1); } }
 @keyframes cl-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
-@keyframes cl-ball-orbit { from { transform: rotate(0deg) translateX(58px) rotate(0deg); } to { transform: rotate(calc(1080deg + var(--ball-angle, 0deg))) translateX(58px) rotate(calc(-1080deg - var(--ball-angle, 0deg))); } }
+@keyframes cl-ball-orbit { from { transform: rotate(0deg) translateX(var(--ball-orbit, 46px)) rotate(0deg); } to { transform: rotate(calc(1080deg + var(--ball-angle, 0deg))) translateX(var(--ball-orbit, 46px)) rotate(calc(-1080deg - var(--ball-angle, 0deg))); } }
+@keyframes cl-wheel-spin { from { transform: rotate(0deg); } to { transform: rotate(1080deg); } }
 @keyframes cl-rocket-flame { from { transform: scaleY(1); opacity: .9; } to { transform: scaleY(1.35); opacity: .6; } }
 @keyframes cl-crash-burst { from { transform: scale(1); opacity: 1; } to { transform: scale(1.7); opacity: 0; } }
 @keyframes cl-scratch-wipe { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 0 100%); } }
@@ -11947,7 +11949,8 @@ button.mr-setup-preview:focus-visible {
 .cl-anim-win { animation: cl-win-pulse 600ms ease-in-out 2; }
 .cl-anim-pop { animation: cl-result-pop 300ms ease-out both; }
 .cl-anim-shake { animation: cl-shake 300ms ease-in-out both; }
-.cl-anim-ball { animation: cl-ball-orbit 900ms cubic-bezier(.2,.7,.3,1) both; }
+.cl-anim-ball { animation: cl-ball-orbit 2000ms cubic-bezier(.2,.7,.3,1) both; }
+.cl-anim-wheel { animation: cl-wheel-spin 2000ms cubic-bezier(.2,.7,.3,1) both; }
 .cl-anim-flame { animation: cl-rocket-flame 180ms ease-in-out infinite alternate; }
 .cl-anim-burst { animation: cl-crash-burst 450ms ease-out both; }
 .cl-anim-wipe { animation: cl-scratch-wipe 300ms ease-in forwards; }
@@ -11967,11 +11970,22 @@ button.mr-setup-preview:focus-visible {
 .cl-flip.small .cl-card .cl-suit { font-size: 15px; }
 
 /* Roulette wheel visual: CSS ring above the number grid; the ball is a
-   visual only — the drawn number + payout logic are untouched. */
-.cl-wheel-visual { position: relative; width: 150px; height: 150px; margin: 2px auto 0; border-radius: 50%; background: conic-gradient(#b01e1e 0 9.7%, #1c1c1c 9.7% 19.4%, #b01e1e 19.4% 29.1%, #1c1c1c 29.1% 38.8%, #b01e1e 38.8% 48.6%, #1c1c1c 48.6% 58.3%, #b01e1e 58.3% 68%, #1c1c1c 68% 77.7%, #b01e1e 77.7% 87.4%, #1c1c1c 87.4% 97.3%, #0d7a3a 97.3% 100%); border: 3px solid var(--cl-gold-deep); }
-.cl-wheel-visual::after { content: ''; position: absolute; inset: 14px; border-radius: 50%; background: var(--cl-felt-deep); border: 2px solid var(--cl-gold-deep); }
+   visual only — the drawn number + payout logic are untouched.
+   Compact (120px) + compact number grid so the wheel and the Spin button
+   fit on one phone screen together (cl-screen is ~706px tall at 390x844:
+   wheel-top to spin-button-bottom is ~686px). The conic ring lives in its
+   own .cl-wheel-ring child so the spin rotates the ring without spinning
+   the ball/hub with it. --ball-orbit is the ball's distance from center. */
+.cl-wheel-visual { position: relative; width: 120px; height: 120px; --ball-orbit: 46px; margin: 0 auto; border-radius: 50%; border: 3px solid var(--cl-gold-deep); }
+.cl-wheel-ring { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(#b01e1e 0 9.7%, #1c1c1c 9.7% 19.4%, #b01e1e 19.4% 29.1%, #1c1c1c 29.1% 38.8%, #b01e1e 38.8% 48.6%, #1c1c1c 48.6% 58.3%, #b01e1e 58.3% 68%, #1c1c1c 68% 77.7%, #b01e1e 77.7% 87.4%, #1c1c1c 87.4% 97.3%, #0d7a3a 97.3% 100%); }
+.cl-wheel-visual::after { content: ''; position: absolute; inset: 11px; border-radius: 50%; background: var(--cl-felt-deep); border: 2px solid var(--cl-gold-deep); }
 .cl-wheel-ball { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #fdfbf5; border: 1px solid #999; z-index: 2; }
-.cl-wheel-hub { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1; font-size: 26px; font-weight: 900; color: var(--cl-gold-soft); }
+.cl-wheel-hub { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1; font-size: 22px; font-weight: 900; color: var(--cl-gold-soft); }
+
+/* Roulette compact stack (scoped to the roulette screen only). */
+.cl-game-roulette { gap: 8px; }
+.cl-game-roulette .cl-betrow { padding: 6px; gap: 4px; }
+.cl-game-roulette .cl-note { margin: 4px 0; }
 
 /* Rocket flame under the ship while flying. */
 .cl-rocket-flame { font-size: 22px; line-height: 1; display: block; }
@@ -11992,6 +12006,11 @@ button.mr-setup-preview:focus-visible {
   .cl-symbol { height: 44px; font-size: 24px; }
   .cl-card { width: 38px; height: 54px; font-size: 15px; }
   .cl-rocket-mult { font-size: 36px; }
+  .cl-wheel-visual { width: 104px; height: 104px; --ball-orbit: 38px; }
+  .cl-wheel-visual::after { inset: 10px; }
+  .cl-wheel-num { width: 30px; height: 30px; font-size: 13px; }
+  .cl-wheel-num.zero { width: 64px; }
+  .cl-wheel-hub { font-size: 20px; }
 }
 
 @media (max-height: 600px) {
@@ -109445,6 +109464,7 @@ var CLGame = (function () {
   var _shiftState = null;
   var _rocketTimer = 0;
   var _scratchTimer = 0;
+  var _rouletteTimer = 0; /* settle timer for the 2000ms wheel spin */
   var _scratchPending = {};
   var _scratchDragging = false;
   var _picker = { gender: 'female', name: '', avatar: 'f1', expr: 'calm' };
@@ -110122,6 +110142,52 @@ var CLGame = (function () {
     _scratchTimer = _clearTimer(_scratchTimer);
     _scratchPending = {};
     _scratchDragging = false;
+    if (_rouletteTimer) {
+      _rouletteTimer = _clearTimer(_rouletteTimer);
+      _rouletteResolvePending(); /* mid-spin exit (back/coach/pause): settle instantly, Rocket precedent */
+    }
+  }
+
+  /* Roulette spin settle: the result is computed + paid synchronously at
+     tap (RNG/payout unchanged) but only DISPLAYED when the 2000ms spin
+     settles. _rouletteResolvePending() applies the held result to state
+     with no render; _rouletteSettle() is the timer callback. */
+  function _rouletteResolvePending() {
+    var g = _game;
+    if (!g || !g._rouletteSpinning || !g._roulettePending) return;
+    g.resultText = g._roulettePending.text;
+    g.resultKind = g._roulettePending.kind;
+    g._roulettePending = null;
+    g._rouletteSpinning = false;
+  }
+
+  function _rouletteSettle() {
+    _rouletteTimer = _clearTimer(_rouletteTimer);
+    var g = _game;
+    if (!g || !g._rouletteSpinning) return;
+    var pending = g._roulettePending;
+    _rouletteResolvePending();
+    if (pending && pending.kind === 'win') _playWin();
+    /* Re-render only if the roulette screen is still showing; a screen
+       change mid-spin already settled the result via _stopRoundTimers. */
+    if (_screen === 'game' && g.id === 'roulette') {
+      _renderRoulette();
+      _rouletteScrollToResult();
+    }
+  }
+
+  function _rouletteScrollToWheel() {
+    try {
+      var el = _screenEl ? _screenEl.querySelector('.cl-wheel-visual') : null;
+      if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start', behavior: 'auto' });
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _rouletteScrollToResult() {
+    try {
+      var el = _doc() ? _doc().getElementById('cl-result') : null;
+      if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+    } catch (e) { /* best-effort */ }
   }
 
   /* Animation helpers (DESIGN.md §0-§1): mount-only CSS classes.
@@ -112116,23 +112182,33 @@ var CLGame = (function () {
     var wheel = '';
     var nums = [0];
     for (var n = 1; n <= 36; n++) nums.push(n);
+    var spinning = !!g._rouletteSpinning;
     for (var i = 0; i < nums.length; i++) {
       var v = nums[i];
       var cls = 'cl-wheel-num' + (v === 0 ? ' green zero' : ROULETTE_RED.indexOf(v) >= 0 ? ' red' : ' black') +
-        (g.lastSpin === v ? ' hit' + (g._rouletteSpun && !_reducedMotion() ? ' cl-anim cl-anim-win' : '') : '');
+        (g.lastSpin === v && !spinning ? ' hit' + (g._rouletteSpun && !_reducedMotion() ? ' cl-anim cl-anim-win' : '') : '');
       wheel += '<button type="button" class="' + cls + '" data-cl-action="roulette-pick" data-num="' + v + '">' + v + '</button>';
     }
     var wheelVisual = '';
     if (typeof g.lastSpin === 'number') {
       var ballAngle = ((g.lastSpin / 37) * 360).toFixed(1);
-      wheelVisual = '<div class="cl-wheel-visual">' +
-        (g._rouletteSpun && !_reducedMotion()
-          ? '<div class="cl-wheel-ball cl-anim cl-anim-ball" style="--ball-angle:' + ballAngle + 'deg"></div>'
-          : '<div class="cl-wheel-ball" style="--ball-angle:' + ballAngle + 'deg; transform: rotate(' + ballAngle + 'deg) translateX(58px) rotate(-' + ballAngle + 'deg)"></div>') +
-        '<div class="cl-wheel-hub">' + g.lastSpin + '</div></div>';
-      g._rouletteSpun = false;
+      if (spinning && !_reducedMotion()) {
+        /* Spin in progress: ball orbits + ring turns for 2000ms; the hub
+           stays '?' and the landed number is NOT highlighted — the
+           result is revealed only by _rouletteSettle(). */
+        wheelVisual = '<div class="cl-wheel-visual">' +
+          '<div class="cl-wheel-ring cl-anim cl-anim-wheel"></div>' +
+          '<div class="cl-wheel-ball cl-anim cl-anim-ball" style="--ball-angle:' + ballAngle + 'deg"></div>' +
+          '<div class="cl-wheel-hub">?</div></div>';
+      } else {
+        wheelVisual = '<div class="cl-wheel-visual">' +
+          '<div class="cl-wheel-ring"></div>' +
+          '<div class="cl-wheel-ball" style="--ball-angle:' + ballAngle + 'deg; transform: rotate(' + ballAngle + 'deg) translateX(var(--ball-orbit, 46px)) rotate(-' + ballAngle + 'deg)"></div>' +
+          '<div class="cl-wheel-hub">' + g.lastSpin + '</div></div>';
+        g._rouletteSpun = false;
+      }
     } else {
-      wheelVisual = '<div class="cl-wheel-visual"><div class="cl-wheel-hub">?</div></div>';
+      wheelVisual = '<div class="cl-wheel-visual"><div class="cl-wheel-ring"></div><div class="cl-wheel-hub">?</div></div>';
     }
     var bets = [
       ['red', 'Red 1:1'], ['black', 'Black 1:1'], ['odd', 'Odd 1:1'],
@@ -112148,25 +112224,28 @@ var CLGame = (function () {
     var straightNote = g.betType === 'straight'
       ? '<div class="cl-note">Straight up: tap a number on the wheel above. Pays 35:1.</div>'
       : '<button type="button" class="cl-btn' + (g.betType === 'straight' ? ' sel' : '') + '" data-cl-action="roulette-type" data-type="straight">Straight up — pick a number (35:1)</button>';
+    var resultText = spinning ? 'The wheel is spinning…' : g.resultText;
+    var resultKind = spinning ? '' : (g.resultKind || '');
     _screenEl.innerHTML =
-      '<div class="cl-game">' + _gameHeadHTML('roulette', _practiceBanner()) +
+      '<div class="cl-game cl-game-roulette">' + _gameHeadHTML('roulette', _practiceBanner()) +
       wheelVisual +
       '<div class="cl-wheel">' + wheel + '</div>' +
       '<div class="cl-bet-grid">' + betGrid + '</div>' + straightNote +
       _betRowHTML('roulette', g.bet, 1, 500, [1, 5, 25, 50, 100, 500]) +
-      '<button type="button" class="cl-btn gold big" data-cl-action="roulette-spin">Spin the wheel</button>' +
-      _resultElHTML(g.resultText) +
+      '<button type="button" class="cl-btn gold big" data-cl-action="roulette-spin"' + (spinning ? ' disabled' : '') + '>Spin the wheel</button>' +
+      _resultElHTML(resultText) +
       '<p class="cl-muted">European single-zero wheel. Straight up 35:1, red/black, odd/even, low/high 1:1, dozens and columns 2:1.</p>' +
       '</div>';
-    if (g.resultText) {
+    if (resultText) {
       var el = _doc() ? _doc().getElementById('cl-result') : null;
-      _setResult(el, g.resultKind || '', g.resultText);
+      _setResult(el, resultKind, resultText);
     }
   }
 
   function _rouletteSpin() {
     var g = _game;
     if (!g || g.id !== 'roulette') return;
+    if (g._rouletteSpinning) return; /* one spin at a time; the settle timer owns the rest */
     if (g.betType === 'straight' && (typeof g.pick !== 'number')) {
       _showToast('Tap a number on the wheel for a straight-up bet.');
       return;
@@ -112187,16 +112266,33 @@ var CLGame = (function () {
     var mult = _roulettePayout(g.betType || 'red', n, g.pick);
     var winAmt = mult > 0 ? g.bet * mult : 0;
     if (winAmt > 0) _pay(winAmt);
-    if (_profile) {
-      _profile.stats.rounds++;
-      if (winAmt > g.bet) _playWin();
-    }
+    if (_profile) _profile.stats.rounds++;
     var color = n === 0 ? 'green' : ROULETTE_RED.indexOf(n) >= 0 ? 'red' : 'black';
-    g.resultText = 'Ball lands on ' + n + ' ' + color + '. ' +
+    var text = 'Ball lands on ' + n + ' ' + color + '. ' +
       (winAmt > 0 ? 'You win ' + _fmt(winAmt - g.bet) + ' profit.' : 'You lose ' + _fmt(g.bet) + '.');
-    g.resultKind = winAmt > g.bet ? 'win' : winAmt > 0 ? 'push' : 'lose';
+    var kind = winAmt > g.bet ? 'win' : winAmt > 0 ? 'push' : 'lose';
     saveNow();
-    _renderRoulette();
+    if (_reducedMotion()) {
+      /* Settled state at once: no orbit, no timer, result visible immediately. */
+      g.resultText = text;
+      g.resultKind = kind;
+      if (kind === 'win') _playWin();
+      _renderRoulette();
+      _rouletteScrollToWheel();
+    } else {
+      /* RNG/payout/bankroll are already applied above, unchanged — but the
+         RESULT is only displayed when the spin settles: hold it in
+         _roulettePending (the win sound waits too, so it cannot leak the
+         outcome early). Spin duration 2000ms matches .cl-anim-ball /
+         .cl-anim-wheel in cl-game.css. */
+      g._roulettePending = { text: text, kind: kind };
+      g._rouletteSpinning = true;
+      _renderRoulette();
+      _rouletteScrollToWheel();
+      var win = _win();
+      try { _rouletteTimer = win ? win.setTimeout(_rouletteSettle, 2000) : 0; } catch (e) { _rouletteTimer = 0; }
+      if (!_rouletteTimer) _rouletteSettle(); /* no timer available: settle at once */
+    }
     if (_game.practice && _coachGame === 'roulette') _coachStep = Math.min(_coachStep + 1, 3);
   }
 
@@ -113037,6 +113133,12 @@ var CLGame = (function () {
     }
     var action = el.getAttribute('data-cl-action');
     var gameId = el.getAttribute('data-game');
+    /* While the roulette wheel is spinning, bets/picks/hints would
+       re-render the screen and restart the ball orbit out of sync with
+       the settle timer — ignore them until the spin settles. */
+    if (_game && _game.id === 'roulette' && _game._rouletteSpinning &&
+        (action === 'roulette-pick' || action === 'roulette-type' || action === 'roulette-spin' ||
+         action === 'set-bet' || action === 'toggle-hints')) return;
     _playClick();
     try {
       switch (action) {
