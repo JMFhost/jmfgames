@@ -10763,6 +10763,144 @@ button.mr-setup-preview:focus-visible {
      information and stays (static brightened blob + "!"). */
   .fl-blob { animation: none; }
   .fl-blob-winding { animation: none; transform: scale(1.15); }
+  /* LAVA-HAZARDS — ember flicker is decoration and goes; the
+     hazard markers + FX are information and stay. */
+  .fl-bg-ember { animation: none; }
+  .fl-hazard-mark { animation: none; }
+}
+
+/* LAVA-HAZARDS — Endless backdrop (Nov 21, 2026): code-only
+   layers, no new art. The arena JPG + strata + ember glows are
+   background layers on #fl-arena (set inline by fl-game.js);
+   these rules cover the DOM pieces: the slow color-drift wash,
+   the seeded per-band rock silhouettes + ember dots (world
+   coords, behind everything in the course), and the hazard
+   telegraph markers + full-arena FX overlay. All pointer-events
+   none — decor must never eat a jump tap. */
+.fl-bg-drift {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 360px;
+  height: 560px;
+  /* Same scale as .fl-viewport: the arena itself is resized to
+     360*scale x 560*scale, so fixed-360px arena children must
+     scale with it or they overflow/clip at 320px. */
+  transform: scale(var(--fl-arena-scale, 1));
+  transform-origin: top left;
+  pointer-events: none;
+  background-image: linear-gradient(180deg,
+    rgba(255, 90, 20, 0.10) 0%, rgba(24, 12, 48, 0.12) 50%,
+    rgba(255, 90, 20, 0.10) 100%);
+  background-size: 100% 1120px;
+  background-repeat: repeat-y;
+}
+.fl-bg-rock {
+  position: absolute;
+  pointer-events: none;
+  background: linear-gradient(180deg, #1c0d12 0%, #2e1410 60%, #160a0c 100%);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.55);
+}
+.fl-bg-ember {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffd94d 0%, #ff7a1a 55%, rgba(255, 60, 0, 0) 100%);
+  box-shadow: 0 0 8px rgba(255, 140, 40, 0.9);
+  animation: fl-bg-ember-flicker 1.6s ease-in-out infinite alternate;
+}
+@keyframes fl-bg-ember-flicker {
+  from { opacity: 0.55; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1.15); }
+}
+
+/* Hazard telegraph markers: sit above the target platform
+   (world coords, like blobs), pulsing until the effect fires. */
+.fl-hazard-mark {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  margin-left: -14px;
+  margin-top: -14px;
+  font-size: 22px;
+  line-height: 28px;
+  text-align: center;
+  pointer-events: none;
+  z-index: 5;
+  text-shadow: 0 0 8px rgba(255, 200, 60, 0.9), 0 1px 2px rgba(0, 0, 0, 0.7);
+  animation: fl-hazard-mark-pulse 0.25s ease-in-out infinite alternate;
+}
+@keyframes fl-hazard-mark-pulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.25); }
+}
+.fl-hazard-mark-frost { text-shadow: 0 0 8px rgba(120, 200, 255, 0.95), 0 1px 2px rgba(0, 0, 0, 0.7); }
+.fl-hazard-mark-gust { text-shadow: 0 0 8px rgba(200, 230, 255, 0.9), 0 1px 2px rgba(0, 0, 0, 0.7); }
+.fl-hazard-mark-rockfall { text-shadow: 0 0 8px rgba(255, 140, 60, 0.95), 0 1px 2px rgba(0, 0, 0, 0.7); }
+
+/* Hazard FX overlay: full-arena, above the course, below nothing
+   interactive (pointer-events none). Telegraph = faint warning;
+   active = the effect flash/tint for the 0.9s FX window. */
+.fl-hazard-fx {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 360px;
+  height: 560px;
+  /* Same scale as .fl-viewport (see .fl-bg-drift). */
+  transform: scale(var(--fl-arena-scale, 1));
+  transform-origin: top left;
+  pointer-events: none;
+  z-index: 6;
+  opacity: 0;
+}
+.fl-hazard-fx-lightning.fl-hazard-fx-telegraph {
+  opacity: 1;
+  background: radial-gradient(ellipse 60% 18% at 50% 0%, rgba(255, 240, 160, 0.25), rgba(255, 240, 160, 0) 70%);
+}
+.fl-hazard-fx-lightning.fl-hazard-fx-active {
+  animation: fl-hazard-flash 0.9s ease-out 1;
+}
+@keyframes fl-hazard-flash {
+  0% { opacity: 1; background: rgba(255, 250, 220, 0.85); }
+  35% { opacity: 1; background: rgba(255, 250, 220, 0.25); }
+  55% { opacity: 1; background: rgba(255, 250, 220, 0.55); }
+  100% { opacity: 0; background: rgba(255, 250, 220, 0); }
+}
+.fl-hazard-fx-frost.fl-hazard-fx-telegraph {
+  opacity: 1;
+  box-shadow: inset 0 0 40px rgba(120, 200, 255, 0.35);
+}
+.fl-hazard-fx-frost.fl-hazard-fx-active {
+  animation: fl-hazard-frost 0.9s ease-out 1;
+}
+@keyframes fl-hazard-frost {
+  0% { opacity: 1; background: rgba(120, 200, 255, 0.35); }
+  100% { opacity: 0; background: rgba(120, 200, 255, 0); }
+}
+.fl-hazard-fx-gust.fl-hazard-fx-telegraph {
+  opacity: 1;
+  background: repeating-linear-gradient(115deg,
+    rgba(200, 230, 255, 0) 0px, rgba(200, 230, 255, 0) 46px,
+    rgba(200, 230, 255, 0.10) 46px, rgba(200, 230, 255, 0.10) 52px);
+}
+.fl-hazard-fx-gust.fl-hazard-fx-active {
+  animation: fl-hazard-gust 0.9s linear 1;
+}
+@keyframes fl-hazard-gust {
+  0% { opacity: 1; background-position: 0 0; background-image: repeating-linear-gradient(115deg, rgba(200, 230, 255, 0) 0px, rgba(200, 230, 255, 0) 46px, rgba(200, 230, 255, 0.22) 46px, rgba(200, 230, 255, 0.22) 52px); }
+  100% { opacity: 0; background-position: 120px 0; background-image: repeating-linear-gradient(115deg, rgba(200, 230, 255, 0) 0px, rgba(200, 230, 255, 0) 46px, rgba(200, 230, 255, 0.22) 46px, rgba(200, 230, 255, 0.22) 52px); }
+}
+.fl-hazard-fx-rockfall.fl-hazard-fx-telegraph {
+  opacity: 1;
+  background: radial-gradient(ellipse 70% 14% at 50% 0%, rgba(255, 140, 60, 0.22), rgba(255, 140, 60, 0) 70%);
+}
+.fl-hazard-fx-rockfall.fl-hazard-fx-active {
+  animation: fl-hazard-rockfall 0.9s ease-in 1;
+}
+@keyframes fl-hazard-rockfall {
+  0% { opacity: 1; background: radial-gradient(ellipse 70% 14% at 50% 0%, rgba(255, 140, 60, 0.4), rgba(255, 140, 60, 0) 70%); }
+  100% { opacity: 0; background: radial-gradient(ellipse 70% 60% at 50% 20%, rgba(255, 140, 60, 0.25), rgba(255, 140, 60, 0) 70%); }
 }
 
 /* narrow screens: keep the header compact so the arena keeps room */
@@ -20562,7 +20700,10 @@ if (typeof window !== 'undefined') {
 //                      are kept. The Block Zen row's Delete button
 //                      keeps the id 'bz-settings-delete-save'.
 // About app:
-//   #about-body      — short About text, copyright line, no links
+//   #about-body      — one paragraph per live game (STANDING RULE, Jesse
+//                      Nov 21, 2026: update this page EVERY time a game is
+//                      added or updated, in the same change set as the game
+//                      work), copyright line, no links
 //
 // Toggle state persists through the single shared settings key
 // jmf-phone-settings-v1 via read-modify-write, preserving every other
@@ -21848,6 +21989,9 @@ var BZSettings = (function () {
   }
 
   // ------------------------------------------------------------- about app
+  // STANDING RULE (Jesse, Nov 21, 2026): this page lists EVERY live game
+  // with an accurate description. Update it in the SAME change set whenever
+  // a game is added or updated — never as an afterthought.
   function _buildAbout(body) {
     _clear(body);
     body.appendChild(_el('p', 'bz-about-text',
@@ -21872,40 +22016,60 @@ var BZSettings = (function () {
       'your best score, with four lines at once earning the biggest bonus.'));
     body.appendChild(_el('p', 'bz-about-text',
       'Chess is classic chess, built for touch. Play a friend on the ' +
-      'same device, or take on ten named AI opponents from beginner to ' +
-      'master, with chess clocks, a choice of boards and piece sets, ' +
-      'and a Training mode that teaches beginners the pieces, the ' +
-      'rules, and the basic checkmates.'));
+      'same device, or climb a 19-opponent ladder from beginner Ben to ' +
+      'master Adrian, with chess clocks, a choice of 14 boards and the ' +
+      'Classic Staunton pieces, and a Training mode that teaches ' +
+      'beginners the pieces, the rules, and the basic checkmates.'));
     body.appendChild(_el('p', 'bz-about-text',
       'Chess Quest is a story adventure built on chess. Create your ' +
       'player, join the school chess club, and climb from friendly ' +
       'club matches through district, state, and national tournaments ' +
       'to the world championship — meeting rivals, solving puzzles, ' +
-      'and collecting boards and piece sets along the way. Every ' +
+      'and collecting boards along the way. Every ' +
       'match is real chess against opponents who get stronger as ' +
-      'your story grows.'));
-    /* BUFFS: corrects pre-combat stale About copy (revoked ground rule; wrong level/world counts). */
+      'your story grows, and Coach Reyes teaches the game in 43 ' +
+      'lessons you can skip any time.'));
     body.appendChild(_el('p', 'bz-about-text',
       'Angry Monkeys is a slingshot game built for touch. Launch monkeys ' +
-      'at the Banana Bandit forts, fly through glowing buffs to power up ' +
-      'each monkey, then fight the bandits hiding in bushes, barrels, ' +
-      'and holes until the fort falls. Clear 110 levels across ten ' +
-      'worlds, duel a friend on the same device, or take on seven rival ' +
-      'crews in tournaments and daily challenges.'));
+      'at the Banana Bandit forts — each of the seven monkeys has one ' +
+      'unique mid-flight power you fire with a tap — and bring the fort ' +
+      'down. The bandits never fight back. Clear 110 levels across ten ' +
+      'worlds, duel a friend on the same device, or take on tournaments ' +
+      'and daily challenges.'));
     body.appendChild(_el('p', 'bz-about-text',
       'Kindlekeep is a lane-and-tower defense game built for touch. ' +
-      'Set light-forged guardians in the lanes, gather Lumen, and hold ' +
-      'the road against the Gloom across 85 story stages and an ' +
+      'Command five heroes — Rowan, Rai, Neve, Sora, and Wren — switch ' +
+      'them between lanes, cast spells, and set light-forged towers in ' +
+      'the road to hold back the Gloom across 85 story stages and an ' +
       'endless Night Watch — with quests, upgrades, and a tale of the ' +
       'last lit town in the valley.'));
     body.appendChild(_el('p', 'bz-about-text',
-      'The Math Realms is a math adventure built for touch. Create a ' +
-      'hero, gather the stolen numbers across six worlds and 60 story ' +
-      'stages, and answer your way past bosses with spells, companions, ' +
-      'and a scratch pad. Story battles never have a timer; the Daily ' +
-      'Challenge, Endless Tower, and Practice Den offer timed and ' +
-      'gentle play, and Parent View shows stars, accuracy, and time ' +
+      'The Math Realms is a math adventure built for touch. Choose one ' +
+      'of six heroes, gather the stolen numbers across six worlds and ' +
+      '276 stages, and answer your way past bosses with spells, ' +
+      'companions, and a scratch pad. Story battles never have a timer; ' +
+      'the Daily Challenge, Endless Tower, and Practice Den offer timed ' +
+      'and gentle play, and Parent View shows stars, accuracy, and time ' +
       'played — with no accounts and nothing leaving the device.'));
+    body.appendChild(_el('p', 'bz-about-text',
+      'Floor Is Lava is a climb race built for touch. Tap to jump from ' +
+      'platform to platform and keep climbing while the lava rises ' +
+      'below — the last survivor wins. Dodge Lava Blobs, play Quick ' +
+      'Race, Lava League, Endless Climb, the Daily Challenge, or ' +
+      'Practice, and quit a race any time from the pause menu.'));
+    body.appendChild(_el('p', 'bz-about-text',
+      'Casino Life is a casino built for touch. Start with $1,000 in ' +
+      'play chips and work your way to $10,000 across nine games — ' +
+      'slots, blackjack, Texas Hold\u2019em, rocket, roulette, baccarat, ' +
+      'Ti\u1ebfn L\u00ean North and South, and scratch-offs — against 99 AI ' +
+      'rivals, with a coach for every game and Hold\u2019em tournaments ' +
+      'to win.'));
+    body.appendChild(_el('p', 'bz-about-text',
+      'The Summoner\u2019s Oath is a hero-collector adventure built for ' +
+      'touch. Swear the oath and summon 150 anime heroes across 10 ' +
+      'arcs and 360 campaign stages, then take them into the Arena, ' +
+      'Dungeons, the 100-floor Spire, Faction Trials, and the weekly ' +
+      'World Boss.'));
     body.appendChild(_el('p', 'bz-about-text',
       'The green chart icon on the home screen opens the companion ' +
       'investing simulation in this same tab.'));
@@ -99048,6 +99212,14 @@ if (typeof window !== 'undefined' && window) {
 // shove everyone down -> 4s cooldown, AI monster-avoidance term
 // + winding danger override, blob state in hashState (via the
 // state JSON), Monsters codex (fl-game.js), DOM/CSS blob render.
+// /* LAVA-HAZARDS */ Random hazard events (Nov 21, 2026):
+// Lightning / Gust / Frozen Snow / Rockfall — world events that
+// strike the LEADERS (rubber-banding by height, never by score),
+// always with a 0.5s telegraph, always temporary, never
+// eliminating on their own. Seeded schedule on a DEDICATED
+// hazard stream (state.hazardRngS) so hazard draws never touch
+// the AI stream; hazard state in hashState (via the state JSON);
+// forceHazard() is the gates/probe API. Practice has no hazards.
 
 var FLEngine = (function () {
   'use strict';
@@ -99163,6 +99335,29 @@ var FLEngine = (function () {
   var BLOB_FIRST_HEIGHT_M = 14;
   var BLOB_SCORE_READY = 0.9; // AI: a READY blob platform scores lower
   var BLOB_SCORE_WINDING = 1.2; // AI: a WINDING blob platform scores much lower
+  // /* LAVA-HAZARDS */ Random hazard events (Nov 21, 2026) —
+  // world events, not powers: they strike the LEADERS (whoever
+  // is in front, human or AI), always with a 0.5s telegraph
+  // (the blob wind-up timing), always temporary, never
+  // eliminating on their own (lava still does the eliminating).
+  // Frequency: one event every 20–35 s of race time, never two
+  // overlapping, never in the opening 0–14 m (height-gated).
+  var HAZARD_TELEGRAPH_MS = 500; // telegraph, same as the blob wind-up
+  var HAZARD_MIN_GAP_MS = 20000; // min race time between events
+  var HAZARD_MAX_GAP_MS = 35000; // max race time between events
+  var HAZARD_FIRST_HEIGHT_M = 14; // no event before the leader passes 14 m
+  var HAZARD_DEFER_MS = 1000; // re-check delay while the leader is below 14 m
+  var HAZARD_FX_MS = 900; // hazard record lingers this long after the
+  // effect fires, so the render can show the flash/frost/streaks
+  var HAZARD_LIGHTNING_MS = 1500; // lightning stun (cannot jump)
+  var HAZARD_FROST_MS = 2000; // frozen-snow freeze (cannot jump)
+  var HAZARD_TYPES = ['lightning', 'gust', 'frost', 'rockfall'];
+  var HAZARD_TYPE_W = [30, 25, 25, 20]; // draw weights (sum 100)
+  var HAZARD_SECOND_WITHIN_M = 2.0; // 2nd place this close to the
+  // leader is struck too ("the leading players")
+  var HAZARD_SCORE_TELEGRAPH = 1.2; // AI: a platform targeted by
+  // a telegraphing hazard scores much lower (dodge it)
+  var HAZARD_SALT = 0x5EED5EED; // hazard-stream salt (seed ^ salt)
   // /* LAVA2 */ M4 — hazard tunables (v34-verbatim, §7): stove
   // heats to 100 in 8s occupied, cools in 4s empty, sinks 2x
   // while at 100 heat; wobble shoves the later arrival after
@@ -100118,6 +100313,312 @@ var FLEngine = (function () {
     }
   }
 
+  // ------------------------------------------------------------ random hazard events (LAVA-HAZARDS)
+  // /* LAVA-HAZARDS */ World events that strike the LEADERS, in
+  // addition to Lava Blobs (untouched). Four types:
+  //   lightning — 0.5s telegraph, then everyone standing on the
+  //     target platform(s) is stunned 1.5s (cannot jump);
+  //   gust — 0.5s telegraph, then everyone standing on the target
+  //     platform(s) is shoved down a rung (displacement only,
+  //     _dropToBelowSafe — never into the lava);
+  //   frost — 0.5s telegraph (frost creep + blue tint), then
+  //     everyone standing on the target platform(s) is frozen
+  //     2.0s (cannot jump);
+  //   rockfall — 0.5s telegraph, then the target platform starts
+  //     crumbling (3s shake, then gone; riders drop below on the
+  //     existing crumble path). Only ever targets a platform
+  //     whose rung has another platform, never a checkpoint /
+  //     summit / start platform — a rung is never left without a
+  //     way up (the blob reachability guard, applied to terrain).
+  // Rules (all enforced here): hazards target the leaders by
+  // HEIGHT (rubber-banding — whoever is in front, human or AI,
+  // can be hit; the further ahead, the likelier); they apply to
+  // AI identically to the human; every hazard telegraphs 0.5s so
+  // it is dodgeable (jump off the platform before the telegraph
+  // ends and the effect misses you — mid-jump players are never
+  // standing on the platform when it fires); effects are
+  // temporary (halt/slow only — never elimination on their own);
+  // one event every 20–35s of race time, never two overlapping,
+  // never before the leader passes 14 m; Practice has none.
+  // Seeding: ALL hazard draws come from a DEDICATED stream
+  // (state.hazardRngS, seeded from the match seed) — the blob
+  // pattern — so hazard timing/type/targeting never consumes the
+  // AI stream and never changes AI decisions when no hazard is
+  // active. A hazard record: {seq, type,
+  // state ('telegraph' | 'active'), platforms [ids],
+  // targets [player ids at telegraph time], telegraphEndsAt,
+  // endsAt}. It lives on the state, so hashState covers it.
+  function _hazardRngInit(seed) {
+    var h = Math.imul((seed | 0) ^ HAZARD_SALT, 2654435761);
+    h ^= h >>> 15;
+    h = Math.imul(h, 2246822519);
+    h ^= h >>> 13;
+    return h | 0;
+  }
+
+  // One draw from the hazard stream (writes the new stream state
+  // back — same shape as _next, separate stream).
+  function _nextHazard(state) {
+    if (typeof state.hazardRngS !== 'number') {
+      state.hazardRngS = _hazardRngInit(state.seed || 1);
+    }
+    var rng = createRng(state.hazardRngS);
+    var v = rng.next();
+    state.hazardRngS = rng.s;
+    return v;
+  }
+
+  function _scheduleNextHazard(state) {
+    var gap = HAZARD_MIN_GAP_MS +
+      Math.floor(_nextHazard(state) * (HAZARD_MAX_GAP_MS - HAZARD_MIN_GAP_MS + 1));
+    state.nextHazardAt = state.timeMs + gap;
+  }
+
+  // Leader targeting: weighted draw among alive racers, weight
+  // 2 + (heightM above the pack's lowest height) — the further
+  // ahead, the likelier. Plus the 2nd-place racer when they are
+  // within HAZARD_SECOND_WITHIN_M of the leader ("the leading
+  // players"). Returns {players, platforms} — the platform each
+  // target is standing on at telegraph time (mid-jump players
+  // still carry their from-platform id; the effect only ever
+  // hits players STANDING on the platform when it fires, so a
+  // jump away during the telegraph is a dodge).
+  function hazardTargets(state) {
+    var alive = [];
+    for (var i = 0; i < state.players.length; i++) {
+      if (state.players[i].alive) alive.push(state.players[i]);
+    }
+    if (!alive.length) return { players: [], platforms: [] };
+    var minH = Infinity;
+    for (var m = 0; m < alive.length; m++) {
+      if (alive[m].heightM < minH) minH = alive[m].heightM;
+    }
+    var weights = [];
+    var total = 0;
+    for (var w = 0; w < alive.length; w++) {
+      var wt = 2 + Math.max(0, alive[w].heightM - minH);
+      weights.push(wt);
+      total += wt;
+    }
+    var roll = _nextHazard(state) * total;
+    var primary = alive[0];
+    for (var r = 0; r < alive.length; r++) {
+      roll -= weights[r];
+      if (roll <= 0) { primary = alive[r]; break; }
+    }
+    var players = [primary.id];
+    var platforms = [];
+    if (primary.platformId !== null && primary.platformId !== undefined) {
+      platforms.push(primary.platformId);
+    }
+    // Second place, close behind the leader, is struck too.
+    var ranked = alive.slice().sort(function (a, b) {
+      if (a.heightM !== b.heightM) return b.heightM - a.heightM;
+      return a.id - b.id;
+    });
+    if (ranked.length >= 2 && ranked[0].id === primary.id &&
+        ranked[1].heightM >= ranked[0].heightM - HAZARD_SECOND_WITHIN_M &&
+        ranked[1].platformId !== null && ranked[1].platformId !== undefined &&
+        platforms.indexOf(ranked[1].platformId) < 0) {
+      players.push(ranked[1].id);
+      platforms.push(ranked[1].platformId);
+    }
+    return { players: players, platforms: platforms };
+  }
+
+  function _hazardTelegraphText(type) {
+    if (type === 'lightning') return 'Lightning cracks overhead — the leaders are exposed!';
+    if (type === 'gust') return 'A gust is coming — hold on tight!';
+    if (type === 'frost') return 'A cold snap creeps in — frost on the platforms!';
+    return 'Rocks loosen overhead — look out below!';
+  }
+
+  // Rockfall guard: the platform must belong to a rung with
+  // another platform (so the rung keeps a way up), and must not
+  // be a checkpoint / summit / start platform (safe ground).
+  function _rockfallOk(state, platformId) {
+    var plat = _platformById(state, platformId);
+    if (!plat || plat.checkpoint || plat.summit) return false;
+    if (typeof plat.rung !== 'number') return false;
+    if (plat.kind === 'start') return false;
+    for (var i = 0; i < state.platforms.length; i++) {
+      var q = state.platforms[i];
+      if (q.id !== platformId && q.rung === plat.rung && q.state !== 'gone') return true;
+    }
+    return false;
+  }
+
+  // Trigger one hazard now (the live path: schedule + height
+  // gate already passed). Draws the type from the hazard stream
+  // (weights 30/25/25/20); a rockfall with no eligible platform
+  // falls back to lightning. Returns the record, or null when
+  // there is nobody to target.
+  function _hazardTrigger(state, forcedType) {
+    var roll = _nextHazard(state) * 100;
+    var type = forcedType || null;
+    if (!type) {
+      var acc = 0;
+      for (var ti = 0; ti < HAZARD_TYPES.length; ti++) {
+        acc += HAZARD_TYPE_W[ti];
+        if (roll < acc) { type = HAZARD_TYPES[ti]; break; }
+      }
+      if (!type) type = HAZARD_TYPES[0];
+    }
+    var t = hazardTargets(state);
+    if (!t.platforms.length) return null;
+    if (type === 'rockfall') {
+      var okPlats = [];
+      for (var oi = 0; oi < t.platforms.length; oi++) {
+        if (_rockfallOk(state, t.platforms[oi])) okPlats.push(t.platforms[oi]);
+      }
+      if (!okPlats.length) {
+        // No crumble-safe platform among the leaders: fall back
+        // to lightning (same telegraph, same targets).
+        type = 'lightning';
+      } else {
+        t.platforms = okPlats;
+        t.players = t.players.filter(function (pid) {
+          var pl = _playerById(state, pid);
+          return pl && okPlats.indexOf(pl.platformId) >= 0;
+        });
+      }
+    }
+    state.hazardSeq = (state.hazardSeq || 0) + 1;
+    state.hazardCount = (state.hazardCount || 0) + 1;
+    state.hazard = {
+      seq: state.hazardSeq,
+      type: type,
+      state: 'telegraph',
+      platforms: t.platforms.slice(),
+      targets: t.players.slice(),
+      telegraphEndsAt: state.timeMs + HAZARD_TELEGRAPH_MS,
+      endsAt: 0
+    };
+    _pushEvent(state, 'hazard', _hazardTelegraphText(type));
+    return state.hazard;
+  }
+
+  // Fire a telegraphing hazard: apply its effect to everyone
+  // STANDING on its target platform(s) right now (jumpers have
+  // dodged — they are not standing there). The record goes
+  // 'active' for the FX window so the render can show the
+  // flash/frost/streaks, then _hazardStep clears it and
+  // schedules the next event.
+  function _hazardFire(state, hz) {
+    hz.state = 'active';
+    hz.endsAt = state.timeMs + HAZARD_FX_MS;
+    var hitNames = [];
+    var missed = true;
+    var i, p, plat;
+    if (hz.type === 'rockfall') {
+      // Terrain effect, not a player effect: the platform
+      // crumbles (3s shake, then gone on the existing crumble
+      // path — riders drop below then). Set directly, bypassing
+      // the _allRacersAbove crumble gate: the rung guard above
+      // already proved another platform on the rung survives.
+      for (i = 0; i < hz.platforms.length; i++) {
+        plat = _platformById(state, hz.platforms[i]);
+        if (plat && plat.state !== 'gone' && !plat.checkpoint && !plat.summit) {
+          plat.state = 'crumbling';
+          plat.crumbleStartedAt = state.timeMs;
+          missed = false;
+        }
+      }
+      _pushEvent(state, 'hazard', missed
+        ? 'The rockfall misses — the platform is already gone!'
+        : 'Rocks crash down — a platform crumbles!');
+      return;
+    }
+    for (i = 0; i < hz.platforms.length; i++) {
+      plat = _platformById(state, hz.platforms[i]);
+      if (!plat) continue;
+      var occ = _occupants(state, hz.platforms[i]);
+      for (var o = 0; o < occ.length; o++) {
+        p = occ[o];
+        missed = false;
+        hitNames.push(p.name);
+        if (hz.type === 'lightning') {
+          _applyFreezeAt(state, p.id, state.timeMs + HAZARD_LIGHTNING_MS);
+        } else if (hz.type === 'frost') {
+          _applyFreezeAt(state, p.id, state.timeMs + HAZARD_FROST_MS);
+        } else if (hz.type === 'gust') {
+          // Safe drop only: nowhere safe below means the gust
+          // just misses this racer (never elimination).
+          if (!_dropToBelowSafe(state, p, plat.y, 'gust')) {
+            _pushEvent(state, 'hazard', p.name + ' holds on against the gust!');
+          }
+        }
+      }
+    }
+    if (missed) {
+      _pushEvent(state, 'hazard', 'The ' + hz.type +
+        ' misses — everyone jumped clear!');
+    } else if (hz.type === 'lightning') {
+      _pushEvent(state, 'hazard', 'Lightning strikes ' + hitNames.join(' and ') + '!');
+    } else if (hz.type === 'frost') {
+      _pushEvent(state, 'hazard', hitNames.join(' and ') + ' frozen solid!');
+    }
+  }
+
+  // Tick step (after _blobStep, before AI decisions so a
+  // telegraphing hazard is visible to the AI the same tick it
+  // starts — the AI still only ACTS on its reaction beat, so
+  // tier times decide the dodge, exactly like a blob wind-up).
+  function _hazardStep(state) {
+    if (!state || state.phase !== 'playing') return;
+    if (state.mode === 'practice') return;
+    if (typeof state.nextHazardAt !== 'number') {
+      state.nextHazardAt = state.timeMs + HAZARD_MIN_GAP_MS;
+    }
+    var hz = state.hazard || null;
+    if (hz) {
+      if (hz.state === 'telegraph') {
+        if (state.timeMs >= hz.telegraphEndsAt) _hazardFire(state, hz);
+      } else if (hz.state === 'active') {
+        if (state.timeMs >= hz.endsAt) {
+          state.hazard = null;
+          _scheduleNextHazard(state);
+        }
+      } else {
+        // Corrupt record (only reachable via a restored state):
+        // clear it and schedule fresh, never stall the race.
+        state.hazard = null;
+        _scheduleNextHazard(state);
+      }
+      return;
+    }
+    if (state.timeMs < state.nextHazardAt) return;
+    // Height gate: never in the opening 0–14 m. Defer and
+    // re-check; the schedule draw is NOT consumed by a defer.
+    var leaderH = 0;
+    for (var i = 0; i < state.players.length; i++) {
+      var p = state.players[i];
+      if (p.alive && p.heightM > leaderH) leaderH = p.heightM;
+    }
+    if (leaderH < HAZARD_FIRST_HEIGHT_M) {
+      state.nextHazardAt = state.timeMs + HAZARD_DEFER_MS;
+      return;
+    }
+    if (!_hazardTrigger(state)) {
+      // Nobody targetable (everyone mid-jump): try again soon.
+      state.nextHazardAt = state.timeMs + HAZARD_DEFER_MS;
+    }
+  }
+
+  // Probe/gates API: force a hazard of the given type NOW
+  // (telegraph starts this tick). Bypasses ONLY the schedule
+  // and the 14 m height gate — targeting, the telegraph, and
+  // the effects are the real paths. Returns the record, or null
+  // when a hazard is already active, the mode is Practice, the
+  // race is not playing, or the type is unknown.
+  function forceHazard(state, type) {
+    if (!state || state.phase !== 'playing') return null;
+    if (state.mode === 'practice') return null;
+    if (state.hazard) return null;
+    if (HAZARD_TYPES.indexOf(type) < 0) return null;
+    return _hazardTrigger(state, type);
+  }
+
 
 
 
@@ -100309,6 +100810,15 @@ var FLEngine = (function () {
       // placeBlobs below, after the course is generated. Practice
       // has none (the empty training course stays empty).
       blobs: [],
+      // /* LAVA-HAZARDS */ Random hazard events: the live record
+      // (null when none), the next scheduled trigger, the
+      // DEDICATED hazard stream (never the AI stream), and
+      // counters. Practice never schedules (see _hazardStep).
+      hazard: null,
+      nextHazardAt: 0, // set below, from the hazard stream
+      hazardRngS: 0, // set below, seeded from the match seed
+      hazardSeq: 0,
+      hazardCount: 0,
       // Race state (ADDENDUM A: last survivor wins; no finish
       // window, no photo finish — both deleted in M2).
       winnerId: null,
@@ -100338,6 +100848,13 @@ var FLEngine = (function () {
     // pattern; Practice gets none).
     state.blobs = (mode === 'practice')
       ? [] : placeBlobs(seed, state.platforms);
+    // /* LAVA-HAZARDS */ Hazard schedule: dedicated stream seeded
+    // from the match seed; first event 20–35 s in (height-gated
+    // to 14 m at trigger time, so the opening climb stays clean).
+    // Drawn here, after _drawRivals, so the AI stream is
+    // untouched by hazard scheduling.
+    state.hazardRngS = _hazardRngInit(seed);
+    _scheduleNextHazard(state);
     // /* LAVA2 */ M2 — the endless-extension chain anchor: the
     // nominal y the next generated rung builds above. Carried on
     // the state (not recomputed from the course top) so the
@@ -100552,7 +101069,12 @@ var FLEngine = (function () {
   // and the victim is NOT stunned after landing — they can jump
   // immediately; the cost is the height lost plus the jump spent
   // recovering it.
-  function _dropToBelow(state, p, fromY, how) {
+  // /* LAVA-HAZARDS */ The highest surviving platform below a
+  // height (larger y), above the lava — null when there is none.
+  // Extracted from _dropToBelow so hazard effects can check
+  // BEFORE they shove: a hazard must never eliminate on its own,
+  // so a gust with nowhere safe below simply misses.
+  function _platformBelow(state, fromY, p) {
     var best = null;
     for (var i = 0; i < state.platforms.length; i++) {
       var q = state.platforms[i];
@@ -100565,16 +101087,35 @@ var FLEngine = (function () {
         best = q;
       }
     }
+    return best;
+  }
+
+  function _dropToBelow(state, p, fromY, how) {
+    var best = _platformBelow(state, fromY, p);
     if (!best) {
       _fallInLava(state, p, 'fell into the lava');
       return;
     }
     if (how === 'shove') {
       _pushEvent(state, 'monster', p.name + ' got shoved off!');
+    } else if (how === 'gust') {
+      // /* LAVA-HAZARDS */ Gust shove (world event): displacement
+      // only, same drop as a blob shove, its own feed line.
+      _pushEvent(state, 'hazard', 'A gust sweeps ' + p.name + ' off the platform!');
     } else {
       _pushEvent(state, 'fall', p.name + ' missed and dropped to a platform below!');
     }
     _settleOnPlatform(state, p, best);
+  }
+
+  // /* LAVA-HAZARDS */ Safe drop: like _dropToBelow, but when
+  // there is no surviving platform below (the drop would end in
+  // the lava) the player is NOT moved at all — returns false.
+  // Hazards use this so they can never eliminate on their own.
+  function _dropToBelowSafe(state, p, fromY, how) {
+    if (!_platformBelow(state, fromY, p)) return false;
+    _dropToBelow(state, p, fromY, how);
+    return true;
   }
 
   // /* LAVA2 */ M2 — a lava fall ELIMINATES immediately
@@ -100754,6 +101295,15 @@ var FLEngine = (function () {
       if (blob.state === 'winding') monster = -BLOB_SCORE_WINDING;
       else if (blob.state === 'idle') monster = -BLOB_SCORE_READY;
     }
+    // /* LAVA-HAZARDS */ A platform targeted by a telegraphing
+    // hazard scores much lower (dodge it — same shape as a
+    // winding blob). The penalty is a fixed constant, never
+    // score-dependent.
+    var hz = state.hazard || null;
+    if (hz && hz.state === 'telegraph' &&
+        hz.platforms && hz.platforms.indexOf(platformId) >= 0) {
+      monster -= HAZARD_SCORE_TELEGRAPH;
+    }
     var crowd = 0;
     for (var ci = 0; ci < state.players.length; ci++) {
       var q = state.players[ci];
@@ -100833,6 +101383,12 @@ var FLEngine = (function () {
     if (cur) {
       var curBlob = _blobByPlatformId(state, cur.id);
       if (curBlob && curBlob.state === 'winding') danger = true;
+      // /* LAVA-HAZARDS */ Same rule for a telegraphing hazard
+      // on the AI's platform: jump NOW. Whether it escapes
+      // falls out of its tier reaction time, exactly like a blob.
+      var curHz = state.hazard || null;
+      if (curHz && curHz.state === 'telegraph' && curHz.platforms &&
+          curHz.platforms.indexOf(cur.id) >= 0) danger = true;
     }
     if (bestId !== null && (danger || bestScore > curScore + margin)) {
       requestJump(state, p.id, bestId);
@@ -100922,6 +101478,11 @@ var FLEngine = (function () {
     // blobs whose platform dissolved. Runs before AI decisions
     // so a winding blob is visible to the AI the same tick.
     _blobStep(state);
+
+    // 1e. /* LAVA-HAZARDS */ Random hazard events: schedule /
+    // telegraph / fire / clear. Runs before AI decisions so a
+    // telegraphing hazard is visible to the AI the same tick.
+    _hazardStep(state);
 
     // 2. AI decisions (tier reaction clock). A wobble slide
     // window forces an immediate decision — the counterplay has to
@@ -101224,6 +101785,32 @@ var FLEngine = (function () {
         if (typeof bl.windUpEndsAt !== 'number') bl.windUpEndsAt = 0;
         if (typeof bl.coolDownEndsAt !== 'number') bl.coolDownEndsAt = 0;
       }
+      // /* LAVA-HAZARDS */ A pre-hazard state loads with no live
+      // hazard and its first event 20–35 s out (the schedule draw
+      // comes from the seeded hazard stream, so the resumed race
+      // is deterministic). A malformed hazard record is dropped,
+      // never trusted.
+      if (!_isPlainObj(s.hazard)) {
+        s.hazard = null;
+      } else {
+        var hz0 = s.hazard;
+        if (HAZARD_TYPES.indexOf(hz0.type) < 0 ||
+            (hz0.state !== 'telegraph' && hz0.state !== 'active') ||
+            !Array.isArray(hz0.platforms) || !Array.isArray(hz0.targets) ||
+            typeof hz0.telegraphEndsAt !== 'number' ||
+            typeof hz0.endsAt !== 'number') {
+          s.hazard = null;
+        }
+      }
+      if (typeof s.nextHazardAt !== 'number') {
+        s.nextHazardAt = (typeof s.timeMs === 'number' ? s.timeMs : 0) +
+          HAZARD_MIN_GAP_MS;
+      }
+      if (typeof s.hazardRngS !== 'number') {
+        s.hazardRngS = _hazardRngInit(s.seed || 1);
+      }
+      if (typeof s.hazardSeq !== 'number') s.hazardSeq = 0;
+      if (typeof s.hazardCount !== 'number') s.hazardCount = 0;
       if (!Array.isArray(s.events)) s.events = [];
       if (!Array.isArray(s.eliminationOrder)) s.eliminationOrder = [];
       if (typeof s.cameraY !== 'number') s.cameraY = CAMERA_MAX_Y;
@@ -101379,6 +101966,18 @@ var FLEngine = (function () {
     /* LAVA2B */ BLOB_FIRST_HEIGHT_M: BLOB_FIRST_HEIGHT_M,
     /* LAVA2B */ BLOB_SCORE_READY: BLOB_SCORE_READY,
     /* LAVA2B */ BLOB_SCORE_WINDING: BLOB_SCORE_WINDING,
+    /* LAVA-HAZARDS */ HAZARD_TELEGRAPH_MS: HAZARD_TELEGRAPH_MS,
+    /* LAVA-HAZARDS */ HAZARD_MIN_GAP_MS: HAZARD_MIN_GAP_MS,
+    /* LAVA-HAZARDS */ HAZARD_MAX_GAP_MS: HAZARD_MAX_GAP_MS,
+    /* LAVA-HAZARDS */ HAZARD_FIRST_HEIGHT_M: HAZARD_FIRST_HEIGHT_M,
+    /* LAVA-HAZARDS */ HAZARD_DEFER_MS: HAZARD_DEFER_MS,
+    /* LAVA-HAZARDS */ HAZARD_FX_MS: HAZARD_FX_MS,
+    /* LAVA-HAZARDS */ HAZARD_LIGHTNING_MS: HAZARD_LIGHTNING_MS,
+    /* LAVA-HAZARDS */ HAZARD_FROST_MS: HAZARD_FROST_MS,
+    /* LAVA-HAZARDS */ HAZARD_TYPES: HAZARD_TYPES.slice(),
+    /* LAVA-HAZARDS */ HAZARD_TYPE_W: HAZARD_TYPE_W.slice(),
+    /* LAVA-HAZARDS */ HAZARD_SECOND_WITHIN_M: HAZARD_SECOND_WITHIN_M,
+    /* LAVA-HAZARDS */ HAZARD_SCORE_TELEGRAPH: HAZARD_SCORE_TELEGRAPH,
     /* LAVA2B */ SLIDE_MS: SLIDE_MS,
     SPAWN_PLATFORMS: SPAWN_PLATFORMS.slice(),
     createRng: createRng,
@@ -101387,6 +101986,8 @@ var FLEngine = (function () {
     extendCourse: extendCourse,
     /* LAVA2B */ placeBlobs: placeBlobs,
     /* LAVA2B */ blobByPlatformId: _blobByPlatformId,
+    /* LAVA-HAZARDS */ forceHazard: forceHazard,
+    /* LAVA-HAZARDS */ hazardTargets: hazardTargets,
     lavaPace: lavaPace,
     /* LAVA2 */ endlessLavaPace: endlessLavaPace,
     /* LAVA2 */ startPractice: startPractice,
@@ -102811,7 +103412,12 @@ var FLGame = (function () {
   var _arcTopY = 0; // /* LAVA2 */ M2: most negative y the arc SVG covers
   var _nextRungCache = -1; // platform id with the pulse, -1 = none
   var _camCache = -1;
-  var _bgCache = -1; // /* LAVA2 */ M4: parallax backgroundPositionY key (px)
+  var _bgCache = ''; // /* LAVA-HAZARDS */ endless-backdrop key:
+  // the four parallax layer offsets joined (1px-guarded)
+  var _bgDriftCache = -1; // /* LAVA-HAZARDS */ slow color-drift offset key
+  var _bgBandEls = {}; // /* LAVA-HAZARDS */ band index -> decor divs
+  var _hazardMarkEls = {}; // /* LAVA-HAZARDS */ platform id -> telegraph marker
+  var _hazardFxCache = ''; // /* LAVA-HAZARDS */ hazard fx key: type|state|seq
   var _prevLavaWarn = false; // edge flag for the fl:lava-warning event
   var _equippedSkin = null;
   var _equippedTrail = null;
@@ -103028,6 +103634,14 @@ var FLGame = (function () {
     var wrap = _el('div', 'fl-arena-wrap');
     var arena = _el('div', 'fl-arena');
     arena.id = 'fl-arena';
+    // /* LAVA-HAZARDS */ Slow color-drift wash (endless
+    // backdrop): a warm/cool gradient tile scrolling at 0.07x,
+    // period 1120/0.07 = 16000px of camera — one more
+    // incommensurate layer. First child, so it sits above the
+    // arena background and below the course.
+    var drift = _el('div', 'fl-bg-drift');
+    drift.id = 'fl-bg-drift';
+    arena.appendChild(drift);
     var viewport = _el('div', 'fl-viewport');
     viewport.id = 'fl-viewport';
     var course = _el('div', 'fl-course');
@@ -103482,6 +104096,13 @@ var FLGame = (function () {
       '<p><b>After a shove the blob cools down for 4 seconds</b> — dimmed and deflated, safe to cross. If the platform is empty when the wind-up finishes, nothing happens and the blob goes back to waiting. A platform the lava dissolves takes its blob with it.</p>' +
       '<p><b>Counterplay is dodging — there is no way to defeat a blob.</b> (1) <b>Route around:</b> every rung always has at least one blob-free platform, and the first blob is never below 14 m, so the opening climb is clean. (2) <b>Touch-and-go:</b> your jump arc is 0.35s and the wind-up is 0.5s — land and jump away immediately and you escape before the shove lands. (3) <b>Wait out the cooldown:</b> after a blob shoves someone else, it is safe for 4 seconds.</p>' +
       '<p><b>Blobs push rivals exactly like they push you</b> — same trigger, same wind-up, same shove. Rivals avoid ready blobs when they can, and whether one escapes a wind-up depends on its reaction time: slow rivals get shoved a lot, fast ones usually slip away. Shoves are announced in the feed (\"Kaito got shoved off!\"). Blobs never sit on checkpoints, the start platform, or the only platform of a rung. Practice has no blobs.</p>' +
+      '<h2>Hazards</h2>' +
+      '<p><b>The mountain fights back.</b> About once every 20–35 seconds, a random world event strikes the <b>leaders</b> — whoever is in front, you or a rival. The further ahead someone is, the likelier they are hit. Hazards are never aimed at you <i>because</i> you are human: rivals are hit exactly the same way, and a rival in front is hit before you are.</p>' +
+      '<p><b>Lightning Strike</b> — a bolt is telegraphed over the leader\'s platform (⚡ marker + warning sound), then strikes 0.5 seconds later: everyone still standing there is <b>stunned for 1.5 seconds</b> and cannot jump.</p>' +
+      '<p><b>Gust Wind</b> — a visible gust sweeps across (💨 marker + warning sound), then <b>shoves everyone standing on the leader\'s platform down a rung</b>, like a blob shove. It only ever moves you — if there is nowhere safe below, you hold on and nothing happens.</p>' +
+      '<p><b>Frozen Snow</b> — a cold snap creeps in (❄ marker, frost at the screen edges, blue tint), then <b>freezes everyone standing on the leader\'s platform for 2 seconds</b>. You cannot jump while frozen.</p>' +
+      '<p><b>Rockfall</b> — rocks loosen overhead (▲ marker + rumble), then the leader\'s platform <b>starts crumbling</b> — it shakes for 3 seconds, then falls. Jump off before it goes. A rockfall never targets a checkpoint, the summit, or the only platform of a rung: there is always another way up.</p>' +
+      '<p><b>Every hazard warns you first — never a blind cheap shot.</b> The telegraph is always 0.5 seconds: <b>jump off the marked platform before it ends and the hazard misses you entirely.</b> Rivals dodge the same way, and whether one escapes depends on its reaction time, just like a blob wind-up. Hazards only ever halt or slow you — <b>no hazard can eliminate you on its own; only the lava eliminates.</b> No hazard ever fires in the opening 0–14 m, and no two hazards ever overlap. Practice has no hazards.</p>' +
       '<h2>Rivals &amp; Difficulty</h2>' +
       // /* LAVA2B */ L3-M3 — rivals rewritten climb-style only:
       // item habits died with the powers.
@@ -103510,6 +104131,7 @@ var FLGame = (function () {
       '<li>Missed a jump? You land on the platform below and lose height — no strike, just lost time.</li>' +
       '<li>Last survivor wins — there is no finish line. The course climbs endlessly and the race ends when one racer remains. Your place and height are live at the top; the strip on the right shows all four racers, the milestones, and the lava.</li>' +
       '<li><b>Lava Blobs:</b> wobbling lava monsters sit on some platforms (never below 14 m, never on checkpoints or the only platform of a rung). Land on one and it winds up for 0.5s — swells, brightens, shows "!" — then shoves everyone on that platform down to the one below. Dodge them: route around, touch-and-go before the wind-up ends (your jump is 0.35s), or cross during the 4s cooldown after a shove. They push rivals too. See <b>Monsters</b> on the menu for the full list.</li>' +
+      '<li><b>Hazards:</b> about once every 20–35 seconds a world event strikes the leaders — <b>Lightning</b> (stuns 1.5s), <b>Gust</b> (shoves you down a rung), <b>Frozen Snow</b> (freezes you 2s), or <b>Rockfall</b> (crumbles the platform). Every hazard warns you for 0.5s first — jump off the marked platform and it misses you. Rivals are hit exactly the same way. See <b>Hazards</b> on the menu for the full list.</li>' +
       '</ul>' +
       '<p>Race tip: keep moving. Standing still is never safe for long.</p>' +
       _codexHtml();
@@ -104224,6 +104846,13 @@ var FLGame = (function () {
     _prevTrayKey = '';
     _blobEls = {};
     _blobStateCache = {};
+    // /* LAVA-HAZARDS */ Fresh race, fresh backdrop/hazard caches
+    // (a stale fx key would swallow the first hazard's cue).
+    _bgBandEls = {};
+    _hazardMarkEls = {};
+    _hazardFxCache = '';
+    _bgCache = '';
+    _bgDriftCache = -1;
     _lavaCache = -1;
     _lavaLabelCache = '';
     _scoreCache = '';
@@ -104579,18 +105208,34 @@ var FLGame = (function () {
     // M4: arena backdrop — runtime-loaded art (never embedded, so
     // the dist stays lean); the CSS gradient underneath is the
     // fallback when the art is missing. Palette class per arena.
-    // /* LAVA2 */ M4 — parallax: the backdrop scrolls at 0.25x
-    // the camera (background-size 360x560, repeat-y; _sync
-    // positions it from the camera, guarded to 1px). The 720x1120
-    // art at arena aspect covers exactly (zero spare px), so a
-    // single non-repeating image cannot parallax — the vertical
-    // tiling IS the parallax mechanism (a seam is masked by the
-    // course gradient; renders at top/middle/bottom decide).
+    // /* LAVA-HAZARDS */ ENDLESS BACKDROP (Nov 21, 2026): the
+    // old single JPG tiled every 560px and the repeat was
+    // visible. The backdrop is now FOUR layers with
+    // incommensurate periods and scroll rates, so the composition
+    // at any two heights never matches — no new art, code only:
+    //   [1] ember glow A — radial warm glow, 911px tile, 0.13x
+    //   [2] ember glow B — same tile/rate, half-period phase
+    //   [3] rock strata — dark band + ember rim, 733px tile, 0.5x
+    //   [4] arena JPG — 360x560 tile, 0.25x (as before)
+    // In camera px the periods are 911/0.13 ≈ 7008, 733/0.5 =
+    // 1466, and 560/0.25 = 2240 — their combination repeats only
+    // past ~10^7 px of climb, far beyond any race. Seeded
+    // per-band rock/ember decor in the course (_syncBackdrop)
+    // breaks even that: no two 350px bands ever look alike.
+    // Positions are set per tick in _sync (one guarded write).
     try {
       var P0 = _portraitsModule();
       var url = (P0 && typeof P0.arenaUrl === 'function') ? P0.arenaUrl(_arenaId) : null;
-      arena.style.backgroundImage = url ? 'url("' + url + '")' : '';
-      arena.style.backgroundSize = '360px 560px';
+      var bgImgs = [
+        'radial-gradient(circle at 22% 24%, rgba(255,150,50,0.16), rgba(255,150,50,0) 70px)',
+        'radial-gradient(circle at 78% 68%, rgba(255,110,30,0.13), rgba(255,110,30,0) 80px)',
+        'linear-gradient(180deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 600px, rgba(0,0,0,0.20) 600px, rgba(0,0,0,0.20) 640px, rgba(255,140,50,0.07) 640px, rgba(255,140,50,0.07) 662px, rgba(0,0,0,0) 662px, rgba(0,0,0,0) 733px)'
+      ];
+      if (url) bgImgs.push('url("' + url + '")');
+      arena.style.backgroundImage = bgImgs.join(', ');
+      arena.style.backgroundSize = url
+        ? '360px 911px, 360px 911px, 360px 733px, 360px 560px'
+        : '360px 911px, 360px 911px, 360px 733px';
       arena.style.backgroundRepeat = 'repeat-y';
       arena.style.backgroundPositionX = '0px';
       var arenaIds = ['volcano', 'livingroom', 'playground', 'kitchen', 'candyland'];
@@ -104602,9 +105247,11 @@ var FLGame = (function () {
     _applyEquipped();
     // Remove old platforms/players/blobs (lava + arc SVG
     // + range ring stay — they live in the course permanently).
+    // /* LAVA-HAZARDS */ Backdrop decor + hazard markers are
+    // course children too — they are rebuilt by _sync.
     var course = doc.getElementById('fl-course');
     if (!course) return;
-    var olds = course.querySelectorAll('.fl-plat, .fl-player, .fl-puff, .fl-blob');
+    var olds = course.querySelectorAll('.fl-plat, .fl-player, .fl-puff, .fl-blob, .fl-bg-rock, .fl-bg-ember, .fl-hazard-mark');
     for (var oi = 0; oi < olds.length; oi++) {
       try { course.removeChild(olds[oi]); } catch (e) { /* cosmetic */ }
     }
@@ -104612,6 +105259,11 @@ var FLGame = (function () {
     _playerEls = {};
     _blobEls = {};
     _blobStateCache = {};
+    _bgBandEls = {};
+    _hazardMarkEls = {};
+    _hazardFxCache = '';
+    _bgCache = '';
+    _bgDriftCache = -1;
     for (var i = 0; i < _state.platforms.length; i++) {
       _makePlatButton(course, _state.platforms[i]);
     }
@@ -105124,6 +105776,11 @@ var FLGame = (function () {
     // /* LAVA2B */ Lava Blobs: one DOM blob per live blob.
     _syncBlobs(st);
 
+    // /* LAVA-HAZARDS */ Endless-backdrop decor (seeded bands)
+    // + hazard telegraph markers / FX overlay.
+    _syncBackdrop(st);
+    _syncHazards(st);
+
     // Players: positions (arc interpolation while jumping) + states.
     for (var qi = 0; qi < st.players.length; qi++) {
       (function (pl) {
@@ -105269,16 +105926,40 @@ var FLGame = (function () {
       if (Math.abs(camTarget - _camCache) > 0.5) {
         _camCache = camTarget;
         try { courseEl.style.transform = 'translateY(' + (-camTarget).toFixed(1) + 'px)'; } catch (e) { /* cosmetic */ }
-        // /* LAVA2 */ M4 — parallax: the backdrop moves at 0.25x
-        // the camera, tiled vertically every 560px (guarded to
-        // 1px so the style is not rewritten every frame).
-        var bgOff = (camTarget * 0.25) % 560;
-        if (bgOff < 0) bgOff += 560;
-        var bgKey = Math.round(bgOff);
+        // /* LAVA-HAZARDS */ Endless backdrop: four layers at
+        // 0.25x / 0.5x / 0.13x / 0.13x with periods 560 / 733 /
+        // 911 / 911 (ember B phase-shifted half a tile) — one
+        // guarded backgroundPosition write per frame. Offsets are
+        // quantized to 2px (invisible at these scales, roughly
+        // halves repaint frequency vs 1px steps).
+        // backgroundPositionY alone cannot set per-layer offsets,
+        // so the full shorthand is written (all X are 0px).
+        var bgA = (((camTarget * 0.25) % 560) + 560) % 560;
+        var bgB = (((camTarget * 0.5) % 733) + 733) % 733;
+        var bgC1 = (((camTarget * 0.13) % 911) + 911) % 911;
+        var bgC2 = (((camTarget * 0.13 + 455.5) % 911) + 911) % 911;
+        var bgKey = (Math.round(bgA / 2) * 2) + '|' +
+          (Math.round(bgB / 2) * 2) + '|' +
+          (Math.round(bgC1 / 2) * 2) + '|' + (Math.round(bgC2 / 2) * 2);
         if (bgKey !== _bgCache) {
           _bgCache = bgKey;
           var arenaEl = doc.getElementById('fl-arena');
-          if (arenaEl) arenaEl.style.backgroundPositionY = (-bgKey) + 'px';
+          if (arenaEl) {
+            var bgParts = bgKey.split('|');
+            arenaEl.style.backgroundPosition =
+              '0px ' + (-bgParts[2]) + 'px, ' +
+              '0px ' + (-bgParts[3]) + 'px, ' +
+              '0px ' + (-bgParts[1]) + 'px, ' +
+              '0px ' + (-bgParts[0]) + 'px';
+          }
+        }
+        // Slow color-drift wash: 0.07x, 1120px tile (guarded, 2px).
+        var driftOff = (((camTarget * 0.07) % 1120) + 1120) % 1120;
+        var driftKey = Math.round(driftOff / 2) * 2;
+        if (driftKey !== _bgDriftCache) {
+          _bgDriftCache = driftKey;
+          var driftEl = doc.getElementById('fl-bg-drift');
+          if (driftEl) driftEl.style.backgroundPositionY = (-driftKey) + 'px';
         }
       }
     }
@@ -105463,6 +106144,193 @@ var FLGame = (function () {
         }
         delete _blobEls[id];
         delete _blobStateCache[id];
+      }
+    }
+  }
+
+  // /* LAVA-HAZARDS */ Endless-backdrop decor: seeded rock
+  // silhouettes + ember dots, one 350px height band at a time.
+  // Each band is a pure function of (seed, band index) — a
+  // derived mulberry32 stream, the blob pattern — so the same
+  // race always shows the same rocks, and no two bands ever
+  // match: a rock on the left or right (40–120px wide,
+  // 60–200px tall, 10–22% opaque) plus 0–3 ember dots. Only
+  // bands near the viewport render (camera ± one screen), so
+  // the DOM stays at ~6 bands even on the endless course.
+  // Bands live in #fl-course (world coords, 1x scroll) and are
+  // inserted FIRST in the course, so they paint behind the lava,
+  // platforms, and players. Cache-guarded like the blobs.
+  function _syncBackdrop(st) {
+    var doc = _doc();
+    if (!doc || !_engine || typeof _engine.createRng !== 'function') return;
+    var course = doc.getElementById('fl-course');
+    if (!course) return;
+    var BAND_H = 350;
+    var cam = (st && typeof st.cameraY === 'number') ? st.cameraY : 2440;
+    var topBand = Math.floor((cam - 700) / BAND_H);
+    var botBand = Math.floor((cam + 1260) / BAND_H);
+    var seen = {};
+    var seed = (st && typeof st.seed === 'number') ? st.seed : 1;
+    for (var b = topBand; b <= botBand; b++) {
+      seen[b] = true;
+      var els = _bgBandEls[b];
+      if (!els) {
+        var rng = _engine.createRng(
+          (seed | 0) ^ Math.imul(b + 1, 2246822519));
+        var rock = _el('div', 'fl-bg-rock', '');
+        var sideLeft = rng.next() < 0.5;
+        var rockW = Math.round(40 + rng.next() * 80);
+        var rockH = Math.round(60 + rng.next() * 140);
+        var bandTop = b * BAND_H;
+        var rockTop = bandTop + Math.round(rng.next() * (BAND_H - rockH));
+        rock.style.left = sideLeft ? '0px' : '';
+        rock.style.right = sideLeft ? '' : '0px';
+        rock.style.width = rockW + 'px';
+        rock.style.height = rockH + 'px';
+        rock.style.top = rockTop + 'px';
+        rock.style.opacity = (0.10 + rng.next() * 0.12).toFixed(2);
+        rock.style.borderRadius = sideLeft
+          ? '0 90px 70px 0 / 0 60px 50px 0'
+          : '90px 0 0 70px / 60px 0 0 50px';
+        try {
+          if (course.firstChild) course.insertBefore(rock, course.firstChild);
+          else course.appendChild(rock);
+        } catch (e) { /* cosmetic */ }
+        els = { rock: rock, embers: [] };
+        var nEmber = Math.floor(rng.next() * 4);
+        for (var ei = 0; ei < nEmber; ei++) {
+          var em = _el('div', 'fl-bg-ember', '');
+          em.style.left = Math.round(10 + rng.next() * 330) + 'px';
+          em.style.top = (bandTop + Math.round(rng.next() * BAND_H)) + 'px';
+          var es = 4 + Math.round(rng.next() * 4);
+          em.style.width = es + 'px';
+          em.style.height = es + 'px';
+          try {
+            if (course.firstChild) course.insertBefore(em, course.firstChild);
+            else course.appendChild(em);
+          } catch (e2) { /* cosmetic */ }
+          els.embers.push(em);
+        }
+        _bgBandEls[b] = els;
+      }
+    }
+    for (var id in _bgBandEls) {
+      if (Object.prototype.hasOwnProperty.call(_bgBandEls, id) && !seen[id]) {
+        var old = _bgBandEls[id];
+        if (old) {
+          if (old.rock && old.rock.parentNode) {
+            try { old.rock.parentNode.removeChild(old.rock); } catch (e) { /* cosmetic */ }
+          }
+          for (var oi = 0; oi < old.embers.length; oi++) {
+            var oe = old.embers[oi];
+            if (oe && oe.parentNode) {
+              try { oe.parentNode.removeChild(oe); } catch (e2) { /* cosmetic */ }
+            }
+          }
+        }
+        delete _bgBandEls[id];
+      }
+    }
+  }
+
+  // /* LAVA-HAZARDS */ Hazard render: telegraph markers over the
+  // target platforms (in #fl-course, world coords, like blobs)
+  // plus a full-arena FX overlay (flash / frost tint / wind
+  // streaks / falling rocks) in #fl-arena. Cache-guarded on
+  // type|state|seq: sounds + the human-targeted toast fire once
+  // per hazard, on the transition. The FX overlay is created
+  // lazily on first use (old saves / old DOMs never had one).
+  var _HAZARD_MARKS = { lightning: '⚡', gust: '💨', frost: '❄', rockfall: '▲' };
+  function _syncHazards(st) {
+    var doc = _doc();
+    if (!doc) return;
+    var course = doc.getElementById('fl-course');
+    var arena = doc.getElementById('fl-arena');
+    var hz = (st && st.hazard) || null;
+    var key = hz ? (hz.type + '|' + hz.state + '|' + hz.seq) : 'none';
+    var seen = {};
+    if (hz && course) {
+      for (var i = 0; i < (hz.platforms || []).length; i++) {
+        var pid = hz.platforms[i];
+        var plat = null;
+        for (var k = 0; k < st.platforms.length; k++) {
+          if (st.platforms[k].id === pid) { plat = st.platforms[k]; break; }
+        }
+        if (!plat || plat.state === 'gone') continue;
+        seen[pid] = true;
+        var el = _hazardMarkEls[pid];
+        if (!el) {
+          el = _el('div', 'fl-hazard-mark fl-hazard-mark-' + hz.type,
+            _HAZARD_MARKS[hz.type] || '!');
+          el.id = 'fl-hazard-mark-' + pid;
+          course.appendChild(el);
+          _hazardMarkEls[pid] = el;
+        }
+        el.style.left = (plat.x + plat.w / 2) + 'px';
+        el.style.top = (plat.y + (plat.sink || 0) - 34) + 'px';
+      }
+    }
+    for (var id in _hazardMarkEls) {
+      if (Object.prototype.hasOwnProperty.call(_hazardMarkEls, id) && !seen[id]) {
+        var old = _hazardMarkEls[id];
+        if (old && old.parentNode) {
+          try { old.parentNode.removeChild(old); } catch (e) { /* cosmetic */ }
+        }
+        delete _hazardMarkEls[id];
+      }
+    }
+    if (key !== _hazardFxCache) {
+      var prevKey = _hazardFxCache;
+      _hazardFxCache = key;
+      // FX overlay class (telegraph = faint warning, active =
+      // full effect). Created lazily; pointer-events none.
+      if (arena) {
+        var fx = doc.getElementById('fl-hazard-fx');
+        if (!fx) {
+          fx = _el('div', 'fl-hazard-fx', '');
+          fx.id = 'fl-hazard-fx';
+          arena.appendChild(fx);
+        }
+        var fxCls = 'fl-hazard-fx';
+        if (hz) {
+          fxCls += ' fl-hazard-fx-' + hz.type +
+            (hz.state === 'telegraph' ? ' fl-hazard-fx-telegraph' : ' fl-hazard-fx-active');
+        }
+        if (fx.className !== fxCls) fx.className = fxCls;
+      }
+      // Sounds + toast fire once per transition (never on a
+      // re-sync): telegraph = warning cue; active = effect cue.
+      // Reuses the shared bus (playFlWaveWarning / playFlFreeze /
+      // playFlQuake) — no new SFX, no new audio code.
+      if (hz && prevKey !== '') {
+        try {
+          var audio = _audioModule();
+          if (audio) {
+            if (hz.state === 'telegraph' &&
+                typeof audio.playFlWaveWarning === 'function') {
+              audio.playFlWaveWarning();
+            } else if (hz.state === 'active') {
+              if ((hz.type === 'lightning' || hz.type === 'frost') &&
+                  typeof audio.playFlFreeze === 'function') {
+                audio.playFlFreeze();
+              } else if (hz.type === 'rockfall' &&
+                  typeof audio.playFlQuake === 'function') {
+                audio.playFlQuake();
+              } else if (hz.type === 'gust' &&
+                  typeof audio.playFlWaveWarning === 'function') {
+                audio.playFlWaveWarning();
+              }
+            }
+          }
+        } catch (e2) { /* best-effort */ }
+        if (hz.state === 'telegraph' && hz.targets &&
+            hz.targets.indexOf(0) >= 0 && _screen === 'game') {
+          var toastText = hz.type === 'lightning' ? '⚡ Lightning — jump clear!'
+            : hz.type === 'gust' ? '💨 Gust coming — jump clear!'
+            : hz.type === 'frost' ? '❄ Cold snap — jump clear!'
+            : '▲ Rockfall — jump clear!';
+          _toast(toastText);
+        }
       }
     }
   }
