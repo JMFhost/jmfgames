@@ -12528,6 +12528,10 @@ button.mr-setup-preview:focus-visible {
 .oath-battle-bg { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
 .oath-battle-bg img { width: 100%; height: 100%; object-fit: cover; opacity: 0.35; }
 .oath-battle > *:not(.oath-battle-bg) { position: relative; z-index: 1; }
+/* Render-driven fx live inside .oath-battle: keep the cutin/banner
+   above the field (the base rule above would flatten their z-index). */
+.oath-battle > .oath-ult-cutin { z-index: 20; }
+.oath-battle > .oath-skill-banner { z-index: 21; }
 /* Bulk-up: Bastion hub background, same treatment. */
 .oath-hub { position: relative; overflow: hidden; }
 .oath-hub-bg { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
@@ -12577,6 +12581,16 @@ button.mr-setup-preview:focus-visible {
 .oath-skill-btn span { font-size: 11px; color: var(--oath-muted); }
 .oath-skill-btn--ult { border-color: var(--oath-gold); }
 .oath-skill-btn--ult.is-ready { background: linear-gradient(180deg, #4a3400, #241d4d); box-shadow: 0 0 16px rgba(245, 179, 1, 0.5); }
+/* Illustrated battle skill cards: portrait left, info right. */
+.oath-skill-cell { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.oath-skill-btn { flex-direction: row; text-align: left; align-items: flex-start; padding: 8px; min-height: 76px; }
+.oath-skill-btn .oath-portrait--sm { width: 48px; height: 48px; flex-shrink: 0; }
+.oath-skill-card-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.oath-skill-card-body b { font-size: 13px; }
+.oath-skill-card-kind { font-size: 11px; color: var(--oath-muted); text-transform: capitalize; }
+.oath-skill-card-text { font-size: 11px; color: var(--oath-muted); line-height: 1.3; }
+.oath-skill-up { border: 1px solid var(--oath-line); background: transparent; color: var(--oath-gold-soft); border-radius: 8px; padding: 4px 8px; font-size: 11px; cursor: pointer; align-self: flex-start; }
+.oath-skill-up:disabled { opacity: 0.45; cursor: default; }
 .oath-endcard { text-align: center; margin-top: 12px; border: 2px solid var(--oath-gold); border-radius: 16px; padding: 14px; background: var(--oath-panel); }
 .oath-endcard-title { font-family: Georgia, serif; font-size: 24px; color: var(--oath-gold-soft); }
 .oath-stars { font-size: 26px; color: var(--oath-gold); letter-spacing: 0.2em; margin: 6px 0; }
@@ -12590,6 +12604,9 @@ button.mr-setup-preview:focus-visible {
 }
 .oath-float--heal { color: #7ed07e; }
 .oath-float--guard { color: #7fb2ff; }
+.oath-float--buff { color: #f5b301; }
+.oath-float--debuff { color: #b388ff; }
+.oath-float--cleanse { color: #5fe3c0; }
 .oath-float--miss { color: var(--oath-muted); font-size: 13px; }
 @keyframes oath-float-up {
   0% { opacity: 0; transform: translate(-50%, 6px) scale(0.8); }
@@ -12607,6 +12624,29 @@ button.mr-setup-preview:focus-visible {
 @keyframes oath-heal-glow { 0% { box-shadow: 0 0 0 rgba(126, 208, 126, 0); } 40% { box-shadow: 0 0 18px rgba(126, 208, 126, 0.8); } 100% { box-shadow: 0 0 0 rgba(126, 208, 126, 0); } }
 .oath-fighter.oath-guard-flash { animation: oath-guard-glow 0.6s ease-out; }
 @keyframes oath-guard-glow { 0% { box-shadow: 0 0 0 rgba(127, 178, 255, 0); } 40% { box-shadow: 0 0 18px rgba(127, 178, 255, 0.8); } 100% { box-shadow: 0 0 0 rgba(127, 178, 255, 0); } }
+.oath-fighter.oath-buff-flash { animation: oath-buff-glow 0.6s ease-out; }
+@keyframes oath-buff-glow { 0% { box-shadow: 0 0 0 rgba(245, 179, 1, 0); } 40% { box-shadow: 0 0 18px rgba(245, 179, 1, 0.8); } 100% { box-shadow: 0 0 0 rgba(245, 179, 1, 0); } }
+.oath-fighter.oath-debuff-flash { animation: oath-debuff-glow 0.6s ease-out; }
+@keyframes oath-debuff-glow { 0% { box-shadow: 0 0 0 rgba(179, 136, 255, 0); } 40% { box-shadow: 0 0 18px rgba(179, 136, 255, 0.8); } 100% { box-shadow: 0 0 0 rgba(179, 136, 255, 0); } }
+.oath-fighter.oath-cleanse-flash { animation: oath-cleanse-glow 0.6s ease-out; }
+@keyframes oath-cleanse-glow { 0% { box-shadow: 0 0 0 rgba(95, 227, 192, 0); } 40% { box-shadow: 0 0 18px rgba(95, 227, 192, 0.8); } 100% { box-shadow: 0 0 0 rgba(95, 227, 192, 0); } }
+/* Acting fighter: brief gold highlight while their skill fires. */
+.oath-fighter.is-acting .oath-portrait { border-color: var(--oath-gold); box-shadow: 0 0 14px rgba(245, 179, 1, 0.7); }
+.oath-fighter.is-acting .oath-fighter-name { color: var(--oath-gold-soft); }
+/* Skill banner: names the skill that just fired, colored by the
+   caster's affinity (border) and the skill kind (name). One at a
+   time, ~1s, render-driven. */
+.oath-skill-banner {
+  position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 21;
+  display: flex; flex-direction: column; align-items: center;
+  background: rgba(13, 10, 30, 0.92); border: 1px solid var(--fx, #f5b301);
+  border-left: 4px solid var(--kind, #f5b301);
+  border-radius: 10px; padding: 6px 14px; pointer-events: none;
+  animation: oath-banner-in 0.9s ease-out both; max-width: 92%;
+}
+.oath-skill-banner-who { font-size: 10px; color: var(--oath-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.oath-skill-banner-name { font-family: Georgia, serif; font-size: 16px; color: var(--kind, #f5b301); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+@keyframes oath-banner-in { 0% { opacity: 0; transform: translate(-50%, -6px); } 15% { opacity: 1; transform: translate(-50%, 0); } 80% { opacity: 1; } 100% { opacity: 0; } }
 .oath-ult-cutin {
   position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
   background: radial-gradient(80% 60% at 50% 50%, rgba(245, 179, 1, 0.35), rgba(13, 10, 30, 0.9));
@@ -12676,6 +12716,18 @@ button.mr-setup-preview:focus-visible {
 .oath-card-mastery b, .oath-card-emerg b, .oath-card-phases b { color: var(--oath-text); font-size: 14px; }
 .oath-card-books { font-size: 13px; color: var(--oath-muted); margin-top: 6px; }
 .oath-card-msg { color: var(--oath-gold-soft); font-size: 13px; font-weight: 700; margin: 8px 0 0; }
+/* Learned skills + skill shop (hero / summoner card). */
+.oath-card-learned, .oath-card-shop {
+  width: 100%; text-align: left; font-size: 13px; color: var(--oath-muted);
+  border-top: 1px solid var(--oath-line); padding-top: 8px; margin-top: 8px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.oath-card-learned > b, .oath-card-shop > b { color: var(--oath-text); font-size: 14px; }
+.oath-card-rowbtns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.oath-shop-card { display: flex; gap: 8px; align-items: flex-start; border-top: 1px solid var(--oath-line); padding-top: 8px; }
+.oath-shop-card .oath-portrait--sm { width: 48px; height: 48px; flex-shrink: 0; }
+.oath-shop-price { font-size: 12px; color: var(--oath-gold-soft); font-weight: 700; }
+.oath-card-shop-note { font-size: 12px; }
 .oath-card .oath-btn--big { margin-top: 12px; }
 
 /* Splash theme: Oath — dark violet + gold portal ring. */
@@ -12685,7 +12737,9 @@ button.mr-setup-preview:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .oath-portal-ring, .oath-reveal-burst, .oath-reveal .oath-portrait--xl,
   .oath-float, .oath-fighter.oath-hit, .oath-fighter.oath-heal-flash,
-  .oath-fighter.oath-guard-flash, .oath-ult-cutin, .oath-ult-cutin-inner,
+  .oath-fighter.oath-guard-flash, .oath-fighter.oath-buff-flash,
+  .oath-fighter.oath-debuff-flash, .oath-fighter.oath-cleanse-flash,
+  .oath-skill-banner, .oath-ult-cutin, .oath-ult-cutin-inner,
   .oath-ult-ready, .oath-card-backdrop, .oath-card { animation: none !important; }
   .oath-hpbar i { transition: none; }
 }
@@ -118175,6 +118229,22 @@ var OathData = (function () {
     }
   };
 
+  /* Learnable Summoner actives (Drill Yard pool, canon §8: a Summoner
+     skill costs 500 gold + 2 Tier-1 Skill Books). The Summoner has no
+     affinity, so the pool is fixed, not derived from a hero group.
+     Learned skills are equipped into the s1/s2 slots like a hero's;
+     the kit s1/s2 stay available as the "base" skills. */
+  var SUMMONER_POOL = [
+    { id: 'SUM:guard', name: 'Oathbound Guard', pct: 0, cd: 3, kind: 'guard', target: 'self', guardPct: 250 },
+    { id: 'SUM:rally', name: 'Rallying Word', pct: 0, cd: 4, kind: 'buff', target: 'allAllies', effect: 'might' },
+    { id: 'SUM:sunder', name: 'Sundering Blow', pct: 170, cd: 3, kind: 'harm', target: 'foe', effect: 'fracture' },
+    { id: 'SUM:mend', name: 'Mend the Bond', pct: 130, cd: 4, kind: 'heal', target: 'lowest' }
+  ];
+
+  /* One price for every learnable skill (hero pool or Summoner pool):
+     the canon Drill Yard shape — 500 gold + 2 Tier-1 Skill Books. */
+  var LEARN_SKILL_COST = { gold: 500, t1: 2, t2: 0, t3: 0 };
+
   var DEFAULT_NAMES = {
     male: ['Thurstan', 'Godwin', 'Leofric'],
     female: ['Fenella', 'Gisela', 'Rowena']
@@ -118241,6 +118311,7 @@ var OathData = (function () {
     RARITIES: RARITIES, ODDS: ODDS, MERCY_EPIC: MERCY_EPIC, MERCY_LEGENDARY: MERCY_LEGENDARY,
     MERCY: MERCY, DUPLICATE_GOLD: DUPLICATE_GOLD, SHARDS: SHARDS,
     HEROES: HEROES, STARTER_TEAM: STARTER_TEAM, SUMMONER: SUMMONER,
+    SUMMONER_POOL: SUMMONER_POOL, LEARN_SKILL_COST: LEARN_SKILL_COST,
     DEFAULT_NAMES: DEFAULT_NAMES, BERDAN: BERDAN, FRAYED_NOVICE: FRAYED_NOVICE,
     EFFECTS: EFFECTS
   };
@@ -118325,9 +118396,10 @@ var OathEngine = (function () {
     return null;
   }
 
-  /* OathProgress is read only for skillLevelEffect (the one skill-level
-     touch in the engine). Level 1 returns a zero effect, so unleveled
-     fighters behave exactly as before. */
+  /* OathProgress is read for skillLevelEffect (the one skill-level
+     touch in the engine) and duplicateBooks (Rank-6 duplicate
+     conversion to Skill Books in applySummon). Level 1 returns a zero
+     effect, so unleveled fighters behave exactly as before. */
   function _progress() {
     try {
       if (typeof OathProgress !== 'undefined' && OathProgress) return OathProgress;
@@ -118452,6 +118524,18 @@ var OathEngine = (function () {
       var rec = save.owned[result.heroId];
       if (rec) { rec.dupes = (rec.dupes || 0) + 1; rec.isNew = false; }
       save.resources.gold += D.DUPLICATE_GOLD[result.rarity] || 0;
+      /* Bible §8: a duplicate past max rank converts at once to Skill
+         Books (tiered by rarity) — the Tier-2/3 income for ultimate
+         upgrades. Rank 6 is the max rank. */
+      if (rec && (rec.rank || 1) >= 6) {
+        var Pr = _progress();
+        if (Pr && typeof Pr.duplicateBooks === 'function') {
+          var conv = Pr.duplicateBooks(result.rarity) || {};
+          save.resources.books = (save.resources.books || 0) + (conv.t1 || 0);
+          save.resources.booksT2 = (save.resources.booksT2 || 0) + (conv.t2 || 0);
+          save.resources.booksT3 = (save.resources.booksT3 || 0) + (conv.t3 || 0);
+        }
+      }
     }
   }
 
@@ -119104,7 +119188,7 @@ var OathSave = (function () {
       summoner: null, /* {gender, name, style, avatar, level, xp} — null until creation */
       owned: {}, /* heroId -> {level, xp, rank, dupes, isNew} */
       team: ['H002', 'H005', 'H013', 'H011'],
-      resources: { gold: 500, oath: 10, relic: 2, zenith: 0, books: 0 },
+      resources: { gold: 500, oath: 10, relic: 2, zenith: 0, books: 0, booksT2: 0, booksT3: 0 },
       mercy: {
         epic: { oath: 0, relic: 0, zenith: 0 },
         legendary: { oath: 0, relic: 0, zenith: 0 },
@@ -121606,7 +121690,40 @@ var OathRoster = (function () {
     }
   };
 
-  return { HEROES: HEROES, MIDBOSSES: MIDBOSSES, VESSELS: VESSELS };
+  /* learnablePool(heroId) — the skills a hero can LEARN.
+     Derived from the roster: the s1/s2 actives of OTHER heroes sharing
+     the hero's affinity + role ("the oath shares skills among the sworn").
+     No invented names, zero collision risk. Deterministic order (source
+     hero id, s1 before s2), capped at 4. Each entry:
+     {id: 'Hxxx:s1', from, key, name, pct, cd, kind, target, effect?, guardPct?}.
+     The hero's own skills are excluded. */
+  var LEARNABLE_POOL_CAP = 4;
+  function learnablePool(heroId) {
+    var hero = HEROES[heroId];
+    if (!hero) return [];
+    var out = [];
+    var ids = Object.keys(HEROES).sort();
+    for (var i = 0; i < ids.length && out.length < LEARNABLE_POOL_CAP; i++) {
+      var h = HEROES[ids[i]];
+      if (h.id === heroId) continue;
+      if (h.affinity !== hero.affinity || h.role !== hero.role) continue;
+      var slots = ['s1', 's2'];
+      for (var s = 0; s < slots.length && out.length < LEARNABLE_POOL_CAP; s++) {
+        var sk = h[slots[s]];
+        if (!sk) continue;
+        var entry = { id: h.id + ':' + slots[s], from: h.id, key: slots[s],
+          name: sk.name, pct: sk.pct || 0, cd: sk.cd || 0, kind: sk.kind,
+          target: sk.target };
+        if (sk.effect) entry.effect = sk.effect;
+        if (sk.guardPct) entry.guardPct = sk.guardPct;
+        out.push(entry);
+      }
+    }
+    return out;
+  }
+
+  return { HEROES: HEROES, MIDBOSSES: MIDBOSSES, VESSELS: VESSELS,
+    learnablePool: learnablePool, LEARNABLE_POOL_CAP: LEARNABLE_POOL_CAP };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = OathRoster;
@@ -122599,7 +122716,16 @@ var OathProgress = (function () {
 
   var MAX_LEVEL = 60;
   var MAX_RANK = 6;
-  var MAX_SKILL_LEVEL = 5; /* phone-build cap (see bible gap note below) */
+  /* Skill cap (canon): ultimates are 5 levels each (canon §5); the bible
+     skill cap for basic/actives is Rank + 4, max 10. So a Rank 1 hero
+     caps actives at 5, a Rank 6 hero at 10; ultimates always cap at 5. */
+  var MAX_SKILL_LEVEL = 10;
+  var MAX_ULT_LEVEL = 5;
+  function isUltKey(skillKey) { return ULT_KEYS.indexOf(skillKey) !== -1; }
+  function skillCapFor(skillKey, rank) {
+    if (isUltKey(skillKey)) return MAX_ULT_LEVEL;
+    return Math.min(rank + 4, MAX_SKILL_LEVEL);
+  }
   var BANKED_XP_CAP = 10000;
 
   /* ------------------------------------------------------------ XP curve */
@@ -122653,7 +122779,8 @@ var OathProgress = (function () {
     return LEVEL_CAPS[rank - 1];
   }
   function skillCapForRank(rank) {
-    /* Bible skill cap (Rank + 4, max 10); the phone build caps at 5. */
+    /* Bible skill cap (Rank + 4, max 10) for basic/actives; ultimates
+       always cap at 5 — see skillCapFor. */
     return Math.min(rank + 4, MAX_SKILL_LEVEL);
   }
   function ascensionBonus(rank) {
@@ -122751,14 +122878,20 @@ var OathProgress = (function () {
 
   /* ------------------------------------------------------------ skill levels */
   /* Bible §8 skill costs (per skill, per hero; ultimates cost more).
-     Phone build caps every skill at level 5, so only steps 1->2 .. 4->5
-     are priced here. Books shape: {t1, t2, t3} (tier1/tier2/tier3 also read). */
+     Actives run to level 10, so steps 1->2 .. 9->10 are priced here;
+     ultimates cap at 5, so ULT_COSTS only runs to 4->5.
+     Books shape: {t1, t2, t3} (tier1/tier2/tier3 also read). */
   var SKILL_COSTS = [
     null,
     { t1: 2, t2: 0, t3: 0 }, /* 1 -> 2 */
     { t1: 3, t2: 0, t3: 0 }, /* 2 -> 3 */
     { t1: 4, t2: 0, t3: 0 }, /* 3 -> 4 */
-    { t1: 5, t2: 0, t3: 0 }  /* 4 -> 5 */
+    { t1: 5, t2: 0, t3: 0 }, /* 4 -> 5 */
+    { t1: 6, t2: 0, t3: 0 }, /* 5 -> 6 */
+    { t1: 7, t2: 0, t3: 0 }, /* 6 -> 7 */
+    { t1: 8, t2: 0, t3: 0 }, /* 7 -> 8 */
+    { t1: 9, t2: 0, t3: 0 }, /* 8 -> 9 */
+    { t1: 10, t2: 0, t3: 0 } /* 9 -> 10 */
   ];
   var ULT_COSTS = [
     null,
@@ -122779,7 +122912,8 @@ var OathProgress = (function () {
     };
   }
   function skillCost(skillKey, fromLevel) {
-    if (fromLevel < 1 || fromLevel >= MAX_SKILL_LEVEL) return null;
+    var cap = ULT_KEYS.indexOf(skillKey) !== -1 ? MAX_ULT_LEVEL : MAX_SKILL_LEVEL;
+    if (fromLevel < 1 || fromLevel >= cap) return null;
     var table = ULT_KEYS.indexOf(skillKey) !== -1 ? ULT_COSTS : SKILL_COSTS;
     return table[fromLevel];
   }
@@ -122808,7 +122942,8 @@ var OathProgress = (function () {
     };
     if (SKILL_KEYS.indexOf(skillKey) === -1) return fail('unknown skill: ' + skillKey);
     var level = rec.skills[skillKey];
-    if (level >= MAX_SKILL_LEVEL) return fail('skill already at max level ' + MAX_SKILL_LEVEL);
+    var cap = skillCapFor(skillKey, rec.rank);
+    if (level >= cap) return fail('skill already at max level ' + cap);
     if (skillKey === 'ultB' && rec.rank < 3) return fail('Ultimate B opens at Rank 3');
     if (skillKey === 'ultC' && rec.rank < 5) return fail('Ultimate C opens at Rank 5');
     if (ULT_KEYS.indexOf(skillKey) !== -1 && level + 1 >= 2 && rec.rank < level + 1) {
@@ -123016,6 +123151,7 @@ var OathProgress = (function () {
 
   return {
     MAX_LEVEL: MAX_LEVEL, MAX_RANK: MAX_RANK, MAX_SKILL_LEVEL: MAX_SKILL_LEVEL,
+    MAX_ULT_LEVEL: MAX_ULT_LEVEL, isUltKey: isUltKey, skillCapFor: skillCapFor,
     BANKED_XP_CAP: BANKED_XP_CAP,
     xpForLevel: xpForLevel, heroXpCurve: heroXpCurve,
     summonerXpCurve: summonerXpCurve, cumulativeXp: cumulativeXp,
@@ -124951,6 +125087,12 @@ var OathGame = (function () {
     def.id = id;
     def.passiveId = id;
     def.skillLevels = _skillLevelsOf(rec);
+    /* Equipped learned skills fill the s1/s2 slots (battle brings basic
+       + 2 equipped actives + ult). Their levels ride in skillLevels. */
+    var eq1 = _equippedSkill(rec, base, 's1');
+    var eq2 = _equippedSkill(rec, base, 's2');
+    if (eq1.skill) { def.s1 = eq1.skill; def.skillLevels.s1 = eq1.level; }
+    if (eq2.skill) { def.s2 = eq2.skill; def.skillLevels.s2 = eq2.level; }
     return def;
   }
 
@@ -124992,14 +125134,111 @@ var OathGame = (function () {
     var D = _data();
     var s = G.save.summoner;
     var kit = D.SUMMONER[s.style];
+    var pseudo = { rank: 6, skills: s.skills, learned: s.learned, equip: s.equip };
+    var eq1 = _equippedSkill(pseudo, kit, 's1');
+    var eq2 = _equippedSkill(pseudo, kit, 's2');
+    var levels = _summonerSkillLevels();
+    levels.s1 = eq1.level;
+    levels.s2 = eq2.level;
     return {
       id: 'SUMMONER', name: s.name, epithet: 'the Last Summoner', affinity: null,
       art: _summonerArtKey(),
       hp: kit.hp, atk: kit.atk, def: kit.def, spd: kit.spd, crit: kit.crit,
-      basic: kit.basic, s1: kit.s1, s2: kit.s2, ultA: kit.ultA,
+      basic: kit.basic, s1: eq1.skill || kit.s1, s2: eq2.skill || kit.s2, ultA: kit.ultA,
       passiveId: 'SUMMONER', summonerStyle: kit.style,
-      skillLevels: _summonerSkillLevels()
+      skillLevels: levels
     };
+  }
+
+  /* ---- Learnable skills: purchase, equip, upgrade ---- */
+  /* The Skill Books purse, tiered. Old saves carry only `books` (T1);
+     _mergeDefaults unions the T2/T3 keys at 0, so reads default safely. */
+  function _booksPurse() {
+    var r = G.save.resources || {};
+    return { t1: r.books || 0, t2: r.booksT2 || 0, t3: r.booksT3 || 0 };
+  }
+  function _writeBooks(books) {
+    if (!G.save.resources) return;
+    G.save.resources.books = books.t1 || 0;
+    G.save.resources.booksT2 = books.t2 || 0;
+    G.save.resources.booksT3 = books.t3 || 0;
+  }
+  function _booksText() {
+    var b = _booksPurse();
+    var parts = [b.t1 + ' Tier-1'];
+    if (b.t2) parts.push(b.t2 + ' Tier-2');
+    if (b.t3) parts.push(b.t3 + ' Tier-3');
+    return parts.join(' \u00B7 ');
+  }
+
+  /* Resolve a learnable-pool id to its skill object. Heroes: the
+     roster-derived pool (id 'Hxxx:s1|s2'); Summoner: SUMMONER_POOL
+     (id 'SUM:...'). Returns null when the id is not in the pool. */
+  function _poolSkillFor(base, poolId) {
+    if (!poolId || poolId === 'base') return null;
+    var D = _data();
+    if (poolId.indexOf('SUM:') === 0) {
+      var sp = (D && D.SUMMONER_POOL) || [];
+      for (var i = 0; i < sp.length; i++) if (sp[i].id === poolId) return sp[i];
+      return null;
+    }
+    var R = _roster();
+    if (R && typeof R.learnablePool === 'function' && base && base.id) {
+      var pool = R.learnablePool(base.id) || [];
+      for (var j = 0; j < pool.length; j++) if (pool[j].id === poolId) return pool[j];
+    }
+    return null;
+  }
+
+  function _learnedOf(rec) { return (rec && Array.isArray(rec.learned)) ? rec.learned : []; }
+  function _equipOf(rec) {
+    var e = (rec && rec.equip) || {};
+    return { s1: e.s1 || 'base', s2: e.s2 || 'base' };
+  }
+  function _learnedEntry(rec, poolId) {
+    var list = _learnedOf(rec);
+    for (var i = 0; i < list.length; i++) if (list[i].pool === poolId) return list[i];
+    return null;
+  }
+
+  /* The skill filling an active slot: the base skill, or an equipped
+     learned skill with its own level. Returns {skill, level, ref}
+     where ref is 'base' or the pool id. Falls back to base when the
+     pool id no longer resolves. */
+  function _equippedSkill(rec, base, slot) {
+    var eq = _equipOf(rec);
+    var ref = eq[slot] || 'base';
+    var baseSkill = base ? base[slot] : null;
+    var baseLevel = (rec && rec.skills && typeof rec.skills[slot] === 'number') ? rec.skills[slot] : 1;
+    if (ref === 'base' || !baseSkill) return { skill: baseSkill, level: baseLevel, ref: 'base' };
+    var poolSkill = _poolSkillFor(base, ref);
+    if (!poolSkill) return { skill: baseSkill, level: baseLevel, ref: 'base' };
+    var entry = _learnedEntry(rec, ref);
+    return { skill: poolSkill, level: entry ? (entry.level || 1) : 1, ref: ref };
+  }
+
+  /* Level up a LEARNED (purchased) skill: same costs/cap as any active
+     (Skill Book table, cap min(rank+4, 10)). Returns the levelSkill
+     shape {rec, books, ok, reason, cost, level}; mutates the learned
+     entry only on success, so a failure leaves record/books untouched. */
+  function _levelPoolSkill(recLike, poolId, books) {
+    var P = _progress();
+    var have = { t1: (books && books.t1) || 0, t2: (books && books.t2) || 0, t3: (books && books.t3) || 0 };
+    var fail = function (reason) {
+      return { rec: recLike, books: have, ok: false, reason: reason, cost: null, level: 1 };
+    };
+    if (!P || typeof P.skillCost !== 'function') return fail('Skill levels are not available.');
+    var entry = _learnedEntry(recLike, poolId);
+    if (!entry) return fail('Skill not learned yet.');
+    var level = entry.level || 1;
+    var cap = (P && typeof P.skillCapFor === 'function') ? P.skillCapFor('s1', recLike.rank || 1) : 5;
+    if (level >= cap) return fail('skill already at max level ' + cap);
+    var cost = P.skillCost('s1', level);
+    if (!cost) return fail('no cost for this step');
+    if (have.t1 < cost.t1 || have.t2 < cost.t2 || have.t3 < cost.t3) return fail('not enough Skill Books');
+    have.t1 -= cost.t1; have.t2 -= cost.t2; have.t3 -= cost.t3;
+    entry.level = level + 1;
+    return { rec: recLike, books: have, ok: true, reason: null, cost: cost, level: level + 1 };
   }
 
   function _persist() {
@@ -125363,6 +125602,7 @@ var OathGame = (function () {
     opt = opt || {};
     var P = _progress();
     var lvl = level || 1;
+    var cap = opt.cap || 5;
     var head = opt.nameOnly
       ? '<b>' + _esc(label) + '</b>'
       : '<b>' + _esc(label) + ' \u2014 ' + _esc(skill.name) + '</b>';
@@ -125372,7 +125612,7 @@ var OathGame = (function () {
     if (opt.cdLeft) meta.push(opt.cdLeft + ' turn' + (opt.cdLeft === 1 ? '' : 's') + ' left');
     var next = '';
     if (opt.upgradable) {
-      if (lvl >= 5) next = 'Max level.';
+      if (lvl >= cap) next = 'Max level.';
       else {
         var bits = [];
         if (skill.kind === 'harm' || skill.kind === 'aoe') bits.push('+8% harm');
@@ -125384,9 +125624,9 @@ var OathGame = (function () {
       '<span>' + _esc(_skillText(skill, lvl)) + '</span>';
     if (meta.length) html += '<span class="oath-card-skill-meta">' + meta.join(' \u00B7 ') + '</span>';
     if (next) html += '<span class="oath-card-skill-meta">' + _esc(next) + '</span>';
-    if (opt.upgradable && lvl < 5) {
+    if (opt.upgradable && lvl < cap) {
       var cost = (P && typeof P.skillCost === 'function') ? P.skillCost(opt.key, lvl) : null;
-      html += '<button type="button" class="oath-btn oath-btn--gold oath-card-up" data-act="card-skillup" data-skill="' + opt.key + '" data-hero="' + _esc(opt.heroId) + '">Level up' + (cost ? ' \u2014 ' + _esc(_costText(cost)) : '') + '</button>';
+      html += '<button type="button" class="oath-btn oath-btn--gold oath-card-up" data-act="card-skillup" data-skill="' + opt.key + '" data-hero="' + _esc(opt.heroId) + '"' + (opt.pool ? ' data-pool="' + _esc(opt.pool) + '"' : '') + '>Level up' + (cost ? ' \u2014 ' + _esc(_costText(cost)) : '') + '</button>';
     }
     html += '</div>';
     return html;
@@ -125464,16 +125704,34 @@ var OathGame = (function () {
         html += '<div class="oath-card-rank">Rank 6 \u2014 fully ascended. Level cap 60.</div>';
       }
     }
+    /* Skill 1/2 rows show the EQUIPPED skill (base or a learned one)
+       with its own level; the upgrade button levels that skill. */
+    var eq1 = rec ? _equippedSkill(rec, base, 's1') : { skill: base.s1, level: 1, ref: 'base' };
+    var eq2 = rec ? _equippedSkill(rec, base, 's2') : { skill: base.s2, level: 1, ref: 'base' };
+    var s1Skill = fighter ? (fighter.s1 || base.s1) : eq1.skill;
+    var s1Lvl = fighter ? ((fighter.skillLevels && fighter.skillLevels.s1) || 1) : eq1.level;
+    var s2Skill = fighter ? (fighter.s2 || base.s2) : eq2.skill;
+    var s2Lvl = fighter ? ((fighter.skillLevels && fighter.skillLevels.s2) || 1) : eq2.level;
+    var s1Pool = (eq1.ref !== 'base') ? eq1.ref : null;
+    var s2Pool = (eq2.ref !== 'base') ? eq2.ref : null;
+    var capFor = function (key) { return (P && typeof P.skillCapFor === 'function') ? P.skillCapFor(key, rec ? (rec.rank || 1) : 1) : 5; };
     html += '<div class="oath-card-skills">' +
-      _cardSkillRow('Basic', base.basic, levels.basic, { key: 'basic', heroId: id, upgradable: !!rec, showLevel: !!rec }) +
-      _cardSkillRow('Skill 1', base.s1, levels.s1, { key: 's1', heroId: id, upgradable: !!rec, showLevel: !!rec }) +
-      _cardSkillRow('Skill 2', base.s2, levels.s2, { key: 's2', heroId: id, upgradable: !!rec, showLevel: !!rec }) +
+      _cardSkillRow('Basic', base.basic, levels.basic, { key: 'basic', heroId: id, upgradable: !!rec, showLevel: !!rec, cap: capFor('basic') }) +
+      _cardSkillRow('Skill 1', s1Skill, s1Lvl, { key: 's1', heroId: id, upgradable: !!rec, showLevel: !!rec, pool: s1Pool, cap: capFor('s1') }) +
+      _cardSkillRow('Skill 2', s2Skill, s2Lvl, { key: 's2', heroId: id, upgradable: !!rec, showLevel: !!rec, pool: s2Pool, cap: capFor('s2') }) +
       '<div class="oath-card-skill"><b>Passive \u2014 ' + _esc(base.passive.name) + '</b><span>' + _esc(base.passive.text) + '</span></div>';
     var unlocked = (P && typeof P.unlockedUltimates === 'function') ? P.unlockedUltimates(rec ? rec.rank : 1) : ['ultA'];
     html += _cardUltRow('Ultimate A', base.ultA, levels.ultA, 'ultA', unlocked.indexOf('ultA') !== -1, '', id, !!rec);
     html += _cardUltRow('Ultimate B', base.ultB, levels.ultB, 'ultB', unlocked.indexOf('ultB') !== -1, 'Rank 3', id, !!rec);
     html += _cardUltRow('Ultimate C', base.ultC, levels.ultC, 'ultC', unlocked.indexOf('ultC') !== -1, 'Rank 5', id, !!rec);
     html += '</div>';
+    /* Learned + shop sections are roster management, not battle UI —
+       hidden while the hero is a live fighter in battle. */
+    if (rec && !fighter) {
+      html += _learnedSectionHTML(id, base, rec);
+      var R = _roster();
+      html += _shopSectionHTML(id, base, rec, (R && typeof R.learnablePool === 'function') ? (R.learnablePool(id) || []) : [], _avatarHTML(base, 'sm', 'battle'));
+    }
     var nodes = (rec && rec.mastery && rec.mastery.nodes) || [];
     if (rec) {
       if (nodes.length && P && P.MASTERY) {
@@ -125493,9 +125751,73 @@ var OathGame = (function () {
       }
     }
     html += '<p class="oath-bio">\u201C' + _esc(base.bio) + '\u201D</p>';
-    html += '<div class="oath-card-books">Skill Books: ' + (G.save.resources.books || 0) + '</div>';
+    html += '<div class="oath-card-books">Skill Books: ' + _booksText() + '</div>';
     html += '</div>';
     return html;
+  }
+
+  /* "Learned skills" — owned actives not currently equipped, each with
+     Level up + Equip into Slot 1 / Slot 2. Base s1/s2 appear here only
+     when a learned skill occupies their slot. */
+  function _learnedRowHTML(heroId, skill, level, poolId, baseSlot) {
+    var P = _progress();
+    var cost = (P && typeof P.skillCost === 'function') ? P.skillCost(baseSlot || 's1', level) : null;
+    var html = '<div class="oath-card-skill"><b>' + _esc(skill.name) + '</b>' +
+      '<span>' + _esc(_skillText(skill, level)) + '</span>' +
+      '<span class="oath-card-skill-meta">' + _esc(skill.kind) + ' \u00B7 Lv ' + level + (skill.cd ? ' \u00B7 CD ' + Math.max(0, skill.cd - (level >= 5 ? 1 : 0)) : '') + '</span>' +
+      '<span class="oath-card-rowbtns">' +
+      '<button type="button" class="oath-btn oath-btn--gold oath-card-up" data-act="card-skillup" data-skill="' + (baseSlot || 's1') + '" data-hero="' + _esc(heroId) + '"' + (poolId !== 'base' ? ' data-pool="' + _esc(poolId) + '"' : '') + '>Level up' + (cost ? ' \u2014 ' + _esc(_costText(cost)) : '') + '</button>';
+    if (poolId === 'base') {
+      html += '<button type="button" class="oath-btn oath-card-up" data-act="card-equip" data-slot="' + baseSlot + '" data-pool="base" data-hero="' + _esc(heroId) + '">Equip \u2192 Slot ' + baseSlot.slice(1) + '</button>';
+    } else {
+      html += '<button type="button" class="oath-btn oath-card-up" data-act="card-equip" data-slot="s1" data-pool="' + _esc(poolId) + '" data-hero="' + _esc(heroId) + '">Equip \u2192 Slot 1</button>' +
+        '<button type="button" class="oath-btn oath-card-up" data-act="card-equip" data-slot="s2" data-pool="' + _esc(poolId) + '" data-hero="' + _esc(heroId) + '">Equip \u2192 Slot 2</button>';
+    }
+    html += '</span></div>';
+    return html;
+  }
+
+  function _learnedSectionHTML(heroId, base, rec) {
+    var eq = _equipOf(rec);
+    var rows = [];
+    var learned = _learnedOf(rec);
+    for (var i = 0; i < learned.length; i++) {
+      var entry = learned[i];
+      if (eq.s1 === entry.pool || eq.s2 === entry.pool) continue;
+      var sk = _poolSkillFor(base, entry.pool);
+      if (!sk) continue;
+      rows.push(_learnedRowHTML(heroId, sk, entry.level || 1, entry.pool, null));
+    }
+    if (eq.s1 !== 'base') rows.push(_learnedRowHTML(heroId, base.s1, (rec.skills && rec.skills.s1) || 1, 'base', 's1'));
+    if (eq.s2 !== 'base') rows.push(_learnedRowHTML(heroId, base.s2, (rec.skills && rec.skills.s2) || 1, 'base', 's2'));
+    if (!rows.length) return '';
+    return '<div class="oath-card-learned"><b>Learned skills</b>' + rows.join('') + '</div>';
+  }
+
+  /* "Learn new skills" — the pool, unowned entries only, each as an
+     illustrated card (the hero's battle portrait) with the price shown
+     before confirming. One price for every skill (canon Drill Yard
+     shape): 500 gold + 2 Tier-1 Skill Books. */
+  function _shopSectionHTML(heroId, base, rec, pool, portraitHTML) {
+    var D = _data();
+    var cost = (D && D.LEARN_SKILL_COST) || { gold: 500, t1: 2 };
+    var learned = _learnedOf(rec);
+    var ownedIds = {};
+    for (var i = 0; i < learned.length; i++) ownedIds[learned[i].pool] = true;
+    var cards = [];
+    for (var j = 0; j < pool.length; j++) {
+      var sk = pool[j];
+      if (ownedIds[sk.id]) continue;
+      cards.push('<div class="oath-shop-card">' +
+        portraitHTML +
+        '<span class="oath-skill-card-body"><b>' + _esc(sk.name) + '</b>' +
+        '<span class="oath-skill-card-kind">' + _esc(sk.kind) + (sk.pct ? ' \u00B7 ' + sk.pct + '%' : '') + '</span>' +
+        '<span class="oath-skill-card-text">' + _esc(_skillText(sk, 1)) + '</span>' +
+        '<span class="oath-shop-price">' + cost.gold + ' gold + ' + cost.t1 + ' Skill Books (T1)</span>' +
+        '<button type="button" class="oath-btn oath-btn--gold oath-card-up" data-act="card-skillbuy" data-pool="' + _esc(sk.id) + '" data-hero="' + _esc(heroId) + '">Learn skill</button></span></div>');
+    }
+    if (!cards.length) return '';
+    return '<div class="oath-card-shop"><b>Learn new skills</b><span class="oath-card-shop-note">Learned from the oath \u2014 ' + cost.gold + ' gold + ' + cost.t1 + ' Tier-1 Skill Books each. Battle brings 4 skills: basic + 2 equipped actives + ultimate.</span>' + cards.join('') + '</div>';
   }
 
   function _summonerCardHTML(fighter) {
@@ -125518,12 +125840,20 @@ var OathGame = (function () {
       html += _cardStatRow(kit, false) +
         '<div class="oath-card-next">Summoner stats are the kit base at every level \u2014 level opens ultimates and emergencies, not stats.</div>';
     }
+    var sPseudo = { rank: 6, skills: s.skills, learned: s.learned, equip: s.equip };
+    var sEq1 = _equippedSkill(sPseudo, kit, 's1');
+    var sEq2 = _equippedSkill(sPseudo, kit, 's2');
+    var sS1Skill = fighter ? (fighter.s1 || kit.s1) : sEq1.skill;
+    var sS1Lvl = fighter ? ((fighter.skillLevels && fighter.skillLevels.s1) || 1) : sEq1.level;
+    var sS2Skill = fighter ? (fighter.s2 || kit.s2) : sEq2.skill;
+    var sS2Lvl = fighter ? ((fighter.skillLevels && fighter.skillLevels.s2) || 1) : sEq2.level;
+    var sCapFor = function (key) { return (P && typeof P.skillCapFor === 'function') ? P.skillCapFor(key, 6) : 5; };
     html += '<div class="oath-card-skills">' +
-      _cardSkillRow('Basic', kit.basic, levels.basic, { key: 'basic', heroId: 'SUMMONER', upgradable: true }) +
-      _cardSkillRow('Skill 1', kit.s1, levels.s1, { key: 's1', heroId: 'SUMMONER', upgradable: true }) +
-      _cardSkillRow('Skill 2', kit.s2, levels.s2, { key: 's2', heroId: 'SUMMONER', upgradable: true }) +
+      _cardSkillRow('Basic', kit.basic, levels.basic, { key: 'basic', heroId: 'SUMMONER', upgradable: true, cap: sCapFor('basic') }) +
+      _cardSkillRow('Skill 1', sS1Skill, sS1Lvl, { key: 's1', heroId: 'SUMMONER', upgradable: true, pool: (sEq1.ref !== 'base') ? sEq1.ref : null, cap: sCapFor('s1') }) +
+      _cardSkillRow('Skill 2', sS2Skill, sS2Lvl, { key: 's2', heroId: 'SUMMONER', upgradable: true, pool: (sEq2.ref !== 'base') ? sEq2.ref : null, cap: sCapFor('s2') }) +
       '<div class="oath-card-skill"><b>Innate \u2014 ' + _esc(kit.passive.name) + '</b><span>' + _esc(kit.passive.text) + '</span></div>' +
-      _cardSkillRow('Ultimate A', kit.ultA, levels.ultA, { key: 'ultA', heroId: 'SUMMONER', upgradable: true });
+      _cardSkillRow('Ultimate A', kit.ultA, levels.ultA, { key: 'ultA', heroId: 'SUMMONER', upgradable: true, cap: sCapFor('ultA') });
     var ults = (P && typeof P.summonerUltimates === 'function') ? P.summonerUltimates(s.level || 1) : ['ultA'];
     if (ults.indexOf('ultB') === -1) {
       html += '<div class="oath-card-skill is-locked"><b>Ultimate B</b><span>Locked \u2014 reaches Level 20. No skill is sworn yet.</span></div>';
@@ -125532,11 +125862,15 @@ var OathGame = (function () {
       html += '<div class="oath-card-skill is-locked"><b>Ultimate C</b><span>Locked \u2014 reaches Level 40. No skill is sworn yet.</span></div>';
     }
     html += '</div>';
+    if (!fighter) {
+      html += _learnedSectionHTML('SUMMONER', kit, sPseudo);
+      html += _shopSectionHTML('SUMMONER', kit, sPseudo, (D && D.SUMMONER_POOL) || [], _avatarHTML({ name: s.name, art: _summonerArtKey() }, 'sm'));
+    }
     html += '<div class="oath-card-emerg"><b>Emergencies \u2014 once per battle each</b>' +
       '<span>1 fallen: +200 Guard on the Summoner.</span>' +
       '<span>2 fallen: heal all living allies 20%.</span>' +
       '<span>3 fallen: Might + Haste on all living allies.</span></div>';
-    html += '<div class="oath-card-books">Skill Books: ' + (G.save.resources.books || 0) + '</div>';
+    html += '<div class="oath-card-books">Skill Books: ' + _booksText() + '</div>';
     html += '</div>';
     return html;
   }
@@ -125669,10 +126003,10 @@ var OathGame = (function () {
     else _render();
   }
 
-  /* Skill level-up: the books purse holds Tier-1 books only
-     (resources.books); levelSkill prices ultimates partly in Tier-2/3,
-     which no reward grants yet — those steps honestly report
-     "not enough Skill Books" until a Tier-2/3 grant lands. */
+  /* Skill level-up: spends Skill Books from the tiered purse
+     (Tier-1/2/3). Tier-2/3 income lands from Rank-6 duplicate
+     conversion at the Portal. Pool skills (data-pool) level their
+     learned entry instead of the base skill levels. */
   function _cardSkillUp(t) {
     var P = _progress();
     if (!P || typeof P.levelSkill !== 'function') {
@@ -125682,28 +126016,42 @@ var OathGame = (function () {
     }
     var skillKey = t.getAttribute('data-skill');
     var heroId = t.getAttribute('data-hero');
-    var books = { t1: G.save.resources.books || 0, t2: 0, t3: 0 };
+    var poolId = t.getAttribute('data-pool');
+    var books = _booksPurse();
     var res = null;
-    if (heroId === 'SUMMONER') {
-      var s = G.save.summoner;
-      if (!s) { G.cardMsg = 'No Summoner yet.'; _refreshCard(); return; }
+    if (poolId) {
+      if (heroId === 'SUMMONER') {
+        var s = G.save.summoner;
+        if (!s) { G.cardMsg = 'No Summoner yet.'; _refreshCard(); return; }
+        if (!s.learned) s.learned = [];
+        res = _levelPoolSkill({ rank: 6, learned: s.learned }, poolId, books);
+      } else {
+        var owned = G.save.owned[heroId];
+        if (!owned) { G.cardMsg = 'Hero not owned.'; _refreshCard(); return; }
+        res = _levelPoolSkill(owned, poolId, books);
+      }
+      if (res.ok) { _writeBooks(res.books); G.cardMsg = ''; }
+      else { G.cardMsg = res.reason || 'Could not level this skill.'; }
+    } else if (heroId === 'SUMMONER') {
+      var s2 = G.save.summoner;
+      if (!s2) { G.cardMsg = 'No Summoner yet.'; _refreshCard(); return; }
       /* The Summoner has no Ascension rank; run at Rank 6 so no
          rank gate applies, and write back only the skill levels. */
-      res = P.levelSkill({ level: s.level || 1, xp: s.xp || 0, rank: 6, skills: _summonerSkillLevels() }, skillKey, books);
+      res = P.levelSkill({ level: s2.level || 1, xp: s2.xp || 0, rank: 6, skills: _summonerSkillLevels() }, skillKey, books);
       if (res.ok) {
         G.save.summoner.skills = res.rec.skills;
-        G.save.resources.books = res.books.t1;
+        _writeBooks(res.books);
         G.cardMsg = '';
       } else {
         G.cardMsg = res.reason || 'Could not level this skill.';
       }
     } else {
-      var owned = G.save.owned[heroId];
-      if (!owned) { G.cardMsg = 'Hero not owned.'; _refreshCard(); return; }
-      res = P.levelSkill(owned, skillKey, books);
+      var owned2 = G.save.owned[heroId];
+      if (!owned2) { G.cardMsg = 'Hero not owned.'; _refreshCard(); return; }
+      res = P.levelSkill(owned2, skillKey, books);
       if (res.ok) {
         G.save.owned[heroId] = res.rec;
-        G.save.resources.books = res.books.t1;
+        _writeBooks(res.books);
         G.cardMsg = '';
       } else {
         G.cardMsg = res.reason || 'Could not level this skill.';
@@ -125711,6 +126059,117 @@ var OathGame = (function () {
     }
     _persist();
     _refreshCard();
+  }
+
+  /* Learn a new skill: the canon Drill Yard price (500 gold + 2 Tier-1
+     Skill Books), shown on the shop card before confirming. The skill
+     joins the hero's learned set at Lv 1, unequipped — equip it from
+     the Learned skills section. Persists in the save. */
+  function _cardSkillBuy(t) {
+    var D = _data();
+    var poolId = t.getAttribute('data-pool');
+    var heroId = t.getAttribute('data-hero');
+    var cost = (D && D.LEARN_SKILL_COST) || { gold: 500, t1: 2 };
+    var res = G.save.resources || {};
+    if ((res.gold || 0) < cost.gold || (res.books || 0) < (cost.t1 || 0)) {
+      G.cardMsg = 'Need ' + cost.gold + ' gold and ' + cost.t1 + ' Tier-1 Skill Books.';
+      _refreshCard();
+      return;
+    }
+    var rec = null;
+    if (heroId === 'SUMMONER') {
+      var s = G.save.summoner;
+      if (!s) { G.cardMsg = 'No Summoner yet.'; _refreshCard(); return; }
+      if (!_poolSkillFor(null, poolId)) { G.cardMsg = 'Unknown skill.'; _refreshCard(); return; }
+      if (!s.learned) s.learned = [];
+      rec = { learned: s.learned };
+    } else {
+      var owned = G.save.owned[heroId];
+      if (!owned) { G.cardMsg = 'Hero not owned.'; _refreshCard(); return; }
+      if (!_poolSkillFor(_heroDef(heroId), poolId)) { G.cardMsg = 'Unknown skill.'; _refreshCard(); return; }
+      if (!owned.learned) owned.learned = [];
+      rec = owned;
+    }
+    if (_learnedEntry(rec, poolId)) { G.cardMsg = 'Already learned.'; _refreshCard(); return; }
+    G.save.resources.gold -= cost.gold;
+    G.save.resources.books -= cost.t1;
+    rec.learned.push({ pool: poolId, level: 1 });
+    G.cardMsg = '';
+    _persist();
+    _refreshCard();
+  }
+
+  /* Equip a learned skill (or a base skill) into an active slot. The
+     battle brings basic + 2 equipped actives + ultimate. The equip
+     buttons are hidden while the hero is a live fighter in battle, so
+     equipping never changes the live fighter mid-battle. */
+  function _cardEquip(t) {
+    var heroId = t.getAttribute('data-hero');
+    var slot = t.getAttribute('data-slot');
+    var poolId = t.getAttribute('data-pool');
+    if (slot !== 's1' && slot !== 's2') return;
+    var setEquip = function (rec) {
+      if (!rec.equip) rec.equip = { s1: 'base', s2: 'base' };
+      rec.equip[slot] = poolId;
+    };
+    if (heroId === 'SUMMONER') {
+      var s = G.save.summoner;
+      if (!s) return;
+      if (poolId !== 'base' && !_learnedEntry(s, poolId)) { G.cardMsg = 'Skill not learned yet.'; _refreshCard(); return; }
+      setEquip(s);
+    } else {
+      var owned = G.save.owned[heroId];
+      if (!owned) return;
+      if (poolId !== 'base' && !_learnedEntry(owned, poolId)) { G.cardMsg = 'Skill not learned yet.'; _refreshCard(); return; }
+      setEquip(owned);
+    }
+    G.cardMsg = '';
+    _persist();
+    _refreshCard();
+  }
+
+  /* Level up a skill from inside battle. Spends Skill Books, persists,
+     and updates the live fighter's skill level at once — the new level
+     applies to the next use in this same battle. Never consumes the
+     turn and never disturbs armedSkill / pendingActor. */
+  function _battleSkillUp(t) {
+    var P = _progress();
+    var U = G.battleUi;
+    if (!P || !U || !U.pendingActor) return;
+    var actor = U.pendingActor;
+    var key = t.getAttribute('data-skill');
+    var lvlKey = key === 'ult' ? 'ultA' : key;
+    var books = _booksPurse();
+    var res = null;
+    if (actor.id === 'SUMMONER') {
+      var s = G.save.summoner;
+      if (!s) return;
+      if (key === 's1' || key === 's2') {
+        var eqS = _equippedSkill({ rank: 6, skills: s.skills, learned: s.learned, equip: s.equip }, _data().SUMMONER[s.style], key);
+        if (eqS.ref !== 'base') res = _levelPoolSkill({ rank: 6, learned: s.learned }, eqS.ref, books);
+      }
+      if (!res) {
+        res = P.levelSkill({ level: s.level || 1, xp: s.xp || 0, rank: 6, skills: _summonerSkillLevels() }, lvlKey, books);
+        if (res.ok) G.save.summoner.skills = res.rec.skills;
+      }
+    } else {
+      var owned = G.save.owned[actor.id];
+      if (!owned) return;
+      if (key === 's1' || key === 's2') {
+        var eqH = _equippedSkill(owned, _heroDef(actor.id), key);
+        if (eqH.ref !== 'base') res = _levelPoolSkill(owned, eqH.ref, books);
+      }
+      if (!res) {
+        res = P.levelSkill(owned, lvlKey, books);
+        if (res.ok) G.save.owned[actor.id] = res.rec;
+      }
+    }
+    if (res && res.ok) {
+      _writeBooks(res.books);
+      actor.skillLevels[lvlKey] = res.level;
+      _persist();
+      _render();
+    }
   }
 
   /* Ascend: one step per tap. rankUp is handed exactly the next step's
@@ -126149,6 +126608,14 @@ var OathGame = (function () {
     if (forTeam) {
       var rec = (G.save && G.save.owned) ? G.save.owned[id] : null;
       def.skillLevels = _skillLevelsOf(rec);
+      /* Equipped learned skills fill the s1/s2 slots (battle brings basic
+         + 2 equipped actives + ult). Same resolution as _heroBattleDef —
+         without this, a purchased skill shows as equipped on the hero
+         card but never reaches the battle. */
+      var eq1 = _equippedSkill(rec, base, 's1');
+      var eq2 = _equippedSkill(rec, base, 's2');
+      if (eq1.skill) { def.s1 = eq1.skill; def.skillLevels.s1 = eq1.level; }
+      if (eq2.skill) { def.s2 = eq2.skill; def.skillLevels.s2 = eq2.level; }
     } else {
       def.skillLevels = _defaultSkillLevels();
     }
@@ -126255,7 +126722,7 @@ var OathGame = (function () {
     G.battle = battle;
     G.battleUi = {
       descriptor: descriptor, pendingActor: null, armedSkill: null,
-      auto: false, busy: false, lastLog: 0, over: false
+      busy: false, lastLog: 0, over: false, skillFx: null, ultFx: null, actingId: null
     };
     G.screen = 'battle';
     _render();
@@ -126270,6 +126737,34 @@ var OathGame = (function () {
       rewards: { gold: 150, oath: 2, relic: 0, zenith: 0, xp: 50 },
       onWin: { berdan: true }
     });
+  }
+
+  /* Skill banner + ult cutin are RENDER-DRIVEN: _playerAct/_aiAct store
+     the fx in battleUi and _renderBattle emits them while fresh (<1s).
+     (The old DOM-append cutin was wiped by the _render() right after
+     it, so it never showed.) One banner at a time — a new skill
+     replaces the old; never stacks. */
+  function _skillFxHTML() {
+    var U = G.battleUi;
+    if (!U) return '';
+    var now = Date.now();
+    var out = '';
+    if (U.skillFx && now - U.skillFx.at < 1000) {
+      var D = _data();
+      var aff = (D && U.skillFx.affinity && D.AFFINITIES[U.skillFx.affinity]) ? D.AFFINITIES[U.skillFx.affinity] : null;
+      var kindColor = { harm: '#ff7a5c', aoe: '#ff7a5c', heal: '#7ed07e', guard: '#7fb2ff',
+        buff: '#f5b301', debuff: '#b388ff', cleanse: '#5fe3c0', miss: '#9aa3ad' }[U.skillFx.kind] || '#f5b301';
+      var color = aff ? aff.color : kindColor;
+      out += '<div class="oath-skill-banner" style="--fx:' + color + ';--kind:' + kindColor + '">' +
+        '<span class="oath-skill-banner-who">' + _esc(U.skillFx.actor) + '</span>' +
+        '<span class="oath-skill-banner-name">' + _esc(U.skillFx.skill) + '</span></div>';
+    }
+    if (U.ultFx && now - U.ultFx.at < 1000) {
+      var heroLike = { name: U.ultFx.actor, art: U.ultFx.art || null, affinity: U.ultFx.affinity };
+      out += '<div class="oath-ult-cutin"><div class="oath-ult-cutin-inner">' + _avatarHTML(heroLike, 'xl', 'battle') +
+        '<div class="oath-ult-cutin-name">' + _esc(U.ultFx.skill) + '</div></div></div>';
+    }
+    return out;
   }
 
   function _renderBattle() {
@@ -126287,9 +126782,9 @@ var OathGame = (function () {
     var bgUrl = _bgUrl(_battleBgKey());
     var html = '<div class="oath-screen oath-battle">' +
       (bgUrl ? '<div class="oath-battle-bg"><img src="' + bgUrl + '" alt="" draggable="false"></div>' : '') +
+      _skillFxHTML() +
       '<div class="oath-topbar"><button type="button" class="oath-btn oath-btn--ghost" data-act="battle-flee">Flee</button>' +
-      '<span class="oath-topbar-title">' + _esc(U.descriptor.title || 'Battle') + '</span>' +
-      '<button type="button" class="oath-btn oath-btn--ghost' + (U.auto ? ' is-on' : '') + '" data-act="battle-auto">AUTO ' + (U.auto ? 'ON' : 'OFF') + '</button></div>' +
+      '<span class="oath-topbar-title">' + _esc(U.descriptor.title || 'Battle') + '</span></div>' +
       '<div class="oath-turn-order">' + order.map(function (id) {
         var f = fighterById(id);
         if (!f) return '';
@@ -126310,7 +126805,7 @@ var OathGame = (function () {
       html += '<div class="oath-endcard"><div class="oath-endcard-title">' + (won ? 'Victory' : 'Defeat') + '</div>' +
         (won ? '<div class="oath-stars">' + '★'.repeat(stars) + '☆'.repeat(3 - stars) + '</div>' +
           '<p class="oath-hint">' + _esc(U.descriptor.winText || 'The gate holds. The road opens.') + '</p>' : '') +
-        '<p class="oath-hint">' + (won ? 'Rewards: ' + _rewardText(U.descriptor.rewards) : 'The oath holds \u2014 swear it again, stronger.') + '</p>' +
+        '<p class="oath-hint">' + (won ? 'Rewards: ' + _rewardText(U.descriptor.rewards) + (U.victoryBooks ? ' \u00B7 +1 Skill Book' : '') : 'The oath holds \u2014 swear it again, stronger.') + '</p>' +
         (won && U.xpResults && U.xpResults.length ? '<p class="oath-hint">' + U.xpResults.map(function (x) {
           return _esc(x.name) + ' +' + x.xp + ' XP' + (x.leveled ? ' \u2014 Level ' + x.level + '!' : ' (Level ' + x.level + ')');
         }).join(' \u00B7 ') + '</p>' : '') +
@@ -126322,8 +126817,8 @@ var OathGame = (function () {
       var a = U.pendingActor;
       html += '<div class="oath-actions"><div class="oath-actions-who">' + _esc(a.name) + ' \u2014 your move' +
         (U.armedSkill ? ' \u00B7 tap a target' : '') + '</div><div class="oath-skill-btns">' +
-        _skillButton(a, 'basic', a.basic) + _skillButton(a, 's1', a.s1) + _skillButton(a, 's2', a.s2) +
-        _ultButton(a) + '</div></div>';
+        _skillCell(a, 'basic', a.basic) + _skillCell(a, 's1', a.s1) + _skillCell(a, 's2', a.s2) +
+        _skillCell(a, 'ult', a.ultA) + '</div></div>';
     } else {
       html += '<div class="oath-actions"><div class="oath-actions-who">' + (U.busy ? 'The battle turns\u2026' : 'Waiting\u2026') + '</div></div>';
     }
@@ -126341,7 +126836,8 @@ var OathGame = (function () {
     var artKey = f.art || null;
     var heroLike = f.summonerStyle ? { name: f.name, art: artKey } : { name: f.name, art: artKey, affinity: f.affinity };
     var cls = 'oath-fighter' + (isFoe ? ' is-foe' : ' is-ally') + (f.boss ? ' is-boss' : '') +
-      (f.summonerStyle ? ' is-summoner' : '') + (!f.alive ? ' is-fallen' : '');
+      (f.summonerStyle ? ' is-summoner' : '') + (!f.alive ? ' is-fallen' : '') +
+      (G.battleUi && G.battleUi.actingId === f.id ? ' is-acting' : '');
     return '<div class="' + cls + '" data-fighter="' + f.id + '" data-act="battle-target" data-target="' + f.id + '">' +
       _avatarHTML(heroLike, isFoe && f.boss ? 'lg' : 'md', 'battle') +
       '<div class="oath-fighter-info"><span class="oath-fighter-name">' + _esc(f.name) + '</span>' +
@@ -126351,19 +126847,60 @@ var OathGame = (function () {
       guard + effs + '</div></div>';
   }
 
+  /* Illustrated battle skill card: the actor's battle portrait as the
+     illustration, skill name, kind, level, cooldown, effect text. */
+  function _skillCardInner(a, skill, lvl, sub) {
+    var heroLike = { name: a.name, art: a.art || null, affinity: a.affinity };
+    return _avatarHTML(heroLike, 'sm', 'battle') +
+      '<span class="oath-skill-card-body"><b>' + _esc(skill.name) + '</b>' +
+      '<span class="oath-skill-card-kind">' + _esc(skill.kind) + ' \u00B7 Lv ' + lvl + (sub ? ' \u00B7 ' + _esc(sub) : '') + '</span>' +
+      '<span class="oath-skill-card-text">' + _esc(_skillText(skill, lvl)) + '</span></span>';
+  }
+
   function _skillButton(a, key, skill) {
     if (!skill) return '';
     var cd = (a.cooldowns && a.cooldowns[key]) || 0;
+    var lvl = (a.skillLevels && a.skillLevels[key]) || 1;
     var dis = cd > 0 || (G.battleUi && G.battleUi.armedSkill === key);
     return '<button type="button" class="oath-skill-btn' + (G.battleUi && G.battleUi.armedSkill === key ? ' is-armed' : '') + '" data-act="battle-skill" data-skill="' + key + '" ' + (dis && cd > 0 ? 'disabled' : '') + '>' +
-      '<b>' + _esc(skill.name) + '</b><span>' + (cd > 0 ? 'CD ' + cd : (skill.pct ? skill.pct + '%' : skill.kind)) + '</span></button>';
+      _skillCardInner(a, skill, lvl, cd > 0 ? 'CD ' + cd : (skill.pct ? skill.pct + '%' : '')) + '</button>';
   }
 
   function _ultButton(a) {
     if (!a.ultA) return '';
     var ready = a.charge >= 100;
-    return '<button type="button" class="oath-skill-btn oath-skill-btn--ult' + (ready ? ' is-ready' : '') + '" data-act="battle-skill" data-skill="ult" ' + (ready ? '' : 'disabled') + '>' +
-      '<b>' + _esc(a.ultA.name) + '</b><span>' + (ready ? 'ULTIMATE \u2014 ready' : 'Charge ' + a.charge + '%') + '</span></button>';
+    var lvl = (a.skillLevels && a.skillLevels.ultA) || 1;
+    /* Mirror _skillButton: show the armed state (gold border) when this
+       ult is the armed skill, or a driver reading the DOM class for
+       "armed" never sees it and the turn looks frozen. */
+    return '<button type="button" class="oath-skill-btn oath-skill-btn--ult' + (ready ? ' is-ready' : '') + (G.battleUi && G.battleUi.armedSkill === 'ult' ? ' is-armed' : '') + '" data-act="battle-skill" data-skill="ult" ' + (ready ? '' : 'disabled') + '>' +
+      _skillCardInner(a, a.ultA, lvl, ready ? 'ULTIMATE \u2014 ready' : 'Charge ' + a.charge + '%') + '</button>';
+  }
+
+  /* One battle skill cell: the illustrated skill card + its Level up
+     button (a separate button — never nested inside the card). The
+     upgrade spends Skill Books, persists, and updates the live
+     fighter's skill level at once; it never consumes the turn. */
+  function _skillCell(a, key, skill) {
+    if (!skill) return '';
+    var btn = key === 'ult' ? _ultButton(a) : _skillButton(a, key, skill);
+    return '<div class="oath-skill-cell">' + btn + _skillUpButton(a, key, skill) + '</div>';
+  }
+
+  function _skillUpButton(a, key, skill) {
+    var P = _progress();
+    if (!P || typeof P.skillCost !== 'function') return '';
+    var lvlKey = key === 'ult' ? 'ultA' : key;
+    var lvl = (a.skillLevels && a.skillLevels[lvlKey]) || 1;
+    var rec = a.id === 'SUMMONER' ? null : (G.save.owned[a.id] || null);
+    var rank = rec ? (rec.rank || 1) : 6;
+    var cap = (P && typeof P.skillCapFor === 'function') ? P.skillCapFor(lvlKey, rank) : 5;
+    if (lvl >= cap) return '<button type="button" class="oath-skill-up" disabled>MAX Lv ' + lvl + '</button>';
+    var cost = P.skillCost(lvlKey, lvl);
+    if (!cost) return '';
+    var res = G.save.resources || {};
+    var afford = (res.books || 0) >= (cost.t1 || 0) && (res.booksT2 || 0) >= (cost.t2 || 0) && (res.booksT3 || 0) >= (cost.t3 || 0);
+    return '<button type="button" class="oath-skill-up" data-act="battle-skillup" data-skill="' + key + '"' + (afford ? '' : ' disabled') + '>Level up \u2014 ' + _esc(_costText(cost)) + '</button>';
   }
 
   function _rewardText(r) {
@@ -126439,6 +126976,10 @@ var OathGame = (function () {
     G.save.resources.relic += r.relic || 0;
     G.save.resources.zenith += r.zenith || 0;
     G.save.resources.books += r.books || 0;
+    /* Every victory grants +1 Tier-1 Skill Book — the steady income
+       for skill upgrades and learning (shown in the victory line). */
+    G.save.resources.books = (G.save.resources.books || 0) + 1;
+    if (G.battleUi) G.battleUi.victoryBooks = 1;
     G.save.stats.battles += 1;
     G.save.stats.wins += 1;
     if (descriptor.onWin && descriptor.onWin.berdan) {
@@ -126660,25 +127201,15 @@ var OathGame = (function () {
     if (kind === 'harm') span.style.color = color;
     span.textContent = text;
     node.appendChild(span);
-    node.classList.remove('oath-hit', 'oath-heal-flash', 'oath-guard-flash');
+    node.classList.remove('oath-hit', 'oath-heal-flash', 'oath-guard-flash', 'oath-buff-flash', 'oath-debuff-flash', 'oath-cleanse-flash');
     void node.offsetWidth;
     if (kind === 'harm') node.classList.add('oath-hit');
     else if (kind === 'heal') node.classList.add('oath-heal-flash');
     else if (kind === 'guard') node.classList.add('oath-guard-flash');
+    else if (kind === 'buff') node.classList.add('oath-buff-flash');
+    else if (kind === 'debuff') node.classList.add('oath-debuff-flash');
+    else if (kind === 'cleanse') node.classList.add('oath-cleanse-flash');
     setTimeout(function () { try { span.remove(); } catch (e) { /* ignore */ } }, 1100);
-  }
-
-  function _ultCutin(actor) {
-    var doc = _doc();
-    if (!doc || _reducedMotion()) return;
-    var overlay = doc.createElement('div');
-    overlay.className = 'oath-ult-cutin';
-    var heroLike = { name: actor.name, art: actor.art || null, affinity: actor.affinity };
-    overlay.innerHTML = '<div class="oath-ult-cutin-inner">' + _avatarHTML(heroLike, 'xl', 'battle') +
-      '<div class="oath-ult-cutin-name">' + _esc(actor.ultA ? actor.ultA.name : 'ULTIMATE') + '</div></div>';
-    var mount = G.mount;
-    if (mount) mount.appendChild(overlay);
-    setTimeout(function () { try { overlay.remove(); } catch (e) { /* ignore */ } }, 900);
   }
 
   function _animateEvents(events, actor) {
@@ -126694,7 +127225,9 @@ var OathGame = (function () {
           } else if (ev.type === 'guard') {
             _fx(ev.targetId, 'guard', 'Guard +' + ev.amount, null);
           } else if (ev.type === 'buff' || ev.type === 'debuff') {
-            _fx(ev.targetId, ev.type === 'buff' ? 'heal' : 'harm', ev.text || ev.type, null);
+            _fx(ev.targetId, ev.type, ev.text || ev.type, null);
+          } else if (ev.type === 'cleanse') {
+            _fx(ev.targetId, 'cleanse', ev.text || 'Cleansed', null);
           } else if (ev.type === 'miss') {
             _fx(ev.targetId, 'miss', ev.text || 'Resisted', null);
           }
@@ -126718,17 +127251,18 @@ var OathGame = (function () {
       return;
     }
     U.pendingActor = actor;
-    if (actor.side === 'foe' || U.auto) {
+    if (actor.side === 'foe') {
       U.busy = true;
       _render();
       setTimeout(function () {
         if (!G.battle || G.battle !== B) return;
         _aiAct(actor);
-      }, actor.side === 'foe' ? 650 : 450);
+      }, 650);
       return;
     }
     U.busy = false;
     U.armedSkill = null;
+    U.actingId = null;
     _render();
   }
 
@@ -126736,6 +127270,8 @@ var OathGame = (function () {
     var B = G.battle, U = G.battleUi, E = _engine();
     if (!B || !U || B.over) return;
     var events = [];
+    var usedSkill = null;
+    var usedUlt = false;
     if (actor.boss) {
       var ready = (actor.skills || []).filter(function (s) { return (actor.cooldowns[s.name] || 0) <= 0; });
       var skill = null;
@@ -126748,16 +127284,26 @@ var OathGame = (function () {
         var tgt = E.chooseAiTarget(B, actor);
         if (skill.kind === 'ult') { /* bosses have no ultimates in M1 */ }
         events = E.useSkillObj(B, actor, skill, null, tgt);
+        usedSkill = skill;
         _sfx('cast');
       }
     } else {
       var c = E.chooseAiSkill(B, actor);
       var targetId = c.targetId || E.chooseAiTarget(B, actor);
       events = E.useSkill(B, actor, c.key, targetId);
+      usedSkill = c.key === 'ult' ? actor.ultA : actor[c.key];
+      usedUlt = c.key === 'ult';
       _sfx(c.key === 'basic' ? 'hit' : 'cast');
     }
     if (actor.charge >= 100 && actor.ultA && !actor.boss) {
       /* chooseAiSkill already prefers ultimates; no double-fire. */
+    }
+    /* Skill fx (render-driven): banner names the foe skill, the foe's
+       card highlights; an AI ultimate fires the cutin too. */
+    if (usedSkill) {
+      U.skillFx = { actor: actor.name, skill: usedSkill.name, kind: usedSkill.kind, affinity: actor.affinity || null, at: Date.now() };
+      U.actingId = actor.id;
+      if (usedUlt) U.ultFx = { actor: actor.name, art: actor.art || null, affinity: actor.affinity || null, skill: usedSkill.name, at: Date.now() };
     }
     _animateEvents(events, actor);
     E.endTurn(B, actor);
@@ -126785,7 +127331,11 @@ var OathGame = (function () {
         return;
       }
     }
-    if (skillKey === 'ult') _ultCutin(actor);
+    if (skillKey === 'ult') U.ultFx = { actor: actor.name, art: actor.art || null, affinity: actor.affinity || null, skill: skill.name, at: Date.now() };
+    /* Skill fx (render-driven): banner names the skill, the actor's
+       card highlights. */
+    U.skillFx = { actor: actor.name, skill: skill.name, kind: skill.kind, affinity: actor.affinity || null, at: Date.now() };
+    U.actingId = actor.id;
     U.busy = true;
     U.armedSkill = null;
     U.pendingActor = null;
@@ -126810,6 +127360,7 @@ var OathGame = (function () {
     U.over = true;
     U.pendingActor = null;
     U.busy = false;
+    U.skillFx = null; U.ultFx = null; U.actingId = null;
     var won = B.winner === 'ally';
     var mode = U.descriptor && U.descriptor.onWin ? U.descriptor.onWin.mode : null;
     if (mode === 'worldBoss') _worldBossSettle(won);
@@ -126962,6 +127513,12 @@ var OathGame = (function () {
       }
     } else if (act === 'card-skillup') {
       _cardSkillUp(t);
+    } else if (act === 'card-skillbuy') {
+      _cardSkillBuy(t);
+    } else if (act === 'card-equip') {
+      _cardEquip(t);
+    } else if (act === 'battle-skillup') {
+      _battleSkillUp(t);
     } else if (act === 'card-ascend') {
       _cardAscend(t);
     } else if (act === 'team-slot') {
@@ -126981,17 +127538,6 @@ var OathGame = (function () {
       }
     } else if (act === 'battle-berdan') {
       _battleBerdan();
-    } else if (act === 'battle-auto') {
-      if (G.battleUi) {
-        G.battleUi.auto = !G.battleUi.auto;
-        _render();
-        if (G.battleUi.auto && G.battleUi.pendingActor && !G.battleUi.busy) {
-          var pending = G.battleUi.pendingActor;
-          G.battleUi.pendingActor = null;
-          G.battleUi.busy = true;
-          setTimeout(function () { if (G.battle) _aiAct(pending); }, 300);
-        }
-      }
     } else if (act === 'battle-flee') {
       _closeCard();
       G.battleToken += 1;
