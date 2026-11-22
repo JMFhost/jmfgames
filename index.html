@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Bidvertiser2109154 -->
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-6TBK3H67Y5"></script>
 <script>
@@ -6101,7 +6102,7 @@ body {
   white-space: nowrap;
 }
 
-/* Choice screen: 5 portraits in a 3+2 grid at 320px. */
+/* Choice screen: 10 portraits in a 3-wide grid at 320px. */
 .td-game .td-hero-choice-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -6144,7 +6145,23 @@ body {
 .td-game .td-map-captain-btns {
   display: flex;
   gap: 6px;
-  justify-content: space-between;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+/* KK H2: portrait + Tree link cell (captain + companions rows). */
+.td-game .td-map-hero-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 44px;
+  flex-shrink: 0;
+}
+.td-game .td-map-hero-tree-link {
+  padding: 1px 6px;
+  font-size: 10px;
+  line-height: 1.4;
+  min-height: 0;
 }
 .td-game .td-map-captain-btn {
   width: 44px;
@@ -54285,10 +54302,13 @@ if (typeof window !== 'undefined') {
       keeperId: null,
       /* KKSPELLS H1: captain + per-hero progression fields (design §7/§10).
          heroValor default {} = every hero 0; heroTrees default {} = no
-         nodes learned. Trees land in H2; H1 only lands the FIELDS. */
+         nodes learned. Trees land in H2; H1 only lands the FIELDS.
+         KK H2: teamCompanions default [] = the first two non-captain
+         heroes in roster order (sanitized at load). */
       captainId: null,
       heroValor: {},
       heroTrees: {},
+      teamCompanions: [],
       keeperSkills: {},
       introSeen: false,
       outroW1Seen: false,
@@ -54330,6 +54350,8 @@ if (typeof window !== 'undefined') {
         if (keeperIdList().indexOf(merged.captainId) < 0) merged.captainId = null;
         if (!merged.heroValor || typeof merged.heroValor !== "object") merged.heroValor = {};
         if (!merged.heroTrees || typeof merged.heroTrees !== "object") merged.heroTrees = {};
+        /* KK H2 */ if (!Array.isArray(merged.teamCompanions)) merged.teamCompanions = [];
+        merged.teamCompanions = teamCompanionsForSave(merged);
         if (!merged.loadout || !merged.loadout.length) merged.loadout = base.loadout.slice();
         sanitizeLoadout(merged);
         if (!merged.loadout.length) merged.loadout = (merged.unlockedDefenders || []).slice(0, 8);
@@ -55423,8 +55445,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     return captainDefForSave(saveState);
   }
 
-  // /* KKSPELLS */ The five hero defs in lane order (rowan/rai/neve/
-  // sora/wren) — the UI worker's roster source.
+  // /* KKSPELLS */ The hero defs in roster order — the UI worker's
+  // // roster source (H2: ten heroes).
   function heroDefList() {
     return keeperDefList();
   }
@@ -55727,6 +55749,293 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     saveState.glimmer -= cost;
     saveState.keeperSkills = {};
     return true;
+  }
+
+  // /* KK H2 */ Per-hero skill trees (HEROES-DESIGN §7). Every hero
+  // // carries its OWN tree in its def (tree.branches, 2 branches x 3
+  // // nodes, costs 3/5/8, 32 Valor to max one hero). Valor is
+  // // per-hero (§7.1): +1 per stage first-clear with that hero as
+  // // captain, +1 bonus per 3-star first-clear (max 2/stage); replays
+  // // and Night Watch earn NOTHING. Node effects are ABSOLUTE target
+  // // values merged from the learned nodes (highest learned tier wins
+  // // per key); with zero nodes learned the merged object is empty,
+  // // so unleveled behavior is byte-identical to the shipped game.
+  // // heroTreeNodeList returns [{branch, node}] for one hero's tree;
+  // // heroTreeNodeById searches all heroes' trees.
+  function heroTreeDef(heroId) {
+    const def = keeperDefById(heroId);
+    return (def && def.tree) || null;
+  }
+
+  function heroTreeNodeList(heroId) {
+    const tree = heroTreeDef(heroId);
+    if (!tree || !tree.branches) return [];
+    const out = [];
+    for (let b = 0; b < tree.branches.length; b++) {
+      const br = tree.branches[b];
+      const nodes = br.nodes || [];
+      for (let n = 0; n < nodes.length; n++) {
+        out.push({ branch: br, node: nodes[n] });
+      }
+    }
+    return out;
+  }
+
+  function heroTreeNodeById(nodeId) {
+    if (!nodeId) return null;
+    const defs = keeperDefList();
+    for (let i = 0; i < defs.length; i++) {
+      const list = heroTreeNodeList(defs[i].id);
+      for (let j = 0; j < list.length; j++) {
+        if (list[j].node.id === nodeId) {
+          return { heroId: defs[i].id, branch: list[j].branch, node: list[j].node };
+        }
+      }
+    }
+    return null;
+  }
+
+  function heroOwnedNodes(saveState, heroId) {
+    // Shape contract (kk-ui.js heroNodesLearned): heroTrees is
+    // { heroId: { nodes: { nodeId: true } } }.
+    if (!saveState) return {};
+    if (!saveState.heroTrees) saveState.heroTrees = {};
+    if (!saveState.heroTrees[heroId]) saveState.heroTrees[heroId] = { nodes: {} };
+    if (!saveState.heroTrees[heroId].nodes) saveState.heroTrees[heroId].nodes = {};
+    return saveState.heroTrees[heroId].nodes;
+  }
+
+  function heroNodesLearned(saveState, heroId) {
+    const owned = heroOwnedNodes(saveState, heroId);
+    let n = 0;
+    const keys = Object.keys(owned);
+    for (let i = 0; i < keys.length; i++) if (owned[keys[i]]) n++;
+    return n;
+  }
+
+  function heroValor(saveState, heroId) {
+    if (!saveState) return 0;
+    if (!saveState.heroValor) saveState.heroValor = {};
+    return saveState.heroValor[heroId] || 0;
+  }
+
+  // Merged absolute effects of a hero's learned nodes. Later tiers
+  // win per key (each node's effect object carries the absolute
+  // target values for its branch's keys, §7.2).
+  function heroTreeEffects(heroId, saveState) {
+    const out = {};
+    const owned = heroOwnedNodes(saveState, heroId);
+    const list = heroTreeNodeList(heroId);
+    for (let i = 0; i < list.length; i++) {
+      const node = list[i].node;
+      if (!owned[node.id]) continue;
+      const eff = node.effect || {};
+      const keys = Object.keys(eff);
+      for (let k = 0; k < keys.length; k++) out[keys[k]] = eff[keys[k]];
+    }
+    return out;
+  }
+
+  function heroCanBuyNode(saveState, heroId, nodeId) {
+    const found = heroTreeNodeById(nodeId);
+    if (!found || found.heroId !== heroId) return { ok: false, reason: "unknown" };
+    const owned = heroOwnedNodes(saveState, heroId);
+    if (owned[nodeId]) return { ok: false, reason: "owned" };
+    if (found.node.requires && !owned[found.node.requires]) {
+      return { ok: false, reason: "requires" };
+    }
+    if (heroValor(saveState, heroId) < (found.node.cost || 0)) {
+      return { ok: false, reason: "valor" };
+    }
+    return { ok: true, reason: "" };
+  }
+
+  function heroBuyNode(saveState, heroId, nodeId) {
+    if (!saveState) return false;
+    const check = heroCanBuyNode(saveState, heroId, nodeId);
+    if (!check.ok) return false;
+    const found = heroTreeNodeById(nodeId);
+    const owned = heroOwnedNodes(saveState, heroId);
+    if (!saveState.heroValor) saveState.heroValor = {};
+    saveState.heroValor[heroId] = Math.max(0, heroValor(saveState, heroId) - (found.node.cost || 0));
+    owned[nodeId] = true;
+    return true;
+  }
+
+  // Respec one hero: 150 Glimmer, refunds that hero's Valor in full
+  // (the sum of the learned nodes' costs) and clears the tree.
+  function heroRespec(saveState, heroId) {
+    if (!saveState) return false;
+    const tree = heroTreeDef(heroId);
+    const cost = (tree && tree.respecGlimmer) || 150;
+    if ((saveState.glimmer || 0) < cost) return false;
+    const owned = heroOwnedNodes(saveState, heroId);
+    const list = heroTreeNodeList(heroId);
+    let refund = 0;
+    for (let i = 0; i < list.length; i++) {
+      if (owned[list[i].node.id]) refund += (list[i].node.cost || 0);
+    }
+    if (refund <= 0) return false;
+    saveState.glimmer -= cost;
+    if (!saveState.heroValor) saveState.heroValor = {};
+    saveState.heroValor[heroId] = heroValor(saveState, heroId) + refund;
+    saveState.heroTrees[heroId] = { nodes: {} };
+    return true;
+  }
+
+  // Valor grant (§7.1): first-clear only, captain only, never on
+  // Night Watch, never on replay. Returns the amount granted (0, 1
+  // or 2). The caller owns the first-clear determination (it knows
+  // whether the stage was cleared before this win).
+  function grantHeroValor(saveState, captainId, isFirstClear, starsEarned, isNightWatch) {
+    if (!saveState || !captainId) return 0;
+    if (isNightWatch) return 0;
+    if (!isFirstClear) return 0;
+    let granted = 1;
+    if (starsEarned >= 3) granted = 2;
+    if (!saveState.heroValor) saveState.heroValor = {};
+    saveState.heroValor[captainId] = heroValor(saveState, captainId) + granted;
+    return granted;
+  }
+
+  // /* KK H2 */ Team companions (CHANGE 3): the captain chooses 2 of
+  // // the other heroes to field; the rest sit out. Stored as
+  // // saveState.teamCompanions [id, id]; sanitized against the roster
+  // // (unknown ids dropped, the captain excluded, duplicates dropped,
+  // // padded in roster order to 2 with the first non-captain heroes).
+  function teamCompanionsForSave(saveState) {
+    const defs = keeperDefList();
+    const cap = captainDefForSave(saveState);
+    const capId = cap ? cap.id : (defs[0] ? defs[0].id : null);
+    const raw = (saveState && saveState.teamCompanions) || [];
+    const out = [];
+    for (let i = 0; i < raw.length && out.length < 2; i++) {
+      const id = raw[i];
+      if (!id || id === capId) continue;
+      if (out.indexOf(id) >= 0) continue;
+      let known = false;
+      for (let j = 0; j < defs.length; j++) if (defs[j].id === id) { known = true; break; }
+      if (known) out.push(id);
+    }
+    for (let j = 0; j < defs.length && out.length < 2; j++) {
+      const id = defs[j].id;
+      if (id === capId || out.indexOf(id) >= 0) continue;
+      out.push(id);
+    }
+    return out;
+  }
+
+  function setTeamCompanions(saveState, ids) {
+    if (!saveState) return [];
+    saveState.teamCompanions = ids || [];
+    const out = teamCompanionsForSave(saveState);
+    saveState.teamCompanions = out;
+    return out;
+  }
+
+  // The fielded defs, roster order: captain first, then companions.
+  function fieldedHeroDefs(saveState) {
+    const defs = keeperDefList();
+    const cap = captainDefForSave(saveState) || defs[0] || null;
+    const compIds = teamCompanionsForSave(saveState);
+    const out = [];
+    if (cap) out.push(cap);
+    for (let i = 0; i < compIds.length; i++) {
+      const d = keeperDefById(compIds[i]);
+      if (d) out.push(d);
+    }
+    return out;
+  }
+
+  // Home lanes for the fielded heroes (§7 team rule): each hero takes
+  // its def homeLane when free; when taken, the nearest free lane
+  // (ties toward the top). With 10 heroes sharing 5 home lanes the
+  // two heroes per lane split: the roster-first takes the home lane,
+  // the second takes the nearest free one. Returns {defId: lane}.
+  function homeLaneForFielded(fieldedDefs) {
+    const taken = {};
+    const out = {};
+    const ordered = (fieldedDefs || []).slice().sort(function (a, b) {
+      const ai = keeperDefList().indexOf(a);
+      const bi = keeperDefList().indexOf(b);
+      return ai - bi;
+    });
+    for (let i = 0; i < ordered.length; i++) {
+      const def = ordered[i];
+      const want = (typeof def.homeLane === "number") ? def.homeLane : i;
+      let lane = -1;
+      if (!taken[want]) lane = want;
+      else {
+        let best = -1;
+        let bestDist = Infinity;
+        for (let ln = 0; ln < 5; ln++) {
+          if (taken[ln]) continue;
+          const dist = Math.abs(ln - want);
+          if (dist < bestDist || (dist === bestDist && ln < best)) {
+            best = ln;
+            bestDist = dist;
+          }
+        }
+        lane = best;
+      }
+      if (lane < 0) lane = 0;
+      taken[lane] = true;
+      out[def.id] = lane;
+    }
+    return out;
+  }
+
+  // Effective bolt element for one hero: the def's base element
+  // merged with the hero's learned tree effects (absolute values).
+  // Returns a FRESH object — the def's data is never mutated.
+  function heroBoltElement(heroDef, saveState) {
+    const base = (heroDef && heroDef.element) || {};
+    const out = {};
+    const keys = Object.keys(base);
+    for (let i = 0; i < keys.length; i++) out[keys[i]] = base[keys[i]];
+    const eff = heroTreeEffects(heroDef.id, saveState);
+    const ekeys = Object.keys(eff);
+    for (let k = 0; k < ekeys.length; k++) out[ekeys[k]] = eff[ekeys[k]];
+    // /* KK H2 */ Tree keys map onto the branch keys the bolt
+    // // branches read (absolute values, highest tier wins):
+    // // burnDps/burnDurSec -> dps/durSec, chainFrac -> frac,
+    // // chillFrac/chillDurSec -> slowFrac/durSec, gustCells -> cells.
+    // // Without this the tree values sit beside the base keys and
+    // // the branches keep reading the base numbers (Rowan/Rai/Neve/
+    // // Sora A-branches were unleveled no matter what was bought).
+    if (typeof eff.burnDps === "number") out.dps = eff.burnDps;
+    if (typeof eff.burnDurSec === "number") out.durSec = eff.burnDurSec;
+    if (typeof eff.chainFrac === "number") out.frac = eff.chainFrac;
+    if (typeof eff.chillFrac === "number") out.slowFrac = eff.chillFrac;
+    if (typeof eff.chillDurSec === "number") out.durSec = eff.chillDurSec;
+    if (typeof eff.gustCells === "number") out.cells = eff.gustCells;
+    return out;
+  }
+
+  // Effective signature for one hero: the def's base signature
+  // merged with the hero's learned tree effects (absolute values).
+  // Returns a FRESH object — the def's data is never mutated.
+  function heroSignature(heroDef, saveState) {
+    const base = (heroDef && heroDef.signature) || {};
+    const out = {};
+    const keys = Object.keys(base);
+    for (let i = 0; i < keys.length; i++) out[keys[i]] = base[keys[i]];
+    const eff = heroTreeEffects(heroDef.id, saveState);
+    if (typeof eff.sigCd === "number") out.cooldownSec = eff.sigCd;
+    if (typeof eff.sigHarm === "number") out.harm = eff.sigHarm;
+    if (typeof eff.sigRadius === "number") out.radiusCells = eff.sigRadius;
+    if (typeof eff.sigTargets === "number") out.targets = eff.sigTargets;
+    if (typeof eff.sigDurSec === "number") out.durSec = eff.sigDurSec;
+    if (typeof eff.sigHeal === "number") out.heal = eff.sigHeal;
+    if (typeof eff.sigKnockbackCells === "number") out.knockbackCells = eff.sigKnockbackCells;
+    if (typeof eff.sigRootSec === "number") out.rootSec = eff.sigRootSec;
+    if (typeof eff.sigAllLanes === "boolean") out.allLanes = eff.sigAllLanes;
+    if (typeof eff.summonCount === "number") out.summonCount = eff.summonCount;
+    if (typeof eff.summonHpMul === "number") out.summonHpMul = eff.summonHpMul;
+    if (typeof eff.summonHarmMul === "number") out.summonHarmMul = eff.summonHarmMul;
+    if (typeof eff.summonHealPerSec === "number") out.summonHealPerSec = eff.summonHealPerSec;
+    if (typeof eff.auraRadius === "number") out.auraRadius = eff.auraRadius;
+    return out;
   }
 
   function keeperSpellUnlocked(saveState, spellId) {
@@ -56366,10 +56675,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
 
   // AI Keeper per-tick update — LEGACY ALIAS (HEROES-DESIGN §5/§6):
   // steps ONLY the spell-caster hero through the same per-hero update
-  // the live battle runs for all five (regen, AI signature decision,
-  // legacy shared-spell auto-cast, bolt, pulse, revive). Kept exported
-  // for standalone callers; the live battle never calls it — stepKeeper
-  // steps all five, and calling this inside the battle step would
+  // the live battle runs for all fielded heroes (regen, AI signature
+  // decision, legacy shared-spell auto-cast, bolt, pulse, revive).
+  // Kept exported for standalone callers; the live battle never
+  // calls it — stepKeeper steps all fielded heroes, and calling this
+  // inside the battle step would
   // double-step the caster. No randomness; fully deterministic.
   // /* KKSPELLS */ The old full body is superseded by stepOneHero.
   function stepAllyKeeper(session, dt, saveState, playAudio) {
@@ -56450,6 +56760,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
       const casterId = (cap && cap.defId === "wren") ? "rowan" : "wren";
       for (let i = 0; i < session.heroes.length; i++) {
         if (session.heroes[i].defId === casterId) return session.heroes[i];
+      }
+      // /* KK H2 */ CHANGE 3: with 3 heroes fielded, neither Wren
+      // // nor Rowan may be on the field — the KS spells still need a
+      // // caster, so the first fielded AI (non-captain) hero casts
+      // // them (its own art is used via backfillHeroes). Without a
+      // // fallback the AI would never cast KS spells on such teams.
+      for (let i = 0; i < session.heroes.length; i++) {
+        if (!session.heroes[i].isCaptain) return session.heroes[i];
       }
       return null;
     }
@@ -56536,10 +56854,32 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
         destLane !== Math.floor(destLane)) return { ok: false, reason: "bad-lane" };
     if (destLane === hero.lane) return { ok: false, reason: "same-lane" };
     const partner = heroStateForLane(session, destLane);
-    if (!partner || !partner.alive || partner.disabled) return { ok: false, reason: "hero-down" };
+    // /* KK H2 */ CHANGE 3: a hero may move into an EMPTY lane
+    // // freely (no swap needed) — with 3 heroes on 5 lanes, two
+    // // lanes are empty. A lane holding a DOWN hero is NOT empty
+    // // (the hero revives in that lane — MOVEMENT-ADDENDUM §2.4),
+    // // so it stays rejected.
     const cfg = keeperMoveConfig();
     const now = (typeof session.time === "number") ? session.time : 0;
     const oldLane = hero.lane;
+    if (!partner) {
+      hero.lane = destLane;
+      const toY = laneCenterY(session, destLane);
+      const fromY = (typeof hero.renderY === "number") ? hero.renderY : laneCenterY(session, oldLane);
+      const fromLaneFrac = (fromY - session.skyH) / session.cellH - 0.5;
+      const dist = Math.abs(destLane - fromLaneFrac);
+      const dur = cfg.slideSecPerLane * dist;
+      hero.slideFromY = fromY;
+      hero.slideToY = toY;
+      hero.slideDur = dur;
+      hero.slideT = dur;
+      hero.renderY = fromY;
+      if (dur <= 0) hero.renderY = toY;
+      hero.lastOrderAt = now;
+      return { ok: true, reason: "", hero: hero.defId, partner: null,
+        fromLane: oldLane, toLane: destLane };
+    }
+    if (!partner.alive || partner.disabled) return { ok: false, reason: "hero-down" };
     hero.lane = destLane;
     partner.lane = oldLane;
     // Slide state per hero (§2.2): 0.28s per lane of REMAINING visual
@@ -56616,23 +56956,36 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     // lane and the CAPTAIN's lane; ties toward the nearest lane, then
     // toward the top. The captain is never a swap partner (condition
     // 6). Lanes whose hero is down are unavailable (orderHeroMove
-    // would reject them).
+    // would reject them). /* KK H2 */ CHANGE 3: EMPTY lanes are
+    // preferred (a free move beats a swap) — the search runs in two
+    // passes, empty lanes first, then occupied non-captain lanes.
     const cap = captainHero(session);
     const capLane = cap ? cap.lane : -1;
     let bestLane = -1;
     let bestThreat = Infinity;
     let bestDist = Infinity;
-    for (let ln = 0; ln < 5; ln++) {
-      if (ln === hero.lane || ln === capLane) continue;
-      const partner = heroStateForLane(session, ln);
-      if (!partner || !partner.alive || partner.disabled) continue;
-      const threat = laneThreatCount(session, ln);
-      const dist = Math.abs(ln - hero.lane);
-      if (threat < bestThreat || (threat === bestThreat && (dist < bestDist || (dist === bestDist && ln < bestLane)))) {
-        bestLane = ln;
-        bestThreat = threat;
-        bestDist = dist;
+    for (let pass = 0; pass < 2 && bestLane < 0; pass++) {
+      for (let ln = 0; ln < 5; ln++) {
+        if (ln === hero.lane || ln === capLane) continue;
+        const partner = heroStateForLane(session, ln);
+        if (pass === 0) {
+          if (partner) continue;
+        } else {
+          if (!partner || !partner.alive || partner.disabled) continue;
+        }
+        const threat = laneThreatCount(session, ln);
+        const dist = Math.abs(ln - hero.lane);
+        if (threat < bestThreat || (threat === bestThreat && (dist < bestDist || (dist === bestDist && ln < bestLane)))) {
+          bestLane = ln;
+          bestThreat = threat;
+          bestDist = dist;
+        }
       }
+      // Pass 0 takes the best empty lane when one exists; otherwise
+      // pass 1 falls back to the old occupied-lane search.
+      if (pass === 0 && bestLane >= 0) break;
+      bestThreat = Infinity;
+      bestDist = Infinity;
     }
     if (bestLane < 0) return false;
     // (4) The slide must complete >= 0.3s before the charge resolves:
@@ -56711,14 +57064,21 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     return applied === snapshot.length;
   }
 
-  // Build the five hero states for a fresh session.
+  // Build the fielded hero states (captain + 2 companions, H2) for
+  // a fresh session.
   function buildHeroStates(saveState, stats, skyH, cellH, aiEnabled) {
-    const defs = keeperDefList();
-    const captainDef = captainDefForSave(saveState) || defs[0] || null;
+    // /* KK H2 */ Only the captain + 2 companions field (CHANGE 3);
+    // // the other heroes sit out. Home lanes come from the defs via
+    // // homeLaneForFielded (nearest-free fallback when two heroes
+    // // share a home lane).
+    const fielded = fieldedHeroDefs(saveState);
+    const homeLanes = homeLaneForFielded(fielded);
+    const captainDef = captainDefForSave(saveState) || (fielded[0] || null);
     const maxHp = keeperHeroConfig().maxHp;
     const out = [];
-    for (let i = 0; i < defs.length; i++) {
-      const def = defs[i];
+    for (let i = 0; i < fielded.length; i++) {
+      const def = fielded[i];
+      const lane = (typeof homeLanes[def.id] === "number") ? homeLanes[def.id] : i;
       const isCaptain = captainDef ? def.id === captainDef.id : i === 0;
       // Sim control only (opts.allyEnabled === false): the AI heroes
       // are present but disabled — down, never stepping, never
@@ -56726,7 +57086,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
       const disabled = !isCaptain && aiEnabled === false;
       const sig = def.signature || {};
       out.push({
-        defId: def.id, homeLane: i, lane: i,
+        defId: def.id, homeLane: lane, lane: lane,
         hp: disabled ? 0 : maxHp, maxHp: maxHp, alive: !disabled,
         reviveT: 0, reviveTimer: 0,
         boltT: stats.boltIntervalSec, sigCd: 0, sigCdTotal: sig.cooldownSec || 0,
@@ -56738,14 +57098,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
         // // recent player move order on this hero (null = never
         // // ordered); the AI dodge reflex reads it (§5.1).
         slideT: 0, slideDur: 0,
-        slideFromY: skyH + (i + 0.5) * cellH,
-        slideToY: skyH + (i + 0.5) * cellH,
+        slideFromY: skyH + (lane + 0.5) * cellH,
+        slideToY: skyH + (lane + 0.5) * cellH,
         lastOrderAt: null,
         poseTimer: 0, hurtTimer: 0, regenDelay: 0,
         pulseTimer: stats.pulseIntervalSec || 10, decisionTimer: 0,
         spellCooldowns: { KS1: 0, KS2: 0, KS3: 0 },
         spellsCast: { KS1: 0, KS2: 0, KS3: 0 },
-        renderY: skyH + (i + 0.5) * cellH,
+        renderY: skyH + (lane + 0.5) * cellH,
         deaths: 0, isCaptain: isCaptain, disabled: disabled
       });
     }
@@ -56768,7 +57128,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
       if (defs[i].id === hero.defId) idx = i;
     }
     if (idx < 0) idx = 0;
-    if (typeof hero.homeLane !== "number") hero.homeLane = idx;
+    // /* KK H2 */ homeLane comes from the def (H2 data carries an
+    // // explicit homeLane per hero); fall back to the roster index
+    // // for defs without one (legacy saves / canonical data).
+    if (typeof hero.homeLane !== "number") {
+      hero.homeLane = (typeof defs[idx].homeLane === "number") ? defs[idx].homeLane : idx;
+    }
     if (typeof hero.lane !== "number") hero.lane = hero.homeLane;
     if (typeof hero.slideT !== "number") hero.slideT = 0;
     if (typeof hero.slideDur !== "number") hero.slideDur = 0;
@@ -56834,7 +57199,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
   }
 
   // Heal every living hero (KS2 Warden's Aegis — "the Keepers" is now
-  // all five). Pre-hero fallback: the two mirrors.
+  // all fielded heroes). Pre-hero fallback: the two mirrors.
   function healAllHeroes(session, heal) {
     const heroes = keeperHeroes(session);
     if (heroes.length) {
@@ -56905,7 +57270,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     const art = keeperArtSnapshotForDef(def, def ? def.name : "Keeper");
     const twin = hero.isCaptain && stats.twinBolt;
     const targets = chooseHeroTargets(session, hero, stats, twin ? 2 : 1);
-    const harm = hero.isCaptain ? stats.boltHarm : (stats.baseBoltHarm || 8);
+    // /* KK H2 */ Per-hero tree: boltHarmAdd (Lysa A3) adds to the
+    // // bolt; the Halo bolt buff (Lysa's signature, team-wide while
+    // // it lasts) multiplies it. The projectile carries the
+    // // EFFECTIVE element (base + learned node values), so the hit
+    // // handler needs no tree lookup.
+    const eff = heroTreeEffects(hero.defId, saveState);
+    let harm = hero.isCaptain ? stats.boltHarm : (stats.baseBoltHarm || 8);
+    if (typeof eff.boltHarmAdd === "number") harm += eff.boltHarmAdd;
+    if (session.heroBoltBuff && session.heroBoltBuff.timer > 0 && (session.heroBoltBuff.boltHarmFrac || 0) > 0) {
+      harm = Math.round(harm * (1 + session.heroBoltBuff.boltHarmFrac));
+    }
+    const element = def ? heroBoltElement(def, saveState) : null;
     for (let i = 0; i < targets.length; i++) {
       const foe = targets[i];
       session.projectiles.push({
@@ -56922,7 +57298,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
         slowDur: 0,
         color: art.boltColor,
         heroId: hero.defId,
-        element: def ? (def.element || null) : null
+        element: element
       });
     }
     if (targets.length > 0) {
@@ -56957,29 +57333,164 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     if (foe.isBoss && foe.activeImmunity === "bolt") return;
     if (el.kind === "burn") {
       applyBurnToEnemy(session, foe, el.dps, el.durSec);
-    } else if (el.kind === "chain") {
-      let best = null;
-      let bestDist = Infinity;
-      for (let e = 0; e < session.enemies.length; e++) {
-        const other = session.enemies[e];
-        if (other === foe || other.dissolving || other.hp <= 0) continue;
-        if (other.burrowed || other.flying) continue;
-        const dist = Math.hypot((other.x - foe.x) / session.cellW,
-                                (other.y - foe.y) / session.cellH);
-        if (dist <= (el.rangeCells || 1.5) && dist < bestDist) {
-          best = other;
-          bestDist = dist;
+      // /* KK H2 */ Rowan A2 (Ember Spread): the burn spreads to
+      // // the nearest foe within 1.5 cells of the burning target.
+      if (el.burnSpread && (el.burnSpreadDps || 0) > 0) {
+        let best = null;
+        let bestDist = Infinity;
+        for (let e = 0; e < session.enemies.length; e++) {
+          const other = session.enemies[e];
+          if (other === foe || other.dissolving || other.hp <= 0) continue;
+          const dist = Math.hypot((other.x - foe.x) / session.cellW,
+                                  (other.y - foe.y) / session.cellH);
+          if (dist <= 1.5 && dist < bestDist) { best = other; bestDist = dist; }
         }
+        if (best) applyBurnToEnemy(session, best, el.burnSpreadDps, el.durSec);
       }
-      if (best) {
-        applyHarmToEnemy(session, best, proj.harm * (el.frac || 0.5),
+    } else if (el.kind === "chain") {
+      // /* KK H2 */ Rai A2 (Storm Reach): the chain hops to up to
+      // // chainTargets additional foes (default 1); hop 1 takes the
+      // // tree frac, later hops take half harm. A3 (Storm Daze):
+      // // the first chain target is dazed (never bosses).
+      const maxHops = Math.max(1, el.chainTargets || 1);
+      let from = foe;
+      const hitSet = [foe];
+      for (let hop = 1; hop <= maxHops; hop++) {
+        let best = null;
+        let bestDist = Infinity;
+        for (let e = 0; e < session.enemies.length; e++) {
+          const other = session.enemies[e];
+          if (hitSet.indexOf(other) >= 0 || other.dissolving || other.hp <= 0) continue;
+          if (other.burrowed || other.flying) continue;
+          const dist = Math.hypot((other.x - from.x) / session.cellW,
+                                  (other.y - from.y) / session.cellH);
+          if (dist <= (el.rangeCells || 1.5) && dist < bestDist) {
+            best = other;
+            bestDist = dist;
+          }
+        }
+        if (!best) break;
+        const frac = (hop === 1) ? (el.frac || 0.5) : 0.5;
+        applyHarmToEnemy(session, best, proj.harm * frac,
           "bolt", playAudio, null, saveState);
+        if (hop === 1 && (el.chainDazeSec || 0) > 0 && !best.isBoss) {
+          best.stunTimer = Math.max(best.stunTimer || 0, el.chainDazeSec);
+        }
+        hitSet.push(best);
+        from = best;
       }
     } else if (el.kind === "chill") {
       applySlowToEnemy(foe, el.slowFrac, el.durSec);
+      // /* KK H2 */ Neve A3 (Permafrost): the chilled foe takes
+      // // extra harm while the chill lasts (consumed by the timer,
+      // // not by hits — see applyHarmToEnemy).
+      if ((el.chillAmp || 0) > 0) {
+        foe.chillAmpFrac = el.chillAmp;
+        foe.chillAmpTimer = el.durSec;
+      }
     } else if (el.kind === "gust") {
-      if (!foe.flying) applyKnockbackToEnemy(session, foe, el.cells);
+      // /* KK H2 */ Sora A3 (Hurricane Gust): the knockback also
+      // // moves E25/E26-class heavies (bosses still never move).
+      if (!foe.flying) applyKnockbackToEnemy(session, foe, el.cells, !!el.gustHeavies);
+      if ((el.boltSlowFrac || 0) > 0) applySlowToEnemy(foe, el.boltSlowFrac, el.boltSlowDurSec || 1);
+    } else if (el.kind === "stone") {
+      // /* KK H2 */ Dain's bolt element: splash — half harm (tree
+      // // frac) to the nearest adjacent same-lane foes.
+      const maxSplash = Math.max(1, el.splashTargets || 1);
+      const adj = [];
+      for (let e = 0; e < session.enemies.length; e++) {
+        const other = session.enemies[e];
+        if (other === foe || other.dissolving || other.hp <= 0) continue;
+        if (other.lane !== foe.lane) continue;
+        adj.push({ other: other, dist: Math.abs(other.x - foe.x) });
+      }
+      adj.sort(function (a, b) { return a.dist - b.dist; });
+      for (let i = 0; i < adj.length && i < maxSplash; i++) {
+        applyHarmToEnemy(session, adj[i].other, proj.harm * (el.splashFrac || 0.5),
+          "bolt", playAudio, null, saveState);
+        if ((el.splashSlowFrac || 0) > 0) {
+          applySlowToEnemy(adj[i].other, el.splashSlowFrac, el.splashSlowDurSec || 1.5);
+        }
+      }
+    } else if (el.kind === "tide") {
+      // /* KK H2 */ Nia's bolt element: drenched — the target takes
+      // // extra harm from the next hit(s), then the mark is spent
+      // // (see applyHarmToEnemy).
+      foe.drenchedFrac = el.drenchedFrac || 0;
+      foe.drenchedHits = Math.max(1, el.drenchedHits || 1);
+      if ((el.drenchedSlowFrac || 0) > 0) {
+        applySlowToEnemy(foe, el.drenchedSlowFrac, el.drenchedSlowDurSec || 1);
+      }
+    } else if (el.kind === "radiant") {
+      // /* KK H2 */ Lysa's bolt element: the bolt heals its hero
+      // // for a fraction of the harm dealt (A2 also heals the
+      // // lowest-HP ally).
+      const hero = heroByDefId(session, proj.heroId);
+      if (hero && hero.alive) {
+        const healAmt = Math.max(1, Math.round(proj.harm * (el.healFrac || 0)));
+        hero.hp = Math.min(hero.maxHp, hero.hp + healAmt);
+        if (el.healAlly) {
+          let lowest = null;
+          const heroes = keeperHeroes(session);
+          for (let i = 0; i < heroes.length; i++) {
+            const h = heroes[i];
+            if (h === hero || !h.alive || h.hp >= h.maxHp) continue;
+            if (!lowest || h.hp < lowest.hp) lowest = h;
+          }
+          if (lowest) lowest.hp = Math.min(lowest.maxHp, lowest.hp + healAmt);
+        }
+      }
+    } else if (el.kind === "umbral") {
+      // /* KK H2 */ Kael's bolt element: weaken — the target deals
+      // // less harm for a few seconds (bosses half).
+      applyWeakenToEnemy(foe, el.weakenFrac || 0, el.weakenDurSec || 3);
+      if ((el.weakenSlowFrac || 0) > 0) {
+        applySlowToEnemy(foe, el.weakenSlowFrac, el.weakenDurSec || 3);
+      }
+    } else if (el.kind === "thorn") {
+      // /* KK H2 */ Fern's bolt element: root — the target and the
+      // // next-nearest foe(s) to the firing hero stop for a second
+      // // (bosses/flyers/E26 immune via applyRootToEnemy).
+      applyRootToEnemy(foe, el.rootSec || 1);
+      const extra = Math.max(0, (el.rootTargets || 1) - 1);
+      if (extra > 0) {
+        const hero = heroByDefId(session, proj.heroId);
+        const hp2 = hero ? heroFieldPos(session, hero) : null;
+        const rangeCells = 8.5;
+        const cands = [];
+        for (let e = 0; e < session.enemies.length; e++) {
+          const other = session.enemies[e];
+          if (other === foe || other.dissolving || other.hp <= 0) continue;
+          if (!hp2) break;
+          const dist = Math.hypot((other.x - hp2.x) / session.cellW,
+                                  (other.y - hp2.y) / session.cellH);
+          if (dist <= rangeCells) cands.push({ other: other, dist: dist });
+        }
+        cands.sort(function (a, b) { return a.dist - b.dist; });
+        for (let i = 0; i < cands.length && i < extra; i++) {
+          applyRootToEnemy(cands[i].other, el.rootSec || 1);
+        }
+      }
     }
+  }
+
+  // /* KK H2 */ Weaken (Kael's bolt element / Nightfall): the foe
+  // // deals less harm while the timer runs; bosses take half the
+  // // frac. Applied at the bite/trample sites via foeHarmOut.
+  function applyWeakenToEnemy(foe, frac, durSec) {
+    if (!foe || foe.dissolving) return;
+    const f = foe.isBoss ? (frac || 0) * 0.5 : (frac || 0);
+    foe.weakenFrac = Math.max(foe.weakenFrac || 0, f);
+    foe.weakenTimer = Math.max(foe.weakenTimer || 0, durSec || 0);
+  }
+
+  // Harm a foe actually deals after weaken (Kael). Bosses' weaken
+  // frac was already halved at application.
+  function foeHarmOut(foe, base) {
+    if (!foe) return base;
+    const w = foe.weakenFrac || 0;
+    if (w <= 0) return base;
+    return Math.max(1, Math.round(base * (1 - w)));
   }
 
   // Summon roster (P3 data when present). H1 has no summon data in
@@ -57057,19 +57568,25 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
   // present (defensive defaults otherwise). P3 owns everything else:
   // summon combat, movement, auras, Mastery ranks, and the summon
   // row. Do NOT grow this stub into the P3 system here.
-  function spawnSummonCreature(session, creatureId, lane) {
+  function spawnSummonCreature(session, creatureId, lane, hpMul, sig) {
     if (!session.summons) session.summons = [];
     const roster = summonCreatureRoster();
     let c = null;
     for (let i = 0; i < roster.length; i++) {
       if (roster[i].id === creatureId) { c = roster[i]; break; }
     }
-    const hp = (c && c.hp) || 250;
+    // /* KK H2 */ Wren A3 (Kindle Call): summoned creatures have
+    // // +50% HP. harmMul + healPerSec ride on the summon object for
+    // // P3's combat loop (there is no summon attack loop yet — the
+    // // roster is empty in this tree, so these paths are dormant).
+    const hp = Math.round(((c && c.hp) || 250) * (hpMul || 1));
     const harm = (c && c.harm) || 0;
     const s = {
       id: creatureId, kind: "summon", lane: lane,
       x: 1.0 * session.cellW, y: laneCenterY(session, lane),
-      hp: hp, maxHp: hp, harm: harm, alive: true
+      hp: hp, maxHp: hp, harm: harm, alive: true,
+      harmMul: (sig && sig.summonHarmMul) || 1,
+      healPerSec: (sig && sig.summonHealPerSec) || 0
     };
     session.summons.push(s);
     spawnParticles(session, s.x, s.y, 10, "#ffe9a8", 40);
@@ -57088,24 +57605,46 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
   // slowResist, E18 immune); Tailwind is defender-side, no enemy
   // interaction. Signatures have no sfxId in the design — no SFX is
   // played in H1 (audio pass owns it).
+  // Highest-unlocked creatures (CU4 > CU3 > CU2 > CU1 — roster
+  // order), up to `count` of them, or fewer when fewer are unlocked.
+  function highestUnlockedSummonCreatures(saveState, count) {
+    const roster = summonCreatureRoster();
+    const out = [];
+    for (let i = roster.length - 1; i >= 0 && out.length < (count || 1); i--) {
+      if (summonCreatureUnlocked(saveState, roster[i])) out.push(roster[i]);
+    }
+    return out;
+  }
+
   function tryFireHeroSignature(session, hero, saveState, playAudio) {
     if (!hero || !hero.alive) return { ok: false, reason: "down" };
     if (hero.sigCd > 0) return { ok: false, reason: "cooldown" };
     const def = keeperDefById(hero.defId);
     if (!def || !def.signature) return { ok: false, reason: "locked" };
-    const sig = def.signature;
+    // /* KK H2 */ The EFFECTIVE signature (base + learned tree
+    // // values) — cooldown, harm, radius, targets, duration and
+    // // the new hook fields all come from here.
+    const sig = heroSignature(def, saveState);
+    const eff = heroTreeEffects(hero.defId, saveState);
     const pos = heroFieldPos(session, hero);
     const art = keeperArtSnapshotForDef(def, def.name);
     hero.poseTimer = 0.45;
 
     if (sig.kind === "summon") {
-      const creature = highestUnlockedSummonCreature(saveState);
-      if (!creature) return { ok: false, reason: "locked" };
-      const lane = pickKindleCallLane(session);
-      if (lane < 0) return { ok: false, reason: "no-room" };
-      spawnSummonCreature(session, creature.id, lane);
+      const creatures = highestUnlockedSummonCreatures(saveState, sig.summonCount || 1);
+      if (!creatures.length) return { ok: false, reason: "locked" };
+      // /* KK H2 */ Wren A2 (Kindle Call): summon TWO creatures —
+      // // the two highest-unlocked, each in its own free lane.
+      let spawned = 0;
+      for (let c = 0; c < creatures.length; c++) {
+        const lane = pickKindleCallLane(session);
+        if (lane < 0) break;
+        spawnSummonCreature(session, creatures[c].id, lane, sig.summonHpMul || 1, sig);
+        spawned++;
+      }
+      if (spawned <= 0) return { ok: false, reason: "no-room" };
       hero.sigCd = hero.sigCdTotal = sig.cooldownSec;
-      addBanner(session, "Kindle Call", (creature.name || creature.id) + " answers", false);
+      addBanner(session, "Kindle Call", (creatures[0].name || creatures[0].id) + " answers", false);
       return { ok: true };
     }
 
@@ -57120,7 +57659,20 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
         if (foe.isBoss && foe.activeImmunity === "aoe") continue;
         applyHarmToEnemy(session, foe, sig.harm, "blast", playAudio, null, saveState);
         if (sig.burnDps) applyBurnToEnemy(session, foe, sig.burnDps, sig.burnDurSec);
-        if (sig.slowFrac) applySlowToEnemy(foe, sig.slowFrac, sig.slowDurSec);
+        if (sig.slowFrac) {
+          applySlowToEnemy(foe, sig.slowFrac, sig.slowDurSec);
+          // /* KK H2 */ Neve A3 (Permafrost): a foe slowed by Deep
+          // // Freeze also takes extra harm while chilled.
+          if ((eff.chillAmp || 0) > 0) {
+            foe.chillAmpFrac = eff.chillAmp;
+            foe.chillAmpTimer = sig.slowDurSec;
+          }
+        }
+        // /* KK H2 */ Dain B3 (Quake): knockback on the blast.
+        // // Kael B (Nightfall): weaken. Fern B (Overgrowth): root.
+        if (sig.knockbackCells) applyKnockbackToEnemy(session, foe, sig.knockbackCells, false);
+        if (sig.weakenFrac) applyWeakenToEnemy(foe, sig.weakenFrac, sig.weakenDurSec || 4);
+        if (sig.rootSec) applyRootToEnemy(foe, sig.rootSec);
       }
       session.spellFx.push({ x: pos.x + 30, y: pos.y, timer: 0.5, dur: 0.5,
         fxKey: (art.fx && art.fx.burst) || "burst_rowan", size: 96 });
@@ -57153,6 +57705,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
         if (sig.dazeSec && !foe.isBoss) {
           foe.stunTimer = Math.max(foe.stunTimer || 0, sig.dazeSec);
         }
+        // /* KK H2 */ Nia's Springtide drenches every target it hits.
+        if ((sig.drenchedFrac || 0) > 0) {
+          foe.drenchedFrac = sig.drenchedFrac;
+          foe.drenchedHits = Math.max(1, sig.drenchedHits || 1);
+        }
       }
       session.spellFx.push({ x: pos.x + 30, y: pos.y, timer: 0.5, dur: 0.5,
         fxKey: (art.fx && art.fx.burst) || "burst_rowan", size: 96 });
@@ -57162,9 +57719,29 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     }
 
     if (sig.kind === "buff") {
+      // /* KK H2 */ Lysa's Halo heals every living hero and raises
+      // // every hero's bolt harm while it lasts; Sora's Tailwind
+      // // still buffs defenders (all lanes when Hurricane is learned).
+      if (typeof sig.heal === "number") {
+        const heroes = keeperHeroes(session);
+        for (let i = 0; i < heroes.length; i++) {
+          const h = heroes[i];
+          if (h.alive && h.hp > 0 && h.hp < h.maxHp) {
+            h.hp = Math.min(h.maxHp, h.hp + sig.heal);
+          }
+        }
+        session.heroBoltBuff = {
+          timer: sig.durSec || 8,
+          boltHarmFrac: sig.boltHarmFrac || 0.30
+        };
+        addBanner(session, sig.name, "All heroes +" + Math.round((sig.boltHarmFrac || 0.30) * 100) + "% bolt harm", false);
+        hero.sigCd = hero.sigCdTotal = sig.cooldownSec;
+        return { ok: true };
+      }
       session.tailwindBuff = {
-        lane: hero.lane, timer: sig.durSec,
-        rangeAddCells: sig.rangeAddCells || 1, hasteFrac: sig.hasteFrac || 0.20
+        lane: hero.lane, timer: sig.durSec || sig.durationSec,
+        rangeAddCells: sig.rangeAddCells || 1, hasteFrac: sig.hasteFrac || 0.20,
+        allLanes: !!sig.allLanes
       };
       addBanner(session, sig.name, "Lane " + (hero.lane + 1) + " quickens", false);
       hero.sigCd = hero.sigCdTotal = sig.cooldownSec;
@@ -57202,7 +57779,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     if (!hero || !hero.alive || hero.sigCd > 0) return false;
     const def = keeperDefById(hero.defId);
     if (!def || !def.signature) return false;
-    const sig = def.signature;
+    // /* KK H2 */ The EFFECTIVE signature (base + learned tree
+    // // values) — thresholds read the tree-modified radius/targets.
+    const sig = heroSignature(def, saveState);
     const pos = heroFieldPos(session, hero);
     const stats = keeperDerivedStats(saveState);
     function distCells(foe) {
@@ -57250,9 +57829,41 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
       let n = 0;
       for (let d = 0; d < session.defenders.length; d++) {
         const du = session.defenders[d];
-        if (du.hp > 0 && !du.isTowerPlot && du.lane === hero.lane) n++;
+        // /* KK H2 */ Sora B3 (Hurricane): Tailwind covers all
+        // // lanes, so the threshold counts defenders everywhere.
+        if (du.hp > 0 && !du.isTowerPlot && (sig.allLanes || du.lane === hero.lane)) n++;
       }
       return n >= 4 && foes.length >= 1;
+    }
+    // /* KK H2 */ H2 signature thresholds (same deterministic style
+    // // as the H1 rules above).
+    if (sig.id === "SIG_QUAKE" || sig.id === "SIG_NIGHTFALL" || sig.id === "SIG_OVERGROWTH") {
+      let n = 0;
+      for (let i = 0; i < foes.length; i++) {
+        if (distCells(foes[i]) <= (sig.radiusCells || 3.0)) n++;
+      }
+      return n >= 3;
+    }
+    if (sig.id === "SIG_SPRINGTIDE") {
+      const rangeCells = stats.boltRangeCells - (session.gloomTideActive ? 1 : 0);
+      let n = 0;
+      for (let i = 0; i < foes.length; i++) {
+        const f = foes[i];
+        if (f.burrowed || f.flying) continue;
+        if (distCells(f) <= rangeCells) n++;
+      }
+      return n >= 2;
+    }
+    if (sig.id === "SIG_HALO") {
+      const heroes = keeperHeroes(session);
+      for (let i = 0; i < heroes.length; i++) {
+        const h = heroes[i];
+        if (h.alive && h.hp > 0 && h.hp < 0.8 * h.maxHp) return true;
+      }
+      for (let i = 0; i < foes.length; i++) {
+        if (foes[i].isBoss) return true;
+      }
+      return false;
     }
     if (sig.id === "SIG_KINDLECALL") {
       if (livingSummons(session) >= 2) return false;
@@ -57381,12 +57992,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
         hero.pulseTimer = stats.pulseIntervalSec;
         const hp2 = heroFieldPos(session, hero);
         let healed = 0;
+        // /* KK H2 */ Wren B3 (Guardian's Bond) widens the pulse
+        // // aura; the default radius is 2.0 cells.
+        const pulseRadius = (heroTreeEffects(hero.defId, saveState).auraRadius || 2.0);
         for (let d = 0; d < session.defenders.length; d++) {
           const def = session.defenders[d];
           if (def.hp <= 0 || def.hp >= def.maxHp) continue;
           const dist = Math.hypot((def.x - hp2.x) / session.cellW,
                                   (def.y - hp2.y) / session.cellH);
-          if (dist <= 2.0) {
+          if (dist <= pulseRadius) {
             def.hp = Math.min(def.maxHp, def.hp + stats.pulseHeal);
             healed++;
             spawnParticles(session, def.x, def.y - 6, 3, "#b6ffc9", 22);
@@ -57402,7 +58016,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
   }
 
   // /* KKSPELLS */ heroStripState: the UI worker's contract — the hero
-  // strip row (5 portraits, lane order). canFire is the signature's
+  // strip row (3 portraits, lane order, H2). canFire is the signature's
   // READY state (owner alive, off cooldown, not locked); the UI
   // decides tappability from isCaptain (only the captain's portrait
   // fires on tap; the other four are AI-fired).
@@ -57784,6 +58398,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
       allyDeaths: 0,
       summons: [],
       tailwindBuff: null,
+      /* KK H2 */ heroBoltBuff: null,
       aiSpellsCast: { KS1: 0, KS2: 0, KS3: 0 },
       keeperRegenEnabled: opts.regenEnabled !== false,
       keeperRegenRate: (typeof opts.regenRate === "number") ? opts.regenRate : null,
@@ -57990,7 +58605,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
           if (!_hh.alive || _hh.lane !== foe.lane) continue;
           const _hp2 = heroFieldPos(session, _hh);
           if (Math.abs(_hp2.x - foe.x) <= session.cellW) {
-            damageHero(session, _hh, trample, playAudio);
+            // /* KK H2 */ Weaken (Kael) reduces the trample harm.
+            damageHero(session, _hh, foeHarmOut(foe, trample), playAudio);
           }
         }
       } else {
@@ -58353,6 +58969,21 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
       if (enemy.activeImmunity === "aoe" && (damageKind === "lob" || damageKind === "blast")) return;
     }
 
+    // /* KK H2 */ Drenched (Nia) + Permafrost (Neve A3): the foe
+    // // takes extra harm from all sources. Drenched is consumed
+    // // hit by hit (drenchedHits); Permafrost lasts while its
+    // // timer runs. Applied BEFORE the shield/armor soak so the
+    // // amplified amount is what gets soaked. Floats stay floats —
+    // // no rounding here (burn ticks are fractional).
+    if ((enemy.drenchedHits || 0) > 0 && (enemy.drenchedFrac || 0) > 0) {
+      amount = amount * (1 + enemy.drenchedFrac);
+      enemy.drenchedHits -= 1;
+      if (enemy.drenchedHits <= 0) enemy.drenchedFrac = 0;
+    }
+    if ((enemy.chillAmpTimer || 0) > 0 && (enemy.chillAmpFrac || 0) > 0) {
+      amount = amount * (1 + enemy.chillAmpFrac);
+    }
+
     // E16 Mirrorwraith reflects 25% of direct bolt harm back to firing defender
     if (enemy.id === "E16" && damageKind === "bolt" && sourceDefender && sourceDefender.hp > 0) {
       sourceDefender.hp = Math.max(0, sourceDefender.hp - Math.round(amount * 0.25));
@@ -58471,8 +59102,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     if (enemy.id === "E15") enemy.burrowed = false; // Traps force E15 Burrower to surface
   }
 
-  function applyKnockbackToEnemy(session, enemy, cellsCount) {
-    if (!enemy || enemy.dissolving || enemy.knockbackImmune || enemy.isBoss || enemy.id === "E25" || enemy.id === "E26") return;
+  function applyKnockbackToEnemy(session, enemy, cellsCount, allowHeavies) {
+    // /* KK H2 */ allowHeavies (Sora A3 Hurricane Gust): the
+    // // knockback also moves E25/E26-class heavies; bosses still
+    // // never move. E25/E26 carry knockbackImmune in the data, so
+    // // allowHeavies also bypasses that flag for those two ids —
+    // // otherwise the A3 node could never move the heavies it names.
+    // // Every other knockbackImmune foe still blocks.
+    if (!enemy || enemy.dissolving || enemy.isBoss) return;
+    if (enemy.knockbackImmune && !(allowHeavies && (enemy.id === "E25" || enemy.id === "E26"))) return;
+    if (!allowHeavies && (enemy.id === "E25" || enemy.id === "E26")) return;
     const maxX = session.fieldW + 14;
     enemy.x = Math.min(maxX, enemy.x + cellsCount * session.cellW);
   }
@@ -58570,6 +59209,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
       rootTimer: 0,
       stunTimer: 0,
       /* KKSPELLS */ burnDps: 0, burnTimer: 0,
+      /* KK H2 */ drenchedFrac: 0, drenchedHits: 0,
+      weakenFrac: 0, weakenTimer: 0, chillAmpFrac: 0, chillAmpTimer: 0,
       summonTimer: _bossCadence0,
       activeImmunity: (bSpec.id === "B7") ? "bolt" : null,
       baseSpeed: bSpec.speed,
@@ -58638,6 +59279,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
       rootTimer: 0,
       stunTimer: 0,
       /* KKSPELLS */ burnDps: 0, burnTimer: 0,
+      /* KK H2 */ drenchedFrac: 0, drenchedHits: 0,
+      weakenFrac: 0, weakenTimer: 0, chillAmpFrac: 0, chillAmpTimer: 0,
       dashTimer: (spec.behavior && spec.behavior.dashEvery) || 0,
       dashActiveTimer: 0,
       spawnAbilityTimer: (spec.behavior && spec.behavior.spawnEvery) || 0,
@@ -58785,6 +59428,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     // /* KKSPELLS */ Tailwind buff timer (Sora's signature).
     if (session.tailwindBuff && session.tailwindBuff.timer > 0) {
       session.tailwindBuff.timer = Math.max(0, session.tailwindBuff.timer - dt);
+    }
+    // /* KK H2 */ Halo bolt buff timer (Lysa's signature): while it
+    // // runs, every hero's bolt deals extra harm (heroFireBolt).
+    if (session.heroBoltBuff && session.heroBoltBuff.timer > 0) {
+      session.heroBoltBuff.timer = Math.max(0, session.heroBoltBuff.timer - dt);
     }
     if (session.frostNovaFx > 0) session.frostNovaFx = Math.max(0, session.frostNovaFx - dt);
 
@@ -58965,8 +59613,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
       // §2.2): defenders in the buffed lane gain +1 cell range and
       // +20% haste while it lasts. Range stays under the existing
       // caps (it feeds the same bonusRangeCells as D20).
+      // /* KK H2 */ Sora B3 (Hurricane): Tailwind covers ALL lanes.
       if (session.tailwindBuff && session.tailwindBuff.timer > 0 &&
-          d.lane === session.tailwindBuff.lane) {
+          (session.tailwindBuff.allLanes || d.lane === session.tailwindBuff.lane)) {
         bonusRangeCells = Math.max(bonusRangeCells, session.tailwindBuff.rangeAddCells || 1);
         hasteAdd += session.tailwindBuff.hasteFrac || 0.20;
       }
@@ -59412,6 +60061,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
           if (foe.slows[s].timer <= 0) foe.slows.splice(s, 1);
           else speedMult *= (1.0 - foe.slows[s].pct);
         }
+        // /* KK H2 */ Weaken + Permafrost timers decay with the
+        // // slows; when a timer lapses its frac clears.
+        if ((foe.weakenTimer || 0) > 0) {
+          foe.weakenTimer -= dt;
+          if (foe.weakenTimer <= 0) { foe.weakenTimer = 0; foe.weakenFrac = 0; }
+        }
+        if ((foe.chillAmpTimer || 0) > 0) {
+          foe.chillAmpTimer -= dt;
+          if (foe.chillAmpTimer <= 0) { foe.chillAmpTimer = 0; foe.chillAmpFrac = 0; }
+        }
         for (let d = 0; d < session.defenders.length; d++) {
           const def = session.defenders[d];
           if (def.id === "D15" && def.hp > 0 && Math.hypot(def.x - foe.x, def.y - foe.y) <= session.cellW * 2.2) {
@@ -59563,7 +60222,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
         foe.biteTimer -= dt;
         if (foe.biteTimer <= 0) {
           foe.biteTimer = foe.biteRate || 1.2;
-          damageHero(session, blockerHero, foe.bite, playAudio);
+          // /* KK H2 */ Weaken (Kael) reduces the bite harm.
+          damageHero(session, blockerHero, foeHarmOut(foe, foe.bite), playAudio);
           // E17 Leechling drains 10 Lumen on a hero bite (same as defenders).
           if (foe.id === "E17") {
             session.lumen = Math.max(0, session.lumen - 10);
@@ -59922,7 +60582,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
 // allyLaneBoltValue are DELETED with tap-a-lane / ally movement
 // (KKSPELLS-DESIGN.md §1.2) — removed from this export list and from
 // the globalThis block below; no export of them remains.
-var KKEngine = { createMulberry32: createMulberry32, getLevelById: getLevelById, levelLabel: levelLabel, isLevelCleared: isLevelCleared, nextUncompletedLevelId: nextUncompletedLevelId, isLevelEnterable: isLevelEnterable, isWorldFullyCleared: isWorldFullyCleared, isWorldUnlocked: isWorldUnlocked, computeUnlockedWorlds: computeUnlockedWorlds, syncUnlockedWorlds: syncUnlockedWorlds, isNightWatchUnlocked: isNightWatchUnlocked, defenderGrantLevelId: defenderGrantLevelId, defenderUnlockLabel: defenderUnlockLabel, getDefenderData: getDefenderData, isDefenderUnlocked: isDefenderUnlocked, grantLevelUnlocks: grantLevelUnlocks, sanitizeLoadout: sanitizeLoadout, almanacCounterText: almanacCounterText, keeperData: keeperData, keeperDefList: keeperDefList, keeperIdList: keeperIdList, keeperDefById: keeperDefById, keeperDefForSave: keeperDefForSave, captainDefForSave: captainDefForSave, heroDefList: heroDefList, setCaptain: setCaptain, keeperDefOrFallback: keeperDefOrFallback, keeperName: keeperName, keeperArtSnapshot: keeperArtSnapshot, keeperRenderText: keeperRenderText, keeperSpeakerLabel: keeperSpeakerLabel, keeperPortraitKey: keeperPortraitKey, keeperNodeList: keeperNodeList, keeperNodeById: keeperNodeById, keeperSpellDef: keeperSpellDef, keeperDerivedStats: keeperDerivedStats, keeperBoltHarmForWorld: keeperBoltHarmForWorld, keeperTotalStars: keeperTotalStars, keeperClaimedStoryQuests: keeperClaimedStoryQuests, keeperPointsEarned: keeperPointsEarned, keeperPointsSpent: keeperPointsSpent, keeperPointsAvailable: keeperPointsAvailable, keeperNextPointInfo: keeperNextPointInfo, keeperCanBuyNode: keeperCanBuyNode, keeperBuyNode: keeperBuyNode, keeperRespec: keeperRespec, keeperSpellUnlocked: keeperSpellUnlocked, keeperHeroConfig: keeperHeroConfig, keeperRegenConfig: keeperRegenConfig, keeperRegenRateFor: keeperRegenRateFor, keeperRegenEnabled: keeperRegenEnabled, allyKeeperConfig: allyKeeperConfig, keeperArtSnapshotForDef: keeperArtSnapshotForDef, spellCasterDefForSave: spellCasterDefForSave, spellCasterHero: spellCasterHero, keeperMoveConfig: keeperMoveConfig, KEEPER_MOVE: KEEPER_MOVE, orderHeroMove: orderHeroMove, heroDodgeReflex: heroDodgeReflex, laneThreatCount: laneThreatCount, heroByDefId: heroByDefId, heroStateSnapshot: heroStateSnapshot, heroStateHash: heroStateHash, restoreHeroStates: restoreHeroStates, keeperAlive: keeperAlive, allyKeeperAlive: allyKeeperAlive, allyKeeperFieldPos: allyKeeperFieldPos, allyKeeperRenderPos: allyKeeperRenderPos, backfillAllyKeeperState: backfillAllyKeeperState, damageAllyKeeper: damageAllyKeeper, allyThreatTier: allyThreatTier, foeEngagedWithFrontKeeper: foeEngagedWithFrontKeeper, chooseAllyKeeperTargets: chooseAllyKeeperTargets, allyKeeperFireBolt: allyKeeperFireBolt, activateAllyKeeperSpell: activateAllyKeeperSpell, allyCastSpellIfWarranted: allyCastSpellIfWarranted, stepAllyKeeperDecision: stepAllyKeeperDecision, stepAllyKeeper: stepAllyKeeper, keeperRenderPos: keeperRenderPos, keeperFieldPos: keeperFieldPos, keeperCellDist: keeperCellDist, chooseKeeperTargets: chooseKeeperTargets, keeperFireBolt: keeperFireBolt, stepKeeper: stepKeeper, stepHeroes: stepHeroes, stepOneHero: stepOneHero, damageHero: damageHero, heroFieldPos: heroFieldPos, heroRenderPos: heroRenderPos, heroFireBolt: heroFireBolt, chooseHeroTargets: chooseHeroTargets, applyBurnToEnemy: applyBurnToEnemy, applyKeeperBoltElement: applyKeeperBoltElement, tryFireHeroSignature: tryFireHeroSignature, fireHeroSignature: fireHeroSignature, fireCaptainSignature: fireCaptainSignature, heroAISignatureReady: heroAISignatureReady, heroStripState: heroStripState, keeperHeroes: keeperHeroes, heroStateForLane: heroStateForLane, anyHeroAlive: anyHeroAlive, spawnSummonCreature: spawnSummonCreature, highestUnlockedSummonCreature: highestUnlockedSummonCreature, summonCreatureRoster: summonCreatureRoster, healAllHeroes: healAllHeroes, backfillHeroes: backfillHeroes, activateKeeperSpell: activateKeeperSpell, TD_TEXT_OVERRIDES: TD_TEXT_OVERRIDES, TRAY_DISPLAY_NAMES: TRAY_DISPLAY_NAMES, KEEPER_FALLBACK: KEEPER_FALLBACK, getDefenderSpecWithUpgrades: getDefenderSpecWithUpgrades, getEnemySpec: getEnemySpec, advanceQuestProgress: advanceQuestProgress, pointSegDistSq: pointSegDistSq, segIntersectsSeg: segIntersectsSeg, pointInRect: pointInRect, segRectDist: segRectDist, scalePathPoint: scalePathPoint, buildPathGeometry: buildPathGeometry, refreshPathGeometry: refreshPathGeometry, isRoadCell: isRoadCell, getPathPlotAtPoint: getPathPlotAtPoint, levelHasEnemy: levelHasEnemy, nightWatchHasEnemy: nightWatchHasEnemy, createBattleSession: createBattleSession, laneCenterY: laneCenterY, bossScriptFor: bossScriptFor, bossPhaseInfo: bossPhaseInfo, bossCadence: bossCadence, bossPhaseBanner: bossPhaseBanner, summonLabel: summonLabel, spawnBossMinions: spawnBossMinions, startGloomTide: startGloomTide, fogPulseActive: fogPulseActive, fogStartColFor: fogStartColFor, fogAppliesTo: fogAppliesTo, updateBossPhase: updateBossPhase, runBossCycle: runBossCycle, getDefenderAt: getDefenderAt, getTowerPlotAtPoint: getTowerPlotAtPoint, canPlaceDefender: canPlaceDefender, placeDefender: placeDefender, shovelDefender: shovelDefender, activateKeeperPower: activateKeeperPower, grantLumen: grantLumen, collectMoteAt: collectMoteAt, applyHarmToEnemy: applyHarmToEnemy, applySlowToEnemy: applySlowToEnemy, applyRootToEnemy: applyRootToEnemy, applyKnockbackToEnemy: applyKnockbackToEnemy, startNextWave: startNextWave, startBossEntrance: startBossEntrance, spawnEnemyInstance: spawnEnemyInstance, stepBattleSession: stepBattleSession, runScriptedLevelVerification: runScriptedLevelVerification };
+var KKEngine = { createMulberry32: createMulberry32, getLevelById: getLevelById, levelLabel: levelLabel, isLevelCleared: isLevelCleared, nextUncompletedLevelId: nextUncompletedLevelId, isLevelEnterable: isLevelEnterable, isWorldFullyCleared: isWorldFullyCleared, isWorldUnlocked: isWorldUnlocked, computeUnlockedWorlds: computeUnlockedWorlds, syncUnlockedWorlds: syncUnlockedWorlds, isNightWatchUnlocked: isNightWatchUnlocked, defenderGrantLevelId: defenderGrantLevelId, defenderUnlockLabel: defenderUnlockLabel, getDefenderData: getDefenderData, isDefenderUnlocked: isDefenderUnlocked, grantLevelUnlocks: grantLevelUnlocks, sanitizeLoadout: sanitizeLoadout, almanacCounterText: almanacCounterText, keeperData: keeperData, keeperDefList: keeperDefList, keeperIdList: keeperIdList, keeperDefById: keeperDefById, keeperDefForSave: keeperDefForSave, captainDefForSave: captainDefForSave, heroDefList: heroDefList, setCaptain: setCaptain, keeperDefOrFallback: keeperDefOrFallback, keeperName: keeperName, keeperArtSnapshot: keeperArtSnapshot, keeperRenderText: keeperRenderText, keeperSpeakerLabel: keeperSpeakerLabel, keeperPortraitKey: keeperPortraitKey, keeperNodeList: keeperNodeList, keeperNodeById: keeperNodeById, keeperSpellDef: keeperSpellDef, keeperDerivedStats: keeperDerivedStats, keeperBoltHarmForWorld: keeperBoltHarmForWorld, keeperTotalStars: keeperTotalStars, keeperClaimedStoryQuests: keeperClaimedStoryQuests, keeperPointsEarned: keeperPointsEarned, keeperPointsSpent: keeperPointsSpent, keeperPointsAvailable: keeperPointsAvailable, keeperNextPointInfo: keeperNextPointInfo, keeperCanBuyNode: keeperCanBuyNode, keeperBuyNode: keeperBuyNode, keeperRespec: keeperRespec, keeperSpellUnlocked: keeperSpellUnlocked, heroTreeDef: heroTreeDef, heroTreeNodeList: heroTreeNodeList, heroTreeNodeById: heroTreeNodeById, heroOwnedNodes: heroOwnedNodes, heroNodesLearned: heroNodesLearned, heroValor: heroValor, heroTreeEffects: heroTreeEffects, heroCanBuyNode: heroCanBuyNode, heroBuyNode: heroBuyNode, heroRespec: heroRespec, grantHeroValor: grantHeroValor, teamCompanionsForSave: teamCompanionsForSave, setTeamCompanions: setTeamCompanions, fieldedHeroDefs: fieldedHeroDefs, homeLaneForFielded: homeLaneForFielded, heroBoltElement: heroBoltElement, heroSignature: heroSignature, applyWeakenToEnemy: applyWeakenToEnemy, foeHarmOut: foeHarmOut, highestUnlockedSummonCreatures: highestUnlockedSummonCreatures, keeperHeroConfig: keeperHeroConfig, keeperRegenConfig: keeperRegenConfig, keeperRegenRateFor: keeperRegenRateFor, keeperRegenEnabled: keeperRegenEnabled, allyKeeperConfig: allyKeeperConfig, keeperArtSnapshotForDef: keeperArtSnapshotForDef, spellCasterDefForSave: spellCasterDefForSave, spellCasterHero: spellCasterHero, keeperMoveConfig: keeperMoveConfig, KEEPER_MOVE: KEEPER_MOVE, orderHeroMove: orderHeroMove, heroDodgeReflex: heroDodgeReflex, laneThreatCount: laneThreatCount, heroByDefId: heroByDefId, heroStateSnapshot: heroStateSnapshot, heroStateHash: heroStateHash, restoreHeroStates: restoreHeroStates, keeperAlive: keeperAlive, allyKeeperAlive: allyKeeperAlive, allyKeeperFieldPos: allyKeeperFieldPos, allyKeeperRenderPos: allyKeeperRenderPos, backfillAllyKeeperState: backfillAllyKeeperState, damageAllyKeeper: damageAllyKeeper, allyThreatTier: allyThreatTier, foeEngagedWithFrontKeeper: foeEngagedWithFrontKeeper, chooseAllyKeeperTargets: chooseAllyKeeperTargets, allyKeeperFireBolt: allyKeeperFireBolt, activateAllyKeeperSpell: activateAllyKeeperSpell, allyCastSpellIfWarranted: allyCastSpellIfWarranted, stepAllyKeeperDecision: stepAllyKeeperDecision, stepAllyKeeper: stepAllyKeeper, keeperRenderPos: keeperRenderPos, keeperFieldPos: keeperFieldPos, keeperCellDist: keeperCellDist, chooseKeeperTargets: chooseKeeperTargets, keeperFireBolt: keeperFireBolt, stepKeeper: stepKeeper, stepHeroes: stepHeroes, stepOneHero: stepOneHero, damageHero: damageHero, heroFieldPos: heroFieldPos, heroRenderPos: heroRenderPos, heroFireBolt: heroFireBolt, chooseHeroTargets: chooseHeroTargets, applyBurnToEnemy: applyBurnToEnemy, applyKeeperBoltElement: applyKeeperBoltElement, tryFireHeroSignature: tryFireHeroSignature, fireHeroSignature: fireHeroSignature, fireCaptainSignature: fireCaptainSignature, heroAISignatureReady: heroAISignatureReady, heroStripState: heroStripState, keeperHeroes: keeperHeroes, heroStateForLane: heroStateForLane, anyHeroAlive: anyHeroAlive, spawnSummonCreature: spawnSummonCreature, highestUnlockedSummonCreature: highestUnlockedSummonCreature, summonCreatureRoster: summonCreatureRoster, healAllHeroes: healAllHeroes, backfillHeroes: backfillHeroes, activateKeeperSpell: activateKeeperSpell, TD_TEXT_OVERRIDES: TD_TEXT_OVERRIDES, TRAY_DISPLAY_NAMES: TRAY_DISPLAY_NAMES, KEEPER_FALLBACK: KEEPER_FALLBACK, getDefenderSpecWithUpgrades: getDefenderSpecWithUpgrades, getEnemySpec: getEnemySpec, advanceQuestProgress: advanceQuestProgress, pointSegDistSq: pointSegDistSq, segIntersectsSeg: segIntersectsSeg, pointInRect: pointInRect, segRectDist: segRectDist, scalePathPoint: scalePathPoint, buildPathGeometry: buildPathGeometry, refreshPathGeometry: refreshPathGeometry, isRoadCell: isRoadCell, getPathPlotAtPoint: getPathPlotAtPoint, levelHasEnemy: levelHasEnemy, nightWatchHasEnemy: nightWatchHasEnemy, createBattleSession: createBattleSession, laneCenterY: laneCenterY, bossScriptFor: bossScriptFor, bossPhaseInfo: bossPhaseInfo, bossCadence: bossCadence, bossPhaseBanner: bossPhaseBanner, summonLabel: summonLabel, spawnBossMinions: spawnBossMinions, startGloomTide: startGloomTide, fogPulseActive: fogPulseActive, fogStartColFor: fogStartColFor, fogAppliesTo: fogAppliesTo, updateBossPhase: updateBossPhase, runBossCycle: runBossCycle, getDefenderAt: getDefenderAt, getTowerPlotAtPoint: getTowerPlotAtPoint, canPlaceDefender: canPlaceDefender, placeDefender: placeDefender, shovelDefender: shovelDefender, activateKeeperPower: activateKeeperPower, grantLumen: grantLumen, collectMoteAt: collectMoteAt, applyHarmToEnemy: applyHarmToEnemy, applySlowToEnemy: applySlowToEnemy, applyRootToEnemy: applyRootToEnemy, applyKnockbackToEnemy: applyKnockbackToEnemy, startNextWave: startNextWave, startBossEntrance: startBossEntrance, spawnEnemyInstance: spawnEnemyInstance, stepBattleSession: stepBattleSession, runScriptedLevelVerification: runScriptedLevelVerification };
 if (typeof window !== 'undefined') {
   try {
     window.KKEngine = KKEngine;
@@ -60135,6 +60795,26 @@ if (typeof globalThis !== 'undefined') {
     globalThis.keeperBuyNode = keeperBuyNode;
     globalThis.keeperRespec = keeperRespec;
     globalThis.keeperSpellUnlocked = keeperSpellUnlocked;
+    /* KK H2 */ globalThis.heroTreeDef = heroTreeDef;
+    globalThis.heroTreeNodeList = heroTreeNodeList;
+    globalThis.heroTreeNodeById = heroTreeNodeById;
+    globalThis.heroOwnedNodes = heroOwnedNodes;
+    globalThis.heroNodesLearned = heroNodesLearned;
+    globalThis.heroValor = heroValor;
+    globalThis.heroTreeEffects = heroTreeEffects;
+    globalThis.heroCanBuyNode = heroCanBuyNode;
+    globalThis.heroBuyNode = heroBuyNode;
+    globalThis.heroRespec = heroRespec;
+    globalThis.grantHeroValor = grantHeroValor;
+    globalThis.teamCompanionsForSave = teamCompanionsForSave;
+    globalThis.setTeamCompanions = setTeamCompanions;
+    globalThis.fieldedHeroDefs = fieldedHeroDefs;
+    globalThis.homeLaneForFielded = homeLaneForFielded;
+    globalThis.heroBoltElement = heroBoltElement;
+    globalThis.heroSignature = heroSignature;
+    globalThis.applyWeakenToEnemy = applyWeakenToEnemy;
+    globalThis.foeHarmOut = foeHarmOut;
+    globalThis.highestUnlockedSummonCreatures = highestUnlockedSummonCreatures;
     globalThis.keeperHeroConfig = keeperHeroConfig;
     globalThis.keeperRegenConfig = keeperRegenConfig;
     globalThis.keeperRegenRateFor = keeperRegenRateFor;
@@ -60302,6 +60982,11 @@ var KKArt = (function () {
     /* KKSPELLS */ if (k.indexOf('keeper_rai') === 0) return 'R';
     /* KKSPELLS */ if (k.indexOf('keeper_neve') === 0) return 'N';
     /* KKSPELLS */ if (k.indexOf('keeper_sora') === 0) return 'S';
+    /* KK H2 */ if (k.indexOf('keeper_dain') === 0) return 'D';
+    /* KK H2 */ if (k.indexOf('keeper_nia') === 0) return 'N';
+    /* KK H2 */ if (k.indexOf('keeper_lysa') === 0) return 'L';
+    /* KK H2 */ if (k.indexOf('keeper_kael') === 0) return 'K';
+    /* KK H2 */ if (k.indexOf('keeper_fern') === 0) return 'F';
     if (k === 'keeper_sigil') return 'K';
     if (k.indexOf('quest_mira') === 0) return 'M';
     if (k.indexOf('quest_bram') === 0) return 'B';
@@ -60828,6 +61513,17 @@ try { if (typeof globalThis !== 'undefined') globalThis.KKArt = KKArt; } catch (
         } catch (e) { /* lane center stands */ }
         const _hImg = SpriteCache.getUnitFrame(_hArt.unitId, _hPose, _h1Tick);
         const _hS = Math.min(54, cellH * 1.12);
+        // /* KK H2 */ CHANGE 2: heroes draw one cell higher than
+        // // their logical lane (Jesse's order). Only the sprite +
+        // // its ring/particles/label move — the lane tick, aura ring,
+        // // and captain range ellipse stay at the logical lane
+        // // center (_hCy). Clamped so the sprite never clips above
+        // // the canvas top: lane 0 lands 3.9px (390w) / 5.8px (320w)
+        // // short of a full cell — measured, not guessed
+        // // (gates/h2-measure-base.py). The slide still reads as a
+        // // slide: the engine's interpolated renderY is shifted the
+        // // same way.
+        _hRy = Math.max(_hRy - cellH, _hS * 0.5);
         if (_hImg && _hImg.complete && _hImg.naturalWidth > 0) {
           if (_he.alive) {
             ctx.drawImage(_hImg, _hX - _hS * 0.5, _hRy - _hS * 0.5, _hS, _hS);
@@ -60878,6 +61574,41 @@ try { if (typeof globalThis !== 'undefined') globalThis.KKArt = KKArt; } catch (
                   ctx.translate(_px, _py); ctx.rotate(_pa);
                   ctx.beginPath(); ctx.ellipse(0, 0, 3.4, 1.7, 0, 0, Math.PI * 2); ctx.fill();
                   ctx.restore();
+                } else if (_he.id === "dain") {
+                  // /* KK H2 */ Stone chip: a small square.
+                  ctx.fillRect(_px - 2.4, _py - 2.4, 4.8, 4.8);
+                } else if (_he.id === "nia") {
+                  // /* KK H2 */ Water drop.
+                  ctx.beginPath();
+                  ctx.moveTo(_px, _py - 3.6);
+                  ctx.quadraticCurveTo(_px + 2.8, _py + 0.6, _px, _py + 2.8);
+                  ctx.quadraticCurveTo(_px - 2.8, _py + 0.6, _px, _py - 3.6);
+                  ctx.fill();
+                } else if (_he.id === "lysa") {
+                  // /* KK H2 */ Radiant ray: a short radiating line.
+                  ctx.lineWidth = 1.6;
+                  ctx.beginPath();
+                  ctx.moveTo(_px - Math.cos(_pa) * 3.4, _py - Math.sin(_pa) * 3.4);
+                  ctx.lineTo(_px + Math.cos(_pa) * 3.4, _py + Math.sin(_pa) * 3.4);
+                  ctx.stroke();
+                } else if (_he.id === "kael") {
+                  // /* KK H2 */ Shadow wisp: a small dark ellipse.
+                  ctx.save();
+                  ctx.translate(_px, _py); ctx.rotate(_pa);
+                  ctx.globalAlpha = 0.7;
+                  ctx.beginPath(); ctx.ellipse(0, 0, 2.6, 1.2, 0, 0, Math.PI * 2); ctx.fill();
+                  ctx.restore();
+                  ctx.globalAlpha = 0.95;
+                } else if (_he.id === "fern") {
+                  // /* KK H2 */ Leaf: an ellipse with a center vein.
+                  ctx.save();
+                  ctx.translate(_px, _py); ctx.rotate(_pa);
+                  ctx.beginPath(); ctx.ellipse(0, 0, 3.2, 1.6, 0, 0, Math.PI * 2); ctx.fill();
+                  ctx.globalAlpha = 0.6;
+                  ctx.lineWidth = 0.8;
+                  ctx.beginPath(); ctx.moveTo(-3.2, 0); ctx.lineTo(3.2, 0); ctx.stroke();
+                  ctx.restore();
+                  ctx.globalAlpha = 0.95;
                 } else {
                   ctx.beginPath(); ctx.arc(_px, _py, 2.0, 0, Math.PI * 2); ctx.fill();
                 }
@@ -62121,6 +62852,16 @@ var KKGameMethods = {
         } else if (btn.classList.contains("td-choose-captain-btn")) {
           const hid = btn.getAttribute("data-hero-id");
           if (hid) self.chooseCaptain(hid);
+        } else if (btn.classList.contains("td-map-companion-btn")) {
+          // /* KK H2 FIX (Nov 21) */ Companion buttons carry BOTH
+          // // td-map-companion-btn and td-map-captain-btn (the latter
+          // // for the shared portrait styling), so this branch MUST
+          // // precede the td-map-captain-btn branch below — otherwise
+          // // every companion tap switched the captain instead of
+          // // toggling the companion, and toggleTeamCompanion was
+          // // unreachable dead code.
+          const hid = btn.getAttribute("data-hero-id");
+          if (hid) self.toggleTeamCompanion(hid);
         } else if (btn.classList.contains("td-map-captain-btn")) {
           const hid = btn.getAttribute("data-hero-id");
           if (hid) self.switchCaptain(hid);
@@ -62130,6 +62871,30 @@ var KKGameMethods = {
         } else if (btn.classList.contains("td-skill-buy-btn")) {
           const nid = btn.getAttribute("data-node-id");
           if (nid) self.buySkillNode(nid);
+        } else if (btn.classList.contains("td-open-htree-btn")) {
+          const hid = btn.getAttribute("data-hero-id");
+          const ret = btn.getAttribute("data-return") || "map";
+          if (hid) self.openHeroTree(hid, ret);
+        } else if (btn.classList.contains("td-hero-buy-btn")) {
+          const hid = btn.getAttribute("data-hero-id");
+          const nid = btn.getAttribute("data-node-id");
+          if (hid && nid) self.buyHeroNode(hid, nid);
+        } else if (id === "td-btn-htree-back") {
+          self.showScreen(self.heroTreeReturnScreen || "map");
+        } else if (id === "td-btn-htree-respec") {
+          if (!self.heroRespecConfirm) {
+            self.heroRespecConfirm = true;
+            self.renderHeroTreeScreen(self.heroTreeHeroId);
+          } else {
+            self.heroRespecConfirm = false;
+            self.respecHeroTree(self.heroTreeHeroId);
+          }
+        } else if (id === "td-btn-wktab-def") {
+          self.renderWorkshopScreen("defenders");
+        } else if (id === "td-btn-wktab-heroes") {
+          self.renderWorkshopScreen("heroes");
+        } else if (id === "td-btn-alm-heroes") {
+          self.renderAlmanacScreen("heroes");
         } else if (btn.classList.contains("td-spell-btn")) {
           const sid = btn.getAttribute("data-spell-id");
           if (sid && self.battleSession) self.tapSpellButton(sid);
@@ -62661,6 +63426,11 @@ var KKUIMethods = {
         '      <div id="td-intro-loadout-grid" class="td-loadout-grid"></div>',
         '    </div>',
         '    <div class="td-panel">',
+        '      <div style="font-size:11px; font-weight:700; color:#ffe38f; margin-bottom:4px;">YOUR TEAM (CAPTAIN + 2 COMPANIONS)</div>',
+        '      <div id="td-intro-team" style="display:flex; gap:8px;"></div>',
+        '      <div style="font-size:11px; color:#d9c9a3; margin-top:4px;">Change your captain and companions on the map before any battle.</div>',
+        '    </div>',
+        '    <div class="td-panel">',
         '      <div style="font-size:11px; font-weight:700; color:#ffe38f; margin-bottom:4px;">REPLAY CHALLENGES</div>',
         '      <div id="td-intro-challenges" style="font-size:11px; color:#d9c9a3;"></div>',
         '    </div>',
@@ -62770,6 +63540,10 @@ var KKUIMethods = {
         '    <span class="td-pill"><span style="width:14px;height:14px;display:inline-block;">' + glmIcon + '</span><span id="td-wk-glimmer">0</span></span>',
         '  </div>',
         '  <div class="td-scroll-body">',
+        '    <div style="display:flex; gap:5px;">',
+        '      <button id="td-btn-wktab-def" class="td-btn" style="flex:1;">Defenders</button>',
+        '      <button id="td-btn-wktab-heroes" class="td-btn" style="flex:1;">Heroes</button>',
+        '    </div>',
         '    <div class="td-panel" style="display:flex; gap:10px; align-items:center;">',
         '      <div id="td-wk-bram-portrait" style="width:54px; height:54px; flex-shrink:0;"></div>',
         '      <div>',
@@ -62809,6 +63583,7 @@ var KKUIMethods = {
         '      <button id="td-btn-alm-def" class="td-btn" style="padding:4px 7px; font-size:11px;">Guardians</button>',
         '      <button id="td-btn-alm-foe" class="td-btn" style="padding:4px 7px; font-size:11px;">Gloomkin</button>',
         '      <button id="td-btn-alm-syn" class="td-btn" style="padding:4px 7px; font-size:11px;">Synergies</button>',
+        '      <button id="td-btn-alm-heroes" class="td-btn" style="padding:4px 7px; font-size:11px;">Heroes</button>',
         '    </div>',
         '  </div>',
         '  <div class="td-scroll-body">',
@@ -62859,7 +63634,7 @@ var KKUIMethods = {
         // five heroes hold the last line, one per lane — the first
         // cell of EVERY lane belongs to the heroes and cannot hold a
         // guardian. (P1 blocked 2 cells; H1 blocks 5.)
-        '      <div>• Five heroes hold the last line beside the gate, one in each lane. The first cell of every lane (marked with a lantern) belongs to the heroes — no guardian can be placed there.</div>',
+        '      <div>• Three heroes hold the last line beside the gate — your captain and two companions, one in each of three lanes. The first cell of every lane (marked with a lantern) belongs to the heroes — no guardian can be placed there.</div>',
         '      <div>• Use your 3 Keeper Powers (Lantern Flare, Time Lull, Mote Rain) on cooldown for tactical swings.</div>',
         '    </div>',
         '    <div class="td-panel" style="border-color:#ff6b6b66;">',
@@ -62870,11 +63645,11 @@ var KKUIMethods = {
         '  <div class="td-bottom-bar" style="justify-content:center; font-size:11px; color:#d9c9a3;">Kindlekeep Expanded Edition</div>',
         '</div>',
 
-        '<!-- CAPTAIN CHOICE SCREEN (H1: five heroes, captain pick) -->',
+        '<!-- CAPTAIN CHOICE SCREEN (H2: ten heroes, captain pick) -->',
         '<div id="td-scr-choice" class="td-screen">',
         '  <div class="td-topbar">',
         '    <span>Choose your Captain</span>',
-        '    <span class="td-pill">Five Heroes · One Captain</span>',
+        '    <span class="td-pill">Ten Heroes · One Captain</span>',
         '  </div>',
         '  <div id="td-choice-body" class="td-scroll-body"></div>',
         '  <div class="td-bottom-bar" style="justify-content:center; font-size:11px; color:#d9c9a3;">Your captain is kept in the save. Switch captains free from the map before any battle.</div>',
@@ -62890,6 +63665,19 @@ var KKUIMethods = {
         '  <div id="td-skills-body" class="td-scroll-body"></div>',
         '  <div class="td-bottom-bar">',
         '    <button id="td-btn-respec" class="td-btn" style="flex:1;">Respec</button>',
+        '  </div>',
+        '</div>',
+
+        '<!-- HERO SKILL TREE SCREEN (H2: per-hero trees, §7) -->',
+        '<div id="td-scr-htree" class="td-screen">',
+        '  <div class="td-topbar">',
+        '    <button id="td-btn-htree-back" class="td-btn">Back</button>',
+        '    <span id="td-htree-title">Hero Skill Tree</span>',
+        '    <span id="td-htree-valor" class="td-pill">0 Valor</span>',
+        '  </div>',
+        '  <div id="td-htree-body" class="td-scroll-body"></div>',
+        '  <div class="td-bottom-bar">',
+        '    <button id="td-btn-htree-respec" class="td-btn" style="flex:1;">Respec</button>',
         '  </div>',
         '</div>',
 
@@ -62957,6 +63745,9 @@ var KKUIMethods = {
       } else if (screenId === "skills") {
         this.respecConfirm = false;
         this.renderSkillsScreen();
+      } else if (screenId === "htree") {
+        this.heroRespecConfirm = false;
+        this.renderHeroTreeScreen(this.heroTreeHeroId);
       }
     },
 
@@ -63019,8 +63810,8 @@ var KKUIMethods = {
       return (typeof v === "number" && v >= 0) ? v : 0;
     },
     heroNodesLearned: function(heroId) {
-      // H2 builds the trees; H1 only displays. heroTrees is
-      // { heroId: { nodes: { nodeId: true } } }; absent means 0/6.
+      // /* KK H2 */ heroTrees is { heroId: { nodes: { nodeId: true } } };
+      // absent means 0/6.
       const ht = (this.saveState && this.saveState.heroTrees) || {};
       const tree = ht[heroId];
       if (!tree || !tree.nodes) return 0;
@@ -63053,6 +63844,12 @@ var KKUIMethods = {
         if (el.kind === "chain") return "Lightning";
         if (el.kind === "chill") return "Ice";
         if (el.kind === "gust") return "Wind";
+        // /* KK H2 */ New bolt elements.
+        if (el.kind === "stone") return "Earth";
+        if (el.kind === "tide") return "Water";
+        if (el.kind === "radiant") return "Light";
+        if (el.kind === "umbral") return "Shadow";
+        if (el.kind === "thorn") return "Nature";
         return "";
       }
       if (typeof el === "string" && el) return el;
@@ -63077,8 +63874,8 @@ var KKUIMethods = {
       const heroes = this.heroDefs();
       const bolt = kd.bolt || {};
       let html = '<div class="td-panel" style="text-align:center; font-size:12px; color:#e6dcc5;">' +
-        'Choose your Captain. In battle, tap a hero&rsquo;s portrait in the strip to select them, then tap a lane to swap them there — every move swaps two heroes. Tap your captain&rsquo;s portrait twice to fire their signature. ' +
-        'The other four heroes fight beside you on their own. Switch captains free from the map before any battle.' +
+        'Choose your Captain. Before each stage, pick your captain and two companions to bring — the other heroes sit that one out. In battle, tap a hero&rsquo;s portrait in the strip to select them, then tap a lane to send them there — an empty lane is a free move, an occupied lane swaps two heroes. Tap your captain&rsquo;s portrait twice to fire their signature. ' +
+        'Your two companions fight beside you on their own. Switch captains and companions free from the map before any battle. Every hero has their own skill tree — open it from a hero&rsquo;s card to spend their Valor.' +
         '</div>';
       html += '<div class="td-hero-choice-grid">';
       for (let i = 0; i < heroes.length; i++) {
@@ -63097,6 +63894,7 @@ var KKUIMethods = {
           '  <div style="font-size:11px; color:#e6dcc5; text-align:center; margin:4px 0;">' + (hDef.blurb || "") + '</div>',
           '  <div style="font-size:10px; color:#d9c9a3; text-align:center;">Light Bolt: ' + this.boltHarmLabel(bolt) + ' every ' + (bolt.intervalSec || 2.4) + 's</div>',
           '  <button class="td-btn td-btn-primary td-choose-captain-btn" data-hero-id="' + hDef.id + '" style="width:100%; margin-top:6px;">Choose ' + hDef.name + '</button>',
+          '  <button class="td-btn td-open-htree-btn" data-hero-id="' + hDef.id + '" data-return="choice" style="width:100%; margin-top:6px;">Skill Tree · ' + nodes + '/6</button>',
           '</div>'
         ].join("\n");
       }
@@ -63544,6 +64342,139 @@ var KKUIMethods = {
       }
     },
 
+    // /* KK H2 */ Per-hero skill tree screen (HEROES-DESIGN §7):
+    // // 2 branches x 3 nodes, Valor costs 3/5/8, respec 150 Glimmer
+    // // refunds that hero's Valor in full. Opens from the captain
+    // // choice screen, the map team section, the Workshop Heroes tab,
+    // // and the Almanac Heroes tab; the return screen is recorded on
+    // // open so Back goes back where the player came from.
+    openHeroTree: function(heroId, returnScreen) {
+      const ids = this.heroDefs().map(function(d) { return d.id; });
+      if (ids.indexOf(heroId) < 0) return;
+      this.heroTreeHeroId = heroId;
+      this.heroTreeReturnScreen = returnScreen || "map";
+      this.showScreen("htree");
+    },
+    renderHeroTreeScreen: function(heroId) {
+      const title = this.rootEl.querySelector("#td-htree-title");
+      const pill = this.rootEl.querySelector("#td-htree-valor");
+      const body = this.rootEl.querySelector("#td-htree-body");
+      if (!body) return;
+      const defs = this.heroDefs();
+      let def = null;
+      for (let i = 0; i < defs.length; i++) {
+        if (defs[i].id === heroId) { def = defs[i]; break; }
+      }
+      if (!def) def = defs[0];
+      if (!def) { body.innerHTML = ""; return; }
+      heroId = def.id;
+      this.heroTreeHeroId = heroId;
+      const tree = def.tree || { branches: [] };
+      const valor = this.heroValorFor(heroId);
+      const nodes = this.heroNodesLearned(heroId);
+      const sig = def.signature || {};
+      const kd = keeperData();
+      const bolt = kd.bolt || {};
+      if (title) title.textContent = def.name + " — Skill Tree";
+      if (pill) pill.textContent = valor + " Valor · " + nodes + "/6 nodes";
+      const pKey = (def.portraits && def.portraits.calm) || "keeper_sigil";
+      const pImg = KKArt.portraitHtml(pKey);
+      let html = [
+        '<div class="td-panel" style="display:flex; gap:10px; align-items:center;">',
+        '  <div style="width:54px; height:54px; flex-shrink:0;">' + pImg + '</div>',
+        '  <div>',
+        '    <div style="font-size:13px; font-weight:800; color:#ffe38f;">' + def.name + ' <span style="font-size:11px; color:#7ce8ff;">(' + this.heroPowerLabel(def) + ' · ' + (def.colorName || "") + ')</span></div>',
+        '    <div style="font-size:11px; color:#e6dcc5;">Signature: ' + (sig.name || "") + (sig.cooldownSec ? ' · ' + sig.cooldownSec + 's cooldown' : '') + '</div>',
+        '    <div style="font-size:11px; color:#e6dcc5;">Light Bolt: ' + this.boltHarmLabel(bolt) + ' every ' + (bolt.intervalSec || 2.4) + 's</div>',
+        '    <div style="font-size:11px; color:#e6dcc5;">Valor: ' + valor + ' · Nodes: ' + nodes + '/6</div>',
+        '  </div>',
+        '</div>',
+        '<div class="td-panel" style="font-size:11px; color:#d9c9a3; line-height:1.5;">' +
+          (tree.pointsRule || "Valor: +1 per stage first-clear with this hero as captain, +1 bonus per 3-star first-clear (max 2 per stage). Replays and Night Watch earn nothing. Valor is per-hero, never shared.") +
+          '<br>' + (tree.fairnessNote || "Node effects apply in battle as soon as they are learned. The tree never gates story progress.") +
+        '</div>'
+      ].join("\n");
+      const branches = tree.branches || [];
+      for (let b = 0; b < branches.length; b++) {
+        const br = branches[b];
+        html += '<div class="td-panel"><div style="font-size:13px; font-weight:800; color:' + (br.color || "#ffe38f") + ';">' + br.name + '</div>' +
+          '<div style="font-size:11px; color:#d9c9a3; margin-bottom:6px;">' + (br.theme || "") + '</div>';
+        const nodesArr = br.nodes || [];
+        for (let n = 0; n < nodesArr.length; n++) {
+          const node = nodesArr[n];
+          const owned = !!((this.saveState.heroTrees || {})[heroId] &&
+            this.saveState.heroTrees[heroId].nodes && this.saveState.heroTrees[heroId].nodes[node.id]);
+          let check = { ok: false, reason: "unknown" };
+          try {
+            if (typeof KKEngine !== "undefined" && KKEngine && typeof KKEngine.heroCanBuyNode === "function") {
+              check = KKEngine.heroCanBuyNode(this.saveState, heroId, node.id);
+            }
+          } catch (e) { check = { ok: false, reason: "unknown" }; }
+          let stateHtml = "";
+          if (owned) {
+            stateHtml = '<span class="td-pill">Owned ✓</span>';
+          } else if (check.reason === "requires") {
+            let reqName = node.requires;
+            try {
+              if (typeof KKEngine !== "undefined" && KKEngine && typeof KKEngine.heroTreeNodeById === "function") {
+                const req = KKEngine.heroTreeNodeById(node.requires);
+                if (req) reqName = req.node.name;
+              }
+            } catch (e) { /* keep the id */ }
+            stateHtml = '<span class="td-pill">🔒 Needs ' + reqName + '</span>';
+          } else if (check.reason === "valor") {
+            stateHtml = '<button class="td-btn" disabled>' + node.cost + ' Valor</button>';
+          } else if (check.ok) {
+            stateHtml = '<button class="td-btn td-btn-primary td-hero-buy-btn" data-hero-id="' + heroId + '" data-node-id="' + node.id + '">Learn (' + node.cost + ' Valor)</button>';
+          } else {
+            stateHtml = '<button class="td-btn" disabled>' + node.cost + ' Valor</button>';
+          }
+          html += '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 0; border-top:1px solid #f5c45322;' + (owned ? '' : (check.ok ? '' : ' opacity:0.75;')) + '">' +
+            '<div style="flex:1;"><div style="font-size:12px; font-weight:700; color:#ffe38f;">' + (n + 1) + '. ' + node.name + '</div>' +
+            '<div style="font-size:11px; color:#e6dcc5;">' + (node.desc || "") + '</div></div>' + stateHtml + '</div>';
+        }
+        html += '</div>';
+      }
+      body.innerHTML = html;
+      const respecBtn = this.rootEl.querySelector("#td-btn-htree-respec");
+      if (respecBtn) {
+        const cost = (tree.respecGlimmer || 150);
+        if (this.heroRespecConfirm) {
+          respecBtn.textContent = "Tap Again to Respec (" + cost + " Glimmer)";
+          respecBtn.disabled = false;
+        } else {
+          respecBtn.textContent = "Respec (" + cost + " Glimmer) · " + nodes + " nodes learned";
+          respecBtn.disabled = (nodes <= 0) || ((this.saveState.glimmer || 0) < cost);
+        }
+      }
+    },
+    buyHeroNode: function(heroId, nodeId) {
+      let bought = false;
+      try {
+        if (typeof KKEngine !== "undefined" && KKEngine && typeof KKEngine.heroBuyNode === "function") {
+          bought = !!KKEngine.heroBuyNode(this.saveState, heroId, nodeId);
+        }
+      } catch (e) { bought = false; }
+      if (bought) {
+        TDSave.save(this.saveState);
+        TDAudio.playSfx("upgrade_chime");
+        this.renderHeroTreeScreen(heroId);
+      }
+    },
+    respecHeroTree: function(heroId) {
+      let done = false;
+      try {
+        if (typeof KKEngine !== "undefined" && KKEngine && typeof KKEngine.heroRespec === "function") {
+          done = !!KKEngine.heroRespec(this.saveState, heroId);
+        }
+      } catch (e) { done = false; }
+      if (done) {
+        TDSave.save(this.saveState);
+        TDAudio.playSfx("upgrade_chime");
+      }
+      this.renderHeroTreeScreen(heroId);
+    },
+
     // M15: battle spell bar, built from TD_DATA.keeper.spells at battle
     // start (lock states cannot change mid-battle).,
     buildSpellsBar: function() {
@@ -63589,7 +64520,8 @@ var KKUIMethods = {
     },
     almanacTabRow: function(activeTab) {
       const tabs = [["defenders", "Guardians"], ["enemies", "Gloomkin"],
-                    ["synergies", "Synergies"], ["keeper", "Keeper"]];
+                    ["synergies", "Synergies"], ["keeper", "Keeper"],
+                    ["heroes", "Heroes"]];
       let html = '<div class="td-alm-tabs">';
       for (let i = 0; i < tabs.length; i++) {
         html += '<button class="td-btn td-alm-tab-btn' + (tabs[i][0] === activeTab ? ' td-alm-active' : '') + '" data-alm-tab="' + tabs[i][0] + '">' + tabs[i][1] + '</button>';
@@ -63631,9 +64563,9 @@ var KKUIMethods = {
       // the gesture returns in its new form and the copy teaches it.
       html += '<div class="td-panel"><div style="font-size:13px; font-weight:800; color:#ffe38f;">Moving your heroes</div>' +
         '<div style="font-size:12px; color:#e6dcc5; margin-top:3px; line-height:1.5;">' +
-        'Tap a hero&rsquo;s portrait in the strip below the field to select them, then tap a lane to swap them there. ' +
-        'Every move swaps two heroes — five heroes, five lanes, no empty lane. ' +
-        'Each battle starts with every hero in their home lane (Rowan top, Rai, Neve, Sora, Wren bottom). ' +
+        'Tap a hero&rsquo;s portrait in the strip below the field to select them, then tap a lane to send them there. ' +
+        'An empty lane is a free move; an occupied lane swaps two heroes. Three heroes fight each stage — your captain and two companions you pick before the battle; the other heroes sit that one out. ' +
+        'Each battle starts with every fielded hero in their home lane (Rowan and Dain top, Rai and Nia, Neve and Lysa, Sora and Kael, Wren and Fern bottom — two heroes share each home lane, so the second takes the nearest free lane). ' +
         'A hero slides along the back line to their new lane; their bolt pauses while sliding. ' +
         'Tap the selected hero&rsquo;s own lane — or their portrait again — to cancel. ' +
         'Tap your captain&rsquo;s portrait a second time to fire their signature. ' +
@@ -63791,15 +64723,76 @@ var KKUIMethods = {
       for (let i = 0; i < defs.length; i++) {
         if (defs[i].id === capId) { capName = defs[i].name; break; }
       }
+      // /* KK H2 */ Team section (CHANGE 3): the captain row plus a
+      // // companions picker — tap a portrait to add or remove that
+      // // hero from the team of two; tapping a third companion
+      // // replaces the first-chosen. Every portrait also carries a
+      // // small Tree link to that hero's skill tree (§7).
       let html = '<div class="td-map-captain-label">Captain: <b>' + (capName || "—") + '</b> — tap a portrait to switch. Free between battles; applies to the next battle.</div><div class="td-map-captain-btns">';
       for (let j = 0; j < defs.length; j++) {
         const def = defs[j];
         const pKey = (def.portraits && def.portraits.calm) || "keeper_sigil";
-        html += '<button type="button" class="td-map-captain-btn' + (def.id === capId ? ' td-map-captain-current' : '') + '" data-hero-id="' + def.id + '" title="' + def.name + ' — tap to make captain">' + KKArt.portraitHtml(pKey) + '</button>';
+        html += '<div class="td-map-hero-cell"><button type="button" class="td-map-captain-btn' + (def.id === capId ? ' td-map-captain-current' : '') + '" data-hero-id="' + def.id + '" title="' + def.name + ' — tap to make captain">' + KKArt.portraitHtml(pKey) + '</button>' +
+          '<button type="button" class="td-btn td-map-hero-tree-link td-open-htree-btn" data-hero-id="' + def.id + '" data-return="map">Tree</button></div>';
+      }
+      html += '</div>';
+      let compIds = [];
+      try {
+        if (typeof KKEngine !== "undefined" && KKEngine && typeof KKEngine.teamCompanionsForSave === "function") {
+          compIds = KKEngine.teamCompanionsForSave(this.saveState) || [];
+        }
+      } catch (e) { compIds = (this.saveState.teamCompanions || []).slice(0, 2); }
+      const compNames = [];
+      for (let i = 0; i < compIds.length; i++) {
+        for (let j = 0; j < defs.length; j++) {
+          if (defs[j].id === compIds[i]) { compNames.push(defs[j].name); break; }
+        }
+      }
+      html += '<div class="td-map-captain-label">Companions: <b>' + (compNames.length ? compNames.join(" + ") : "—") + '</b> — pick 2 to bring. Tap a portrait to add or remove; tapping a third replaces the first-chosen. Only the captain and these two fight.</div><div class="td-map-captain-btns">';
+      for (let j = 0; j < defs.length; j++) {
+        const def = defs[j];
+        if (def.id === capId) continue;
+        const pKey = (def.portraits && def.portraits.calm) || "keeper_sigil";
+        const chosen = compIds.indexOf(def.id) >= 0;
+        html += '<div class="td-map-hero-cell"><button type="button" class="td-map-captain-btn td-map-companion-btn' + (chosen ? ' td-map-captain-current' : '') + '" data-hero-id="' + def.id + '" title="' + def.name + (chosen ? ' — companion, tap to remove' : ' — tap to bring along') + '">' + KKArt.portraitHtml(pKey) + '</button>' +
+          '<button type="button" class="td-btn td-map-hero-tree-link td-open-htree-btn" data-hero-id="' + def.id + '" data-return="map">Tree</button></div>';
       }
       html += '</div>';
       row.innerHTML = html;
       row.style.display = "";
+    },
+    // /* KK H2 */ Companion toggle (CHANGE 3): tap to add or remove;
+    // // adding a third replaces the first-chosen (deterministic).
+    toggleTeamCompanion: function(heroId) {
+      if (!this.saveState) return;
+      if (heroId === this.heroCaptainId(this.saveState)) return;
+      const ids = this.heroDefs().map(function(d) { return d.id; });
+      if (ids.indexOf(heroId) < 0) return;
+      let comp = [];
+      try {
+        if (typeof KKEngine !== "undefined" && KKEngine && typeof KKEngine.teamCompanionsForSave === "function") {
+          comp = KKEngine.teamCompanionsForSave(this.saveState) || [];
+        }
+      } catch (e) { comp = (this.saveState.teamCompanions || []).slice(0, 2); }
+      const at = comp.indexOf(heroId);
+      if (at >= 0) {
+        comp.splice(at, 1);
+      } else if (comp.length < 2) {
+        comp.push(heroId);
+      } else {
+        comp.shift();
+        comp.push(heroId);
+      }
+      try {
+        if (typeof KKEngine !== "undefined" && KKEngine && typeof KKEngine.setTeamCompanions === "function") {
+          comp = KKEngine.setTeamCompanions(this.saveState, comp);
+        } else {
+          this.saveState.teamCompanions = comp;
+        }
+      } catch (e) { this.saveState.teamCompanions = comp; }
+      TDSave.save(this.saveState);
+      TDAudio.playSfx("upgrade_chime");
+      this.renderMapScreen();
     },
     openLevelIntro: function(levelId) {
       let lv = null;
@@ -63890,6 +64883,7 @@ var KKUIMethods = {
       }
 
       this.renderLoadoutGrid();
+      this.renderIntroTeam();
 
       // Replay Challenges (C4)
       const rcEl = this.rootEl.querySelector("#td-intro-challenges");
@@ -63904,6 +64898,35 @@ var KKUIMethods = {
       }
 
       this.showScreen("intro");
+    },
+    // /* KK H2 */ Intro team strip (read-only): the captain and the
+    // // two companions who will fight this stage.
+    renderIntroTeam: function() {
+      const teamEl = this.rootEl.querySelector("#td-intro-team");
+      if (!teamEl) return;
+      const defs = this.heroDefs();
+      const capId = this.heroCaptainId(this.saveState);
+      let compIds = [];
+      try {
+        if (typeof KKEngine !== "undefined" && KKEngine && typeof KKEngine.teamCompanionsForSave === "function") {
+          compIds = KKEngine.teamCompanionsForSave(this.saveState) || [];
+        }
+      } catch (e) { compIds = (this.saveState.teamCompanions || []).slice(0, 2); }
+      const order = [];
+      if (capId) order.push(capId);
+      for (let i = 0; i < compIds.length; i++) order.push(compIds[i]);
+      let html = "";
+      for (let i = 0; i < order.length; i++) {
+        let def = null;
+        for (let j = 0; j < defs.length; j++) {
+          if (defs[j].id === order[i]) { def = defs[j]; break; }
+        }
+        if (!def) continue;
+        const pKey = (def.portraits && def.portraits.calm) || "keeper_sigil";
+        const isCap = def.id === capId;
+        html += '<div style="display:flex; align-items:center; gap:6px; background:#1a2038; padding:4px 8px; border-radius:8px; border:1px solid ' + (isCap ? '#ffd86b' : '#f5c45344') + ';"><div style="width:28px; height:28px;">' + KKArt.portraitHtml(pKey) + '</div><div><div style="font-size:11px; font-weight:800; color:#ffe38f;">' + def.name + '</div><div style="font-size:10px; color:#d9c9a3;">' + (isCap ? 'Captain' : 'Companion') + ' · ' + this.heroPowerLabel(def) + '</div></div></div>';
+      }
+      teamEl.innerHTML = html;
     },
     renderLoadoutGrid: function() {
       const gridEl = this.rootEl.querySelector("#td-intro-loadout-grid");
@@ -64317,6 +65340,23 @@ var KKUIMethods = {
         this.saveState.glimmer = (this.saveState.glimmer || 0) + glimmerWon;
         this.saveState.battleSnapshot = null;
 
+        // /* KK H2 */ Valor (§7.1): +1 per stage first-clear with
+        // // that hero as captain, +1 bonus per 3-star first-clear
+        // // (max 2/stage). Replays pay nothing; Night Watch pays
+        // // nothing (it returns early above). Per-hero, never shared.
+        let valorWon = 0;
+        let valorText = "";
+        try {
+          if (typeof KKEngine !== "undefined" && KKEngine && typeof KKEngine.grantHeroValor === "function") {
+            const capId = this.heroCaptainId(this.saveState);
+            valorWon = KKEngine.grantHeroValor(this.saveState, capId, !prevCleared, s.starsEarned, false) || 0;
+            if (valorWon > 0) {
+              const capDef = this.heroCaptainDef(this.saveState);
+              valorText = " · +" + valorWon + " Valor for " + (capDef ? capDef.name : "your captain");
+            }
+          }
+        } catch (e) { valorWon = 0; valorText = ""; }
+
         // M2/M6: clearing unlocks this stage's defenders + advances the
         // world cache. Grants happen on CLEAR only, never on intro view.
         grantLevelUnlocks(this.saveState, lv);
@@ -64340,17 +65380,17 @@ var KKUIMethods = {
         // Trigger World / Boss Outros & Specified Ending (L50) or Epilogues (L85_W6)
         if (lv.id === "L50") {
           this.playStorySequence(["ending_1", "ending_2", "ending_3"], function() {
-            self.renderResultScreen(true, "THE REKINDLING — DAWN", "+" + glimmerWon + " Glimmer Earned", spk, lineText, prt);
+            self.renderResultScreen(true, "THE REKINDLING — DAWN", "+" + glimmerWon + " Glimmer Earned" + valorText, spk, lineText, prt);
           });
           return;
         } else if (lv.id === "L85_W6") {
           this.playStorySequence(["boss_b8_outro", "epilogue_1", "epilogue_2", "epilogue_3"], function() {
-            self.renderResultScreen(true, "REKINDLED ROADS COMPLETE", "+" + glimmerWon + " Glimmer Earned", spk, lineText, prt);
+            self.renderResultScreen(true, "REKINDLED ROADS COMPLETE", "+" + glimmerWon + " Glimmer Earned" + valorText, spk, lineText, prt);
           });
           return;
         }
 
-        this.renderResultScreen(true, "ROAD HELD — VICTORY", "+" + glimmerWon + " Glimmer Earned", spk, lineText, prt);
+        this.renderResultScreen(true, "ROAD HELD — VICTORY", "+" + glimmerWon + " Glimmer Earned" + valorText, spk, lineText, prt);
       } else {
         this.saveState.battleSnapshot = null;
         TDSave.save(this.saveState);
@@ -64448,7 +65488,8 @@ var KKUIMethods = {
         lEl.innerHTML = beat.lines.map(function(ln) { return '<div style="margin-bottom:4px;">"' + keeperRenderText(ln, selfBeat.saveState) + '"</div>'; }).join("");
       }
     },
-    renderWorkshopScreen: function() {
+    renderWorkshopScreen: function(tab) {
+      this.currentWorkshopTab = tab || this.currentWorkshopTab || "defenders";
       const glmEl = this.rootEl.querySelector("#td-wk-glimmer");
       if (glmEl) glmEl.textContent = String(this.saveState.glimmer || 0);
       const bpEl = this.rootEl.querySelector("#td-wk-bram-portrait");
@@ -64457,6 +65498,34 @@ var KKUIMethods = {
       }
       const listEl = this.rootEl.querySelector("#td-wk-list");
       if (!listEl) return;
+
+      // /* KK H2 */ Heroes tab: all ten heroes with Valor/nodes and
+      // // an Open Tree button (the tree itself lives on its own
+      // // screen). Defenders tab is the unchanged forge list.
+      if (this.currentWorkshopTab === "heroes") {
+        const heroes = this.heroDefs();
+        let html = '<div class="td-panel" style="font-size:11px; color:#d9c9a3; line-height:1.5;">Every hero has their own skill tree. Valor: +1 per stage first-clear with that hero as captain, +1 bonus per 3-star first-clear. Replays and Night Watch earn nothing.</div>';
+        for (let i = 0; i < heroes.length; i++) {
+          const hDef = heroes[i];
+          const pKey = (hDef.portraits && hDef.portraits.calm) || "keeper_sigil";
+          const sig = hDef.signature || {};
+          const valor = this.heroValorFor(hDef.id);
+          const nodes = this.heroNodesLearned(hDef.id);
+          const isCap = hDef.id === this.heroCaptainId(this.saveState);
+          html += [
+            '<div class="td-panel" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">',
+            '  <div style="width:42px; height:42px; flex-shrink:0;">' + KKArt.portraitHtml(pKey) + '</div>',
+            '  <div style="flex:1;">',
+            '    <div style="font-size:12px; font-weight:800; color:#ffe38f;">' + hDef.name + ' <span style="color:#7ce8ff; font-size:10px;">(' + this.heroPowerLabel(hDef) + ' · ' + (hDef.colorName || "") + (isCap ? ' · Captain' : '') + ')</span></div>',
+            '    <div style="font-size:11px; color:#d9c9a3;">Valor ' + valor + ' · ' + nodes + '/6 nodes · ' + (sig.name || "") + '</div>',
+            '  </div>',
+            '  <button class="td-btn td-btn-primary td-open-htree-btn" data-hero-id="' + hDef.id + '" data-return="workshop">Open Tree</button>',
+            '</div>'
+          ].join("\n");
+        }
+        listEl.innerHTML = html;
+        return;
+      }
 
       let html = "";
       for (let i = 0; i < TD_DATA.defenders.length; i++) {
@@ -64658,6 +65727,45 @@ var KKUIMethods = {
         }
       } else if (tab === "keeper") {
         html += this.keeperAlmanacHtml();
+      } else if (tab === "heroes") {
+        // /* KK H2 */ Heroes tab: all ten heroes, read-only, with
+        // // their trees (Owned markers) and an Open Tree button.
+        const heroes = this.heroDefs();
+        const kd = keeperData();
+        const bolt = kd.bolt || {};
+        for (let i = 0; i < heroes.length; i++) {
+          const hDef = heroes[i];
+          const pKey = (hDef.portraits && hDef.portraits.calm) || "keeper_sigil";
+          const sig = hDef.signature || {};
+          const tree = hDef.tree || { branches: [] };
+          const valor = this.heroValorFor(hDef.id);
+          const nodes = this.heroNodesLearned(hDef.id);
+          let treeHtml = "";
+          const branches = tree.branches || [];
+          for (let b = 0; b < branches.length; b++) {
+            const br = branches[b];
+            treeHtml += '<div style="font-size:11px; color:' + (br.color || "#ffe38f") + '; font-weight:700; margin-top:4px;">' + br.name + '</div>';
+            const nodesArr = br.nodes || [];
+            for (let n = 0; n < nodesArr.length; n++) {
+              const node = nodesArr[n];
+              const owned = !!((this.saveState.heroTrees || {})[hDef.id] &&
+                this.saveState.heroTrees[hDef.id].nodes && this.saveState.heroTrees[hDef.id].nodes[node.id]);
+              treeHtml += '<div style="font-size:11px; color:#e6dcc5;">' + (n + 1) + '. ' + node.name + ' <span style="color:#ffd86b;">(' + node.cost + ' Valor' + (owned ? ' · Owned' : '') + ')</span> — ' + (node.desc || "") + '</div>';
+            }
+          }
+          html += [
+            '<div class="td-panel" style="display:flex; gap:10px; align-items:flex-start;">',
+            '  <div style="width:48px; height:48px; flex-shrink:0;">' + KKArt.portraitHtml(pKey) + '</div>',
+            '  <div style="flex:1;">',
+            '    <div style="font-size:13px; font-weight:800; color:#ffe38f;">' + hDef.name + ' <span style="font-size:11px; color:#7ce8ff;">(' + this.heroPowerLabel(hDef) + ' · ' + (hDef.colorName || "") + ')</span></div>',
+            '    <div style="font-size:11px; color:#d9c9a3;">Valor ' + valor + ' · ' + nodes + '/6 nodes · Signature: ' + (sig.name || "") + (sig.cooldownSec ? ' · ' + sig.cooldownSec + 's' : '') + '</div>',
+            '    <div style="font-size:11px; color:#e6dcc5;">' + (hDef.blurb || "") + '</div>',
+            treeHtml,
+            '    <button class="td-btn td-open-htree-btn" data-hero-id="' + hDef.id + '" data-return="almanac" style="margin-top:6px;">Open Skill Tree</button>',
+            '  </div>',
+            '</div>'
+          ].join("\n");
+        }
       } else {
         const syns = TD_DATA.synergies || [];
         for (let s = 0; s < syns.length; s++) {
