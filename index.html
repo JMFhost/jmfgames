@@ -11825,6 +11825,7 @@ button.mr-setup-preview:focus-visible {
 
 /* ------------------------------------------------------------ slots */
 .cl-slots-grid {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 6px;
@@ -11849,6 +11850,17 @@ button.mr-setup-preview:focus-visible {
   color: #1a1a1a;
 }
 .cl-symbol.win { outline: 3px solid var(--cl-gold); }
+/* Spinning reels: each .cl-reel-spin is an overflow-hidden viewport
+   (height set inline from the measured cell step) holding one
+   .cl-reel-strip of 15 symbols. The strip animates translateY from
+   -spinDist to 0 (see cl-reel-spin keyframes); --spin-dist is set
+   inline per reel from the measured cell height + gap. */
+.cl-reel-spin { overflow: hidden; }
+.cl-reel-strip { display: flex; flex-direction: column; gap: 6px; will-change: transform; }
+/* Win-line trace overlay: SVG positioned over the grid (see
+   _slotsDrawWinLines); polylines draw in via stroke-dashoffset. */
+.cl-slots-lines { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 2; }
+.cl-win-line { fill: none; stroke: var(--cl-gold); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; animation: cl-line-draw 500ms ease-out forwards; }
 .cl-paytable { font-size: 13px; }
 .cl-paytable td { padding: 2px 8px 2px 0; }
 .cl-paytable td:last-child { text-align: right; color: var(--cl-gold-soft); font-weight: 700; }
@@ -12161,6 +12173,8 @@ button.mr-setup-preview:focus-visible {
 @keyframes cl-deal-in { from { transform: translateY(-14px) scale(.92); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
 @keyframes cl-flip-in { from { transform: rotateY(90deg); opacity: 0; } to { transform: rotateY(0deg); opacity: 1; } }
 @keyframes cl-reel-settle { from { transform: translateY(-46px); filter: blur(2px); opacity: 0; } to { transform: translateY(0); filter: blur(0); opacity: 1; } }
+@keyframes cl-reel-spin { 0% { transform: translateY(calc(-1 * var(--spin-dist, 0px))); filter: blur(2px); } 70% { filter: blur(0); } 96% { transform: translateY(5px); filter: blur(0); } 100% { transform: translateY(0); filter: blur(0); } }
+@keyframes cl-line-draw { to { stroke-dashoffset: 0; } }
 @keyframes cl-win-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 @keyframes cl-result-pop { 0% { transform: scale(.88); } 60% { transform: scale(1.06); } 100% { transform: scale(1); } }
 @keyframes cl-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
@@ -12174,6 +12188,7 @@ button.mr-setup-preview:focus-visible {
 
 .cl-anim-deal { animation: cl-deal-in 280ms ease-out both; }
 .cl-anim-reel { animation: cl-reel-settle 420ms ease-out both; }
+.cl-anim-reel-spin { animation: cl-reel-spin 1100ms cubic-bezier(.15,.7,.25,1) both; }
 .cl-anim-flip { animation: cl-flip-in 380ms ease-out both; }
 .cl-anim-win { animation: cl-win-pulse 600ms ease-in-out 2; }
 .cl-anim-pop { animation: cl-result-pop 300ms ease-out both; }
@@ -111742,6 +111757,8 @@ var CLGame = (function () {
   var _rocketTimer = 0;
   var _scratchTimer = 0;
   var _rouletteTimer = 0; /* settle timer for the 2000ms wheel spin */
+  var _slotsTimer = 0; /* settle timer for the 2500ms reel spin */
+  var _slotsCountTimer = 0; /* win-amount count-up interval at slots settle */
   var _bankrollHold = null; /* displayed bankroll while a result is held (roulette spin); null = show _profile.bankroll */
   var _scratchPending = {};
   var _scratchDragging = false;
@@ -112424,9 +112441,14 @@ var CLGame = (function () {
     _scratchTimer = _clearTimer(_scratchTimer);
     _scratchPending = {};
     _scratchDragging = false;
+    _slotsCountTimer = _clearTimer(_slotsCountTimer);
     if (_rouletteTimer) {
       _rouletteTimer = _clearTimer(_rouletteTimer);
       _rouletteResolvePending(); /* mid-spin exit (back/coach/pause): settle instantly, Rocket precedent */
+    }
+    if (_slotsTimer) {
+      _slotsTimer = _clearTimer(_slotsTimer);
+      _slotsResolvePending(); /* mid-spin exit (back/coach/pause): settle instantly, Rocket/roulette precedent */
     }
   }
 
@@ -113595,8 +113617,16 @@ var CLGame = (function () {
   function _renderSlots() {
     if (!_screenEl) return;
     var g = _game;
+    /* A shell-driven re-render mid-spin (save restore / settings
+       reload) must not reveal the final grid: re-render the spinning
+       view instead. Only the settle handler shows the result. */
+    if (g.spinning && g._slotsPending) {
+      _renderSlotsSpin(g._slotsPending.grid, null, g._slotsGeom, g._slotsFillers);
+      return;
+    }
     var grid = g.grid || null;
     var spun = _takeAnim(g, '_slotsSpun');
+    var winPulse = spun || _takeAnim(g, '_slotsWinPulse');
     var gridHtml = '';
     for (var reel = 0; reel < 5; reel++) {
       var cells = '';
@@ -113604,7 +113634,7 @@ var CLGame = (function () {
         var sym = grid ? grid[reel][row] : -1;
         var winCell = g.winCells && g.winCells[reel] && g.winCells[reel][row];
         var glyph = (typeof sym === 'string') ? sym : (sym >= 0 ? SLOT_SYMBOLS[sym] : '\u2753');
-        cells += '<div class="cl-symbol' + (winCell ? ' win' + (spun ? ' cl-anim cl-anim-win' : '') : '') + '">' + glyph + '</div>';
+        cells += '<div class="cl-symbol' + (winCell ? ' win' + (winPulse ? ' cl-anim cl-anim-win' : '') : '') + '">' + glyph + '</div>';
       }
       gridHtml += '<div class="cl-reel' + (spun ? ' cl-anim cl-anim-reel' : '') + '"' + (spun ? ' style="animation-delay:' + (reel * 90) + 'ms"' : '') + '>' + cells + '</div>';
     }
@@ -113613,18 +113643,22 @@ var CLGame = (function () {
       '<div class="cl-game">' + _gameHeadHTML('slots', _practiceBanner()) +
       '<div class="cl-slots-grid">' + gridHtml + '</div>' + fs +
       _betRowHTML('slots', g.bet, 1, 100, [1, 5, 10, 25, 50, 100]) +
-      '<button type="button" class="cl-btn gold big" data-cl-action="slots-spin">Spin</button>' +
+      '<button type="button" class="cl-btn gold big" data-cl-action="slots-spin"' + (g.spinning ? ' disabled' : '') + '>Spin</button>' +
       '<button type="button" class="cl-btn" data-cl-action="slots-auto">' + (g.auto ? 'Stop auto-play' : 'Auto-play (up to 25 spins)') + '</button>' +
       _resultElHTML(g.resultText) +
-      '<table class="cl-paytable"><tr><td>\uD83C\uDF52 Cherries</td><td>3: 5x &nbsp; 4: 15x &nbsp; 5: 50x</td></tr>' +
+      _slotsPaytableHTML() +
+      '</div>';
+  }
+
+  function _slotsPaytableHTML() {
+    return '<table class="cl-paytable"><tr><td>\uD83C\uDF52 Cherries</td><td>3: 5x &nbsp; 4: 15x &nbsp; 5: 50x</td></tr>' +
       '<tr><td>\u2B50 Stars</td><td>3: 10x &nbsp; 4: 25x &nbsp; 5: 100x</td></tr>' +
       '<tr><td>\uD83D\uDD14 Bells</td><td>3: 4x &nbsp; 4: 10x &nbsp; 5: 40x</td></tr>' +
       '<tr><td>\uD83C\uDF47 Grapes</td><td>3: 3x &nbsp; 4: 8x &nbsp; 5: 30x</td></tr>' +
       '<tr><td>\uD83C\uDF4B Lemons</td><td>3: 2x &nbsp; 4: 5x &nbsp; 5: 20x</td></tr>' +
       '<tr><td>\uD83C\uDF53 Strawberries</td><td>3: 2x &nbsp; 4: 5x &nbsp; 5: 15x</td></tr>' +
       '<tr><td>3+ scatters</td><td>10 free spins, wins doubled</td></tr></table>' +
-      '<p class="cl-muted">RTP about 96%. 20 paylines, left to right.</p>' +
-      '</div>';
+      '<p class="cl-muted">RTP about 96%. 20 paylines, left to right.</p>';
   }
 
   function _slotsSpin() {
@@ -113632,14 +113666,23 @@ var CLGame = (function () {
     if (!g || g.id !== 'slots' || g.spinning) return;
     var bet = g.bet;
     var isFree = g.freeSpins > 0;
+    /* Hold the bankroll DISPLAY at its pre-spin value for the whole spin
+       (roulette pattern, cl-game.js:3013): _placeBet/_pay below settle
+       the bankroll internally at once, but the topbar + goal bar must
+       not move until the reels settle, or the balance would leak
+       win/lose while the result is still hidden. Reduced motion
+       settles in the same tick, so no hold. */
+    var holdBankroll = !_reducedMotion();
+    if (holdBankroll) _bankrollHold = _profile ? _profile.bankroll : null;
     if (!isFree && !_placeBet(bet)) {
+      _bankrollHold = null;
       _showToast('Not enough bankroll for that bet.');
       return;
     }
     if (isFree) g.freeSpins--;
     g.spinning = true;
     var rng = _nextRng('slots');
-    var grid, totalWin = 0, winCells = [[], [], [], [], []], scatters = 0, freeSpinsWon = 0;
+    var grid, totalWin = 0, winCells = [[], [], [], [], []], scatters = 0, freeSpinsWon = 0, wins = [];
     if (_engine && typeof _engine.slotsSpin === 'function') {
       try {
         var res = _engine.slotsSpin(rng);
@@ -113649,12 +113692,15 @@ var CLGame = (function () {
         // dollars directly, so both paths end up in bet dollars.)
         totalWin = (res.totalWin || 0) * bet;
         freeSpinsWon = res.freeSpins || 0;
+        if (Array.isArray(res.wins)) wins = res.wins;
         // Engine grid holds symbol names; map to display glyphs.
+        var scatterCells = [];
         if (typeof grid[0][0] === 'string') {
           var mapped = [];
           for (var a = 0; a < 5; a++) {
             mapped.push([]);
             for (var b = 0; b < 3; b++) {
+              if (grid[a][b] === 'SCATTER') scatterCells.push([a, b]);
               mapped[a].push(SLOT_ENGINE_DISPLAY[grid[a][b]] || '\u2753');
             }
           }
@@ -113669,6 +113715,10 @@ var CLGame = (function () {
               }
             }
           }
+        }
+        /* Scatter cells pulse at settle (no line trace for scatters). */
+        if (freeSpinsWon > 0) {
+          for (var sc = 0; sc < scatterCells.length; sc++) winCells[scatterCells[sc][0]][scatterCells[sc][1]] = true;
         }
       } catch (e) { grid = null; }
     }
@@ -113703,10 +113753,19 @@ var CLGame = (function () {
         if (count >= 3) {
           var pay = (SLOT_PAYS[s0] && SLOT_PAYS[s0][count]) || 0;
           totalWin += pay * bet;
+          wins.push({ line: li, count: count });
           for (var cc = 0; cc < count; cc++) winCells[cc][line[cc]] = true;
         }
       }
-      if (scatters >= 3) freeSpinsWon = 10;
+      if (scatters >= 3) {
+        freeSpinsWon = 10;
+        /* Scatter cells pulse at settle (no line trace for scatters). */
+        for (var fr = 0; fr < 5; fr++) {
+          for (var fc = 0; fc < 3; fc++) {
+            if (grid[fr][fc] === 1) winCells[fr][fc] = true;
+          }
+        }
+      }
     }
     if (freeSpinsWon > 0) g.freeSpins = (g.freeSpins || 0) + freeSpinsWon;
     var mult = isFree ? 2 : 1;
@@ -113714,37 +113773,271 @@ var CLGame = (function () {
     if (payout > 0) _pay(payout);
     if (_profile) {
       _profile.stats.spins++;
-      if (payout > 0 && payout > bet) _playWin();
     }
     g.grid = grid;
     g.winCells = winCells;
-    g.spinning = false;
-    g._slotsSpun = true;
-    var net = payout - (isFree ? 0 : bet);
-    g.resultText = (freeSpinsWon > 0 ? 'Bonus! 10 free spins at 2x. ' : '') +
-      (payout > 0 ? 'Win ' + _fmt(payout) + (isFree ? ' (free spin, 2x)' : ' — net ' + (net >= 0 ? '+' : '') + _fmt(net)) : (isFree ? 'Free spin — no win.' : 'No win this spin.'));
     var resultKind = payout > bet ? 'win' : payout > 0 ? 'push' : 'lose';
-    _renderSlots();
-    var el = _doc() ? _doc().getElementById('cl-result') : null;
-    _setResult(el, resultKind, g.resultText);
+    var text = _slotsResultText(freeSpinsWon, payout, bet, isFree);
+    if (_reducedMotion()) {
+      /* Settled state at once: no spinning view, no timer, result
+         visible immediately — the old synchronous flow. */
+      _bankrollHold = null;
+      g.spinning = false;
+      g._slotsSpun = true;
+      g.resultText = text;
+      g.resultKind = resultKind;
+      if (payout > 0 && payout > bet) _playWin();
+      _slotsChainAfterSpin(isFree);
+      _renderSlots();
+      var el0 = _doc() ? _doc().getElementById('cl-result') : null;
+      _setResult(el0, resultKind, g.resultText);
+      _slotsDrawWinLines(wins);
+      saveNow();
+      if (_game.practice && _coachGame === 'slots') _coachStep = Math.min(_coachStep + 1, 3);
+      return;
+    }
+    /* Animated spin: hold the result until the reels settle. The
+       bankroll display stays held (set above); _playWin/_setResult
+       wait for settle so nothing leaks the outcome early. */
+    g._slotsPending = { text: text, kind: resultKind, resultKind: resultKind, payout: payout, bet: bet, grid: grid, winCells: winCells, wins: wins, freeSpinsWon: freeSpinsWon, isFree: isFree };
+    _renderSlotsSpin(grid, rng);
+    var win = _win();
+    try { _slotsTimer = win ? win.setTimeout(_slotsSettle, 2500) : 0; } catch (e) { _slotsTimer = 0; }
+    if (!_slotsTimer) _slotsSettle(); /* no timer available: settle at once */
+  }
+
+  /* Filler glyphs for the spinning strips (engine display set). */
+  var SLOT_SPIN_FILLERS = ['\uD83D\uDC51', '7', '\uD83D\uDD14', 'BAR', '\uD83C\uDF52', '\uD83C\uDF4B', '\uD83C\uDF47', '\uD83C\uDF53', '\u2605'];
+
+  function _slotsWinText(prefix, payout, bet, isFree) {
+    return prefix + 'Win ' + _fmt(payout) + (isFree ? ' (free spin, 2x)' : ' — net ' + ((payout - bet) >= 0 ? '+' : '') + _fmt(payout - bet));
+  }
+
+  function _slotsResultText(freeSpinsWon, payout, bet, isFree) {
+    var prefix = freeSpinsWon > 0 ? 'Bonus! 10 free spins at 2x. ' : '';
+    if (payout > 0) return _slotsWinText(prefix, payout, bet, isFree);
+    return prefix + (isFree ? 'Free spin — no win.' : 'No win this spin.');
+  }
+
+  /* Slots spin settle: the result is computed + paid synchronously at
+     tap (RNG/payout unchanged) but only DISPLAYED when the 2500ms reel
+     spin settles. _slotsResolvePending() applies the held result to
+     state with no render; _slotsSettle() is the timer callback. */
+  function _slotsResolvePending() {
+    var g = _game;
+    if (!g || !g.spinning || !g._slotsPending) return;
+    g.resultText = g._slotsPending.text;
+    g.resultKind = g._slotsPending.kind;
+    g._slotsPending = null;
+    g.spinning = false;
+    /* The held bankroll resolves with the result — every path through
+       here (settle timer, back/coach/pause via _stopRoundTimers) shows
+       the true value, so the display can never get stuck held. */
+    _bankrollHold = null;
+    _updateBankroll();
+  }
+
+  function _slotsSettle() {
+    _slotsTimer = _clearTimer(_slotsTimer);
+    var g = _game;
+    if (!g || !g.spinning) return;
+    var pending = g._slotsPending;
+    _slotsResolvePending();
+    if (!pending) return;
+    if (pending.kind === 'win') _playWin();
+    /* The auto/free chain is decided before the settle render so the
+       auto button label is right in the single render below; the next
+       spin still fires 700ms after settle. */
+    _slotsChainAfterSpin(pending.isFree);
+    if (_screen === 'game' && g.id === 'slots') {
+      g._slotsWinPulse = true;
+      _renderSlots();
+      _slotsDrawWinLines(pending.wins);
+      _slotsCountUp(pending);
+    }
     saveNow();
+    if (_game.practice && _coachGame === 'slots') _coachStep = Math.min(_coachStep + 1, 3);
+  }
+
+  /* Auto-play / free-spin chain after a spin. Returns 'scheduled' when
+     the next spin is queued, 'ended' when auto-play ran out, 'free'
+     when a free-spin chain is queued, '' otherwise. When auto ends it
+     does NOT re-render — the caller renders once, after. */
+  function _slotsChainAfterSpin(isFree) {
+    var g = _game;
+    if (!g || g.id !== 'slots') return '';
     if (g.auto && !isFree) {
       var canContinue = _profile && _profile.bankroll >= g.bet && (g.autoLeft || 25) > 1;
       if (canContinue) {
         g.autoLeft = (g.autoLeft || 25) - 1;
         var win2 = _win();
         if (win2) win2.setTimeout(function () { if (_game && _game.id === 'slots' && _game.auto) _slotsSpin(); }, 700);
-      } else {
-        g.auto = false;
-        _renderSlots();
+        return 'scheduled';
       }
-    } else if (isFree && g.freeSpins > 0) {
+      g.auto = false;
+      return 'ended';
+    }
+    if (isFree && g.freeSpins > 0) {
       var win3 = _win();
       if (win3) win3.setTimeout(function () { if (_game && _game.id === 'slots') _slotsSpin(); }, 900);
+      return 'free';
     }
-    if (_game.practice && _coachGame === 'slots') {
-      _coachStep = Math.min(_coachStep + 1, 3);
+    return '';
+  }
+
+  /* Win-amount count-up at settle: 0 -> payout over ~600ms. Only the
+     result text changes per tick (the pop class is set once); the
+     final text is applied exactly at the end. No timer available or
+     reduced motion: final value at once. */
+  function _slotsCountUp(pending) {
+    var el = _doc() ? _doc().getElementById('cl-result') : null;
+    if (!el) return;
+    if (!(pending.payout > 0) || _reducedMotion()) {
+      _setResult(el, pending.kind, pending.text);
+      return;
     }
+    var prefix = pending.freeSpinsWon > 0 ? 'Bonus! 10 free spins at 2x. ' : '';
+    _setResult(el, pending.kind, _slotsWinText(prefix, 0, pending.bet, pending.isFree));
+    var start = _now();
+    var win = _win();
+    _slotsCountTimer = _clearTimer(_slotsCountTimer);
+    try {
+      _slotsCountTimer = win ? win.setInterval(function () {
+        var t = Math.min(1, (_now() - start) / 600);
+        var el2 = _doc() ? _doc().getElementById('cl-result') : null;
+        if (!el2 || !_game || _game.id !== 'slots' || _screen !== 'game') {
+          _slotsCountTimer = _clearTimer(_slotsCountTimer);
+          return;
+        }
+        if (t >= 1) {
+          _slotsCountTimer = _clearTimer(_slotsCountTimer);
+          el2.textContent = pending.text;
+        } else {
+          el2.textContent = _slotsWinText(prefix, Math.round(pending.payout * t), pending.bet, pending.isFree);
+        }
+      }, 30) : 0;
+    } catch (e) { _slotsCountTimer = 0; }
+    if (!_slotsCountTimer) el.textContent = pending.text;
+  }
+
+  function _slotsMeasureGeom() {
+    /* Measure the cell step (cell height + gap) from the live grid in
+       LAYOUT pixels (offsetTop/offsetHeight are transform-independent,
+       so the shell's --cl-scale does not skew the spin distance). */
+    var geom = { cellStep: 58, viewportH: 168 };
+    try {
+      var gridEl = _screenEl ? _screenEl.querySelector('.cl-slots-grid') : null;
+      var reelEl = gridEl ? gridEl.querySelector('.cl-reel') : null;
+      var cells = reelEl ? reelEl.querySelectorAll('.cl-symbol') : null;
+      if (cells && cells.length >= 2 && cells[0].offsetHeight > 0) {
+        var step = cells[1].offsetTop - cells[0].offsetTop;
+        if (step > 0) {
+          geom.cellStep = step;
+          geom.viewportH = cells[0].offsetHeight * 3 + (step - cells[0].offsetHeight) * 2;
+        }
+      }
+    } catch (e) { /* fall back to 52px cells + 6px gaps */ }
+    return geom;
+  }
+
+  /* Spinning view: each reel is an overflow-hidden viewport holding one
+     strip — the final 3 symbols first, then K=12 filler symbols drawn
+     from the seeded 'slots' stream (presentation only — the result is
+     already determined). The strip animates translateY from -spinDist
+     to 0, so the fillers scroll past and the reel lands on the final 3
+     with a settle bounce; per-reel durations stop them left to right.
+     The final symbols sit at the TOP of the strip because the keyframe
+     ends at translateY(0) — that is what the strip shows when the spin
+     lands. --spin-dist is computed from the MEASURED cell step, never
+     hardcoded. geom/fillers are stored on the game so a shell-driven
+     re-render mid-spin can rebuild the same view. */
+  function _renderSlotsSpin(finalGrid, rng, geom, fillers) {
+    if (!_screenEl) return;
+    var g = _game;
+    geom = geom || _slotsMeasureGeom();
+    if (!fillers) {
+      fillers = [];
+      for (var reel = 0; reel < 5; reel++) {
+        var arr = [];
+        for (var f = 0; f < 12; f++) {
+          if (rng) arr.push(SLOT_SPIN_FILLERS[Math.floor(rng() * SLOT_SPIN_FILLERS.length)]);
+          else arr.push(SLOT_SPIN_FILLERS[(reel * 12 + f) % SLOT_SPIN_FILLERS.length]);
+        }
+        fillers.push(arr);
+      }
+    }
+    g._slotsGeom = geom;
+    g._slotsFillers = fillers;
+    var spinDist = 12 * geom.cellStep;
+    var gridHtml = '';
+    for (var reel2 = 0; reel2 < 5; reel2++) {
+      var strip = '';
+      for (var row = 0; row < 3; row++) {
+        var sym = (finalGrid && finalGrid[reel2]) ? finalGrid[reel2][row] : -1;
+        var glyph = (typeof sym === 'string') ? sym : (sym >= 0 ? SLOT_SYMBOLS[sym] : '\u2753');
+        strip += '<div class="cl-symbol">' + glyph + '</div>';
+      }
+      for (var f2 = 0; f2 < 12; f2++) {
+        strip += '<div class="cl-symbol">' + fillers[reel2][f2] + '</div>';
+      }
+      gridHtml += '<div class="cl-reel cl-reel-spin" style="height:' + geom.viewportH + 'px">' +
+        '<div class="cl-reel-strip cl-anim cl-anim-reel-spin" style="--spin-dist:' + spinDist + 'px; animation-duration:' + (1100 + reel2 * 350) + 'ms">' + strip + '</div></div>';
+    }
+    var fs = g.freeSpins > 0 ? '<div class="cl-note">Free spins left: ' + g.freeSpins + ' — all wins doubled (2x).</div>' : '';
+    _screenEl.innerHTML =
+      '<div class="cl-game">' + _gameHeadHTML('slots', _practiceBanner()) +
+      '<div class="cl-slots-grid">' + gridHtml + '</div>' + fs +
+      _betRowHTML('slots', g.bet, 1, 100, [1, 5, 10, 25, 50, 100]) +
+      '<button type="button" class="cl-btn gold big" data-cl-action="slots-spin" disabled>Spin</button>' +
+      '<button type="button" class="cl-btn" data-cl-action="slots-auto">' + (g.auto ? 'Stop auto-play' : 'Auto-play (up to 25 spins)') + '</button>' +
+      _resultElHTML('The reels are spinning\u2026') +
+      _slotsPaytableHTML() +
+      '</div>';
+  }
+
+  /* Win-line trace: one gold polyline per line win, through the winning
+     cells' centers (line index -> SLOT_LINES rows, first `count` reels).
+     Cell centers are measured from the DOM after the final render
+     (getBoundingClientRect relative to the grid rect, corrected for the
+     shell's --cl-scale transform and the grid border). Scatter wins
+     have no line: their cells only pulse (see _slotsSpin). */
+  function _slotsDrawWinLines(wins) {
+    if (!_screenEl || !wins || !wins.length) return;
+    var gridEl = null;
+    try { gridEl = _screenEl.querySelector('.cl-slots-grid'); } catch (e) { return; }
+    if (!gridEl) return;
+    var grect, scale = 1;
+    try {
+      grect = gridEl.getBoundingClientRect();
+      if (!grect || !grect.width || !gridEl.clientWidth) return;
+      scale = grect.width / gridEl.clientWidth;
+    } catch (e) { return; }
+    var reels = null;
+    try { reels = gridEl.querySelectorAll('.cl-reel'); } catch (e) { return; }
+    if (!reels || reels.length < 5) return;
+    var polylines = '';
+    for (var w = 0; w < wins.length; w++) {
+      var ln = wins[w].line;
+      var count = wins[w].count;
+      if (typeof ln !== 'number' || !SLOT_LINES[ln] || !count) continue;
+      var pts = [];
+      for (var c = 0; c < count && c < 5; c++) {
+        var cells = null;
+        try { cells = reels[c].querySelectorAll('.cl-symbol'); } catch (e) { cells = null; }
+        if (!cells) continue;
+        var cell = cells[SLOT_LINES[ln][c]];
+        if (!cell) continue;
+        var r = cell.getBoundingClientRect();
+        pts.push((((r.left + r.width / 2 - grect.left - gridEl.clientLeft) / scale).toFixed(1)) + ',' +
+          (((r.top + r.height / 2 - grect.top - gridEl.clientTop) / scale).toFixed(1)));
+      }
+      if (pts.length >= 2) {
+        polylines += '<polyline class="cl-win-line" pathLength="100" points="' + pts.join(' ') + '"/>';
+      }
+    }
+    if (!polylines) return;
+    var svg = '<svg class="cl-slots-lines" width="' + gridEl.clientWidth + '" height="' + gridEl.clientHeight + '" viewBox="0 0 ' + gridEl.clientWidth + ' ' + gridEl.clientHeight + '" aria-hidden="true">' + polylines + '</svg>';
+    try { gridEl.insertAdjacentHTML('beforeend', svg); } catch (e) { /* overlay is cosmetic */ }
   }
 
   /* ---------------------------------------------------------- blackjack */
@@ -115434,6 +115727,12 @@ var CLGame = (function () {
     if (_game && _game.id === 'roulette' && _game._rouletteSpinning &&
         (action === 'roulette-pick' || action === 'roulette-type' || action === 'roulette-spin' ||
          action === 'set-bet' || action === 'toggle-hints')) return;
+    /* While the slots reels are spinning, bet changes / hints would
+       re-render the screen and destroy the spinning strips — ignore
+       them until the spin settles. (Stopping auto-play mid-spin is
+       handled in the slots-auto case: it sets the flag only.) */
+    if (_game && _game.id === 'slots' && _game.spinning &&
+        (action === 'set-bet' || action === 'toggle-hints' || action === 'slots-spin')) return;
     _playClick();
     try {
       switch (action) {
@@ -115521,10 +115820,22 @@ var CLGame = (function () {
         case 'slots-spin': _slotsSpin(); break;
         case 'slots-auto': {
           if (_game) {
-            _game.auto = !_game.auto;
-            _game.autoLeft = 25;
-            _renderSlots();
-            if (_game.auto) _slotsSpin();
+            if (_game.spinning) {
+              /* Mid-spin: set the flag only. Stopping auto-play takes
+                 effect at settle (the chain checks g.auto); starting it
+                 mid-spin is a no-op. No re-render: the strips must
+                 survive. The button label updates in place. */
+              if (_game.auto) {
+                _game.auto = false;
+                var ab = _screenEl ? _screenEl.querySelector('[data-cl-action="slots-auto"]') : null;
+                if (ab) ab.textContent = 'Auto-play (up to 25 spins)';
+              }
+            } else {
+              _game.auto = !_game.auto;
+              _game.autoLeft = 25;
+              _renderSlots();
+              if (_game.auto) _slotsSpin();
+            }
           }
           break;
         }
