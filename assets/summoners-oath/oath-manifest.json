@@ -1,0 +1,1979 @@
+{
+ "fileCount": 493,
+ "files": {
+  "backgrounds/arc1-oathlands.webp": {
+   "bytes": 174376,
+   "sha256": "7173480425ba6be8c950198b598a8a2b5df5e127d0e9f166d9dd5785de00af67"
+  },
+  "backgrounds/arc10-vale.webp": {
+   "bytes": 130102,
+   "sha256": "519944f381fee3f1691ec771e0253a7c5edd6625edafc594ab9a1a9eb76a6599"
+  },
+  "backgrounds/arc2-saltreach.webp": {
+   "bytes": 155044,
+   "sha256": "4ff676901e72bda2e1e346487ecb3cf20ac98b68ea3396d319f75bc8c847e4e7"
+  },
+  "backgrounds/arc3-undertow.webp": {
+   "bytes": 186054,
+   "sha256": "1312d15e39d1bd2b2ca32b2d24938f02fee198e94b75f98b5f561112e2a747a6"
+  },
+  "backgrounds/arc4-ironpeaks.webp": {
+   "bytes": 227136,
+   "sha256": "48bdd9bcbad2c387e508155bf3ea4d384bfacd926d546f32059ea259b2c203ad"
+  },
+  "backgrounds/arc5-rimewilds.webp": {
+   "bytes": 235616,
+   "sha256": "2a4a079d8d1ef9582b5d000f66c2e48969fff89fdc697ce17f5536a682b89260"
+  },
+  "backgrounds/arc6-fenwilds.webp": {
+   "bytes": 209960,
+   "sha256": "7b7b139381edfe0ff1893e319248114f4dc14419bad65c77e12536eeca3c5eef"
+  },
+  "backgrounds/arc7-greymarches.webp": {
+   "bytes": 186272,
+   "sha256": "0ed443adcc5bb9f636d6e2f611a9426a8f23e68e25ea232b30024a0d47196a54"
+  },
+  "backgrounds/arc8-beastwood.webp": {
+   "bytes": 233324,
+   "sha256": "93b3ae8bc5ebd58f7d41d1ee8710aeeb7df9c3a2de96ee3d478183bc464e5fde"
+  },
+  "backgrounds/arc9-brasscoast.webp": {
+   "bytes": 243504,
+   "sha256": "e1c13c109491f5d134e7e44b17307d1450bf5ee16ea55cde5b848da1df0cec9a"
+  },
+  "backgrounds/arena.webp": {
+   "bytes": 201608,
+   "sha256": "dd57317a28e48d4acde2178187f0385524c0afa18becc5de760df84c8e0520ce"
+  },
+  "backgrounds/hub-bastion.webp": {
+   "bytes": 180714,
+   "sha256": "07887a900873e73faad4f0aa45e0b9cc132267ea388d58c0df13202569eb251a"
+  },
+  "backgrounds/spire.webp": {
+   "bytes": 160710,
+   "sha256": "7e86a2245273075820325a12ec7d580f768afd5dc5540276ddaff78af0b30623"
+  },
+  "portraits/aella-battle.webp": {
+   "bytes": 77760,
+   "sha256": "1cbe632c3789abac6f953bf6b0d8bcf900de455a3f079c587e829c66770088d3"
+  },
+  "portraits/aella-calm.webp": {
+   "bytes": 60600,
+   "sha256": "7706f01e102866229f2171a721b9565ba4769ba44eb328be59ccf3b8eaa2cfaf"
+  },
+  "portraits/aella-warm.webp": {
+   "bytes": 67484,
+   "sha256": "1280274cc1b97c23020ea1523d33238b288196c44f9e040e9698d2c012a0f8b8"
+  },
+  "portraits/aelred-battle.webp": {
+   "bytes": 85940,
+   "sha256": "eccd63aa30655b939d7c1a681d335fd01d947f2ae5ac48d1be3f19923eec96ab"
+  },
+  "portraits/aelred-calm.webp": {
+   "bytes": 72362,
+   "sha256": "d523ecaeec729410a1a0e0656ab876e79e2545ac8ce0d36c7c3488f3ab9d8685"
+  },
+  "portraits/aelred-warm.webp": {
+   "bytes": 72312,
+   "sha256": "98ff5f554ebb5cda492f7672399a05675d92711ca708aa6f6830c21eb7675275"
+  },
+  "portraits/alaric-battle.webp": {
+   "bytes": 73514,
+   "sha256": "facd68f8ab0065de537052490e60fc6caf7bd654c10c327490819494867c937b"
+  },
+  "portraits/alaric-calm.webp": {
+   "bytes": 58296,
+   "sha256": "f06b759ae8ce249cfab1db02f65136f7d9a5303733a41be78cf37bb90b155e6e"
+  },
+  "portraits/alaric-warm.webp": {
+   "bytes": 63284,
+   "sha256": "c9106b16160d66fc79685ae9e2b6aa62acc7cd5b4b72fe02a5078ff367437128"
+  },
+  "portraits/alban-battle.webp": {
+   "bytes": 103310,
+   "sha256": "abb6903979ba51e1df2e3ff373ad90177141a4b546cea51bd9fa193a61c5b9f9"
+  },
+  "portraits/alban-calm.webp": {
+   "bytes": 69340,
+   "sha256": "4e4a6049874457cd2fc022e15eee9a9cb05ee5b44a30e944816a24c1d85ae4d3"
+  },
+  "portraits/alban-warm.webp": {
+   "bytes": 69142,
+   "sha256": "e9e60396a5f6bf53695bce4f4d90546e8238bd3a08b4f01fa42e337403d1fb8a"
+  },
+  "portraits/alder-battle.webp": {
+   "bytes": 82734,
+   "sha256": "3871b318221cdce69b346a8e4bd0c1c6c90824d862df6201082f0eab53fdb374"
+  },
+  "portraits/alder-calm.webp": {
+   "bytes": 55674,
+   "sha256": "c91fa9e786d3eb07af6873ad3b7740342e7ff7fb68a0615179a9b0d90df33fe8"
+  },
+  "portraits/alder-warm.webp": {
+   "bytes": 64360,
+   "sha256": "02baff0bbf88f21fb52e1e3d9ab7b6b6c6d82fd37a81754855fa05a740601920"
+  },
+  "portraits/aldous.webp": {
+   "bytes": 58548,
+   "sha256": "ee72bed1c384b00b76e8774682080c31f29e40295a52ee7a83b64f7101497c94"
+  },
+  "portraits/alix-battle.webp": {
+   "bytes": 100312,
+   "sha256": "ce02a9b25e830a2fd0639fc2703d07e61e72d251079a14055cd22e3c018dbccd"
+  },
+  "portraits/alix-calm.webp": {
+   "bytes": 65310,
+   "sha256": "79b19e758186b4460500711be1bceb124ea7661c2ea729a44bc0d91f22ce2b7b"
+  },
+  "portraits/alix-warm.webp": {
+   "bytes": 63188,
+   "sha256": "3679b3c07ec97e963bc0b15db9f2eae2454583870e8d241c34b82d293015c8a0"
+  },
+  "portraits/alouette-battle.webp": {
+   "bytes": 84486,
+   "sha256": "25bfe160cc2513c4cab4d841bb7d18536dc580d024ad7e24cd95799f2f3e6225"
+  },
+  "portraits/alouette-calm.webp": {
+   "bytes": 72930,
+   "sha256": "d751dbabc3e28873069ea7aa55daeee6c3e90544c6cb179e6ff957c9dffd64f4"
+  },
+  "portraits/alouette-warm.webp": {
+   "bytes": 71842,
+   "sha256": "90807dbf3c4f8086437deddc294e828eec769640d23e8a06bdfd7f6fb800a2e1"
+  },
+  "portraits/ambrose.webp": {
+   "bytes": 48176,
+   "sha256": "de5f3a782154baa7d019d700eabeffd9bdc464eaa926d42ee2030211b88d8470"
+  },
+  "portraits/annis-battle.webp": {
+   "bytes": 65318,
+   "sha256": "61237a3628c643849cefe66dc0065dbd95719af5a086115ce10b41aa20bc18e6"
+  },
+  "portraits/annis-calm.webp": {
+   "bytes": 50650,
+   "sha256": "45795d1fceeb8798c92c494dcd3e14edbc5861b5ea03c7f74ff9ad7d82cb384e"
+  },
+  "portraits/annis-warm.webp": {
+   "bytes": 63606,
+   "sha256": "f4324551a2f62453fa25b155f6f032fe13546601575c826e0a720224628ec344"
+  },
+  "portraits/anouk-battle.webp": {
+   "bytes": 72158,
+   "sha256": "988f5b8290e89e962e2bef2878d5372849067dfe963e66f3b56b3aa66acc161b"
+  },
+  "portraits/anouk-calm.webp": {
+   "bytes": 70550,
+   "sha256": "0ba18ede1475cdd9b54bd04073d02c61635f1d2c52de62c1b95602b8a978ccb1"
+  },
+  "portraits/anouk-warm.webp": {
+   "bytes": 67088,
+   "sha256": "8534a59dd1c82604cccbe0784d58bff3001ec83e05e45abc3ef79565450a5e67"
+  },
+  "portraits/antiope-battle.webp": {
+   "bytes": 71480,
+   "sha256": "74fc2e9b7e077919055f718bf53e46cfc5c14b111612b4f4bbeea4abb17ac428"
+  },
+  "portraits/antiope-calm.webp": {
+   "bytes": 58990,
+   "sha256": "a8b9a6d045b8cf09b5b08a8cb511910454c3a1ad94f797db022f52c1e29dd251"
+  },
+  "portraits/antiope-warm.webp": {
+   "bytes": 63414,
+   "sha256": "c68f7080e02055bea7ed213e767b937c1b50a33ee4df0ac661ff31bf7355e461"
+  },
+  "portraits/astrid-battle.webp": {
+   "bytes": 78696,
+   "sha256": "f759704b8810f9b256f89eba8af3809160e356e68e7021921523c6382a42653a"
+  },
+  "portraits/astrid-calm.webp": {
+   "bytes": 44420,
+   "sha256": "34b10551fbe7e45dc7191b3cb3310da442ae424cfe3890f8ff7a35d86800c3e4"
+  },
+  "portraits/astrid-warm.webp": {
+   "bytes": 48752,
+   "sha256": "7a340c309b59a20596446551df5ffc9fbca519ecda7b1ad55683469b51ff4670"
+  },
+  "portraits/augusta-battle.webp": {
+   "bytes": 101660,
+   "sha256": "5260a33075ae6ea851fae1497a67c8278f6bf88e50658bc592406da6ae9662d9"
+  },
+  "portraits/augusta-calm.webp": {
+   "bytes": 85190,
+   "sha256": "7f4461cf4c305ed849bd6d8af107d4950e39ff064ce82a170586737a5ae49202"
+  },
+  "portraits/augusta-warm.webp": {
+   "bytes": 81834,
+   "sha256": "1cc44c3a927af26dde7b7a5f3cab5b44d85af6fd502472450ffcdb88d2aaeae6"
+  },
+  "portraits/aveline-battle.webp": {
+   "bytes": 82342,
+   "sha256": "58aced0e0ffa09dfe41f56321717146270c1f640e44315c50923b6d9d3b0598f"
+  },
+  "portraits/aveline-calm.webp": {
+   "bytes": 66726,
+   "sha256": "34ef0aa50313b032aeb058bc1bb7b029a5f6d35f79a095c21cc8907c6cdddb70"
+  },
+  "portraits/aveline-warm.webp": {
+   "bytes": 65948,
+   "sha256": "2c27576ae34d95adff8274b90e70cad94b01701ba2a570fc6d4640fb9d401f51"
+  },
+  "portraits/avis-battle.webp": {
+   "bytes": 85688,
+   "sha256": "dc1e8e093848c56fb3db19aa97141d55adb469038aaff8ca91b42935c91cfc44"
+  },
+  "portraits/avis-calm.webp": {
+   "bytes": 74310,
+   "sha256": "6c4c6c6c61056fd5d1fe71e1f6e7b4c6bc4129eff2a5ce4671500f3d14e8046a"
+  },
+  "portraits/avis-warm.webp": {
+   "bytes": 77928,
+   "sha256": "f9ae8a470af7a09efa4d4f8a55f69b4a2577d6c77599fb553265de2f42a061c6"
+  },
+  "portraits/bastien-battle.webp": {
+   "bytes": 72716,
+   "sha256": "a53c8a17b1d4d6d21670d5542651e253397b2901f23c12a5148af1cd179b792d"
+  },
+  "portraits/bastien-calm.webp": {
+   "bytes": 54298,
+   "sha256": "5b447854540f176e5a31a3ccbb71311424098e30763df3d0816fc42258f3cc6e"
+  },
+  "portraits/bastien-warm.webp": {
+   "bytes": 55794,
+   "sha256": "0309fec054b1d104816017e11709655f97a3eb7e8f5620c2a3a56279b66cb54b"
+  },
+  "portraits/bastion-portal.webp": {
+   "bytes": 69624,
+   "sha256": "dbec17b20e1daf96130bafe48a377bc912f20611c6d4c3038551abcd152b7778"
+  },
+  "portraits/beatrix-battle.webp": {
+   "bytes": 79426,
+   "sha256": "154c9b91aa63e6d6851d882c5959265b0d7feddfbd7f4497872fed462afec055"
+  },
+  "portraits/beatrix-calm.webp": {
+   "bytes": 62984,
+   "sha256": "388ec636d63691368d6218c433cce00cb537476784dbdb96511ad72a42ce231a"
+  },
+  "portraits/beatrix-warm.webp": {
+   "bytes": 65476,
+   "sha256": "ae678959b5a1f9237e9c9824e980bac7582838ec42f2c9d1f4030d446e259ecf"
+  },
+  "portraits/belinda-battle.webp": {
+   "bytes": 81858,
+   "sha256": "a60b4ae0dca9f0dedb06b71161014ba47fc077e51dd676684a7df11cb53b7c57"
+  },
+  "portraits/belinda-calm.webp": {
+   "bytes": 67080,
+   "sha256": "6ef0daddfc3441f6d041236cf5d83666a09539a51b1f0adfed810f0c3eb52f4b"
+  },
+  "portraits/belinda-warm.webp": {
+   "bytes": 64816,
+   "sha256": "7f27d0b97b7423af4089f013f59db2214b044c0ea08e60ef3f7e83db55b9ef35"
+  },
+  "portraits/belric-battle.webp": {
+   "bytes": 69052,
+   "sha256": "506ed345220a22687b1b55d93767aa82bacf495c25cde4a17b370a953b812d14"
+  },
+  "portraits/belric-calm.webp": {
+   "bytes": 57948,
+   "sha256": "57d3c5541d5ed8e1bfc4cbb606e4d95317ec31a56a3f5bdc63d988932adc984c"
+  },
+  "portraits/belric-warm.webp": {
+   "bytes": 60522,
+   "sha256": "5fc2afa7d7986e743006ac665a2f2164c75c7249e2398c60968343533fab12c1"
+  },
+  "portraits/beltran-battle.webp": {
+   "bytes": 81648,
+   "sha256": "6dfbca7d5b3a363675d0a2cbeb79fb278f2244a7dc6ec0db786738ebe0ef5132"
+  },
+  "portraits/beltran-calm.webp": {
+   "bytes": 58306,
+   "sha256": "bc07c85079bf42ddde7e17e574018fcd7322149a62d4c5e615a2aae6e7135ac0"
+  },
+  "portraits/beltran-warm.webp": {
+   "bytes": 54250,
+   "sha256": "ea17a0b22f8fb66953b0af5d752c79dc7050a4c43e754f7f03b0cdb7603235ac"
+  },
+  "portraits/benedicta-battle.webp": {
+   "bytes": 83106,
+   "sha256": "f3256b48bd38fbb4f97a69df6871e34adceb94d66aed1dd1d8c7e90fd44f663a"
+  },
+  "portraits/benedicta-calm.webp": {
+   "bytes": 46632,
+   "sha256": "797eace8b241e4d4cf5e6b5c78be3fbd34d89d155e4c461f5726aef0dea8017a"
+  },
+  "portraits/benedicta-warm.webp": {
+   "bytes": 46268,
+   "sha256": "cd01d670bb3bb1938e6c567a08e6acd908736d0d16923fe4ff4ecd3338d69051"
+  },
+  "portraits/berdan.webp": {
+   "bytes": 56506,
+   "sha256": "26af3211423b254ce21f5206b139ca83cbb8d43e7c932e80f993fda361cb3928"
+  },
+  "portraits/berta-battle.webp": {
+   "bytes": 85968,
+   "sha256": "c5306652fd36930055a9cf7d294863e9408c6c40796dde3d9e47655f14b665f7"
+  },
+  "portraits/berta-calm.webp": {
+   "bytes": 50840,
+   "sha256": "2aa69ed134f26f22042c6499e24d935e15165cd7467d237c44abd9501e59e275"
+  },
+  "portraits/berta-warm.webp": {
+   "bytes": 57654,
+   "sha256": "50008dfd3c2eb4b2fbe789fd497564bcc9c251ea812e1bcf3f9ec8889b0eeb88"
+  },
+  "portraits/betony-battle.webp": {
+   "bytes": 86744,
+   "sha256": "59d586669846528ae8c231f1248c5fabf67e6e9e66e0cf827d44bcbfc013c9d2"
+  },
+  "portraits/betony-calm.webp": {
+   "bytes": 75500,
+   "sha256": "2d4ad62973a043911d3c5ad7ac48230260b937647b45f1200ca10ac5c8d00537"
+  },
+  "portraits/betony-warm.webp": {
+   "bytes": 75594,
+   "sha256": "f394471fa5f18c9eb8a47d1d3b22fd85653528b35f13264b4ed00a95a8809b7c"
+  },
+  "portraits/brienne-battle.webp": {
+   "bytes": 70258,
+   "sha256": "447c9c0aa7173ed7dd3934e8fb856856a2f99ec11c439b1f4a86659760328299"
+  },
+  "portraits/brienne-calm.webp": {
+   "bytes": 69778,
+   "sha256": "0a6eb1282f7e679b4a9c370489381384a040826bd643796a9ae7d4f2ee64d084"
+  },
+  "portraits/brienne-warm.webp": {
+   "bytes": 69752,
+   "sha256": "554a0b32880df89cfb3e1fd03741cdaad0a93ce583de65ceb214d2bffebf880d"
+  },
+  "portraits/briony-battle.webp": {
+   "bytes": 69068,
+   "sha256": "afb5db8cb07d31b9370168054e8a177b0741f59096d331a427888aa6c45cce0c"
+  },
+  "portraits/briony-calm.webp": {
+   "bytes": 68064,
+   "sha256": "a057fd2a7302f8839e9ff0982ecffd02490085fb11d497f09d6e87a6cdd5fc6b"
+  },
+  "portraits/briony-warm.webp": {
+   "bytes": 67252,
+   "sha256": "e80cdf3e4ea689a3371ab81a148004a6b6e83cc665d32507ee149e573cbdd966"
+  },
+  "portraits/caelum-battle.webp": {
+   "bytes": 77952,
+   "sha256": "ed156f3fbb002f772853b2e4824140d4d93953166198593c4e1509d006cf830d"
+  },
+  "portraits/caelum-calm.webp": {
+   "bytes": 60682,
+   "sha256": "db82f8890ccea4a527f4c785f8214518536dabcbfc82331e9fe599c26aa82c68"
+  },
+  "portraits/caelum-warm.webp": {
+   "bytes": 55514,
+   "sha256": "0006b7ea9f09e1d0bfb0a95f45703b8e579a1b62990441d0a0c6085d86198e6b"
+  },
+  "portraits/calypso-battle.webp": {
+   "bytes": 76788,
+   "sha256": "4b9b4f50293fbeaea74b9f504cfe2fecfff7c4e042d3a86753c259756e7148b4"
+  },
+  "portraits/calypso-calm.webp": {
+   "bytes": 59254,
+   "sha256": "70675218c39efad539a4a36991eb866ce0f81556ba7d0eddb249373724a85a9c"
+  },
+  "portraits/calypso-warm.webp": {
+   "bytes": 54018,
+   "sha256": "c9a5396b318e0a2dcb6fac102d40915364ab068864d0e8d000e307f3437d47a0"
+  },
+  "portraits/caspia-battle.webp": {
+   "bytes": 87482,
+   "sha256": "fdde2a329fff6fe4cdd6111952bfeafb43678417996947f4f487a813a74bd4c8"
+  },
+  "portraits/caspia-calm.webp": {
+   "bytes": 57122,
+   "sha256": "4b5c0f3228d9d861070d37a1ff4dd0e839541624d6fbd7f120cceced533cfd5f"
+  },
+  "portraits/caspia-warm.webp": {
+   "bytes": 68354,
+   "sha256": "f08c50f003e2365c9e6bc6efff544c3559f815bfb34280600f455ad264f7d19d"
+  },
+  "portraits/cato-battle.webp": {
+   "bytes": 71004,
+   "sha256": "9fe584789ad31230581172eba85c0793820e736238d91afbd9d0c7400eb0134c"
+  },
+  "portraits/cato-calm.webp": {
+   "bytes": 43834,
+   "sha256": "3fd80be650a1811c8736172a3d69173c92c339b29f47435b4e31715ef7aa3416"
+  },
+  "portraits/cato-warm.webp": {
+   "bytes": 44920,
+   "sha256": "d9903069b6c2f3d592d46886fa3612a9638377da30777caa220cfad99383f9eb"
+  },
+  "portraits/celandine-battle.webp": {
+   "bytes": 73632,
+   "sha256": "062e3b130e06775bdc575b2251b85fcd45125f85369114341c9a1771c7a6792d"
+  },
+  "portraits/celandine-calm.webp": {
+   "bytes": 48338,
+   "sha256": "1e2e494c30f2489c33cdbe816bfd0887519bc174a24f766ff816ead8d4222fb7"
+  },
+  "portraits/celandine-warm.webp": {
+   "bytes": 46746,
+   "sha256": "d6fc3c19960a1f44a5dcdb6f17740ec35755c9fec085d8ae9367dad9ff649cd0"
+  },
+  "portraits/celestine-battle.webp": {
+   "bytes": 84074,
+   "sha256": "6bb51b49196de622812d641570696c421f0a25713afd1401bc52adb67634da4c"
+  },
+  "portraits/celestine-calm.webp": {
+   "bytes": 70864,
+   "sha256": "6ffe1f19f21c8c9f060ebedc9c699238522f9bd37c5f4ac55ec71ae48fe6c7c1"
+  },
+  "portraits/celestine-warm.webp": {
+   "bytes": 68914,
+   "sha256": "8e8aaf324f8a04ea422dfece8a6378eb5032cc586f63ed534fab6ec8610d8002"
+  },
+  "portraits/coralie-battle.webp": {
+   "bytes": 83732,
+   "sha256": "3f47b6f7ad0cdcafc8a2291881be6be66412f5018e2e290067762c748c060bbf"
+  },
+  "portraits/coralie-calm.webp": {
+   "bytes": 52474,
+   "sha256": "2f4b41e8d54f9f779246e311a516b9da0c8fa824d7f763bb2cef5a3ea05f9501"
+  },
+  "portraits/coralie-warm.webp": {
+   "bytes": 53470,
+   "sha256": "9b7a541c4b146491924c01993953d28481dbd4a3f645f7212585f9fe3998d4c0"
+  },
+  "portraits/cordelia-battle.webp": {
+   "bytes": 72358,
+   "sha256": "495d68d5f2467ff468a6daf22083bb5f0de79d32c7e52b5a418c45d4923179f8"
+  },
+  "portraits/cordelia-calm.webp": {
+   "bytes": 59272,
+   "sha256": "14c93e3657989139bf2805527c44c6c2a96e94af77b714c959ed8eba5867a0c4"
+  },
+  "portraits/cordelia-warm.webp": {
+   "bytes": 64148,
+   "sha256": "f7e51a9a79fb8dc4082cd90fda1838622a6af24fe82637e249582358756e85cc"
+  },
+  "portraits/cormac-battle.webp": {
+   "bytes": 67694,
+   "sha256": "f51717a26d3e639db92f08b7a67842cffd175b175f4f170cb186e17d0d0cd0f4"
+  },
+  "portraits/cormac-calm.webp": {
+   "bytes": 63646,
+   "sha256": "db2cee7b0328145bf35a50d80106aa767d1da6bba95e794a98a1c53d88ff0b32"
+  },
+  "portraits/cormac-warm.webp": {
+   "bytes": 66078,
+   "sha256": "44ec949630bf7d502a7cf3fb1eeed82c660453f5655f092f2504c05fe83eca66"
+  },
+  "portraits/cuthbert-battle.webp": {
+   "bytes": 98034,
+   "sha256": "6c1a5d01f33c944e9bcaad306e991c7066a5685022ac7e5faa914682563b5383"
+  },
+  "portraits/cuthbert-calm.webp": {
+   "bytes": 81018,
+   "sha256": "1560d940fdd31fdf804210daca4ba0a96fffac968e72444327ed2c607e2227d4"
+  },
+  "portraits/cuthbert-warm.webp": {
+   "bytes": 90908,
+   "sha256": "18747439cb13e9425f6980390245bc6aefc56fabd07f20b2f520ebfae5db6805"
+  },
+  "portraits/dagna-battle.webp": {
+   "bytes": 88552,
+   "sha256": "34f4976db56cd41713efc2b27d8482a4d1187746605a1e89feb1a7cc8008d4ab"
+  },
+  "portraits/dagna-calm.webp": {
+   "bytes": 69388,
+   "sha256": "c2309ec695ad89578e6473049b0dbc0adf5a11008c0e6d532830bb13ff3ee755"
+  },
+  "portraits/dagna-warm.webp": {
+   "bytes": 74048,
+   "sha256": "8e9bf5a9effb04ac6aab0123ca4a9b7a7c6336aa893d6d643ea1985e970e4297"
+  },
+  "portraits/delmar-battle.webp": {
+   "bytes": 79394,
+   "sha256": "0b3a25011720f5845cdc7e4ca2fdab83e3071211bbc6531475c833d2758ab4ea"
+  },
+  "portraits/delmar-calm.webp": {
+   "bytes": 54166,
+   "sha256": "6f6f3afa977916e9287100445ebf10f504b9d4181420088f38fb7de6e8b33d09"
+  },
+  "portraits/delmar-warm.webp": {
+   "bytes": 61642,
+   "sha256": "ccccf549409ce169c25ad5729a2b15ca207ff93353cdbd56393ba0128859f1e0"
+  },
+  "portraits/delphine-battle.webp": {
+   "bytes": 102178,
+   "sha256": "2ce2bfa1c0ffc68516b073776a69980ac8c966bfcb712b89ff047e687fe8cb7d"
+  },
+  "portraits/delphine-calm.webp": {
+   "bytes": 70214,
+   "sha256": "039f03b59a4e1c20ee1fcdc73adbb7873c2a91b7a459014b8cd9a29952ee19cd"
+  },
+  "portraits/delphine-warm.webp": {
+   "bytes": 71168,
+   "sha256": "0956962e5b237cbe948c5ddc3f15f43f3a05b8aaa5103f2e495746cbd1f7fe1f"
+  },
+  "portraits/delwyn-battle.webp": {
+   "bytes": 68368,
+   "sha256": "89f0444362f34f228ca15cb35f453e8e0b09690737df32f2356b01228eec4bd0"
+  },
+  "portraits/delwyn-calm.webp": {
+   "bytes": 59892,
+   "sha256": "a743b6805107d2f71a39182cfc93858c19304d13219953ced5fc686613d0cce5"
+  },
+  "portraits/delwyn-warm.webp": {
+   "bytes": 58628,
+   "sha256": "eae8f94fe7c3c7ab1ddc1a1252549f9a35f560a98e6eaa255457e8214740eb06"
+  },
+  "portraits/dittany-battle.webp": {
+   "bytes": 77300,
+   "sha256": "ecafd012a9952fd72c52c361b7061f2f3873c81ed9dbd964f72dd04dfcc41e95"
+  },
+  "portraits/dittany-calm.webp": {
+   "bytes": 63734,
+   "sha256": "450a6c9d09eb0f8a70e312f16318764726f6cc4fc5df7023fad928ae493283ae"
+  },
+  "portraits/dittany-warm.webp": {
+   "bytes": 61346,
+   "sha256": "33e6a5a6057d4588d5063e4317988de148880071d5fe21fd082d564266bc868d"
+  },
+  "portraits/draven-battle.webp": {
+   "bytes": 86578,
+   "sha256": "53ffdf3df4d6ca0c6ba7ff7cc924f9b5e75eec59d6fb104a483b5f69c334de07"
+  },
+  "portraits/draven-calm.webp": {
+   "bytes": 68202,
+   "sha256": "c25bbd6786645d444b7736f2cff35eb2831d48daa519581842fff6c4d7968f49"
+  },
+  "portraits/draven-warm.webp": {
+   "bytes": 67014,
+   "sha256": "9d2a985ad8ecdcead72ad9e37b3bddb3bca5c9c03bddbbe4340d5679a8871163"
+  },
+  "portraits/durnan-battle.webp": {
+   "bytes": 103724,
+   "sha256": "377d38407659712f7c9a8a89424ab7daa4039f151442c471f47a36f57d205d57"
+  },
+  "portraits/durnan-calm.webp": {
+   "bytes": 88336,
+   "sha256": "57f4893fe94c731df79de2b58c4fb5da4867a37958464e7ea1bd4c5158467ed2"
+  },
+  "portraits/durnan-warm.webp": {
+   "bytes": 88060,
+   "sha256": "d36bcdf8c10054443cd298fd12f8f9dd00ac6e5e1ed5a474ec10821f9dd941c5"
+  },
+  "portraits/duvall-battle.webp": {
+   "bytes": 82694,
+   "sha256": "c4e3b4df534f778e0266dae8512279a378e634a2d1fa217996e5a89d0a41377b"
+  },
+  "portraits/duvall-calm.webp": {
+   "bytes": 61838,
+   "sha256": "dab94d4364c30c958aac63730708688ed0a49ec5ea66a7ba2ec7b7ced8f570e4"
+  },
+  "portraits/duvall-warm.webp": {
+   "bytes": 63542,
+   "sha256": "5f201c0e1e89e8fc3f07471bec9222d67a850d56f540bd0ab7f2b30fa4771564"
+  },
+  "portraits/edith-battle.webp": {
+   "bytes": 92848,
+   "sha256": "cc32fade0e1c559306ec294506a3bc7c61f077be5996f915a9a7569ccbe90f24"
+  },
+  "portraits/edith-calm.webp": {
+   "bytes": 59688,
+   "sha256": "cefa2cb5f1e8257d28baed490517c240331de955d918ec32f0bb08836c6ad1c6"
+  },
+  "portraits/edith-warm.webp": {
+   "bytes": 62834,
+   "sha256": "85c323698f2cfe72e2b1231584adf86313d088e8e90c1d1583d327845261edb9"
+  },
+  "portraits/edmund-battle.webp": {
+   "bytes": 99520,
+   "sha256": "aad6a7bba95e05d1ae64d1376f767cdec22296764a25ac5be98ad79f16cfea12"
+  },
+  "portraits/edmund-calm.webp": {
+   "bytes": 84148,
+   "sha256": "3bfa2995f0b4ae01caa2d62faae5fbd1a4109a28db850b4a8a800ece9cde065a"
+  },
+  "portraits/edmund-warm.webp": {
+   "bytes": 86898,
+   "sha256": "26867bbd9057bd07d6ad184f62174cbc45db1e3dd981c01fc74d5c0bd321f42b"
+  },
+  "portraits/einar-battle.webp": {
+   "bytes": 72152,
+   "sha256": "c5b2ad5997d3a1954d82050ac44fa46211f896a39e2638ff148e14cf37a12a2f"
+  },
+  "portraits/einar-calm.webp": {
+   "bytes": 46150,
+   "sha256": "d6316ccfd2e98d4ee954712970f1621884baeeafb7f3e18b88fda6250272ab13"
+  },
+  "portraits/einar-warm.webp": {
+   "bytes": 53336,
+   "sha256": "bc7af35bf2b216387e10f7d725836b23d4f5fc528f461004c2e075894f13568a"
+  },
+  "portraits/eira-battle.webp": {
+   "bytes": 84052,
+   "sha256": "d48a0e99ca00dbe3c03fd1f2be52068fa3fa0a5321b148d3430b3255a6a25f30"
+  },
+  "portraits/eira-calm.webp": {
+   "bytes": 58284,
+   "sha256": "8357c7e9b1e5a6e7f75b7d4c4b143e4225094c3a967095335c4e6d646fc5a7e8"
+  },
+  "portraits/eira-warm.webp": {
+   "bytes": 66782,
+   "sha256": "f2fc8f79c88913481fbde823c548f97c4f1f1fd448f5477d9f4dfb0e73d4273f"
+  },
+  "portraits/eirik-battle.webp": {
+   "bytes": 73038,
+   "sha256": "e9b8cc0d3049dcfcedf01f892c4e0128cc3d7d3dfacffb8cd38de8019bfd70e1"
+  },
+  "portraits/eirik-calm.webp": {
+   "bytes": 54190,
+   "sha256": "c17b85aed63b33445478dbb8165d573af93f5cb4357e078536169548d1c111bd"
+  },
+  "portraits/eirik-warm.webp": {
+   "bytes": 59178,
+   "sha256": "e43a12423a580ef4a5b1d300ea0a01e3ffd356e6c5ca3177ce7aca3f41c179be"
+  },
+  "portraits/elinor-battle.webp": {
+   "bytes": 72310,
+   "sha256": "c8d14a2faab1e05f14112cd8aa38599749133ec574f14f391ed0dac2563f545a"
+  },
+  "portraits/elinor-calm.webp": {
+   "bytes": 55708,
+   "sha256": "50ad3a8d3ce6d74a18ac337b1b01098f7899521b40d29c9e89b4469a62561828"
+  },
+  "portraits/elinor-warm.webp": {
+   "bytes": 54532,
+   "sha256": "2765ca6173f3afa40005eefec503bc213c66e540e1bede021d65ed6127d87132"
+  },
+  "portraits/elowen-battle.webp": {
+   "bytes": 79856,
+   "sha256": "8bf9981fdc3d0418f1f5b94332cf57b9abf4130c867e503fbb942d02f3c263d9"
+  },
+  "portraits/elowen-calm.webp": {
+   "bytes": 63870,
+   "sha256": "72a268067451109bcd82871cb7ec6852b87b6faa7b1107dd1ce91f8945b9eac2"
+  },
+  "portraits/elowen-warm.webp": {
+   "bytes": 66356,
+   "sha256": "b262920afcfd3221ec1f9bb5f035fcc76f66b4010beb3cd6705851807b439210"
+  },
+  "portraits/farida-battle.webp": {
+   "bytes": 82570,
+   "sha256": "f0a263ddf5838136d974475501ac54acd1616c3a2a5f436a0a5a996c95675314"
+  },
+  "portraits/farida-calm.webp": {
+   "bytes": 57046,
+   "sha256": "d713f09a7dd545f38b35da718c6169440f75f12ee60b8023e15f4d26f4e45c68"
+  },
+  "portraits/farida-warm.webp": {
+   "bytes": 68208,
+   "sha256": "32470fd1abacbeaf51c5b2bee006cf0c1435ab68a411eca5be4225fcf502ce4c"
+  },
+  "portraits/ferran-battle.webp": {
+   "bytes": 97052,
+   "sha256": "011eaddd2c3a9066111ced3dfbcec06815bf3815e61ff18a9265506ee42504c4"
+  },
+  "portraits/ferran-calm.webp": {
+   "bytes": 68616,
+   "sha256": "c059fbaf211f03d77e9e8ea241cc6043c86e785e6864443d9f4671f7c2c3eb01"
+  },
+  "portraits/ferran-warm.webp": {
+   "bytes": 71958,
+   "sha256": "be1990168a9d153a609b7da1dad7b03d15c78c150706b7708c61c9311b9baf77"
+  },
+  "portraits/gadiel-battle.webp": {
+   "bytes": 72370,
+   "sha256": "dd52317df20078311023c9376a5ec26fbab18467f41c03cc5d012bbec8266074"
+  },
+  "portraits/gadiel-calm.webp": {
+   "bytes": 60442,
+   "sha256": "2dcd7b6ac646bdfb65fab214919f418d6abf9c3efeac13f1e393197f5a9bdda4"
+  },
+  "portraits/gadiel-warm.webp": {
+   "bytes": 62288,
+   "sha256": "a0d8381129d1954d3a9354b3cab7b0e64e7dd1550f032ce732a114f433efc8c8"
+  },
+  "portraits/garrick-battle.webp": {
+   "bytes": 73992,
+   "sha256": "5958a662a49de28fbacf615e40dcbe43c82427b8605c0a0c43b9b79d5d39ce3b"
+  },
+  "portraits/garrick-calm.webp": {
+   "bytes": 52712,
+   "sha256": "8ba47c9632b4aa1f988cbb3063c7a724c4d5e408e57cbeec3a20cf16566c1a02"
+  },
+  "portraits/garrick-warm.webp": {
+   "bytes": 53532,
+   "sha256": "7eeae7b0c400004a9b7b484d2a4a42807decefa27fed0a34d446e3bdfcbe3416"
+  },
+  "portraits/giles-battle.webp": {
+   "bytes": 73410,
+   "sha256": "74c9ac40ec56e691b1c9214333d5c6a0825ebd54a56e9a871c909fd284f91f5f"
+  },
+  "portraits/giles-calm.webp": {
+   "bytes": 59032,
+   "sha256": "b0a42cfb6d0f51288fa534e40ca9099e09062918d217ed85bb8e361e03cb1e9a"
+  },
+  "portraits/giles-warm.webp": {
+   "bytes": 53614,
+   "sha256": "72b444b4f8099c7b99f5792fc46d8620e648237f670862a50ef13d1be23470a4"
+  },
+  "portraits/glacia-battle.webp": {
+   "bytes": 79052,
+   "sha256": "0c2da44da4cca28a31e01fde9a2e55b0ef3181de9c6e9e85441621aefccc3d5b"
+  },
+  "portraits/glacia-calm.webp": {
+   "bytes": 66104,
+   "sha256": "1576fd16c8163f1b2ad03eca552dbae9641cc7403955cf4e1fe4fc8ece1be031"
+  },
+  "portraits/glacia-warm.webp": {
+   "bytes": 60210,
+   "sha256": "e120f2ee50d06e218b3500cb79ab63e2715775a7460227ce005fa82a2e201e06"
+  },
+  "portraits/grimble.webp": {
+   "bytes": 58034,
+   "sha256": "95d078435e5e0e5763ee0ee473c9bad2d1681aa82ed24da37e11327b06df3bb9"
+  },
+  "portraits/gudrun-battle.webp": {
+   "bytes": 100530,
+   "sha256": "b245931bc0e542e0da66bece85127f8a0f117cf2846bf5ca89fb7a0cb0aa9d4e"
+  },
+  "portraits/gudrun-calm.webp": {
+   "bytes": 71164,
+   "sha256": "a2e6898da521c260dcf9ee8ebd3ca8637a3a45e156f7f31980924b875c252764"
+  },
+  "portraits/gudrun-warm.webp": {
+   "bytes": 74136,
+   "sha256": "cdc177b929db0f66d053567b754155bb3b3562874da718c2f6d1cfbf791dd2b6"
+  },
+  "portraits/gunnar-battle.webp": {
+   "bytes": 80784,
+   "sha256": "a7f3713f84077d091be33af6ec5b3a6730f86bedc91a2904b81d948fcb989152"
+  },
+  "portraits/gunnar-calm.webp": {
+   "bytes": 83220,
+   "sha256": "7e4dfcad131dc5db7441d10dab32d26d9a4abb527117534d7694585955d1315f"
+  },
+  "portraits/gunnar-warm.webp": {
+   "bytes": 86970,
+   "sha256": "71ab10ef66ce785eccb786486f537d8179f67ad9bbd207b3d5076258a14e2356"
+  },
+  "portraits/halcyon-battle.webp": {
+   "bytes": 64942,
+   "sha256": "865c1f728ca175d85e20422256b252c5c516e992e4568be847192af7d91c3797"
+  },
+  "portraits/halcyon-calm.webp": {
+   "bytes": 49310,
+   "sha256": "1217ff4019a6b8594109065ef2e40cb55ea6e18ddc84a1da4d49c129dee3e8ad"
+  },
+  "portraits/halcyon-warm.webp": {
+   "bytes": 48180,
+   "sha256": "df68d6c403ad9879db8e0ebc3934a2bdcce5995a180abb88b0c23aa204da1a5d"
+  },
+  "portraits/halden-battle.webp": {
+   "bytes": 73076,
+   "sha256": "80bf6488d6de04012de9dae2ebe1168982f1c4f23658c56629f8fe4ac6db3e21"
+  },
+  "portraits/halden-calm.webp": {
+   "bytes": 65232,
+   "sha256": "8bb549623be74e40a051325b315cf4f023b796f7e50af166b495ea3315b81b40"
+  },
+  "portraits/halden-warm.webp": {
+   "bytes": 61162,
+   "sha256": "1af63d92822d12e987599f876434ddf56ae4c70060f64ef6635c5207931b3811"
+  },
+  "portraits/haldor.webp": {
+   "bytes": 66326,
+   "sha256": "c1baa9e400919b949cf43e8a65cbc77b77eb8ca4d821245e1fb77d2431e42312"
+  },
+  "portraits/helmi-battle.webp": {
+   "bytes": 84594,
+   "sha256": "ac0e5c888a77fbbb4eb857b634ea6183a4a25757aa48d74f685fabb891042323"
+  },
+  "portraits/helmi-calm.webp": {
+   "bytes": 52850,
+   "sha256": "cc7e5de2ace3ce9b297bc2f6c2c0c2040e9762ce298e7ff1cdb4d77b7ceae948"
+  },
+  "portraits/helmi-warm.webp": {
+   "bytes": 56284,
+   "sha256": "7cbbfdd154eff8d9f685984a87eb79b716f6274f2c58a5124ee0b9e693238d2d"
+  },
+  "portraits/hesper-battle.webp": {
+   "bytes": 63530,
+   "sha256": "a12deca5a8c26387be825708d7850b13494fbecb3fb28039769807edc8d6796f"
+  },
+  "portraits/hesper-calm.webp": {
+   "bytes": 49006,
+   "sha256": "7bb60151f0c847f70f9b44a889c51bfaee14f05296e6b859aeceb58bcbbe47f2"
+  },
+  "portraits/hesper-warm.webp": {
+   "bytes": 52840,
+   "sha256": "3fd8b7302aad10bcc6d342e861c7510bf7b58091dc69258928a537ed2cf7a3d9"
+  },
+  "portraits/hilde-battle.webp": {
+   "bytes": 86490,
+   "sha256": "70b269191d5c7a89985fbaa0ca5ac86554d8e0059a6f5d3a1ef5eac4615c00b3"
+  },
+  "portraits/hilde-calm.webp": {
+   "bytes": 55806,
+   "sha256": "cdd7394c55e064d3eb5b89ce4a80ac9b9b411e33b5c120b054f8c3ba35af78f6"
+  },
+  "portraits/hilde-warm.webp": {
+   "bytes": 58826,
+   "sha256": "6cc3e9068722c3008f8bff24192108c445c84416610b49c02d79ec7e510920db"
+  },
+  "portraits/honora-battle.webp": {
+   "bytes": 73240,
+   "sha256": "da501e5da00239cf2e652f76b7c6bacd86c58a027df371be3d761738f557ff86"
+  },
+  "portraits/honora-calm.webp": {
+   "bytes": 52438,
+   "sha256": "4e0f029437943f0742751857192c8ced3773581ab00cbe25d35f41115cfab4b5"
+  },
+  "portraits/honora-warm.webp": {
+   "bytes": 54200,
+   "sha256": "b6ad5e861c4ca2659dc82860e3050a02899bd616ce9033f3a06ed9c8e079d584"
+  },
+  "portraits/ines-battle.webp": {
+   "bytes": 97154,
+   "sha256": "01b42872a95cb3f44da8f35208a3fb98086370b2942dace3609dc69f6dc10ef1"
+  },
+  "portraits/ines-calm.webp": {
+   "bytes": 67176,
+   "sha256": "44bec0a5663e09b3f4b002a5fa80faf775b6fb94c27c34c76f0a8cf11a13d1b1"
+  },
+  "portraits/ines-warm.webp": {
+   "bytes": 72084,
+   "sha256": "bc2b03f72cae0344b85bb59dd35f925b012e42473d75e4d4980c2a80d47368db"
+  },
+  "portraits/ione.webp": {
+   "bytes": 41376,
+   "sha256": "0994ebadd9bc45958fda84884187135baf26287251d521b6d06c56b8e4659a16"
+  },
+  "portraits/isolde-battle.webp": {
+   "bytes": 93090,
+   "sha256": "2fda286511f7fbfb22b36d88080cd5f1a46257c26a49b09243577606f8b19422"
+  },
+  "portraits/isolde-calm.webp": {
+   "bytes": 67858,
+   "sha256": "21f59a35cca0025d6fea3fa97818cdde2222419adbb89b66d1f7476f02fa575b"
+  },
+  "portraits/isolde-warm.webp": {
+   "bytes": 65200,
+   "sha256": "e76fcf45d8e567c0b13c1a964f6158da4de57f7eaaae01021ef2be2f9256a4a2"
+  },
+  "portraits/jago-battle.webp": {
+   "bytes": 75300,
+   "sha256": "b5ee720a7cf142185e25be4e5cb0c32f24d985cad2f6fe7416437cfc1d19e9b4"
+  },
+  "portraits/jago-calm.webp": {
+   "bytes": 48488,
+   "sha256": "5cb1e0cf7f47f4022189070733cdb635fe2456c458315195c9274cb5597df093"
+  },
+  "portraits/jago-warm.webp": {
+   "bytes": 54076,
+   "sha256": "5e59dd1a2f37a05cfd7af497961a157becc0e80fdb76c270cb3bc8920560d285"
+  },
+  "portraits/jalil-battle.webp": {
+   "bytes": 73016,
+   "sha256": "338d0f59152a1ac361358bd166393eb671a6178492aa1e3d42d034f2e4275701"
+  },
+  "portraits/jalil-calm.webp": {
+   "bytes": 61410,
+   "sha256": "57eb9f66eaf7c008191e08e48f494779640fd4469dde3765dc7d78b851efb79e"
+  },
+  "portraits/jalil-warm.webp": {
+   "bytes": 65314,
+   "sha256": "02e0261dc71cd3c5301c37021e292dbae63fb368b092e3323159b70e13020127"
+  },
+  "portraits/jasper-battle.webp": {
+   "bytes": 110988,
+   "sha256": "79a5f1fd5bb4ed82d1327df427547ace45a1ee8a5e03c9e2ae5d5532e0f36acd"
+  },
+  "portraits/jasper-calm.webp": {
+   "bytes": 82100,
+   "sha256": "3e34c9381cd75185c7cce7983c7289cd7d950014d8c80f94f1b21effedfceb36"
+  },
+  "portraits/jasper-warm.webp": {
+   "bytes": 88918,
+   "sha256": "112488ec6426832b7e140c1a27ca28fe3187e9affd17bda6a64d81e84a0edafb"
+  },
+  "portraits/joren-battle.webp": {
+   "bytes": 95196,
+   "sha256": "e3a5ae2377e6ea6a0484afa5dec841e597961e0e70034332b756199062af6d00"
+  },
+  "portraits/joren-calm.webp": {
+   "bytes": 70524,
+   "sha256": "eb0e6570b1ef2bfc6ed1d11a59bc084f560d64668de7277fedfb901e5051e623"
+  },
+  "portraits/joren-warm.webp": {
+   "bytes": 73242,
+   "sha256": "cf28389483e841ecb71fa712286a6fa06cc17b36f142a35de138676ec72592c1"
+  },
+  "portraits/jorunn-battle.webp": {
+   "bytes": 74850,
+   "sha256": "703d1d3d183c2ce3a8b021e30109308e2ca5be0c197cefc8eba19f85b380bafe"
+  },
+  "portraits/jorunn-calm.webp": {
+   "bytes": 64230,
+   "sha256": "5feb8c1965e5b73a649bf3307b0841d32fd9b1c8c3c34213ad2d1e878bef901a"
+  },
+  "portraits/jorunn-warm.webp": {
+   "bytes": 54774,
+   "sha256": "9b10470ac8ea1b1cb38f546e155330b993dc30d6e79b4dde277abd9bf35c4114"
+  },
+  "portraits/kargus.webp": {
+   "bytes": 60384,
+   "sha256": "0bb3a870e850358bf583f3e93bed37f3b19a14fd0b11b7c09db32daaa4ac4108"
+  },
+  "portraits/katla-battle.webp": {
+   "bytes": 87954,
+   "sha256": "6839fcec9f8c7fe2a9728ab410ce4d1f2446f45cdd00606beab6a1b75d5508ee"
+  },
+  "portraits/katla-calm.webp": {
+   "bytes": 53370,
+   "sha256": "8ae9f50135eefa47f4f10e3ddaaeb98d8f5fa616eb8bb68cced1b41b0ccadd03"
+  },
+  "portraits/katla-warm.webp": {
+   "bytes": 60656,
+   "sha256": "63a25e4f5d75365d6ac3f48e38a636c7f12122eb1b3ed86a4cb202c2df299229"
+  },
+  "portraits/katrien-battle.webp": {
+   "bytes": 101726,
+   "sha256": "f66e4042569fc6266fc7db802abe2efc618dfde7079b8b58679b077101aa783b"
+  },
+  "portraits/katrien-calm.webp": {
+   "bytes": 63730,
+   "sha256": "b9d6ade375b2f32ca64ddea068527c50a1641f56b56ed468f71a9e78bcc470d0"
+  },
+  "portraits/katrien-warm.webp": {
+   "bytes": 73170,
+   "sha256": "ff09dc1ac2256d95b80405d2695e4b90e1f67060199c9ea529c3641e8e684942"
+  },
+  "portraits/kavya-battle.webp": {
+   "bytes": 66114,
+   "sha256": "a85a3bb638f9887990430a76a82022acd3301c6c1bc55c1c51af878325d3eae1"
+  },
+  "portraits/kavya-calm.webp": {
+   "bytes": 51122,
+   "sha256": "517286f58e63fa9034d7d6ebd2608c121bbe029997f5431c43b8171e35cdd1a1"
+  },
+  "portraits/kavya-warm.webp": {
+   "bytes": 54042,
+   "sha256": "dff6fc28157bc141c19dab761bea744bbc8ef5f5bcd669a6bc71165e0b45af86"
+  },
+  "portraits/kelda-battle.webp": {
+   "bytes": 83978,
+   "sha256": "74f9408b36950b1dec9c5e0bf48c24111985c4debe27ac1ad1eff85bb51c70b2"
+  },
+  "portraits/kelda-calm.webp": {
+   "bytes": 50784,
+   "sha256": "c8a83fc7116454385fa6aa4fa5a87b37624013fed5a7ea46f85d77075e20615e"
+  },
+  "portraits/kelda-warm.webp": {
+   "bytes": 49066,
+   "sha256": "cf2da95dd546246e7aec841f613940ceb1ae83962cfaa1d32ccb29bf00cbe943"
+  },
+  "portraits/kellen-battle.webp": {
+   "bytes": 77636,
+   "sha256": "6c83b10320292d7d50b5ee37ae3cd9779af80d639b0611f25fcb6006375d36ca"
+  },
+  "portraits/kellen-calm.webp": {
+   "bytes": 49358,
+   "sha256": "6712d08c9613c24e7bf6f778a0e39d4b81bc16254322ef1af2077065176ce17c"
+  },
+  "portraits/kellen-warm.webp": {
+   "bytes": 54030,
+   "sha256": "46d240a39988081453bf5e891a96ceabbbb26524f0458267c77037eb264192a2"
+  },
+  "portraits/kerensa-battle.webp": {
+   "bytes": 89588,
+   "sha256": "c3e66680a749fc9bb86250bdd7eb7323763451978946bf924cb52cb5c6bb76de"
+  },
+  "portraits/kerensa-calm.webp": {
+   "bytes": 66912,
+   "sha256": "1eed8208d739af2198fff85fcdaf9edc31807d61bb33cff19c2da837a04b8d44"
+  },
+  "portraits/kerensa-warm.webp": {
+   "bytes": 66082,
+   "sha256": "040beb702985618c426eb0aa864f51c56f7fcf092e1c44a25a034b6b2145c600"
+  },
+  "portraits/kestrel-battle.webp": {
+   "bytes": 72428,
+   "sha256": "5e5e6ffcc5ba8b12cde9376a7358d9c2ef9fcdbe4c0c4155f790b62e244d271d"
+  },
+  "portraits/kestrel-calm.webp": {
+   "bytes": 58288,
+   "sha256": "d97942e6e573083fcfceac1105ed4fb8b3b2646b330b44314a7b6dacfaa82073"
+  },
+  "portraits/kestrel-warm.webp": {
+   "bytes": 65938,
+   "sha256": "8d01d0260090b79668cfbbe3a136629abe139a46bc2def02e21bed3ca66206ea"
+  },
+  "portraits/ketzia-battle.webp": {
+   "bytes": 70830,
+   "sha256": "530ece25ce951abe35ad3f5d1985bc0232b976fdecda9319aa0f354fe22730b6"
+  },
+  "portraits/ketzia-calm.webp": {
+   "bytes": 43676,
+   "sha256": "0978fc4b306eed763d232e4ba0b020fc9935f1b3018aa09211829b10d9acb23c"
+  },
+  "portraits/ketzia-warm.webp": {
+   "bytes": 54038,
+   "sha256": "eda5fae5f0889b6c471d74ea00e2159c9779babbe7e5a66b6ad59bc55fa1f852"
+  },
+  "portraits/leander-battle.webp": {
+   "bytes": 80030,
+   "sha256": "84fa9bfbeac5a9368ba8336fb3237dd2f384707cac79ea98141621c774609e55"
+  },
+  "portraits/leander-calm.webp": {
+   "bytes": 65940,
+   "sha256": "e4ed4f9bbeff2f3ecd3583ba8dbd3cc3934d68e43405adc3da81e51ec5e2bad9"
+  },
+  "portraits/leander-warm.webp": {
+   "bytes": 69276,
+   "sha256": "29e312b9e0ce1625aa96234a7e2ce3305a5deae85eea9991c6919eb63860fe5a"
+  },
+  "portraits/linden-battle.webp": {
+   "bytes": 101236,
+   "sha256": "4803ff3149669da0bcce8166942801ffde8777ef9e4ae99afa8d337fbf6dbc54"
+  },
+  "portraits/linden-calm.webp": {
+   "bytes": 74746,
+   "sha256": "e70038e629ceeacdb982bf334a7fd5cfabc4e76d46e5081d42bb47930e8086a1"
+  },
+  "portraits/linden-warm.webp": {
+   "bytes": 79010,
+   "sha256": "967a41752c4cecfb8eed8219484715d49ecdc19f1004d5aa4eb3511b8700587e"
+  },
+  "portraits/linnea-battle.webp": {
+   "bytes": 81676,
+   "sha256": "5d083dd4006d7afc82028176f5d55e4e885e7283eb136a2df774b8cf86b627c1"
+  },
+  "portraits/linnea-calm.webp": {
+   "bytes": 55732,
+   "sha256": "c2b24e671a9637b3aa9fa6ce41d5a7d6d0d920e4b03ea31e113f0ccd985625e4"
+  },
+  "portraits/linnea-warm.webp": {
+   "bytes": 61872,
+   "sha256": "ce3bbd5de470e2b6a80907fc23518af71bdab72aafd23b2a177008c200654c74"
+  },
+  "portraits/liora-battle.webp": {
+   "bytes": 89100,
+   "sha256": "0bda5705fd8a9524fe327d789cadb5d54799079ec5ff3d9b9510c2770d114131"
+  },
+  "portraits/liora-calm.webp": {
+   "bytes": 64950,
+   "sha256": "6502e120dbe71fe395e41c1ab69c16c0a33267c95f168935d0122ee7e92f6525"
+  },
+  "portraits/liora-warm.webp": {
+   "bytes": 61438,
+   "sha256": "fdc86a7d7eaca7066676e8a64ad9ac89905a75ac8a639fab62c3d487e02b91e2"
+  },
+  "portraits/lirena-battle.webp": {
+   "bytes": 85318,
+   "sha256": "e8451c4a49f3bc46123b07b6fe4c084ffcaf48a156cb21fa909868e5af48e73a"
+  },
+  "portraits/lirena-calm.webp": {
+   "bytes": 68034,
+   "sha256": "de5901a4516e0183c4489f8687a6dbb5cd1218f742ac2b832d92b45e59a95dbd"
+  },
+  "portraits/lirena-warm.webp": {
+   "bytes": 72714,
+   "sha256": "64cd63c0f8dd15d173cd35b8253e8b0c33abb75941a173b85a0f144c80c7e83c"
+  },
+  "portraits/lowenna-battle.webp": {
+   "bytes": 87684,
+   "sha256": "d08e77153891098b4ae32454171ad62b3a5402ba4514d7d8779f1b739ad575f4"
+  },
+  "portraits/lowenna-calm.webp": {
+   "bytes": 63546,
+   "sha256": "af805fe0032a7f412ecd153b1b277eb542212015bad5a41082f5e18abd928c41"
+  },
+  "portraits/lowenna-warm.webp": {
+   "bytes": 61924,
+   "sha256": "39418903950f24691056899e795bbe80932ce28920c1642355479276c1ed5e08"
+  },
+  "portraits/lucien-battle.webp": {
+   "bytes": 66272,
+   "sha256": "a8a056264f6e7c325bd3d7705a74590cf451a796a5dc892277cc43703f3d69d5"
+  },
+  "portraits/lucien-calm.webp": {
+   "bytes": 49210,
+   "sha256": "9f636460813d67b00d841896c3cfa4565504bbc54e823bab950d6a846da3e621"
+  },
+  "portraits/lucien-warm.webp": {
+   "bytes": 54760,
+   "sha256": "6d35e2d718f5ae1c0024871b74aa87a593feaaa1e029efd9f94eafa0dd7006a0"
+  },
+  "portraits/lucius-battle.webp": {
+   "bytes": 90084,
+   "sha256": "d16428146b631cf5c10a2a6e283407ffa5a837cf8bed16e5008ba752e0f7e467"
+  },
+  "portraits/lucius-calm.webp": {
+   "bytes": 62750,
+   "sha256": "4b00f3b5909b4f8383276b70a8611722416962aace55de4bea6312bd40bab1f9"
+  },
+  "portraits/lucius-warm.webp": {
+   "bytes": 62930,
+   "sha256": "e1219bb871bff8433aba10560520f2e47886f8a59c5848d29845245f8dbd8afc"
+  },
+  "portraits/mabel-battle.webp": {
+   "bytes": 78176,
+   "sha256": "93964cdee053b7422ea1787583de263ced5b61a544a7b0d8841c394782bd5b0f"
+  },
+  "portraits/mabel-calm.webp": {
+   "bytes": 64414,
+   "sha256": "e4f0273b9db77c2fdbe40281c836536a65a007a7c39a6a4ac33a0c9872578cde"
+  },
+  "portraits/mabel-warm.webp": {
+   "bytes": 63856,
+   "sha256": "b8b8c59545339a20439d1ddf37b0eaa9653f4da76b593c9a3e285890531ac985"
+  },
+  "portraits/magnar-battle.webp": {
+   "bytes": 76926,
+   "sha256": "1ac228c60f6176b4c93a3ad30de0db91e32f25fd06d03a22b6549caa25c648b7"
+  },
+  "portraits/magnar-calm.webp": {
+   "bytes": 65308,
+   "sha256": "3cbd4f920d642de72b0f79a69a7e1d5efe55201cdd2030c62f87977a650bdfc8"
+  },
+  "portraits/magnar-warm.webp": {
+   "bytes": 67008,
+   "sha256": "e0b0907196e9c2d2011a0c287162e2bcb8ff536234c09b6600f8ee4b19e537a0"
+  },
+  "portraits/mallow-battle.webp": {
+   "bytes": 99594,
+   "sha256": "a7edcc6ff85f327aea5a29ebd068af55c22473f6cc9dc94692eec6efaf695080"
+  },
+  "portraits/mallow-calm.webp": {
+   "bytes": 67556,
+   "sha256": "c236bd6067922fbcd8437e8460d5982cf4cf88bcce19992e000d6e2fbb3f1f54"
+  },
+  "portraits/mallow-warm.webp": {
+   "bytes": 72990,
+   "sha256": "2f1f3fc9784f76132cd619435714986fdc8c99a4deb235058710e419fa0275af"
+  },
+  "portraits/manon-battle.webp": {
+   "bytes": 64134,
+   "sha256": "10864035fce088f8783d83efb2a401fcc43c627e74e644566f346edc8611f8cd"
+  },
+  "portraits/manon-calm.webp": {
+   "bytes": 47820,
+   "sha256": "6130a04e206ccd58b6a5a8a5d6e2af236ccdad4dbfdd2fdb9dc6eb263bb5c0c0"
+  },
+  "portraits/manon-warm.webp": {
+   "bytes": 53232,
+   "sha256": "8b563f1a18f04028a125644b764c5944f753907bdca5d2eb1085fbe090af487b"
+  },
+  "portraits/maren-battle.webp": {
+   "bytes": 65054,
+   "sha256": "adbb0411d75602c9cf6da00ee0e4a8ea0f6a8d54e99289e5bf5792a373a013d4"
+  },
+  "portraits/maren-calm.webp": {
+   "bytes": 46058,
+   "sha256": "7a3dbfa96838e701acf25dbfb9ff1d67ed3ecf8a60483c21e886b320c8400aac"
+  },
+  "portraits/maren-warm.webp": {
+   "bytes": 52074,
+   "sha256": "1e04d3bf1f532f088bb4f60937b5611ab4dc73ee54c617642fe58fbead82662f"
+  },
+  "portraits/marta-battle.webp": {
+   "bytes": 75520,
+   "sha256": "aca390d4bc6b84a2e96929269f725bcef3e3218340a2469233bed4d6e8c68bbd"
+  },
+  "portraits/marta-calm.webp": {
+   "bytes": 58230,
+   "sha256": "3ad3d9f6d9bc85d0e589341c5a25d055866a4b1449910fafd85127e9358913e7"
+  },
+  "portraits/marta-warm.webp": {
+   "bytes": 59174,
+   "sha256": "0e810f96c6bf3d3a830f281a07ff5e57d8bca41663510accd23261f5900ee3c1"
+  },
+  "portraits/merryn-battle.webp": {
+   "bytes": 79500,
+   "sha256": "ec2e4f2eb63f4a6fd6f5c4307b5e433886dc9c2770d3d9be5b37c9de6874297e"
+  },
+  "portraits/merryn-calm.webp": {
+   "bytes": 62670,
+   "sha256": "b739ec4329f6249a063a92f47e66bbb491e492482ffe57efdafd1a482391bb70"
+  },
+  "portraits/merryn-warm.webp": {
+   "bytes": 58488,
+   "sha256": "b99b39ed53a19515d181e01aaab7bcbc117525536bfa35415d4e110e885a0e4f"
+  },
+  "portraits/mirren.webp": {
+   "bytes": 63564,
+   "sha256": "87a79a80f1c59294d3f5ac2c4c13581cd396abe754b1cbd65243305bfab5cf57"
+  },
+  "portraits/molly-battle.webp": {
+   "bytes": 75752,
+   "sha256": "0a89b6450be534138826e1ac612383db1fb37d9d6892760b405b3716f809fc51"
+  },
+  "portraits/molly-calm.webp": {
+   "bytes": 54166,
+   "sha256": "88c9a83f44cabe7bf07a7e5155ea88452e12f48800ad1c8cfa40441d253eee61"
+  },
+  "portraits/molly-warm.webp": {
+   "bytes": 57504,
+   "sha256": "f6525258dc27fbf55f0497165755be27e0249521845f5c1530c9e25081e2fbbe"
+  },
+  "portraits/morganna.webp": {
+   "bytes": 76254,
+   "sha256": "ed3c8cd7d8e902532b821b76a38b698652b73d03e3717a61e8925a0c440a023a"
+  },
+  "portraits/nadira-battle.webp": {
+   "bytes": 82800,
+   "sha256": "041320fbc2461e9dc1f7533bbd84e1b8cf76c1d513bfb1c70f4e346abac782a8"
+  },
+  "portraits/nadira-calm.webp": {
+   "bytes": 64564,
+   "sha256": "1a612a0dc9fd9642450023e357136c2a8e622325cc9091d759ef94c7b2f17ef5"
+  },
+  "portraits/nadira-warm.webp": {
+   "bytes": 70020,
+   "sha256": "fad7842f84b3d26a0bc9fad4776d10fd504518ffa9a217a9240b2210af2181c2"
+  },
+  "portraits/nazir.webp": {
+   "bytes": 58304,
+   "sha256": "d2c29d159b2577ace7ee17cb229cfcb8f4cc2cdf15029418d7e3e05d4eba37ad"
+  },
+  "portraits/neriah-battle.webp": {
+   "bytes": 76948,
+   "sha256": "e48cdce771ffa7f49045d422172a2e3bf3a3b165e4c4073a2568ec0beff50a72"
+  },
+  "portraits/neriah-calm.webp": {
+   "bytes": 60796,
+   "sha256": "392ab3ffd78fad12b1b20895bee22a5998dab6441760c32657d8abe32f76419f"
+  },
+  "portraits/neriah-warm.webp": {
+   "bytes": 60980,
+   "sha256": "43cf80db1267eb9bc755534518beb41f4e7c7708f8f51e9cd9ec369af0f79b26"
+  },
+  "portraits/nerida-battle.webp": {
+   "bytes": 83850,
+   "sha256": "0572453d51844fa9b68c39264f581bce5739cecf3f9e7b7c543c24f5f7b91acc"
+  },
+  "portraits/nerida-calm.webp": {
+   "bytes": 75072,
+   "sha256": "3ef6b8f24778136bf63c5943febe3890eaff8e8e72de4b0b5d38ce97757f5845"
+  },
+  "portraits/nerida-warm.webp": {
+   "bytes": 72158,
+   "sha256": "39b67f75ca32186c61d784e8b62305fe59eb2a5a04aeef315ab18155dfef65ff"
+  },
+  "portraits/nessa-battle.webp": {
+   "bytes": 71224,
+   "sha256": "e920d6285fdc648c93a720352a16ec257152daf9f77e37e64f64382653742a63"
+  },
+  "portraits/nessa-calm.webp": {
+   "bytes": 53484,
+   "sha256": "562b89a8a5261ef3d163dd8eb22c3c16c6ff5bcb85bc9dbcf8a802e84f8dc6f4"
+  },
+  "portraits/nessa-warm.webp": {
+   "bytes": 62398,
+   "sha256": "2afd6fe656234ff109b851ab43b01a448bcc99a16026e253c9f068b014aa84a5"
+  },
+  "portraits/nettle-battle.webp": {
+   "bytes": 82636,
+   "sha256": "ca1bc9eb686765d18c22a6669ea91beef6b0452a944ef0c728c2deadfac516ea"
+  },
+  "portraits/nettle-calm.webp": {
+   "bytes": 55920,
+   "sha256": "4eb35c0b8a58828be4b70d97cac5639fcf08b9db80d29536fa10480000268e0c"
+  },
+  "portraits/nettle-warm.webp": {
+   "bytes": 55530,
+   "sha256": "20dbef3e248ad7418eeec08e26b884fd9c5b22c15e72b8800368ee817c38ccf4"
+  },
+  "portraits/nona-battle.webp": {
+   "bytes": 79724,
+   "sha256": "249ee06d310df297cba85208cf6b89f9084d8e66295bc8d28cf01711430cf19c"
+  },
+  "portraits/nona-calm.webp": {
+   "bytes": 70592,
+   "sha256": "8595269d637499d690ee71a64f8c981eed60ae13ec9ae99155d6ad21f6a0a818"
+  },
+  "portraits/nona-warm.webp": {
+   "bytes": 73044,
+   "sha256": "775f1a791de8d33f74232bd6c5ffb5d0c28eb99ee32c4710502668198cb619e8"
+  },
+  "portraits/odile.webp": {
+   "bytes": 75510,
+   "sha256": "52c1e1e2ce745279d4ac1908c4e29dc2a231062b8e45eada22a243afb87e3f04"
+  },
+  "portraits/odilia-battle.webp": {
+   "bytes": 67952,
+   "sha256": "78da8efd583af238412710c60b61aae9484aa585754a3b62384e869b4da08f91"
+  },
+  "portraits/odilia-calm.webp": {
+   "bytes": 56466,
+   "sha256": "a4490f0dbdb492c327dfd2a0717074b2a6a6e6d35ecceb4772a06c6c8ced3a57"
+  },
+  "portraits/odilia-warm.webp": {
+   "bytes": 61020,
+   "sha256": "4a8dd1c76b8973721ccc177245484e62bf3f41c45c191a610ce7f5456e98d720"
+  },
+  "portraits/osbert-battle.webp": {
+   "bytes": 80356,
+   "sha256": "bcfa0305219f7e61a52126b615b141c24b9b625c0435a1eb03707964706a004e"
+  },
+  "portraits/osbert-calm.webp": {
+   "bytes": 64144,
+   "sha256": "575eff89797c82ede52e15a18e956f7d20c2866ddfa0d101555264537bbe527f"
+  },
+  "portraits/osbert-warm.webp": {
+   "bytes": 61536,
+   "sha256": "1217aa41e6fad14b84c76223034dc5498b33c28693b23eb6468799256b2b639a"
+  },
+  "portraits/osmund-battle.webp": {
+   "bytes": 82382,
+   "sha256": "cec4f03a2ab97d8400c55058d2955b2e4cfd087c8d4af6b6ebf76a0fdc7b0003"
+  },
+  "portraits/osmund-calm.webp": {
+   "bytes": 58354,
+   "sha256": "219d91ca1843e6041abebf2370e82cdeb649bc1de0750e87aba1422f61a437ec"
+  },
+  "portraits/osmund-warm.webp": {
+   "bytes": 57742,
+   "sha256": "4ce3062e7db0dbea57eaa0960e5a8e208e76d7b81d2445856a296167e2f6656f"
+  },
+  "portraits/osric-battle.webp": {
+   "bytes": 67846,
+   "sha256": "fb5e252bb02ae3e76d96c34c8a403b460e960a3bd50982daa983661fa02c1748"
+  },
+  "portraits/osric-calm.webp": {
+   "bytes": 45882,
+   "sha256": "7f86ac6d8722551a34f11de1767c8a0ce195a3a22f011cd8d032d2e92c12c340"
+  },
+  "portraits/osric-warm.webp": {
+   "bytes": 57472,
+   "sha256": "70397a8c431dbb0716442abf9dd58e45878647264be2f47bbeb178bcdbbcc323"
+  },
+  "portraits/ossian-battle.webp": {
+   "bytes": 74756,
+   "sha256": "a0bc73594c59e256b3b1cb47a3c3385b539b26a2433b8bf15ca99c5da14251fe"
+  },
+  "portraits/ossian-calm.webp": {
+   "bytes": 43424,
+   "sha256": "6b184e10a4882e4601b4681eeb88016d58a6dc425d0b01cf210d34f9912b9b63"
+  },
+  "portraits/ossian-warm.webp": {
+   "bytes": 46712,
+   "sha256": "46a8ec89b2e5b150472e677938059cc0c087ba0bf4c68b013c56e0f3239d979e"
+  },
+  "portraits/paloma-battle.webp": {
+   "bytes": 95758,
+   "sha256": "ce82cb3138f74901dd3aee50b88c55d1fd4186e4de079cecb52290c34e0ce16b"
+  },
+  "portraits/paloma-calm.webp": {
+   "bytes": 80102,
+   "sha256": "271f2a70eb1ea597c07fa67d9bb936f53aff0852d8114ef015e9c1aece56c17e"
+  },
+  "portraits/paloma-warm.webp": {
+   "bytes": 78038,
+   "sha256": "3e1c41501c7a4ba9d5bcb9e995fa94cac33fa815143e90e7595131cb578e62b5"
+  },
+  "portraits/pelagia-battle.webp": {
+   "bytes": 83736,
+   "sha256": "4a230437087304bf630a0e13ffaffd89b0d3c0cb1ff2d8e066fe7419a6aea59a"
+  },
+  "portraits/pelagia-calm.webp": {
+   "bytes": 66836,
+   "sha256": "b1ab50549530eb0c19e57dfd1068940889589eb63bdeb2b1710a946c83ba385d"
+  },
+  "portraits/pelagia-warm.webp": {
+   "bytes": 77482,
+   "sha256": "8f33c2c0b7586ec63a4ef33269c38129d233873d7ea466105c84e29611ad8f4c"
+  },
+  "portraits/pellan.webp": {
+   "bytes": 46222,
+   "sha256": "c7114de4630c15fd5466951cfa17b31e512cf70140a5cdc3c09b32361ec19923"
+  },
+  "portraits/piran-battle.webp": {
+   "bytes": 85136,
+   "sha256": "e7ff3391efa092465ff47515306482a2842666dff3f051e423217dbdc52607bd"
+  },
+  "portraits/piran-calm.webp": {
+   "bytes": 64248,
+   "sha256": "b4e760556979af2c450934e74bb4563f34ab88bf36097ad7ffe3a72c23fbc932"
+  },
+  "portraits/piran-warm.webp": {
+   "bytes": 64650,
+   "sha256": "0759e61b242ab96c94afa614b121697773d24c147a330e9fd842e65f8dce503a"
+  },
+  "portraits/prudence-battle.webp": {
+   "bytes": 81978,
+   "sha256": "7fe6ed1a7ebcb13564c4bac05f9f8e8bef51c996cbcc02507bd01402f26fb73b"
+  },
+  "portraits/prudence-calm.webp": {
+   "bytes": 53600,
+   "sha256": "b81b59300be4f22be2dc2fd1a778156297802129ed40550770808ff912ec0100"
+  },
+  "portraits/prudence-warm.webp": {
+   "bytes": 58992,
+   "sha256": "7d134aa7b8bf64a1d6ae5cb360d86230d3550d6b7cda87b20dee9edafbc512d3"
+  },
+  "portraits/qasim-battle.webp": {
+   "bytes": 71074,
+   "sha256": "c91edd7d5d6b6f50bf3e5a42ff8c7f3a34509ed32f52c4e6af2df2c6721340ed"
+  },
+  "portraits/qasim-calm.webp": {
+   "bytes": 58926,
+   "sha256": "a7e3cd3e7f69a9e058c6853d291b3579845e0f0daddd28de94b5d124ecc83c2e"
+  },
+  "portraits/qasim-warm.webp": {
+   "bytes": 50750,
+   "sha256": "20632f5578299aba06e045cca8621f51e05c05e2c524f444c8112bbb20eb53a2"
+  },
+  "portraits/ragna-battle.webp": {
+   "bytes": 80116,
+   "sha256": "3ede96402a596854d81f5534fd15d40e77c62513025d567bfe033aca2aa763f0"
+  },
+  "portraits/ragna-calm.webp": {
+   "bytes": 54138,
+   "sha256": "d3232766a74c3c9958d7f4d5df1ab3f235ec225cf5dbd6897a57a59f65f05f0b"
+  },
+  "portraits/ragna-warm.webp": {
+   "bytes": 57642,
+   "sha256": "9ba4b1c3cb2a7c6beefb60dbabf5dc3ad26b935159e832a30b11c990fe683801"
+  },
+  "portraits/roderic-battle.webp": {
+   "bytes": 84106,
+   "sha256": "e07f638f184e3921020179da7a2b06877878d7a497d5e80bb35c9e00316c7fd5"
+  },
+  "portraits/roderic-calm.webp": {
+   "bytes": 65784,
+   "sha256": "3255542516b65678d744c03508b7b0a3358587e4c090be27d6717de723da739b"
+  },
+  "portraits/roderic-warm.webp": {
+   "bytes": 66440,
+   "sha256": "e1f28d88d982a915f49da79f119282e491290d8a6ee2b71c886982ac9facd48f"
+  },
+  "portraits/rogar.webp": {
+   "bytes": 72724,
+   "sha256": "63d2f2db1f38fb8abfc4c6c4eabdf22bb2d28c6ef54e2f27eeeb6c8d320d7a8d"
+  },
+  "portraits/rolf-battle.webp": {
+   "bytes": 70700,
+   "sha256": "4b6c3cc1c9b6fdfbb2bed75c2b4af54a841b7e5d1f6151e266ab3c04b46d253e"
+  },
+  "portraits/rolf-calm.webp": {
+   "bytes": 59722,
+   "sha256": "6b276448a08f9cf93c7a907abb56332a1aec939130cdff0388a1f09a8c3c8d32"
+  },
+  "portraits/rolf-warm.webp": {
+   "bytes": 61020,
+   "sha256": "c223424f5de302c7e14d026fc6f3f39fbae67ea4e86e20839d3c66cb08529df1"
+  },
+  "portraits/ruelle.webp": {
+   "bytes": 70262,
+   "sha256": "a6ac8b3e699fac1ea7d82a8d6c3c164240298df14197c294c62d64f3830d8969"
+  },
+  "portraits/sabine-battle.webp": {
+   "bytes": 78258,
+   "sha256": "2202675bc7f533760440f96504fcf1b17911c8ee1fddad36f04be8224682cd22"
+  },
+  "portraits/sabine-calm.webp": {
+   "bytes": 72490,
+   "sha256": "c2e6a38f71776a4342940525c2f97a3ff19086e802673102fb339254d28927f4"
+  },
+  "portraits/sabine-warm.webp": {
+   "bytes": 75272,
+   "sha256": "e1e41a43ffc5ad59d9d8d7a3cf7a5e08c891940f3ea4e4c301f322c9b7a93910"
+  },
+  "portraits/salvia-battle.webp": {
+   "bytes": 73186,
+   "sha256": "9cdf7cc967e29f973cafaa2c9ce24c9c19700c4286d4ebb8928ef3ad81ec6611"
+  },
+  "portraits/salvia-calm.webp": {
+   "bytes": 55468,
+   "sha256": "fed40124a0909274f93f15bd53ee59897c2de8b89ae7e4d1dbe8583a1b0121e3"
+  },
+  "portraits/salvia-warm.webp": {
+   "bytes": 54716,
+   "sha256": "9c1025a80cdb32c02fce31ba005904fcedd414743b7d36c3f37354ca7e9dfb4f"
+  },
+  "portraits/sefira.webp": {
+   "bytes": 56020,
+   "sha256": "aa3a611844cf936d570ba5490510609a444ee6287ad4a38c9a0215afeeb4aca3"
+  },
+  "portraits/severine-battle.webp": {
+   "bytes": 85358,
+   "sha256": "d71f2d03e23911e18e5f27216c2c3afee5331c6750391fbc99abc173075051d5"
+  },
+  "portraits/severine-calm.webp": {
+   "bytes": 54378,
+   "sha256": "91ffcffe5af9cba75de59096022248d336e20392b1e085a75977b23ba701492e"
+  },
+  "portraits/severine-warm.webp": {
+   "bytes": 52516,
+   "sha256": "be6b8861ff05f7f5863fb759fa99399588ba0fed3d8b0e6ef3375375bf387a2a"
+  },
+  "portraits/shifra-battle.webp": {
+   "bytes": 77620,
+   "sha256": "03590466d1d5861b5f130c6da1302cdc5bfd3cc357d5977946b0c4955fa332c8"
+  },
+  "portraits/shifra-calm.webp": {
+   "bytes": 67728,
+   "sha256": "e633dab0d316eb51c88e3a65825ffc9c2e916a95874483ac63eb709e5f096a75"
+  },
+  "portraits/shifra-warm.webp": {
+   "bytes": 57612,
+   "sha256": "4bed881ee0e89e0d1f1eeb48d134d8786e77feaed7f68b077eb7c3db8fb260e1"
+  },
+  "portraits/sibyl-battle.webp": {
+   "bytes": 104850,
+   "sha256": "2f4990660aca769f62c33de3530b3f71398d240d1736dcf5a5134154571c7024"
+  },
+  "portraits/sibyl-calm.webp": {
+   "bytes": 75382,
+   "sha256": "63bec1716b0d9a403e8a0ff114991958cd57ea7586214fc9a9d4f0532db7e9d9"
+  },
+  "portraits/sibyl-warm.webp": {
+   "bytes": 74826,
+   "sha256": "de7db082bab1d9beb86e5e98d8b2b75bcebdc5e31f5351088beb1bdac120bdc8"
+  },
+  "portraits/signe-battle.webp": {
+   "bytes": 78182,
+   "sha256": "7a690d6562df5a7812976b5ce987ef42d4aeb315522c190e9aa9222a18f29818"
+  },
+  "portraits/signe-calm.webp": {
+   "bytes": 65436,
+   "sha256": "51de69af666b38a839011c6250e921a823d8563706148bf8dd2a22bebf57b83f"
+  },
+  "portraits/signe-warm.webp": {
+   "bytes": 58058,
+   "sha256": "10e1ab005030849c8c76ee79b9aad68d498839d12ba14a051284681d50bcb4be"
+  },
+  "portraits/sisu-battle.webp": {
+   "bytes": 66970,
+   "sha256": "bb4588d948ac6323ba5f5cb81066f271c16033c91e52d8e80a35cbd181fffd1e"
+  },
+  "portraits/sisu-calm.webp": {
+   "bytes": 60224,
+   "sha256": "fe0b4a0a9d226f609d4a6c1e1222db87980114d122d8b76557c48921c3e594df"
+  },
+  "portraits/sisu-warm.webp": {
+   "bytes": 60380,
+   "sha256": "135648953a0286bf19f87387b59cb14bb04ca980550de8d78b4fb097c1806167"
+  },
+  "portraits/skadi-battle.webp": {
+   "bytes": 81626,
+   "sha256": "3c62f40c23e30d31d2aa044aa53e243f962e6354fdb87529d4e1f8d2673af215"
+  },
+  "portraits/skadi-calm.webp": {
+   "bytes": 68036,
+   "sha256": "0045d25b15a50238329576de3172679137b4e890e5c38226edc194ff2de9c6e8"
+  },
+  "portraits/skadi-warm.webp": {
+   "bytes": 71712,
+   "sha256": "a599b6e85eb4ef59651e776359da3732b2b482bb033153ae9f4c716ed93c46e9"
+  },
+  "portraits/summoner-f.webp": {
+   "bytes": 57954,
+   "sha256": "2279be4542040d10135b8a0d2115084af6a19648b9a5d005286b9470a67c4b0e"
+  },
+  "portraits/summoner-f2.webp": {
+   "bytes": 48134,
+   "sha256": "d740dcb4e8337119e93db2aa21793e62e6f5369ed5b7ebb6971adf50d7f508c3"
+  },
+  "portraits/summoner-f3.webp": {
+   "bytes": 54698,
+   "sha256": "8bdceb193f3dfd096b6c78effc73496cf9b52e974168aa8ea944ba656a814179"
+  },
+  "portraits/summoner-f4.webp": {
+   "bytes": 74954,
+   "sha256": "f4513f1c84846f333d9d13c00e18e4382eae7ec428937a59571b397f175acca5"
+  },
+  "portraits/summoner-m.webp": {
+   "bytes": 51724,
+   "sha256": "9637173377a82d8950112be005349a7f6713ed50cc4b4f435de6ae9c4396a1e1"
+  },
+  "portraits/summoner-m2.webp": {
+   "bytes": 64488,
+   "sha256": "42a340c9463669fa7bea5fdbb511e7fb2ea3ee7e4219b9a79ee2680dcdcbbea4"
+  },
+  "portraits/summoner-m3.webp": {
+   "bytes": 66884,
+   "sha256": "c11e4fde26d76a110780506ca61c8b44788dcf00fda977225e9311b46987aaa5"
+  },
+  "portraits/summoner-m4.webp": {
+   "bytes": 55278,
+   "sha256": "9c7415d7b1905a00769948fa912cdbf4a503eecd72a34f66cce7db3244148f5f"
+  },
+  "portraits/svala.webp": {
+   "bytes": 69542,
+   "sha256": "3bd9af5b4300494036581042b7f58004fe1e3f92ef72282c70ace45189f378f8"
+  },
+  "portraits/talia-battle.webp": {
+   "bytes": 74348,
+   "sha256": "a456ca3408a858f8b99771697f7f3d930057c438c614d9f2aa7f7d49e1fe0faf"
+  },
+  "portraits/talia-calm.webp": {
+   "bytes": 53118,
+   "sha256": "4f063c3b43b8f94898dcbb91ce620caf39f499d7f52199cd2499c5492737ce22"
+  },
+  "portraits/talia-warm.webp": {
+   "bytes": 61000,
+   "sha256": "a6518e0f2cdd7779d42287c4074742b590cb8b25288173819eff036480e4fc7e"
+  },
+  "portraits/tamlin-battle.webp": {
+   "bytes": 66052,
+   "sha256": "d9f3fb7c0b3014ddaef4ddd115dc82eb591a8eeea7252a449d3ec84b182fba32"
+  },
+  "portraits/tamlin-calm.webp": {
+   "bytes": 41066,
+   "sha256": "9dfdb712819c4058090245b73cd54f475ed610241988cee2f7b4839288323b55"
+  },
+  "portraits/tamlin-warm.webp": {
+   "bytes": 48896,
+   "sha256": "9f1854528c66e4ce0e158d42fb1780aace743e10cc11d4767278da7089d9fffd"
+  },
+  "portraits/tansy-battle.webp": {
+   "bytes": 54462,
+   "sha256": "41dee2aa0494e0966ccae18ed455947daca624ec2a6d6404b195a9ad37ff779d"
+  },
+  "portraits/tansy-calm.webp": {
+   "bytes": 51424,
+   "sha256": "9f4e3d98ad8ce6e3de40e60e956ac7d3616a174d4911d985831cca6ee6b3d524"
+  },
+  "portraits/tansy-warm.webp": {
+   "bytes": 47976,
+   "sha256": "8187f236c4d9f7b9568e71309533420f99f899eb2b0a9c6f260064e500639a48"
+  },
+  "portraits/tarek-battle.webp": {
+   "bytes": 92308,
+   "sha256": "b62365b8530e45b83102720b7cc7192dfbd4b0ad7ed9073ad73691c888346ef1"
+  },
+  "portraits/tarek-calm.webp": {
+   "bytes": 64652,
+   "sha256": "14151ed71e871afefcb42c6f6a42edf83df5fa92db6ceaacbde29d8eb827c9b5"
+  },
+  "portraits/tarek-warm.webp": {
+   "bytes": 69700,
+   "sha256": "b87f740fb4e528893967a388d07ffd1dcfc82174b0b3b4f22c11e1a50e99e5d3"
+  },
+  "portraits/tavian-battle.webp": {
+   "bytes": 78414,
+   "sha256": "fdaa15572d39c3847bbf3ef5bf9a3f4a1d22df215bca9d5e8c7d40b82a5c0a05"
+  },
+  "portraits/tavian-calm.webp": {
+   "bytes": 66518,
+   "sha256": "ce55a331bbb0cb73709c58b16ca52d35b6903748539fd1ea413681a4c387aa6d"
+  },
+  "portraits/tavian-warm.webp": {
+   "bytes": 67244,
+   "sha256": "9554957c53af0322eb71d768d2466af23a6b64fa76c52d8dca7af7e2f12e4431"
+  },
+  "portraits/tavish-battle.webp": {
+   "bytes": 90318,
+   "sha256": "77cd2963ff34a20439d38ed716822a7ad333bb875f4f784eebd9392e7f0a2770"
+  },
+  "portraits/tavish-calm.webp": {
+   "bytes": 78424,
+   "sha256": "a1676c23b9176ae03e356379eaa8754e303d1beb347eb793644f91c178bf1a23"
+  },
+  "portraits/tavish-warm.webp": {
+   "bytes": 84658,
+   "sha256": "214610d371bf8d4194f4d9aa55421a95713dd5cdb7edd0df9dd56803b5de7c92"
+  },
+  "portraits/tavius.webp": {
+   "bytes": 47048,
+   "sha256": "a05d70cba7b783e5cfd66910fd382d70a53a990ceb985d8104037f3f223de872"
+  },
+  "portraits/tegan-battle.webp": {
+   "bytes": 77832,
+   "sha256": "c7650f43cfc18649e6cb6005c6c3cfb9e394e6a002acbbc2490d1a6fbb921c1e"
+  },
+  "portraits/tegan-calm.webp": {
+   "bytes": 51714,
+   "sha256": "2210d402c6829d51175052cd8e8282ed3f29aeebf25db58336289820311e777e"
+  },
+  "portraits/tegan-warm.webp": {
+   "bytes": 55258,
+   "sha256": "763f3228abf7bfd93b55f8d11b950da158f19441c20cdb04109aecab0ae25c63"
+  },
+  "portraits/thaddeus-battle.webp": {
+   "bytes": 101280,
+   "sha256": "43178c186a9183d4c5b443a0c52d8641e781dedd36250b652cb7092c4198c728"
+  },
+  "portraits/thaddeus-calm.webp": {
+   "bytes": 73570,
+   "sha256": "1bcafae908bd0c88f3a14517dc97420432d41f9ba8763cf13da8328deaab64fe"
+  },
+  "portraits/thaddeus-warm.webp": {
+   "bytes": 71388,
+   "sha256": "febfe02af881b6a94b1d43ec8a447b9f7b5779a51134cf79df25dcd8be2ff659"
+  },
+  "portraits/thalassa-battle.webp": {
+   "bytes": 102934,
+   "sha256": "96b26d5cab2aadd90ca191479322f988e803d40d5587520f83335238b877b3cd"
+  },
+  "portraits/thalassa-calm.webp": {
+   "bytes": 69104,
+   "sha256": "64d716692d8c722ac9825f619564e6c14473cb6768a2501a0fadf1ec5cc9d6c8"
+  },
+  "portraits/thalassa-warm.webp": {
+   "bytes": 66726,
+   "sha256": "06fc9611a8450ce070f739391598dc3d11c48c2724cd9b833ac974a1badf70d7"
+  },
+  "portraits/thamira-battle.webp": {
+   "bytes": 75556,
+   "sha256": "63501323173f7ac2e369726b66f817ce7e897bdf7567b9b42bbcfce3e4e9288d"
+  },
+  "portraits/thamira-calm.webp": {
+   "bytes": 66880,
+   "sha256": "bcd7a17bbb51f07efeb7f82cca5036426b654857b08a376234f156bc57857736"
+  },
+  "portraits/thamira-warm.webp": {
+   "bytes": 64736,
+   "sha256": "9182813ec92d3730dd5e9a4b3141cce2fd2053d3bfaeced9943289173b7dc756"
+  },
+  "portraits/tindra-battle.webp": {
+   "bytes": 69292,
+   "sha256": "daa84d6c65f064e4b424b405dd67a5c2fc069ceaef6371810ac0559c056479ad"
+  },
+  "portraits/tindra-calm.webp": {
+   "bytes": 47626,
+   "sha256": "da2e80d143f5b08254d90261e554a0adcd2300fcac33bc29ed17659028046a31"
+  },
+  "portraits/tindra-warm.webp": {
+   "bytes": 50022,
+   "sha256": "9431c4d7fe1d6046a7155b9667b0e34a750e871cf8d2f6c94dcc67cca93ec09e"
+  },
+  "portraits/torvald-battle.webp": {
+   "bytes": 80314,
+   "sha256": "cfe7724d20821366a23f07d10bb171b3ece96fcfacf792ce33a04ab31c84130f"
+  },
+  "portraits/torvald-calm.webp": {
+   "bytes": 70404,
+   "sha256": "aa0d3b9abf58b4dfe7da5d0a457eb179ce518bf16604819e9c8457cb38e3fb3c"
+  },
+  "portraits/torvald-warm.webp": {
+   "bytes": 69624,
+   "sha256": "19e28fda69d037108a7e60136daa5fbc1a06310c8055c018d678b6da0d312e79"
+  },
+  "portraits/tuula-battle.webp": {
+   "bytes": 65614,
+   "sha256": "6f49564b3208c089edabd068a45812a2dfb91c65539a861fe8c02a140fa800e1"
+  },
+  "portraits/tuula-calm.webp": {
+   "bytes": 49938,
+   "sha256": "6979d6f8d3d27619acf73265119efcb1f217782a507dec76f5b46b4e6ef7b57d"
+  },
+  "portraits/tuula-warm.webp": {
+   "bytes": 52972,
+   "sha256": "a8590de0b96d972dd13709e1a1a684a1416fd6ce2f2765ea4890b8c7e807aff2"
+  },
+  "portraits/ulfar-battle.webp": {
+   "bytes": 83720,
+   "sha256": "de6528370a0e78398c890e78164931c49876945901036d28856eaea244ebb086"
+  },
+  "portraits/ulfar-calm.webp": {
+   "bytes": 79058,
+   "sha256": "c21871a7129d3436a2c7165310095f02272df4ce14750c4a859e45051cca089f"
+  },
+  "portraits/ulfar-warm.webp": {
+   "bytes": 79668,
+   "sha256": "271bb858d8ce46366266c2ce0ef805ecbc149606738f1b36efc8bff2653ecc44"
+  },
+  "portraits/vance.webp": {
+   "bytes": 43428,
+   "sha256": "c08b229446fa25579a96982304059a6e4803b95435a6c46359e20f5432dfb52f"
+  },
+  "portraits/varga-battle.webp": {
+   "bytes": 78432,
+   "sha256": "bd640dad622a868301ac5b2aba6dfc86b5b0374089c33c9f9dacb0fcd63d88ec"
+  },
+  "portraits/varga-calm.webp": {
+   "bytes": 56176,
+   "sha256": "e183adbb186f69ba17bbcf370cf8814a8fcb01e813b90454906bbe4cef9af60c"
+  },
+  "portraits/varga-warm.webp": {
+   "bytes": 61238,
+   "sha256": "5690ed2288298ff9cd1c697a00ec358e0ff6566d73f5eb9062ceb5672f9b3ea9"
+  },
+  "portraits/verity-battle.webp": {
+   "bytes": 74442,
+   "sha256": "f51689222e8f2075e11087d036c9133fc61bac979d6f6dd9743fb4f3cfacc90a"
+  },
+  "portraits/verity-calm.webp": {
+   "bytes": 48486,
+   "sha256": "26a5e101543756182378e3306b7b04db4049ab8627e6ce60a2a99bd2a2f5f8d7"
+  },
+  "portraits/verity-warm.webp": {
+   "bytes": 55846,
+   "sha256": "80ba8d04024421669fc4da374c47d8179e42f7f8353bd8fc7f2a38bb26e60041"
+  },
+  "portraits/vervain-battle.webp": {
+   "bytes": 99086,
+   "sha256": "24c5fdce9afd1054ec8032937c1c8f60cd7b79abc9d1e7cf03d8d56b3bf570b2"
+  },
+  "portraits/vervain-calm.webp": {
+   "bytes": 78464,
+   "sha256": "8a70ba56014ff3253ffecdd19b95a277d465665991928bff969e62b89523f55c"
+  },
+  "portraits/vervain-warm.webp": {
+   "bytes": 69436,
+   "sha256": "26020941534d914ec97111c6abb9927f71a9832037d14a4da4aeaf72e169c4ce"
+  },
+  "portraits/vesper-battle.webp": {
+   "bytes": 59872,
+   "sha256": "ad5595d3b8d903d9c1555d9f735450822b8081c8c2b02d718b0e77d87a20f9b9"
+  },
+  "portraits/vesper-calm.webp": {
+   "bytes": 36632,
+   "sha256": "80bc396a69fba8a536130527fb2bbe903c5511d7e54cee3c066b6b90c3d97720"
+  },
+  "portraits/vesper-warm.webp": {
+   "bytes": 38792,
+   "sha256": "e39eb8cc4fb702a6023dbd0e4c7296c830f3bb93b1f30c39ab5252ac4accd191"
+  },
+  "portraits/vireo-battle.webp": {
+   "bytes": 102808,
+   "sha256": "1dc098b67482c9e404e942c12b69a87bad033e37692e9baee3b417c7039fa7b5"
+  },
+  "portraits/vireo-calm.webp": {
+   "bytes": 78370,
+   "sha256": "da7653ca3b67e9adabd05e2c9db9b377573b8ace104793a4f9ed383e66188fe1"
+  },
+  "portraits/vireo-warm.webp": {
+   "bytes": 85964,
+   "sha256": "34725d795cd1a51cc211269c0e82e62c03cfdaa1267c1be039b4712e843f9082"
+  },
+  "portraits/vivienne-battle.webp": {
+   "bytes": 81924,
+   "sha256": "493f624dba3f9827aa666c5229e71c5c1e0b75793a4d5ce02f391bb2976a6c47"
+  },
+  "portraits/vivienne-calm.webp": {
+   "bytes": 66564,
+   "sha256": "c5c9d4813906c2a92dd0247c2e90c79385e7d452bbff5318373dbedb96c52287"
+  },
+  "portraits/vivienne-warm.webp": {
+   "bytes": 67558,
+   "sha256": "a2406e3ba490c481e7b8d1953bd70c9b4529d10fbf3ebb91e8f6a269a9a1cdfc"
+  },
+  "portraits/vorthax.webp": {
+   "bytes": 76854,
+   "sha256": "39bfb6491ba0a938569fc183dcb5c198178ff756e1db766945f1efa831d9620e"
+  },
+  "portraits/waverly-battle.webp": {
+   "bytes": 72096,
+   "sha256": "8f5dfc56e647b27af1add2f76a620bbd77d91d55a597df59bc266d02f78e9a0f"
+  },
+  "portraits/waverly-calm.webp": {
+   "bytes": 64124,
+   "sha256": "40b7bb5104c93729199131b146dd1c408b112a9014758e1769ca61ae8ba85219"
+  },
+  "portraits/waverly-warm.webp": {
+   "bytes": 67398,
+   "sha256": "c94220c2f92484b292a3ed52a4ee5b0e2a45b231c3731bddbe1e897c1ec3b30a"
+  },
+  "portraits/wendell-battle.webp": {
+   "bytes": 85732,
+   "sha256": "30e7a24fb2ecd253f56415a8148326fd505d41b9ed15a0ead3c1b034639b87c9"
+  },
+  "portraits/wendell-calm.webp": {
+   "bytes": 72144,
+   "sha256": "6c9b95d6274ea74d7674126b72eeb43810c0dae7eff18743f994aae936946dc6"
+  },
+  "portraits/wendell-warm.webp": {
+   "bytes": 74644,
+   "sha256": "26a346f528602d6ad4431984d3c40ffc671ccae066c8a126bb70b5021f4830cd"
+  },
+  "portraits/wulfgar.webp": {
+   "bytes": 50384,
+   "sha256": "0427e3e72f46695234782bf61f6a85f3f246e3820da12b96fa4ba5d7652545b9"
+  },
+  "portraits/wystan-battle.webp": {
+   "bytes": 102448,
+   "sha256": "ee29feb55935453cd99d225e27e5dbd812b0500e88f753d7fa740ceb3bf625a9"
+  },
+  "portraits/wystan-calm.webp": {
+   "bytes": 55192,
+   "sha256": "4ecb6d3fc68d7c1d424db4f4e38af451a62057807c45de70f4fdf75055bba1a5"
+  },
+  "portraits/wystan-warm.webp": {
+   "bytes": 58804,
+   "sha256": "42217265b21bca8e048b5b0ed6bbff9742ddf512f69a857ce436d6148c8db46a"
+  },
+  "portraits/yamina-battle.webp": {
+   "bytes": 89136,
+   "sha256": "0ed459f1cfbcd51438287c164cca26dc4abc6c8a06ddfd58d97dccbf68fd6ed2"
+  },
+  "portraits/yamina-calm.webp": {
+   "bytes": 69436,
+   "sha256": "973e9d3b447a2c818d6434b4750a0fcd795521283bc0191d95a9c484e44bde6c"
+  },
+  "portraits/yamina-warm.webp": {
+   "bytes": 73710,
+   "sha256": "ae26f90c0e6690f1612008a3301ed15b505646a46aa0c27f4cad718dd2bb5cbd"
+  },
+  "portraits/yarrow-battle.webp": {
+   "bytes": 79452,
+   "sha256": "eee21fe07dd911ca558f66c31b0a350bde2de8001691a725d03dd974f0148f9e"
+  },
+  "portraits/yarrow-calm.webp": {
+   "bytes": 54084,
+   "sha256": "a2ae4bfad868c9c5771e8b779a8c28dd75ff47dd4a4e5e32096c71e66f22cd72"
+  },
+  "portraits/yarrow-warm.webp": {
+   "bytes": 63664,
+   "sha256": "9bd7e0573c57c198367e77de9a20d8dfbc996d76b8d0e0115195b817067ed902"
+  },
+  "portraits/yrsa.webp": {
+   "bytes": 75842,
+   "sha256": "e310ed3c08923617ffc3ef55514f912e97fe9550aa449cb0b1de063acd60baf7"
+  },
+  "portraits/yusuf-battle.webp": {
+   "bytes": 83140,
+   "sha256": "46160ac07057bdc4d31f5963551db7ecba67ea0b9633ef350ae6ab72b6bce0d5"
+  },
+  "portraits/yusuf-calm.webp": {
+   "bytes": 68992,
+   "sha256": "f4145ff5dba61d7703f4de33ee5e0e9ca54ac4d45839f4ed2a5dcb02853342ce"
+  },
+  "portraits/yusuf-warm.webp": {
+   "bytes": 72524,
+   "sha256": "b0796bb572ffb6f0d67213bf253a775cd3fc328b010b7fc18b77243ced7e8812"
+  },
+  "portraits/yvette-battle.webp": {
+   "bytes": 71182,
+   "sha256": "f63296614d504b10eb3da13aab02c38d92e64e4c895a30ba3d3fa34d6a32bb9e"
+  },
+  "portraits/yvette-calm.webp": {
+   "bytes": 47676,
+   "sha256": "b57574265948d02881a288e8b090dcb60766ed2befaa0b15b4194ed959205808"
+  },
+  "portraits/yvette-warm.webp": {
+   "bytes": 54778,
+   "sha256": "a3a75b40fd6d8918109ebee6743ac7df46f6f3c11c2a546453d59cf2d3a1ea5a"
+  },
+  "portraits/zahira-battle.webp": {
+   "bytes": 80626,
+   "sha256": "09144a6eca4c3f993d3062e169844c33b6185c3f001042da33755409804b4988"
+  },
+  "portraits/zahira-calm.webp": {
+   "bytes": 82698,
+   "sha256": "3a6f6710aaf7c6dac17e126b2f45d134210dfe94ba58f9348647809d8a9ebc32"
+  },
+  "portraits/zahira-warm.webp": {
+   "bytes": 76186,
+   "sha256": "912ad3fe3b5b039876febf9b6288d4b7cadd628167dfccab95c2ecd3a31d637e"
+  },
+  "portraits/zaki-battle.webp": {
+   "bytes": 78310,
+   "sha256": "5d3fea090d3e3e2bc820e76aa55844f44c56a6f1a3299b2cbb0824be9d4a080e"
+  },
+  "portraits/zaki-calm.webp": {
+   "bytes": 55330,
+   "sha256": "7d954a490188e7e7ca7b6e0cfce9663b974551b7a0becd11b9f920966fad90ae"
+  },
+  "portraits/zaki-warm.webp": {
+   "bytes": 58120,
+   "sha256": "a48b1d26fcd7e5afdadff116eb803acd71890234c095be4637975e22aba86ec5"
+  }
+ },
+ "totalBytes": 35319630,
+ "v": 1
+}
