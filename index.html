@@ -11106,6 +11106,27 @@ button.mr-setup-preview:focus-visible {
   background-size: 100% 1120px;
   background-repeat: repeat-y;
 }
+/* LAVA-BGFIX — GIANT BACKGROUND (Nov 21, 2026): Jesse's bar is
+   ONE GIANT continuous background, a single long scene that never
+   repeats — not tiled layers with longer periods. The volcano
+   backdrop is now ONE 720x8960 image (8 stitched panels, hot lava
+   base to cold summit) on this single layer: 360x560 div,
+   background-size 360px 8960px, no-repeat, scrolled by
+   backgroundPositionY in _sync at 0.25x with the camera. It
+   covers 672 m of climb and never repeats within any race. First
+   child of #fl-arena, below the drift wash and the course. */
+.fl-bg-giant {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 360px;
+  height: 560px;
+  transform: scale(var(--fl-arena-scale, 1));
+  transform-origin: top left;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-size: 360px 8960px;
+}
 .fl-bg-rock {
   position: absolute;
   pointer-events: none;
@@ -107101,6 +107122,11 @@ var FLGame = (function () {
   // the four parallax layer offsets joined (1px-guarded)
   var _bgDriftCache = -1; // /* LAVA-HAZARDS */ slow color-drift offset key
   var _bgBandEls = {}; // /* LAVA-HAZARDS */ band index -> decor divs
+  // /* LAVA-BGFIX */ giant-background state: _bgGiantActive is
+  // true when the current arena uses the single 720x8960 scene
+  // (volcano); _bgGiantCache is its guarded offset key.
+  var _bgGiantActive = false;
+  var _bgGiantCache = -1;
   var _hazardMarkEls = {}; // /* LAVA-HAZARDS */ platform id -> telegraph marker
   var _hazardFxCache = ''; // /* LAVA-HAZARDS */ hazard fx key: type|state|seq
   var _prevLavaWarn = false; // edge flag for the fl:lava-warning event
@@ -107337,6 +107363,16 @@ var FLGame = (function () {
     var wrap = _el('div', 'fl-arena-wrap');
     var arena = _el('div', 'fl-arena');
     arena.id = 'fl-arena';
+    // /* LAVA-BGFIX */ GIANT BACKGROUND layer (Nov 21, 2026):
+    // one 360x560 div holding the single 720x8960 scene
+    // (background-size 360px 8960px, no-repeat), scrolled by
+    // backgroundPositionY in _sync. First child, so it sits below
+    // the drift wash and the course. The arena's own
+    // backgroundImage is cleared for volcano in _buildArenaDom;
+    // the giant image carries the whole scene.
+    var giant = _el('div', 'fl-bg-giant');
+    giant.id = 'fl-bg-giant';
+    arena.appendChild(giant);
     // /* LAVA-HAZARDS */ Slow color-drift wash (endless
     // backdrop): a warm/cool gradient tile scrolling at 0.07x,
     // period 1120/0.07 = 16000px of camera — one more
@@ -108558,6 +108594,7 @@ var FLGame = (function () {
     _hazardFxCache = '';
     _bgCache = '';
     _bgDriftCache = -1;
+    _bgGiantCache = -1; // /* LAVA-BGFIX */ force a giant rewrite
     _lavaCache = -1;
     _lavaLabelCache = '';
     _scoreCache = '';
@@ -108913,36 +108950,59 @@ var FLGame = (function () {
     // M4: arena backdrop — runtime-loaded art (never embedded, so
     // the dist stays lean); the CSS gradient underneath is the
     // fallback when the art is missing. Palette class per arena.
-    // /* LAVA-HAZARDS */ ENDLESS BACKDROP (Nov 21, 2026): the
-    // old single JPG tiled every 560px and the repeat was
-    // visible. The backdrop is now FOUR layers with
-    // incommensurate periods and scroll rates, so the composition
-    // at any two heights never matches — no new art, code only:
-    //   [1] ember glow A — radial warm glow, 911px tile, 0.13x
-    //   [2] ember glow B — same tile/rate, half-period phase
-    //   [3] rock strata — dark band + ember rim, 733px tile, 0.5x
-    //   [4] arena JPG — 360x560 tile, 0.25x (as before)
-    // In camera px the periods are 911/0.13 ≈ 7008, 733/0.5 =
-    // 1466, and 560/0.25 = 2240 — their combination repeats only
-    // past ~10^7 px of climb, far beyond any race. Seeded
-    // per-band rock/ember decor in the course (_syncBackdrop)
-    // breaks even that: no two 350px bands ever look alike.
-    // Positions are set per tick in _sync (one guarded write).
+    // /* LAVA-BGFIX */ GIANT BACKGROUND (Nov 21, 2026): Jesse's
+    // bar — ONE GIANT continuous background, a single long scene
+    // that never repeats, not tiled layers with longer periods.
+    // The 4-layer "endless backdrop" from the hazards build is
+    // RETIRED for volcano: its dominant JPG layer still repeated
+    // every 44.8 m of climb and the eye caught the same
+    // lava-pool / cliffs / dark-band composition at 0 m, ~56 m
+    // and ~270 m (the pixel-diff proof passed only because the
+    // secondary layers changed pixels). Volcano now uses ONE
+    // 720x8960 scene (8 stitched panels, hot lava base to cold
+    // summit) on the .fl-bg-giant layer, scrolling at 0.25x with
+    // the camera, never repeating — it covers 672 m of climb,
+    // far beyond any race. The arena's own backgroundImage and
+    // the periodic drift wash are OFF for volcano, so no periodic
+    // layer remains. Other arenas keep the old 4-layer tiled path
+    // (unchanged). Seeded per-band rock/ember decor in the course
+    // (_syncBackdrop) stays: it is seeded per band, never periodic.
+    // The giant's position is set per tick in _sync (one guarded
+    // write).
     try {
       var P0 = _portraitsModule();
       var url = (P0 && typeof P0.arenaUrl === 'function') ? P0.arenaUrl(_arenaId) : null;
-      var bgImgs = [
-        'radial-gradient(circle at 22% 24%, rgba(255,150,50,0.16), rgba(255,150,50,0) 70px)',
-        'radial-gradient(circle at 78% 68%, rgba(255,110,30,0.13), rgba(255,110,30,0) 80px)',
-        'linear-gradient(180deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 600px, rgba(0,0,0,0.20) 600px, rgba(0,0,0,0.20) 640px, rgba(255,140,50,0.07) 640px, rgba(255,140,50,0.07) 662px, rgba(0,0,0,0) 662px, rgba(0,0,0,0) 733px)'
-      ];
-      if (url) bgImgs.push('url("' + url + '")');
-      arena.style.backgroundImage = bgImgs.join(', ');
-      arena.style.backgroundSize = url
-        ? '360px 911px, 360px 911px, 360px 733px, 360px 560px'
-        : '360px 911px, 360px 911px, 360px 733px';
-      arena.style.backgroundRepeat = 'repeat-y';
-      arena.style.backgroundPositionX = '0px';
+      var giantUrl = (P0 && typeof P0.arenaBgGiant === 'function') ? P0.arenaBgGiant(_arenaId) : null;
+      var giantEl = doc.getElementById('fl-bg-giant');
+      var driftEl0 = doc.getElementById('fl-bg-drift');
+      _bgGiantActive = !!giantUrl;
+      if (_bgGiantActive) {
+        if (giantEl) {
+          giantEl.style.backgroundImage = 'url("' + giantUrl + '")';
+          giantEl.style.backgroundPositionY = '-8400px'; // bottom = lava base
+          giantEl.style.display = '';
+        }
+        arena.style.backgroundImage = '';
+        arena.style.backgroundSize = '';
+        arena.style.backgroundRepeat = '';
+        arena.style.backgroundPosition = '';
+        if (driftEl0) driftEl0.style.display = 'none';
+      } else {
+        if (giantEl) { giantEl.style.backgroundImage = ''; giantEl.style.display = 'none'; }
+        if (driftEl0) driftEl0.style.display = '';
+        var bgImgs = [
+          'radial-gradient(circle at 22% 24%, rgba(255,150,50,0.16), rgba(255,150,50,0) 70px)',
+          'radial-gradient(circle at 78% 68%, rgba(255,110,30,0.13), rgba(255,110,30,0) 80px)',
+          'linear-gradient(180deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 600px, rgba(0,0,0,0.20) 600px, rgba(0,0,0,0.20) 640px, rgba(255,140,50,0.07) 640px, rgba(255,140,50,0.07) 662px, rgba(0,0,0,0) 662px, rgba(0,0,0,0) 733px)'
+        ];
+        if (url) bgImgs.push('url("' + url + '")');
+        arena.style.backgroundImage = bgImgs.join(', ');
+        arena.style.backgroundSize = url
+          ? '360px 911px, 360px 911px, 360px 733px, 360px 560px'
+          : '360px 911px, 360px 911px, 360px 733px';
+        arena.style.backgroundRepeat = 'repeat-y';
+        arena.style.backgroundPositionX = '0px';
+      }
       var arenaIds = ['volcano', 'livingroom', 'playground', 'kitchen', 'candyland'];
       for (var ai = 0; ai < arenaIds.length; ai++) {
         arena.classList.remove('fl-arena--' + arenaIds[ai]);
@@ -108970,6 +109030,7 @@ var FLGame = (function () {
     _hazardFxCache = '';
     _bgCache = '';
     _bgDriftCache = -1;
+    _bgGiantCache = -1; // /* LAVA-BGFIX */ force a giant rewrite
     for (var i = 0; i < _state.platforms.length; i++) {
       _makePlatButton(course, _state.platforms[i]);
     }
@@ -109635,40 +109696,64 @@ var FLGame = (function () {
       if (Math.abs(camTarget - _camCache) > 0.5) {
         _camCache = camTarget;
         try { courseEl.style.transform = 'translateY(' + (-camTarget).toFixed(1) + 'px)'; } catch (e) { /* cosmetic */ }
-        // /* LAVA-HAZARDS */ Endless backdrop: four layers at
-        // 0.25x / 0.5x / 0.13x / 0.13x with periods 560 / 733 /
-        // 911 / 911 (ember B phase-shifted half a tile) — one
-        // guarded backgroundPosition write per frame. Offsets are
-        // quantized to 2px (invisible at these scales, roughly
-        // halves repaint frequency vs 1px steps).
-        // backgroundPositionY alone cannot set per-layer offsets,
-        // so the full shorthand is written (all X are 0px).
-        var bgA = (((camTarget * 0.25) % 560) + 560) % 560;
-        var bgB = (((camTarget * 0.5) % 733) + 733) % 733;
-        var bgC1 = (((camTarget * 0.13) % 911) + 911) % 911;
-        var bgC2 = (((camTarget * 0.13 + 455.5) % 911) + 911) % 911;
-        var bgKey = (Math.round(bgA / 2) * 2) + '|' +
-          (Math.round(bgB / 2) * 2) + '|' +
-          (Math.round(bgC1 / 2) * 2) + '|' + (Math.round(bgC2 / 2) * 2);
-        if (bgKey !== _bgCache) {
-          _bgCache = bgKey;
-          var arenaEl = doc.getElementById('fl-arena');
-          if (arenaEl) {
-            var bgParts = bgKey.split('|');
-            arenaEl.style.backgroundPosition =
-              '0px ' + (-bgParts[2]) + 'px, ' +
-              '0px ' + (-bgParts[3]) + 'px, ' +
-              '0px ' + (-bgParts[1]) + 'px, ' +
-              '0px ' + (-bgParts[0]) + 'px';
+        if (_bgGiantActive) {
+          // /* LAVA-BGFIX */ GIANT BACKGROUND: one 720x8960 scene
+          // (8 stitched panels, lava base to cold summit) on the
+          // .fl-bg-giant layer, scrolling at 0.25x with the
+          // camera, NEVER repeating — it covers 672 m of climb.
+          // The camera starts at 2440 (CAMERA_MAX_Y) and falls
+          // ~50px per metre climbed; the scene offset is
+          // (2440 - cam) * 0.25, clamped to [0, 8400] so the view
+          // freezes on the summit past 672 m instead of showing
+          // the fallback. backgroundPositionY = -(8400 - offset):
+          // at the start (offset 0) the bottom 560px (lava base)
+          // show; at the top (offset 8400) the summit shows.
+          // One guarded write per frame, quantized to 2px.
+          var giantOff = Math.round(((2440 - camTarget) * 0.25) / 2) * 2;
+          if (giantOff < 0) giantOff = 0;
+          if (giantOff > 8400) giantOff = 8400;
+          if (giantOff !== _bgGiantCache) {
+            _bgGiantCache = giantOff;
+            var giantEl = doc.getElementById('fl-bg-giant');
+            if (giantEl) giantEl.style.backgroundPositionY = (-(8400 - giantOff)) + 'px';
           }
-        }
-        // Slow color-drift wash: 0.07x, 1120px tile (guarded, 2px).
-        var driftOff = (((camTarget * 0.07) % 1120) + 1120) % 1120;
-        var driftKey = Math.round(driftOff / 2) * 2;
-        if (driftKey !== _bgDriftCache) {
-          _bgDriftCache = driftKey;
-          var driftEl = doc.getElementById('fl-bg-drift');
-          if (driftEl) driftEl.style.backgroundPositionY = (-driftKey) + 'px';
+        } else {
+          // /* LAVA-HAZARDS */ Endless backdrop (non-volcano
+          // arenas only): four layers at 0.25x / 0.5x / 0.13x /
+          // 0.13x with periods 560 / 733 / 911 / 911 (ember B
+          // phase-shifted half a tile) — one guarded
+          // backgroundPosition write per frame. Offsets are
+          // quantized to 2px (invisible at these scales, roughly
+          // halves repaint frequency vs 1px steps).
+          // backgroundPositionY alone cannot set per-layer offsets,
+          // so the full shorthand is written (all X are 0px).
+          var bgA = (((camTarget * 0.25) % 560) + 560) % 560;
+          var bgB = (((camTarget * 0.5) % 733) + 733) % 733;
+          var bgC1 = (((camTarget * 0.13) % 911) + 911) % 911;
+          var bgC2 = (((camTarget * 0.13 + 455.5) % 911) + 911) % 911;
+          var bgKey = (Math.round(bgA / 2) * 2) + '|' +
+            (Math.round(bgB / 2) * 2) + '|' +
+            (Math.round(bgC1 / 2) * 2) + '|' + (Math.round(bgC2 / 2) * 2);
+          if (bgKey !== _bgCache) {
+            _bgCache = bgKey;
+            var arenaEl = doc.getElementById('fl-arena');
+            if (arenaEl) {
+              var bgParts = bgKey.split('|');
+              arenaEl.style.backgroundPosition =
+                '0px ' + (-bgParts[2]) + 'px, ' +
+                '0px ' + (-bgParts[3]) + 'px, ' +
+                '0px ' + (-bgParts[1]) + 'px, ' +
+                '0px ' + (-bgParts[0]) + 'px';
+            }
+          }
+          // Slow color-drift wash: 0.07x, 1120px tile (guarded, 2px).
+          var driftOff = (((camTarget * 0.07) % 1120) + 1120) % 1120;
+          var driftKey = Math.round(driftOff / 2) * 2;
+          if (driftKey !== _bgDriftCache) {
+            _bgDriftCache = driftKey;
+            var driftEl = doc.getElementById('fl-bg-drift');
+            if (driftEl) driftEl.style.backgroundPositionY = (-driftKey) + 'px';
+          }
         }
       }
     }
@@ -110985,6 +111070,20 @@ var FLPortraits = (function () {
     return null;
   }
 
+  // /* LAVA-BGFIX */ GIANT BACKGROUND (Nov 21, 2026): the URL of
+  // the single tall continuous scene for an arena (volcano only):
+  // one 720x8960 image, 8 stitched panels from the lava base to
+  // the cold summit, scrolling at 0.25x with the camera and never
+  // repeating (covers 672 m of climb). Returns null for arenas
+  // without a giant scene — the caller falls back to the single
+  // JPG + layered path.
+  function arenaBgGiant(arena) {
+    if (typeof arena !== 'string') return null;
+    var want = arena.replace(/^\s+|\s+$/g, '').toLowerCase();
+    if (want !== 'volcano') return null;
+    return ART_BASE + 'arenas/volcano-giant.jpg';
+  }
+
   // Baked splash motif URL (assets/lava/splash.webp).
   function splashUrl() { return ART_BASE + 'splash.webp'; }
 
@@ -111036,6 +111135,7 @@ var FLPortraits = (function () {
     rivalIds: rivalIds,
     avatarIds: avatarIds,
     arenaUrl: arenaUrl,
+    arenaBgGiant: arenaBgGiant,
     splashUrl: splashUrl,
     keyFor: keyFor,
     urlFor: urlFor,
