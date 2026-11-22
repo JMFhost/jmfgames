@@ -394,6 +394,40 @@ body {
   outline-offset: 2px;
 }
 
+/* Shared Quit button (Nov 22, 2026 — Jesse): an explicit Quit in every
+   game's top bar. Same pill language as the audio toggles, red-tinted
+   so it reads as an exit, not a setting. */
+.ph-quit-btn {
+  appearance: none;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 120, 120, 0.55);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #ff9e9e;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  white-space: nowrap;
+}
+
+.ph-quit-btn--compact {
+  min-width: 36px;
+  padding: 0 8px;
+  font-size: 15px;
+}
+
+.ph-quit-btn:active {
+  transform: scale(0.96);
+}
+
+.ph-quit-btn:focus-visible {
+  outline: 2px solid #ff9e9e;
+  outline-offset: 2px;
+}
+
 /* Block game icon: small original block pattern on a teal tile. */
 .ph-icon-blocks {
   background: linear-gradient(150deg, #2fae8f 0%, #1d7f74 100%);
@@ -7048,6 +7082,16 @@ body {
    row so the centered title stays centered; the subtitle (when
    present) takes its own line. */
 #app-chessquest .chq-head-spacer { flex: 0 0 81px; order: 0; }
+/* KK QUIT-SKILLS: the Quest headers now carry a third header button
+   (the Quit ✕ beside the two audio toggles), so the audio row is
+   ~124px wide and the 81px spacer no longer balances it — at 360px
+   the title ("CHESS QUEST") wraps to two lines and the creation
+   screen overflows by 12px. Below 400px viewport the spacer drops
+   to 40px, giving the title room for one line (fit beats perfect
+   centering at narrow widths; at >=390px the 81px spacer stands). */
+@media (max-width: 400px) {
+  #app-chessquest .chq-head-spacer { flex-basis: 40px; }
+}
 #app-chessquest .chq-screen-title { flex: 1 1 0; min-width: 0; order: 1; }
 #app-chessquest .chq-screen-sub { flex: 1 1 100%; order: 3; }
 #app-chessquest .chq-audio-row { display: flex; gap: 8px; flex: 0 0 auto; order: 2; }
@@ -13699,6 +13743,115 @@ if (typeof window !== 'undefined') {
     }
   }
 
+  /* Shared Quit button (Nov 22, 2026 — Jesse): an explicit Quit in
+     every game's top bar that returns to the phone home screen. Same
+     never-throws / idempotent style as injectAudioToggles. No confirm
+     dialog: quitting is defeat-equivalent with no penalty — meta
+     progress only writes on victory (or on the game's own UI actions)
+     and is already saved, and a mid-battle attempt is abandoned, not
+     lost. opts.onQuit (optional) runs first, best-effort — a game can
+     pause itself there (Kindlekeep does); its failure never blocks
+     the quit. */
+  function injectQuitButton(container, opts) {
+    try {
+      if (!container || typeof container.querySelector !== 'function') return false;
+      if (typeof document === 'undefined' || !document ||
+          typeof document.createElement !== 'function') return false;
+      opts = opts || {};
+      var existing = null;
+      try {
+        existing = container.querySelector('[data-ph-quit]');
+      } catch (e) { existing = null; }
+      if (existing) return existing;
+      var btn = document.createElement('button');
+      try { btn.type = 'button'; } catch (e) { /* silent */ }
+      var cls = 'ph-quit-btn';
+      if (opts.compact) cls += ' ph-quit-btn--compact';
+      try { btn.className = cls; } catch (e) { /* silent */ }
+      try {
+        btn.setAttribute('data-ph-quit', 'true');
+        btn.setAttribute('aria-label', 'Quit to home');
+        if (opts.id) btn.id = opts.id;
+      } catch (e) { /* silent */ }
+      try { btn.textContent = opts.compact ? '\u2715' : '\u2715 Quit'; } catch (e) { /* silent */ }
+      try {
+        if (btn.addEventListener) {
+          btn.addEventListener('click', function () {
+            try {
+              if (typeof opts.onQuit === 'function') {
+                try { opts.onQuit(); } catch (e) { /* pre-quit hook must not block */ }
+              }
+            } catch (e2) { /* silent */ }
+            try {
+              if (typeof PhoneShell !== 'undefined' && PhoneShell &&
+                  typeof PhoneShell.goHome === 'function') {
+                PhoneShell.goHome();
+                return;
+              }
+            } catch (e3) { /* fall through to the direct path */ }
+            try {
+              closeCurrent();
+              hideApps();
+              showHome();
+              _clearHash();
+            } catch (e4) { /* never throw */ }
+          });
+        }
+      } catch (e) { /* a button without listeners still renders */ }
+      try {
+        if (opts.before && opts.before.parentNode === container &&
+            typeof container.insertBefore === 'function') {
+          container.insertBefore(btn, opts.before);
+        } else if (typeof container.appendChild === 'function') {
+          container.appendChild(btn);
+        }
+      } catch (e) { /* silent */ }
+      return btn;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /* OATH QUIT WATCH (Nov 22, 2026 — Jesse): Oath builds its topbar
+     from an HTML string in oath-game.js (owned by the parallel Oath
+     coordinator — this tree must not touch oath-* files), so the quit
+     button cannot be injected by the game itself. The shell watches
+     #app-oath and re-injects the compact quit button into every
+     .oath-topbar-toggles whenever Oath re-renders a screen. Started
+     on Oath open, stopped on Oath close; never throws. */
+  var _oathQuitObserver = null;
+  function _injectOathQuit() {
+    try {
+      var root = $('app-oath');
+      if (!root || typeof root.querySelectorAll !== 'function') return;
+      var slots = root.querySelectorAll('.oath-topbar-toggles');
+      for (var i = 0; i < slots.length; i++) {
+        try { injectQuitButton(slots[i], { compact: true }); } catch (e) { /* best-effort */ }
+      }
+    } catch (e) { /* never throw */ }
+  }
+  function _startOathQuitWatch() {
+    try {
+      _injectOathQuit();
+      var root = $('app-oath');
+      if (!root) return;
+      if (typeof MutationObserver === 'undefined') return;
+      if (_oathQuitObserver) { try { _oathQuitObserver.disconnect(); } catch (e) { /* silent */ } }
+      _oathQuitObserver = new MutationObserver(function () {
+        try { _injectOathQuit(); } catch (e) { /* never throw */ }
+      });
+      _oathQuitObserver.observe(root, { childList: true, subtree: true });
+    } catch (e) { /* never throw */ }
+  }
+  function _stopOathQuitWatch() {
+    try {
+      if (_oathQuitObserver) {
+        _oathQuitObserver.disconnect();
+        _oathQuitObserver = null;
+      }
+    } catch (e) { /* never throw */ }
+  }
+
   /* Scale the 414x868 phone frame to fit the viewport, centered. */
   function fitPhone() {
     var phone = $('ph-phone');
@@ -14944,6 +15097,10 @@ if (typeof window !== 'undefined') {
        for the home row and every game's top bar. */
     injectAudioToggles: injectAudioToggles,
 
+    /* Shared Quit button (Nov 22, 2026 — Jesse): an explicit Quit in
+       every game's top bar that returns to the phone home screen. */
+    injectQuitButton: injectQuitButton,
+
     appInfo: function (id) {
       var app = registry[id];
       if (!app) return null;
@@ -15109,6 +15266,7 @@ if (typeof window !== 'undefined') {
             window.OathWire.onOpen();
           }
         } catch (e) { /* never throws */ }
+        try { _startOathQuitWatch(); } catch (e) { /* never throws */ }
       },
       onClose: function () {
         try {
@@ -15117,6 +15275,7 @@ if (typeof window !== 'undefined') {
             window.OathWire.onClose();
           }
         } catch (e) { /* never throws */ }
+        try { _stopOathQuitWatch(); } catch (e) { /* never throws */ }
       } });
     PhoneShell.registerApp('chess', { title: 'Chess', game: true, el: $('app-chess'),
       /* Re-measure + re-render on open (Blockfall pattern): the board is
@@ -16177,11 +16336,19 @@ var BZGame = (function () {
     _root = _el('div', 'bz-game');
 
     // Header: home/back, score, best, restart.
+    // /* KK QUIT-SKILLS */ The Home button IS the Quit button: it already
+    // calls PhoneShell.goHome. It is labelled with the shared Quit mark
+    // (\u2715) instead of "\u2039 Home" so Block Zen carries the same explicit
+    // Quit affordance as every other game. A SEPARATE injected \u2715 was
+    // tried first and broke the header fit at every viewport (the
+    // header is already at its fit limit -- the music/sound toggles
+    // overlapped the Score/Best readout, 12 shared-fit failures);
+    // relabelling the existing button keeps the header at 6 items.
     var header = _el('div', 'bz-header');
-    var homeBtn = _el('button', 'bz-btn bz-home', '\u2039 Home');
+    var homeBtn = _el('button', 'bz-btn bz-home', '\u2715');
     homeBtn.id = 'bz-home';
     homeBtn.type = 'button';
-    homeBtn.setAttribute('aria-label', 'Back to home');
+    homeBtn.setAttribute('aria-label', 'Quit to home');
     homeBtn.addEventListener('click', _goHome);
     header.appendChild(homeBtn);
 
@@ -23599,6 +23766,11 @@ if (typeof window !== 'undefined') {
         } catch (e) {
           _injectMusicButtonLegacy(mount);
         }
+        // /* KK QUIT-SKILLS */ No separate Quit button is injected here:
+        // Block Zen's header is already at its fit limit, and a 7th
+        // header item overlaps the Score/Best readout at every viewport
+        // (12 shared-fit failures). The header's own Home button IS the
+        // Quit button (bz-game.js: labelled ✕, calls PhoneShell.goHome).
         return;
       }
       _injectMusicButtonLegacy(mount);
@@ -26672,6 +26844,12 @@ var SolGame = (function () {
         window.PhoneShell.injectAudioToggles(actions, { compact: true });
       }
     } catch (e) { /* audio toggles are best-effort */ }
+    try {
+      if (typeof window !== 'undefined' && window.PhoneShell &&
+          typeof window.PhoneShell.injectQuitButton === 'function') {
+        window.PhoneShell.injectQuitButton(actions, { compact: true });
+      }
+    } catch (e) { /* quit button is best-effort */ }
     header.appendChild(actions);
 
     // Stats row placeholder: filled by the wire via SolUI.renderStats
@@ -30668,6 +30846,12 @@ var BFGame = (function () {
         window.PhoneShell.injectAudioToggles(header, { compact: true });
       }
     } catch (e) { /* audio toggles are best-effort */ }
+    try {
+      if (typeof window !== 'undefined' && window.PhoneShell &&
+          typeof window.PhoneShell.injectQuitButton === 'function') {
+        window.PhoneShell.injectQuitButton(header, { compact: true });
+      }
+    } catch (e) { /* quit button is best-effort */ }
     _root.appendChild(header);
     _headerEl = header;
 
@@ -41409,6 +41593,12 @@ var CHSGame = (function () {
         window.PhoneShell.injectAudioToggles(controls, { compact: true });
       }
     } catch (e) { /* audio toggles are best-effort */ }
+    try {
+      if (typeof window !== 'undefined' && window.PhoneShell &&
+          typeof window.PhoneShell.injectQuitButton === 'function') {
+        window.PhoneShell.injectQuitButton(controls, { compact: true });
+      }
+    } catch (e) { /* quit button is best-effort */ }
     _root.appendChild(controls);
 
     // Collapsible move list.
@@ -53926,6 +54116,9 @@ var AMWire = (function () {
       if (shell && typeof shell.injectAudioToggles === 'function') {
         shell.injectAudioToggles(header, { compact: true });
       }
+      if (shell && typeof shell.injectQuitButton === 'function') {
+        shell.injectQuitButton(header, { compact: true });
+      }
     } catch (e) { /* audio toggles are best-effort */ }
   }
 
@@ -54495,6 +54688,120 @@ var KKData = (function () {
     return root;
   }
 
+  /* KK QUIT-SKILLS: A boss in every stage (Jesse, Nov 22, 2026):
+     only 8 of the 85 stages carry a bossId in the shards (the world
+     bosses). The rest get a SYNTHESIZED boss, derived in memory from
+     their world's boss — never written to a shard (shards are
+     checksummed; the merge stays byte-identical). Naming: "<World
+     Boss> of <Stage Name>" (stage names are unique, so boss names are
+     distinct). Stats scale with the stage's position inside its world:
+     HP 25% → 85% of the world boss, bite 62.5% → 92.5%, art size 0.9x,
+     same speed / slow resist / immunities / phase script / art as the
+     template (phases deep-copied so no runtime state is shared). No
+     introScene (a story scene before every stage would stall the game
+     — the world bosses keep theirs). Flagged isStageBoss so the win
+     flow can tell a stage boss from a world boss (the +100 boss-clear
+     glimmer stays world-boss-only). Idempotent: re-running skips
+     levels that already have a bossId and defs that already exist. */
+  function ensureStageBosses(data) {
+    if (!data || !data.levels || !data.bosses) return data;
+    var bosses = data.bosses;
+    var byId = {};
+    for (var i = 0; i < bosses.length; i++) {
+      if (bosses[i] && bosses[i].id) byId[bosses[i].id] = bosses[i];
+    }
+    var worldTemplate = {};
+    var worldOrder = ["B1", "B2", "B3", "B4", "B5", "B6"];
+    for (var w = 0; w < worldOrder.length; w++) {
+      if (byId[worldOrder[w]]) worldTemplate[w + 1] = byId[worldOrder[w]];
+    }
+    // Position of each level inside its world (0-based, in file order).
+    var worldCount = {};
+    var positions = [];
+    for (var l = 0; l < data.levels.length; l++) {
+      var lv0 = data.levels[l];
+      var w0 = (lv0 && lv0.world) || 0;
+      positions[l] = worldCount[w0] || 0;
+      worldCount[w0] = (worldCount[w0] || 0) + 1;
+    }
+    for (var m = 0; m < data.levels.length; m++) {
+      var lvl = data.levels[m];
+      if (!lvl || lvl.bossId) continue;
+      var tmpl = worldTemplate[lvl.world];
+      if (!tmpl) continue;
+      var n = worldCount[lvl.world] || 1;
+      var f = 0.25 + 0.60 * (n > 1 ? positions[m] / (n - 1) : 0);
+      var id = "B_" + lvl.id;
+      if (byId[id]) { lvl.bossId = id; continue; }
+      var phasesCopy = null;
+      try {
+        phasesCopy = tmpl.phases ? JSON.parse(JSON.stringify(tmpl.phases)) : tmpl.phases;
+      } catch (e) { phasesCopy = tmpl.phases; }
+      var def = {
+        id: id,
+        name: tmpl.name + " of " + (lvl.name || lvl.id),
+        world: lvl.world,
+        hp: Math.max(200, Math.round(tmpl.hp * f)),
+        speed: tmpl.speed,
+        bite: Math.max(10, Math.round(tmpl.bite * (0.5 + 0.5 * f))),
+        biteRate: tmpl.biteRate,
+        lane: tmpl.lane || 3,
+        scale: Math.round((tmpl.scale || 2.2) * 0.9 * 100) / 100,
+        slowResist: tmpl.slowResist,
+        knockbackImmune: true,
+        rootImmune: true,
+        phases: phasesCopy,
+        art: tmpl.art,
+        flavor: "A lesser echo of " + tmpl.name + " — the warden of " + (lvl.name || lvl.id) + ".",
+        isStageBoss: true
+      };
+      bosses.push(def);
+      byId[id] = def;
+      lvl.bossId = id;
+    }
+    return data;
+  }
+
+  /* KK QUIT-SKILLS: spells unlocked from level 1 (Jesse, Nov 22,
+     2026). The keeper spells + shared skill tree live in the SHARD
+     (kk-00-root.json), not the engine fallback — so the unlock and
+     the W3/L3 repurpose are applied here, in memory after the merge,
+     next to ensureStageBosses (shards stay byte-identical). KS2/KS3
+     become base-unlocked; W3 "Aegis Rite" (whose only effect was the
+     KS2 unlock) becomes "Aegis Ward" (Mending Pulse +60 every 8s)
+     and L3 "Bounty Rite" (whose only effect was the KS3 unlock)
+     becomes "Bountiful Wells" (Lumen Wells +10 per payout). Both use
+     effect keys the applicator already consumes, so no new code paths.
+     Idempotent: re-running writes the same values. */
+  function ensureSpellsUnlocked(data) {
+    if (!data || !data.keeper) return data;
+    var spells = data.keeper.spells || [];
+    for (var i = 0; i < spells.length; i++) {
+      if (spells[i] && (spells[i].id === "KS2" || spells[i].id === "KS3")) {
+        spells[i].unlockedBy = "base";
+      }
+    }
+    var tree = data.keeper.skillTree;
+    var branches = (tree && tree.branches) || [];
+    for (var b = 0; b < branches.length; b++) {
+      var nodes = branches[b].nodes || [];
+      for (var n = 0; n < nodes.length; n++) {
+        var node = nodes[n];
+        if (!node) continue;
+        if (node.id === "W3") {
+          node.name = "Aegis Ward";
+          node.desc = "Mending Pulse heals +60 every 8s (was +40 every 10s).";
+          node.effects = { pulseHeal: 60, pulseIntervalSec: 8 };
+        } else if (node.id === "L3") {
+          node.name = "Bountiful Wells";
+          node.desc = "Lumen Wells pay +10 Lumen per payout.";
+          node.effects = { wellBonus: 10 };
+        }
+      }
+    }
+    return data;
+  }
+
   function _ensureDataObject() {
     if (_data) return _data;
     _data = {};
@@ -54636,7 +54943,11 @@ var KKData = (function () {
     _eagerPromise = loadManifest().then(function () {
       _ensureDataObject();
       var entries = _manifestOrder(_manifest.groups.eager || []);
-      return _loadSequence(entries, onProgress).then(function () { return _data; });
+      return _loadSequence(entries, onProgress).then(function () {
+        ensureStageBosses(_data);
+        ensureSpellsUnlocked(_data);
+        return _data;
+      });
     });
     return _eagerPromise;
   }
@@ -54650,6 +54961,8 @@ var KKData = (function () {
         if (!_loaded[list[i].file]) rest.push(list[i]);
       }
       return _loadSequence(rest, onProgress).then(function () {
+        ensureStageBosses(_data);
+        ensureSpellsUnlocked(_data);
         if (_readyResolve) {
           var r = _readyResolve;
           _readyResolve = null;
@@ -54718,6 +55031,8 @@ var KKData = (function () {
 
   var api = {
     mergeShard: mergeShard,
+    ensureStageBosses: ensureStageBosses,
+    ensureSpellsUnlocked: ensureSpellsUnlocked,
     loadManifest: loadManifest,
     loadEager: loadEager,
     prefetchRest: prefetchRest,
@@ -55650,8 +55965,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
   // verification scripts assert fallback == data on every number.
   // Fairness: fixed harm/rates/cooldowns/costs, no crits, no chance, no
   // unseeded randomness anywhere in this block. Heroes: FIVE Keepers
-  // /* KKSPELLS */ stand at the last line (x = backXCells 0.5 cells,
-  // the center of column 0, beside the gate), one per lane, switching
+  // /* KKSPELLS */ stand three rows forward (x = backXCells 3.5 cells,
+  // the center of column 3), one per lane, switching
   // lanes by player move order (MOVEMENT-ADDENDUM §1-§2: home lanes
   // Rowan 0, Rai 1, Neve 2, Sora 3, Wren 4; current lane is mutable).
   // The chosen hero is the CAPTAIN
@@ -55672,10 +55987,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
         harm: 120, radiusCells: 2.0, sfxId: "keeper_dawnburst",
         target: "point", unlockedBy: "base" },
       { id: "KS2", name: "Warden's Aegis", branch: "warden", cooldownSec: 45,
-        heal: 150, sfxId: "keeper_aegis", target: "instant", unlockedBy: "W3" },
+        heal: 150, sfxId: "keeper_aegis", target: "instant", unlockedBy: "base" },
       { id: "KS3", name: "Lantern's Bounty", branch: "lantern", cooldownSec: 60,
         lumen: 100, cooldownCutSec: 10, sfxId: "keeper_bounty",
-        target: "instant", unlockedBy: "L3" }
+        target: "instant", unlockedBy: "base" }
     ],
     skillTree: {
       pointsPerStars: 12, pointsPerQuests: 3, respecGlimmer: 150,
@@ -55705,8 +56020,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
             effects: { auraHarm: 0.10 } },
           { id: "W2", name: "Mending Pulse", cost: 1, requires: "W1",
             effects: { pulseHeal: 40, pulseIntervalSec: 10 } },
-          { id: "W3", name: "Aegis Rite", cost: 2, requires: "W2",
-            effects: { unlockSpell: "KS2" } },
+          { id: "W3", name: "Aegis Ward", cost: 2, requires: "W2",
+            desc: "Mending Pulse heals +60 every 8s (was +40 every 10s).",
+            effects: { pulseHeal: 60, pulseIntervalSec: 8 } },
           { id: "W4", name: "Guardian's Haste", cost: 3, requires: "W3",
             effects: { auraHaste: 0.10 } },
           { id: "W5", name: "Keeper's Vigil", cost: 4, requires: "W4",
@@ -55717,8 +56033,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
             effects: { moteBonus: 5 } },
           { id: "L2", name: "Deep Wells", cost: 1, requires: "L1",
             effects: { wellBonus: 5 } },
-          { id: "L3", name: "Bounty Rite", cost: 2, requires: "L2",
-            effects: { unlockSpell: "KS3" } },
+          { id: "L3", name: "Bountiful Wells", cost: 2, requires: "L2",
+            desc: "Lumen Wells pay +10 Lumen per payout.",
+            effects: { wellBonus: 10 } },
           { id: "L4", name: "Swift Recovery", cost: 3, requires: "L3",
             effects: { cooldownReductionSec: 5 } },
           { id: "L5", name: "Bright Harvest", cost: 4, requires: "L4",
@@ -55790,12 +56107,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
   // TD_DATA.keeper.hero overrides over these defaults when present
   // (forward-compatible; shards carry no hero block today, so the
   // defaults below rule). Bolt numbers are NOT adjusted here.
-  // /* KKSPELLS */ backXCells 0.5: the last line, center of column 0.
-  // A single shared value for all FIVE heroes (see KEEPER_ALLY below);
-  // the old frontXCells 6.0 is retired. The 0.28s/lane slide speed is
+  // /* KKSPELLS */ backXCells 3.5: three rows forward from the back
+  // edge (Jesse, Nov 22, 2026) — the heroes stand at the center of
+  // column 3, not the last line. A single shared value for all FIVE
+  // heroes (see KEEPER_ALLY below); the old frontXCells 6.0 is retired.
+  // The 0.28s/lane slide speed is
   // REUSED from live-v34 tap-a-lane (MOVEMENT-ADDENDUM §2.2) and lives
   // in KEEPER_MOVE below, not here.
-  var KEEPER_HERO = { maxHp: 700, reviveSec: 20, backXCells: 0.5 };
+  var KEEPER_HERO = { maxHp: 700, reviveSec: 20, backXCells: 3.5 };
 
   // Co-op Keeper regen (KK-AI-DESIGN.md §2): both Keepers slowly
   // recover HP after a short delay without damage. Alive-only: a
@@ -55831,7 +56150,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
   // HEROES-DESIGN.md §5). allyKeeperConfig() merges
   // TD_DATA.keeper.ally overrides over these defaults when present
   // (shards carry no ally block today). The AI heroes stand at the LAST
-  // line (backXCells 0.5, the same x as the captain) in their HOME
+  // line (backXCells 3.5, the same x as the captain) in their HOME
   // lanes at battle start; the CURRENT lane changes only by move order
   // (player) or the dodge reflex (AI, §5.1). The decision tick
   // (decisionSec) now drives each AI hero's SIGNATURE rule evaluation
@@ -55845,7 +56164,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
   // file (verified at the H1-resume rework): the AI never moves a hero
   // toward a stacked lane, never chases bolt value, never rebalances.
   // bountyLumenBelow stays (KS3 cast rule).
-  var KEEPER_ALLY = { backXCells: 0.5, decisionSec: 0.5,
+  var KEEPER_ALLY = { backXCells: 3.5, decisionSec: 0.5,
     bountyLumenBelow: 150 };
 
   // /* KKSPELLS */ Hero movement numbers (MOVEMENT-ADDENDUM §2/§5).
@@ -56374,14 +56693,32 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
   // Night Watch, never on replay. Returns the amount granted (0, 1
   // or 2). The caller owns the first-clear determination (it knows
   // whether the stage was cleared before this win).
-  function grantHeroValor(saveState, captainId, isFirstClear, starsEarned, isNightWatch) {
-    if (!saveState || !captainId) return 0;
+  // /* KK QUIT-SKILLS */ Valor economy (Jesse, Nov 22, 2026 —
+  // binding): Valor is earned ONLY by clearing a stage at 3 stars.
+  // EVERY hero deployed to that battlefield earns +1 Valor — captain
+  // and both companions alike. Once a stage has 3 stars, replaying it
+  // earns NOTHING (no farming). A stage first cleared below 3 stars
+  // and later re-cleared at 3 stars DOES earn (first time at 3 stars
+  // only). Night Watch pays nothing. Per-hero storage
+  // (heroValor[heroId]) is unchanged. Max supply: 85 stages x 3
+  // deployed heroes = 255 Valor events; maxing one hero's tree costs
+  // 32, all ten cost 320 — a full-roster max is NOT reachable from
+  // stage clears alone (choice is mandatory); maxing any five (160)
+  // fits inside the supply.
+  function grantHeroValor(saveState, deployedHeroIds, starsEarned, prevStars, isNightWatch) {
+    if (!saveState) return 0;
     if (isNightWatch) return 0;
-    if (!isFirstClear) return 0;
-    let granted = 1;
-    if (starsEarned >= 3) granted = 2;
+    if ((starsEarned || 0) < 3) return 0;
+    if ((prevStars || 0) >= 3) return 0;
+    if (!deployedHeroIds || !deployedHeroIds.length) return 0;
     if (!saveState.heroValor) saveState.heroValor = {};
-    saveState.heroValor[captainId] = heroValor(saveState, captainId) + granted;
+    let granted = 0;
+    for (let i = 0; i < deployedHeroIds.length; i++) {
+      const id = deployedHeroIds[i];
+      if (!id) continue;
+      saveState.heroValor[id] = heroValor(saveState, id) + 1;
+      granted += 1;
+    }
     return granted;
   }
 
@@ -56516,6 +56853,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     if (typeof eff.sigHeal === "number") out.heal = eff.sigHeal;
     if (typeof eff.sigKnockbackCells === "number") out.knockbackCells = eff.sigKnockbackCells;
     if (typeof eff.sigRootSec === "number") out.rootSec = eff.sigRootSec;
+    // /* KK QUIT-SKILLS */ sigSlowFrac was the one tree effect the merge
+    // dropped: Neve's maxed Deep Freeze slowed 0.50 (base) instead of
+    // the advertised 0.65. The skill-correctness proof caught it.
+    if (typeof eff.sigSlowFrac === "number") out.slowFrac = eff.sigSlowFrac;
     if (typeof eff.sigAllLanes === "boolean") out.allLanes = eff.sigAllLanes;
     if (typeof eff.summonCount === "number") out.summonCount = eff.summonCount;
     if (typeof eff.summonHpMul === "number") out.summonHpMul = eff.summonHpMul;
@@ -56529,8 +56870,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     return !!keeperDerivedStats(saveState).unlockedSpells[spellId];
   }
 
-  // Hero Keeper: the CAPTAIN stands on the LAST LINE at the center of
-  // column 0 (x = backXCells * cellW = 0.5 cells), in the CAPTAIN's
+  // Hero Keeper: the CAPTAIN stands three rows forward at the center of
+  // column 3 (x = backXCells * cellW = 3.5 cells), in the CAPTAIN's
   // CURRENT lane (home lanes Rowan 0, Rai 1, Neve 2, Sora 3, Wren 4;
   // the lane changes by move order, MOVEMENT-ADDENDUM §1-§2), on lane
   // maps AND winding-path maps alike. The old road-exit special case
@@ -56659,7 +57000,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
   // =========================================================================
 
   // /* KKSPELLS */ Back-line position of the AI spell-caster hero,
-  // // same x as the captain (backXCells 0.5, the center of column 0),
+  // // same x as the captain (backXCells 3.5, the center of column 3),
   // // y = its CURRENT lane center (Wren home lane 4 unless the captain
   // // is Wren, when the caster is Rowan, home lane 0 — either hero's
   // // lane changes by move order). Same on lane maps AND winding-path
@@ -56892,9 +57233,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
   // instead. Mirrors the blocker block in the enemy loop exactly
   // (same lane/reach/tie conditions); path maps and burrowed foes
   // never engage. Used as the AI bolt's top priority (protect the
-  // player). /* KKSPELLS */ Back-line geometry: the hero Keeper
-  // stands at x = 0.5 cells in the CAPTAIN's CURRENT lane, so
-  // engagement is possible ONLY in that lane, at the last line. (The
+  // player). /* KKSPELLS */ Forward geometry: the hero Keeper
+  // stands at x = 3.5 cells in the CAPTAIN's CURRENT lane, so
+  // engagement is possible ONLY in that lane, three rows forward. (The
   // caster's own engagement in its current lane is not tested here —
   // the priority is protecting the player's Keeper.)
   function foeEngagedWithFrontKeeper(session, foe) {
@@ -56902,7 +57243,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     if (!keeperAlive(session)) return false;
     // /* KKSPELLS */ The captain's CURRENT lane (Rowan home 0, Rai 1,
     // Neve 2, Sora 3, Wren home 4 — the lane changes by move order) —
-    // engagement is possible ONLY in that lane, at the last line.
+    // engagement is possible ONLY in that lane, three rows forward.
     const kLane = heroLaneOf(session, true);
     if (foe.lane !== kLane) return false;
     const kp = keeperFieldPos(session);
@@ -57212,7 +57553,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     return wantCaptain ? 0 : 4;
   }
 
-  // Logical + render positions for one hero (x = 0.5 cells, CURRENT lane).
+  // Logical + render positions for one hero (x = 3.5 cells, CURRENT lane).
   function heroFieldPos(session, hero) {
     const cfg = keeperHeroConfig();
     const lane = (hero && typeof hero.lane === "number") ? hero.lane : 0;
@@ -57980,18 +58321,32 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     return Math.max(1, Math.round(base * (1 - w)));
   }
 
-  // Summon roster (P3 data when present). H1 has no summon data in
-  // this tree, so the roster is empty and Kindle Call is locked —
-  // that is the correct H1 state, not a bug.
+  // /* KK QUIT-SKILLS */ Summon roster (Jesse, Nov 22, 2026): P3
+  // summon data never shipped — TD_DATA.summons is absent in this
+  // tree, so the roster was empty and Kindle Call was locked for
+  // every save. The built-in roster below is the fallback the P3 seam
+  // always assumed: CU1 is the base creature, unlocked from level 1;
+  // CU2–CU4 unlock by clearing the end of worlds 1–3. Stats are
+  // modest (a summoned creature is a helper, not a defender). P3
+  // data, if it ever ships, still wins (TD_DATA.summons takes
+  // precedence). A creature with no unlockLevelId is unlocked.
+  var SUMMON_ROSTER_FALLBACK = [
+    { id: "CU1", name: "Ember Mote", hp: 250, harm: 10, lifeSec: 45, unlockLevelId: null },
+    { id: "CU2", name: "Gloom Mote", hp: 400, harm: 16, lifeSec: 45, unlockLevelId: "L15" },
+    { id: "CU3", name: "Frost Mote", hp: 600, harm: 24, lifeSec: 45, unlockLevelId: "L30" },
+    { id: "CU4", name: "Storm Mote", hp: 900, harm: 34, lifeSec: 45, unlockLevelId: "L45" }
+  ];
   function summonCreatureRoster() {
     if (typeof TD_DATA !== "undefined" && TD_DATA.summons) return TD_DATA.summons;
-    return [];
+    return SUMMON_ROSTER_FALLBACK;
   }
 
   // A creature is unlocked by the save's summonUnlocked map, or by
-  // its unlockLevelId being cleared (P3 data carries the level id).
+  // its unlockLevelId being cleared (P3 data carries the level id),
+  // or by having no unlockLevelId at all (the base creature CU1).
   function summonCreatureUnlocked(saveState, creature) {
     if (!creature) return false;
+    if (!creature.unlockLevelId) return true;
     if (saveState && saveState.summonUnlocked && saveState.summonUnlocked[creature.id]) return true;
     if (creature.unlockLevelId && saveState && saveState.clearedLevels &&
         saveState.clearedLevels[creature.unlockLevelId]) return true;
@@ -58052,9 +58407,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
   // spawn path Kindle Call calls. It creates the companion entity in
   // session.summons (never in session.defenders) at x = 1.0 cell in
   // the given lane, with the roster's stats when the roster is
-  // present (defensive defaults otherwise). P3 owns everything else:
-  // summon combat, movement, auras, Mastery ranks, and the summon
-  // row. Do NOT grow this stub into the P3 system here.
+  // present (defensive defaults otherwise). /* KK QUIT-SKILLS */ The
+  // minimal combat loop (stepSummons: attack + heal + lifetime +
+  // blocker) now lives here — P3 still owns movement, auras, Mastery
+  // ranks, and the summon row. Do NOT grow this stub into P3 here.
   function spawnSummonCreature(session, creatureId, lane, hpMul, sig) {
     if (!session.summons) session.summons = [];
     const roster = summonCreatureRoster();
@@ -58064,20 +58420,85 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     }
     // /* KK H2 */ Wren A3 (Kindle Call): summoned creatures have
     // // +50% HP. harmMul + healPerSec ride on the summon object for
-    // // P3's combat loop (there is no summon attack loop yet — the
-    // // roster is empty in this tree, so these paths are dormant).
+    // // the combat loop (stepSummons below).
     const hp = Math.round(((c && c.hp) || 250) * (hpMul || 1));
     const harm = (c && c.harm) || 0;
     const s = {
       id: creatureId, kind: "summon", lane: lane,
+      name: (c && c.name) || creatureId,
       x: 1.0 * session.cellW, y: laneCenterY(session, lane),
       hp: hp, maxHp: hp, harm: harm, alive: true,
       harmMul: (sig && sig.summonHarmMul) || 1,
-      healPerSec: (sig && sig.summonHealPerSec) || 0
+      healPerSec: (sig && sig.summonHealPerSec) || 0,
+      attackTimer: 2.4, healTimer: 1.0,
+      lifeTimer: (c && c.lifeSec) || 45
     };
     session.summons.push(s);
     spawnParticles(session, s.x, s.y, 10, "#ffe9a8", 40);
     return s;
+  }
+
+  // /* KK QUIT-SKILLS */ Minimal summon combat loop (Jesse, Nov 22,
+  // // 2026): a summoned creature attacks the nearest living enemy in
+  // // its lane every 2.4s (roster harm x harmMul, kind "summon",
+  // // bolt-like reach 8.5 cells — burrowed/flying foes are safe, like
+  // // bolts), heals the most-hurt living hero in its lane when its
+  // // tree grants healPerSec (Wren A3), and fades when its lifetime
+  // // ends (lifeSec from the roster) or its HP hits 0. Dead summons
+  // // are spliced out of session.summons here. No movement, no auras
+  // // — those stay P3's.
+  function stepSummons(session, dt, saveState, playAudio) {
+    if (!session || !session.summons || !session.summons.length) return;
+    for (let i = session.summons.length - 1; i >= 0; i--) {
+      const s = session.summons[i];
+      if (!s.alive || s.hp <= 0) {
+        session.summons.splice(i, 1);
+        continue;
+      }
+      s.lifeTimer -= dt;
+      if (s.lifeTimer <= 0) {
+        s.alive = false;
+        spawnParticles(session, s.x, s.y, 8, "#b79cff", 30);
+        session.summons.splice(i, 1);
+        continue;
+      }
+      // Heal: most-hurt living hero in this lane, once a second.
+      if ((s.healPerSec || 0) > 0) {
+        s.healTimer -= dt;
+        if (s.healTimer <= 0) {
+          s.healTimer = 1.0;
+          const heroes = keeperHeroes(session);
+          let worst = null;
+          for (let h = 0; h < heroes.length; h++) {
+            const hh = heroes[h];
+            if (!hh.alive || hh.lane !== s.lane || hh.hp >= hh.maxHp) continue;
+            if (!worst || (hh.hp / hh.maxHp) < (worst.hp / worst.maxHp)) worst = hh;
+          }
+          if (worst) worst.hp = Math.min(worst.maxHp, worst.hp + s.healPerSec);
+        }
+      }
+      // Attack: nearest living enemy in this lane within 8.5 cells.
+      s.attackTimer -= dt;
+      if (s.attackTimer <= 0) {
+        let target = null;
+        let targetX = Infinity;
+        for (let e = 0; e < session.enemies.length; e++) {
+          const foe = session.enemies[e];
+          if (!foe || foe.dissolving || foe.hp <= 0 || foe.lane !== s.lane) continue;
+          if (foe.burrowed || foe.flying) continue;
+          const distCells = Math.abs(foe.x - s.x) / session.cellW;
+          if (distCells > 8.5) continue;
+          if (foe.x < targetX) { target = foe; targetX = foe.x; }
+        }
+        if (target) {
+          s.attackTimer = 2.4;
+          applyHarmToEnemy(session, target, Math.max(1, Math.round((s.harm || 0) * (s.harmMul || 1))), "summon", playAudio, null, saveState);
+          spawnParticles(session, target.x, target.y, 4, "#b79cff", 25);
+        } else {
+          s.attackTimer = 0.5;
+        }
+      }
+    }
   }
 
   // Fire one hero's signature. Returns {ok, reason}; reason is
@@ -58094,12 +58515,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
   // played in H1 (audio pass owns it).
   // Highest-unlocked creatures (CU4 > CU3 > CU2 > CU1 — roster
   // order), up to `count` of them, or fewer when fewer are unlocked.
+  // /* KK QUIT-SKILLS */ When fewer distinct creatures are unlocked
+  // // than `count`, the highest-unlocked one fills the rest (two
+  // // Ember Motes for a fresh save at summonCount 2) — the signature
+  // // promises `count` creatures, not `count` distinct kinds.
   function highestUnlockedSummonCreatures(saveState, count) {
     const roster = summonCreatureRoster();
     const out = [];
     for (let i = roster.length - 1; i >= 0 && out.length < (count || 1); i--) {
       if (summonCreatureUnlocked(saveState, roster[i])) out.push(roster[i]);
     }
+    while (out.length > 0 && out.length < (count || 1)) out.push(out[0]);
     return out;
   }
 
@@ -58791,7 +59217,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     const spellCooldowns = { KS1: 0, KS2: 0, KS3: 0 };
     const keeperStats0 = keeperDerivedStats(saveState, worldId);
     // /* KKSPELLS */ Five heroes (HEROES-DESIGN §1/§3): one per lane,
-    // fixed, at the last line (x = 0.5 cells). The captain is the
+    // fixed, three rows forward (x = 3.5 cells). The captain is the
     // save's captain (Rowan by default); the other four are AI co-op.
     // Disabled only by the explicit sim-control opt (allyEnabled:
     // false), which leaves the AI heroes present but inert; real play
@@ -59193,6 +59619,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     if ((session.cooldowns[defId] || 0) > 0) return { ok: false, reason: "cooldown" };
     if (session.lumen < spec.cost) return { ok: false, reason: "lumen" };
 
+    // /* KK QUIT-SKILLS v2 */ No global tower cap (Jesse, Nov 22, 2026):
+    // order #6 always meant Ember Sentry (6 tower plots on L1-L5, not
+    // 6 defenders total). The v1 cap is removed entirely — live never
+    // had one. Ember Sentry is still limited by empty tower plots.
     if (spec.towerPlotOnly) {
       if (!towerPlotObj || towerPlotObj.defender) return { ok: false, reason: "needs_empty_tower_plot" };
       return { ok: true, spec: spec, isTower: true, lane: lane, col: col };
@@ -59216,9 +59646,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
         return { ok: false, reason: "occupied" };
       }
       // /* KKSPELLS */ Keeper ground applies to plots too: a plot at
-      // (lane, col 0) cannot hold a guardian — every lane has a hero
-      // standing in column 0 (HEROES-DESIGN §3).
-      if (spec.kind !== "tactic" && pathPlotObj.col === 0) {
+      // (lane, col 3) cannot hold a guardian — every lane has a hero
+      // standing in column 3 (HEROES-DESIGN §3, moved forward Nov 22).
+      if (spec.kind !== "tactic" && pathPlotObj.col === 3) {
         return { ok: false, reason: "keeper_ground" };
       }
       return { ok: true, spec: spec, isTower: false, isPathPlot: true, lane: pathPlotObj.lane, col: pathPlotObj.col };
@@ -59226,14 +59656,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
 
     if (lane < 0 || lane >= 5 || col < 0 || col >= 9) return { ok: false, reason: "bounds" };
     // /* KKSPELLS */ Keeper ground (HEROES-DESIGN §3, as reworked by
-    // MOVEMENT-ADDENDUM §3): (lane, col 0) is blocked in ALL 5 lanes,
+    // MOVEMENT-ADDENDUM §3): (lane, col 3) is blocked in ALL 5 lanes,
     // ALWAYS — the rule is LANE-based, not hero-based: every lane
     // always has exactly one hero owner (living or down), so the
-    // whole back column is hero ground (5 of 45 cells, 11%). No
+    // whole hero column is hero ground (5 of 45 cells, 11%). No
     // placeable cell is ever gained or lost by a move. Tactics target
     // cells without occupying them, so they are exempt; tower plots
     // sit on the rims, not the grid, so they are exempt.
-    if (spec.kind !== "tactic" && col === 0) {
+    if (spec.kind !== "tactic" && col === 3) {
       return { ok: false, reason: "keeper_ground" };
     }
     // M4: on path levels, non-tactic defenders may not sit on the road.
@@ -59818,6 +60248,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
 
     // M15: the Keeper casts through the battle (Light Bolt + pulses).
     stepKeeper(session, dt, saveState, playAudio);
+    // /* KK QUIT-SKILLS */ Summoned creatures fight (attack + heal +
+    // lifetime) — see stepSummons.
+    stepSummons(session, dt, saveState, playAudio);
 
     if (!session.started) {
       // /* KK-BUGFIX Nov 21, 2026 */ The build timer MUST count down
@@ -60608,17 +61041,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
       // Hero Keeper: on lane maps the living Keeper is a blocker
       // candidate exactly like a defender — same lane, same reach
       // (0.52 cells, 3.0 for E09), rightmost-x wins — so the Keeper is
-      // met after defenders ahead of it (cols 1-8) and before the ward.
-      // /* KKSPELLS */ The Keeper stands at the last line (0.5 cells,
+      // met after defenders ahead of it (cols 4-8) and before the ward.
+      // /* KKSPELLS */ The Keeper stands three rows forward (3.5 cells,
       // in its CURRENT lane): a foe reaches it only after clearing
       // every defender in its lane. Flying foes follow the same rule
       // as with defenders (no flying exclusion here); burrowed foes
       // and path maps never block.
-      // AI co-op Keeper: the SAME blocker system at the last line, in
-      // its own CURRENT lane (same 0.5-cell x). The five heroes never
+      // AI co-op Keeper: the SAME blocker system three rows forward, in
+      // its own CURRENT lane (same 3.5-cell x). The five heroes never
       // share a lane, so they never compete as blockers; a hero blocks
       // when it is alive in the foe's lane and only when no defender
-      // ahead of it (cols 1-8) is in reach. On path maps enemies never
+      // ahead of it (cols 4-8) is in reach. On path maps enemies never
       // block, so no hero can be hit there either — the same rule as
       // the captain.
       let blocker = null;
@@ -60638,15 +61071,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
         // // reworked by MOVEMENT-ADDENDUM §7): every living hero is a
         // // blocker candidate in its CURRENT lane — same reach (0.52
         // // cells, 3.0 for E09), rightmost-x wins. All five stand at
-        // // the same x (0.5 cells), one per lane, so at most one hero
+        // // the same x (3.5 cells), one per lane, so at most one hero
         // // can block a given foe; the hero is met after every
         // // defender in its lane and before the ward (bite-then-flare,
         // // per lane — the enemy bites whoever stands in the lane
         // // NOW). A defender ahead of the hero always out-ranks it
-        // // (col >= 1 is gate-ward of 0.5 cells). If the hero in the
-        // // lane is DOWN, no hero blocks and the foe advances to the
-        // // ward (the only no-living-hero case — movement never
-        // // empties a lane).
+        // // (col >= 4 is gate-ward of 3.5 cells; a defender in col
+        // // 1-2 sits behind the hero and does not out-rank it). If
+        // // the hero in the lane is DOWN, no hero blocks and the foe
+        // // advances to the ward (the only no-living-hero case —
+        // // movement never empties a lane).
         const _heroesB = keeperHeroes(session);
         if (_heroesB.length) {
           for (let _hb = 0; _hb < _heroesB.length; _hb++) {
@@ -60696,15 +61130,30 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
         }
       }
 
+      // /* KK QUIT-SKILLS */ Summon blocker: a living summon in the
+      // // foe's lane at x = 1.0 cell blocks ONLY when no defender and
+      // // no hero stands in the lane (it is the last line behind the
+      // // forward hero line). Same reach as the rest.
+      let blockerSummon = null;
+      if (!foe.burrowed && !session.isPathLevel && !blockerHero && !blocker) {
+        const _sums = session.summons || [];
+        for (let _si = 0; _si < _sums.length; _si++) {
+          const _sm = _sums[_si];
+          if (!_sm.alive || _sm.hp <= 0 || _sm.lane !== foe.lane) continue;
+          const _reach = (foe.id === "E09") ? (session.cellW * 3.0) : (session.cellW * 0.52);
+          const _sd = foe.x - _sm.x;
+          if (_sd >= -8 && _sd <= _reach) { blockerSummon = _sm; break; }
+        }
+      }
+
       if (blockerHero) {
         // /* KKSPELLS */ Hero bites (HEROES-DESIGN §3): the same rules
         // for every hero — no D27 reflect / D17 thorn (a hero is
         // neither), E17 drains 10 Lumen, and the E26 cleave hits the
-        // defender at (hero lane, col floor(backXCells) - 1). At the
-        // back line that is col -1: a recorded NO-OP, same for all
-        // five heroes (KKSPELLS-DESIGN.md §1.1 — NOT "fixed" into
-        // hitting something else). A col-1 defender out-ranks the
-        // hero and takes the bite instead.
+        // defender at (hero lane, col floor(backXCells) - 1) — col 2
+        // now that the heroes stand three rows forward, so the cleave
+        // can land on a defender behind the hero line. A defender in
+        // col 4-8 out-ranks the hero and takes the bite instead.
         foe.pose = "attack";
         foe.biteTimer -= dt;
         if (foe.biteTimer <= 0) {
@@ -60755,6 +61204,23 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
               if (!blocker.shoveled) session.defendersLostCount++;
               spawnParticles(session, blocker.x, blocker.y, 9, "#ffcf70", 35);
             }
+          }
+        }
+      } else if (blockerSummon) {
+        // /* KK QUIT-SKILLS */ Summon bites: the foe chews the summoned
+        // // creature (no reflect/thorn/drain/cleave — a summon is
+        // // neither defender nor hero). At 0 HP the summon is gone.
+        foe.pose = "attack";
+        foe.biteTimer -= dt;
+        if (foe.biteTimer <= 0) {
+          foe.biteTimer = foe.biteRate || 1.2;
+          blockerSummon.hp -= foe.bite;
+          blockerSummon.hurtTimer = 0.14;
+          if (playAudio) TDAudio.playSfx("enemy_bite");
+          if (blockerSummon.hp <= 0) {
+            blockerSummon.hp = 0;
+            blockerSummon.alive = false;
+            spawnParticles(session, blockerSummon.x, blockerSummon.y, 9, "#b79cff", 35);
           }
         }
       } else if (foe.rootTimer <= 0) {
@@ -61069,7 +61535,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
 // allyLaneBoltValue are DELETED with tap-a-lane / ally movement
 // (KKSPELLS-DESIGN.md §1.2) — removed from this export list and from
 // the globalThis block below; no export of them remains.
-var KKEngine = { createMulberry32: createMulberry32, getLevelById: getLevelById, levelLabel: levelLabel, isLevelCleared: isLevelCleared, nextUncompletedLevelId: nextUncompletedLevelId, isLevelEnterable: isLevelEnterable, isWorldFullyCleared: isWorldFullyCleared, isWorldUnlocked: isWorldUnlocked, computeUnlockedWorlds: computeUnlockedWorlds, syncUnlockedWorlds: syncUnlockedWorlds, isNightWatchUnlocked: isNightWatchUnlocked, defenderGrantLevelId: defenderGrantLevelId, defenderUnlockLabel: defenderUnlockLabel, getDefenderData: getDefenderData, isDefenderUnlocked: isDefenderUnlocked, grantLevelUnlocks: grantLevelUnlocks, sanitizeLoadout: sanitizeLoadout, almanacCounterText: almanacCounterText, keeperData: keeperData, keeperDefList: keeperDefList, keeperIdList: keeperIdList, keeperDefById: keeperDefById, keeperDefForSave: keeperDefForSave, captainDefForSave: captainDefForSave, heroDefList: heroDefList, setCaptain: setCaptain, keeperDefOrFallback: keeperDefOrFallback, keeperName: keeperName, keeperArtSnapshot: keeperArtSnapshot, keeperRenderText: keeperRenderText, keeperSpeakerLabel: keeperSpeakerLabel, keeperPortraitKey: keeperPortraitKey, keeperNodeList: keeperNodeList, keeperNodeById: keeperNodeById, keeperSpellDef: keeperSpellDef, keeperDerivedStats: keeperDerivedStats, keeperBoltHarmForWorld: keeperBoltHarmForWorld, keeperTotalStars: keeperTotalStars, keeperClaimedStoryQuests: keeperClaimedStoryQuests, keeperPointsEarned: keeperPointsEarned, keeperPointsSpent: keeperPointsSpent, keeperPointsAvailable: keeperPointsAvailable, keeperNextPointInfo: keeperNextPointInfo, keeperCanBuyNode: keeperCanBuyNode, keeperBuyNode: keeperBuyNode, keeperRespec: keeperRespec, keeperSpellUnlocked: keeperSpellUnlocked, heroTreeDef: heroTreeDef, heroTreeNodeList: heroTreeNodeList, heroTreeNodeById: heroTreeNodeById, heroOwnedNodes: heroOwnedNodes, heroNodesLearned: heroNodesLearned, heroValor: heroValor, heroTreeEffects: heroTreeEffects, heroCanBuyNode: heroCanBuyNode, heroBuyNode: heroBuyNode, heroRespec: heroRespec, grantHeroValor: grantHeroValor, teamCompanionsForSave: teamCompanionsForSave, setTeamCompanions: setTeamCompanions, fieldedHeroDefs: fieldedHeroDefs, homeLaneForFielded: homeLaneForFielded, heroBoltElement: heroBoltElement, heroSignature: heroSignature, applyWeakenToEnemy: applyWeakenToEnemy, foeHarmOut: foeHarmOut, highestUnlockedSummonCreatures: highestUnlockedSummonCreatures, keeperHeroConfig: keeperHeroConfig, keeperRegenConfig: keeperRegenConfig, keeperRegenRateFor: keeperRegenRateFor, keeperRegenEnabled: keeperRegenEnabled, allyKeeperConfig: allyKeeperConfig, keeperArtSnapshotForDef: keeperArtSnapshotForDef, spellCasterDefForSave: spellCasterDefForSave, spellCasterHero: spellCasterHero, keeperMoveConfig: keeperMoveConfig, KEEPER_MOVE: KEEPER_MOVE, orderHeroMove: orderHeroMove, heroDodgeReflex: heroDodgeReflex, laneThreatCount: laneThreatCount, heroByDefId: heroByDefId, heroStateSnapshot: heroStateSnapshot, heroStateHash: heroStateHash, restoreHeroStates: restoreHeroStates, keeperAlive: keeperAlive, allyKeeperAlive: allyKeeperAlive, allyKeeperFieldPos: allyKeeperFieldPos, allyKeeperRenderPos: allyKeeperRenderPos, backfillAllyKeeperState: backfillAllyKeeperState, damageAllyKeeper: damageAllyKeeper, allyThreatTier: allyThreatTier, foeEngagedWithFrontKeeper: foeEngagedWithFrontKeeper, chooseAllyKeeperTargets: chooseAllyKeeperTargets, allyKeeperFireBolt: allyKeeperFireBolt, activateAllyKeeperSpell: activateAllyKeeperSpell, allyCastSpellIfWarranted: allyCastSpellIfWarranted, stepAllyKeeperDecision: stepAllyKeeperDecision, stepAllyKeeper: stepAllyKeeper, keeperRenderPos: keeperRenderPos, keeperFieldPos: keeperFieldPos, keeperCellDist: keeperCellDist, chooseKeeperTargets: chooseKeeperTargets, keeperFireBolt: keeperFireBolt, stepKeeper: stepKeeper, stepHeroes: stepHeroes, stepOneHero: stepOneHero, damageHero: damageHero, heroFieldPos: heroFieldPos, heroRenderPos: heroRenderPos, heroFireBolt: heroFireBolt, chooseHeroTargets: chooseHeroTargets, applyBurnToEnemy: applyBurnToEnemy, applyKeeperBoltElement: applyKeeperBoltElement, tryFireHeroSignature: tryFireHeroSignature, fireHeroSignature: fireHeroSignature, fireCaptainSignature: fireCaptainSignature, heroAISignatureReady: heroAISignatureReady, heroStripState: heroStripState, keeperHeroes: keeperHeroes, heroStateForLane: heroStateForLane, anyHeroAlive: anyHeroAlive, spawnSummonCreature: spawnSummonCreature, highestUnlockedSummonCreature: highestUnlockedSummonCreature, summonCreatureRoster: summonCreatureRoster, healAllHeroes: healAllHeroes, backfillHeroes: backfillHeroes, activateKeeperSpell: activateKeeperSpell, TD_TEXT_OVERRIDES: TD_TEXT_OVERRIDES, TRAY_DISPLAY_NAMES: TRAY_DISPLAY_NAMES, KEEPER_FALLBACK: KEEPER_FALLBACK, getDefenderSpecWithUpgrades: getDefenderSpecWithUpgrades, getEnemySpec: getEnemySpec, advanceQuestProgress: advanceQuestProgress, pointSegDistSq: pointSegDistSq, segIntersectsSeg: segIntersectsSeg, pointInRect: pointInRect, segRectDist: segRectDist, scalePathPoint: scalePathPoint, buildPathGeometry: buildPathGeometry, refreshPathGeometry: refreshPathGeometry, isRoadCell: isRoadCell, getPathPlotAtPoint: getPathPlotAtPoint, levelHasEnemy: levelHasEnemy, nightWatchHasEnemy: nightWatchHasEnemy, createBattleSession: createBattleSession, laneCenterY: laneCenterY, bossScriptFor: bossScriptFor, bossPhaseInfo: bossPhaseInfo, bossCadence: bossCadence, bossPhaseBanner: bossPhaseBanner, summonLabel: summonLabel, spawnBossMinions: spawnBossMinions, startGloomTide: startGloomTide, fogPulseActive: fogPulseActive, fogStartColFor: fogStartColFor, fogAppliesTo: fogAppliesTo, updateBossPhase: updateBossPhase, runBossCycle: runBossCycle, getDefenderAt: getDefenderAt, getTowerPlotAtPoint: getTowerPlotAtPoint, canPlaceDefender: canPlaceDefender, placeDefender: placeDefender, shovelDefender: shovelDefender, activateKeeperPower: activateKeeperPower, grantLumen: grantLumen, collectMoteAt: collectMoteAt, applyHarmToEnemy: applyHarmToEnemy, applySlowToEnemy: applySlowToEnemy, applyRootToEnemy: applyRootToEnemy, applyKnockbackToEnemy: applyKnockbackToEnemy, startNextWave: startNextWave, startBossEntrance: startBossEntrance, spawnEnemyInstance: spawnEnemyInstance, stepBattleSession: stepBattleSession, runScriptedLevelVerification: runScriptedLevelVerification };
+var KKEngine = { createMulberry32: createMulberry32, getLevelById: getLevelById, levelLabel: levelLabel, isLevelCleared: isLevelCleared, nextUncompletedLevelId: nextUncompletedLevelId, isLevelEnterable: isLevelEnterable, isWorldFullyCleared: isWorldFullyCleared, isWorldUnlocked: isWorldUnlocked, computeUnlockedWorlds: computeUnlockedWorlds, syncUnlockedWorlds: syncUnlockedWorlds, isNightWatchUnlocked: isNightWatchUnlocked, defenderGrantLevelId: defenderGrantLevelId, defenderUnlockLabel: defenderUnlockLabel, getDefenderData: getDefenderData, isDefenderUnlocked: isDefenderUnlocked, grantLevelUnlocks: grantLevelUnlocks, sanitizeLoadout: sanitizeLoadout, almanacCounterText: almanacCounterText, keeperData: keeperData, keeperDefList: keeperDefList, keeperIdList: keeperIdList, keeperDefById: keeperDefById, keeperDefForSave: keeperDefForSave, captainDefForSave: captainDefForSave, heroDefList: heroDefList, setCaptain: setCaptain, keeperDefOrFallback: keeperDefOrFallback, keeperName: keeperName, keeperArtSnapshot: keeperArtSnapshot, keeperRenderText: keeperRenderText, keeperSpeakerLabel: keeperSpeakerLabel, keeperPortraitKey: keeperPortraitKey, keeperNodeList: keeperNodeList, keeperNodeById: keeperNodeById, keeperSpellDef: keeperSpellDef, keeperDerivedStats: keeperDerivedStats, keeperBoltHarmForWorld: keeperBoltHarmForWorld, keeperTotalStars: keeperTotalStars, keeperClaimedStoryQuests: keeperClaimedStoryQuests, keeperPointsEarned: keeperPointsEarned, keeperPointsSpent: keeperPointsSpent, keeperPointsAvailable: keeperPointsAvailable, keeperNextPointInfo: keeperNextPointInfo, keeperCanBuyNode: keeperCanBuyNode, keeperBuyNode: keeperBuyNode, keeperRespec: keeperRespec, keeperSpellUnlocked: keeperSpellUnlocked, heroTreeDef: heroTreeDef, heroTreeNodeList: heroTreeNodeList, heroTreeNodeById: heroTreeNodeById, heroOwnedNodes: heroOwnedNodes, heroNodesLearned: heroNodesLearned, heroValor: heroValor, heroTreeEffects: heroTreeEffects, heroCanBuyNode: heroCanBuyNode, heroBuyNode: heroBuyNode, heroRespec: heroRespec, grantHeroValor: grantHeroValor, teamCompanionsForSave: teamCompanionsForSave, setTeamCompanions: setTeamCompanions, fieldedHeroDefs: fieldedHeroDefs, homeLaneForFielded: homeLaneForFielded, heroBoltElement: heroBoltElement, heroSignature: heroSignature, applyWeakenToEnemy: applyWeakenToEnemy, foeHarmOut: foeHarmOut, highestUnlockedSummonCreatures: highestUnlockedSummonCreatures, keeperHeroConfig: keeperHeroConfig, keeperRegenConfig: keeperRegenConfig, keeperRegenRateFor: keeperRegenRateFor, keeperRegenEnabled: keeperRegenEnabled, allyKeeperConfig: allyKeeperConfig, keeperArtSnapshotForDef: keeperArtSnapshotForDef, spellCasterDefForSave: spellCasterDefForSave, spellCasterHero: spellCasterHero, keeperMoveConfig: keeperMoveConfig, KEEPER_MOVE: KEEPER_MOVE, orderHeroMove: orderHeroMove, heroDodgeReflex: heroDodgeReflex, laneThreatCount: laneThreatCount, heroByDefId: heroByDefId, heroStateSnapshot: heroStateSnapshot, heroStateHash: heroStateHash, restoreHeroStates: restoreHeroStates, keeperAlive: keeperAlive, allyKeeperAlive: allyKeeperAlive, allyKeeperFieldPos: allyKeeperFieldPos, allyKeeperRenderPos: allyKeeperRenderPos, backfillAllyKeeperState: backfillAllyKeeperState, damageAllyKeeper: damageAllyKeeper, allyThreatTier: allyThreatTier, foeEngagedWithFrontKeeper: foeEngagedWithFrontKeeper, chooseAllyKeeperTargets: chooseAllyKeeperTargets, allyKeeperFireBolt: allyKeeperFireBolt, activateAllyKeeperSpell: activateAllyKeeperSpell, allyCastSpellIfWarranted: allyCastSpellIfWarranted, stepAllyKeeperDecision: stepAllyKeeperDecision, stepAllyKeeper: stepAllyKeeper, keeperRenderPos: keeperRenderPos, keeperFieldPos: keeperFieldPos, keeperCellDist: keeperCellDist, chooseKeeperTargets: chooseKeeperTargets, keeperFireBolt: keeperFireBolt, stepKeeper: stepKeeper, stepHeroes: stepHeroes, stepOneHero: stepOneHero, damageHero: damageHero, heroFieldPos: heroFieldPos, heroRenderPos: heroRenderPos, heroFireBolt: heroFireBolt, chooseHeroTargets: chooseHeroTargets, applyBurnToEnemy: applyBurnToEnemy, applyKeeperBoltElement: applyKeeperBoltElement, tryFireHeroSignature: tryFireHeroSignature, fireHeroSignature: fireHeroSignature, fireCaptainSignature: fireCaptainSignature, heroAISignatureReady: heroAISignatureReady, heroStripState: heroStripState, keeperHeroes: keeperHeroes, heroStateForLane: heroStateForLane, anyHeroAlive: anyHeroAlive, spawnSummonCreature: spawnSummonCreature, stepSummons: stepSummons, highestUnlockedSummonCreature: highestUnlockedSummonCreature, summonCreatureRoster: summonCreatureRoster, healAllHeroes: healAllHeroes, backfillHeroes: backfillHeroes, activateKeeperSpell: activateKeeperSpell, TD_TEXT_OVERRIDES: TD_TEXT_OVERRIDES, TRAY_DISPLAY_NAMES: TRAY_DISPLAY_NAMES, KEEPER_FALLBACK: KEEPER_FALLBACK, getDefenderSpecWithUpgrades: getDefenderSpecWithUpgrades, getEnemySpec: getEnemySpec, advanceQuestProgress: advanceQuestProgress, pointSegDistSq: pointSegDistSq, segIntersectsSeg: segIntersectsSeg, pointInRect: pointInRect, segRectDist: segRectDist, scalePathPoint: scalePathPoint, buildPathGeometry: buildPathGeometry, refreshPathGeometry: refreshPathGeometry, isRoadCell: isRoadCell, getPathPlotAtPoint: getPathPlotAtPoint, levelHasEnemy: levelHasEnemy, nightWatchHasEnemy: nightWatchHasEnemy, createBattleSession: createBattleSession, laneCenterY: laneCenterY, bossScriptFor: bossScriptFor, bossPhaseInfo: bossPhaseInfo, bossCadence: bossCadence, bossPhaseBanner: bossPhaseBanner, summonLabel: summonLabel, spawnBossMinions: spawnBossMinions, startGloomTide: startGloomTide, fogPulseActive: fogPulseActive, fogStartColFor: fogStartColFor, fogAppliesTo: fogAppliesTo, updateBossPhase: updateBossPhase, runBossCycle: runBossCycle, getDefenderAt: getDefenderAt, getTowerPlotAtPoint: getTowerPlotAtPoint, canPlaceDefender: canPlaceDefender, placeDefender: placeDefender, shovelDefender: shovelDefender, activateKeeperPower: activateKeeperPower, grantLumen: grantLumen, collectMoteAt: collectMoteAt, applyHarmToEnemy: applyHarmToEnemy, applySlowToEnemy: applySlowToEnemy, applyRootToEnemy: applyRootToEnemy, applyKnockbackToEnemy: applyKnockbackToEnemy, startNextWave: startNextWave, startBossEntrance: startBossEntrance, spawnEnemyInstance: spawnEnemyInstance, stepBattleSession: stepBattleSession, runScriptedLevelVerification: runScriptedLevelVerification };
 if (typeof window !== 'undefined') {
   try {
     window.KKEngine = KKEngine;
@@ -61759,18 +62225,18 @@ try { if (typeof globalThis !== 'undefined') globalThis.KKArt = KKArt; } catch (
     }
 
     // /* KKSPELLS H1 */ Hero ground (HEROES-DESIGN.md §3): five
-    // heroes stand at the center of column 0, one per lane, so
-    // (lane, col 0) cannot hold a guardian in ANY lane (5 of 45
+    // heroes stand at the center of column 3, one per lane, so
+    // (lane, col 3) cannot hold a guardian in ANY lane (5 of 45
     // cells). The cells render greyed (the hero sprite draws over
     // the center later; the dark frame stays visible around it).
     // The small lantern glyph is drawn AFTER the hero sprites (end
     // of the hero block below) so it stays visible above them.
     for (let _lane = 0; _lane < 5; _lane++) {
       ctx.fillStyle = "#1c2230cc";
-      ctx.fillRect(0, skyH + _lane * cellH, cellW, cellH);
+      ctx.fillRect(3 * cellW, skyH + _lane * cellH, cellW, cellH);
       ctx.strokeStyle = "#8a7a4d";
       ctx.lineWidth = 1;
-      ctx.strokeRect(1, skyH + _lane * cellH + 1, cellW - 2, cellH - 2);
+      ctx.strokeRect(3 * cellW + 1, skyH + _lane * cellH + 1, cellW - 2, cellH - 2);
     }
 
     // M7b: E24 switch-point markers — dashed chevrons over columns 6 and
@@ -62182,8 +62648,8 @@ try { if (typeof globalThis !== 'undefined') globalThis.KKArt = KKArt; } catch (
     // lane 0 and the AI co-op Keeper in lane 4. Sprites + names only —
     // the floating HP bars and revive countdowns are removed in H1
     // (the hero strip owns HP + revive state once the contract lands).
-    // /* KKSPELLS */ The Keeper is a back-line hero at 0.5 cells
-    // (center of column 0, beside the gate), FIXED in the top lane
+    // /* KKSPELLS */ The Keeper is a forward hero at 3.5 cells
+    // (center of column 3), FIXED in the top lane
     // (lane 0). Drawn at the fixed lane-center position (no slide).
     // Drawn before the ward icons (existing order). Rings center on
     // the LOGICAL position, matching bolt targeting; the sprite/HP/
@@ -62364,7 +62830,7 @@ try { if (typeof globalThis !== 'undefined') globalThis.KKArt = KKArt; } catch (
       }
       // KK-AI label clamp: center each ally label element so its
       // full width stays inside [2, W-2]. /* KKSPELLS */ The ally now
-      // stands at the last line (0.5 cells, near the LEFT edge), so
+      // stands three rows forward (3.5 cells), so
       // the clamp is a LIVE correction for the HP bar / name / revive
       // text — not a safety net. It stays because it costs nothing
       // and guards every geometry. The sprite itself is untouched
@@ -62461,13 +62927,50 @@ try { if (typeof globalThis !== 'undefined') globalThis.KKArt = KKArt; } catch (
       }
     }
 
+    // /* KK QUIT-SKILLS */ Summoned creatures (Kindle Call): a violet
+    // spirit orb with a star glyph, drawn after defenders so it reads
+    // as a battlefield ally; HP bar when damaged. No art dependency
+    // (the roster carries no sprite keys — P3 owns summon art).
+    for (let _si = 0; _si < session.summons.length; _si++) {
+      const _sm = session.summons[_si];
+      if (!_sm.alive || _sm.hp <= 0) continue;
+      const _sr = Math.min(20, cellH * 0.42);
+      const _pulse = 0.75 + 0.25 * Math.sin(session.time * 3 + _si);
+      ctx.save();
+      ctx.globalAlpha = _pulse;
+      ctx.fillStyle = "#b79cff";
+      ctx.beginPath();
+      ctx.arc(_sm.x, _sm.y, _sr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#efe6ff";
+      ctx.beginPath();
+      ctx.arc(_sm.x, _sm.y, _sr * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#3a2c10";
+      ctx.font = "bold " + Math.round(_sr * 0.9) + "px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("✦", _sm.x, _sm.y + 1);
+      ctx.restore();
+      if (_sm.hp < _sm.maxHp) {
+        const _bw = cellW * 0.70;
+        const _bx = _sm.x - _bw * 0.5;
+        const _by = _sm.y - _sr - 8;
+        ctx.fillStyle = "#000000b0";
+        ctx.fillRect(_bx, _by, _bw, 3.5);
+        ctx.fillStyle = "#b79cff";
+        ctx.fillRect(_bx, _by, _bw * Math.max(0, _sm.hp / _sm.maxHp), 3.5);
+      }
+    }
+
     // /* KKSPELLS H1 */ Hero-ground lantern glyphs (drawn last among
     // the hero art so they stay visible above the hero sprites):
     // a small gold lantern at the top-right corner of each blocked
-    // cell — (lane, col 0) in ALL 5 lanes. Drawn in both paths so
+    // cell — (lane, col 3) in ALL 5 lanes. Drawn in both paths so
     // the ground reads the same in every battle.
     for (let _lane = 0; _lane < 5; _lane++) {
-      const _lx = cellW - 8;
+      const _lx = 4 * cellW - 8;
       const _ly = skyH + _lane * cellH + 9;
       ctx.save();
       ctx.fillStyle = "#ffd86b";
@@ -62816,6 +63319,23 @@ var KKGameMethods = {
           window.PhoneShell.injectAudioToggles(_audioGroup, { compact: true });
         }
       } catch (e) { /* audio toggles are best-effort */ }
+      // Nov 22, 2026: explicit Quit in the same button group (Jesse).
+      // onQuit pauses a live battle first — quitting abandons the
+      // attempt (same as losing), and the battle must not keep running
+      // behind the home screen. Meta progress is already saved.
+      try {
+        var _quitSelf = this;
+        if (_audioGroup && typeof window !== 'undefined' && window.PhoneShell &&
+            typeof window.PhoneShell.injectQuitButton === 'function') {
+          window.PhoneShell.injectQuitButton(_audioGroup, { compact: true,
+            onQuit: function () {
+              try {
+                if (_quitSelf.currentScreen === 'battle' && !_quitSelf.isPaused &&
+                    typeof _quitSelf.pause === 'function') _quitSelf.pause();
+              } catch (e) { /* never throw */ }
+            } });
+        }
+      } catch (e) { /* quit button is best-effort */ }
       this.bindEvents();
       this.measureAndClampContainer();
 
@@ -63001,6 +63521,13 @@ var KKGameMethods = {
           } else {
             foe.y *= hRatio;
           }
+        }
+        // /* KK QUIT-SKILLS */ Summons re-base like everything else:
+        // x = 1.0 cell, y = lane center in the new geometry.
+        for (let _sm = 0; _sm < s.summons.length; _sm++) {
+          const _sum = s.summons[_sm];
+          _sum.x = 1.0 * s.cellW;
+          _sum.y = laneCenterY(s, _sum.lane);
         }
         // KKSPELLS H1-RESUME: resize re-bases hero renderY (same rule
         // as the wire's phoneMeasure — see kk-wire.js): a hero at rest
@@ -63521,7 +64048,8 @@ var KKGameMethods = {
       // 3. Sprite tap selects the hero in that lane (shortcut only —
       // same result as tapping its strip portrait). Tapping the
       // already-selected hero's sprite cancels the selection.
-      if (cell.col === 0) {
+      // /* KK QUIT-SKILLS */ Heroes stand in column 3 now.
+      if (cell.col === 3) {
         const laneHero = this.heroInLane(cell.lane);
         if (laneHero) {
           if (this.selectedHeroId === laneHero.id) {
@@ -63725,12 +64253,12 @@ var KKGameMethods = {
           this.updateBattleHud();
         } else if (check.reason === "keeper_ground") {
           // /* KKSPELLS H1 */ Hero ground (HEROES-DESIGN.md §3):
-          // the five heroes hold the first cell of every lane; no
+          // the five heroes hold the fourth cell of every lane; no
           // guardian goes there. (The engine's canPlaceDefender must
           // block all 5 lanes — engine worker's item; the UI side
           // already greys + glyphs all 5.)
           addFloatingText(s, px || ((col + 0.5) * s.cellW), py || laneCenterY(s, lane), "The five heroes hold this ground", "#ff9e9e");
-          this.hudHintText = "The five heroes hold the first cell of every lane — place guardians elsewhere.";
+          this.hudHintText = "The five heroes hold the fourth cell of every lane — place guardians elsewhere.";
           this.hudHintUntil = performance.now() + 2600;
           this.updateBattleHud();
         } else {
@@ -64118,10 +64646,10 @@ var KKUIMethods = {
         '      <div>• Choose up to 8 Guardians on the Loadout screen before each battle to counter the previewed enemy mix.</div>',
         '      <div>• Place lane Guardians on the 5×9 grid (or beside the road on Winding-Path maps) and place Ember Sentries on the elevated stone Tower Plots along the top and bottom rims.</div>',
         // /* KKSPELLS H1 */ Hero-ground rule (HEROES-DESIGN.md §3):
-        // five heroes hold the last line, one per lane — the first
-        // cell of EVERY lane belongs to the heroes and cannot hold a
-        // guardian. (P1 blocked 2 cells; H1 blocks 5.)
-        '      <div>• Three heroes hold the last line beside the gate — your captain and two companions, one in each of three lanes. The first cell of every lane (marked with a lantern) belongs to the heroes — no guardian can be placed there.</div>',
+        // five heroes stand three rows forward, one per lane — the
+        // fourth cell of EVERY lane belongs to the heroes and cannot
+        // hold a guardian. (P1 blocked 2 cells; H1 blocks 5.)
+        '      <div>• Three heroes stand three rows forward from the back edge — your captain and two companions, one in each of three lanes. The fourth cell of every lane (marked with a lantern) belongs to the heroes — no guardian can be placed there.</div>',
         '      <div>• Use your 3 Keeper Powers (Lantern Flare, Time Lull, Mote Rain) on cooldown for tactical swings.</div>',
         '    </div>',
         '    <div class="td-panel" style="border-color:#ff6b6b66;">',
@@ -65053,7 +65581,7 @@ var KKUIMethods = {
         'Tap a hero&rsquo;s portrait in the strip below the field to select them, then tap a lane to send them there. ' +
         'An empty lane is a free move; an occupied lane swaps two heroes. Three heroes fight each stage — your captain and two companions you pick before the battle; the other heroes sit that one out. ' +
         'Each battle starts with every fielded hero in their home lane (Rowan and Dain top, Rai and Nia, Neve and Lysa, Sora and Kael, Wren and Fern bottom — two heroes share each home lane, so the second takes the nearest free lane). ' +
-        'A hero slides along the back line to their new lane; their bolt pauses while sliding. ' +
+        'A hero slides along the hero line to their new lane; their bolt pauses while sliding. ' +
         'Tap the selected hero&rsquo;s own lane — or their portrait again — to cancel. ' +
         'Tap your captain&rsquo;s portrait a second time to fire their signature. ' +
         'A hero who has fallen holds their lane until they rise — no orders into or out of a fallen hero&rsquo;s lane. ' +
@@ -65360,10 +65888,14 @@ var KKUIMethods = {
         }
         if (lv.bossId) {
           let bName = lv.bossId;
+          let bArt = lv.bossId;
           for (let b = 0; b < TD_DATA.bosses.length; b++) {
-            if (TD_DATA.bosses[b].id === lv.bossId) bName = TD_DATA.bosses[b].name;
+            if (TD_DATA.bosses[b].id === lv.bossId) {
+              bName = TD_DATA.bosses[b].name;
+              bArt = TD_DATA.bosses[b].art || lv.bossId;
+            }
           }
-          const bThumb = KKArt.unitThumbHtml(lv.bossId);
+          const bThumb = KKArt.unitThumbHtml(bArt);
           cHtml += '<div style="display:flex; align-items:center; gap:6px; background:#241136; padding:4px 8px; border-radius:8px; border:1px solid #d17aff;"><div style="width:28px; height:28px;">' + bThumb + '</div><div><div style="font-size:11px; font-weight:800; color:#f3d4ff;">' + bName + '</div><div style="font-size:10px; color:#ff9e9e;">Boss</div></div></div>';
         }
         wcEl.innerHTML = cHtml;
@@ -65798,7 +66330,17 @@ var KKUIMethods = {
         if (!prevCleared) {
           glimmerWon += (TD_DATA.tuning.glimmerRewards.firstClear || 30);
           glimmerWon += (lv.glimmerBonus || 0);
-          if (lv.bossId) glimmerWon += (TD_DATA.tuning.glimmerRewards.bossClear || 100);
+          if (lv.bossId) {
+            // /* KK QUIT-SKILLS */ The +100 boss-clear glimmer stays
+            // world-boss-only: every stage has a boss now, and paying
+            // it 85 times would flood the economy. Stage bosses pay
+            // no bonus (their reward is the Valor on a 3-star clear).
+            let _bDef = null;
+            for (let _bi = 0; _bi < TD_DATA.bosses.length; _bi++) {
+              if (TD_DATA.bosses[_bi].id === lv.bossId) { _bDef = TD_DATA.bosses[_bi]; break; }
+            }
+            if (!_bDef || !_bDef.isStageBoss) glimmerWon += (TD_DATA.tuning.glimmerRewards.bossClear || 100);
+          }
         }
 
         // Check Replay Challenges (C4)
@@ -65827,19 +66369,24 @@ var KKUIMethods = {
         this.saveState.glimmer = (this.saveState.glimmer || 0) + glimmerWon;
         this.saveState.battleSnapshot = null;
 
-        // /* KK H2 */ Valor (§7.1): +1 per stage first-clear with
-        // // that hero as captain, +1 bonus per 3-star first-clear
-        // // (max 2/stage). Replays pay nothing; Night Watch pays
-        // // nothing (it returns early above). Per-hero, never shared.
+        // /* KK QUIT-SKILLS */ Valor economy (Jesse, Nov 22, 2026 —
+        // // binding): +1 Valor to EVERY hero deployed to the battle,
+        // // but ONLY on a first-time 3-star clear. A stage first
+        // // cleared below 3 stars and later re-cleared at 3 stars
+        // // DOES earn; a replayed 3-star stage earns nothing.
+        // // Night Watch pays nothing. Per-hero, never shared.
         let valorWon = 0;
         let valorText = "";
         try {
           if (typeof KKEngine !== "undefined" && KKEngine && typeof KKEngine.grantHeroValor === "function") {
-            const capId = this.heroCaptainId(this.saveState);
-            valorWon = KKEngine.grantHeroValor(this.saveState, capId, !prevCleared, s.starsEarned, false) || 0;
+            const deployed = KKEngine.fieldedHeroDefs(this.saveState) || [];
+            const deployedIds = [];
+            for (let d = 0; d < deployed.length; d++) {
+              if (deployed[d] && deployed[d].id) deployedIds.push(deployed[d].id);
+            }
+            valorWon = KKEngine.grantHeroValor(this.saveState, deployedIds, s.starsEarned, prevStars, false) || 0;
             if (valorWon > 0) {
-              const capDef = this.heroCaptainDef(this.saveState);
-              valorText = " · +" + valorWon + " Valor for " + (capDef ? capDef.name : "your captain");
+              valorText = " · +" + valorWon + " Valor for the deployed heroes";
             }
           }
         } catch (e) { valorWon = 0; valorText = ""; }
@@ -75310,6 +75857,11 @@ var CHQUI = (function () {
           // (the head is a flex row: spacer | title | toggles).
           try { head.insertBefore(_el(doc, 'div', 'chq-head-spacer'), head.firstChild); } catch (e2) { /* best-effort */ }
         }
+        try {
+          if (typeof shell.injectQuitButton === 'function') {
+            shell.injectQuitButton(audioRow, { compact: true });
+          }
+        } catch (e2) { /* quit button is best-effort */ }
       }
     } catch (e) { /* audio toggles are best-effort */ }
     return head;
@@ -99958,6 +100510,15 @@ var MRUI = (function () {
     head.appendChild(el('div', 'mr-header-title', title));
     var right = el('div', 'mr-header-right');
     right.appendChild(musicChip(vm));
+    // Nov 22, 2026: explicit Quit in every header (Jesse). header()
+    // runs on every screen render with a fresh `right`, so the button
+    // re-injects with each render (injectQuitButton is idempotent).
+    try {
+      if (typeof window !== 'undefined' && window.PhoneShell &&
+          typeof window.PhoneShell.injectQuitButton === 'function') {
+        window.PhoneShell.injectQuitButton(right, { compact: true });
+      }
+    } catch (e) { /* quit button is best-effort */ }
     head.appendChild(right);
     return head;
   }
@@ -106146,6 +106707,9 @@ var FLGame = (function () {
       var shell = _global('PhoneShell');
       if (shell && typeof shell.injectAudioToggles === 'function') {
         shell.injectAudioToggles(row, { before: helpBtn });
+      }
+      if (shell && typeof shell.injectQuitButton === 'function') {
+        shell.injectQuitButton(row, { before: helpBtn, compact: true });
       }
     } catch (e) { /* audio toggles are best-effort */ }
     row.appendChild(helpBtn);
@@ -113964,6 +114528,17 @@ var CLGame = (function () {
     _goalTextEl = _doc().getElementById('cl-goal-text');
     _musicBtn = _doc().getElementById('cl-music-btn');
     _soundBtn = _doc().getElementById('cl-sound-btn');
+    // Nov 22, 2026: explicit Quit in the topbar toggles (Jesse).
+    // _buildDom rebuilds the topbar, so the injection lives here and
+    // re-runs on every build (injectQuitButton is idempotent).
+    try {
+      var _clToggles = _doc().querySelector('.cl-toggles');
+      var _clWin = _win();
+      if (_clToggles && _clWin && _clWin.PhoneShell &&
+          typeof _clWin.PhoneShell.injectQuitButton === 'function') {
+        _clWin.PhoneShell.injectQuitButton(_clToggles, { compact: true });
+      }
+    } catch (e) { /* quit button is best-effort */ }
     if (_root) {
       _root.addEventListener('click', _onClick);
       _root.addEventListener('input', _onInput);
