@@ -11890,7 +11890,11 @@ button.mr-setup-preview:focus-visible {
 
 /* ------------------------------------------------------------ cards */
 .cl-cards { display: flex; gap: 6px; flex-wrap: wrap; min-height: 62px; align-items: center; }
+/* Real playing cards: white face, red/black suits, corner indices top-left
+   + bottom-right (rotated), classic pip layouts, typographic court panels,
+   and one uniform patterned back. Sizes/animations untouched. */
 .cl-card {
+  position: relative;
   width: 44px;
   height: 62px;
   flex: 0 0 auto;
@@ -11898,10 +11902,10 @@ button.mr-setup-preview:focus-visible {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #fdfbf5;
-  color: #1a1a1a;
-  border: 1px solid #c9c2ae;
-  border-radius: 7px;
+  background: #ffffff;
+  color: #161616;
+  border: 1px solid #b9b2a0;
+  border-radius: 6px;
   font-weight: 800;
   font-size: 17px;
   line-height: 1.05;
@@ -11909,17 +11913,132 @@ button.mr-setup-preview:focus-visible {
   user-select: none;
   transition: transform .15s ease;
 }
-.cl-card .cl-suit { font-size: 19px; }
-.cl-card.red { color: #c0392b; }
+.cl-card.red { color: #c8102e; }
+/* Corner indices: rank over suit, stacked tight. */
+.cl-card .cl-idx { position: absolute; display: flex; flex-direction: column; align-items: center; line-height: 1; font-weight: 800; }
+.cl-card .cl-idx .cl-rank { font-size: 12px; }
+.cl-card .cl-idx .cl-suit { font-size: 10px; margin-top: 1px; }
+.cl-card .cl-idx.tl { top: 2px; left: 3px; }
+.cl-card .cl-idx.br { bottom: 2px; right: 3px; transform: rotate(180deg); }
+/* Center field between the indices. */
+.cl-card .cl-center { position: absolute; inset: 13px 3px; }
+.cl-card .cl-pips { position: absolute; inset: 0; }
+.cl-card .cl-pip { position: absolute; transform: translate(-50%, -50%); font-size: 13px; line-height: 1; }
+.cl-card .cl-pip.flip { transform: translate(-50%, -50%) rotate(180deg); }
+.cl-card .cl-ace { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 28px; line-height: 1; }
+/* Court cards: gold-framed two-tone panel, big serif rank letter + suit. */
+.cl-card .cl-court { position: absolute; inset: 0; border: 1px solid currentColor; border-radius: 3px; background: linear-gradient(180deg, #fffdf6 0 49%, #f3e2b0 51% 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.cl-card .cl-court::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px solid rgba(0, 0, 0, .18); }
+.cl-card .cl-court .cl-court-letter { font-family: Georgia, 'Times New Roman', serif; font-size: 20px; font-weight: 900; line-height: 1; }
+.cl-card .cl-court .cl-court-suit { font-size: 13px; line-height: 1; margin-top: 2px; }
 .cl-card.back {
-  background: repeating-linear-gradient(45deg, #7a1f1a 0 6px, #9a2a22 6px 12px);
+  background-color: #8e1620;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, .16) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, .16) 0 2px, transparent 2px 9px);
   color: transparent;
-  border-color: #5a1712;
+  border-color: #5a0d14;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 0 0 2px #fdfbf5, inset 0 0 0 4px #8e1620;
 }
-.cl-card.small { width: 34px; height: 48px; font-size: 14px; }
-.cl-card.small .cl-suit { font-size: 15px; }
+.cl-card.back::after { content: ''; position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; background: #f5e9c8; border: 1px solid #fdfbf5; transform: rotate(45deg); }
+.cl-card.small { width: 34px; height: 48px; }
+.cl-card.small .cl-idx .cl-rank { font-size: 10px; }
+.cl-card.small .cl-idx .cl-suit { font-size: 8px; }
+.cl-card.small .cl-center { inset: 11px 2px; }
+.cl-card.small .cl-pip { font-size: 10px; }
+.cl-card.small .cl-ace { font-size: 20px; }
+.cl-card.small .cl-court .cl-court-letter { font-size: 15px; }
+.cl-card.small .cl-court .cl-court-suit { font-size: 10px; }
+.cl-card.small.back::after { width: 9px; height: 9px; margin: -5px 0 0 -5px; }
 .cl-card.sel { transform: translateY(-8px); border-color: var(--cl-gold); box-shadow: 0 0 0 2px var(--cl-gold); }
 .cl-card.playable { cursor: pointer; }
+/* The Tiến Lên hand renders cards as <button>s: the generic
+   .cl-root button rule (dark panel background, light text) outranks
+   .cl-card, which is how the old dark tiles happened. Button cards
+   must look exactly like span cards. */
+.cl-root button.cl-card { background: #ffffff; color: #161616; border-color: #b9b2a0; border-radius: 6px; padding: 0; min-height: 0; min-width: 0; }
+.cl-root button.cl-card.red { color: #c8102e; }
+.cl-root button.cl-card.sel:active { transform: translateY(-8px); }
+
+/* ------------------------------------------------- casino table scene
+   Green felt, warm overhead light, gold rim — the table card games
+   (blackjack, hold'em, baccarat, tien len) are staged as people
+   seated around it. Controls stay below the table, unchanged. */
+.cl-table {
+  position: relative;
+  border-radius: 18px;
+  border: 2px solid var(--cl-gold-deep);
+  background:
+    radial-gradient(ellipse 120% 90% at 50% 0%, rgba(255, 214, 130, .22), rgba(255, 214, 130, 0) 55%),
+    radial-gradient(ellipse 90% 70% at 50% 45%, var(--cl-felt-light), var(--cl-felt) 60%, var(--cl-felt-deep));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .5), inset 0 0 0 1px rgba(240, 216, 120, .25);
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+.cl-table::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 76%;
+  height: 54%;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(240, 216, 120, .28);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+.cl-table > * { position: relative; z-index: 1; }
+.cl-table-row { display: flex; justify-content: space-around; align-items: flex-start; gap: 4px; }
+.cl-table-row.flanks { justify-content: space-between; align-items: center; }
+.cl-table-row.flanks .cl-seat { width: 32%; }
+.cl-table-mid { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.cl-table-mid .cl-hand-label { text-align: center; }
+.cl-table-you { display: flex; flex-direction: column; align-items: center; gap: 6px; border-top: 1px solid rgba(240, 216, 120, .22); padding-top: 8px; }
+.cl-table-hand { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.cl-table-hand .cl-hand-label { text-align: center; }
+.cl-table-sides { display: flex; gap: 6px; }
+.cl-table-side { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.cl-table-side .cl-hand-label { text-align: center; }
+.cl-table-side .cl-cards { justify-content: center; min-height: 0; }
+/* A seat at the table: portrait, name, chips/count, cards in front. */
+.cl-seat { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; width: 30%; min-width: 0; }
+.cl-seat .cl-portrait { width: 44px; height: 44px; }
+.cl-seat .cl-initials { font-size: 15px; }
+.cl-seat-name { font-size: 11px; font-weight: 800; color: var(--cl-text); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 3px; }
+.cl-seat-sub { font-size: 10px; color: var(--cl-muted); white-space: nowrap; }
+.cl-seat-tag { font-size: 10px; font-weight: 800; line-height: 1; margin-top: 3px; padding: 3px 7px; border-radius: 9px; border: 1px solid var(--cl-gold); color: var(--cl-gold-soft); }
+.cl-seat-tag.fill { background: var(--cl-gold); color: #1a1a1a; border-color: var(--cl-gold); }
+.cl-seat-tag.muted { border-color: var(--cl-line); color: var(--cl-muted); }
+.cl-seat-cards { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 4px; min-height: 48px; }
+.cl-seat-cards .cl-fan { display: flex; }
+.cl-seat-cards .cl-fan .cl-card + .cl-card { margin-left: -22px; }
+.cl-seat.wide { width: 100%; }
+.cl-seat.wide .cl-talk { max-width: 260px; }
+.cl-table-you .cl-seat { width: 50%; }
+.cl-table-hand.active .cl-hand-label { color: var(--cl-gold-soft); }
+.cl-felt-caption { font-size: 11px; letter-spacing: 1px; font-weight: 800; color: rgba(240, 216, 120, .55); text-transform: uppercase; }
+/* Presence: turn ring, win glow, loss slump, folded/out dim. */
+.cl-seat-turn .cl-portrait { box-shadow: 0 0 0 2px var(--cl-gold), 0 0 12px rgba(212, 175, 55, .55); }
+.cl-seat-win .cl-portrait { box-shadow: 0 0 0 2px var(--cl-gold), 0 0 16px rgba(212, 175, 55, .75); }
+.cl-seat-lose { opacity: .62; }
+.cl-seat-lose .cl-portrait { filter: grayscale(.6); transform: rotate(2deg); }
+.cl-seat-fold, .cl-seat-out { opacity: .55; }
+/* Table talk: white speech bubble under the seat's cards. */
+.cl-talk { margin-top: 4px; max-width: 100%; font-size: 10px; font-style: italic; line-height: 1.25; color: #1a1a1a; background: rgba(253, 251, 245, .95); border: 1px solid #c9c2ae; border-radius: 10px; border-bottom-left-radius: 2px; padding: 4px 6px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+/* Thinking beat: fades in, holds, fades out — pure CSS, no timers. */
+.cl-anim-think { opacity: 0; animation: cl-think-beat 1.6s ease-out both; }
+/* Chips on the table: little stacked discs + amount. */
+.cl-chipstack { display: inline-flex; align-items: center; vertical-align: middle; }
+.cl-chipstack i { width: 15px; height: 15px; border-radius: 50%; border: 2px dashed rgba(255, 255, 255, .85); margin-left: -6px; box-shadow: 0 1px 2px rgba(0, 0, 0, .5); }
+.cl-chipstack i:first-child { margin-left: 0; }
+.cl-chipstack i.c-red { background: #c8102e; }
+.cl-chipstack i.c-white { background: #f5f0e1; }
+.cl-chipstack i.c-blue { background: #2456a6; }
+.cl-table-pot { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 15px; color: var(--cl-gold-soft); }
 
 .cl-hand-label { font-size: 13px; font-weight: 700; color: var(--cl-muted); margin: 2px 0; }
 .cl-hand-label b { color: var(--cl-text); }
@@ -12310,6 +12429,8 @@ button.mr-setup-preview:focus-visible {
 @keyframes cl-scratch-wipe { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 0 100%); } }
 @keyframes cl-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes cl-play-in { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes cl-think-beat { 0% { opacity: 0; transform: translateY(4px); } 15% { opacity: 1; transform: translateY(0); } 65% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes cl-nod { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(3px); } 60% { transform: translateY(0); } }
 
 .cl-anim-deal { animation: cl-deal-in 280ms ease-out both; }
 .cl-anim-reel { animation: cl-reel-settle 420ms ease-out both; }
@@ -12325,6 +12446,7 @@ button.mr-setup-preview:focus-visible {
 .cl-anim-wipe { animation: cl-scratch-wipe 300ms ease-in forwards; }
 .cl-anim-fade { animation: cl-fade-in 250ms ease-out both; }
 .cl-anim-play { animation: cl-play-in 260ms ease-out both; }
+.cl-anim-nod { animation: cl-nod 500ms ease-in-out 1; }
 
 /* Card flip wrapper (blackjack hole card, hold'em showdown, baccarat
    third cards): two faces, front shown unless .show-back. */
@@ -12335,8 +12457,7 @@ button.mr-setup-preview:focus-visible {
 .cl-flip.show-back .cl-flip-face.front { transform: rotateY(180deg); }
 .cl-flip.show-back .cl-flip-face.back { transform: rotateY(0deg); }
 .cl-flip.small { width: 34px; height: 48px; }
-.cl-flip.small .cl-card { width: 34px; height: 48px; font-size: 14px; }
-.cl-flip.small .cl-card .cl-suit { font-size: 15px; }
+.cl-flip.small .cl-card { width: 34px; height: 48px; }
 
 /* Roulette wheel visual: CSS ring above the number grid; the ball is a
    visual only — the drawn number + payout logic are untouched.
@@ -12373,7 +12494,21 @@ button.mr-setup-preview:focus-visible {
   .cl-root { font-size: 14px; }
   .cl-bank-val { font-size: 19px; }
   .cl-symbol { height: 44px; font-size: 24px; }
-  .cl-card { width: 38px; height: 54px; font-size: 15px; }
+  .cl-card { width: 38px; height: 54px; }
+  .cl-card .cl-idx .cl-rank { font-size: 11px; }
+  .cl-card .cl-idx .cl-suit { font-size: 9px; }
+  .cl-card .cl-center { inset: 11px 2px; }
+  .cl-card .cl-pip { font-size: 11px; }
+  .cl-card .cl-ace { font-size: 23px; }
+  .cl-card .cl-court .cl-court-letter { font-size: 17px; }
+  .cl-card .cl-court .cl-court-suit { font-size: 11px; }
+  .cl-table { padding: 8px 6px; gap: 6px; }
+  .cl-seat .cl-portrait { width: 38px; height: 38px; }
+  .cl-seat .cl-initials { font-size: 13px; }
+  .cl-seat-name { font-size: 10px; }
+  .cl-seat-sub { font-size: 9px; }
+  .cl-seat-cards { min-height: 42px; }
+  .cl-talk { font-size: 9px; }
   .cl-rocket-mult { font-size: 36px; }
   .cl-wheel-visual { width: 104px; height: 104px; --ball-orbit: 38px; }
   .cl-wheel-visual::after { inset: 10px; }
@@ -112026,15 +112161,15 @@ if (typeof window !== 'undefined') window.CLEngine = CLEngine;
       { title: 'Rank order: 3 is low, 2 is high', text: 'Cards rank 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K, A, 2 — the 2 is the highest card. Suit order is spades, clubs, diamonds, hearts, weakest to strongest.', demo: { kind: 'ranks', order: ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2'] } },
       { title: 'Northern combos are strict', text: 'Sequences must be all the same suit. Pairs must be the same color — both red (hearts, diamonds) or both black (spades, clubs). Triples are three of a kind. A play must match the led combination and its suit or color rule to beat it.', demo: { kind: 'combos', variant: 'north', note: 'Sequence: same suit. Pair: same color.' } },
       { title: 'Bombs beat the mighty 2', text: 'Four of a kind beats a single 2, and a higher 2 beats a lower 2. Bombs are precious — save them for a 2, not for a small single.', demo: { kind: 'bomb', play: 'four of a kind', beats: 'a single 2' } },
-      { title: 'Shed everything, first', text: 'First to play all 13 cards wins the hand. Everyone else ranks by cards left. A 2 stuck in your hand at the end costs $5 per 2, paid to the winner.', demo: { kind: 'scoring', ante: 10, penalty: 5, note: '$10 ante each, $40 pot. Instant win pays double.' } },
-      { title: 'Instant wins', text: 'Four 2s, or a dragon straight (3 through ace plus a 2 — all 13 ranks) wins the hand instantly, for double the pot. If you are dealt one, do not overthink it.', demo: { kind: 'instant', hands: ['four 2s', 'dragon straight'] } }
+      { title: 'Shed everything, first', text: 'First to play all 13 cards wins the hand. Everyone else ranks by cards left. A 2 stuck in your hand at the end costs $5 per 2, paid to the winner.', demo: { kind: 'scoring', ante: 10, penalty: 5, note: '$10 ante each, $40 pot. Instant win takes the pot.' } },
+      { title: 'Instant wins', text: 'Four 2s, or a dragon straight (3 through ace plus a 2 — all 13 ranks) wins the hand instantly and takes the pot. If you are dealt one, do not overthink it.', demo: { kind: 'instant', hands: ['four 2s', 'dragon straight'] } }
     ],
     'tienlen-south': [
       { title: 'Rank order: 3 is low, 2 is high', text: 'Cards rank 3 up to 2, the highest card. Suit order is spades, clubs, diamonds, hearts — suits only break ties here, they do not restrict your plays.', demo: { kind: 'ranks', order: ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2'] } },
       { title: 'Southern combos run free', text: 'Sequences of 3 or more can mix suits (but never include a 2). Pairs, triples, and four of a kind are three or four of the same rank. Pair sequences — 3 or more consecutive pairs — are a Southern special.', demo: { kind: 'combos', variant: 'south', note: 'Sequences: any suits, no 2s. Pair sequences: 3+ pairs.' } },
       { title: 'Bombs chop the 2s', text: 'Four of a kind beats a single 2. A 3-pair sequence beats a single 2. A 4-pair sequence beats a pair of 2s. Chopping a 2 earns bonus points — but a wasted bomb is gone forever.', demo: { kind: 'bomb', play: 'four of a kind / pair sequences', beats: 'single 2 / pair of 2s' } },
       { title: 'Three of spades leads', text: 'The player holding the 3 of spades leads the first hand. After that, the previous hand winner leads. Lead low and shed — every card you keep is a card that can beat you later.', demo: { kind: 'lead', card: { r: 3, s: 'S' } } },
-      { title: 'Instant wins and penalties', text: 'Four 2s, a dragon straight, or a 6-pair sequence wins instantly for double the pot. A 2 left in your hand at the end costs $5 each, paid to the winner.', demo: { kind: 'instant', hands: ['four 2s', 'dragon straight', '6-pair sequence'] } }
+      { title: 'Instant wins and penalties', text: 'Four 2s, a dragon straight, or a 6-pair sequence wins instantly and takes the pot. A 2 left in your hand at the end costs $5 each, paid to the winner.', demo: { kind: 'instant', hands: ['four 2s', 'dragon straight', '6-pair sequence'] } }
     ],
     scratch: [
       { title: 'Pick a ticket', text: 'Three tickets: $1, $5, and $25, each with its own theme and published prize table. Bigger tickets mean bigger top prizes — and the same honest odds, printed on the ticket.', demo: { kind: 'tickets', tiers: [1, 5, 25] } },
@@ -112084,14 +112219,14 @@ if (typeof window !== 'undefined') window.CLEngine = CLEngine;
     'tienlen-north': {
       name: 'Tien Len — North', tagline: 'Strict suits, strict colors, sharp play.',
       minBet: 10, maxBet: 10,
-      oddsText: 'Skill game vs 3 AI rivals. $10 ante per player, $40 pot. Instant win pays double. 2s left in hand cost $5 each.',
-      rulesText: 'Northern rules: sequences must be one suit; pairs must be one color (red hearts/diamonds or black spades/clubs); triples are three of a kind. Four of a kind beats a single 2; higher 2 beats lower 2. First to shed all 13 cards wins. Instant win: four 2s or dragon straight, pays double.'
+      oddsText: 'Skill game vs 3 AI rivals. $10 ante per player, $40 pot. Instant win takes the pot. 2s left in hand cost $5 each.',
+      rulesText: 'Northern rules: sequences must be one suit; pairs must be one color (red hearts/diamonds or black spades/clubs); triples are three of a kind. Four of a kind beats a single 2; higher 2 beats lower 2. First to shed all 13 cards wins. Instant win: four 2s or dragon straight, takes the pot.'
     },
     'tienlen-south': {
       name: 'Tien Len — South', tagline: 'Free sequences, deadly bombs.',
       minBet: 10, maxBet: 10,
-      oddsText: 'Skill game vs 3 AI rivals. $10 ante per player, $40 pot. Instant win pays double. 2s left in hand cost $5 each.',
-      rulesText: 'Southern rules: sequences of 3+ any suits (no 2s); pair sequences of 3+ consecutive pairs. Bombs: four of a kind beats a single 2, 3-pair sequence beats a single 2, 4-pair sequence beats a pair of 2s. 3 of spades leads the first hand; previous winner leads after. First to shed all 13 cards wins. Instant win: four 2s, dragon straight, or 6-pair sequence, pays double.'
+      oddsText: 'Skill game vs 3 AI rivals. $10 ante per player, $40 pot. Instant win takes the pot. 2s left in hand cost $5 each.',
+      rulesText: 'Southern rules: sequences of 3+ any suits (no 2s); pair sequences of 3+ consecutive pairs. Bombs: four of a kind beats a single 2, 3-pair sequence beats a single 2, 4-pair sequence beats a pair of 2s. 3 of spades leads the first hand; previous winner leads after. First to shed all 13 cards wins. Instant win: four 2s, dragon straight, or 6-pair sequence, takes the pot.'
     },
     scratch: {
       name: 'Scratch-Offs', tagline: 'Three tickets, one lucky rub.',
@@ -113982,10 +114117,10 @@ var CLGame = (function () {
       rulesText: 'Bet Player, Banker, or Tie, then the cards play themselves under punto banco rules. Closest to 9 wins. Banker wins pay a 5% commission. Tie pays 8:1. No side bets.' },
     'tienlen-north': { name: 'Tien Len North', minBet: 10, maxBet: 10,
       oddsText: '$10 ante per player per hand. Winner takes the $40 pot plus $5 per 2 left in a rival hand.',
-      rulesText: 'Northern rules: sequences must be all the same suit; pairs must be the same color (red hearts/diamonds, black spades/clubs); triples are three of a kind. Four of a kind beats a single 2; a higher 2 beats a lower 2. First to shed all cards wins. Four 2s or a dragon straight (3 to Ace plus a 2) wins instantly and pays double. Each 2 left in hand costs $5.' },
+      rulesText: 'Northern rules: sequences must be all the same suit; pairs must be the same color (red hearts/diamonds, black spades/clubs); triples are three of a kind. Four of a kind beats a single 2; a higher 2 beats a lower 2. First to shed all cards wins. Four 2s or a dragon straight (3 to Ace plus a 2) wins instantly and takes the pot. Each 2 left in hand costs $5.' },
     'tienlen-south': { name: 'Tien Len South', minBet: 10, maxBet: 10,
       oddsText: '$10 ante per player per hand. Winner takes the $40 pot plus $5 per 2 left in a rival hand.',
-      rulesText: 'Southern rules: sequences of 3+ in any suits (no 2s), sequences of 3+ pairs, singles, pairs, triples, four of a kind. Bombs: four of a kind beats a single 2, a 3-pair sequence beats a single 2, a 4-pair sequence beats a pair of 2s. 3 of spades leads the first hand; the previous winner leads after that. Instant wins: four 2s, dragon straight, 6-pair sequence — all pay double. Each 2 left in hand costs $5.' },
+      rulesText: 'Southern rules: sequences of 3+ in any suits (no 2s), sequences of 3+ pairs, singles, pairs, triples, four of a kind. Bombs: four of a kind beats a single 2, a 3-pair sequence beats a single 2, a 4-pair sequence beats a pair of 2s. 3 of spades leads the first hand; the previous winner leads after that. Instant wins: four 2s, dragon straight, 6-pair sequence — all take the pot. Each 2 left in hand costs $5.' },
     scratch: { name: 'Scratch-Off', minBet: 1, maxBet: 25,
       oddsText: 'RTP about 65%. Prizes are fixed before you scratch — scratching never changes the outcome.',
       rulesText: 'Buy a ticket ($1, $5, or $25) and tap the nine panels to reveal them. Match three of a kind to win that prize. The prize is decided when the ticket is printed, before you scratch anything.' }
@@ -114267,6 +114402,12 @@ var CLGame = (function () {
       return _profile.rivalBankrolls[rival.id];
     }
     return rival.bankroll;
+  }
+
+  function _setRivalBankroll(rival, value) {
+    if (!_profile) return;
+    if (!_profile.rivalBankrolls) _profile.rivalBankrolls = {};
+    _profile.rivalBankrolls[rival.id] = Math.max(0, Math.floor(value));
   }
 
   function _limits() {
@@ -114690,12 +114831,19 @@ var CLGame = (function () {
   function _animCardHTML(card, delay) {
     var h = _cardHTML(card);
     if (_reducedMotion()) return h;
-    return h.replace('<span class="cl-card', '<span' + _delayAttr(delay) + ' class="cl-card cl-anim cl-anim-deal"');
+    /* Insert inside the class attribute: the old form closed the
+       attribute early and dropped the trailing class (red/back). */
+    return h.replace('class="cl-card', 'class="cl-card cl-anim cl-anim-deal').replace('<span', '<span' + _delayAttr(delay));
   }
-  function _flipCardHTML(card, animate) {
-    var cls = 'cl-flip' + ((!_reducedMotion() && animate) ? ' cl-anim cl-anim-flip' : '');
-    return '<span class="' + cls + '"><span class="cl-flip-face front">' + _cardHTML(card) +
-      '</span><span class="cl-flip-face back">' + _cardBackHTML() + '</span></span>';
+  function _flipCardHTML(card, animate, small) {
+    var cls = 'cl-flip' + (small ? ' small' : '') + ((!_reducedMotion() && animate) ? ' cl-anim cl-anim-flip' : '');
+    var front = _cardHTML(card), back = _cardBackHTML();
+    if (small) {
+      front = front.replace('class="cl-card', 'class="cl-card small');
+      back = back.replace('class="cl-card', 'class="cl-card small');
+    }
+    return '<span class="' + cls + '"><span class="cl-flip-face front">' + front +
+      '</span><span class="cl-flip-face back">' + back + '</span></span>';
   }
   function _flipBackHTML() {
     return '<span class="cl-flip show-back"><span class="cl-flip-face front">' + _cardBackHTML() +
@@ -115509,16 +115657,98 @@ var CLGame = (function () {
     return rl + (SUIT_SYMBOL[card.s] || card.s);
   }
 
-  function _cardHTML(card) {
-    if (!card) return '<span class="cl-card back"><span>&nbsp;</span></span>';
-    var red = card.s === 'H' || card.s === 'D';
-    return '<span class="cl-card' + (red ? ' red' : '') + '"><span>' +
-      _esc(RANK_LABEL[card.r] || String(card.r)) + '</span><span class="cl-suit">' +
-      (SUIT_SYMBOL[card.s] || '') + '</span></span>';
+  /* Classic pip layouts: [col, row] on a 3-col grid; row 1.5 is the
+     middle line, .75 / 2.25 the quarter lines (7/8/10 centre pips).
+     Bottom-half pips render rotated, like a real card. */
+  var _PIP_LAYOUT = {
+    2: [[1, 0], [1, 3]],
+    3: [[1, 0], [1, 1.5], [1, 3]],
+    4: [[0, 0], [2, 0], [0, 3], [2, 3]],
+    5: [[0, 0], [2, 0], [1, 1.5], [0, 3], [2, 3]],
+    6: [[0, 0], [2, 0], [0, 1.5], [2, 1.5], [0, 3], [2, 3]],
+    7: [[0, 0], [2, 0], [0, 1.5], [2, 1.5], [0, 3], [2, 3], [1, 0.75]],
+    8: [[0, 0], [2, 0], [0, 1.5], [2, 1.5], [0, 3], [2, 3], [1, 0.75], [1, 2.25]],
+    9: [[0, 0], [2, 0], [0, 1], [2, 1], [1, 1.5], [0, 2], [2, 2], [0, 3], [2, 3]],
+    10: [[0, 0], [2, 0], [0, 1], [2, 1], [0, 2], [2, 2], [0, 3], [2, 3], [1, 0.75], [1, 2.25]]
+  };
+
+  /* Shared face interior: corner indices (TL + rotated BR) + centre
+     (pip layout / big ace pip / court panel). Used by _cardHTML and by
+     the Tiến Lên hand buttons, so every card face matches. */
+  function _cardFaceInner(card) {
+    var rl = RANK_LABEL[card.r] || String(card.r);
+    var sym = SUIT_SYMBOL[card.s] || '';
+    var idx = '<span class="cl-idx tl"><span class="cl-rank">' + _esc(rl) +
+      '</span><span class="cl-suit">' + sym + '</span></span>' +
+      '<span class="cl-idx br"><span class="cl-rank">' + _esc(rl) +
+      '</span><span class="cl-suit">' + sym + '</span></span>';
+    var center = '';
+    if (card.r === 14) {
+      center = '<span class="cl-center"><span class="cl-ace">' + sym + '</span></span>';
+    } else if (card.r >= 11) {
+      center = '<span class="cl-center"><span class="cl-court"><span class="cl-court-letter">' +
+        _esc(rl) + '</span><span class="cl-court-suit">' + sym + '</span></span></span>';
+    } else {
+      var pips = '';
+      var lay = _PIP_LAYOUT[card.r] || [];
+      for (var i = 0; i < lay.length; i++) {
+        var col = lay[i][0], row = lay[i][1];
+        pips += '<span class="cl-pip' + (row > 1.5 ? ' flip' : '') +
+          '" style="left:' + (22 + col * 28) + '%;top:' + (15 + row * 23.33) + '%">' +
+          sym + '</span>';
+      }
+      center = '<span class="cl-center"><span class="cl-pips">' + pips + '</span></span>';
+    }
+    return idx + center;
   }
 
-  function _cardBackHTML() {
-    return '<span class="cl-card back"><span>&nbsp;</span></span>';
+  function _cardHTML(card) {
+    if (!card) return _cardBackHTML();
+    var red = card.s === 'H' || card.s === 'D';
+    return '<span class="cl-card' + (red ? ' red' : '') + '">' + _cardFaceInner(card) + '</span>';
+  }
+
+  function _cardBackHTML(small) {
+    return '<span class="cl-card back' + (small ? ' small' : '') + '"><span>&nbsp;</span></span>';
+  }
+
+  /* ------------------------------------------- casino table scene.
+     Presentation only: seats, chips, talk, turn/reaction states.
+     Every value comes from existing game state; table-talk line
+     picks are deterministic (seeded by state numbers) — no RNG. */
+  function _tableTalkFor(rival, seed) {
+    var lines = BANTER[(rival && rival.archetype) || 'Social Butterfly'] || BANTER['Social Butterfly'];
+    var i = ((seed % lines.length) + lines.length) % lines.length;
+    return lines[i];
+  }
+  function _rivalNum(rival) {
+    var n = parseInt(String((rival && rival.id) || '').replace(/\D/g, ''), 10);
+    return isNaN(n) ? 0 : n;
+  }
+  function _chipStackHTML() {
+    return '<span class="cl-chipstack" aria-hidden="true"><i class="c-red"></i><i class="c-white"></i><i class="c-blue"></i></span>';
+  }
+  function _playerSeatHTML(tag, tagFill, sub, extraCls) {
+    var p = (_profile && _profile.player) ? _profile.player : {};
+    var name = p.name || 'You';
+    return _seatHTML({
+      portrait: _avatarPortraitFile(p.avatar || 'f1', 'calm'),
+      name: 'You', sub: sub || (name === 'You' ? null : name),
+      cls: (tag ? 'cl-seat-turn' : '') + (extraCls ? ' ' + extraCls : ''), tag: tag || null, tagFill: !!tagFill
+    });
+  }
+  /* o: { portrait, name, sub, tag, tagFill, tagMuted, cards, cls,
+     talk, think } — a rival/dealer seat at the table. */
+  function _seatHTML(o) {
+    var h = '<div class="cl-seat' + (o.cls ? ' ' + o.cls : '') + '">';
+    h += _portraitHTML(o.portrait, o.name);
+    h += '<span class="cl-seat-name">' + _esc(o.name) + '</span>';
+    if (o.sub) h += '<span class="cl-seat-sub">' + o.sub + '</span>';
+    if (o.tag) h += '<span class="cl-seat-tag' + (o.tagFill ? ' fill' : o.tagMuted ? ' muted' : '') + '">' + _esc(o.tag) + '</span>';
+    if (o.cards) h += '<span class="cl-seat-cards">' + o.cards + '</span>';
+    if (o.think) h += '<span class="cl-talk cl-anim-think">thinking&hellip;</span>';
+    else if (o.talk) h += '<span class="cl-talk">' + _esc(o.talk) + '</span>';
+    return h + '</div>';
   }
 
   function _newDeck() {
@@ -116217,9 +116447,10 @@ var CLGame = (function () {
     var g = _game;
     var bjAnim = _takeAnim(g, '_bjDealt');
     var bjDelay = 0;
-    var dealerHtml = '';
+    var host = _host();
+    var dealerFirst = String(host.name || 'Vivienne').split(' ')[0];
+    var dealerCards = '';
     if (g.dealer) {
-      var dealerCards = '';
       for (var di = 0; di < g.dealer.length; di++) {
         var dc = g.dealer[di];
         if (di === 1 && g.dealerHoleHidden) dealerCards += _flipBackHTML();
@@ -116227,26 +116458,38 @@ var CLGame = (function () {
         else dealerCards += bjAnim ? _animCardHTML(dc, bjDelay) : _cardHTML(dc);
         bjDelay += 70;
       }
-      dealerHtml = '<div class="cl-hand-box"><div class="cl-hand-label">Dealer — <b>' +
-        (g.dealerHoleHidden ? _bjValue([g.dealer[0]]).total + ' + ?' : _bjValue(g.dealer).total) + '</b></div>' +
-        '<div class="cl-cards">' + dealerCards + '</div></div>';
     }
+    var dealerTalk = null;
+    if (g.phase === 'bet') dealerTalk = 'Place your bets.';
+    else if (g.phase === 'done') dealerTalk = g.resultKind === 'win' ? 'You take it — well played.' : g.resultKind === 'lose' ? 'House wins this one.' : 'Push — bets returned.';
+    var dealerCls = 'wide';
+    if (g.phase === 'done' && g.resultKind === 'lose') dealerCls += ' cl-seat-win' + (!_reducedMotion() ? ' cl-anim cl-anim-win' : '');
+    else if (g.phase === 'done' && g.resultKind === 'win') dealerCls += ' cl-seat-lose';
+    var dealerSub = dealerFirst + (g.dealer ? ' \u2022 ' + (g.dealerHoleHidden ? _bjValue([g.dealer[0]]).total + ' + ?' : _bjValue(g.dealer).total) : '');
+    var dealerSeat = _seatHTML({ portrait: _hostPortraitFile('warm'), name: 'Dealer', sub: dealerSub, cards: dealerCards || null, talk: dealerTalk, cls: dealerCls });
     var handsHtml = '';
+    var totalBet = 0;
     if (g.hands) {
       for (var h = 0; h < g.hands.length; h++) {
         var hand = g.hands[h];
+        totalBet += hand.bet;
         var v = _bjValue(hand.cards);
         var hCards = '';
         for (var hi = 0; hi < hand.cards.length; hi++) {
           hCards += bjAnim ? _animCardHTML(hand.cards[hi], bjDelay) : _cardHTML(hand.cards[hi]);
           bjDelay += 70;
         }
-        handsHtml += '<div class="cl-hand-box' + (g.phase === 'play' && g.activeHand === h ? ' active' : '') + (v.bust && !_reducedMotion() ? ' cl-anim cl-anim-shake' : '') + '">' +
+        handsHtml += '<div class="cl-table-hand' + (g.phase === 'play' && g.activeHand === h ? ' active' : '') + (v.bust && !_reducedMotion() ? ' cl-anim cl-anim-shake' : '') + '">' +
           '<div class="cl-hand-label">Hand ' + (h + 1) + ' — <b>' + v.total + (v.soft ? ' soft' : '') + '</b> \u2022 bet ' + _fmt(hand.bet) +
           (hand.doubled ? ' (doubled)' : '') + (hand.done ? ' \u2022 done' : '') + '</div>' +
           '<div class="cl-cards">' + hCards + '</div></div>';
       }
     }
+    var youCls = (g.phase === 'done' && g.resultKind === 'win') ? 'cl-seat-win' + (!_reducedMotion() ? ' cl-anim cl-anim-win' : '') : (g.phase === 'done' && g.resultKind === 'lose' ? 'cl-seat-lose' : '');
+    var tableHtml = '<div class="cl-table">' +
+      '<div class="cl-table-row">' + dealerSeat + '</div>' +
+      '<div class="cl-table-mid">' + (totalBet > 0 ? '<span class="cl-table-pot">' + _chipStackHTML() + ' Bet ' + _fmt(totalBet) + '</span>' : '<span class="cl-felt-caption">Blackjack pays 3:2 &bull; Dealer stands on 17</span>') + '</div>' +
+      '<div class="cl-table-you">' + _playerSeatHTML(g.phase === 'play' ? 'Your turn' : null, true, totalBet > 0 ? 'Bet ' + _fmt(totalBet) : null, youCls) + handsHtml + '</div></div>';
     var hintHtml = '';
     if (_profile && _profile.settings.hints && g.phase === 'play' && g.hands && g.hands[g.activeHand]) {
       var hint = _bjHint(g.hands[g.activeHand].cards, g.dealer ? g.dealer[0] : null);
@@ -116270,7 +116513,7 @@ var CLGame = (function () {
     }
     _screenEl.innerHTML =
       '<div class="cl-game">' + _gameHeadHTML('blackjack', _practiceBanner()) +
-      dealerHtml + handsHtml + hintHtml +
+      tableHtml + hintHtml +
       _betRowHTML('blackjack', g.bet, 5, 500, [5, 25, 50, 100, 500]) +
       actions + _resultElHTML(g.resultText) +
       '<p class="cl-muted">6-deck shoe. Dealer stands on all 17s. Blackjack pays 3:2. Double any two cards, split up to 3 hands. No surrender, no insurance.</p>' +
@@ -116493,20 +116736,41 @@ var CLGame = (function () {
       var heDeal = _takeAnim(g, '_heDealt');
       var heStreet = _takeAnim(g, '_heStreet');
       var heShow = !!g._heShowdown;
-      var oppRows = '';
+      var talkIdx = -1;
+      if (heShow && g._heWinner) {
+        for (var wi = 0; wi < h.opponents.length; wi++) if (h.opponents[wi].rival.id === g._heWinner) { talkIdx = wi; break; }
+      } else {
+        var bestBet = -1;
+        for (var bi = 0; bi < h.opponents.length; bi++) {
+          if (!h.opponents[bi].folded && h.opponents[bi].bet > bestBet) { bestBet = h.opponents[bi].bet; talkIdx = bi; }
+        }
+        if (talkIdx < 0) { for (var fi = 0; fi < h.opponents.length; fi++) if (!h.opponents[fi].folded) { talkIdx = fi; break; } }
+      }
+      var thinkIdx = ((heDeal || heStreet) && !_reducedMotion()) ? talkIdx : -1;
+      var oppSeats = [];
       for (var i = 0; i < h.opponents.length; i++) {
         var o = h.opponents[i];
         var oppCards = '';
         if (heShow && !o.folded && o.cards) {
-          oppCards = '<span class="cl-opp-cards">' + _flipCardHTML(o.cards[0], true) + _flipCardHTML(o.cards[1], true) + '</span>';
+          oppCards = _flipCardHTML(o.cards[0], true, true) + _flipCardHTML(o.cards[1], true, true);
         } else if (o.cards) {
-          oppCards = '<span class="cl-opp-cards">' +
-            (heDeal ? _animCardHTML(null, i * 70) : _cardBackHTML()) +
-            (heDeal ? _animCardHTML(null, i * 70 + 35) : _cardBackHTML()) + '</span>';
+          oppCards = (heDeal ? _animCardHTML(null, i * 70).replace('class="cl-card', 'class="cl-card small') : _cardBackHTML(true)) +
+            (heDeal ? _animCardHTML(null, i * 70 + 35).replace('class="cl-card', 'class="cl-card small') : _cardBackHTML(true));
         }
-        oppRows += '<div class="cl-opp-row' + ((heShow && g._heWinner === o.rival.id && !_reducedMotion()) ? ' cl-anim cl-anim-win' : '') + '">' + _portraitHTML(_rivalPortraitFile(o.rival), o.rival.name) +
-          '<span class="cl-opp-name">' + _esc(o.rival.name) + (o.folded ? ' — folded' : o.allIn ? ' — all in' : '') + '</span>' + oppCards +
-          '<span class="cl-opp-state">' + _fmt(o.stack) + (o.bet > 0 ? ' \u2022 bet ' + _fmt(o.bet) : '') + '</span></div>';
+        var isWinner = heShow && g._heWinner === o.rival.id;
+        var oCls = '';
+        if (isWinner) oCls = 'cl-seat-win' + (!_reducedMotion() ? ' cl-anim cl-anim-win' : '');
+        else if (heShow && !o.folded) oCls = 'cl-seat-lose';
+        else if (o.folded) oCls = 'cl-seat-fold';
+        oppSeats.push(_seatHTML({
+          portrait: _rivalPortraitFile(o.rival), name: o.rival.name,
+          sub: _fmt(o.stack) + (o.bet > 0 ? ' \u2022 bet ' + _fmt(o.bet) : ''),
+          tag: o.folded ? 'folded' : o.allIn ? 'all in' : isWinner ? 'wins' : null,
+          tagFill: isWinner, tagMuted: o.folded,
+          cards: oppCards || null, cls: oCls,
+          talk: i === talkIdx ? _tableTalkFor(o.rival, _rivalNum(o.rival) + h.pot + h.community.length) : null,
+          think: i === thinkIdx
+        }));
       }
       var hintHtml = '';
       if (_profile && _profile.settings.hints && h.myCards) {
@@ -116536,13 +116800,16 @@ var CLGame = (function () {
       for (var hi2 = 0; hi2 < h.myCards.length; hi2++) {
         heHoleHtml += heDeal ? _animCardHTML(h.myCards[hi2], hi2 * 70) : _cardHTML(h.myCards[hi2]);
       }
+      var youWinCls = (g.phase === 'done' && g.resultKind === 'win') ? 'cl-seat-win' + (!_reducedMotion() ? ' cl-anim cl-anim-win' : '') : (g.phase === 'done' && g.resultKind === 'lose' ? 'cl-seat-lose' : '');
       tableHtml =
-        '<div class="cl-hand-box' + ((g.phase === 'done' && g.resultKind === 'win' && !_reducedMotion()) ? ' cl-anim cl-anim-win' : '') + '"><div class="cl-hand-label">Community \u2022 <span class="cl-pot">Pot ' + _fmt(h.pot) + '</span></div>' +
+        '<div class="cl-table">' +
+        '<div class="cl-table-row">' + oppSeats.slice(0, 3).join('') + '</div>' +
+        '<div class="cl-table-row flanks">' + oppSeats[3] + '<span class="cl-table-pot">' + _chipStackHTML() + ' Pot ' + _fmt(h.pot) + '</span>' + oppSeats[4] + '</div>' +
+        '<div class="cl-table-mid"><div class="cl-hand-label">Community</div>' +
         '<div class="cl-cards">' + heCommHtml +
-        (h.community.length < 5 ? '<span class="cl-muted"> &nbsp;' + (5 - h.community.length) + ' to come</span>' : '') + '</div>' +
-        '<div class="cl-hand-label">Your cards \u2022 stack ' + _fmt(h.myStack) + '</div>' +
-        '<div class="cl-cards">' + heHoleHtml + '</div></div>' +
-        oppRows + hintHtml + actions;
+        (h.community.length < 5 ? '<span class="cl-muted"> &nbsp;' + (5 - h.community.length) + ' to come</span>' : '') + '</div></div>' +
+        '<div class="cl-table-you">' + _playerSeatHTML(g.phase === 'act' ? 'Your turn' : null, true, 'Stack ' + _fmt(h.myStack), youWinCls) + '<div class="cl-cards">' + heHoleHtml + '</div></div>' +
+        '</div>' + hintHtml + actions;
     }
     _screenEl.innerHTML =
       '<div class="cl-game">' + _gameHeadHTML('holdem', _practiceBanner()) +
@@ -117099,7 +117366,13 @@ var CLGame = (function () {
   function _renderBaccarat() {
     if (!_screenEl) return;
     var g = _game;
-    var tableHtml = '';
+    var host = _host();
+    var dealerFirst = String(host.name || 'Vivienne').split(' ')[0];
+    var side = g.bacBet || 'banker';
+    var pSide = '<div class="cl-table-side"><div class="cl-hand-label">Player</div><div class="cl-cards"><span class="cl-muted">awaiting deal</span></div></div>';
+    var bSide = '<div class="cl-table-side"><div class="cl-hand-label">Banker</div><div class="cl-cards"><span class="cl-muted">awaiting deal</span></div></div>';
+    var dealerTalk = 'Place your bet — Player, Banker, or Tie.';
+    var youCls = '';
     if (g.lastHand) {
       var h = g.lastHand;
       var bacAnim = _takeAnim(g, '_bacDealt');
@@ -117111,11 +117384,17 @@ var CLGame = (function () {
       var pCards = '', bCards = '';
       for (var pi = 0; pi < h.player.length; pi++) pCards += bacCard(h.player[pi], pi * 2, pi >= 2);
       for (var bi = 0; bi < h.banker.length; bi++) bCards += bacCard(h.banker[bi], bi * 2 + 1, bi >= 2);
-      tableHtml = '<div class="cl-hand-box' + ((h.winner !== 'tie' && !_reducedMotion()) ? ' cl-anim cl-anim-win' : '') + '"><div class="cl-hand-label">Player — <b>' + h.playerTotal + '</b></div>' +
-        '<div class="cl-cards">' + pCards + '</div>' +
-        '<div class="cl-hand-label">Banker — <b>' + h.bankerTotal + '</b></div>' +
-        '<div class="cl-cards">' + bCards + '</div></div>';
+      dealerTalk = h.winner === 'tie' ? 'Tie — no one takes it.' : h.winner === 'player' ? 'Player wins.' : 'Banker wins.';
+      pSide = '<div class="cl-table-side"><div class="cl-hand-label">Player — <b>' + h.playerTotal + '</b></div><div class="cl-cards">' + pCards + '</div></div>';
+      bSide = '<div class="cl-table-side"><div class="cl-hand-label">Banker — <b>' + h.bankerTotal + '</b></div><div class="cl-cards">' + bCards + '</div></div>';
+      youCls = g.resultKind === 'win' ? 'cl-seat-win' + (!_reducedMotion() ? ' cl-anim cl-anim-win' : '') : g.resultKind === 'lose' ? 'cl-seat-lose' : '';
     }
+    var dealerSeat = _seatHTML({ portrait: _hostPortraitFile('warm'), name: 'Dealer', sub: dealerFirst, talk: dealerTalk, cls: 'wide' });
+    var tableHtml = '<div class="cl-table">' +
+      '<div class="cl-table-row">' + dealerSeat + '</div>' +
+      '<div class="cl-table-sides">' + pSide + bSide + '</div>' +
+      '<div class="cl-table-mid"><span class="cl-table-pot">' + _chipStackHTML() + ' Your ' + _fmt(g.bet) + ' on ' + side + '</span></div>' +
+      '<div class="cl-table-you">' + _playerSeatHTML(null, false, null, youCls) + '</div></div>';
     var bets = [['player', 'Player 1:1'], ['banker', 'Banker 1:1*'], ['tie', 'Tie 8:1']];
     var betBtns = '';
     for (var i = 0; i < bets.length; i++) {
@@ -117325,37 +117604,67 @@ var CLGame = (function () {
       html += '<p class="cl-muted">Four players, 13 cards each. $10 ante per player — pot $40. First to shed all cards wins the pot, plus $5 per 2 left in a rival hand.</p>' +
         '<button type="button" class="cl-btn gold big" data-cl-action="tl-deal">Deal a hand — ante ' + _fmt(10) + '</button>';
     } else {
-      var oppRows = '';
-      for (var i = 0; i < h.opponents.length; i++) {
-        var o = h.opponents[i];
-        oppRows += '<div class="cl-opp-row">' + _portraitHTML(_rivalPortraitFile(o.rival), o.rival.name) +
-          '<span class="cl-opp-name">' + _esc(o.rival.name) + (o.out ? ' — out' : '') + '</span>' +
-          '<span class="cl-opp-state">' + o.hand.length + ' cards' + (h.leader === i + 1 ? ' \u2022 leading' : '') + '</span></div>';
-      }
       var tlDeal = _takeAnim(g, '_tlDealt');
       var tlPlayed = _takeAnim(g, '_tlPlayed');
       var tlPassed = _takeAnim(g, '_tlPassed');
+      var tlDone = g.phase === 'done';
+      /* Winner derived from state: whoever shed all their cards. */
+      var winnerWho = -1;
+      if (tlDone) {
+        if (h.myHand.length === 0) winnerWho = 0;
+        else for (var tw = 0; tw < h.opponents.length; tw++) if (h.opponents[tw].hand.length === 0) { winnerWho = tw + 1; break; }
+      }
+      var talkIdx = -1;
+      if (winnerWho > 0) talkIdx = winnerWho - 1;
+      else if (h.leader > 0) talkIdx = h.leader - 1;
+      var thinkIdx = -1;
+      if ((tlPlayed || tlPassed) && !_reducedMotion()) {
+        for (var tt = 0; tt < h.opponents.length; tt++) {
+          if (!h.opponents[tt].out && h.opponents[tt].hand.length > 0) { thinkIdx = tt; break; }
+        }
+      }
+      var oppSeats = '';
+      for (var i = 0; i < h.opponents.length; i++) {
+        var o = h.opponents[i];
+        var isWinner = winnerWho === i + 1;
+        var isLeader = h.leader === i + 1;
+        var oCls = '';
+        if (isWinner) oCls = 'cl-seat-win' + (!_reducedMotion() ? ' cl-anim cl-anim-win' : '');
+        else if (tlDone) oCls = 'cl-seat-lose';
+        else if (o.out) oCls = 'cl-seat-out';
+        if (tlPlayed && isLeader && !_reducedMotion()) oCls += ' cl-anim cl-anim-nod';
+        oppSeats += _seatHTML({
+          portrait: _rivalPortraitFile(o.rival), name: o.rival.name,
+          sub: _fmt(_rivalBankroll(o.rival)) + ' \u2022 ' + o.hand.length + ' cards',
+          tag: o.out ? 'out' : isWinner ? 'wins' : isLeader ? 'leading' : null,
+          tagFill: isWinner, tagMuted: o.out,
+          cards: o.hand.length > 0 ? '<span class="cl-fan">' + _cardBackHTML(true) + _cardBackHTML(true) + '</span>' : null,
+          cls: oCls,
+          talk: i === talkIdx ? _tableTalkFor(o.rival, _rivalNum(o.rival) + h.myHand.length + h.passes + h.pot) : null,
+          think: i === thinkIdx
+        });
+      }
       var ledCards = '';
       if (h.led) {
         for (var lc = 0; lc < h.led.cards.length; lc++) {
           var lch = _cardHTML(h.led.cards[lc]);
           if (tlPlayed && !_reducedMotion()) {
-            lch = lch.replace('<span class="cl-card', '<span style="animation-delay:' + Math.min(lc * 60, 540) + 'ms" class="cl-card cl-anim cl-anim-play"');
+            lch = lch.replace('class="cl-card', 'class="cl-card cl-anim cl-anim-play').replace('<span', '<span style="animation-delay:' + Math.min(lc * 60, 540) + 'ms"');
           }
           ledCards += lch;
         }
       }
-      var ledHtml = '<div class="cl-hand-box"><div class="cl-hand-label">Table — ' +
-        (h.led ? _esc(h.ledBy || 'lead') + ' played ' + _esc(_tlComboLabel(h.led)) : 'no play yet — you lead with any combination') + '</div>' +
-        '<div class="cl-cards">' + (h.led ? ledCards : '<span class="cl-muted">Waiting for a lead.</span>') + '</div></div>' +
-        (tlPassed ? '<div class="cl-note cl-anim cl-anim-fade">You passed — rivals play on.</div>' : '');
+      var midHtml = '<div class="cl-table-mid">' +
+        '<span class="cl-table-pot">' + _chipStackHTML() + ' Pot ' + _fmt(h.pot) + '</span>' +
+        '<div class="cl-cards">' + (h.led ? ledCards : '<span class="cl-muted">Waiting for a lead.</span>') + '</div>' +
+        '<div class="cl-hand-label">' + (h.led ? _esc(h.ledBy || 'lead') + ' played ' + _esc(_tlComboLabel(h.led)) : 'no play yet — you lead with any combination') + '</div></div>';
       var myCards = '';
       var sorted = _tlSortHand(h.myHand);
       for (var c = 0; c < sorted.length; c++) {
         var card = sorted[c];
         var sel = g.selected && g.selected.indexOf(card) >= 0;
         myCards += '<button type="button" class="cl-card' + ((card.s === 'H' || card.s === 'D') ? ' red' : '') + (sel ? ' sel' : '') + ' playable' + ((tlDeal && !_reducedMotion()) ? ' cl-anim cl-anim-deal' : '') + '"' + (tlDeal ? ' style="animation-delay:' + (c * 35) + 'ms"' : '') + ' data-cl-action="tl-toggle-card" data-r="' + card.r + '" data-s="' + card.s + '">' +
-          '<span>' + _esc(RANK_LABEL[card.r] || String(card.r)) + '</span><span class="cl-suit">' + SUIT_SYMBOL[card.s] + '</span></button>';
+          _cardFaceInner(card) + '</button>';
       }
       var hintHtml = '';
       if (_profile && _profile.settings.hints) {
@@ -117371,9 +117680,13 @@ var CLGame = (function () {
       } else if (g.phase === 'done') {
         actions = '<button type="button" class="cl-btn gold big" data-cl-action="tl-deal">Deal another hand</button>';
       }
-      html += oppRows + ledHtml +
-        '<div class="cl-hand-box active"><div class="cl-hand-label">Your hand — <b>' + h.myHand.length + ' cards</b> \u2022 Pot ' + _fmt(h.pot) + '</div>' +
-        '<div class="cl-cards">' + myCards + '</div></div>' + hintHtml + actions;
+      var youCls = winnerWho === 0 ? 'cl-seat-win' + (!_reducedMotion() ? ' cl-anim cl-anim-win' : '') : tlDone ? 'cl-seat-lose' : '';
+      html += '<div class="cl-table">' +
+        '<div class="cl-table-row">' + oppSeats + '</div>' +
+        midHtml +
+        '<div class="cl-table-you">' + _playerSeatHTML(g.phase === 'play' ? 'Your turn' : null, true, h.myHand.length + ' cards', youCls) + '<div class="cl-cards">' + myCards + '</div></div></div>' +
+        (tlPassed ? '<div class="cl-note cl-anim cl-anim-fade">You passed — rivals play on.</div>' : '') +
+        hintHtml + actions;
     }
     html += _resultElHTML(g.resultText) + '</div>';
     _screenEl.innerHTML = html;
@@ -117402,6 +117715,40 @@ var CLGame = (function () {
       : 'Suggested lead: ' + _tlComboLabel(best) + '.';
   }
 
+  /* Pure Tien Len settlement — zero-sum by construction.
+   * hands: [playerHand, rival0Hand, rival1Hand, rival2Hand]; a card's rank
+   *   is .r on the standard deck, where the 2 is r === 2. (The old finish
+   *   code counted r === 14 — Aces — as stuck 2s. That was wrong: the
+   *   penalty is for 2s left in hand, and 2s are the highest cards, so
+   *   they are the ones that get stuck. This helper counts real 2s.)
+   * winnerWho: 0 = player, 1..3 = rival index + 1.
+   * pot: the antes actually collected (normally $40 = 4 x $10).
+   * bankrolls: [player, rival0, rival1, rival2] at finish time.
+   * Returns { penalties, debits, collected, winnerCredit }: penalties[i]
+   * is $5 per 2 stuck in loser i's hand; debits[i] is what loser i
+   * actually pays, floored at what they hold (a loser never pays more
+   * than their bankroll); collected is the sum of debits; winnerCredit is
+   * exactly pot + collected. The winner never pays, no debit exceeds its
+   * bankroll, and pot + collected == winnerCredit — no money appears
+   * from or vanishes to nowhere. */
+  function _tlSettle(hands, winnerWho, pot, bankrolls) {
+    var penalties = [0, 0, 0, 0];
+    var debits = [0, 0, 0, 0];
+    var collected = 0;
+    for (var i = 0; i < 4; i++) {
+      if (i === winnerWho) continue;
+      var twos = 0;
+      for (var j = 0; j < hands[i].length; j++) {
+        if (hands[i][j] && hands[i][j].r === 2) twos++;
+      }
+      penalties[i] = twos * 5;
+      var held = bankrolls && typeof bankrolls[i] === 'number' ? bankrolls[i] : 0;
+      debits[i] = Math.min(penalties[i], Math.max(0, held));
+      collected += debits[i];
+    }
+    return { penalties: penalties, debits: debits, collected: collected, winnerCredit: pot + collected };
+  }
+
   function _tlDeal() {
     var g = _game;
     if (!g || (g.id !== 'tienlen-north' && g.id !== 'tienlen-south')) return;
@@ -117413,12 +117760,36 @@ var CLGame = (function () {
     var rng = _nextRng('tl-deal');
     var deck = _shuffle(_newDeck(), rng);
     var rivals = _rivals();
-    var idx = [];
-    for (var i = 0; i < 99; i++) idx.push(i);
-    idx = _shuffle(idx, rng);
+    // Full settlement: every seat pays the $10 ante. A rival whose
+    // bankroll is below the ante cannot sit at this hand — pick from
+    // rivals who can pay. If fewer than three can (essentially
+    // impossible with 99 rivals, whose bankrolls start at $500+ and
+    // never drift below $50), fill the remaining seats from the
+    // richest rivals and take whatever they hold.
+    var eligible = [];
+    var short = [];
+    for (var i = 0; i < rivals.length; i++) {
+      if (_rivalBankroll(rivals[i]) >= 10) eligible.push(rivals[i]);
+      else short.push(rivals[i]);
+    }
+    var pool = _shuffle(eligible, rng);
+    if (pool.length < 3) {
+      short.sort(function (a, b) { return _rivalBankroll(b) - _rivalBankroll(a); });
+      pool = pool.concat(short);
+    }
     var opponents = [];
+    var pot = 10; // the player's ante, already paid above
     for (var j = 0; j < 3; j++) {
-      opponents.push({ rival: rivals[idx[j]], hand: [], out: false });
+      var rival = pool[j];
+      var ante = 10;
+      if (_game.practice) {
+        // Practice chips: no bankroll moves, so the pot stays nominal.
+      } else {
+        ante = Math.min(10, Math.max(0, _rivalBankroll(rival)));
+        _setRivalBankroll(rival, _rivalBankroll(rival) - ante);
+      }
+      pot += ante;
+      opponents.push({ rival: rival, hand: [], out: false });
     }
     var myHand = [];
     var hands = [[], [], [], []];
@@ -117428,12 +117799,14 @@ var CLGame = (function () {
     }
     for (var o2 = 0; o2 < 3; o2++) opponents[o2].hand = _tlSortHand(opponents[o2].hand);
     myHand = _tlSortHand(myHand);
-    // Instant wins pay double the pot immediately.
+    // Instant wins take the pot — the pot is exactly the four antes, so
+    // there is no "double pot" anymore: the old $80 was $40 of created
+    // money. The winner takes what was actually collected.
     var myInstant = _tlInstantWin(myHand, variant);
     if (myInstant) {
-      _pay(80);
+      _pay(pot);
       if (_profile) _profile.stats.hands++;
-      g.resultText = 'Instant win — ' + (myInstant === 'four-twos' ? 'four 2s' : myInstant === 'dragon' ? 'dragon straight' : 'six-pair sequence') + '! Double pot: +' + _fmt(80) + '.';
+      g.resultText = 'Instant win — ' + (myInstant === 'four-twos' ? 'four 2s' : myInstant === 'dragon' ? 'dragon straight' : 'six-pair sequence') + '! Takes the pot: +' + _fmt(pot) + '.';
       g.resultKind = 'win';
       _playWin();
       saveNow();
@@ -117446,7 +117819,8 @@ var CLGame = (function () {
       var oi = _tlInstantWin(opponents[o3].hand, variant);
       if (oi) {
         if (_profile) _profile.stats.hands++;
-        g.resultText = opponents[o3].rival.name + ' holds an instant win (' + oi + ') — the pot is theirs. You lose the ' + _fmt(10) + ' ante.';
+        if (!_game.practice) _setRivalBankroll(opponents[o3].rival, _rivalBankroll(opponents[o3].rival) + pot);
+        g.resultText = opponents[o3].rival.name + ' holds an instant win (' + oi + ') — takes the ' + _fmt(pot) + ' pot. You lose the ' + _fmt(10) + ' ante.';
         g.resultKind = 'lose';
         saveNow();
         g.tl = null;
@@ -117457,7 +117831,7 @@ var CLGame = (function () {
     }
     g.tl = {
       variant: variant, myHand: myHand, opponents: opponents,
-      led: null, ledBy: null, leader: 0, pot: 40, passes: 0, turn: 0
+      led: null, ledBy: null, leader: 0, pot: pot, passes: 0, turn: 0
     };
     g._tlDealt = true;
     // 3 of spades leads the first hand (south); north: lowest hand leads.
@@ -117587,28 +117961,33 @@ var CLGame = (function () {
     var g = _game;
     var h = g.tl;
     var pot = h.pot;
-    var penalties = 0;
     var hands = [h.myHand].concat(h.opponents.map(function (o) { return o.hand; }));
-    for (var i = 0; i < hands.length; i++) {
-      if (i === winnerWho) continue;
-      for (var j = 0; j < hands[i].length; j++) {
-        if (hands[i][j].r === 14) penalties += 5;
-      }
-    }
+    var bankrolls = [_profile ? _profile.bankroll : 0];
+    for (var q = 0; q < h.opponents.length; q++) bankrolls.push(_rivalBankroll(h.opponents[q].rival));
+    var settle = _tlSettle(hands, winnerWho, pot, bankrolls);
     var won = winnerWho === 0;
+    if (!_game.practice) {
+      // Losers pay their stuck-2 penalties and the winner takes the pot
+      // plus everything collected. Practice rounds move no money at all:
+      // the old code deducted the player's stuck-2 penalty even in
+      // practice, against the "no bankroll at stake" banner.
+      for (var d = 0; d < 4; d++) {
+        if (d === winnerWho || settle.debits[d] <= 0) continue;
+        if (d === 0) _addBankroll(-settle.debits[0]);
+        else _setRivalBankroll(h.opponents[d - 1].rival, _rivalBankroll(h.opponents[d - 1].rival) - settle.debits[d]);
+      }
+      if (won) _pay(settle.winnerCredit);
+      else _setRivalBankroll(h.opponents[winnerWho - 1].rival, _rivalBankroll(h.opponents[winnerWho - 1].rival) + settle.winnerCredit);
+    }
     if (won) {
-      var total = pot + penalties;
-      _pay(total);
-      g.resultText = 'You shed all your cards first! Pot ' + _fmt(pot) + ' plus ' + _fmt(penalties) + ' in 2 penalties — +' + _fmt(total) + '.';
+      g.resultText = 'You shed all your cards first! Pot ' + _fmt(pot) + ' plus ' + _fmt(settle.collected) + ' in 2 penalties — +' + _fmt(settle.winnerCredit) + '.';
       g.resultKind = 'win';
       _playWin();
     } else {
       var name = h.opponents[winnerWho - 1].rival.name;
-      var myTwos = 0;
-      for (var k = 0; k < h.myHand.length; k++) if (h.myHand[k].r === 14) myTwos++;
-      g.resultText = name + ' shed first and takes the pot. You pay ' + _fmt(myTwos * 5) + ' for ' + myTwos + ' stuck 2' + (myTwos === 1 ? '' : 's') + '.';
+      var myTwos = settle.penalties[0] / 5;
+      g.resultText = name + ' shed first and takes the pot plus ' + _fmt(settle.collected) + ' in 2 penalties. You pay ' + _fmt(settle.debits[0]) + ' for ' + myTwos + ' stuck 2' + (myTwos === 1 ? '' : 's') + '.';
       g.resultKind = 'lose';
-      if (myTwos > 0) _addBankroll(-myTwos * 5);
       _recordRivalry(h.opponents[winnerWho - 1].rival.id, false);
     }
     if (won) {
@@ -118324,7 +118703,10 @@ var CLGame = (function () {
     isSoundOn: isSoundOn,
     setSound: setSound,
     _portraitError: _portraitError,
-    GAME_IDS: GAME_IDS.slice()
+    GAME_IDS: GAME_IDS.slice(),
+    // Test seam: the pure Tien Len settlement (zero-sum math only — no
+    // DOM, no profile). The node settlement test drives this directly.
+    _internals: { _tlSettle: _tlSettle }
   };
 
   try {
