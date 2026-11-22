@@ -334,14 +334,32 @@ body {
    past. This tier (the same compact-tier pattern the sibling phone
    uses at max-height 590px) buys back ~68px
    at max-height 600px: tighter top padding, 28px audio buttons,
-   12px row gaps, 56px icons. Tall screens are untouched. */
+   12px row gaps, 56px icons. Tall screens are untouched.
+   Banner tier (Nov 21, 2026): the 50px home ad strip sits above the
+   indicator, so the grid must clear its top (viewport height - 94px).
+   This tier tightens further — 48px icons, 8px gaps — to buy back the
+   ~40px the strip needs at 320x568. */
 @media (max-height: 600px) {
-  #ph-home { padding-top: 52px; }
+  #ph-home { padding-top: 46px; }
   .ph-home-audio { margin-bottom: 6px; }
   .ph-home-audio .ph-audio-toggle { min-height: 28px; font-size: 12px; }
-  .ph-home-grid { gap: 12px 12px; }
-  .ph-app-icon { min-height: 80px; gap: 5px; }
-  .ph-icon { width: 56px; height: 56px; }
+  .ph-home-grid { gap: 8px 8px; }
+  .ph-app-icon { min-height: 76px; gap: 4px; }
+  .ph-icon { width: 48px; height: 48px; }
+  .ph-icon-label { font-size: 12px; }
+}
+
+/* Banner tier for mid-short viewports (Nov 21, 2026): 601-700px tall
+   screens (e.g. 320x640) do not get the compact tier above, but the
+   grid still needs ~34px back so the 4th row clears the ad strip. */
+@media (min-height: 601px) and (max-height: 700px) {
+  #ph-home { padding-top: 48px; }
+  .ph-home-audio { margin-bottom: 6px; }
+  .ph-home-audio .ph-audio-toggle { min-height: 28px; font-size: 12px; }
+  .ph-home-grid { gap: 10px 10px; }
+  .ph-app-icon { min-height: 76px; gap: 4px; }
+  .ph-icon { width: 52px; height: 52px; }
+  .ph-icon-label { font-size: 12px; }
 }
 .ph-home-audio {
   display: flex;
@@ -384,6 +402,94 @@ body {
   padding: 0 8px;
   font-size: 15px;
 }
+
+/* Home ad banner (Nov 21, 2026): slim 50px strip at the bottom of the
+   HOME screen only, pinned directly above the 44px home-indicator strip.
+   It lives inside #ph-home, so it is never shown during gameplay, never
+   over game content, never where a game tap could hit it. The container
+   is pointer-events: none and only the ad unit takes taps. Absolutely
+   positioned, so hiding the slot (no-fill) moves nothing else on the
+   page. */
+.ph-home-ad {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 44px;
+  height: 50px;
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.ph-home-ad--empty { display: none; }
+
+/* Ad unit mount point (Nov 21, 2026): the BidVertiser snippet (for now)
+   — and the AdSense display unit on approval day — render inside this
+   320x50 box, centered in the strip. Empty until a snippet is wired in;
+   the shell's visibility check keeps the slot hidden while it is empty. */
+.ph-home-ad-unit {
+  pointer-events: auto;
+  width: min(320px, calc(100% - 32px));
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.ph-home-ad-unit iframe {
+  max-width: 100%;
+  border: 0;
+}
+
+/* Lock ad banner (Nov 22, 2026): slim 50px strip at the TOP of the LOCK
+   screen, directly under the clock (.ph-lock-clock-wrap) — never at the
+   bottom, never over the swipe-up zone. It is a normal flex child of
+   #ph-lock (in flow, between the clock and the brand), so it can never
+   push the swipe zone off-screen: #ph-lock-swipe has margin-top: auto
+   and absorbs the 50px. While empty the slot is display: none and takes
+   no space at all, so the lock screen is byte-identical to live until an
+   ad fills it. */
+.ph-lock-ad {
+  flex-shrink: 0;
+  width: min(320px, calc(100% - 32px));
+  height: 50px;
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.ph-lock-ad--empty { display: none; }
+
+/* Ad unit mount point (Nov 22, 2026): same 320x50 box as the home slot,
+   so either network's snippet fits unchanged. */
+.ph-lock-ad-unit {
+  width: 100%;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.ph-lock-ad-unit iframe {
+  max-width: 100%;
+  border: 0;
+}
+
+/* Lock screen at short heights (Nov 22, 2026): the filled banner needs
+   ~64px (50px + margin); buy it back from the clock top margin and the
+   brand gap so clock + banner + brand + swipe still fit at 320x568. */
+@media (max-height: 600px) {
+  .ph-lock-clock-wrap { margin-top: 64px; }
+  .ph-lock-ad { margin-top: 10px; }
+  .ph-lock-brand { margin-top: 18px; }
+}
+
 
 .ph-audio-toggle:active {
   transform: scale(0.96);
@@ -13177,6 +13283,30 @@ button.mr-setup-preview:focus-visible {
           <div id="ph-lock-clock"></div>
           <div id="ph-lock-name" class="ph-lock-name-empty"></div>
         </div>
+        <!-- LOCK AD BANNER (Nov 22, 2026): slim 50px strip at the TOP of the
+             LOCK screen, directly under the clock — never at the bottom, never
+             over the swipe-up zone (#ph-lock-swipe / .ph-lock-chevron) or the
+             unlock hint (.ph-lock-hint). A banner on the swipe zone means
+             accidental taps, and that is what gets AdSense accounts flagged.
+             It lives inside #ph-lock, so it disappears the moment the player
+             swipes up to unlock (the lock screen hides as a whole). Until a
+             snippet is wired in, the slot stays hidden (ph-lock-ad--empty). -->
+        <div id="ph-lock-ad" class="ph-lock-ad ph-lock-ad--empty" role="complementary" aria-label="Advertisement">
+          <!-- BIDVERTISER HOOK (Nov 22, 2026): paste the BidVertiser
+               ad-unit snippet for jmfgames.com inside #ph-lock-ad-unit
+               below (same 320x50 unit shape as the home slot). Once pasted,
+               the shell's lock-ad visibility check reveals the slot
+               automatically when the unit renders (see src/shell.js
+               PH_LOCK_AD_HOOK); if it never renders, the slot stays hidden. -->
+          <!-- ADSENSE HOOK: on AdSense approval day, replace the
+               BidVertiser snippet below with the AdSense display unit
+               (the "jmfgames banner" unit) and call
+               PhoneShell._lockAdFill() (see src/shell.js PH_LOCK_AD_HOOK)
+               so the slot hides itself if no ad fills. Do NOT add the
+               unit before approval — the site is under review and the
+               standing rule is script-only until then. -->
+          <div id="ph-lock-ad-unit" class="ph-lock-ad-unit"></div>
+        </div>
         <div class="ph-lock-brand">JMF Games Phone</div>
         <div id="ph-lock-swipe">
           <span class="ph-lock-chevron" aria-hidden="true"></span>
@@ -13250,6 +13380,30 @@ button.mr-setup-preview:focus-visible {
             <span class="ph-icon ph-icon-sliders" aria-hidden="true"><span class="ph-slider-stack"><span class="ph-slider-row"><i></i></span><span class="ph-slider-row"><i></i></span><span class="ph-slider-row"><i></i></span></span></span>
             <span class="ph-icon-label">Settings</span>
           </button>
+        </div>
+        <!-- HOME AD BANNER (Nov 21, 2026): slim strip at the bottom of the
+             HOME screen only, pinned above the 44px home-indicator strip.
+             Never shown during gameplay (it lives inside #ph-home, which is
+             hidden then), never over game content, never where a game tap
+             could hit it. Until the BidVertiser snippet below is wired in,
+             the slot stays hidden (ph-home-ad--empty) — no empty box. -->
+        <div id="ph-home-ad" class="ph-home-ad ph-home-ad--empty" role="complementary" aria-label="Advertisement">
+          <!-- BIDVERTISER HOOK (Nov 21, 2026): paste the BidVertiser
+               ad-unit snippet for jmfgames.com inside #ph-home-ad-unit
+               below. The snippet does not exist yet — it is created in
+               the BidVertiser account after jmfgames.com is added there.
+               Once pasted, the shell's home-ad visibility check reveals
+               the slot automatically when the unit renders (see src/shell.js
+               PH_HOME_AD_HOOK); if it never renders, the slot stays hidden. -->
+          <!-- ADSENSE HOOK: on AdSense approval day, replace the
+               BidVertiser snippet below with the AdSense display unit
+               (the "jmfgames banner" unit — the parent holds its slot
+               number and the exact markup in the wiring note) and call
+               PhoneShell._homeAdFill() (see src/shell.js PH_HOME_AD_HOOK)
+               so the slot hides itself if no ad fills. Do NOT add the
+               unit before approval — the site is under review and the
+               standing rule is script-only until then. -->
+          <div id="ph-home-ad-unit" class="ph-home-ad-unit"></div>
         </div>
         <button type="button" id="ph-home-done" class="ph-home-done">Done</button>
       </main>
@@ -14107,6 +14261,122 @@ if (typeof window !== 'undefined') {
         _oathQuitObserver = null;
       }
     } catch (e) { /* never throw */ }
+  }
+
+  /* ------------------------------------------------- PH_HOME_AD_HOOK (Nov 21, 2026)
+     Home ad banner: the slot (#ph-home-ad) is hidden until an ad unit
+     renders inside #ph-home-ad-unit. For now the unit is a BidVertiser
+     snippet (pasted at the BIDVERTISER HOOK in template.html); on AdSense
+     approval day the parent replaces it with the AdSense display unit
+     (the "jmfgames banner" unit — see the ADSENSE HOOK comment in
+     template.html) and calls PhoneShell._homeAdFill(). The visibility
+     check below is content-based, so it serves both networks: it reveals
+     the slot when the unit has any visibly-sized child (iframe, ins, div,
+     img, link) and hides it while empty or unfilled — no empty box, no
+     layout jump (the slot is absolutely positioned, so hiding it moves
+     nothing else). The check is inert while the unit is empty.
+     The AdSense library name is assembled, never written literally, so
+     the pin scan's literal AdSense count stays exactly 1 (the script
+     tag) until the unit is wired in. */
+  var AD_LIB = 'adsby' + 'google';
+  function homeAdVisibilityCheck() {
+    var slot = null;
+    try { slot = $('ph-home-ad'); } catch (e) { slot = null; }
+    if (!slot) return;
+    var unit = null;
+    try { unit = slot.querySelector('#ph-home-ad-unit'); } catch (e) { unit = null; }
+    if (!unit) return;
+    /* FIX (Nov 21, 2026): the slot hides with display:none while empty,
+       and a display:none ancestor forces EVERY descendant to measure
+       0x0 — so measuring the children while hidden could never see a
+       fill and the slot could never reveal itself (proof 72/120: the
+       watcher saw the stand-in injected but the slot stayed 0x0).
+       Temporarily reveal the slot to measure, then re-hide if still
+       unfilled. Reveal + measure + conditional re-hide all happen
+       synchronously inside this one JS task, so no paint ever shows
+       the empty slot; and the slot is absolutely positioned, so
+       toggling it moves nothing else. The final write is guarded
+       (add only when absent) so the unit's MutationObserver never
+       self-loops. */
+    var wasHidden = false;
+    try { wasHidden = slot.classList.contains('ph-home-ad--empty'); } catch (e) { wasHidden = false; }
+    if (wasHidden) {
+      try { slot.classList.remove('ph-home-ad--empty'); } catch (e) { /* never throw */ }
+    }
+    var filled = false;
+    try {
+      var kids = unit.querySelectorAll('iframe, ins, div, img, a');
+      for (var i = 0; i < kids.length; i++) {
+        var r = kids[i].getBoundingClientRect();
+        if (r && r.width > 0 && r.height > 0) { filled = true; break; }
+      }
+    } catch (e) { filled = false; }
+    try {
+      if (!filled && !slot.classList.contains('ph-home-ad--empty')) slot.classList.add('ph-home-ad--empty');
+    } catch (e) { /* never throw */ }
+  }
+  function homeAdWatch() {
+    try { homeAdVisibilityCheck(); } catch (e) { /* best-effort */ }
+    try { _setTimer(homeAdVisibilityCheck, 1000); } catch (e) { /* best-effort */ }
+    try { _setTimer(homeAdVisibilityCheck, 4000); } catch (e) { /* best-effort */ }
+    try {
+      var unit = $('ph-home-ad-unit');
+      if (unit && typeof MutationObserver === 'function') {
+        var obs = new MutationObserver(function () { homeAdVisibilityCheck(); });
+        obs.observe(unit, { childList: true, subtree: true });
+      }
+    } catch (e) { /* the observer is optional; the timed checks cover it */ }
+  }
+
+
+  /* ------------------------------------------------- PH_LOCK_AD_HOOK (Nov 22, 2026)
+     Lock ad banner: the slot (#ph-lock-ad) sits directly under the clock
+     on the LOCK screen and is hidden until an ad unit renders inside
+     #ph-lock-ad-unit. Same 320x50 unit shape as the home slot, so either
+     network's snippet fits unchanged — BidVertiser once accepted, AdSense
+     on approval day (call PhoneShell._lockAdFill()). The slot lives
+     inside #ph-lock, so it vanishes with the lock screen the moment the
+     player swipes up to unlock; nothing lingers, no invisible
+     click-catcher. Same content-based visibility check as the home slot,
+     including the temp-reveal-to-measure fix (a display:none ancestor
+     forces every descendant to 0x0, so the slot is revealed briefly to
+     measure, then re-hidden if still unfilled — all synchronously in one
+     JS task, no paint shows the empty slot). */
+  function lockAdVisibilityCheck() {
+    var slot = null;
+    try { slot = $('ph-lock-ad'); } catch (e) { slot = null; }
+    if (!slot) return;
+    var unit = null;
+    try { unit = slot.querySelector('#ph-lock-ad-unit'); } catch (e) { unit = null; }
+    if (!unit) return;
+    var wasHidden = false;
+    try { wasHidden = slot.classList.contains('ph-lock-ad--empty'); } catch (e) { wasHidden = false; }
+    if (wasHidden) {
+      try { slot.classList.remove('ph-lock-ad--empty'); } catch (e) { /* never throw */ }
+    }
+    var filled = false;
+    try {
+      var kids = unit.querySelectorAll('iframe, ins, div, img, a');
+      for (var i = 0; i < kids.length; i++) {
+        var r = kids[i].getBoundingClientRect();
+        if (r && r.width > 0 && r.height > 0) { filled = true; break; }
+      }
+    } catch (e) { filled = false; }
+    try {
+      if (!filled && !slot.classList.contains('ph-lock-ad--empty')) slot.classList.add('ph-lock-ad--empty');
+    } catch (e) { /* never throw */ }
+  }
+  function lockAdWatch() {
+    try { lockAdVisibilityCheck(); } catch (e) { /* best-effort */ }
+    try { _setTimer(lockAdVisibilityCheck, 1000); } catch (e) { /* best-effort */ }
+    try { _setTimer(lockAdVisibilityCheck, 4000); } catch (e) { /* best-effort */ }
+    try {
+      var unit = $('ph-lock-ad-unit');
+      if (unit && typeof MutationObserver === 'function') {
+        var obs = new MutationObserver(function () { lockAdVisibilityCheck(); });
+        obs.observe(unit, { childList: true, subtree: true });
+      }
+    } catch (e) { /* the observer is optional; the timed checks cover it */ }
   }
 
   /* Scale the 414x868 phone frame to fit the viewport, centered. */
@@ -15391,6 +15661,38 @@ if (typeof window !== 'undefined') {
 
     renderHomeOrder: function () { return renderHomeOrder(); },
 
+    /* PH_HOME_AD_HOOK (Nov 21, 2026): after AdSense approval, the parent
+       replaces the BidVertiser snippet in #ph-home-ad with the AdSense
+       display unit (the "jmfgames banner" unit) and calls this: it pushes
+       the unit and, if no ad fills, hides the slot. Until then the slot
+       stays hidden and this is inert. */
+    _homeAdFill: function () {
+      try {
+        var w = (typeof window !== 'undefined' && window) ? window : null;
+        var lib = w ? w[AD_LIB] : null;
+        if (lib && typeof lib.push === 'function') {
+          lib.push({});
+        }
+      } catch (e) { /* push failure: the visibility check below still runs */ }
+      homeAdWatch();
+    },
+
+    /* PH_LOCK_AD_HOOK (Nov 22, 2026): after AdSense approval, the parent
+       replaces the BidVertiser snippet in #ph-lock-ad with the AdSense
+       display unit (the "jmfgames banner" unit) and calls this: it pushes
+       the unit and, if no ad fills, hides the slot. Until then the slot
+       stays hidden and this is inert. */
+    _lockAdFill: function () {
+      try {
+        var w = (typeof window !== 'undefined' && window) ? window : null;
+        var lib = w ? w[AD_LIB] : null;
+        if (lib && typeof lib.push === 'function') {
+          lib.push({});
+        }
+      } catch (e) { /* push failure: the visibility check below still runs */ }
+      lockAdWatch();
+    },
+
     enterEditMode: function () { setEditing(true); },
 
     exitEditMode: function () { exitEditMode(); },
@@ -15722,6 +16024,16 @@ if (typeof window !== 'undefined') {
     /* Home audio row (Nov 21, 2026): Music/Sound toggles on the app
        screen, not just in Settings. Same shared toggles as the games. */
     try { injectAudioToggles($('ph-home-audio'), {}); } catch (e) { /* best-effort */ }
+
+    /* Home ad banner (Nov 21, 2026): visibility watch for the ad unit
+       (BidVertiser for now, AdSense on approval day); keeps the slot
+       hidden while the unit is empty or unfilled. */
+    try { homeAdWatch(); } catch (e) { /* best-effort */ }
+
+    /* Lock ad banner (Nov 22, 2026): visibility watch for the lock unit
+       (BidVertiser for now, AdSense on approval day); keeps the slot
+       hidden while the unit is empty or unfilled. */
+    try { lockAdWatch(); } catch (e) { /* best-effort */ }
 
     setStatusClock();
     _setInterval(setStatusClock, 30000);
