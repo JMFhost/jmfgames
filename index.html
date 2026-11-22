@@ -10979,6 +10979,107 @@ button.mr-setup-preview:focus-visible {
   .fl-hazard-mark { animation: none; }
 }
 
+/* LAVA-MONSTERS — Chase + bite (Nov 21, 2026): DOM/CSS only,
+   no new art. ONE contiguous block, immediately after the
+   existing blob rules. The blob comes alive: eyes that track
+   the nearest racer (pupil shift), a faster pulse while
+   chasing, a toothy mouth that opens only while lunging, a
+   stretch-toward-the-victim lunge, a slump while sated, a dim
+   on the way home, a soft shadow on its platform, and the
+   bite flash on the victim's token. The mouth, the "!",
+   the lunge stretch and the bite flash are information and
+   stay under reduced motion (static); the pulse/wobble go. */
+.fl-blob::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 26px;
+  width: 26px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+.fl-blob-look-left .fl-blob-eye::after { left: 0; }
+.fl-blob-look-right .fl-blob-eye::after { left: 4px; }
+.fl-blob-look-up .fl-blob-eye::after { top: 1px; }
+.fl-blob-look-down .fl-blob-eye::after { top: 5px; }
+.fl-blob-chasing {
+  animation: fl-blob-chase-pulse 0.45s ease-in-out infinite alternate;
+  filter: brightness(1.15) saturate(1.15);
+}
+@keyframes fl-blob-chase-pulse {
+  from { transform: scale(1.05, 0.95) translateY(0); }
+  to { transform: scale(1.16, 1.06) translateY(-2px); }
+}
+.fl-blob-mouth {
+  position: absolute;
+  left: 7px;
+  top: 17px;
+  width: 16px;
+  height: 0;
+  overflow: hidden;
+  background: #5c0a00;
+  border-radius: 0 0 8px 8px;
+  transition: height 0.15s ease-out;
+  pointer-events: none;
+}
+.fl-blob-mouth::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: repeating-linear-gradient(90deg, #fff 0 3px, transparent 3px 6px);
+}
+.fl-blob-lunging {
+  animation: fl-blob-lunge 0.5s ease-in-out infinite alternate;
+  filter: brightness(1.4) saturate(1.25);
+  /* LAVA-MONSTERS-REBASE — mouth occlusion (Nov 22, 2026): the
+     blob (z-index 4) sits under the victim token (z-index 5) on
+     the same platform center, so the open mouth (top 17px, 9px
+     tall) + the lunge stretch were fully hidden behind the token
+     in real play — the telegraph read only through "!" + glow.
+     The mouth exists ONLY while lunging, so the lunging blob
+     paints above the token (z-index 6) for exactly the 500ms
+     lunge: mouth + teeth + stretch all read, name stays visible
+     below the blob, and every other state keeps its old depth. */
+  z-index: 6;
+}
+@keyframes fl-blob-lunge {
+  from { transform: scale(1.18, 1.02); }
+  to { transform: scale(1.32, 0.86) translateY(-3px); }
+}
+.fl-blob-lunging .fl-blob-mouth { height: 9px; }
+.fl-blob-lunging .fl-blob-bang { display: block; }
+.fl-blob-sated {
+  animation: none;
+  opacity: 0.55;
+  filter: brightness(0.8);
+  transform: scale(0.9, 0.84);
+}
+.fl-blob-returning {
+  opacity: 0.75;
+  filter: brightness(0.9);
+}
+.fl-player.fl-bitten .fl-token {
+  animation: fl-bitten-flash 0.3s ease-in-out 3;
+  border-color: #ff5a3c;
+  box-shadow: 0 0 12px rgba(255, 60, 20, 0.95);
+}
+@keyframes fl-bitten-flash {
+  0%, 100% { filter: none; }
+  50% { filter: brightness(2.2) saturate(2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* LAVA-MONSTERS — pulse + lunge motion go; the open mouth,
+     the "!" and the bite flash are information and stay. */
+  .fl-blob-chasing { animation: none; transform: scale(1.1); }
+  .fl-blob-lunging { animation: none; transform: scale(1.25, 1); }
+  .fl-player.fl-bitten .fl-token { animation: none; }
+}
+
 /* LAVA-HAZARDS — Endless backdrop (Nov 21, 2026): code-only
    layers, no new art. The arena JPG + strata + ember glows are
    background layers on #fl-arena (set inline by fl-game.js);
@@ -20043,6 +20144,25 @@ var BZAudio = (function () {
     }
   }
 
+  // /* LAVA-MONSTERS */ Bite growl: one short low sawtooth
+  // snarl (110 -> 65 Hz, ~0.3s) — the blob's bite. Distinct
+  // from the icy Freeze chime (playFlFreeze), which is the
+  // lightning/frost voice: the growl is the teeth, the chime
+  // stays the cold.
+  function playFlBite() {
+    try {
+      if (!_soundOn) return;
+      if (!_ensureCtx()) return;
+      _resume();
+      _tone({ freq: 110, freqEnd: 65, dur: 0.30, type: 'sawtooth',
+              peak: 0.20, attack: 0.01, bus: _sfxBus });
+      _tone({ freq: 220, freqEnd: 130, at: 0.02, dur: 0.18, type: 'sawtooth',
+              peak: 0.08, attack: 0.01, bus: _sfxBus });
+    } catch (e) {
+      /* effects must never throw */
+    }
+  }
+
   // Quake rumble: three low pulses.
   function playFlQuake() {
     try {
@@ -21248,6 +21368,7 @@ var BZAudio = (function () {
     playFlLose: playFlLose,
     playFlPowerPickup: playFlPowerPickup,
     playFlFreeze: playFlFreeze,
+    playFlBite: playFlBite,
     playFlQuake: playFlQuake,
     playFlGust: playFlGust,
     playFlSwap: playFlSwap,
@@ -102446,6 +102567,21 @@ if (typeof window !== 'undefined' && window) {
 // shove everyone down -> 4s cooldown, AI monster-avoidance term
 // + winding danger override, blob state in hashState (via the
 // state JSON), Monsters codex (fl-game.js), DOM/CSS blob render.
+// /* LAVA-MONSTERS */ Chase + bite (Nov 21, 2026): idle blobs
+// hunt the nearest alive racer within 170px vertical, hopping
+// platform to platform (110px range, one hop per 800ms); on
+// arrival they lunge 0.5s, then bite ONLY the locked target —
+// a 3s freeze (the lava keeps rising). A jumped-away target
+// dodges; the blob is then sated (5s after a bite, 2s after a
+// miss), then chases again or hops home. /* LAVA-MONSTERS-REBASE
+// */ No-bite guard (Nov 22, 2026): the bite is withheld when
+// the lava is within noBiteGuardPx of the victim's platform —
+// a 3s stun there is a guaranteed death. Give up when the
+// target climbs >255px above or the chase passes 10s. A
+// chasing/lunging/sated/returning blob never winds up or shoves;
+// a winding blob never chases. AI scores chasing/lunging like
+// winding (-1.2), sated like cooling (0), returning like idle
+// (-0.9); a chasing/lunging blob on the AI's platform is danger.
 // /* LAVA-HAZARDS */ Random hazard events (Nov 21, 2026):
 // Lightning / Gust / Frozen Snow / Rockfall — world events that
 // strike the LEADERS (rubber-banding by height, never by score),
@@ -102569,6 +102705,53 @@ var FLEngine = (function () {
   var BLOB_FIRST_HEIGHT_M = 14;
   var BLOB_SCORE_READY = 0.9; // AI: a READY blob platform scores lower
   var BLOB_SCORE_WINDING = 1.2; // AI: a WINDING blob platform scores much lower
+  // /* LAVA-MONSTERS */ Chase + bite (Nov 21, 2026): idle blobs
+  // HUNT. When the nearest alive racer's platform is within
+  // CHASE_RANGE_PX vertically (above or below), the blob hops
+  // platform to platform after them (one hop per CHASE_HOP_MS,
+  // 110px jump range, same reachableFrom as a player jump),
+  // re-targeting the nearest racer at each hop. Catching the
+  // target's platform starts a BITE_TELEGRAPH_MS lunge; the bite
+  // freezes ONLY the locked target for BITE_MS (3s — the lava
+  // keeps rising during the stun). A jumped-away target dodges
+  // the bite. After a bite the blob is sated for SATED_MS, after
+  // a miss for MISS_SATED_MS; then it chases again if a target
+  // is in range, else hops home. A chase gives up when the
+  // target climbs more than CHASE_GIVEUP_PX above the blob, or
+  // after CHASE_TIMEOUT_MS without a bite. Chase is a pure
+  // function of positions + timeMs — no RNG stream is drawn,
+  // so determinism and hashState are untouched.
+  var CHASE_RANGE_PX = 170; // activation: nearest racer within 170px vertical
+  var CHASE_HOP_MS = 800; // one platform hop per 800ms while chasing/returning
+  var CHASE_GIVEUP_PX = 255; // target more than 255px above -> give up
+  var CHASE_TIMEOUT_MS = 10000; // chase older than 10s without a bite -> give up
+  var BITE_TELEGRAPH_MS = 500; // lunge telegraph before the bite fires
+  var BITE_MS = 3000; // bite stun: cannot jump for 3s
+  var SATED_MS = 5000; // cooldown after a successful bite
+  var MISS_SATED_MS = 2000; // cooldown after a missed bite
+  // /* LAVA-MONSTERS-REBASE */ No-bite guard (Nov 22, 2026): a
+  // bite stuns its victim for BITE_MS while the lava keeps
+  // rising, so a bite with the lava already close is a
+  // guaranteed death — the victim cannot jump away before the
+  // lava takes their platform. The blob holds back when the
+  // lava is within NO_BITE_GUARD_PX of the victim's platform
+  // top (lavaY - (plat.y + sink), the exact distance to the
+  // dissolve/contact death). The distance is pace-derived, not
+  // a fixed number, because the race ramp runs 26 -> 420 px/s:
+  // a fixed X would over-block early (26 px/s x 3 s = 78 px)
+  // and under-block late (420 px/s x 3 s = 1260 px). The guard
+  // window is the stun (3.0 s) + the slowest reaction (Rookie
+  // 900 ms) + the jump arc (0.35 s) = 4.25 s of lava travel at
+  // the CURRENT pace (race ramp, or the endless ramp in Endless
+  // mode). X = pace x 4.25 s: 110 px at 26 px/s, 620 px at
+  // 146 px/s (60 s), 1130 px at 266 px/s (120 s), 1785 px at
+  // the 420 cap; Endless 85 px at 20 px/s, 255 px at the 60 cap.
+  // The guard is checked at bite-fire time (the 500 ms lunge
+  // already telegraphed — a held-back bite still reads as a
+  // lunge, and the blob goes sated for MISS_SATED_MS like a
+  // dodge). Deterministic: lavaPace is a pure function of
+  // timeMs, so no RNG stream is drawn.
+  var NO_BITE_GUARD_MS = 4250; // stun + slowest reaction + jump arc
   // /* LAVA-HAZARDS */ Random hazard events (Nov 21, 2026) —
   // world events, not powers: they strike the LEADERS (whoever
   // is in front, human or AI), always with a 0.5s telegraph
@@ -103431,8 +103614,15 @@ var FLEngine = (function () {
   // correlate with hazard draws — so placement NEVER consumes the generation
   // stream and extension blobs are batch-independent.
   // A blob: {id (== platformId), platformId,
-  // state ('idle' | 'winding' | 'cooling'),
-  // windUpEndsAt, coolDownEndsAt}.
+  // state ('idle' | 'winding' | 'cooling' | 'chasing' |
+  // 'lunging' | 'sated' | 'returning'),
+  // windUpEndsAt, coolDownEndsAt,
+  // homePlatformId (spawn platform — the chase returns here),
+  // targetId (locked chase/bite target player id, null when none),
+  // nextHopAt (next chase/return hop time),
+  // lungeEndsAt (bite fire time while lunging),
+  // satedEndsAt (sated cooldown end),
+  // chaseStartedAt (chase start — the 10s give-up clock)}.
   // Rules (all enforced here, so every caller gets them):
   //   - only 'normal' platforms (never start, checkpoint,
   //     summit — checkpoints are safe ground);
@@ -103460,7 +103650,9 @@ var FLEngine = (function () {
       if (heightM(p.y) <= BLOB_FIRST_HEIGHT_M) continue;
       if (_blobRng(seed, p.id).next() >= BLOB_DENSITY) continue;
       var blob = { id: p.id, platformId: p.id, state: 'idle',
-        windUpEndsAt: 0, coolDownEndsAt: 0 };
+        windUpEndsAt: 0, coolDownEndsAt: 0,
+        homePlatformId: p.id, targetId: null, nextHopAt: 0,
+        lungeEndsAt: 0, satedEndsAt: 0, chaseStartedAt: 0 };
       out.push(blob);
       if (!byRung[p.rung]) byRung[p.rung] = [];
       byRung[p.rung].push(blob);
@@ -103499,6 +103691,175 @@ var FLEngine = (function () {
     return null;
   }
 
+  // /* LAVA-MONSTERS */ Chase-acquisition target: the nearest
+  // alive racer whose platform is within CHASE_RANGE_PX
+  // vertically of the blob's platform — but NOT already within
+  // a player's jump (110px) of it. Up close the blob is a
+  // wind-up trap, not a hunter: a racer standing on an adjacent
+  // platform meets the shove (landing on an idle blob's
+  // platform winds it up), and the blob only starts hunting
+  // once the racer is 2-3 rungs out. Once chasing, the blob
+  // closes the last 110px itself (_chaseStep has no such
+  // exclusion), so the bite still lands. Ties break by lowest
+  // player index (players are stored in id order, strict <
+  // keeps the first).
+  function _chaseAcquireTarget(state, blobPlat) {
+    var best = null;
+    var bestDy = Infinity;
+    for (var i = 0; i < state.players.length; i++) {
+      var p = state.players[i];
+      if (!p.alive) continue;
+      if (p.platformId === null || p.platformId === undefined) continue;
+      if (p.platformId === blobPlat.id) continue;
+      var plat = _platformById(state, p.platformId);
+      if (!plat) continue;
+      var dy = Math.abs(plat.y - blobPlat.y);
+      if (dy > CHASE_RANGE_PX) continue;
+      if (dist(plat, blobPlat) <= JUMP_RANGE_PX) continue;
+      if (dy < bestDy) { bestDy = dy; best = p; }
+    }
+    return best;
+  }
+
+  // /* LAVA-MONSTERS */ Nearest alive racer to a platform, by
+  // |heightM difference| (== |platform y difference| / 50).
+  // Ties break by lowest player index (players are stored in id
+  // order, strict < keeps the first). No range limit here — the
+  // callers apply their own range (activation: 170px; chase:
+  // give up only when the nearest is >255px above).
+  function _nearestAliveRacer(state, blobPlat) {
+    var best = null;
+    var bestDy = Infinity;
+    for (var i = 0; i < state.players.length; i++) {
+      var p = state.players[i];
+      if (!p.alive) continue;
+      if (p.platformId === null || p.platformId === undefined) continue;
+      var plat = _platformById(state, p.platformId);
+      if (!plat) continue;
+      var dy = Math.abs(plat.y - blobPlat.y);
+      if (dy < bestDy) { bestDy = dy; best = p; }
+    }
+    return best;
+  }
+
+  // /* LAVA-MONSTERS */ One chase hop: among the platforms
+  // reachableFrom the blob's platform (110px, gone excluded),
+  // move to the one whose center is closest to the target
+  // platform's center; ties break by lowest platform id
+  // (reachableFrom returns platform order == id order, strict
+  // < keeps the first). If nothing is closer than the current
+  // platform, stay put this hop. Returns true when the blob moved.
+  function _blobHopToward(state, blob, targetPlat) {
+    var cur = _platformById(state, blob.platformId);
+    if (!cur || !targetPlat) return false;
+    var curDist = dist(cur, targetPlat);
+    var best = null;
+    var bestDist = curDist;
+    var reach = reachableFrom(state, blob.platformId, JUMP_RANGE_PX);
+    for (var i = 0; i < reach.length; i++) {
+      var q = _platformById(state, reach[i]);
+      if (!q) continue;
+      var d = dist(q, targetPlat);
+      if (d < bestDist) { bestDist = d; best = q; }
+    }
+    if (!best) return false;
+    blob.platformId = best.id;
+    return true;
+  }
+
+  // /* LAVA-MONSTERS */ One chasing step (called every tick
+  // while the blob is 'chasing'): re-target the nearest alive
+  // racer, give up when the nearest is more than 255px above
+  // or the chase is older than 10s without a bite, hop toward
+  // the target every 800ms, and enter the 500ms lunge when the
+  // blob reaches the target's platform with the target standing
+  // on it. A mid-jump target is never lunged at — the blob
+  // waits for the next hop.
+  function _chaseStep(state, blob) {
+    var blobPlat = _platformById(state, blob.platformId);
+    if (!blobPlat) return;
+    var target = _nearestAliveRacer(state, blobPlat);
+    if (!target) {
+      blob.state = 'returning'; blob.targetId = null;
+      blob.nextHopAt = state.timeMs;
+      return;
+    }
+    blob.targetId = target.id;
+    var targetPlat = _platformById(state, target.platformId);
+    if (!targetPlat || targetPlat.state === 'gone') {
+      blob.state = 'returning'; blob.targetId = null;
+      blob.nextHopAt = state.timeMs;
+      return;
+    }
+    if (targetPlat.y < blobPlat.y - CHASE_GIVEUP_PX ||
+        state.timeMs - blob.chaseStartedAt > CHASE_TIMEOUT_MS) {
+      blob.state = 'returning'; blob.targetId = null;
+      blob.nextHopAt = state.timeMs;
+      return;
+    }
+    if (state.timeMs >= blob.nextHopAt) {
+      _blobHopToward(state, blob, targetPlat);
+      blob.nextHopAt = state.timeMs + CHASE_HOP_MS;
+    }
+    if (blob.platformId === target.platformId && !target.jumping) {
+      blob.state = 'lunging';
+      blob.lungeEndsAt = state.timeMs + BITE_TELEGRAPH_MS;
+    }
+  }
+
+  // /* LAVA-MONSTERS-REBASE */ No-bite guard distance (px): the
+  // lava travel over NO_BITE_GUARD_MS at the current pace. The
+  // pace selection mirrors the tick (endless ramp in Endless
+  // mode, race ramp everywhere else, Practice included — the
+  // race ramp once its lava starts).
+  function noBiteGuardPx(state) {
+    var pace = (state.mode === 'endless') ? endlessLavaPace(state) : lavaPace(state);
+    return pace * NO_BITE_GUARD_MS / 1000;
+  }
+
+  // /* LAVA-MONSTERS */ The lunge fires: a hit ONLY when the
+  // locked target is still standing on the blob's platform —
+  // a target that jumped away during the 500ms telegraph
+  // dodges it (no freeze). A hit freezes the target for 3s
+  // (applyFreeze — the lava keeps rising during the stun) and
+  // sates the blob for 5s; a miss sates it for 2s. The bite
+  // never hits another occupant: only the locked target.
+  // /* LAVA-MONSTERS-REBASE */ No-bite guard: when the lava is
+  // within noBiteGuardPx of the victim's platform top, the bite
+  // is withheld — a 3s stun there is a guaranteed death, and a
+  // fair monster does not deal those. The blob goes sated for
+  // MISS_SATED_MS (like a dodge) and the feed says so; this is
+  // NOT counted as a bite anywhere.
+  function _biteFire(state, blob) {
+    var target = _playerById(state, blob.targetId);
+    var hit = target && target.alive && !target.jumping &&
+      target.platformId === blob.platformId;
+    if (hit) {
+      var tplat = _platformById(state, target.platformId);
+      var lavaGap = tplat ? (state.lavaY - (tplat.y + (tplat.sink || 0))) : Infinity;
+      if (lavaGap <= noBiteGuardPx(state)) {
+        _pushEvent(state, 'monster', 'The blob spares ' + target.name + ' - lava too close!');
+        blob.state = 'sated';
+        blob.satedEndsAt = state.timeMs + MISS_SATED_MS;
+        blob.targetId = null;
+        blob.lungeEndsAt = 0;
+        return;
+      }
+      applyFreeze(state, target.id, BITE_MS);
+      _pushEvent(state, 'monster', target.name + ' got bitten!');
+      blob.state = 'sated';
+      blob.satedEndsAt = state.timeMs + SATED_MS;
+    } else {
+      if (target && target.alive) {
+        _pushEvent(state, 'monster', target.name + ' dodged the bite!');
+      }
+      blob.state = 'sated';
+      blob.satedEndsAt = state.timeMs + MISS_SATED_MS;
+    }
+    blob.targetId = null;
+    blob.lungeEndsAt = 0;
+  }
+
   // /* LAVA2B */ Resolve one blob's wind-up / cooldown step
   // (tick step 1d, before AI decisions so a winding blob is
   // visible to the AI the same tick it starts winding — the AI
@@ -103508,6 +103869,17 @@ var FLEngine = (function () {
   // platform resets to idle; on an occupied one it shoves every
   // standing racer down to the platform below (Gust slide-off
   // pattern, no stun after landing) and cools down for 4s.
+  // /* LAVA-MONSTERS */ Chase + bite live here too: an idle blob
+  // starts chasing the nearest alive racer within 170px
+  // vertical; chasing blobs hop toward their target and lunge
+  // on arrival; lunging blobs fire the bite at lungeEndsAt;
+  // sated blobs wait out their cooldown, then chase again if a
+  // target is in range, else return home; returning blobs hop
+  // home and go idle on arrival. Precedence: a winding blob
+  // never chases, and a chasing/lunging/sated/returning blob
+  // never starts a wind-up and never shoves (_settleOnPlatform
+  // only winds up an idle blob) — landing on a chasing blob's
+  // platform is punished by the lunge/bite, never by a shove.
   function _blobStep(state) {
     if (!Array.isArray(state.blobs)) return;
     for (var i = state.blobs.length - 1; i >= 0; i--) {
@@ -103541,6 +103913,52 @@ var FLEngine = (function () {
             for (var w = 0; w < victims.length; w++) {
               _dropToBelow(state, victims[w], plat.y, 'shove');
             }
+          }
+        }
+      } else if (blob.state === 'idle') {
+        var near = _chaseAcquireTarget(state, plat);
+        if (near) {
+          blob.state = 'chasing';
+          blob.targetId = near.id;
+          blob.chaseStartedAt = state.timeMs;
+          blob.nextHopAt = state.timeMs;
+          _chaseStep(state, blob);
+        }
+      } else if (blob.state === 'chasing') {
+        _chaseStep(state, blob);
+      } else if (blob.state === 'lunging') {
+        if (state.timeMs >= blob.lungeEndsAt) _biteFire(state, blob);
+      } else if (blob.state === 'sated') {
+        if (state.timeMs >= blob.satedEndsAt) {
+          var again = _chaseAcquireTarget(state, plat);
+          if (again) {
+            blob.state = 'chasing';
+            blob.targetId = again.id;
+            blob.chaseStartedAt = state.timeMs;
+            blob.nextHopAt = state.timeMs;
+            _chaseStep(state, blob);
+            continue;
+          }
+          blob.state = 'returning';
+          blob.targetId = null;
+          blob.nextHopAt = state.timeMs;
+        }
+      } else if (blob.state === 'returning') {
+        var home = _platformById(state, blob.homePlatformId);
+        if (!home || home.state === 'gone') {
+          // Home is gone: the blob settles where it is.
+          blob.homePlatformId = blob.platformId;
+          blob.state = 'idle';
+          blob.targetId = null;
+        } else if (blob.platformId === blob.homePlatformId) {
+          blob.state = 'idle';
+          blob.targetId = null;
+        } else if (state.timeMs >= blob.nextHopAt) {
+          _blobHopToward(state, blob, home);
+          blob.nextHopAt = state.timeMs + CHASE_HOP_MS;
+          if (blob.platformId === blob.homePlatformId) {
+            blob.state = 'idle';
+            blob.targetId = null;
           }
         }
       }
@@ -104522,12 +104940,18 @@ var FLEngine = (function () {
     // is the only route; a WINDING blob scores much lower (it is
     // about to shove); a COOLING blob scores normally (the 4s
     // cooldown is public state, so the AI knows it is safe).
+    // /* LAVA-MONSTERS */ A CHASING or LUNGING blob scores like
+    // a winding one (it is about to bite — flee); a SATED blob
+    // scores normally (it cannot chase, bite, or shove until it
+    // recovers); a RETURNING blob scores like a ready one (it
+    // is on its way home, still dangerous if crossed).
     // The penalties are fixed constants, never score-dependent.
     var blob = _blobByPlatformId(state, platformId);
     var monster = 0;
     if (blob) {
-      if (blob.state === 'winding') monster = -BLOB_SCORE_WINDING;
-      else if (blob.state === 'idle') monster = -BLOB_SCORE_READY;
+      if (blob.state === 'winding' || blob.state === 'chasing' ||
+          blob.state === 'lunging') monster = -BLOB_SCORE_WINDING;
+      else if (blob.state === 'idle' || blob.state === 'returning') monster = -BLOB_SCORE_READY;
     }
     // /* LAVA-HAZARDS */ A platform targeted by a telegraphing
     // hazard scores much lower (dodge it — same shape as a
@@ -104616,7 +105040,9 @@ var FLEngine = (function () {
     // shoved often, Pro 400ms usually escapes).
     if (cur) {
       var curBlob = _blobByPlatformId(state, cur.id);
-      if (curBlob && curBlob.state === 'winding') danger = true;
+      if (curBlob && (curBlob.state === 'winding' ||
+          curBlob.state === 'chasing' ||
+          curBlob.state === 'lunging')) danger = true;
       // /* LAVA-HAZARDS */ Same rule for a telegraphing hazard
       // on the AI's platform: jump NOW. Whether it escapes
       // falls out of its tier reaction time, exactly like a blob.
@@ -105015,9 +105441,23 @@ var FLEngine = (function () {
       for (var bi = 0; bi < s.blobs.length; bi++) {
         var bl = s.blobs[bi];
         if (bl.state !== 'idle' && bl.state !== 'winding' &&
-            bl.state !== 'cooling') bl.state = 'idle';
+            bl.state !== 'cooling' && bl.state !== 'chasing' &&
+            bl.state !== 'lunging' && bl.state !== 'sated' &&
+            bl.state !== 'returning') bl.state = 'idle';
         if (typeof bl.windUpEndsAt !== 'number') bl.windUpEndsAt = 0;
         if (typeof bl.coolDownEndsAt !== 'number') bl.coolDownEndsAt = 0;
+        // /* LAVA-MONSTERS */ A pre-chase blob loads with its
+        // home platform, no target, and all chase timers at 0 —
+        // it starts idle and hunts from there.
+        if (typeof bl.homePlatformId !== 'number') {
+          bl.homePlatformId = (typeof bl.platformId === 'number')
+            ? bl.platformId : bl.id;
+        }
+        if (bl.targetId !== null && typeof bl.targetId !== 'number') bl.targetId = null;
+        if (typeof bl.nextHopAt !== 'number') bl.nextHopAt = 0;
+        if (typeof bl.lungeEndsAt !== 'number') bl.lungeEndsAt = 0;
+        if (typeof bl.satedEndsAt !== 'number') bl.satedEndsAt = 0;
+        if (typeof bl.chaseStartedAt !== 'number') bl.chaseStartedAt = 0;
       }
       // /* LAVA-HAZARDS */ A pre-hazard state loads with no live
       // hazard and its first event 20–35 s out (the schedule draw
@@ -105200,6 +105640,16 @@ var FLEngine = (function () {
     /* LAVA2B */ BLOB_FIRST_HEIGHT_M: BLOB_FIRST_HEIGHT_M,
     /* LAVA2B */ BLOB_SCORE_READY: BLOB_SCORE_READY,
     /* LAVA2B */ BLOB_SCORE_WINDING: BLOB_SCORE_WINDING,
+    /* LAVA-MONSTERS */ CHASE_RANGE_PX: CHASE_RANGE_PX,
+    /* LAVA-MONSTERS */ CHASE_HOP_MS: CHASE_HOP_MS,
+    /* LAVA-MONSTERS */ CHASE_GIVEUP_PX: CHASE_GIVEUP_PX,
+    /* LAVA-MONSTERS */ CHASE_TIMEOUT_MS: CHASE_TIMEOUT_MS,
+    /* LAVA-MONSTERS */ BITE_TELEGRAPH_MS: BITE_TELEGRAPH_MS,
+    /* LAVA-MONSTERS */ BITE_MS: BITE_MS,
+    /* LAVA-MONSTERS */ SATED_MS: SATED_MS,
+    /* LAVA-MONSTERS */ MISS_SATED_MS: MISS_SATED_MS,
+    /* LAVA-MONSTERS-REBASE */ NO_BITE_GUARD_MS: NO_BITE_GUARD_MS,
+    /* LAVA-MONSTERS-REBASE */ noBiteGuardPx: noBiteGuardPx,
     /* LAVA-HAZARDS */ HAZARD_TELEGRAPH_MS: HAZARD_TELEGRAPH_MS,
     /* LAVA-HAZARDS */ HAZARD_MIN_GAP_MS: HAZARD_MIN_GAP_MS,
     /* LAVA-HAZARDS */ HAZARD_MAX_GAP_MS: HAZARD_MAX_GAP_MS,
@@ -106609,7 +107059,8 @@ var FLGame = (function () {
   var _platEls = {}; // id -> button element
   var _playerEls = {}; // id -> {wrap, token, name}
   var _blobEls = {}; // blob platform id -> element (LAVA2B lava blobs)
-  var _blobStateCache = {}; // blob platform id -> 'idle' | 'winding' | 'cooling'
+  var _blobStateCache = {}; // blob platform id -> 'state|look' (LAVA-MONSTERS: eyes track)
+  var _lastBiteSeenT = -1; // /* LAVA-MONSTERS */ latest bite event time already sounded/flashed
   var _platCache = {}; // id -> class string
   var _platGeomCache = {}; // id -> 'wPct|lPct' (drives swing motion)
   var _platHeatCache = {}; // id -> heat % (stove meter)
@@ -106826,6 +107277,14 @@ var FLGame = (function () {
     var header = _el('div', 'fl-header');
     var row = _el('div', 'fl-header-row');
     row.appendChild(_el('div', 'fl-title', 'Floor Is Lava'));
+    var musicBtn = _el('button', 'fl-icon-btn', 'Music: On');
+    musicBtn.type = 'button';
+    musicBtn.id = 'fl-music-btn';
+    musicBtn.setAttribute('aria-label', 'Toggle music');
+    musicBtn.addEventListener('click', function () {
+      try { setMusic(!isMusicOn()); } catch (e) { /* never throw */ }
+    });
+    row.appendChild(musicBtn);
     var helpBtn = _el('button', 'fl-icon-btn', '?');
     helpBtn.type = 'button';
     helpBtn.id = 'fl-help-btn';
@@ -107336,10 +107795,11 @@ var FLGame = (function () {
       '<p><b>Platforms</b> sink while you stand on them and recover when empty. A platform only starts crumbling once every racer has passed it — a crumble can never remove a bridge you still need. Crumbling platforms shake for 3 seconds, then fall.</p>' +
       '<p><b>The finish:</b> there is no finish line. The course climbs endlessly, the lava speeds up, and the race ends the moment one racer remains — the last survivor wins. Your place and height are live at the top; the strip on the right shows all four racers, the milestones, and the lava.</p>' +
       '<h2>Monsters</h2>' +
-      '<p><b>Lava Blobs</b> sit on platforms along the climb — wobbling blobs of lava with two eyes. They never chase you and never leave their platform. <b>Land on a blob\'s platform and it winds up for 0.5 seconds</b> — it swells, brightens, and shows a \"!\" — <b>then shoves everyone standing on that platform down to the platform below.</b> You are NOT stunned after a shove: you can jump immediately, but the height is lost. If there is no platform below, you free-fall — you may land lower, or hit the lava.</p>' +
+      '<p><b>Lava Blobs</b> sit on platforms along the climb — wobbling blobs of lava with two eyes. <b>They hunt now: when a racer climbs within reach, a blob hops platform to platform after them</b> — eyes tracking its prey, body pulsing faster as it closes in. <b>If it catches you it lunges — swelling up with its toothy mouth open for 0.5 seconds — then bites: you are stunned for 3 seconds and cannot jump while the lava keeps rising.</b> Jump away during the 0.5s lunge and the bite misses. After a bite the blob is sated for 5 seconds (2 seconds after a miss) — full and sleepy, it will not chase, bite, or shove until it recovers — then it hunts again, or hops back to its home platform if its prey climbed too far above it. A chase gives up after 10 seconds without a bite. <b>A blob never bites when the lava is right below you</b> — a 3-second stun there would be a death sentence, so it holds back and goes sated instead.</p>' +
+      '<p><b>Land on a blob\'s platform and it winds up for 0.5 seconds</b> — it swells, brightens, and shows a \"!\" — <b>then shoves everyone standing on that platform down to the platform below.</b> You are NOT stunned after a shove: you can jump immediately, but the height is lost. If there is no platform below, you free-fall — you may land lower, or hit the lava. A blob that is already hunting, lunging, sated, or heading home never winds up: landing on a hunting blob\'s platform is punished by the lunge and bite instead, never by a shove.</p>' +
       '<p><b>After a shove the blob cools down for 4 seconds</b> — dimmed and deflated, safe to cross. If the platform is empty when the wind-up finishes, nothing happens and the blob goes back to waiting. A platform the lava dissolves takes its blob with it.</p>' +
-      '<p><b>Counterplay is dodging — there is no way to defeat a blob.</b> (1) <b>Route around:</b> every rung always has at least one blob-free platform, and the first blob is never below 14 m, so the opening climb is clean. (2) <b>Touch-and-go:</b> your jump arc is 0.35s and the wind-up is 0.5s — land and jump away immediately and you escape before the shove lands. (3) <b>Wait out the cooldown:</b> after a blob shoves someone else, it is safe for 4 seconds.</p>' +
-      '<p><b>Blobs push rivals exactly like they push you</b> — same trigger, same wind-up, same shove. Rivals avoid ready blobs when they can, and whether one escapes a wind-up depends on its reaction time: slow rivals get shoved a lot, fast ones usually slip away. Shoves are announced in the feed (\"Kaito got shoved off!\"). Blobs never sit on checkpoints, the start platform, or the only platform of a rung. Practice has no blobs.</p>' +
+      '<p><b>Counterplay is dodging — there is no way to defeat a blob.</b> (1) <b>Route around:</b> every rung always has at least one blob-free platform, and the first blob is never below 14 m, so the opening climb is clean. (2) <b>Touch-and-go:</b> your jump arc is 0.35s and the wind-up is 0.5s — land and jump away immediately and you escape before the shove lands. (3) <b>Keep moving:</b> a blob only bites a racer standing on its platform — jump during the 0.5s lunge and the bite misses. (4) <b>Wait out the cooldown:</b> after a blob shoves someone else, it is safe for 4 seconds; after a bite, it is sated for 5 seconds.</p>' +
+      '<p><b>Blobs hunt rivals exactly like they hunt you</b> — same chase, same lunge, same bite. Rivals avoid blob platforms when they can, flee a hunting blob at their next reaction beat, and whether one escapes a lunge depends on its reaction time: slow rivals get bitten a lot, fast ones usually slip away. Bites and shoves are announced in the feed (\"Kaito got bitten!\", \"Kaito got shoved off!\"). Blobs never sit on checkpoints, the start platform, or the only platform of a rung. Practice has no blobs.</p>' +
       '<h2>Hazards</h2>' +
       '<p><b>The mountain fights back.</b> About once every 20–35 seconds, a random world event strikes the <b>leaders</b> — whoever is in front, you or a rival. The further ahead someone is, the likelier they are hit. Hazards are never aimed at you <i>because</i> you are human: rivals are hit exactly the same way, and a rival in front is hit before you are.</p>' +
       '<p><b>Lightning Strike</b> — a bolt is telegraphed over the leader\'s platform (⚡ marker + warning sound), then strikes 0.5 seconds later: everyone still standing there is <b>stunned for 1.5 seconds</b> and cannot jump.</p>' +
@@ -107374,7 +107834,7 @@ var FLGame = (function () {
       '<li><b>Modes:</b> Quick Race is 4-player survival (last one standing wins; stars: survive past 28 m, win, win past 56 m). Lava League is the same race with rank stakes — 3 wins take the next Cup. Endless Climb is solo score attack: climb as high as you can, your score is the meters you climb, nothing else. Daily Challenge is one seeded course a day — 1st 100 / 2nd 60 / 3rd 40 / 4th 20 points plus meters climbed. Practice is an empty course with the lava paused until you start it.</li>' +
       '<li>Missed a jump? You land on the platform below and lose height — no strike, just lost time.</li>' +
       '<li>Last survivor wins — there is no finish line. The course climbs endlessly and the race ends when one racer remains. Your place and height are live at the top; the strip on the right shows all four racers, the milestones, and the lava.</li>' +
-      '<li><b>Lava Blobs:</b> wobbling lava monsters sit on some platforms (never below 14 m, never on checkpoints or the only platform of a rung). Land on one and it winds up for 0.5s — swells, brightens, shows "!" — then shoves everyone on that platform down to the one below. Dodge them: route around, touch-and-go before the wind-up ends (your jump is 0.35s), or cross during the 4s cooldown after a shove. They push rivals too. See <b>Monsters</b> on the menu for the full list.</li>' +
+      '<li><b>Lava Blobs:</b> wobbling lava monsters sit on some platforms (never below 14 m, never on checkpoints or the only platform of a rung). Land on one and it winds up for 0.5s — swells, brightens, shows "!" — then shoves everyone on that platform down to the one below. They also hunt: a blob hops after a nearby racer and bites (3s stun, lava keeps rising) if it catches them — jump away during its 0.5s lunge and the bite misses. Dodge them: route around, touch-and-go before the wind-up ends (your jump is 0.35s), or cross during the 4s cooldown after a shove. They hunt rivals too. See <b>Monsters</b> on the menu for the full list.</li>' +
       '<li><b>Hazards:</b> about once every 20–35 seconds a world event strikes the leaders — <b>Lightning</b> (stuns 1.5s), <b>Gust</b> (shoves you down a rung), <b>Frozen Snow</b> (freezes you 2s), or <b>Rockfall</b> (crumbles the platform). Every hazard warns you for 0.5s first — jump off the marked platform and it misses you. Rivals are hit exactly the same way. See <b>Hazards</b> on the menu for the full list.</li>' +
       '</ul>' +
       '<p>Race tip: keep moving. Standing still is never safe for long.</p>' +
@@ -108090,6 +108550,7 @@ var FLGame = (function () {
     _prevTrayKey = '';
     _blobEls = {};
     _blobStateCache = {};
+    _lastBiteSeenT = -1;
     // /* LAVA-HAZARDS */ Fresh race, fresh backdrop/hazard caches
     // (a stale fx key would swallow the first hazard's cue).
     _bgBandEls = {};
@@ -108503,6 +108964,7 @@ var FLGame = (function () {
     _playerEls = {};
     _blobEls = {};
     _blobStateCache = {};
+    _lastBiteSeenT = -1;
     _bgBandEls = {};
     _hazardMarkEls = {};
     _hazardFxCache = '';
@@ -109020,6 +109482,9 @@ var FLGame = (function () {
     // /* LAVA2B */ Lava Blobs: one DOM blob per live blob.
     _syncBlobs(st);
 
+    // /* LAVA-MONSTERS */ Bite feedback: growl + victim flash + human toast.
+    _syncBites(st);
+
     // /* LAVA-HAZARDS */ Endless-backdrop decor (seeded bands)
     // + hazard telegraph markers / FX overlay.
     _syncBackdrop(st);
@@ -109343,6 +109808,13 @@ var FLGame = (function () {
   // swollen + bright + "!", cooling = dimmed + deflated). Blobs
   // on gone platforms are not rendered; blobs on endlessly
   // extended platforms render too (dynamic sync, like boxes).
+  // /* LAVA-MONSTERS */ The blob is alive now: its eyes track
+  // the nearest racer (look-left/right/up/down from the target
+  // direction), its body pulses faster while chasing, its
+  // toothy mouth opens only while lunging, and it stretches
+  // toward its victim in the lunge. A sated blob slumps;
+  // a returning blob dims on its way home. The state cache key
+  // is state + look direction, so an eye-flick re-renders.
   function _syncBlobs(st) {
     var doc = _doc();
     if (!doc) return;
@@ -109366,17 +109838,67 @@ var FLGame = (function () {
         el.appendChild(_el('span', 'fl-blob-eye', ''));
         el.appendChild(_el('span', 'fl-blob-eye', ''));
         el.appendChild(_el('span', 'fl-blob-bang', '!'));
+        el.appendChild(_el('span', 'fl-blob-mouth', ''));
         course.appendChild(el);
         _blobEls[blob.platformId] = el;
       }
       el.style.left = (plat.x + plat.w / 2) + 'px';
       el.style.top = (plat.y + (plat.sink || 0) - 14) + 'px';
-      var key = blob.state || 'idle';
+      // Eyes track the nearest alive racer: the locked chase
+      // target when there is one, else the nearest racer by
+      // height. Direction is the target platform center vs the
+      // blob platform center (dominant axis wins).
+      var look = '';
+      var tplayer = null;
+      if (blob.targetId !== null && blob.targetId !== undefined) {
+        for (var pi = 0; pi < (st.players || []).length; pi++) {
+          if (st.players[pi].id === blob.targetId) { tplayer = st.players[pi]; break; }
+        }
+      }
+      if (!tplayer || !tplayer.alive) {
+        var bestDy = Infinity;
+        tplayer = null;
+        for (var qi = 0; qi < (st.players || []).length; qi++) {
+          var qp = st.players[qi];
+          if (!qp.alive) continue;
+          if (qp.platformId === null || qp.platformId === undefined) continue;
+          var qplat = null;
+          for (var qk = 0; qk < st.platforms.length; qk++) {
+            if (st.platforms[qk].id === qp.platformId) { qplat = st.platforms[qk]; break; }
+          }
+          if (!qplat) continue;
+          var dy = Math.abs(qplat.y - plat.y);
+          if (dy < bestDy) { bestDy = dy; tplayer = qp; }
+        }
+      }
+      if (tplayer && tplayer.alive &&
+          tplayer.platformId !== null && tplayer.platformId !== undefined) {
+        var tplat = null;
+        for (var tk = 0; tk < st.platforms.length; tk++) {
+          if (st.platforms[tk].id === tplayer.platformId) { tplat = st.platforms[tk]; break; }
+        }
+        if (tplat) {
+          var dx = (tplat.x + tplat.w / 2) - (plat.x + plat.w / 2);
+          var tdy = tplat.y - plat.y;
+          if (dx === 0 && tdy === 0) look = '';
+          else if (Math.abs(tdy) > Math.abs(dx)) look = tdy < 0 ? 'up' : 'down';
+          else look = dx < 0 ? 'left' : 'right';
+        }
+      }
+      var key = (blob.state || 'idle') + '|' + look;
       if (_blobStateCache[blob.platformId] !== key) {
         _blobStateCache[blob.platformId] = key;
         try {
-          el.classList.toggle('fl-blob-winding', key === 'winding');
-          el.classList.toggle('fl-blob-cooling', key === 'cooling');
+          el.classList.toggle('fl-blob-winding', key.indexOf('winding|') === 0);
+          el.classList.toggle('fl-blob-cooling', key.indexOf('cooling|') === 0);
+          el.classList.toggle('fl-blob-chasing', key.indexOf('chasing|') === 0);
+          el.classList.toggle('fl-blob-lunging', key.indexOf('lunging|') === 0);
+          el.classList.toggle('fl-blob-sated', key.indexOf('sated|') === 0);
+          el.classList.toggle('fl-blob-returning', key.indexOf('returning|') === 0);
+          el.classList.toggle('fl-blob-look-left', look === 'left');
+          el.classList.toggle('fl-blob-look-right', look === 'right');
+          el.classList.toggle('fl-blob-look-up', look === 'up');
+          el.classList.toggle('fl-blob-look-down', look === 'down');
         } catch (e) { /* cosmetic */ }
       }
     }
@@ -109390,6 +109912,52 @@ var FLGame = (function () {
         delete _blobStateCache[id];
       }
     }
+  }
+
+  // /* LAVA-MONSTERS */ Bite feedback: watch the feed events
+  // for new 'got bitten!' lines (kind 'monster'). Each new bite
+  // plays the growl once, flashes the victim's token (~900ms),
+  // and toasts a human victim ("Bitten! Stunned 3s"); the feed
+  // line itself is the "BITTEN!" indicator. Tracked by event
+  // time so a re-sync never replays a bite.
+  function _syncBites(st) {
+    if (!st || !Array.isArray(st.events)) return;
+    var maxT = _lastBiteSeenT;
+    for (var i = 0; i < st.events.length; i++) {
+      var e = st.events[i];
+      if (!e || e.kind !== 'monster' || typeof e.text !== 'string') continue;
+      if (e.text.indexOf('got bitten!') === -1) continue;
+      if (typeof e.t !== 'number' || e.t <= _lastBiteSeenT) continue;
+      if (e.t > maxT) maxT = e.t;
+      var name = e.text.split(' got bitten!')[0];
+      var victim = null;
+      for (var k = 0; k < (st.players || []).length; k++) {
+        if (st.players[k].name === name) { victim = st.players[k]; break; }
+      }
+      try {
+        var audio = _audioModule();
+        if (audio && typeof audio.playFlBite === 'function') audio.playFlBite();
+        else if (audio && typeof audio.playFlFreeze === 'function') audio.playFlFreeze();
+      } catch (e2) { /* best-effort */ }
+      if (victim) {
+        if (victim.id === 0) _toast('Bitten! Stunned 3s');
+        (function (pid) {
+          try {
+            var els = _playerEls[pid];
+            if (els && els.wrap) {
+              els.wrap.classList.add('fl-bitten');
+              _setTimer(function () {
+                try {
+                  var els2 = _playerEls[pid];
+                  if (els2 && els2.wrap) els2.wrap.classList.remove('fl-bitten');
+                } catch (e3) { /* cosmetic */ }
+              }, 900);
+            }
+          } catch (e4) { /* cosmetic */ }
+        })(victim.id);
+      }
+    }
+    _lastBiteSeenT = maxT;
   }
 
   // /* LAVA-HAZARDS */ Endless-backdrop decor: seeded rock
