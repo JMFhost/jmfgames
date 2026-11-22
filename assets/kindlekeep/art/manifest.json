@@ -326,6 +326,66 @@
    "file": "bram_soft.webp",
    "sha256": "12326fef660452794ccb7638872591aa99d0df252d5d32f55e699d6b16bda187"
   },
+  "keeper_dain_battle": {
+   "bytes": 121756,
+   "file": "keeper_dain_battle.webp",
+   "sha256": "c2ab924b44b2abca50ffd7b176b140b92027feae4b1db61a41bb8556c2a8cb7f"
+  },
+  "keeper_dain_calm": {
+   "bytes": 111768,
+   "file": "keeper_dain_calm.webp",
+   "sha256": "a493440aba7211fc82d0a113f8ec4ac4cb957835ad46a08aabb4883384b1c634"
+  },
+  "keeper_dain_warm": {
+   "bytes": 116600,
+   "file": "keeper_dain_warm.webp",
+   "sha256": "31ded1ff45419fdb42085939dcccf097ae2ee3d4a91714a07b23bbf816ec9eca"
+  },
+  "keeper_fern_battle": {
+   "bytes": 119354,
+   "file": "keeper_fern_battle.webp",
+   "sha256": "2b8dcaa44fe1ac7da07f1215941d6606ada2c49804e9d9222e7477b7d1e9128b"
+  },
+  "keeper_fern_calm": {
+   "bytes": 114532,
+   "file": "keeper_fern_calm.webp",
+   "sha256": "651eb2fbf708218d1d361dbccda85ebb66284065212dcf2c592a788eb23fc57a"
+  },
+  "keeper_fern_warm": {
+   "bytes": 114940,
+   "file": "keeper_fern_warm.webp",
+   "sha256": "bacd95da5bbd74c5e8361337e0edb1ab4f129ffbf58143e19f684807cccfb67e"
+  },
+  "keeper_kael_battle": {
+   "bytes": 87570,
+   "file": "keeper_kael_battle.webp",
+   "sha256": "4673c9fabaa351502f2a11af2d2225203c6416a2fb48859bbd4adcf2806300f4"
+  },
+  "keeper_kael_calm": {
+   "bytes": 77692,
+   "file": "keeper_kael_calm.webp",
+   "sha256": "f239295f9f22bd34142efbd8d97f7e3811ffc6a5501e45bff9c0cb3739eaae1d"
+  },
+  "keeper_kael_warm": {
+   "bytes": 76446,
+   "file": "keeper_kael_warm.webp",
+   "sha256": "fd12f5b81fa4c0d6128d31f2fc8e2dd052ffd756e3b92e3dbad4da62395dd24a"
+  },
+  "keeper_lysa_battle": {
+   "bytes": 83366,
+   "file": "keeper_lysa_battle.webp",
+   "sha256": "5c4e93be2e6b663ceeb8920ad7c7bc8f2d217705a8500d9af945c4dbb9c6484e"
+  },
+  "keeper_lysa_calm": {
+   "bytes": 70618,
+   "file": "keeper_lysa_calm.webp",
+   "sha256": "8f300e301f7d46b4fe72c0c69c917f3fdef426adc1ebd0153a385f3baf969956"
+  },
+  "keeper_lysa_warm": {
+   "bytes": 70964,
+   "file": "keeper_lysa_warm.webp",
+   "sha256": "15ccc34a31ea0e03d5a9a60a2bbfb8753e8123fcc5d7c67f5ce5bc8527270fea"
+  },
   "keeper_neve_battle": {
    "bytes": 117394,
    "file": "keeper_neve_battle.webp",
@@ -340,6 +400,21 @@
    "bytes": 96136,
    "file": "keeper_neve_warm.webp",
    "sha256": "66a8207a50c26979ab6d03926cb79e0e9b22f23633f9ecba74162fc8088232f9"
+  },
+  "keeper_nia_battle": {
+   "bytes": 111368,
+   "file": "keeper_nia_battle.webp",
+   "sha256": "3b5955fc8fd5a3823b05bb49679cca31e80807aa3976a2cd217b2a3455bc7245"
+  },
+  "keeper_nia_calm": {
+   "bytes": 86812,
+   "file": "keeper_nia_calm.webp",
+   "sha256": "cfbfbc87eb9cbf2c867dc8e8cc2cc9abc0d3b9a191ebc544b02cd556bb583e70"
+  },
+  "keeper_nia_warm": {
+   "bytes": 83948,
+   "file": "keeper_nia_warm.webp",
+   "sha256": "59a71816c8f59ffed6aed01253fd4521fb66a2ff69a68861b0b52bcac17a8ef8"
   },
   "keeper_rai_battle": {
    "bytes": 103230,
