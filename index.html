@@ -11212,11 +11212,12 @@ button.mr-setup-preview:focus-visible {
   background-size: 100% 1120px;
   background-repeat: repeat-y;
 }
-/* LAVA-BGFIX — GIANT BACKGROUND (Nov 21, 2026): Jesse's bar is
+/* LAVA-BGFIX — GIANT BACKGROUND (Nov 21, 2026; all arenas Nov 22,
+   2026 — LAVA-BG-REPEAT): Jesse's bar is
    ONE GIANT continuous background, a single long scene that never
-   repeats — not tiled layers with longer periods. The volcano
-   backdrop is now ONE 720x8960 image (8 stitched panels, hot lava
-   base to cold summit) on this single layer: 360x560 div,
+   repeats — not tiled layers with longer periods. Each arena's
+   backdrop is now ONE 720x8960 image (8 stitched panels, arena
+   base to summit sky) on this single layer: 360x560 div,
    background-size 360px 8960px, no-repeat, scrolled by
    backgroundPositionY in _sync at 0.25x with the camera. It
    covers 672 m of climb and never repeats within any race. First
@@ -107855,7 +107856,8 @@ var FLGame = (function () {
   var _bgBandEls = {}; // /* LAVA-HAZARDS */ band index -> decor divs
   // /* LAVA-BGFIX */ giant-background state: _bgGiantActive is
   // true when the current arena uses the single 720x8960 scene
-  // (volcano); _bgGiantCache is its guarded offset key.
+  // (all arenas since LAVA-BG-REPEAT, Nov 22, 2026 — volcano only
+  // before that); _bgGiantCache is its guarded offset key.
   var _bgGiantActive = false;
   var _bgGiantCache = -1;
   var _hazardMarkEls = {}; // /* LAVA-HAZARDS */ platform id -> telegraph marker
@@ -109685,21 +109687,23 @@ var FLGame = (function () {
     // bar — ONE GIANT continuous background, a single long scene
     // that never repeats, not tiled layers with longer periods.
     // The 4-layer "endless backdrop" from the hazards build is
-    // RETIRED for volcano: its dominant JPG layer still repeated
-    // every 44.8 m of climb and the eye caught the same
+    // RETIRED for every arena: its dominant JPG layer still
+    // repeated every 44.8 m of climb and the eye caught the same
     // lava-pool / cliffs / dark-band composition at 0 m, ~56 m
     // and ~270 m (the pixel-diff proof passed only because the
-    // secondary layers changed pixels). Volcano now uses ONE
-    // 720x8960 scene (8 stitched panels, hot lava base to cold
-    // summit) on the .fl-bg-giant layer, scrolling at 0.25x with
-    // the camera, never repeating — it covers 672 m of climb,
-    // far beyond any race. The arena's own backgroundImage and
-    // the periodic drift wash are OFF for volcano, so no periodic
-    // layer remains. Other arenas keep the old 4-layer tiled path
-    // (unchanged). Seeded per-band rock/ember decor in the course
-    // (_syncBackdrop) stays: it is seeded per band, never periodic.
-    // The giant's position is set per tick in _sync (one guarded
-    // write).
+    // secondary layers changed pixels). The Nov 21 build covered
+    // volcano only, so the other four arenas kept the tiled path
+    // and Jesse caught the living-room repeat Nov 22 (same sofa /
+    // window / lamp at 0 m and ~45 m, lava band on top at 16 m).
+    // Every arena now uses ONE 720x8960 scene (8 stitched panels,
+    // arena base to summit sky) on the .fl-bg-giant layer,
+    // scrolling at 0.25x with the camera, never repeating — it
+    // covers 672 m of climb, far beyond any race. The arena's own
+    // backgroundImage and the periodic drift wash are OFF whenever
+    // a giant is active, so no periodic layer remains. Seeded
+    // per-band rock/ember decor in the course (_syncBackdrop)
+    // stays: it is seeded per band, never periodic. The giant's
+    // position is set per tick in _sync (one guarded write).
     try {
       var P0 = _portraitsModule();
       var url = (P0 && typeof P0.arenaUrl === 'function') ? P0.arenaUrl(_arenaId) : null;
@@ -110429,7 +110433,7 @@ var FLGame = (function () {
         try { courseEl.style.transform = 'translateY(' + (-camTarget).toFixed(1) + 'px)'; } catch (e) { /* cosmetic */ }
         if (_bgGiantActive) {
           // /* LAVA-BGFIX */ GIANT BACKGROUND: one 720x8960 scene
-          // (8 stitched panels, lava base to cold summit) on the
+          // (8 stitched panels, arena base to summit sky) on the
           // .fl-bg-giant layer, scrolling at 0.25x with the
           // camera, NEVER repeating — it covers 672 m of climb.
           // The camera starts at 2440 (CAMERA_MAX_Y) and falls
@@ -110449,9 +110453,10 @@ var FLGame = (function () {
             if (giantEl) giantEl.style.backgroundPositionY = (-(8400 - giantOff)) + 'px';
           }
         } else {
-          // /* LAVA-HAZARDS */ Endless backdrop (non-volcano
-          // arenas only): four layers at 0.25x / 0.5x / 0.13x /
-          // 0.13x with periods 560 / 733 / 911 / 911 (ember B
+          // /* LAVA-HAZARDS */ Endless backdrop (fallback only —
+          // every shipped arena has a giant scene now; this path
+          // runs only for an unknown arena): four layers at 0.25x /
+          // 0.5x / 0.13x / 0.13x with periods 560 / 733 / 911 / 911 (ember B
           // phase-shifted half a tile) — one guarded
           // backgroundPosition write per frame. Offsets are
           // quantized to 2px (invisible at these scales, roughly
@@ -111801,18 +111806,21 @@ var FLPortraits = (function () {
     return null;
   }
 
-  // /* LAVA-BGFIX */ GIANT BACKGROUND (Nov 21, 2026): the URL of
-  // the single tall continuous scene for an arena (volcano only):
-  // one 720x8960 image, 8 stitched panels from the lava base to
-  // the cold summit, scrolling at 0.25x with the camera and never
-  // repeating (covers 672 m of climb). Returns null for arenas
-  // without a giant scene — the caller falls back to the single
-  // JPG + layered path.
+  // /* LAVA-BGFIX */ GIANT BACKGROUND (Nov 21, 2026) — extended to
+  // ALL arenas Nov 22, 2026 (LAVA-BG-REPEAT): the URL of the single
+  // tall continuous scene for an arena: one 720x8960 image, 8
+  // stitched panels from the arena base to the summit sky, scrolling
+  // at 0.25x with the camera and never repeating (covers 672 m of
+  // climb). The Nov 21 build covered volcano only, so the other four
+  // arenas kept the old tiled single-JPG path and the room repeated
+  // every 44.8 m — Jesse's Nov 22 report. Returns null for unknown
+  // arenas — the caller falls back to the single JPG + layered path.
   function arenaBgGiant(arena) {
     if (typeof arena !== 'string') return null;
     var want = arena.replace(/^\s+|\s+$/g, '').toLowerCase();
-    if (want !== 'volcano') return null;
-    return ART_BASE + 'arenas/volcano-giant.jpg';
+    if (want === 'volcano') return ART_BASE + 'arenas/volcano-giant.jpg';
+    if (ARENAS.indexOf(want) < 0) return null;
+    return ART_BASE + 'arenas/' + want + '-giant.jpg';
   }
 
   // Baked splash motif URL (assets/lava/splash.webp).
