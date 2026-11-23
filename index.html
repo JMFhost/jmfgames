@@ -2223,6 +2223,30 @@ body {
   --bz-theme-tray-selected-bg: rgba(46, 196, 182, 0.10);
 }
 
+/* Basic (Nov 23, 2026 — the default): white board, light-blue-only
+   blocks. Panel and button colors are pale blue-greys so rows stay
+   distinct on white; text and muted text are dark navy/slate for
+   readability. The overlay is near-opaque white so the game-over
+   card reads on the white board. No photo rule exists for Basic
+   (see the photo section below): the flat white chrome above is the
+   whole look, and BZArt clears any previous theme's scene. */
+:root[data-bz-theme="basic"] {
+  --bz-theme-bg: #ffffff;
+  --bz-theme-well: #f4f8fb;
+  --bz-theme-grid: #c9d9e6;
+  --bz-theme-box: #8fb4d4;
+  --bz-theme-text: #16324a;
+  --bz-theme-accent: #7cc4f5;
+  --bz-theme-panel: #f0f6fb;
+  --bz-theme-panel-edge: #c3d5e2;
+  --bz-theme-muted: #4a6b80;
+  --bz-theme-btn-bg: #dceaf6;
+  --bz-theme-btn-bg-active: #c2d9ec;
+  --bz-theme-overlay: rgba(255, 255, 255, 0.88);
+  --bz-theme-tray-bg: rgba(23, 92, 140, 0.06);
+  --bz-theme-tray-selected-bg: rgba(124, 196, 245, 0.30);
+}
+
 /* ------------------------------------------------------------- game chrome */
 /* The game sets --bz-bg/--bz-text inline from the palette; the rest of
    the chrome variables are mapped here per theme. */
@@ -2419,7 +2443,7 @@ body {
   color: var(--bz-theme-muted, #8fb3c7);
 }
 
-/* Nine themes wrap to rows at phone width; the 96px basis keeps every
+/* Ten themes wrap to rows at phone width; the 96px basis keeps every
    label on one line with three buttons per row at 390px. */
 .bz-theme-picker {
   display: flex;
@@ -2628,7 +2652,7 @@ body {
    overlay in the theme's own background color over the photo. The
    canvas paints its own dark board from the palette, so these photos
    live only on the chrome around it and board contrast is untouched.
-   All nine themes follow the aurora structure exactly: overlay
+   All nine photo themes follow the aurora structure exactly: overlay
    linear-gradient + url(TOKEN) center/cover no-repeat + fallback color;
    only the overlay strength varies with photo brightness (sunset,
    glacier, and dunes are the brightest photos and carry the strongest overlays).
@@ -18056,6 +18080,10 @@ var BZGame = (function () {
   var SNAP_MS = 120;           // placement snap animation duration
   var SHAKE_MS = 220;          // invalid-tap shake duration
   var DRAG_THRESHOLD = 8;      // px of movement before a press becomes a drag
+  var DRAG_FALLBACK_RADIUS = 45; // px: on release, a drift this far from the
+  // last legal hover still snaps to that hover (see _onDragEnd). ~1 cell:
+  // forgives a finger rolling on lift-off; a deliberate drag back to the
+  // tray (~90px from a bottom-row hover) stays a cancel.
   var TAP_SLOP = 10;           // px of movement allowed for a board tap
   var INVALID_FILL = 'rgba(148,163,178,0.30)';
   var INVALID_STROKE = 'rgba(148,163,178,0.55)';
@@ -18120,6 +18148,9 @@ var BZGame = (function () {
   var _selected = -1;          // tray slot index selected by tap, or -1
   var _drag = null;            // active drag, or null
   var _hover = null;           // ghost preview anchor, or null
+  var _lastLegalHover = null;  // last legal ghost anchor this drag:
+  // {row, col, cx, cy} with cx/cy the pointer's canvas coords when it was
+  // recorded. The drop fallback in _onDragEnd snaps to it (Nov 23, 2026).
   var _snap = null;            // {cells:[indices], t0} placement animation
   var _shake = null;           // {t0} invalid-tap shake animation
   var _raf = 0;
@@ -19104,6 +19135,7 @@ var BZGame = (function () {
       moved: false,
       wasSelected: (_selected === slot)
     };
+    _lastLegalHover = null;
     _addDragListeners();
   }
 
@@ -19139,6 +19171,12 @@ var BZGame = (function () {
     _drag.cx = pt.x;
     _drag.cy = pt.y;
     _hover = _computeHover(pt, _drag.shape, _drag.color);
+    // Remember the last spot the ghost showed as legal, with the pointer
+    // position that produced it. _onDragEnd falls back to it when the
+    // release point itself goes illegal/null (finger roll on lift-off).
+    if (_hover && _hover.legal) {
+      _lastLegalHover = { row: _hover.row, col: _hover.col, cx: pt.x, cy: pt.y };
+    }
     _render();
   }
 
@@ -19150,6 +19188,7 @@ var BZGame = (function () {
     _removeDragListeners();
     if (!drag.moved) {
       // Tap on a tray piece: toggle selection.
+      _lastLegalHover = null;
       if (drag.wasSelected) _select(-1);
       else _select(drag.slot);
       _renderTray();
@@ -19159,6 +19198,28 @@ var BZGame = (function () {
     var hover = _computeHover(pt, drag.shape, drag.color);
     var placed = false;
     if (hover && hover.legal) placed = _tryPlace(drag.slot, hover.row, hover.col);
+    if (!placed && _lastLegalHover) {
+      // Drop fallback (Nov 23, 2026 drag fix): the release point is
+      // re-checked, but it must not overrule the preview the player was
+      // just shown. A finger lifting off the glass routinely rolls a
+      // few dozen px — past a cell edge, or just off the board bottom —
+      // and the release-point hover goes illegal/null even though the
+      // ghost was legal the whole drag. At edge anchors that loses the
+      // drop outright: every neighbouring anchor is illegal, so any
+      // drift at all is a silent bounce-back (Jesse's L at (7,0):
+      // preview legal, release rolled ~25px, piece never placed). If
+      // the last legal hover is close to the release point, the player
+      // was aiming at it: place there. The radius guard keeps a
+      // deliberate cancel (drag back to the tray and release, ~90px
+      // from a bottom-row hover) a cancel, and _tryPlace re-validates
+      // the anchor against the live board before placing.
+      var fdx = pt.x - _lastLegalHover.cx;
+      var fdy = pt.y - _lastLegalHover.cy;
+      if (fdx * fdx + fdy * fdy <= DRAG_FALLBACK_RADIUS * DRAG_FALLBACK_RADIUS) {
+        placed = _tryPlace(drag.slot, _lastLegalHover.row, _lastLegalHover.col);
+      }
+    }
+    _lastLegalHover = null;
     if (!placed) {
       _updateSlotClasses();
       _render();
@@ -19170,6 +19231,7 @@ var BZGame = (function () {
     if (!_drag) return;
     _drag = null;
     _hover = null;
+    _lastLegalHover = null;
     _removeDragListeners();
     _updateSlotClasses();
     _render();
@@ -19400,6 +19462,7 @@ var BZGame = (function () {
     _selected = -1;
     _drag = null;
     _hover = null;
+    _lastLegalHover = null;
     _snap = null;
     _shake = null;
     _tapStart = null;
@@ -19473,6 +19536,7 @@ var BZGame = (function () {
     _selected = -1;
     _drag = null;
     _hover = null;
+    _lastLegalHover = null;
     _snap = null;
     _shake = null;
     _tapStart = null;
@@ -24402,23 +24466,25 @@ if (typeof window !== 'undefined') {
 <script>
 // source: bz-themes.js
 // BZThemes — color themes for Block Zen.
-// Nine palettes. Each palette is a full 8-key object matching
+// Ten palettes. Each palette is a full 8-key object matching
 // the contract: {background, well, grid, boxLine, blocks[7], ghost,
-// ghostClear, text}. "aurora" is the default: a night sky lit by green,
-// teal, cyan, violet, magenta, pale gold, and ice-blue hues. "ocean"
-// copies the default palette already in bz-game.js exactly, so
-// switching to it changes nothing visually. "sunset" follows a dusk
-// gradient (coral -> amber -> rose -> violet -> twilight blue, with a
-// pale peach). "forest" is built from leaf, fern, moss, bark, berry,
-// sunlight, and stream hues. "cosmos" is deep violet night lit by
-// starlight hues. "ember" is warm fire glow on dark charcoal.
-// "glacier" is cold ice blue on a dark frozen sea. "dunes" is golden
-// desert sand at golden hour on deep shadow brown. "waterfall" is
-// falling water and fern green on dark wet basalt.
+// ghostClear, text}. "basic" is the default (Nov 23, 2026 — Jesse's
+// order): a white board with light-blue-only blocks, every one of the
+// seven block slots the same light blue. "aurora" is a night sky lit
+// by green, teal, cyan, violet, magenta, pale gold, and ice-blue
+// hues. "ocean" copies the default palette already in bz-game.js
+// exactly, so switching to it changes nothing visually. "sunset"
+// follows a dusk gradient (coral -> amber -> rose -> violet ->
+// twilight blue, with a pale peach). "forest" is built from leaf,
+// fern, moss, bark, berry, sunlight, and stream hues. "cosmos" is
+// deep violet night lit by starlight hues. "ember" is warm fire glow
+// on dark charcoal. "glacier" is cold ice blue on a dark frozen sea.
+// "dunes" is golden desert sand at golden hour on deep shadow brown.
+// "waterfall" is falling water and fern green on dark wet basalt.
 //
-// On load this module registers all nine palettes with BZGame (when
+// On load this module registers all ten palettes with BZGame (when
 // present), applies the persisted theme from the shared settings key
-// (default "aurora"), and restyles the page chrome through CSS variables
+// (default "basic"), and restyles the page chrome through CSS variables
 // on the document root plus a data-bz-theme attribute consumed by
 // bz-themes.css. Persistence uses read-modify-write on the single
 // settings key jmf-phone-settings-v1 and preserves every other field.
@@ -24428,11 +24494,28 @@ var BZThemes = (function () {
   'use strict';
 
   var SETTINGS_KEY = 'jmf-phone-settings-v1';
-  var THEME_NAMES = ['aurora', 'ocean', 'sunset', 'forest', 'cosmos', 'ember', 'glacier', 'dunes', 'waterfall'];
+  var THEME_NAMES = ['basic', 'aurora', 'ocean', 'sunset', 'forest', 'cosmos', 'ember', 'glacier', 'dunes', 'waterfall'];
 
+  // "basic": white board, light-blue-only blocks. All seven block
+  // slots are the same light blue (#7cc4f5), so every piece, placed
+  // tile, tray piece, and ghost preview renders light blue and no
+  // other block color appears anywhere. Text is dark navy for
+  // readability on white; the ghost outline and clear glow are a
+  // deeper blue so they stay visible on the white board. No photo
+  // art and no photo CSS rule: the board and chrome are flat white.
+  var PALETTES = {
+    basic: {
+      background: '#ffffff',
+      well: '#f4f8fb',
+      grid: '#c9d9e6',
+      boxLine: '#8fb4d4',
+      blocks: ['#7cc4f5', '#7cc4f5', '#7cc4f5', '#7cc4f5', '#7cc4f5', '#7cc4f5', '#7cc4f5'],
+      ghost: 'rgba(47,143,224,0.75)',
+      ghostClear: '#2f8fe0',
+      text: '#16324a'
+    },
   // "aurora": night sky. Deep near-black blue, slate-teal well, a muted
   // aurora-green box line, and blocks in aurora hues.
-  var PALETTES = {
     aurora: {
       background: '#050d1a',
       well: '#0b1e2e',
@@ -24526,7 +24609,7 @@ var BZThemes = (function () {
     }
   };
 
-  var _current = 'aurora';
+  var _current = 'basic';
 
   function _global(name) {
     try {
@@ -24547,7 +24630,8 @@ var BZThemes = (function () {
       blocks: p.blocks.slice(),
       ghost: p.ghost,
       ghostClear: p.ghostClear,
-      text: p.text
+      text: p.text,
+      accent: p.accent || p.blocks[2]
     };
   }
 
@@ -24623,7 +24707,7 @@ var BZThemes = (function () {
       style.setProperty('--bz-theme-grid', palette.grid);
       style.setProperty('--bz-theme-box', palette.boxLine);
       style.setProperty('--bz-theme-text', palette.text);
-      style.setProperty('--bz-theme-accent', palette.blocks[2]);
+      style.setProperty('--bz-theme-accent', palette.accent || palette.blocks[2]);
       for (var i = 0; i < 7; i++) {
         style.setProperty('--bz-theme-block-' + i, palette.blocks[i]);
       }
@@ -24686,10 +24770,30 @@ var BZThemes = (function () {
   }
 
   // Load: register everything, then apply the persisted theme (or the
-  // default) without writing storage back and without dispatching.
+  // default) without dispatching. One-time Basic migration (Nov 23,
+  // 2026 — Jesse ordered Basic as the default for fresh AND existing
+  // installs): the first load after this change moves any stored
+  // non-Basic theme to Basic and records the migration in settings, so
+  // a theme the player picks afterwards is never re-migrated. Fresh
+  // installs (no stored theme) and invalid stored values fall through
+  // to Basic and still record the flag, so the migration runs at most
+  // once per browser profile. The flag lives in the same settings key
+  // (bzBasicMigrated) and read-modify-write preserves every other
+  // field; when storage is unavailable the in-memory default is Basic
+  // and nothing is written.
   try {
-    var stored = _readSettings().theme;
-    var initial = (typeof stored === 'string' && PALETTES[stored]) ? stored : 'aurora';
+    var loadSettings = _readSettings();
+    var loadStored = loadSettings.theme;
+    var initial = (typeof loadStored === 'string' && PALETTES[loadStored]) ? loadStored : 'basic';
+    if (!loadSettings.bzBasicMigrated) {
+      loadSettings.theme = 'basic';
+      loadSettings.bzBasicMigrated = true;
+      try {
+        var loadStore = _store();
+        if (loadStore) loadStore.setItem(SETTINGS_KEY, JSON.stringify(loadSettings));
+      } catch (e) { /* persistence is best-effort */ }
+      initial = 'basic';
+    }
     _apply(initial, false, false);
   } catch (e) { /* fall back to the in-memory default */ }
 
@@ -24721,7 +24825,7 @@ if (typeof window !== 'undefined') {
 //   #settings-name   — player name input, shown on the lock screen
 //   #settings-sound  — sound toggle, wired to BZAudio.setSound
 //   #settings-music  — music toggle, wired to BZAudio.setMusic
-//   #settings-theme  — theme picker (9 buttons), wired to BZThemes.set
+//   #settings-theme  — theme picker (10 buttons), wired to BZThemes.set
 //   #settings-home   — Home-screen section (Sort A–Z / Reset layout),
 //                      wired to PhoneShell.sortHomeAlphabetical /
 //                      PhoneShell.resetHomeOrder
@@ -24758,7 +24862,7 @@ var BZSettings = (function () {
   var VERSION = '1.0';
   var NAME_MAX_LENGTH = 20;
   var NAME_EVENT = 'bz:player-name';
-  var FALLBACK_THEMES = ['aurora', 'ocean', 'sunset', 'forest', 'cosmos', 'ember', 'glacier', 'dunes', 'waterfall'];
+  var FALLBACK_THEMES = ['basic', 'aurora', 'ocean', 'sunset', 'forest', 'cosmos', 'ember', 'glacier', 'dunes', 'waterfall'];
 
   var _booted = false;
   var _themeButtons = []; // [{name, button}] for re-marking the current theme
@@ -25100,7 +25204,7 @@ var BZSettings = (function () {
       } catch (e) { /* fall back to the built-in names */ }
     }
     var current = readSettings().theme;
-    if (typeof current !== 'string') current = 'aurora';
+    if (typeof current !== 'string') current = 'basic';
     if (themes && typeof themes.current === 'function') {
       try {
         var live = themes.current();
@@ -27197,7 +27301,8 @@ if (typeof window !== 'undefined') {
 // the files ride in assets/blockzen/ and are preloaded on boot.
 //
 // Contract:
-//   THEME_ART: theme name -> asset path (same 9 names as BZThemes).
+//   THEME_ART: theme name -> asset path (the 9 photo themes; Basic
+//     has no scene and applyThemeArt clears the backdrop for it).
 //   GAMEOVER_ART, TILE_FACET, TILE_SPARKLE: single asset paths.
 //   preload(): starts loading every asset; safe to call repeatedly.
 //   artUrl(theme): path string for the theme (or null for unknown).
@@ -27349,10 +27454,16 @@ var BZArt = (function () {
       if (!rootEl || typeof rootEl.querySelector !== 'function') return false;
       var bg = rootEl.querySelector('.bz-art-bg');
       if (!bg) return false;
+      var url = artUrl(theme);
+      if (!url) {
+        // Themes without art (Basic, Nov 23, 2026) must clear any scene
+        // a previous theme left behind; otherwise the old photo would
+        // show through the transparent gaps around the canvas and tray.
+        bg.style.backgroundImage = '';
+        return true;
+      }
       var img = themeImage(theme);
       if (!img) return false;
-      var url = artUrl(theme);
-      if (!url) return false;
       bg.style.backgroundImage = VEIL + ', url("' + url + '")';
       return true;
     } catch (e) {
