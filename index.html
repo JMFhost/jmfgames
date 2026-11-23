@@ -6170,6 +6170,9 @@ body {
   flex-shrink: 0;
 }
 .td-game .td-hero-cell {
+  /* KK HERO-SKILLS: the cell is a DIV now (it holds two buttons:
+     portrait + skill chip). position:relative anchors the chip. */
+  position: relative;
   flex: 1;
   min-width: 0;
   padding: 0;
@@ -6180,11 +6183,63 @@ body {
   align-items: center;
   justify-content: flex-start;
   gap: 2px;
+}
+.td-game .td-hero-portrait-btn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 8px;
   cursor: pointer;
   touch-action: manipulation;
 }
-.td-game .td-hero-cell:active {
+.td-game .td-hero-portrait-btn:active {
   transform: scale(0.96);
+}
+/* KK HERO-SKILLS: skill chip, one per hero, overlaid on the
+   portrait's bottom edge so the strip stays 50px. Ready = gold with
+   glow (the eye goes there); cooling/locked = dimmed; down = hidden
+   (the revive countdown already shows in the portrait center). */
+.td-game .td-hero-skill {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  width: 64px; /* wide enough for the full sig name (e.g. ⚡ Emberbrand) */
+  height: 14px;
+  padding: 0 1px;
+  border: 1px solid #b98a3d;
+  border-radius: 4px;
+  background: rgba(8, 10, 18, 0.88);
+  color: #d9c9a3;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 12px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  touch-action: manipulation;
+  z-index: 2;
+}
+.td-game .td-hero-skill-ready {
+  background: #ffd86b;
+  border-color: #fff0b8;
+  color: #241a05;
+  box-shadow: 0 0 8px rgba(255, 216, 107, 0.8);
+}
+.td-game .td-hero-skill-cooling,
+.td-game .td-hero-skill-locked {
+  opacity: 0.75;
+}
+.td-game .td-hero-skill-down {
+  display: none;
+}
+.td-game .td-hero-skill:active {
+  transform: translateX(-50%) scale(0.94);
 }
 .td-game .td-hero-portrait {
   position: relative;
@@ -59693,6 +59748,57 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     return res;
   }
 
+  // /* KK HERO-SKILLS (Nov 22, 2026 — Jesse: "I don't see a way to
+  // use my hero skills") */ fireHeroSignatureManual: the UI worker's
+  // contract for the strip's ⚡ skill button — the player triggers ANY
+  // fielded hero's signature (captain AND companions). Same fire path
+  // as the AI tick (tryFireHeroSignature, unchanged), so the effect,
+  // banner, FX, and cooldown are identical whichever side fires it.
+  // The AI thresholds (heroAISignatureReady) are NOT applied here —
+  // the player decides when to fire. One player-facing guard IS added:
+  // a damage signature with NO valid target in range returns
+  // "no-target" WITHOUT starting the cooldown, so a tap never burns
+  // the skill on a whiff. Buff/summon kinds always attempt (tryFire
+  // reports locked/no-room for those). Reasons: "no-hero" (defId not
+  // fielded), "down", "cooldown", "locked", "no-target", "no-room".
+  function fireHeroSignatureManual(session, heroDefId, saveState, playAudio) {
+    const hero = (typeof heroByDefId === "function") ? heroByDefId(session, heroDefId) : null;
+    if (!hero) return { ok: false, reason: "no-hero" };
+    if (!hero.alive) return { ok: false, reason: "down" };
+    if (hero.sigCd > 0) return { ok: false, reason: "cooldown" };
+    const def = keeperDefById(hero.defId);
+    if (!def || !def.signature) return { ok: false, reason: "locked" };
+    const sig = heroSignature(def, saveState);
+    const pos = heroFieldPos(session, hero);
+    if (sig.kind === "aoe") {
+      const rad = sig.radiusCells || 3.0;
+      let n = 0;
+      for (let e = 0; e < session.enemies.length; e++) {
+        const foe = session.enemies[e];
+        if (foe.dissolving || foe.hp <= 0) continue;
+        if (foe.isBoss && foe.activeImmunity === "aoe") continue;
+        const dist = Math.hypot((foe.x - pos.x) / session.cellW,
+                                (foe.y - pos.y) / session.cellH);
+        if (dist <= rad) n++;
+      }
+      if (n === 0) return { ok: false, reason: "no-target" };
+    }
+    if (sig.kind === "bolt") {
+      const stats = keeperDerivedStats(saveState);
+      const rangeCells = stats.boltRangeCells - (session.gloomTideActive ? 1 : 0);
+      let n = 0;
+      for (let e = 0; e < session.enemies.length; e++) {
+        const foe = session.enemies[e];
+        if (foe.dissolving || foe.hp <= 0 || foe.burrowed || foe.flying) continue;
+        const dist = Math.hypot((foe.x - pos.x) / session.cellW,
+                                (foe.y - pos.y) / session.cellH);
+        if (dist <= rangeCells) n++;
+      }
+      if (n === 0) return { ok: false, reason: "no-target" };
+    }
+    return tryFireHeroSignature(session, hero, saveState, playAudio);
+  }
+
   // AI signature rule (HEROES-DESIGN §5.2): deterministic threshold
   // tests on visible state only — NO Math.random. One signature per
   // tick max per hero (the decision tick evaluates once per 0.5s).
@@ -62544,7 +62650,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
 // allyLaneBoltValue are DELETED with tap-a-lane / ally movement
 // (KKSPELLS-DESIGN.md §1.2) — removed from this export list and from
 // the globalThis block below; no export of them remains.
-var KKEngine = { createMulberry32: createMulberry32, getLevelById: getLevelById, levelLabel: levelLabel, isLevelCleared: isLevelCleared, nextUncompletedLevelId: nextUncompletedLevelId, isLevelEnterable: isLevelEnterable, isWorldFullyCleared: isWorldFullyCleared, isWorldUnlocked: isWorldUnlocked, computeUnlockedWorlds: computeUnlockedWorlds, syncUnlockedWorlds: syncUnlockedWorlds, isNightWatchUnlocked: isNightWatchUnlocked, defenderGrantLevelId: defenderGrantLevelId, defenderUnlockLabel: defenderUnlockLabel, getDefenderData: getDefenderData, isDefenderUnlocked: isDefenderUnlocked, grantLevelUnlocks: grantLevelUnlocks, sanitizeLoadout: sanitizeLoadout, almanacCounterText: almanacCounterText, keeperData: keeperData, keeperDefList: keeperDefList, keeperIdList: keeperIdList, keeperDefById: keeperDefById, keeperDefForSave: keeperDefForSave, captainDefForSave: captainDefForSave, heroDefList: heroDefList, setCaptain: setCaptain, keeperDefOrFallback: keeperDefOrFallback, keeperName: keeperName, keeperArtSnapshot: keeperArtSnapshot, keeperRenderText: keeperRenderText, keeperSpeakerLabel: keeperSpeakerLabel, keeperPortraitKey: keeperPortraitKey, keeperNodeList: keeperNodeList, keeperNodeById: keeperNodeById, keeperSpellDef: keeperSpellDef, keeperDerivedStats: keeperDerivedStats, keeperBoltHarmForWorld: keeperBoltHarmForWorld, keeperTotalStars: keeperTotalStars, keeperClaimedStoryQuests: keeperClaimedStoryQuests, keeperPointsEarned: keeperPointsEarned, keeperPointsSpent: keeperPointsSpent, keeperPointsAvailable: keeperPointsAvailable, keeperNextPointInfo: keeperNextPointInfo, keeperCanBuyNode: keeperCanBuyNode, keeperBuyNode: keeperBuyNode, keeperRespec: keeperRespec, keeperSpellUnlocked: keeperSpellUnlocked, heroTreeDef: heroTreeDef, heroTreeNodeList: heroTreeNodeList, heroTreeNodeById: heroTreeNodeById, heroOwnedNodes: heroOwnedNodes, heroNodesLearned: heroNodesLearned, heroValor: heroValor, heroTreeEffects: heroTreeEffects, heroCanBuyNode: heroCanBuyNode, heroBuyNode: heroBuyNode, heroRespec: heroRespec, grantHeroValor: grantHeroValor, teamCompanionsForSave: teamCompanionsForSave, setTeamCompanions: setTeamCompanions, fieldedHeroDefs: fieldedHeroDefs, homeLaneForFielded: homeLaneForFielded, heroBoltElement: heroBoltElement, heroSignature: heroSignature, applyWeakenToEnemy: applyWeakenToEnemy, foeHarmOut: foeHarmOut, highestUnlockedSummonCreatures: highestUnlockedSummonCreatures, keeperHeroConfig: keeperHeroConfig, keeperRegenConfig: keeperRegenConfig, keeperRegenRateFor: keeperRegenRateFor, keeperRegenEnabled: keeperRegenEnabled, allyKeeperConfig: allyKeeperConfig, keeperArtSnapshotForDef: keeperArtSnapshotForDef, spellCasterDefForSave: spellCasterDefForSave, spellCasterHero: spellCasterHero, keeperMoveConfig: keeperMoveConfig, KEEPER_MOVE: KEEPER_MOVE, orderHeroMove: orderHeroMove, heroDodgeReflex: heroDodgeReflex, laneThreatCount: laneThreatCount, heroByDefId: heroByDefId, heroStateSnapshot: heroStateSnapshot, heroStateHash: heroStateHash, restoreHeroStates: restoreHeroStates, keeperAlive: keeperAlive, allyKeeperAlive: allyKeeperAlive, allyKeeperFieldPos: allyKeeperFieldPos, allyKeeperRenderPos: allyKeeperRenderPos, backfillAllyKeeperState: backfillAllyKeeperState, damageAllyKeeper: damageAllyKeeper, allyThreatTier: allyThreatTier, foeEngagedWithFrontKeeper: foeEngagedWithFrontKeeper, chooseAllyKeeperTargets: chooseAllyKeeperTargets, allyKeeperFireBolt: allyKeeperFireBolt, activateAllyKeeperSpell: activateAllyKeeperSpell, allyCastSpellIfWarranted: allyCastSpellIfWarranted, stepAllyKeeperDecision: stepAllyKeeperDecision, stepAllyKeeper: stepAllyKeeper, keeperRenderPos: keeperRenderPos, keeperFieldPos: keeperFieldPos, keeperCellDist: keeperCellDist, chooseKeeperTargets: chooseKeeperTargets, keeperFireBolt: keeperFireBolt, stepKeeper: stepKeeper, stepHeroes: stepHeroes, stepOneHero: stepOneHero, damageHero: damageHero, heroFieldPos: heroFieldPos, heroRenderPos: heroRenderPos, heroFireBolt: heroFireBolt, chooseHeroTargets: chooseHeroTargets, applyBurnToEnemy: applyBurnToEnemy, applyKeeperBoltElement: applyKeeperBoltElement, tryFireHeroSignature: tryFireHeroSignature, fireHeroSignature: fireHeroSignature, fireCaptainSignature: fireCaptainSignature, heroAISignatureReady: heroAISignatureReady, heroStripState: heroStripState, keeperHeroes: keeperHeroes, heroStateForLane: heroStateForLane, anyHeroAlive: anyHeroAlive, spawnSummonCreature: spawnSummonCreature, stepSummons: stepSummons, highestUnlockedSummonCreature: highestUnlockedSummonCreature, summonCreatureRoster: summonCreatureRoster, healAllHeroes: healAllHeroes, backfillHeroes: backfillHeroes, activateKeeperSpell: activateKeeperSpell, TD_TEXT_OVERRIDES: TD_TEXT_OVERRIDES, TRAY_DISPLAY_NAMES: TRAY_DISPLAY_NAMES, KEEPER_FALLBACK: KEEPER_FALLBACK, getDefenderSpecWithUpgrades: getDefenderSpecWithUpgrades, getEnemySpec: getEnemySpec, advanceQuestProgress: advanceQuestProgress, pointSegDistSq: pointSegDistSq, segIntersectsSeg: segIntersectsSeg, pointInRect: pointInRect, segRectDist: segRectDist, scalePathPoint: scalePathPoint, buildPathGeometry: buildPathGeometry, refreshPathGeometry: refreshPathGeometry, isRoadCell: isRoadCell, getPathPlotAtPoint: getPathPlotAtPoint, levelHasEnemy: levelHasEnemy, nightWatchHasEnemy: nightWatchHasEnemy, createBattleSession: createBattleSession, laneCenterY: laneCenterY, bossScriptFor: bossScriptFor, bossPhaseInfo: bossPhaseInfo, bossCadence: bossCadence, bossPhaseBanner: bossPhaseBanner, summonLabel: summonLabel, spawnBossMinions: spawnBossMinions, startGloomTide: startGloomTide, fogPulseActive: fogPulseActive, fogStartColFor: fogStartColFor, fogAppliesTo: fogAppliesTo, updateBossPhase: updateBossPhase, runBossCycle: runBossCycle, getDefenderAt: getDefenderAt, getTowerPlotAtPoint: getTowerPlotAtPoint, canPlaceDefender: canPlaceDefender, placeDefender: placeDefender, shovelDefender: shovelDefender, activateKeeperPower: activateKeeperPower, grantLumen: grantLumen, collectMoteAt: collectMoteAt, applyHarmToEnemy: applyHarmToEnemy, applySlowToEnemy: applySlowToEnemy, applyRootToEnemy: applyRootToEnemy, applyKnockbackToEnemy: applyKnockbackToEnemy, startNextWave: startNextWave, startBossEntrance: startBossEntrance, spawnEnemyInstance: spawnEnemyInstance, stepBattleSession: stepBattleSession, runScriptedLevelVerification: runScriptedLevelVerification };
+var KKEngine = { createMulberry32: createMulberry32, getLevelById: getLevelById, levelLabel: levelLabel, isLevelCleared: isLevelCleared, nextUncompletedLevelId: nextUncompletedLevelId, isLevelEnterable: isLevelEnterable, isWorldFullyCleared: isWorldFullyCleared, isWorldUnlocked: isWorldUnlocked, computeUnlockedWorlds: computeUnlockedWorlds, syncUnlockedWorlds: syncUnlockedWorlds, isNightWatchUnlocked: isNightWatchUnlocked, defenderGrantLevelId: defenderGrantLevelId, defenderUnlockLabel: defenderUnlockLabel, getDefenderData: getDefenderData, isDefenderUnlocked: isDefenderUnlocked, grantLevelUnlocks: grantLevelUnlocks, sanitizeLoadout: sanitizeLoadout, almanacCounterText: almanacCounterText, keeperData: keeperData, keeperDefList: keeperDefList, keeperIdList: keeperIdList, keeperDefById: keeperDefById, keeperDefForSave: keeperDefForSave, captainDefForSave: captainDefForSave, heroDefList: heroDefList, setCaptain: setCaptain, keeperDefOrFallback: keeperDefOrFallback, keeperName: keeperName, keeperArtSnapshot: keeperArtSnapshot, keeperRenderText: keeperRenderText, keeperSpeakerLabel: keeperSpeakerLabel, keeperPortraitKey: keeperPortraitKey, keeperNodeList: keeperNodeList, keeperNodeById: keeperNodeById, keeperSpellDef: keeperSpellDef, keeperDerivedStats: keeperDerivedStats, keeperBoltHarmForWorld: keeperBoltHarmForWorld, keeperTotalStars: keeperTotalStars, keeperClaimedStoryQuests: keeperClaimedStoryQuests, keeperPointsEarned: keeperPointsEarned, keeperPointsSpent: keeperPointsSpent, keeperPointsAvailable: keeperPointsAvailable, keeperNextPointInfo: keeperNextPointInfo, keeperCanBuyNode: keeperCanBuyNode, keeperBuyNode: keeperBuyNode, keeperRespec: keeperRespec, keeperSpellUnlocked: keeperSpellUnlocked, heroTreeDef: heroTreeDef, heroTreeNodeList: heroTreeNodeList, heroTreeNodeById: heroTreeNodeById, heroOwnedNodes: heroOwnedNodes, heroNodesLearned: heroNodesLearned, heroValor: heroValor, heroTreeEffects: heroTreeEffects, heroCanBuyNode: heroCanBuyNode, heroBuyNode: heroBuyNode, heroRespec: heroRespec, grantHeroValor: grantHeroValor, teamCompanionsForSave: teamCompanionsForSave, setTeamCompanions: setTeamCompanions, fieldedHeroDefs: fieldedHeroDefs, homeLaneForFielded: homeLaneForFielded, heroBoltElement: heroBoltElement, heroSignature: heroSignature, applyWeakenToEnemy: applyWeakenToEnemy, foeHarmOut: foeHarmOut, highestUnlockedSummonCreatures: highestUnlockedSummonCreatures, keeperHeroConfig: keeperHeroConfig, keeperRegenConfig: keeperRegenConfig, keeperRegenRateFor: keeperRegenRateFor, keeperRegenEnabled: keeperRegenEnabled, allyKeeperConfig: allyKeeperConfig, keeperArtSnapshotForDef: keeperArtSnapshotForDef, spellCasterDefForSave: spellCasterDefForSave, spellCasterHero: spellCasterHero, keeperMoveConfig: keeperMoveConfig, KEEPER_MOVE: KEEPER_MOVE, orderHeroMove: orderHeroMove, heroDodgeReflex: heroDodgeReflex, laneThreatCount: laneThreatCount, heroByDefId: heroByDefId, heroStateSnapshot: heroStateSnapshot, heroStateHash: heroStateHash, restoreHeroStates: restoreHeroStates, keeperAlive: keeperAlive, allyKeeperAlive: allyKeeperAlive, allyKeeperFieldPos: allyKeeperFieldPos, allyKeeperRenderPos: allyKeeperRenderPos, backfillAllyKeeperState: backfillAllyKeeperState, damageAllyKeeper: damageAllyKeeper, allyThreatTier: allyThreatTier, foeEngagedWithFrontKeeper: foeEngagedWithFrontKeeper, chooseAllyKeeperTargets: chooseAllyKeeperTargets, allyKeeperFireBolt: allyKeeperFireBolt, activateAllyKeeperSpell: activateAllyKeeperSpell, allyCastSpellIfWarranted: allyCastSpellIfWarranted, stepAllyKeeperDecision: stepAllyKeeperDecision, stepAllyKeeper: stepAllyKeeper, keeperRenderPos: keeperRenderPos, keeperFieldPos: keeperFieldPos, keeperCellDist: keeperCellDist, chooseKeeperTargets: chooseKeeperTargets, keeperFireBolt: keeperFireBolt, stepKeeper: stepKeeper, stepHeroes: stepHeroes, stepOneHero: stepOneHero, damageHero: damageHero, heroFieldPos: heroFieldPos, heroRenderPos: heroRenderPos, heroFireBolt: heroFireBolt, chooseHeroTargets: chooseHeroTargets, applyBurnToEnemy: applyBurnToEnemy, applyKeeperBoltElement: applyKeeperBoltElement, tryFireHeroSignature: tryFireHeroSignature, fireHeroSignature: fireHeroSignature, fireCaptainSignature: fireCaptainSignature, fireHeroSignatureManual: fireHeroSignatureManual, heroAISignatureReady: heroAISignatureReady, heroStripState: heroStripState, keeperHeroes: keeperHeroes, heroStateForLane: heroStateForLane, anyHeroAlive: anyHeroAlive, spawnSummonCreature: spawnSummonCreature, stepSummons: stepSummons, highestUnlockedSummonCreature: highestUnlockedSummonCreature, summonCreatureRoster: summonCreatureRoster, healAllHeroes: healAllHeroes, backfillHeroes: backfillHeroes, activateKeeperSpell: activateKeeperSpell, TD_TEXT_OVERRIDES: TD_TEXT_OVERRIDES, TRAY_DISPLAY_NAMES: TRAY_DISPLAY_NAMES, KEEPER_FALLBACK: KEEPER_FALLBACK, getDefenderSpecWithUpgrades: getDefenderSpecWithUpgrades, getEnemySpec: getEnemySpec, advanceQuestProgress: advanceQuestProgress, pointSegDistSq: pointSegDistSq, segIntersectsSeg: segIntersectsSeg, pointInRect: pointInRect, segRectDist: segRectDist, scalePathPoint: scalePathPoint, buildPathGeometry: buildPathGeometry, refreshPathGeometry: refreshPathGeometry, isRoadCell: isRoadCell, getPathPlotAtPoint: getPathPlotAtPoint, levelHasEnemy: levelHasEnemy, nightWatchHasEnemy: nightWatchHasEnemy, createBattleSession: createBattleSession, laneCenterY: laneCenterY, bossScriptFor: bossScriptFor, bossPhaseInfo: bossPhaseInfo, bossCadence: bossCadence, bossPhaseBanner: bossPhaseBanner, summonLabel: summonLabel, spawnBossMinions: spawnBossMinions, startGloomTide: startGloomTide, fogPulseActive: fogPulseActive, fogStartColFor: fogStartColFor, fogAppliesTo: fogAppliesTo, updateBossPhase: updateBossPhase, runBossCycle: runBossCycle, getDefenderAt: getDefenderAt, getTowerPlotAtPoint: getTowerPlotAtPoint, canPlaceDefender: canPlaceDefender, placeDefender: placeDefender, shovelDefender: shovelDefender, activateKeeperPower: activateKeeperPower, grantLumen: grantLumen, collectMoteAt: collectMoteAt, applyHarmToEnemy: applyHarmToEnemy, applySlowToEnemy: applySlowToEnemy, applyRootToEnemy: applyRootToEnemy, applyKnockbackToEnemy: applyKnockbackToEnemy, startNextWave: startNextWave, startBossEntrance: startBossEntrance, spawnEnemyInstance: spawnEnemyInstance, stepBattleSession: stepBattleSession, runScriptedLevelVerification: runScriptedLevelVerification };
 if (typeof window !== 'undefined') {
   try {
     window.KKEngine = KKEngine;
@@ -62644,6 +62750,7 @@ if (typeof window !== 'undefined') {
     window.tryFireHeroSignature = tryFireHeroSignature;
     window.fireHeroSignature = fireHeroSignature;
     window.fireCaptainSignature = fireCaptainSignature;
+    window.fireHeroSignatureManual = fireHeroSignatureManual;
     window.heroAISignatureReady = heroAISignatureReady;
     window.heroStripState = heroStripState;
     window.keeperHeroes = keeperHeroes;
@@ -62826,6 +62933,7 @@ if (typeof globalThis !== 'undefined') {
     globalThis.tryFireHeroSignature = tryFireHeroSignature;
     globalThis.fireHeroSignature = fireHeroSignature;
     globalThis.fireCaptainSignature = fireCaptainSignature;
+    globalThis.fireHeroSignatureManual = fireHeroSignatureManual;
     globalThis.heroAISignatureReady = heroAISignatureReady;
     globalThis.heroStripState = heroStripState;
     globalThis.keeperHeroes = keeperHeroes;
@@ -63375,15 +63483,19 @@ try { if (typeof globalThis !== 'undefined') globalThis.KKArt = KKArt; } catch (
         // glow + arrow must still show until arrival).
         if (_dl === moveState.selectedLane && _dl !== moveState.destLane) continue;
         const _isDest = moveState.destLane === _dl;
+        // /* KK HERO-SKILLS */ The glow sits under the HERO's column
+        // (col 3, where heroes stand since the forward fix) — the old
+        // col-0 glow pointed at the back edge the heroes no longer
+        // occupy. It still marks the destination LANE (row).
         ctx.fillStyle = _isDest ? "#ffd86b33" : "#ffffff10";
-        ctx.fillRect(0, skyH + _dl * cellH, cellW, cellH);
+        ctx.fillRect(3 * cellW, skyH + _dl * cellH, cellW, cellH);
         if (_isDest) {
           ctx.save();
           ctx.fillStyle = "#ffd86b";
           ctx.beginPath();
-          ctx.moveTo(cellW - 4, skyH + (_dl + 0.5) * cellH - 6);
-          ctx.lineTo(cellW - 4, skyH + (_dl + 0.5) * cellH + 6);
-          ctx.lineTo(cellW - 12, skyH + (_dl + 0.5) * cellH);
+          ctx.moveTo(4 * cellW - 4, skyH + (_dl + 0.5) * cellH - 6);
+          ctx.lineTo(4 * cellW - 4, skyH + (_dl + 0.5) * cellH + 6);
+          ctx.lineTo(4 * cellW - 12, skyH + (_dl + 0.5) * cellH);
           ctx.closePath();
           ctx.fill();
           ctx.restore();
@@ -63392,8 +63504,13 @@ try { if (typeof globalThis !== 'undefined') globalThis.KKArt = KKArt; } catch (
     }
 
     // /* KKSPELLS H1 */ Five-hero field (HEROES-DESIGN.md §3, §4):
-    // one hero per lane at x = 0.5 cells. All hero state comes from
-    // the engine contract (KKEngine.heroStripState + heroDefList +
+    // one hero per lane at the ENGINE's forward position (x = 3.5
+    // cells, center of column 3 — the same x bolts, auras, and
+    // signature ranges already measure from). The old render put the
+    // sprites at 0.5 cells (the back edge) while the sim fought from
+    // 3.5 cells, so heroes LOOKED stuck at the back (Jesse's
+    // screenshot, Nov 22, 2026). All hero state comes from the engine
+    // contract (KKEngine.heroStripState + heroDefList +
     // keeperArtSnapshotForDef); the UI never reads session hero
     // internals. HP bars live on the hero strip now — NO floating HP
     // bar or revive countdown is drawn on the canvas anywhere.
@@ -63412,7 +63529,22 @@ try { if (typeof globalThis !== 'undefined') globalThis.KKArt = KKArt; } catch (
       for (let _hi = 0; _hi < _h1Strip.length; _hi++) {
         const _he = _h1Strip[_hi];
         const _hCy = skyH + (_he.lane + 0.5) * cellH;
-        const _hX = 0.5 * cellW;
+        // /* KK HERO-SKILLS */ Forward x from the engine contract:
+        // heroFieldPos of the lane's live hero state (3.5 cells).
+        // Fallback is the configured backXCells (3.5) — never the
+        // old 0.5-cell back edge.
+        let _hX = 3.5 * cellW;
+        try {
+          if (typeof KKEngine !== "undefined" && KKEngine &&
+              typeof KKEngine.heroStateForLane === "function" &&
+              typeof KKEngine.heroFieldPos === "function") {
+            const _hState = KKEngine.heroStateForLane(session, _he.lane);
+            if (_hState) {
+              const _hFp = KKEngine.heroFieldPos(session, _hState);
+              if (_hFp && typeof _hFp.x === "number") _hX = _hFp.x;
+            }
+          }
+        } catch (e) { /* 3.5-cell fallback stands */ }
         let _hDef = null;
         for (let _hd = 0; _hd < _h1Defs.length; _hd++) {
           if (_h1Defs[_hd].id === _he.id) { _hDef = _h1Defs[_hd]; break; }
@@ -64888,6 +65020,18 @@ var KKGameMethods = {
         } else if (btn.classList.contains("td-map-captain-btn")) {
           const hid = btn.getAttribute("data-hero-id");
           if (hid) self.switchCaptain(hid);
+        } else if (btn.classList.contains("td-hero-skill")) {
+          // /* KK HERO-SKILLS */ ⚡ skill chip: fire that hero's
+          // signature. Checked BEFORE td-hero-cell (the chip is a
+          // sibling of the portrait button inside the cell div).
+          const hid = btn.getAttribute("data-hero-id");
+          if (hid) self.fireHeroSignatureTap(hid);
+        } else if (btn.classList.contains("td-hero-portrait-btn")) {
+          // /* KK HERO-SKILLS */ Portrait button: select the hero
+          // (same as the old td-hero-cell tap — the cell is a div
+          // now, so the portrait carries the tap).
+          const hid = btn.getAttribute("data-hero-id");
+          if (hid) self.heroStripTap(hid);
         } else if (btn.classList.contains("td-hero-cell")) {
           const hid = btn.getAttribute("data-hero-id");
           if (hid) self.heroStripTap(hid);
@@ -65898,7 +66042,7 @@ var KKUIMethods = {
       const heroes = this.heroDefs();
       const bolt = kd.bolt || {};
       let html = '<div class="td-panel" style="text-align:center; font-size:12px; color:#e6dcc5;">' +
-        'Choose your Captain. Before each stage, pick your captain and two companions to bring — the other heroes sit that one out. In battle, tap a hero&rsquo;s portrait in the strip to select them, then tap a lane to send them there — an empty lane is a free move, an occupied lane swaps two heroes. Tap your captain&rsquo;s portrait twice to fire their signature. ' +
+        'Choose your Captain. Before each stage, pick your captain and two companions to bring — the other heroes sit that one out. In battle, tap a hero&rsquo;s portrait in the strip to select them, then tap a lane to send them there — an empty lane is a free move, an occupied lane swaps two heroes. Tap a hero&rsquo;s &#9889; skill button under their portrait to fire their signature — every hero has one, and it glows gold when it is ready. ' +
         'Your two companions fight beside you on their own. Switch captains and companions free from the map before any battle. Every hero has their own skill tree — open it from a hero&rsquo;s card to spend their Valor.' +
         '</div>';
       html += '<div class="td-hero-choice-grid">';
@@ -66048,6 +66192,58 @@ var KKUIMethods = {
       this.hudHintUntil = performance.now() + 2600;
       this.updateBattleHud();
     },
+    // /* KK HERO-SKILLS (Nov 22, 2026) */ Skill-chip tap: the strip's
+    // ⚡ button fires ANY fielded hero's signature (captain AND
+    // companions) through the engine's manual contract. The AI
+    // auto-fire path is untouched — a manual fire only ever ADDS a
+    // firing opportunity; the 0.5s AI tick still fires companions on
+    // its own thresholds. A chip tap is never a move order, so it
+    // does not disturb a pending lane selection.
+    fireHeroSignatureTap: function(heroId) {
+      const s = this.battleSession;
+      if (!s || this.currentScreen !== "battle") return;
+      const entries = this.heroStripEntries(s);
+      let entry = null;
+      if (entries) {
+        for (let i = 0; i < entries.length; i++) {
+          if (entries[i].id === heroId) { entry = entries[i]; break; }
+        }
+      }
+      if (!entry) return;
+      let res = null;
+      try {
+        if (typeof KKEngine !== "undefined" && KKEngine &&
+            typeof KKEngine.fireHeroSignatureManual === "function") {
+          res = KKEngine.fireHeroSignatureManual(s, heroId, this.saveState, true);
+        }
+      } catch (e) { res = null; }
+      if (!res) {
+        this.hudHintText = (entry.sigName || "Signature") + " is not ready yet.";
+        this.hudHintUntil = performance.now() + 2600;
+        this.updateBattleHud();
+        return;
+      }
+      if (res.ok) {
+        this.hudHintText = (entry.sigName || "Signature") + "!";
+        this.hudHintUntil = performance.now() + 1500;
+        this.updateBattleHud();
+        return;
+      }
+      const reason = res.reason || "locked";
+      let text = "Locked";
+      if (reason === "cooldown") {
+        const cd = (typeof entry.sigCdLeft === "number") ? Math.max(0, Math.ceil(entry.sigCdLeft)) : 0;
+        text = cd > 0 ? ("Cooling down — " + cd + "s") : "Cooling down";
+      } else if (reason === "down") {
+        const rv = (typeof entry.reviveSecLeft === "number") ? Math.max(0, Math.ceil(entry.reviveSecLeft)) : 0;
+        text = rv > 0 ? ((entry.name || "Hero") + " down — " + rv + "s") : ((entry.name || "Hero") + " down");
+      } else if (reason === "no-target") text = "No target in range";
+      else if (reason === "no-room") text = "No room for a summon";
+      else if (reason === "no-hero") text = "Hero not on the field";
+      this.hudHintText = text;
+      this.hudHintUntil = performance.now() + 2600;
+      this.updateBattleHud();
+    },
     // /* KKSPELLS H1-RESUME */ Hero-move selection (MOVEMENT-ADDENDUM
     // §1): strip-select + lane-tap. Selection lives on the game
     // object (this.selectedHeroId, init null in kk-game.js); the
@@ -66145,12 +66341,24 @@ var KKUIMethods = {
           if (defs[d].id === e.id) { def = defs[d]; break; }
         }
         const pKey = (def && def.portraits && def.portraits.calm) || "keeper_sigil";
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "td-hero-cell" + (e.isCaptain ? " td-hero-captain" : "");
-        btn.setAttribute("data-hero-id", e.id);
-        btn.setAttribute("data-hero-lane", String(e.lane));
-        btn.setAttribute("aria-label", (e.name || e.id) + (e.isCaptain ? " (Captain — tap to select; tap again to fire signature)" : " (AI teammate — tap to select)"));
+        // /* KK HERO-SKILLS (Nov 22, 2026 — Jesse: "I don't see a way
+        // to use my hero skills") */ The cell is a DIV, not a button:
+        // it holds TWO buttons — the portrait (select the hero for
+        // lane moves) and the ⚡ skill chip (fire that hero's
+        // signature). A <button> inside a <button> is invalid HTML
+        // (the browser splits the DOM), so the cell cannot stay a
+        // button now that the chip exists. The chip overlays the
+        // portrait's bottom edge (absolute, cell-relative) so the
+        // strip stays 50px and the 350px chrome budget holds.
+        const cell = document.createElement("div");
+        cell.className = "td-hero-cell" + (e.isCaptain ? " td-hero-captain" : "");
+        cell.setAttribute("data-hero-id", e.id);
+        cell.setAttribute("data-hero-lane", String(e.lane));
+        const portraitBtn = document.createElement("button");
+        portraitBtn.type = "button";
+        portraitBtn.className = "td-hero-portrait-btn";
+        portraitBtn.setAttribute("data-hero-id", e.id);
+        portraitBtn.setAttribute("aria-label", (e.name || e.id) + (e.isCaptain ? " (Captain — tap to select; tap again to fire signature)" : " (tap to select)"));
         const portrait = document.createElement("span");
         portrait.className = "td-hero-portrait";
         portrait.innerHTML = KKArt.portraitHtml(pKey);
@@ -66160,23 +66368,30 @@ var KKUIMethods = {
         sec.className = "td-hero-sig-sec";
         portrait.appendChild(sweep);
         portrait.appendChild(sec);
-        // /* KKSPELLS H1-RESUME */ Signature hint (ADDENDUM §1.2):
-        // while the captain is selected the strip shows "Tap again:
-        // <Signature>" under the captain's portrait. It overlays the
-        // portrait's bottom edge: a separate row would need a taller
-        // strip and break the 350px chrome budget (see report).
+        // /* KK HERO-SKILLS */ The "Tap again: <Signature>" hint is
+        // retired: the ⚡ chip below IS the affordance now, for every
+        // hero, so the captain-only hint would only collide with it.
+        // The hint span stays in the DOM (empty → hidden) so the
+        // guarded update below keeps its shape.
         const hint = document.createElement("span");
         hint.className = "td-hero-sig-hint";
         portrait.appendChild(hint);
+        portraitBtn.appendChild(portrait);
         const hp = document.createElement("span");
         hp.className = "td-hero-hp";
         const fill = document.createElement("span");
         fill.className = "td-hero-hp-fill";
         hp.appendChild(fill);
-        btn.appendChild(portrait);
-        btn.appendChild(hp);
-        strip.appendChild(btn);
-        this._heroStripCells.push({ id: e.id, el: btn, portrait: portrait, sweep: sweep, sec: sec, hint: hint, hpFill: fill, _hpPct: -1, _hpBucket: null, _sweepPct: -1, _secText: null, _alive: null, _captain: null, _canFire: null, _selected: null, _hintText: null });
+        const skillBtn = document.createElement("button");
+        skillBtn.type = "button";
+        skillBtn.className = "td-hero-skill";
+        skillBtn.setAttribute("data-hero-id", e.id);
+        skillBtn.setAttribute("aria-label", "Fire " + (e.sigName || "signature"));
+        cell.appendChild(portraitBtn);
+        cell.appendChild(hp);
+        cell.appendChild(skillBtn);
+        strip.appendChild(cell);
+        this._heroStripCells.push({ id: e.id, el: cell, portrait: portrait, sweep: sweep, sec: sec, hint: hint, hpFill: fill, skill: skillBtn, _hpPct: -1, _hpBucket: null, _sweepPct: -1, _secText: null, _alive: null, _captain: null, _canFire: null, _selected: null, _hintText: null, _skillText: null, _skillState: null });
       }
     },
     updateHeroStrip: function(entries) {
@@ -66243,21 +66458,40 @@ var KKUIMethods = {
           if (canFire) c.el.classList.add("td-hero-ready");
           else c.el.classList.remove("td-hero-ready");
         }
-        // /* KKSPELLS H1-RESUME */ Selection ring + signature hint
-        // (ADDENDUM §1): white ring on the selected hero's portrait
-        // (distinct from the captain's gold ring); the hint shows only
-        // while the CAPTAIN is selected. GUARDED writes only.
+        // /* KKSPELLS H1-RESUME */ Selection ring (ADDENDUM §1):
+        // white ring on the selected hero's portrait (distinct from
+        // the captain's gold ring). GUARDED writes only.
         const isSel = this.selectedHeroId === e.id;
         if (c._selected !== isSel) {
           c._selected = isSel;
           if (isSel) c.el.classList.add("td-hero-selected");
           else c.el.classList.remove("td-hero-selected");
         }
-        let hintText = "";
-        if (isSel && e.isCaptain && e.sigName) hintText = "Tap again: " + e.sigName;
+        // /* KK HERO-SKILLS */ The "Tap again: <Signature>" hint is
+        // retired — the ⚡ chip IS the affordance now. The hint span
+        // stays empty (hidden by :empty) so the guarded shape below
+        // keeps working.
+        const hintText = "";
         if (c._hintText !== hintText) {
           c._hintText = hintText;
           if (c.hint.textContent !== hintText) c.hint.textContent = hintText;
+        }
+        // /* KK HERO-SKILLS */ Skill chip state (GUARDED writes
+        // only): label "⚡ <Signature>"; ready = gold + glow, cooling
+        // = dimmed, locked = dimmed, down = hidden (the revive
+        // countdown already shows in the portrait center).
+        const cdLeft2 = (typeof e.sigCdLeft === "number" && e.sigCdLeft > 0) ? e.sigCdLeft : 0;
+        const skillState = !e.alive ? "down" : (canFire ? "ready" : (cdLeft2 > 0.05 ? "cooling" : "locked"));
+        const skillText = (e.sigName || "Skill") ? ("⚡ " + (e.sigName || "Skill")) : "⚡ Skill";
+        if (c._skillText !== skillText) {
+          c._skillText = skillText;
+          if (c.skill.textContent !== skillText) c.skill.textContent = skillText;
+        }
+        if (c._skillState !== skillState) {
+          c._skillState = skillState;
+          c.skill.classList.remove("td-hero-skill-ready", "td-hero-skill-cooling", "td-hero-skill-locked", "td-hero-skill-down");
+          c.skill.classList.add("td-hero-skill-" + skillState);
+          c.skill.disabled = (skillState === "down");
         }
       }
     },
@@ -66592,7 +66826,7 @@ var KKUIMethods = {
         'Each battle starts with every fielded hero in their home lane (Rowan and Dain top, Rai and Nia, Neve and Lysa, Sora and Kael, Wren and Fern bottom — two heroes share each home lane, so the second takes the nearest free lane). ' +
         'A hero slides along the hero line to their new lane; their bolt pauses while sliding. ' +
         'Tap the selected hero&rsquo;s own lane — or their portrait again — to cancel. ' +
-        'Tap your captain&rsquo;s portrait a second time to fire their signature. ' +
+        'Tap a hero&rsquo;s &#9889; skill button under their portrait to fire their signature — it glows gold when it is ready (tapping your captain&rsquo;s portrait a second time fires it too). ' +
         'A hero who has fallen holds their lane until they rise — no orders into or out of a fallen hero&rsquo;s lane. ' +
         'A move into a telegraphed charge lane is a move into harm: the charge hits whoever stands in that lane when it lands. ' +
         'Picking a card, power, or spell cancels a move selection at once — moving never blocks placing or casting.' +
