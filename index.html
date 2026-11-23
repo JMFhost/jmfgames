@@ -13265,6 +13265,370 @@ button.mr-setup-preview:focus-visible {
 #app-snake #snMusicBtn{display:flex}
 #app-snake #snMusicBtn.sn-off{opacity:.45}
 </style>
+<style>
+/* source: tycoon-game.css */
+/* Tycoon Town — phone styles (Nov 22, 2026). Touch-only, built for
+   the phone shell. The board is an 11x11 grid; the 40 squares ring
+   the edge and the dice / log / actions sit in the middle. */
+.ty-game {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  /* 48px clears the phone status bar, like every other game root
+     (chs/sol/cl all use 48px). Without it the header sits under the
+     clock and battery icons. */
+  padding-top: 48px;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #0f3d2e 0%, #14532d 55%, #0b2e1f 100%);
+  color: #f8fafc;
+  font-family: inherit;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.ty-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 6px;
+}
+.ty-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #fde68a;
+  white-space: nowrap;
+}
+.ty-turn {
+  flex: 1;
+  font-size: 11px;
+  color: #d1fae5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ty-headbtns { display: flex; align-items: center; gap: 4px; }
+.ty-iconbtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ty-iconbtn.ty-off { opacity: 0.45; }
+.ty-players {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 0 10px 8px;
+}
+.ty-player {
+  background: rgba(0, 0, 0, 0.28);
+  border: 2px solid transparent;
+  border-radius: 10px;
+  padding: 5px 4px;
+  text-align: center;
+  min-width: 0;
+}
+.ty-player.ty-active { border-color: #fde68a; box-shadow: 0 0 0 1px #fde68a; }
+.ty-player.ty-bankrupt { opacity: 0.45; }
+.ty-face {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 18%;
+  display: block;
+  margin: 0 auto 2px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+}
+.ty-pname {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ty-pmoney { display: block; font-size: 11px; color: #bbf7d0; }
+.ty-out { display: block; font-size: 10px; color: #fca5a5; font-weight: 800; }
+
+.ty-boardwrap { padding: 0 8px 8px; }
+.ty-board {
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  grid-template-rows: repeat(11, 1fr);
+  width: 100%;
+  max-width: 374px;
+  margin: 0 auto;
+  aspect-ratio: 1 / 1;
+  background: #f8f5e8;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 1px;
+  box-sizing: border-box;
+}
+.ty-sq {
+  position: relative;
+  background: #fffdf5;
+  border: 1px solid #d6cfb8;
+  border-radius: 2px;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  color: #1f2937;
+  font-family: inherit;
+  text-align: center;
+}
+.ty-sq.ty-here { outline: 2px solid #f59e0b; outline-offset: -2px; }
+.ty-color { display: block; height: 5px; width: 100%; }
+.ty-sq-top .ty-color { position: absolute; bottom: 0; left: 0; }
+.ty-sq-left .ty-color { position: absolute; top: 0; right: 0; width: 5px; height: 100%; }
+.ty-sq-right .ty-color { position: absolute; top: 0; left: 0; width: 5px; height: 100%; }
+.ty-name {
+  display: block;
+  font-size: 6.5px;
+  line-height: 1.15;
+  font-weight: 700;
+  padding: 1px;
+  word-break: break-word;
+}
+.ty-sq-top .ty-name, .ty-sq-bottom .ty-name { padding-top: 6px; }
+.ty-sq-top .ty-name { padding-bottom: 6px; padding-top: 1px; }
+.ty-price { display: block; font-size: 6px; color: #6b7280; }
+.ty-houses { position: absolute; top: 1px; left: 1px; display: flex; gap: 1px; }
+.ty-houses i { width: 4px; height: 4px; background: #16a34a; border-radius: 1px; display: block; }
+.ty-hotel {
+  position: absolute; top: 0; left: 1px;
+  font-size: 8px; font-weight: 900; color: #dc2626;
+}
+.ty-mort {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  font-size: 5px; font-weight: 800; color: #dc2626; background: rgba(255, 255, 255, 0.85);
+}
+.ty-owner {
+  position: absolute; bottom: 1px; right: 1px;
+  width: 6px; height: 6px; border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+}
+.ty-tokens {
+  position: absolute; bottom: 1px; left: 1px;
+  display: flex; gap: 1px;
+}
+.ty-token {
+  width: 9px; height: 9px; border-radius: 50%;
+  color: #fff; font-size: 7px; font-weight: 800; line-height: 9px;
+  text-align: center; border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.7);
+}
+/* The current player's token bobs gently so the eye finds it. */
+.ty-sq.ty-here .ty-token { animation: ty-bob 1s ease-in-out infinite alternate; }
+@keyframes ty-bob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-2px); }
+}
+/* Buy / build / mortgage pulse on the square that just changed. */
+.ty-sq.ty-pulse { animation: ty-pulse 0.9s ease-out 2; }
+@keyframes ty-pulse {
+  0% { box-shadow: inset 0 0 0 3px #f59e0b; }
+  100% { box-shadow: inset 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+.ty-center {
+  grid-row: 2 / 11;
+  grid-column: 2 / 11;
+  background: linear-gradient(160deg, #166534, #14532d);
+  background-size: cover;
+  background-position: center;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px;
+  overflow: hidden;
+}
+/* Card-draw + jail banners in the board center (HQ art + flip-in). */
+.ty-carddraw, .ty-jailbanner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 4px 6px;
+  font-size: 10px;
+  line-height: 1.3;
+  color: #fef9c3;
+  animation: ty-flip 0.5s ease-out;
+}
+.ty-carddraw-art, .ty-jailbanner-art {
+  width: 26px; height: 26px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex: none;
+}
+.ty-carddraw span, .ty-jailbanner span {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+@keyframes ty-flip {
+  from { transform: perspective(300px) rotateY(90deg); opacity: 0; }
+  to { transform: perspective(300px) rotateY(0); opacity: 1; }
+}
+.ty-dice { display: flex; gap: 10px; }
+.ty-die {
+  width: 30px; height: 30px;
+  background: #fff;
+  border-radius: 7px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 4px;
+  box-sizing: border-box;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+.ty-die i { border-radius: 50%; }
+.ty-die i.on { background: #111827; }
+.ty-die-idle {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 800; color: #6b7280;
+}
+.ty-dice.ty-rolling .ty-die { animation: ty-shake 0.09s infinite alternate; }
+@keyframes ty-shake {
+  from { transform: translate(0, 0) rotate(-6deg); }
+  to { transform: translate(1px, -1px) rotate(6deg); }
+}
+.ty-log {
+  width: 100%;
+  font-size: 10px;
+  line-height: 1.35;
+  color: #d1fae5;
+  max-height: 76px;
+  overflow: hidden;
+}
+.ty-logline { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ty-logline:last-child { color: #fef9c3; font-weight: 700; }
+.ty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  width: 100%;
+}
+.ty-status { width: 100%; font-size: 11px; text-align: center; color: #fef9c3; }
+.ty-debt {
+  width: 100%;
+  font-size: 11px;
+  text-align: center;
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.5);
+  border-radius: 6px;
+  padding: 4px;
+}
+.ty-btn {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border-radius: 9px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.ty-btn:disabled { opacity: 0.4; }
+.ty-btn-primary { background: #f59e0b; border-color: #f59e0b; color: #1c1005; }
+.ty-btn-danger { background: #b91c1c; border-color: #b91c1c; }
+.ty-btn-small { padding: 4px 7px; font-size: 11px; }
+.ty-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 40;
+}
+.ty-sheet {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: min(100%, 420px);
+  max-height: 82%;
+  overflow-y: auto;
+  background: #fffdf5;
+  color: #1f2937;
+  border-radius: 16px 16px 0 0;
+  z-index: 41;
+  padding: 14px 14px 22px;
+  box-sizing: border-box;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.45);
+  animation: ty-sheetin 0.22s ease-out;
+}
+@keyframes ty-sheetin {
+  from { transform: translate(-50%, 24px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+/* HQ sheet art: property cards, victory, menu, rules. */
+.ty-card-art { width: 100%; height: 110px; object-fit: cover; border-radius: 8px; margin-bottom: 6px; display: block; }
+.ty-over-art { width: 100%; height: 120px; object-fit: cover; border-radius: 10px; margin-bottom: 8px; display: block; }
+.ty-menu-art { width: 100%; height: 110px; object-fit: cover; border-radius: 10px; margin-bottom: 8px; display: block; }
+.ty-rules-art { width: 100%; height: 90px; object-fit: cover; border-radius: 10px; margin-bottom: 8px; display: block; }
+.ty-sheet-card { position: relative; }
+.ty-sheet-card h2 { margin: 4px 0 8px; font-size: 18px; }
+.ty-sheet-card h3 { margin: 10px 0 4px; font-size: 14px; }
+.ty-sheet-x {
+  position: absolute; top: 0; right: 0;
+  border: none; background: none; font-size: 18px; cursor: pointer;
+  width: 30px; height: 30px; color: #6b7280;
+}
+.ty-card-color { height: 10px; border-radius: 5px; margin-bottom: 6px; }
+.ty-card-sub { font-size: 12px; color: #4b5563; margin: 6px 0; line-height: 1.4; }
+.ty-rents { width: 100%; border-collapse: collapse; font-size: 12px; margin: 8px 0; }
+.ty-rents td { padding: 3px 4px; border-bottom: 1px solid #e5e0cf; }
+.ty-rents td:last-child { text-align: right; font-weight: 700; }
+.ty-build-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  border-bottom: 1px solid #e5e0cf; padding: 8px 0;
+}
+.ty-build-row .ty-btn { color: #1f2937; border-color: #9ca3af; background: #f3f4f6; }
+.ty-build-row .ty-btn-primary { background: #f59e0b; border-color: #f59e0b; color: #1c1005; }
+.ty-build-name { flex: 1 1 100%; font-weight: 700; font-size: 13px; }
+.ty-build-name i { font-weight: 400; color: #6b7280; }
+.ty-build-info { font-size: 11px; color: #6b7280; }
+.ty-field { display: block; font-size: 12px; margin: 6px 0; }
+.ty-field input, .ty-field select {
+  font-size: 14px; padding: 6px; border-radius: 6px; border: 1px solid #9ca3af;
+  max-width: 110px; background: #fff;
+}
+.ty-trade-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ty-check { display: block; font-size: 12px; margin: 3px 0; }
+.ty-rules p { font-size: 13px; line-height: 1.5; margin: 8px 0; }
+.ty-over { text-align: center; }
+.ty-over-face { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; object-position: 50% 18%; }
+.ty-sheet .ty-btn { color: #1f2937; border-color: #9ca3af; background: #f3f4f6; }
+.ty-sheet .ty-btn-primary { background: #f59e0b; border-color: #f59e0b; color: #1c1005; }
+.ty-sheet .ty-btn-danger { background: #b91c1c; border-color: #b91c1c; color: #fff; }
+
+/* Shell splash theme for Tycoon Town (3s, tap to skip, like the rest). */
+.ph-splash--tycoon {
+  background: linear-gradient(180deg, #14532d 0%, #0f3d2e 100%);
+}
+.ph-splash--tycoon .ph-splash-game { color: #fde68a; }
+
+/* Narrow phones: shrink the board text a touch so nothing clips. */
+@media (max-width: 360px) {
+  .ty-name { font-size: 6px; }
+  .ty-title { font-size: 16px; }
+  .ty-log { max-height: 60px; }
+}
+</style>
 </head>
 <body>
 <div id="ph-stage">
@@ -13364,6 +13728,12 @@ button.mr-setup-preview:focus-visible {
             <span class="ph-icon" style="background:linear-gradient(150deg,#1a5c31 0%,#0d3a1e 100%)" aria-hidden="true"><svg viewBox="0 0 48 48" width="38" height="38" aria-hidden="true" focusable="false"><circle cx="35" cy="12" r="6" fill="#ef4444"/><path d="M35 6 Q37 3 40 4" stroke="#4ade80" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M9 37 Q19 37 21 29 Q23 21 15 19 Q9 17 12 11" stroke="#7cff6b" stroke-width="6" fill="none" stroke-linecap="round"/><circle cx="12" cy="10" r="4.5" fill="#a3e635"/><circle cx="10.5" cy="8.5" r="1" fill="#101018"/><circle cx="13.5" cy="8.5" r="1" fill="#101018"/></svg></span>
             <span class="ph-icon-label">Snake</span>
           </button>
+          <!-- TYCOON -->
+          <button type="button" class="ph-app-icon" data-app="tycoon" aria-label="Tycoon Town">
+            <span class="ph-icon" style="background:linear-gradient(150deg,#16a34a 0%,#14532d 100%)" aria-hidden="true"><svg viewBox="0 0 48 48" width="38" height="38" aria-hidden="true" focusable="false"><circle cx="37" cy="11" r="5" fill="#fde68a" stroke="#b45309" stroke-width="1.5"/><rect x="6" y="22" width="10" height="18" rx="1.5" fill="#fef3c7"/><rect x="9" y="26" width="2.5" height="2.5" fill="#14532d"/><rect x="9" y="31" width="2.5" height="2.5" fill="#14532d"/><rect x="19" y="14" width="11" height="26" rx="1.5" fill="#fde68a"/><rect x="22" y="18" width="2.5" height="2.5" fill="#14532d"/><rect x="22" y="23" width="2.5" height="2.5" fill="#14532d"/><rect x="22" y="28" width="2.5" height="2.5" fill="#14532d"/><rect x="26" y="18" width="2.5" height="2.5" fill="#14532d"/><rect x="33" y="26" width="9" height="14" rx="1.5" fill="#bbf7d0"/><rect x="36" y="29" width="2.5" height="2.5" fill="#14532d"/><rect x="36" y="34" width="2.5" height="2.5" fill="#14532d"/><rect x="5" y="40" width="38" height="3" rx="1.5" fill="#052e16"/></svg></span>
+            <span class="ph-icon-label">Tycoon Town</span>
+          </button>
+          <!-- /TYCOON -->
           <button type="button" class="ph-app-icon" data-app="solitaire" aria-label="Solitaire">
             <span class="ph-icon ph-icon-cards" aria-hidden="true"><span class="ph-fan"><i></i><i></i><i></i></span></span>
             <span class="ph-icon-label">Solitaire</span>
@@ -13427,6 +13797,9 @@ button.mr-setup-preview:focus-visible {
       <!-- SNAKE -->
       <section id="app-snake" class="ph-app" aria-label="Snake"></section>
       <!-- /SNAKE -->
+      <!-- TYCOON -->
+      <section id="app-tycoon" class="ph-app" aria-label="Tycoon Town"></section>
+      <!-- /TYCOON -->
       <section id="app-settings" class="ph-app" aria-label="Settings">
         <div class="ph-panel">
           <h1 class="ph-panel-title">Settings</h1>
@@ -13878,7 +14251,8 @@ if (typeof window !== 'undefined') {
     mathrealms: 'math-realms',
     oath: 'summoners-oath',
     solitaire: 'solitaire',
-    snake: 'snake'
+    snake: 'snake',
+    tycoon: 'tycoon-town'
   };
   var SLUG_TO_APP = {};
   (function () {
@@ -14691,6 +15065,24 @@ if (typeof window !== 'undefined') {
         { star: true, x: 222, y: 108, s: 4, d: 0.9 },
         { star: true, x: 120, y: 8, s: 4, d: 1.2 },
         { flash: true, x: 24, y: 122, w: 200, h: 14, d: 2.0 }
+      ]
+    }
+    /* TYCOON (Nov 22, 2026): Tycoon Town — gold coins and dice over the
+       town, flash as the deal closes. Reuses the chip/dice/star/flash
+       renderer branches; timing exactly 3000ms via SPLASH_MS. */
+    , tycoon: {
+      cls: 'ph-splash--tycoon',
+      tag: 'Buy the town. Own the streets.',
+      motif: 'tycoon',
+      pieces: [
+        { chip: true, c: 'gold', x: 30, y: 30, d: 0.1 },
+        { chip: true, c: 'gold', x: 52, y: 52, d: 0.25 },
+        { chip: true, c: 'green', x: 180, y: 30, d: 0.4 },
+        { chip: true, c: 'gold', x: 196, y: 96, d: 0.6 },
+        { dice: true, text: '🎲🎲', x: 92, y: 8, d: 0.5 },
+        { star: true, x: 120, y: 118, s: 5, d: 0.8 },
+        { star: true, x: 24, y: 100, s: 4, d: 1.1 },
+        { flash: true, x: 74, y: 52, w: 100, h: 40, d: 1.9 }
       ]
     }
   };
@@ -16001,6 +16393,26 @@ if (typeof window !== 'undefined') {
           if (typeof window !== 'undefined' && window.SnakeWire &&
               typeof window.SnakeWire.onClose === 'function') {
             window.SnakeWire.onClose();
+          }
+        } catch (e) { /* never throws */ }
+      } });
+    /* TYCOON (Nov 22, 2026): Tycoon Town. Delegated to the Tycoon
+       wire, which no-ops until the game lands. Guarded and tycoon-scoped;
+       never throws. Do not init the wire here. */
+    PhoneShell.registerApp('tycoon', { title: 'Tycoon Town', game: true, el: $('app-tycoon'),
+      onOpen: function () {
+        try {
+          if (typeof window !== 'undefined' && window.TycoonWire &&
+              typeof window.TycoonWire.onOpen === 'function') {
+            window.TycoonWire.onOpen();
+          }
+        } catch (e) { /* never throws */ }
+      },
+      onClose: function () {
+        try {
+          if (typeof window !== 'undefined' && window.TycoonWire &&
+              typeof window.TycoonWire.onClose === 'function') {
+            window.TycoonWire.onClose();
           }
         } catch (e) { /* never throws */ }
       } });
@@ -24145,6 +24557,13 @@ var BZSettings = (function () {
       'five themes, five modes including Time Attack, Maze, and Portal, ' +
       'golden apples, slow-mo, and a shield that saves one hit. Chase ' +
       'your best score across every mode.'));
+    body.appendChild(_el('p', 'bz-about-text',
+      'Tycoon Town is a property-trading board game built for touch. ' +
+      'Roll the dice, buy the streets of a little town, build houses ' +
+      'and hotels, and collect rent until you are the last solvent ' +
+      'player. Play against three rivals — Maya, Leo, and Rosa — with ' +
+      'Fortune and Town Event cards, jail, trades, and mortgages, ' +
+      'and your game auto-saves after every move.'));
     body.appendChild(_el('p', 'bz-about-text',
       'The green chart icon on the home screen opens the companion ' +
       'investing simulation in this same tab.'));
@@ -131493,6 +131912,2769 @@ if (typeof module !== 'undefined' && module.exports) module.exports = SnakeWire;
 if (typeof window !== 'undefined') {
   try { window.SnakeWire = SnakeWire; } catch (e) { /* best-effort */ }
 }
+</script>
+<script>
+// source: tycoon-data.js
+// Tycoon Town — board data (Nov 22, 2026).
+//
+// A property-trading board game for the JMF Games phone. ALL names,
+// streets, and card text are original inventions for this game —
+// nothing is copied from any classic property-trading board game.
+// The title lives in ONE constant (TYCOON_TITLE) so a rename is trivial.
+//
+// UMD: global TycoonData (+ window.__TYCOON_DATA__ handle) and
+// module.exports. Pure data + tiny pure helpers; never throws.
+var TycoonData = (function () {
+  'use strict';
+
+  var TYCOON_TITLE = 'Tycoon Town';
+  var TITLE = TYCOON_TITLE;
+
+  var START_MONEY = 1500;
+  var GO_SALARY = 200;
+  var JAIL_FINE = 50;
+  var MAX_JAIL_TURNS = 3;
+
+  // Color sets. groups: id -> {name, color, squares[]}.
+  var GROUPS = {
+    rose:    { name: 'Rose',    color: '#d96a8b', squares: [1, 3] },
+    sky:     { name: 'Sky',     color: '#7ec8e3', squares: [6, 8, 9] },
+    coral:   { name: 'Coral',   color: '#ff8a5c', squares: [11, 13, 14] },
+    gold:    { name: 'Gold',    color: '#f5c542', squares: [16, 18, 19] },
+    emerald: { name: 'Emerald', color: '#4caf7d', squares: [21, 23, 24] },
+    azure:   { name: 'Azure',  color: '#3f8efc', squares: [26, 27, 28] },
+    violet:  { name: 'Violet',  color: '#9b7ede', squares: [29, 31, 32] },
+    ruby:    { name: 'Ruby',    color: '#d63a3a', squares: [34, 37] }
+  };
+
+  // Streets: price, house cost, rents [base, 1H, 2H, 3H, 4H, hotel].
+  function street(name, group, price, houseCost, rents) {
+    return { kind: 'street', name: name, group: group, price: price,
+      houseCost: houseCost, rents: rents };
+  }
+  function station(name) {
+    return { kind: 'station', name: name, price: 200 };
+  }
+  function utility(name) {
+    return { kind: 'utility', name: name, price: 150 };
+  }
+
+  // 40 squares. Index 0 is GO (bottom-right corner); play runs
+  // clockwise: bottom row right-to-left, left column bottom-to-top,
+  // top row left-to-right, right column top-to-bottom.
+  var SQUARES = [
+    { kind: 'go', name: 'GO' },
+    street('Rosewood Lane', 'rose', 60, 50, [2, 10, 30, 90, 160, 250]),
+    { kind: 'event', name: 'Town Event' },
+    street('Daisy Court', 'rose', 60, 50, [4, 20, 60, 180, 320, 450]),
+    { kind: 'tax', name: 'Town Tax', amount: 200 },
+    station('North Station'),
+    street('Harbor View', 'sky', 100, 50, [6, 30, 90, 270, 400, 550]),
+    { kind: 'fortune', name: 'Fortune' },
+    street('Gull Street', 'sky', 100, 50, [6, 30, 90, 270, 400, 550]),
+    street('Lighthouse Road', 'sky', 120, 50, [8, 40, 100, 300, 450, 600]),
+    { kind: 'jail', name: 'Jail / Just Visiting' },
+    street('Maple Avenue', 'coral', 140, 100, [10, 50, 150, 450, 625, 750]),
+    utility('Sunbeam Power'),
+    street('Birch Street', 'coral', 140, 100, [10, 50, 150, 450, 625, 750]),
+    street('Cedar Lane', 'coral', 160, 100, [12, 60, 180, 500, 700, 900]),
+    station('East Station'),
+    street('Sunset Boulevard', 'gold', 180, 100, [14, 70, 200, 550, 750, 950]),
+    { kind: 'event', name: 'Town Event' },
+    street('Palm Court', 'gold', 180, 100, [14, 70, 200, 550, 750, 950]),
+    street('Coral Drive', 'gold', 200, 100, [16, 80, 220, 600, 800, 1000]),
+    { kind: 'parking', name: 'Free Parking' },
+    street('Willow Way', 'emerald', 220, 150, [18, 90, 250, 700, 875, 1050]),
+    { kind: 'fortune', name: 'Fortune' },
+    street('Fern Street', 'emerald', 220, 150, [18, 90, 250, 700, 875, 1050]),
+    street('Ivy Lane', 'emerald', 240, 150, [20, 100, 300, 750, 925, 1100]),
+    station('South Station'),
+    street('Ocean Drive', 'azure', 260, 150, [22, 110, 300, 800, 975, 1150]),
+    street('Marina Bay', 'azure', 260, 150, [22, 110, 300, 800, 975, 1150]),
+    street('Seagull Terrace', 'azure', 280, 150, [24, 120, 360, 850, 1025, 1200]),
+    street('Royal Crescent', 'violet', 300, 200, [26, 130, 350, 900, 1100, 1275]),
+    { kind: 'gotojail', name: 'Go to Jail' },
+    street('Crown Street', 'violet', 300, 200, [26, 130, 350, 900, 1100, 1275]),
+    street('Palace Road', 'violet', 320, 200, [28, 150, 400, 950, 1150, 1400]),
+    { kind: 'event', name: 'Town Event' },
+    street('Diamond Row', 'ruby', 350, 200, [35, 175, 500, 1100, 1300, 1500]),
+    station('West Station'),
+    { kind: 'fortune', name: 'Fortune' },
+    street('Golden Mile', 'ruby', 400, 200, [50, 200, 600, 1400, 1700, 2000]),
+    { kind: 'tax', name: 'Festival Tax', amount: 100 },
+    utility('Harbor Waterworks')
+  ];
+
+  // Card decks. Every card is an original invention. `effect` is a
+  // machine tag the engine switches on; `text` is what the player sees.
+  var FORTUNE_CARDS = [
+    { effect: 'advance-go', text: 'Advance to GO. Collect $200.' },
+    { effect: 'go-jail', text: 'Go to Jail. Go directly — do not pass GO.' },
+    { effect: 'advance-to', to: 6, text: 'Advance to Harbor View. If nobody owns it, you may buy it.' },
+    { effect: 'advance-station', text: 'Advance to the nearest station. If nobody owns it, you may buy it.' },
+    { effect: 'money', amount: 50, text: 'The town bank pays you a $50 dividend.' },
+    { effect: 'collect-each', amount: 10, text: 'It is your birthday! Collect $10 from every player.' },
+    { effect: 'money', amount: -50, text: 'Pay $50 into the town festival fund.' },
+    { effect: 'jail-card', text: 'Get Out of Jail Free. Keep this card until you need it.' },
+    { effect: 'advance-to', to: 37, text: 'Advance to Golden Mile. If nobody owns it, you may buy it.' },
+    { effect: 'advance-station-double', text: 'Take the Harbor Line to the nearest station. If it is owned, pay double rent.' },
+    { effect: 'money', amount: 100, text: 'You found a lost wallet and returned it — collect a $100 reward.' },
+    { effect: 'money', amount: -15, text: 'Pay a $15 street-cleaning fine.' },
+    { effect: 'advance-to', to: 11, text: 'Advance to Maple Avenue. If nobody owns it, you may buy it.' },
+    { effect: 'repairs', house: 25, hotel: 100, text: 'Your buildings need repairs. Pay $25 per house and $100 per hotel.' },
+    { effect: 'back', steps: 3, text: 'Go back 3 spaces.' },
+    { effect: 'money', amount: 25, text: 'The town market pays you $25 for your famous jam.' }
+  ];
+
+  var EVENT_CARDS = [
+    { effect: 'advance-go', text: 'Advance to GO. Collect $200.' },
+    { effect: 'go-jail', text: 'Go to Jail. Go directly — do not pass GO.' },
+    { effect: 'money', amount: 100, text: 'You inherit $100 from a distant aunt.' },
+    { effect: 'money', amount: -40, text: 'Pay $40 for a new street sign.' },
+    { effect: 'jail-card', text: 'Get Out of Jail Free. Keep this card until you need it.' },
+    { effect: 'money', amount: -50, text: 'Doctor\u2019s fee. Pay $50.' },
+    { effect: 'money', amount: 75, text: 'You won the town raffle. Collect $75.' },
+    { effect: 'advance-utility', text: 'Advance to the nearest utility. If nobody owns it, you may buy it; if owned, pay 10 times the dice.' },
+    { effect: 'money', amount: -20, text: 'Pay $20 in library fines.' },
+    { effect: 'money', amount: 50, text: 'Your corner shop had a great week. Collect $50.' },
+    { effect: 'repairs', house: 40, hotel: 115, text: 'Street repairs. Pay $40 per house and $115 per hotel.' },
+    { effect: 'advance-to', to: 1, text: 'Advance to Rosewood Lane. If nobody owns it, you may buy it.' },
+    { effect: 'back', steps: 2, text: 'Go back 2 spaces.' },
+    { effect: 'collect-each', amount: 10, text: 'Collect $10 from every player for the block party.' },
+    { effect: 'money', amount: -100, text: 'Pay $100 to plant trees along your streets.' },
+    { effect: 'money', amount: 30, text: 'You are elected Mayor for a day. Collect $30.' }
+  ];
+
+  var PLAYERS = [
+    { id: 'you',  name: 'You',  isAI: false, color: '#0e7490', token: '●', portrait: 'assets/tycoon/portraits/you.webp' },
+    { id: 'maya', name: 'Maya', isAI: true,  color: '#9d2c4e', token: '◆', portrait: 'assets/tycoon/portraits/maya.webp' },
+    { id: 'leo',  name: 'Leo',  isAI: true,  color: '#c2570b', token: '▲', portrait: 'assets/tycoon/portraits/leo.webp' },
+    { id: 'rosa', name: 'Rosa', isAI: true,  color: '#2f7d32', token: '■', portrait: 'assets/tycoon/portraits/rosa.webp' }
+  ];
+
+  // HQ art manifest (Nov 22, 2026). Runtime-loaded files under
+  // assets/tycoon/ — never embedded in index.html. All art is original
+  // anime-style illustration made for this game.
+  var ART = {
+    board: 'assets/tycoon/art/board-backdrop.webp',
+    sets: {
+      rose:    'assets/tycoon/art/set-rose.webp',
+      sky:     'assets/tycoon/art/set-sky.webp',
+      coral:   'assets/tycoon/art/set-coral.webp',
+      gold:    'assets/tycoon/art/set-gold.webp',
+      emerald: 'assets/tycoon/art/set-emerald.webp',
+      azure:   'assets/tycoon/art/set-azure.webp',
+      violet:  'assets/tycoon/art/set-violet.webp',
+      ruby:    'assets/tycoon/art/set-ruby.webp'
+    },
+    decks: {
+      fortune: 'assets/tycoon/art/deck-fortune.webp',
+      event:   'assets/tycoon/art/deck-event.webp'
+    },
+    station: 'assets/tycoon/art/station-art.webp',
+    jail:    'assets/tycoon/art/jail-scene.webp',
+    victory: 'assets/tycoon/art/victory-scene.webp',
+    splash:  'assets/tycoon/art/splash-art.webp',
+    tokens:  'assets/tycoon/art/tokens-sheet.webp'
+  };
+
+  // HQ audio manifest. music.mp3 is a 256s seamless soft loop;
+  // sfx are short synthesized effects. All original, generated.
+  var AUDIO_FILES = {
+    music: 'assets/tycoon/audio/music.mp3',
+    sfx: {
+      dice:    'assets/tycoon/audio/dice.mp3',
+      cash:    'assets/tycoon/audio/cash.mp3',
+      bad:     'assets/tycoon/audio/bad.mp3',
+      card:    'assets/tycoon/audio/card.mp3',
+      build:   'assets/tycoon/audio/build.mp3',
+      jail:    'assets/tycoon/audio/jail.mp3',
+      victory: 'assets/tycoon/audio/victory.mp3',
+      click:   'assets/tycoon/audio/click.mp3'
+    }
+  };
+
+  function squareAt(i) {
+    var n = ((i % 40) + 40) % 40;
+    return SQUARES[n];
+  }
+
+  function isPurchasable(sq) {
+    return sq && (sq.kind === 'street' || sq.kind === 'station' || sq.kind === 'utility');
+  }
+
+  function groupOf(sqIndex) {
+    var sq = SQUARES[sqIndex];
+    if (!sq || sq.kind !== 'street') return null;
+    return GROUPS[sq.group];
+  }
+
+  var api = {
+    TITLE: TITLE,
+    TYCOON_TITLE: TYCOON_TITLE,
+    START_MONEY: START_MONEY,
+    GO_SALARY: GO_SALARY,
+    JAIL_FINE: JAIL_FINE,
+    MAX_JAIL_TURNS: MAX_JAIL_TURNS,
+    GROUPS: GROUPS,
+    SQUARES: SQUARES,
+    FORTUNE_CARDS: FORTUNE_CARDS,
+    EVENT_CARDS: EVENT_CARDS,
+    PLAYERS: PLAYERS,
+    ART: ART,
+    AUDIO_FILES: AUDIO_FILES,
+    squareAt: squareAt,
+    isPurchasable: isPurchasable,
+    groupOf: groupOf
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  if (typeof window !== 'undefined' && window) {
+    window.TycoonData = api;
+    window.__TYCOON_DATA__ = api;
+  }
+  return api;
+})();
+</script>
+<script>
+// source: tycoon-engine.js
+// Tycoon Town — engine (Nov 22, 2026).
+//
+// Pure game logic: no DOM, no storage, no network. Deterministic when
+// given a seed (mulberry32); live play seeds from Math.random. Every
+// action returns {ok, events[]} or {ok:false, reason}; events are
+// plain log strings the UI shows. Fairness: one shared RNG for dice
+// and card shuffles, identical rules for human and AI — no rigged
+// dice, no hidden advantages.
+//
+// State shape (serializable for saves):
+//   { seed, rngState, turn, phase, dice, doubles, debt, players[], owns,
+//     mortgaged, houses, hotels, fortuneDeck, eventDeck, log, winner,
+//     turnCount, doubleRentStation, utilityX10 }
+//   owns: {sqIndex: playerId}; mortgaged: {sqIndex: true}
+//   houses: {sqIndex: 0..4}; hotels: {sqIndex: true}
+//   player: {id,name,isAI,color,token,money,pos,inJail,jailTurns,
+//            jailCards,bankrupt,portrait}
+//   phase: 'roll' | 'buy' | 'debt' | 'end' | 'over'
+//   debt: null | {amount, to: playerId|null} (null = bank)
+//
+// UMD: global TycoonEngine + module.exports. Never throws.
+var TycoonEngine = (function () {
+  'use strict';
+
+  var D = (typeof TycoonData !== 'undefined' && TycoonData) ? TycoonData : null;
+  if (!D && typeof require === 'function') {
+    try { D = require('./tycoon-data.js'); } catch (e) { D = null; }
+  }
+
+  function _clone(o) { try { return JSON.parse(JSON.stringify(o)); } catch (e) { return null; } }
+
+  // mulberry32 — small deterministic PRNG.
+  function _rngNext(state) {
+    var t = (state + 0x6D2B79F5) | 0;
+    var r = Math.imul(t ^ (t >>> 15), t | 1);
+    r ^= r + Math.imul(r ^ (r >>> 7), r | 61);
+    return { state: t, value: ((r ^ (r >>> 14)) >>> 0) / 4294967296 };
+  }
+
+  function createGame(seed, opts) {
+    opts = opts || {};
+    var s = (typeof seed === 'number' && isFinite(seed)) ? (seed | 0) : ((Math.random() * 2147483647) | 0);
+    var game = {
+      seed: s, rngState: s, turn: 0, phase: 'roll', dice: [0, 0], doubles: 0,
+      debt: null, players: [], owns: {}, mortgaged: {}, houses: {}, hotels: {},
+      fortuneDeck: [], eventDeck: [], log: [], winner: null, turnCount: 0,
+      doubleRentStation: false, utilityX10: false
+    };
+    var defs = D.PLAYERS;
+    for (var i = 0; i < defs.length; i++) {
+      game.players.push({
+        id: defs[i].id, name: defs[i].name, isAI: !!defs[i].isAI,
+        color: defs[i].color, token: defs[i].token, portrait: defs[i].portrait,
+        money: D.START_MONEY, pos: 0, inJail: false, jailTurns: 0,
+        jailCards: 0, bankrupt: false
+      });
+    }
+    game.fortuneDeck = _shuffled(game, D.FORTUNE_CARDS.length);
+    game.eventDeck = _shuffled(game, D.EVENT_CARDS.length);
+    if (opts.state) {
+      var restored = _clone(opts.state);
+      if (restored) game = restored;
+    }
+    return game;
+  }
+
+  function _shuffled(game, n) {
+    var arr = [];
+    for (var i = 0; i < n; i++) arr.push(i);
+    for (var j = n - 1; j > 0; j--) {
+      var r = _rngNext(game.rngState); game.rngState = r.state;
+      var k = Math.floor(r.value * (j + 1));
+      var t = arr[j]; arr[j] = arr[k]; arr[k] = t;
+    }
+    return arr;
+  }
+
+  function _rand(game, n) {
+    var r = _rngNext(game.rngState); game.rngState = r.state;
+    return Math.floor(r.value * n);
+  }
+
+  function _player(game, id) {
+    for (var i = 0; i < game.players.length; i++) if (game.players[i].id === id) return game.players[i];
+    return null;
+  }
+  function _current(game) { return game.players[game.turn]; }
+  function _log(game, msg) {
+    game.log.push(msg);
+    if (game.log.length > 200) game.log.splice(0, game.log.length - 200);
+    return msg;
+  }
+  // Append an action's event strings to the game log, skipping any the
+  // action already logged inline (rent, cards, jail...). The log is
+  // the player's narration — every roll, landing, buy, and build must
+  // appear in it exactly once.
+  function _logNew(game, events) {
+    if (!events) return;
+    for (var i = 0; i < events.length; i++) {
+      var ev = events[i];
+      var seen = false;
+      for (var j = Math.max(0, game.log.length - 12); j < game.log.length; j++) {
+        if (game.log[j] === ev) { seen = true; break; }
+      }
+      if (!seen) _log(game, ev);
+    }
+  }
+  function _money(game, p) { return p.money; }
+
+  function _ownedBy(game, sq) { return game.owns[sq] || null; }
+  function _playerProps(game, pid) {
+    var out = [];
+    for (var k in game.owns) if (game.owns[k] === pid) out.push(parseInt(k, 10));
+    return out.sort(function (a, b) { return a - b; });
+  }
+  function _groupSquares(groupId) { return D.GROUPS[groupId].squares.slice(); }
+  function _ownsFullSet(game, pid, groupId) {
+    var sqs = _groupSquares(groupId);
+    for (var i = 0; i < sqs.length; i++) if (game.owns[sqs[i]] !== pid) return false;
+    return true;
+  }
+  function _housesOn(game, sq) { return game.hotels[sq] ? 5 : (game.houses[sq] || 0); }
+  function _improvementValue(game, sq) {
+    var sqDef = D.SQUARES[sq];
+    if (!sqDef || sqDef.kind !== 'street') return 0;
+    if (game.hotels[sq]) return 5 * sqDef.houseCost;
+    return (game.houses[sq] || 0) * sqDef.houseCost;
+  }
+
+  // Value of a property to a player: price + improvements + a bonus
+  // when receiving it completes a set for that player. The SAME rule
+  // decides every AI trade answer (see aiAcceptsTrade).
+  function propertyValue(game, pid, sq) {
+    var sqDef = D.SQUARES[sq];
+    if (!sqDef || !D.isPurchasable(sqDef)) return 0;
+    var v = sqDef.price + _improvementValue(game, sq);
+    if (sqDef.kind === 'street') {
+      var g = D.GROUPS[sqDef.group];
+      var missing = 0;
+      for (var i = 0; i < g.squares.length; i++) {
+        if (g.squares[i] !== sq && game.owns[g.squares[i]] !== pid) missing++;
+      }
+      if (missing === 0) v += Math.round(sqDef.price * 0.6);
+    }
+    if (game.mortgaged[sq]) v = Math.round(v * 0.6);
+    return v;
+  }
+
+  function _stationCount(game, pid) {
+    var n = 0;
+    [5, 15, 25, 35].forEach(function (sq) { if (game.owns[sq] === pid) n++; });
+    return n;
+  }
+  function _utilityCount(game, pid) {
+    var n = 0;
+    [12, 39].forEach(function (sq) { if (game.owns[sq] === pid) n++; });
+    return n;
+  }
+
+  function rentFor(game, sq, diceTotal) {
+    var sqDef = D.SQUARES[sq];
+    var owner = game.owns[sq];
+    if (!sqDef || !owner) return 0;
+    if (game.mortgaged[sq]) return 0;
+    if (sqDef.kind === 'station') {
+      var rents = [0, 25, 50, 100, 200];
+      var r = rents[_stationCount(game, owner)] || 0;
+      return game.doubleRentStation ? r * 2 : r;
+    }
+    if (sqDef.kind === 'utility') {
+      var mult = game.utilityX10 ? 10 : (_utilityCount(game, owner) >= 2 ? 10 : 4);
+      return mult * (diceTotal || 7);
+    }
+    // street
+    var n = _housesOn(game, sq);
+    if (n > 0) return sqDef.rents[n];
+    if (_ownsFullSet(game, owner, sqDef.group)) return sqDef.rents[0] * 2;
+    return sqDef.rents[0];
+  }
+
+  function netWorth(game, pid) {
+    var p = _player(game, pid);
+    if (!p) return 0;
+    var v = p.money;
+    _playerProps(game, pid).forEach(function (sq) {
+      var sqDef = D.SQUARES[sq];
+      v += Math.floor(sqDef.price / 2);
+      v += Math.floor(_improvementValue(game, sq) / 2);
+      if (game.mortgaged[sq]) v -= Math.floor(sqDef.price / 2);
+    });
+    return v;
+  }
+
+  function _solventPlayers(game) {
+    return game.players.filter(function (p) { return !p.bankrupt; });
+  }
+
+  function _checkWinner(game) {
+    var alive = _solventPlayers(game);
+    if (alive.length === 1) {
+      game.winner = alive[0].id;
+      game.phase = 'over';
+      _log(game, alive[0].name + ' is the last solvent player and wins ' + D.TITLE + '!');
+      return alive[0].id;
+    }
+    return null;
+  }
+
+  function _advanceTurn(game) {
+    game.debt = null;
+    game.doubles = 0;
+    game.dice = [0, 0];
+    game.doubleRentStation = false;
+    game.utilityX10 = false;
+    var n = game.players.length;
+    for (var i = 1; i <= n; i++) {
+      var next = (game.turn + i) % n;
+      if (!game.players[next].bankrupt) { game.turn = next; break; }
+    }
+    game.turnCount++;
+    game.phase = 'roll';
+    _checkWinner(game);
+  }
+
+  // --- debt / bankruptcy -------------------------------------------
+  // Charge with correct remainder math.
+  function charge(game, payerId, amount, creditorId) {
+    var events = [];
+    var payer = _player(game, payerId);
+    if (!payer || payer.bankrupt || amount <= 0) return { ok: true, events: events };
+    if (payer.money >= amount) {
+      payer.money -= amount;
+      if (creditorId) { var c = _player(game, creditorId); if (c && !c.bankrupt) c.money += amount; }
+      return { ok: true, events: events };
+    }
+    var remaining = amount - payer.money;
+    payer.money = 0;
+    game.debt = { amount: remaining, to: creditorId || null, from: payerId };
+    game.phase = 'debt';
+    events.push(payer.name + ' owes $' + remaining + ' more. Mortgage or sell to raise it — or go bankrupt.');
+    _log(game, events[0]);
+    return { ok: false, events: events, debt: _clone(game.debt) };
+  }
+
+  function liquidationOptions(game, pid) {
+    var opts = { sellHouses: [], mortgages: [] };
+    _playerProps(game, pid).forEach(function (sq) {
+      var sqDef = D.SQUARES[sq];
+      if (sqDef.kind !== 'street') return;
+      if (game.hotels[sq]) opts.sellHouses.push({ sq: sq, kind: 'hotel', value: Math.floor(sqDef.houseCost / 2) });
+      else if ((game.houses[sq] || 0) > 0) opts.sellHouses.push({ sq: sq, kind: 'house', value: Math.floor(sqDef.houseCost / 2) });
+    });
+    _playerProps(game, pid).forEach(function (sq) {
+      if (!game.mortgaged[sq] && _housesOn(game, sq) === 0) {
+        opts.mortgages.push({ sq: sq, value: Math.floor(D.SQUARES[sq].price / 2) });
+      }
+    });
+    return opts;
+  }
+
+  function sellHouse(game, pid, sq) {
+    var p = _player(game, pid);
+    var sqDef = D.SQUARES[sq];
+    if (!p || p.bankrupt || !sqDef || sqDef.kind !== 'street') return { ok: false, reason: 'not a street' };
+    if (game.owns[sq] !== pid) return { ok: false, reason: 'not yours' };
+    if (game.mortgaged[sq]) return { ok: false, reason: 'mortgaged' };
+    // Even-selling: sell from the most-built street in the set first.
+    var g = D.GROUPS[sqDef.group];
+    var mine = _housesOn(game, sq);
+    for (var i = 0; i < g.squares.length; i++) {
+      if (_housesOn(game, g.squares[i]) > mine) return { ok: false, reason: 'sell evenly: another street in this set has more houses' };
+    }
+    var events = [];
+    if (game.hotels[sq]) {
+      game.hotels[sq] = false; game.houses[sq] = 4;
+      p.money += Math.floor(sqDef.houseCost / 2);
+      events.push(p.name + ' sold the hotel on ' + sqDef.name + ' for $' + Math.floor(sqDef.houseCost / 2) + '.');
+    } else if ((game.houses[sq] || 0) > 0) {
+      game.houses[sq]--;
+      p.money += Math.floor(sqDef.houseCost / 2);
+      events.push(p.name + ' sold a house on ' + sqDef.name + ' for $' + Math.floor(sqDef.houseCost / 2) + '.');
+    } else return { ok: false, reason: 'nothing to sell' };
+    _logNew(game, events);
+    _afterDebtPayment(game, p, events);
+    return { ok: true, events: events };
+  }
+
+  function mortgage(game, pid, sq) {
+    var p = _player(game, pid);
+    var sqDef = D.SQUARES[sq];
+    if (!p || p.bankrupt || !sqDef || !D.isPurchasable(sqDef)) return { ok: false, reason: 'not purchasable' };
+    if (game.owns[sq] !== pid) return { ok: false, reason: 'not yours' };
+    if (game.mortgaged[sq]) return { ok: false, reason: 'already mortgaged' };
+    if (_housesOn(game, sq) > 0) return { ok: false, reason: 'sell the buildings first' };
+    game.mortgaged[sq] = true;
+    var v = Math.floor(sqDef.price / 2);
+    p.money += v;
+    var events = [p.name + ' mortgaged ' + sqDef.name + ' for $' + v + '.'];
+    _logNew(game, events);
+    _afterDebtPayment(game, p, events);
+    return { ok: true, events: events };
+  }
+
+  function unmortgage(game, pid, sq) {
+    var p = _player(game, pid);
+    var sqDef = D.SQUARES[sq];
+    if (!p || p.bankrupt || !sqDef || !D.isPurchasable(sqDef)) return { ok: false, reason: 'not purchasable' };
+    if (game.owns[sq] !== pid) return { ok: false, reason: 'not yours' };
+    if (!game.mortgaged[sq]) return { ok: false, reason: 'not mortgaged' };
+    var cost = Math.floor(sqDef.price / 2 * 1.1);
+    if (p.money < cost) return { ok: false, reason: 'not enough money' };
+    delete game.mortgaged[sq];
+    p.money -= cost;
+    var events = [p.name + ' lifted the mortgage on ' + sqDef.name + ' for $' + cost + '.'];
+    _logNew(game, events);
+    return { ok: true, events: events };
+  }
+
+  function _afterDebtPayment(game, p, events) {
+    if (game.debt && game.debt.from === p.id && p.money >= game.debt.amount) {
+      var d = game.debt;
+      p.money -= d.amount;
+      if (d.to) { var c = _player(game, d.to); if (c && !c.bankrupt) c.money += d.amount; }
+      events.push(p.name + ' paid the $' + d.amount + ' debt.');
+      _log(game, events[events.length - 1]);
+      game.debt = null;
+      game.phase = 'end';
+    }
+  }
+
+  function payDebt(game, pid) {
+    var p = _player(game, pid);
+    if (!p || !game.debt || game.debt.from !== pid) return { ok: false, reason: 'no debt to pay' };
+    if (p.money < game.debt.amount) return { ok: false, reason: 'not enough money yet' };
+    var events = [];
+    _afterDebtPayment(game, p, events);
+    _logNew(game, events);
+    return { ok: true, events: events };
+  }
+
+  // Force-settle a charge against a NON-current player (card collections):
+  // auto-liquidate them on the spot; if they still cannot pay, they go
+  // bankrupt immediately with their properties to the creditor. Never
+  // leaves a foreign debt dangling in the current player's turn.
+  function _forceSettle(game, pid, amount, creditorId, events) {
+    var p = _player(game, pid);
+    if (!p || p.bankrupt || amount <= 0) return;
+    if (p.money >= amount) {
+      p.money -= amount;
+      var c = _player(game, creditorId);
+      if (c && !c.bankrupt) c.money += amount;
+      return;
+    }
+    var guard = 0;
+    while (p.money < amount && guard++ < 40) {
+      var opts = liquidationOptions(game, pid);
+      if (opts.sellHouses.length) {
+        opts.sellHouses.sort(function (a, b) { return b.value - a.value; });
+        sellHouse(game, pid, opts.sellHouses[0].sq);
+      } else if (opts.mortgages.length) {
+        opts.mortgages.sort(function (a, b) { return a.value - b.value; });
+        mortgage(game, pid, opts.mortgages[0].sq);
+      } else break;
+    }
+    if (p.money >= amount) {
+      p.money -= amount;
+      var c2 = _player(game, creditorId);
+      if (c2 && !c2.bankrupt) c2.money += amount;
+      return;
+    }
+    var remaining = amount - p.money;
+    p.money = 0;
+    game.debt = { amount: remaining, to: creditorId || null, from: pid };
+    var r = declareBankrupt(game, pid);
+    events.push.apply(events, r.events || []);
+  }
+
+  function declareBankrupt(game, pid) {
+    var p = _player(game, pid);
+    if (!p || p.bankrupt) return { ok: false, reason: 'already bankrupt' };
+    var events = [];
+    var creditorId = game.debt ? game.debt.to : null;
+    // Everything the bankrupt player owns goes to the creditor (or the
+    // bank, if the debt was to the bank). Buildings are already sold
+    // during liquidation; any left are cleared.
+    _playerProps(game, pid).forEach(function (sq) {
+      delete game.houses[sq];
+      delete game.hotels[sq];
+      if (creditorId) game.owns[sq] = creditorId;
+      else delete game.owns[sq];
+      if (!creditorId) delete game.mortgaged[sq];
+    });
+    if (p.jailCards > 0 && creditorId) {
+      var c = _player(game, creditorId);
+      if (c) c.jailCards += p.jailCards;
+    }
+    p.jailCards = 0;
+    p.money = 0;
+    p.bankrupt = true;
+    p.inJail = false;
+    game.debt = null;
+    var msg = p.name + ' is bankrupt and out of the game!' +
+      (creditorId ? (' ' + _player(game, creditorId).name + ' takes their properties.') : ' Their properties return to the bank.');
+    events.push(msg);
+    _logNew(game, events);
+    if (game.turn === game.players.indexOf(p)) {
+      game.phase = 'end';
+      _advanceTurn(game);
+    } else {
+      _checkWinner(game);
+    }
+    return { ok: true, events: events };
+  }
+
+  // --- building ------------------------------------------------------
+  function canBuildOn(game, pid, sq) {
+    var sqDef = D.SQUARES[sq];
+    if (!sqDef || sqDef.kind !== 'street') return { ok: false, reason: 'not a street' };
+    if (game.owns[sq] !== pid) return { ok: false, reason: 'not yours' };
+    if (game.mortgaged[sq]) return { ok: false, reason: 'mortgaged' };
+    if (!_ownsFullSet(game, pid, sqDef.group)) return { ok: false, reason: 'you need the full set first' };
+    var g = D.GROUPS[sqDef.group];
+    for (var i = 0; i < g.squares.length; i++) {
+      if (game.mortgaged[g.squares[i]]) return { ok: false, reason: 'a street in this set is mortgaged' };
+    }
+    if (game.hotels[sq]) return { ok: false, reason: 'already has a hotel' };
+    var mine = _housesOn(game, sq);
+    for (var j = 0; j < g.squares.length; j++) {
+      if (_housesOn(game, g.squares[j]) < mine) return { ok: false, reason: 'build evenly across the set' };
+    }
+    return { ok: true, hotel: mine === 4 };
+  }
+
+  function build(game, pid, sq) {
+    var p = _player(game, pid);
+    if (!p || p.bankrupt) return { ok: false, reason: 'no player' };
+    var check = canBuildOn(game, pid, sq);
+    if (!check.ok) return check;
+    var sqDef = D.SQUARES[sq];
+    if (p.money < sqDef.houseCost) return { ok: false, reason: 'not enough money' };
+    p.money -= sqDef.houseCost;
+    var events = [];
+    if (check.hotel) {
+      game.hotels[sq] = true; game.houses[sq] = 0;
+      events.push(p.name + ' built a hotel on ' + sqDef.name + ' for $' + sqDef.houseCost + '.');
+    } else {
+      game.houses[sq] = (game.houses[sq] || 0) + 1;
+      events.push(p.name + ' built a house on ' + sqDef.name + ' for $' + sqDef.houseCost + ' (' + game.houses[sq] + ' now).');
+    }
+    _logNew(game, events);
+    return { ok: true, events: events };
+  }
+
+  // --- movement / landing --------------------------------------------
+  function _sendToJail(game, p, events) {
+    p.pos = 10;
+    p.inJail = true;
+    p.jailTurns = 0;
+    p.doubles = 0;
+    events.push(p.name + ' goes to Jail!');
+    _log(game, events[events.length - 1]);
+  }
+
+  function _moveTo(game, p, to, events) {
+    var from = p.pos;
+    var passed = to < from;
+    p.pos = to;
+    if (passed) {
+      p.money += D.GO_SALARY;
+      events.push(p.name + ' passed GO and collected $' + D.GO_SALARY + '.');
+      _log(game, events[events.length - 1]);
+    }
+  }
+
+  function _drawCard(game, deckName) {
+    var deck = deckName === 'fortune' ? game.fortuneDeck : game.eventDeck;
+    var cards = deckName === 'fortune' ? D.FORTUNE_CARDS : D.EVENT_CARDS;
+    if (!deck.length) {
+      game[deckName + 'Deck'] = _shuffled(game, cards.length);
+      deck = game[deckName + 'Deck'];
+    }
+    var idx = deck.shift();
+    deck.push(idx);
+    return cards[idx];
+  }
+
+  function _resolveLanding(game, p, events, depth) {
+    depth = depth || 0;
+    if (depth > 3) return;
+    var sq = p.pos;
+    var sqDef = D.SQUARES[sq];
+    game.doubleRentStation = false;
+    game.utilityX10 = false;
+    if (sqDef.kind === 'go') {
+      events.push(p.name + ' is on GO.');
+    } else if (sqDef.kind === 'tax') {
+      var r = charge(game, p.id, sqDef.amount, null);
+      events.push(p.name + ' pays ' + sqDef.name + ' of $' + sqDef.amount + '.');
+      _log(game, events[events.length - 1]);
+      if (!r.ok) events = events.concat(r.events);
+    } else if (sqDef.kind === 'gotojail') {
+      _sendToJail(game, p, events);
+    } else if (sqDef.kind === 'jail') {
+      events.push(p.name + ' is just visiting Jail.');
+    } else if (sqDef.kind === 'parking') {
+      events.push(p.name + ' rests at Free Parking. (No jackpot in ' + D.TITLE + '.)');
+    } else if (sqDef.kind === 'fortune' || sqDef.kind === 'event') {
+      var card = _drawCard(game, sqDef.kind);
+      events.push(p.name + ' draws ' + (sqDef.kind === 'fortune' ? 'Fortune' : 'Town Event') + ': "' + card.text + '"');
+      _log(game, events[events.length - 1]);
+      _applyCard(game, p, card, events, depth);
+    } else if (D.isPurchasable(sqDef)) {
+      var owner = game.owns[sq];
+      if (!owner) {
+        game.phase = 'buy';
+        events.push(p.name + ' landed on unowned ' + sqDef.name + ' ($' + sqDef.price + ').');
+      } else if (owner === p.id) {
+        events.push(p.name + ' is home on ' + sqDef.name + '.');
+        game.phase = 'end';
+      } else if (game.mortgaged[sq]) {
+        events.push(sqDef.name + ' is mortgaged — no rent.');
+        game.phase = 'end';
+      } else {
+        var rent = rentFor(game, sq, game.dice[0] + game.dice[1]);
+        var ownerP = _player(game, owner);
+        events.push(p.name + ' pays $' + rent + ' rent to ' + ownerP.name + ' for ' + sqDef.name + '.');
+        _log(game, events[events.length - 1]);
+        var rr = charge(game, p.id, rent, owner);
+        if (!rr.ok) events = events.concat(rr.events);
+        else game.phase = 'end';
+      }
+    } else {
+      game.phase = 'end';
+    }
+    if (game.phase === 'roll' && !game.debt) game.phase = 'end';
+  }
+
+  function _applyCard(game, p, card, events, depth) {
+    var total;
+    switch (card.effect) {
+      case 'advance-go':
+        _moveTo(game, p, 0, events);
+        events.push(p.name + ' is on GO.');
+        game.phase = 'end';
+        break;
+      case 'go-jail':
+        _sendToJail(game, p, events);
+        game.phase = 'end';
+        break;
+      case 'advance-to': {
+        _moveTo(game, p, card.to, events);
+        // Landing on the target resolves as a normal landing, but a
+        // card square cannot chain forever (depth guard).
+        var sqDef = D.SQUARES[card.to];
+        if (D.isPurchasable(sqDef)) {
+          var owner = game.owns[card.to];
+          if (!owner) { game.phase = 'buy'; events.push(p.name + ' may buy ' + sqDef.name + ' ($' + sqDef.price + ').'); }
+          else if (owner !== p.id && !game.mortgaged[card.to]) {
+            var rent = rentFor(game, card.to, game.dice[0] + game.dice[1]);
+            events.push(p.name + ' pays $' + rent + ' rent to ' + _player(game, owner).name + ' for ' + sqDef.name + '.');
+            var rr = charge(game, p.id, rent, owner);
+            if (!rr.ok) events = events.concat(rr.events); else game.phase = 'end';
+          } else game.phase = 'end';
+        } else game.phase = 'end';
+        break;
+      }
+      case 'advance-station': {
+        var stations = [5, 15, 25, 35];
+        var next = stations[0];
+        for (var i = 0; i < stations.length; i++) if (stations[i] > p.pos) { next = stations[i]; break; }
+        _moveTo(game, p, next, events);
+        var o = game.owns[next];
+        if (!o) { game.phase = 'buy'; events.push(p.name + ' may buy ' + D.SQUARES[next].name + ' ($200).'); }
+        else if (o !== p.id && !game.mortgaged[next]) {
+          var r2 = rentFor(game, next, 0);
+          events.push(p.name + ' pays $' + r2 + ' rent to ' + _player(game, o).name + '.');
+          var r3 = charge(game, p.id, r2, o);
+          if (!r3.ok) events = events.concat(r3.events); else game.phase = 'end';
+        } else game.phase = 'end';
+        break;
+      }
+      case 'advance-station-double': {
+        var st2 = [5, 15, 25, 35];
+        var nx2 = st2[0];
+        for (var j = 0; j < st2.length; j++) if (st2[j] > p.pos) { nx2 = st2[j]; break; }
+        _moveTo(game, p, nx2, events);
+        var o2 = game.owns[nx2];
+        if (!o2) { game.phase = 'buy'; events.push(p.name + ' may buy ' + D.SQUARES[nx2].name + ' ($200).'); }
+        else if (o2 !== p.id && !game.mortgaged[nx2]) {
+          game.doubleRentStation = true;
+          var r4 = rentFor(game, nx2, 0);
+          game.doubleRentStation = false;
+          events.push(p.name + ' pays double rent $' + r4 + ' to ' + _player(game, o2).name + '.');
+          var r5 = charge(game, p.id, r4, o2);
+          if (!r5.ok) events = events.concat(r5.events); else game.phase = 'end';
+        } else game.phase = 'end';
+        break;
+      }
+      case 'advance-utility': {
+        var uts = [12, 39];
+        var nx3 = uts[0];
+        for (var k = 0; k < uts.length; k++) if (uts[k] > p.pos) { nx3 = uts[k]; break; }
+        _moveTo(game, p, nx3, events);
+        var o3 = game.owns[nx3];
+        if (!o3) { game.phase = 'buy'; events.push(p.name + ' may buy ' + D.SQUARES[nx3].name + ' ($150).'); }
+        else if (o3 !== p.id && !game.mortgaged[nx3]) {
+          game.utilityX10 = true;
+          total = (game.dice[0] + game.dice[1]) || 7;
+          var r6 = 10 * total;
+          game.utilityX10 = false;
+          events.push(p.name + ' pays $' + r6 + ' to ' + _player(game, o3).name + ' for ' + D.SQUARES[nx3].name + '.');
+          var r7 = charge(game, p.id, r6, o3);
+          if (!r7.ok) events = events.concat(r7.events); else game.phase = 'end';
+        } else game.phase = 'end';
+        break;
+      }
+      case 'money': {
+        if (card.amount >= 0) { p.money += card.amount; }
+        else {
+          var rr2 = charge(game, p.id, -card.amount, null);
+          if (!rr2.ok) events = events.concat(rr2.events);
+        }
+        if (!game.debt) game.phase = 'end';
+        break;
+      }
+      case 'collect-each': {
+        game.players.forEach(function (other) {
+          if (other.id !== p.id && !other.bankrupt) {
+            _forceSettle(game, other.id, card.amount, p.id, events);
+          }
+        });
+        game.phase = 'end';
+        break;
+      }
+      case 'jail-card':
+        p.jailCards++;
+        events.push(p.name + ' holds a Get Out of Jail Free card.');
+        game.phase = 'end';
+        break;
+      case 'repairs': {
+        var cost = 0;
+        _playerProps(game, p.id).forEach(function (sq) {
+          if (game.hotels[sq]) cost += card.hotel;
+          else cost += (game.houses[sq] || 0) * card.house;
+        });
+        events.push(p.name + ' pays $' + cost + ' in repairs.');
+        var rr4 = charge(game, p.id, cost, null);
+        if (!rr4.ok) events = events.concat(rr4.events);
+        if (!game.debt) game.phase = 'end';
+        break;
+      }
+      case 'back': {
+        var to = (p.pos - card.steps + 40) % 40;
+        p.pos = to;
+        events.push(p.name + ' moves back to ' + D.SQUARES[to].name + '.');
+        _resolveLanding(game, p, events, depth + 1);
+        break;
+      }
+      default:
+        game.phase = 'end';
+    }
+  }
+
+  // --- dice / turns -----------------------------------------------
+  function rollDice(game, pid) {
+    var p = _player(game, pid);
+    if (!p || p.bankrupt) return { ok: false, reason: 'no player' };
+    if (game.phase !== 'roll') return { ok: false, reason: 'not the roll phase' };
+    if (game.players[game.turn].id !== pid) return { ok: false, reason: 'not your turn' };
+    var events = [];
+    var d1 = _rand(game, 6) + 1;
+    var d2 = _rand(game, 6) + 1;
+    game.dice = [d1, d2];
+    var isDouble = d1 === d2;
+
+    if (p.inJail) {
+      p.jailTurns++;
+      if (isDouble) {
+        p.inJail = false;
+        p.jailTurns = 0;
+        events.push(p.name + ' rolled doubles (' + d1 + '+' + d2 + ') and escapes Jail!');
+        _log(game, events[0]);
+        _moveAndResolve(game, p, d1 + d2, events);
+      } else if (p.jailTurns >= D.MAX_JAIL_TURNS) {
+        events.push(p.name + ' spent 3 turns in Jail and pays the $' + D.JAIL_FINE + ' fine.');
+        var rr = charge(game, p.id, D.JAIL_FINE, null);
+        p.inJail = false;
+        p.jailTurns = 0;
+        if (!rr.ok) { events = events.concat(rr.events); _logNew(game, events); return { ok: true, events: events, dice: [d1, d2] }; }
+        _moveAndResolve(game, p, d1 + d2, events);
+      } else {
+        events.push(p.name + ' rolled ' + d1 + '+' + d2 + ' in Jail — no doubles, stays put (turn ' + p.jailTurns + ' of 3).');
+        game.phase = 'end';
+      }
+      _logNew(game, events);
+      return { ok: true, events: events, dice: [d1, d2], doubles: isDouble };
+    }
+
+    if (isDouble) {
+      game.doubles++;
+      if (game.doubles >= 3) {
+        events.push(p.name + ' rolled doubles three times in a row (' + d1 + '+' + d2 + ')!');
+        _sendToJail(game, p, events);
+        game.phase = 'end';
+        _logNew(game, events);
+        return { ok: true, events: events, dice: [d1, d2], doubles: true };
+      }
+    } else game.doubles = 0;
+
+    events.push(p.name + ' rolled ' + d1 + ' + ' + d2 + (isDouble ? ' — doubles! Roll again after this move.' : '.'));
+    _moveAndResolve(game, p, d1 + d2, events);
+    // Doubles grant another roll once the landing is settled (and the
+    // player is not in debt or jail).
+    if (isDouble && game.phase === 'end' && !p.inJail && !game.debt) {
+      game.phase = 'roll';
+      events.push(p.name + ' rolls again.');
+    }
+    _logNew(game, events);
+    return { ok: true, events: events, dice: [d1, d2], doubles: isDouble };
+  }
+
+  function _moveAndResolve(game, p, steps, events) {
+    var from = p.pos;
+    var to = (from + steps) % 40;
+    var passed = from + steps >= 40;
+    p.pos = to;
+    if (passed) {
+      p.money += D.GO_SALARY;
+      events.push(p.name + ' passed GO and collected $' + D.GO_SALARY + '.');
+    }
+    events.push(p.name + ' lands on ' + D.SQUARES[to].name + '.');
+    _resolveLanding(game, p, events, 0);
+  }
+
+  function buyProperty(game, pid) {
+    var p = _player(game, pid);
+    if (!p || p.bankrupt) return { ok: false, reason: 'no player' };
+    if (game.phase !== 'buy') return { ok: false, reason: 'nothing to buy' };
+    if (game.players[game.turn].id !== pid) return { ok: false, reason: 'not your turn' };
+    var sq = p.pos;
+    var sqDef = D.SQUARES[sq];
+    if (!D.isPurchasable(sqDef) || game.owns[sq]) return { ok: false, reason: 'not for sale' };
+    if (p.money < sqDef.price) return { ok: false, reason: 'not enough money' };
+    p.money -= sqDef.price;
+    game.owns[sq] = pid;
+    var events = [p.name + ' bought ' + sqDef.name + ' for $' + sqDef.price + '.'];
+    if (sqDef.kind === 'street' && _ownsFullSet(game, pid, sqDef.group)) {
+      events.push(p.name + ' now owns the whole ' + D.GROUPS[sqDef.group].name + ' set — rent doubles, and houses can be built!');
+    }
+    _logNew(game, events);
+    game.phase = 'end';
+    _maybeExtraRoll(game, p);
+    return { ok: true, events: events };
+  }
+
+  // Doubles grant another roll after the landing is settled — including
+  // after buying or declining. Called by buy/decline; rollDice does its
+  // own equivalent check for the plain landing path.
+  function _maybeExtraRoll(game, p) {
+    if (game.doubles > 0 && game.doubles < 3 && !p.inJail && !game.debt && game.phase === 'end') {
+      game.phase = 'roll';
+    }
+  }
+
+  function declineBuy(game, pid) {
+    var p = _player(game, pid);
+    if (!p || game.phase !== 'buy') return { ok: false, reason: 'nothing to decline' };
+    if (game.players[game.turn].id !== pid) return { ok: false, reason: 'not your turn' };
+    var events = [p.name + ' did not buy ' + D.SQUARES[p.pos].name + '. It stays with the bank.'];
+    _logNew(game, events);
+    game.phase = 'end';
+    _maybeExtraRoll(game, p);
+    return { ok: true, events: events };
+  }
+
+  function endTurn(game, pid) {
+    var p = _player(game, pid);
+    if (!p || p.bankrupt) return { ok: false, reason: 'no player' };
+    if (game.players[game.turn].id !== pid) return { ok: false, reason: 'not your turn' };
+    if (game.phase === 'roll') return { ok: false, reason: 'roll first' };
+    if (game.phase === 'debt') return { ok: false, reason: 'settle the debt first' };
+    if (game.phase === 'buy') return { ok: false, reason: 'buy or decline first' };
+    var events = [p.name + ' ends the turn.'];
+    _logNew(game, events);
+    _advanceTurn(game);
+    return { ok: true, events: events };
+  }
+
+  function payJailFine(game, pid) {
+    var p = _player(game, pid);
+    if (!p || !p.inJail) return { ok: false, reason: 'not in jail' };
+    if (game.players[game.turn].id !== pid) return { ok: false, reason: 'not your turn' };
+    if (game.phase !== 'roll') return { ok: false, reason: 'not the roll phase' };
+    if (p.money < D.JAIL_FINE) return { ok: false, reason: 'not enough money' };
+    p.money -= D.JAIL_FINE;
+    p.inJail = false;
+    p.jailTurns = 0;
+    var events = [p.name + ' paid $' + D.JAIL_FINE + ' and leaves Jail.'];
+    _logNew(game, events);
+    return { ok: true, events: events };
+  }
+
+  function useJailCard(game, pid) {
+    var p = _player(game, pid);
+    if (!p || !p.inJail) return { ok: false, reason: 'not in jail' };
+    if (game.players[game.turn].id !== pid) return { ok: false, reason: 'not your turn' };
+    if (game.phase !== 'roll') return { ok: false, reason: 'not the roll phase' };
+    if (p.jailCards < 1) return { ok: false, reason: 'no card' };
+    p.jailCards--;
+    p.inJail = false;
+    p.jailTurns = 0;
+    var events = [p.name + ' uses a Get Out of Jail Free card.'];
+    _logNew(game, events);
+    return { ok: true, events: events };
+  }
+
+  // --- trades --------------------------------------------------------
+  // offer/ask: {props: [sq], cash: n}. Value rule (same for every AI):
+  // accept iff value(ask to me) <= value(offer to me) * 1.10, where
+  // value counts price + improvements + set-completion bonus.
+  function _bundleValue(game, pid, bundle) {
+    var v = bundle.cash || 0;
+    (bundle.props || []).forEach(function (sq) { v += propertyValue(game, pid, sq); });
+    return v;
+  }
+
+  function aiAcceptsTrade(game, aiId, offer, ask) {
+    // offer = what the OTHER side gives the AI; ask = what the AI gives up.
+    var giveValue = _bundleValue(game, aiId, ask);
+    var getValue = _bundleValue(game, aiId, offer);
+    return getValue * 1.10 >= giveValue;
+  }
+
+  function applyTrade(game, fromId, toId, offer, ask) {
+    // from gives `offer` to `to`; `to` gives `ask` to `from`.
+    var from = _player(game, fromId);
+    var to = _player(game, toId);
+    if (!from || !to || from.bankrupt || to.bankrupt) return { ok: false, reason: 'no player' };
+    var events = [];
+    function moveProps(props, a, b) {
+      (props || []).forEach(function (sq) {
+        if (game.owns[sq] === a.id) {
+          game.owns[sq] = b.id;
+          // A traded property keeps its mortgage; buildings never
+          // transfer (they are sold back first by the engine).
+          if (_housesOn(game, sq) > 0) {
+            var refund = Math.floor(_improvementValue(game, sq) / 2);
+            a.money += refund;
+            delete game.houses[sq];
+            delete game.hotels[sq];
+          }
+        }
+      });
+    }
+    // Cash first (validated by the caller/UI; clamp at what they hold).
+    var oc = Math.min(offer.cash || 0, from.money);
+    var ac = Math.min(ask.cash || 0, to.money);
+    from.money -= oc; to.money += oc;
+    to.money -= ac; from.money += ac;
+    moveProps(offer.props, from, to);
+    moveProps(ask.props, to, from);
+    function names(bundle) {
+      var parts = (bundle.props || []).map(function (sq) { return D.SQUARES[sq].name; });
+      if (bundle.cash) parts.push('$' + bundle.cash);
+      return parts.join(', ') || 'nothing';
+    }
+    events.push(from.name + ' trades ' + names(offer) + ' to ' + to.name + ' for ' + names(ask) + '.');
+    _logNew(game, events);
+    return { ok: true, events: events };
+  }
+
+  // AI proposes a trade when it holds all but one street of a set and
+  // another solvent player holds the missing street. Returns null or
+  // {to, offer, ask}.
+  function aiFindTrade(game, aiId) {
+    var ai = _player(game, aiId);
+    if (!ai || ai.bankrupt) return null;
+    var groupIds = Object.keys(D.GROUPS);
+    for (var gi = 0; gi < groupIds.length; gi++) {
+      var g = D.GROUPS[groupIds[gi]];
+      var mine = [], missing = null;
+      for (var i = 0; i < g.squares.length; i++) {
+        var sq = g.squares[i];
+        if (game.owns[sq] === aiId) mine.push(sq);
+        else if (!missing && game.owns[sq] && game.owns[sq] !== aiId) missing = { sq: sq, owner: game.owns[sq] };
+      }
+      if (mine.length === g.squares.length - 1 && missing && _housesOn(game, missing.sq) === 0) {
+        var holder = _player(game, missing.owner);
+        if (!holder || holder.bankrupt) continue;
+        var askPrice = propertyValue(game, missing.owner, missing.sq);
+        var cash = Math.min(ai.money - 100, Math.round(askPrice * 1.3));
+        if (cash < askPrice) continue;
+        // Offer cash, plus one non-set property if the cash alone is short.
+        var offer = { props: [], cash: cash };
+        var ask = { props: [missing.sq], cash: 0 };
+        if (aiAcceptsTrade(game, missing.owner, offer, ask)) return { to: missing.owner, offer: offer, ask: ask };
+        // Try sweetening with a spare property the AI does not need.
+        var spares = _playerProps(game, aiId).filter(function (sq) {
+          var d = D.SQUARES[sq];
+          return d.kind !== 'street' || !_ownsFullSet(game, aiId, d.group);
+        });
+        for (var s = 0; s < spares.length; s++) {
+          var o2 = { props: [spares[s]], cash: Math.max(0, cash - 50) };
+          if (aiAcceptsTrade(game, missing.owner, o2, ask)) return { to: missing.owner, offer: o2, ask: ask };
+        }
+      }
+    }
+    return null;
+  }
+
+  // --- AI turn --------------------------------------------------------
+  function _aiAutoLiquidate(game, p) {
+    // Sell houses (most expensive first), then mortgage cheapest.
+    var guard = 0;
+    while (game.debt && game.debt.from === p.id && guard++ < 40) {
+      var opts = liquidationOptions(game, p.id);
+      if (opts.sellHouses.length) {
+        opts.sellHouses.sort(function (a, b) { return b.value - a.value; });
+        sellHouse(game, p.id, opts.sellHouses[0].sq);
+      } else if (opts.mortgages.length) {
+        opts.mortgages.sort(function (a, b) { return a.value - b.value; });
+        mortgage(game, p.id, opts.mortgages[0].sq);
+      } else break;
+    }
+  }
+
+  function _aiUnmortgage(game, p) {
+    // Lift mortgages — first on streets in completed sets (a mortgaged
+    // street blocks building on its whole set), then anywhere, while
+    // the player stays comfortably solvent. A rich player sitting on
+    // mortgaged streets is how late games stall.
+    var guard = 0;
+    var changed = true;
+    while (changed && guard++ < 20) {
+      changed = false;
+      var props = _playerProps(game, p.id);
+      props.sort(function (a, b) {
+        var da = D.SQUARES[a], db = D.SQUARES[b];
+        var sa = (da.kind === 'street' && _ownsFullSet(game, p.id, da.group)) ? 0 : 1;
+        var sb = (db.kind === 'street' && _ownsFullSet(game, p.id, db.group)) ? 0 : 1;
+        return sa - sb || da.price - db.price;
+      });
+      for (var i = 0; i < props.length; i++) {
+        var sq = props[i];
+        if (!game.mortgaged[sq]) continue;
+        var cost = Math.floor(D.SQUARES[sq].price / 2 * 1.1);
+        if (p.money - cost < 200) continue;
+        var r = unmortgage(game, p.id, sq);
+        if (r.ok) { changed = true; break; }
+      }
+    }
+  }
+
+  function _aiBuild(game, p) {
+    var guard = 0;
+    var changed = true;
+    while (changed && guard++ < 30) {
+      changed = false;
+      var groupIds = Object.keys(D.GROUPS);
+      for (var gi = 0; gi < groupIds.length && !changed; gi++) {
+        if (!_ownsFullSet(game, p.id, groupIds[gi])) continue;
+        var sqs = _groupSquares(groupIds[gi]);
+        // Build on the least-built street (even building).
+        sqs.sort(function (a, b) { return _housesOn(game, a) - _housesOn(game, b); });
+        for (var i = 0; i < sqs.length; i++) {
+          var sq = sqs[i];
+          var sqDef = D.SQUARES[sq];
+          if (p.money - sqDef.houseCost < 100) continue;
+          var r = build(game, p.id, sq);
+          if (r.ok) { changed = true; break; }
+        }
+      }
+    }
+  }
+
+  function aiTakeTurn(game, pid) {
+    var p = _player(game, pid);
+    var events = [];
+    if (!p || !p.isAI || p.bankrupt || game.phase === 'over') return { ok: false, reason: 'not an AI turn', events: events };
+    if (game.players[game.turn].id !== pid) return { ok: false, reason: 'not their turn', events: events };
+    // Build any time on your own turn (classic rule): unmortgage first
+    // so full sets are buildable, then build evenly on completed sets.
+    _aiUnmortgage(game, p);
+    _aiBuild(game, p);
+    var guard = 0;
+    while (game.phase !== 'over' && guard++ < 12) {
+      if (game.phase === 'debt') {
+        _aiAutoLiquidate(game, p);
+        if (game.debt) {
+          var r = declareBankrupt(game, pid);
+          events = events.concat(r.events || []);
+          _logNew(game, events);
+          return { ok: true, events: events };
+        }
+        if (game.phase === 'end') break;
+      }
+      if (game.phase === 'roll') {
+        if (p.inJail) {
+          if (p.jailCards > 0) { var u = useJailCard(game, pid); events = events.concat(u.events || []); }
+          else if (p.jailTurns >= 2 && p.money >= D.JAIL_FINE + 100) { var f = payJailFine(game, pid); events = events.concat(f.events || []); }
+        }
+        var roll = rollDice(game, pid);
+        events = events.concat(roll.events || []);
+        if (game.phase === 'debt') continue;
+        if (game.phase === 'buy') {
+          var sqDef = D.SQUARES[p.pos];
+          var completes = sqDef.kind === 'street' && (function () {
+            var g = D.GROUPS[sqDef.group];
+            var n = 0;
+            g.squares.forEach(function (s) { if (game.owns[s] === pid || s === p.pos) n++; });
+            return n === g.squares.length;
+          })();
+          var reserve = completes ? 50 : 150;
+          if (p.money - sqDef.price >= reserve) {
+            var b = buyProperty(game, pid);
+            events = events.concat(b.events || []);
+          } else {
+            var d = declineBuy(game, pid);
+            events = events.concat(d.events || []);
+          }
+          _aiBuild(game, p);
+          continue;
+        }
+        if (game.phase === 'roll') continue; // doubles: roll again
+        if (game.phase === 'end') { _aiBuild(game, p); break; }
+      }
+      if (game.phase === 'buy') { // reached via a card move
+        var sq2 = D.SQUARES[p.pos];
+        if (p.money - sq2.price >= 150) { var b2 = buyProperty(game, pid); events = events.concat(b2.events || []); }
+        else { var d2 = declineBuy(game, pid); events = events.concat(d2.events || []); }
+        _aiBuild(game, p);
+        continue;
+      }
+      if (game.phase === 'end') break;
+      break;
+    }
+    // One trade offer per turn, before ending.
+    if (game.phase === 'end' && !p.bankrupt) {
+      var trade = aiFindTrade(game, pid);
+      if (trade) {
+        var target = _player(game, trade.to);
+        if (target && !target.isAI) {
+          // Human target: the UI presents the offer; the AI turn pauses.
+          game.pendingTrade = { from: pid, to: trade.to, offer: trade.offer, ask: trade.ask };
+          events.push(p.name + ' offers you a trade!');
+          _logNew(game, events);
+          return { ok: true, events: events, pendingTrade: _clone(game.pendingTrade) };
+        }
+        if (target && aiAcceptsTrade(game, trade.to, trade.offer, trade.ask)) {
+          var t = applyTrade(game, pid, trade.to, trade.offer, trade.ask);
+          events = events.concat(t.events || []);
+          _aiBuild(game, p);
+        }
+      }
+      var e = endTurn(game, pid);
+      events = events.concat(e.events || []);
+    }
+    _logNew(game, events);
+    return { ok: true, events: events };
+  }
+
+  // Answer a pending AI trade offer (human decision).
+  function answerTrade(game, accept) {
+    var t = game.pendingTrade;
+    if (!t) return { ok: false, reason: 'no pending trade' };
+    var events = [];
+    var from = _player(game, t.from);
+    if (accept) {
+      var r = applyTrade(game, t.from, t.to, t.offer, t.ask);
+      events = events.concat(r.events || []);
+    } else {
+      events.push(_player(game, t.to).name + ' declined ' + from.name + '\u2019s trade offer.');
+      _logNew(game, events);
+    }
+    game.pendingTrade = null;
+    // The offering AI's turn resumes: end it now.
+    if (game.phase === 'end' && game.players[game.turn].id === t.from) {
+      var e = endTurn(game, t.from);
+      events = events.concat(e.events || []);
+    }
+    _logNew(game, events);
+    return { ok: true, events: events };
+  }
+
+  // Fast-forward: every living player plays with the AI policy until a
+  // winner emerges or maxTurns pass. Used by tests and the browser
+  // proof (deterministic for a fixed seed).
+  function fastForward(game, maxTurns) {
+    maxTurns = maxTurns || 500;
+    var events = [];
+    var guard = 0;
+    while (!game.winner && guard++ < maxTurns) {
+      var p = _current(game);
+      if (!p || p.bankrupt) { _advanceTurn(game); continue; }
+      if (game.phase === 'debt') {
+        _aiAutoLiquidate(game, p);
+        if (game.debt) { var b = declareBankrupt(game, p.id); events = events.concat(b.events || []); continue; }
+      }
+      // Play this player's turn with the AI policy regardless of isAI.
+      var savedIsAI = p.isAI;
+      p.isAI = true;
+      var r = aiTakeTurn(game, p.id);
+      p.isAI = savedIsAI;
+      events = events.concat(r.events || []);
+      if (r.pendingTrade) {
+        // In fast-forward the human "accepts" by the same value rule.
+        var t = game.pendingTrade;
+        var accept = aiAcceptsTrade(game, t.to, t.offer, t.ask);
+        var a = answerTrade(game, accept);
+        events = events.concat(a.events || []);
+      }
+      if (game.phase === 'end' || game.phase === 'roll' || game.phase === 'buy') {
+        // A stuck phase (should not happen) — force the turn on.
+        if (game.phase === 'buy') declineBuy(game, p.id);
+        if (game.phase === 'end') endTurn(game, p.id);
+        if (game.phase === 'roll') { rollDice(game, p.id); }
+      }
+    }
+    return { winner: game.winner, turns: game.turnCount, events: events };
+  }
+
+  function serialize(game) { return _clone(game); }
+  function deserialize(data) {
+    var g = _clone(data);
+    return g;
+  }
+
+  var api = {
+    createGame: createGame,
+    rentFor: rentFor,
+    netWorth: netWorth,
+    propertyValue: propertyValue,
+    rollDice: rollDice,
+    buyProperty: buyProperty,
+    declineBuy: declineBuy,
+    endTurn: endTurn,
+    build: build,
+    canBuildOn: canBuildOn,
+    sellHouse: sellHouse,
+    mortgage: mortgage,
+    unmortgage: unmortgage,
+    payDebt: payDebt,
+    declareBankrupt: declareBankrupt,
+    payJailFine: payJailFine,
+    useJailCard: useJailCard,
+    charge: charge,
+    liquidationOptions: liquidationOptions,
+    aiAcceptsTrade: aiAcceptsTrade,
+    applyTrade: applyTrade,
+    aiFindTrade: aiFindTrade,
+    aiTakeTurn: aiTakeTurn,
+    answerTrade: answerTrade,
+    fastForward: fastForward,
+    serialize: serialize,
+    deserialize: deserialize,
+    playerProps: _playerProps,
+    ownsFullSet: _ownsFullSet,
+    housesOn: _housesOn
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  if (typeof window !== 'undefined' && window) {
+    window.TycoonEngine = api;
+    window.__TYCOON_ENGINE__ = api;
+  }
+  return api;
+})();
+</script>
+<script>
+// source: tycoon-save.js
+// TycoonSave — Tycoon Town's persistent data + SaveRegistry entry.
+//
+// Keys (all jmf-phone-*, per the registry convention):
+//   jmf-phone-tycoon-save-v1  — mid-game engine snapshot (primary key)
+//   jmf-phone-tycoon-stats-v1 — games played / won / best net worth
+//
+// UMD: global TycoonSave + module.exports. Never throws. Registers
+// with SaveRegistry at eval time when it exists (guarded).
+var TycoonSave = (function () {
+  'use strict';
+
+  var SAVE_KEY = 'jmf-phone-tycoon-save-v1';
+  var STATS_KEY = 'jmf-phone-tycoon-stats-v1';
+
+  var DEFAULT_STATS = { games: 0, wins: 0, bestWorth: 0 };
+
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+  function _ls() {
+    try {
+      if (typeof localStorage !== 'undefined' && localStorage) return localStorage;
+      var w = _win();
+      if (w && w.localStorage) return w.localStorage;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _get(key) {
+    try {
+      var store = _ls();
+      if (!store) return null;
+      var raw = store.getItem(key);
+      return (typeof raw === 'string' && raw) ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function _set(key, value) {
+    try {
+      var store = _ls();
+      if (!store) return false;
+      store.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) { return false; }
+  }
+  function _del(key) {
+    try { var store = _ls(); if (store) store.removeItem(key); return true; } catch (e) { return false; }
+  }
+  function _clone(o) { try { return JSON.parse(JSON.stringify(o)); } catch (e) { return null; } }
+  function _withDefaults(saved, defaults) {
+    var out = _clone(defaults) || {};
+    if (saved && typeof saved === 'object') {
+      for (var k in defaults) {
+        if (Object.prototype.hasOwnProperty.call(defaults, k) &&
+            typeof saved[k] === typeof defaults[k]) out[k] = saved[k];
+      }
+    }
+    return out;
+  }
+
+  function loadGame() { return _get(SAVE_KEY); }
+  function saveGame(state) {
+    if (!state || typeof state !== 'object') return false;
+    return _set(SAVE_KEY, state);
+  }
+  function clearGame() { return _del(SAVE_KEY); }
+  function hasSave() { return !!loadGame(); }
+
+  function loadStats() { return _withDefaults(_get(STATS_KEY), DEFAULT_STATS); }
+  function saveStats(stats) {
+    if (!stats || typeof stats !== 'object') return false;
+    return _set(STATS_KEY, _withDefaults(stats, DEFAULT_STATS));
+  }
+  function recordResult(won, bestWorth) {
+    var stats = loadStats();
+    stats.games++;
+    if (won) stats.wins++;
+    if (typeof bestWorth === 'number' && bestWorth > stats.bestWorth) stats.bestWorth = bestWorth;
+    saveStats(stats);
+    return stats;
+  }
+
+  // Register with the phone's save directory (guarded: standalone /
+  // node loads simply skip it).
+  try {
+    var SR = null;
+    var w = _win();
+    if (w && w.SaveRegistry) SR = w.SaveRegistry;
+    else if (typeof SaveRegistry !== 'undefined' && SaveRegistry) SR = SaveRegistry;
+    if (SR && typeof SR.register === 'function') {
+      SR.register({ id: 'tycoon', name: 'Tycoon Town', keys: [SAVE_KEY, STATS_KEY] });
+    }
+  } catch (e) { /* registry is best-effort */ }
+
+  var api = {
+    SAVE_KEY: SAVE_KEY,
+    STATS_KEY: STATS_KEY,
+    loadGame: loadGame,
+    saveGame: saveGame,
+    clearGame: clearGame,
+    hasSave: hasSave,
+    loadStats: loadStats,
+    saveStats: saveStats,
+    recordResult: recordResult
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  if (typeof window !== 'undefined' && window) {
+    window.TycoonSave = api;
+    window.__TYCOON_SAVE__ = api;
+  }
+  return api;
+})();
+</script>
+<script>
+// source: tycoon-audio.js
+// TycoonAudio — HQ music track + file sound effects (Nov 22, 2026).
+//
+// Music: Tycoon Town plays its own soft track
+// (assets/tycoon/audio/music.mp3, a 256s seamless loop) while the game
+// is open. The phone's shared music system (BZAudio) owns the hub
+// music; when the Tycoon track starts, the shared loop is silenced
+// via BZAudio.stopMusic() — the persisted music setting is NOT
+// changed — and when the game closes, the shared loop resumes via
+// BZAudio.startMusic(). No double music, no setting clobbered.
+//
+// Sound effects are short MP3 files (assets/tycoon/audio/*.mp3). The
+// old WebAudio blips remain as fallback when a file cannot play
+// (node / standalone / missing Audio). Everything is gated by the
+// global sound/music settings when readable.
+//
+// UMD: global TycoonAudio + module.exports. Never throws.
+var TycoonAudio = (function () {
+  'use strict';
+
+  var _musicOn = true;
+  var _track = null;      // <audio> element for the music loop
+  var _sfx = {};          // kind -> <audio> element
+  var _sfxFailed = {};    // kind -> true (file unusable; use WebAudio blip)
+  var _ctx = null;
+  var _padTimer = null;
+  var _padOn = false;
+  var _chordIdx = 0;
+  // Slow, gentle C-major pad progression (frequencies in Hz) — legacy
+  // fallback only, used when BZAudio is absent AND <audio> is missing.
+  var _CHORDS = [
+    [261.63, 329.63, 392.00],
+    [220.00, 261.63, 329.63],
+    [174.61, 220.00, 261.63],
+    [196.00, 246.94, 293.66]
+  ];
+  var _FALLBACK_SRC = {
+    music: 'assets/tycoon/audio/music.mp3',
+    dice: 'assets/tycoon/audio/dice.mp3',
+    cash: 'assets/tycoon/audio/cash.mp3',
+    bad: 'assets/tycoon/audio/bad.mp3',
+    card: 'assets/tycoon/audio/card.mp3',
+    build: 'assets/tycoon/audio/build.mp3',
+    jail: 'assets/tycoon/audio/jail.mp3',
+    victory: 'assets/tycoon/audio/victory.mp3',
+    click: 'assets/tycoon/audio/click.mp3'
+  };
+
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+  function _bzAudio() {
+    try {
+      var w = _win();
+      if (w && w.BZAudio) return w.BZAudio;
+      if (typeof BZAudio !== 'undefined' && BZAudio) return BZAudio;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _settings() {
+    try {
+      var w = _win();
+      if (w && w.BZSettings && typeof w.BZSettings.readSettings === 'function') return w.BZSettings.readSettings();
+      if (typeof BZSettings !== 'undefined' && BZSettings && typeof BZSettings.readSettings === 'function') return BZSettings.readSettings();
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _data() {
+    try {
+      if (typeof TycoonData !== 'undefined' && TycoonData && TycoonData.AUDIO_FILES) return TycoonData.AUDIO_FILES;
+      var w = _win();
+      if (w && w.TycoonData && w.TycoonData.AUDIO_FILES) return w.TycoonData.AUDIO_FILES;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _musicSrc() {
+    var d = _data();
+    return (d && d.music) || _FALLBACK_SRC.music;
+  }
+  function _sfxSrc(kind) {
+    var d = _data();
+    if (d && d.sfx && d.sfx[kind]) return d.sfx[kind];
+    return _FALLBACK_SRC[kind] || null;
+  }
+
+  function _audioCtx() {
+    try {
+      if (_ctx) return _ctx;
+      var w = _win();
+      var AC = (w && (w.AudioContext || w.webkitAudioContext)) ||
+        (typeof AudioContext !== 'undefined' ? AudioContext : null) ||
+        (typeof webkitAudioContext !== 'undefined' ? webkitAudioContext : null);
+      if (!AC) return null;
+      _ctx = new AC();
+      return _ctx;
+    } catch (e) { return null; }
+  }
+
+  // --- shared-music coordination (never touches the persisted setting) --
+  function _silenceShared() {
+    var bz = _bzAudio();
+    if (bz && typeof bz.stopMusic === 'function') {
+      try { bz.stopMusic(); } catch (e) { /* best-effort */ }
+    }
+  }
+  function _resumeShared() {
+    var bz = _bzAudio();
+    if (bz && typeof bz.startMusic === 'function' && isMusicOn()) {
+      try { bz.startMusic(); } catch (e) { /* best-effort */ }
+    }
+  }
+
+  // --- HQ music track -----------------------------------------------------
+  function _ensureTrack() {
+    if (_track) return _track;
+    try {
+      if (typeof Audio !== 'function') return null;
+      var a = new Audio();
+      a.src = _musicSrc();
+      a.loop = true;
+      a.preload = 'auto';
+      a.volume = 0.5;
+      _track = a;
+      return _track;
+    } catch (e) { return null; }
+  }
+  function _startTrack() {
+    var a = _ensureTrack();
+    if (!a) return false;
+    try {
+      var p = a.play();
+      if (p && typeof p.catch === 'function') p.catch(function () { /* autoplay blocked; next tap retries */ });
+      return true;
+    } catch (e) { return false; }
+  }
+  function _pauseTrack() {
+    if (_track) { try { _track.pause(); } catch (e) { /* ignore */ } }
+  }
+
+  // --- legacy WebAudio pad fallback (BZAudio absent + no <audio>) --------
+  function _playChord(freqs, seconds) {
+    var ctx = _audioCtx();
+    if (!ctx) return;
+    try {
+      if (ctx.state === 'suspended' && typeof ctx.resume === 'function') ctx.resume();
+      var gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.045, ctx.currentTime + 1.2);
+      gain.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + seconds);
+      gain.connect(ctx.destination);
+      freqs.forEach(function (f) {
+        var o = ctx.createOscillator();
+        o.type = 'triangle';
+        o.frequency.value = f;
+        o.connect(gain);
+        o.start();
+        o.stop(ctx.currentTime + seconds + 0.1);
+      });
+    } catch (e) { /* audio is best-effort */ }
+  }
+  function _startPad() {
+    if (_padOn || _bzAudio()) return;
+    _padOn = true;
+    _chordIdx = 0;
+    function tick() {
+      if (!_padOn || !_musicOn) { _padTimer = null; return; }
+      _playChord(_CHORDS[_chordIdx % _CHORDS.length], 5.5);
+      _chordIdx++;
+      try { _padTimer = setTimeout(tick, 4200); } catch (e) { _padTimer = null; }
+    }
+    tick();
+  }
+  function _stopPad() {
+    _padOn = false;
+    if (_padTimer) { try { clearTimeout(_padTimer); } catch (e) { /* ignore */ } _padTimer = null; }
+  }
+
+  function isMusicOn() {
+    var bz = _bzAudio();
+    if (bz && typeof bz.isMusicOn === 'function') {
+      try { return !!bz.isMusicOn(); } catch (e) { /* fall through */ }
+    }
+    var s = _settings();
+    if (s && typeof s.music === 'boolean') return s.music;
+    return _musicOn;
+  }
+
+  function setMusic(on) {
+    _musicOn = !!on;
+    var bz = _bzAudio();
+    if (bz && typeof bz.setMusic === 'function') {
+      try { bz.setMusic(_musicOn); } catch (e) { /* fall through */ }
+      // setMusic(true) restarts the shared loop; silence it again so
+      // only the Tycoon track plays while the game is open.
+      if (_musicOn) { _silenceShared(); _startTrack(); }
+      else _pauseTrack();
+      return _musicOn;
+    }
+    if (_musicOn) { if (!_startTrack()) _startPad(); }
+    else { _pauseTrack(); _stopPad(); }
+    return _musicOn;
+  }
+
+  function toggleMusic() { return setMusic(!isMusicOn()); }
+
+  // Call on open / first tap: starts the music if the setting is on.
+  function ensureStarted() {
+    if (!isMusicOn()) return false;
+    if (_bzAudio()) _silenceShared();
+    if (_startTrack()) return true;
+    if (!_bzAudio()) _startPad();
+    return true;
+  }
+
+  // Call on game close: pauses the Tycoon track and resumes hub music.
+  function stop() {
+    _pauseTrack();
+    _stopPad();
+    _resumeShared();
+  }
+
+  function _soundOn() {
+    var s = _settings();
+    if (s && typeof s.sound === 'boolean') return s.sound;
+    return true;
+  }
+
+  function _blipFallback(kind) {
+    var ctx = _audioCtx();
+    if (!ctx) return;
+    try {
+      if (ctx.state === 'suspended' && typeof ctx.resume === 'function') ctx.resume();
+      var freq = kind === 'cash' ? 880 : kind === 'dice' ? 520 : kind === 'bad' ? 180 :
+        kind === 'card' ? 740 : kind === 'build' ? 440 : kind === 'jail' ? 220 :
+        kind === 'victory' ? 880 : kind === 'click' ? 990 : 660;
+      var o = ctx.createOscillator();
+      var g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.08, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start();
+      o.stop(ctx.currentTime + 0.2);
+    } catch (e) { /* best-effort */ }
+  }
+
+  function blip(kind) {
+    if (!_soundOn()) return;
+    var src = _sfxSrc(kind);
+    if (src && !_sfxFailed[kind]) {
+      try {
+        if (typeof Audio !== 'function') { _blipFallback(kind); return; }
+        var a = _sfx[kind];
+        if (!a) {
+          a = new Audio();
+          a.src = src;
+          a.preload = 'auto';
+          a.volume = 0.9;
+          a.addEventListener('error', function () { _sfxFailed[kind] = true; });
+          _sfx[kind] = a;
+        }
+        a.currentTime = 0;
+        var p = a.play();
+        if (p && typeof p.catch === 'function') p.catch(function () { /* ignore */ });
+        return;
+      } catch (e) { /* fall through to WebAudio blip */ }
+    }
+    _blipFallback(kind);
+  }
+
+  // Proof/test hook: report the track + SFX load state (DOM facts only).
+  function debugState() {
+    var t = _track;
+    return {
+      musicOn: isMusicOn(),
+      track: t ? {
+        src: t.src || '', paused: !!t.paused, time: t.currentTime || 0,
+        duration: t.duration || 0, readyState: t.readyState || 0, error: !!t.error
+      } : null,
+      sfxLoaded: Object.keys(_sfx),
+      sfxFailed: Object.keys(_sfxFailed)
+    };
+  }
+
+  var api = {
+    isMusicOn: isMusicOn,
+    setMusic: setMusic,
+    toggleMusic: toggleMusic,
+    ensureStarted: ensureStarted,
+    stop: stop,
+    blip: blip,
+    debugState: debugState
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  if (typeof window !== 'undefined' && window) {
+    window.TycoonAudio = api;
+    window.__TYCOON_AUDIO__ = api;
+  }
+  return api;
+})();
+</script>
+<script>
+// source: tycoon-game.js
+// TycoonGame — Tycoon Town's touch UI for the JMF Games phone.
+//
+// Mounts into #app-tycoon. Board is an 11x11 grid with the 40 squares
+// around the edge and the dice / log / actions in the middle. All
+// state lives in TycoonEngine; this file only renders it and wires
+// taps to engine actions. No MutationObserver (writes are direct and
+// guarded). Sheets opened from tap handlers carry the 350ms
+// _sheetOpenedAt guard so the tap's trailing click cannot cancel the
+// sheet it just opened (promotion-picker lesson).
+//
+// UMD: global TycoonGame (+ window.__TYCOON__ proof handle).
+// Never throws on boot; a missing mount no-ops.
+var TycoonGame = (function () {
+  'use strict';
+
+  var D = (typeof TycoonData !== 'undefined' && TycoonData) ? TycoonData : null;
+  var E = (typeof TycoonEngine !== 'undefined' && TycoonEngine) ? TycoonEngine : null;
+  var SAVE = (typeof TycoonSave !== 'undefined' && TycoonSave) ? TycoonSave : null;
+  var AUDIO = (typeof TycoonAudio !== 'undefined' && TycoonAudio) ? TycoonAudio : null;
+
+  var _root = null;
+  var _game = null;
+  var _aiTimer = null;
+  var _aiRunning = false;
+  var _sheetOpenedAt = 0;
+  var _sheetSq = null;
+  var _diceTimer = null;
+  var _started = false;
+  var _overRecorded = false;
+  // HQ visuals: last drawn card / jail banner shown in the board
+  // center, and the square to pulse after a buy/build.
+  var _lastCard = null;
+  var _lastJail = false;
+  var _pulseSq = null;
+
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+  function _el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined && text !== null) e.textContent = text;
+    return e;
+  }
+  function _esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function _money(n) { return '$' + Math.round(n).toLocaleString('en-US'); }
+
+  // Board geometry: square index -> {row, col} in the 11x11 grid.
+  function _gridPos(i) {
+    if (i < 11) return { row: 11, col: 11 - i };
+    if (i < 20) return { row: 21 - i, col: 1 };
+    if (i < 30) return { row: 1, col: i - 19 };
+    if (i === 30) return { row: 1, col: 11 };
+    return { row: i - 29, col: 11 };
+  }
+  function _side(i) {
+    if (i < 11) return 'bottom';
+    if (i < 20) return 'left';
+    if (i < 30) return 'top';
+    return 'right';
+  }
+
+  function _current() { return _game ? _game.players[_game.turn] : null; }
+  function _isHumanTurn() {
+    var c = _current();
+    return !!_game && !!c && !c.isAI && !c.bankrupt && _game.phase !== 'over';
+  }
+  function _playerById(id) {
+    if (!_game) return null;
+    for (var i = 0; i < _game.players.length; i++) if (_game.players[i].id === id) return _game.players[i];
+    return null;
+  }
+
+  function _autosave() {
+    try {
+      if (SAVE && _game) SAVE.saveGame(E.serialize(_game));
+    } catch (e) { /* save is best-effort */ }
+  }
+
+  // Scan an action's events for card draws / jail trips: show the
+  // drawn card (with its deck art) and the jail scene in the board
+  // center, and play the matching sound effect.
+  function _noteEvents(events) {
+    if (!events) return;
+    for (var i = 0; i < events.length; i++) {
+      var ev = events[i];
+      if (ev.indexOf('draws Fortune') !== -1) {
+        _lastCard = { deck: 'fortune', text: ev };
+        if (AUDIO) { try { AUDIO.blip('card'); } catch (e) { /* ignore */ } }
+      } else if (ev.indexOf('draws Town Event') !== -1) {
+        _lastCard = { deck: 'event', text: ev };
+        if (AUDIO) { try { AUDIO.blip('card'); } catch (e) { /* ignore */ } }
+      } else if (ev.indexOf('goes to Jail') !== -1) {
+        _lastJail = true;
+        if (AUDIO) { try { AUDIO.blip('jail'); } catch (e) { /* ignore */ } }
+      }
+    }
+  }
+
+  // --- rendering ---------------------------------------------------------
+  function _squareHtml(i) {
+    var sq = D.SQUARES[i];
+    var gp = _gridPos(i);
+    var side = _side(i);
+    var cls = 'ty-sq ty-sq-' + side + ' ty-kind-' + sq.kind;
+    var owner = _game.owns[i];
+    var ownerP = owner ? _playerById(owner) : null;
+    var colorBar = '';
+    if (sq.kind === 'street') {
+      colorBar = '<span class="ty-color" style="background:' + D.GROUPS[sq.group].color + '"></span>';
+    } else if (sq.kind === 'station') {
+      colorBar = '<span class="ty-color" style="background:#374151"></span>';
+    } else if (sq.kind === 'utility') {
+      colorBar = '<span class="ty-color" style="background:#0ea5e9"></span>';
+    }
+    var houses = '';
+    var n = E.housesOn(_game, i);
+    if (n > 0) {
+      if (_game.hotels[i]) houses = '<span class="ty-hotel" title="Hotel">H</span>';
+      else {
+        var pips = '';
+        for (var h = 0; h < n; h++) pips += '<i></i>';
+        houses = '<span class="ty-houses">' + pips + '</span>';
+      }
+    }
+    var mort = _game.mortgaged[i] ? '<span class="ty-mort">MORTGAGED</span>' : '';
+    var tokens = '';
+    _game.players.forEach(function (p) {
+      if (!p.bankrupt && p.pos === i) {
+        tokens += '<span class="ty-token" style="background:' + p.color + '" title="' + _esc(p.name) + '">' + _esc(p.name.charAt(0)) + '</span>';
+      }
+    });
+    var price = (sq.price !== undefined) ? '<span class="ty-price">' + _money(sq.price) + '</span>' : '';
+    var ownerDot = ownerP ? '<span class="ty-owner" style="background:' + ownerP.color + '" title="' + _esc(ownerP.name) + '"></span>' : '';
+    var here = _current() && _current().pos === i ? ' ty-here' : '';
+    var pulse = (_pulseSq === i) ? ' ty-pulse' : '';
+    return '<button type="button" class="' + cls + here + pulse + '" data-action="square" data-sq="' + i + '" style="grid-row:' + gp.row + ';grid-column:' + gp.col + '">' +
+      colorBar + '<span class="ty-name">' + _esc(sq.name) + '</span>' + price + houses + mort + ownerDot +
+      '<span class="ty-tokens">' + tokens + '</span></button>';
+  }
+
+  function _playersHtml() {
+    var out = '';
+    _game.players.forEach(function (p) {
+      var active = _current() && _current().id === p.id && _game.phase !== 'over';
+      out += '<div class="ty-player' + (active ? ' ty-active' : '') + (p.bankrupt ? ' ty-bankrupt' : '') + '">' +
+        '<img class="ty-face" src="' + _esc(p.portrait) + '" alt="' + _esc(p.name) + '"' +
+        ' onerror="this.style.display=\'none\'">' +
+        '<span class="ty-pname">' + _esc(p.name) + (p.inJail ? ' 🔒' : '') + (p.jailCards ? ' 🃏' : '') + '</span>' +
+        '<span class="ty-pmoney">' + _money(p.money) + '</span>' +
+        (p.bankrupt ? '<span class="ty-out">OUT</span>' : '') +
+        '</div>';
+    });
+    return out;
+  }
+
+  function _logHtml() {
+    var lines = _game.log.slice(-5);
+    return lines.map(function (l) { return '<div class="ty-logline">' + _esc(l) + '</div>'; }).join('');
+  }
+
+  function _diceFace(n) {
+    var pips = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+    var cells = '';
+    var on = pips[n] || [];
+    for (var i = 0; i < 9; i++) cells += '<i class="' + (on.indexOf(i) !== -1 ? 'on' : '') + '"></i>';
+    return '<span class="ty-die">' + cells + '</span>';
+  }
+
+  function _actionsHtml() {
+    if (!_game) return '';
+    if (_game.phase === 'over') {
+      var w = _playerById(_game.winner);
+      return '<div class="ty-status">🏆 ' + _esc(w ? w.name : 'Nobody') + ' wins ' + _esc(D.TITLE) + '!</div>' +
+        '<button type="button" class="ty-btn ty-btn-primary" data-action="new-game">New Game</button>';
+    }
+    var c = _current();
+    var out = '';
+    if (_game.pendingTrade) {
+      out += '<div class="ty-status">💼 ' + _esc(_playerById(_game.pendingTrade.from).name) + ' offers you a trade — see the sheet.</div>';
+    } else if (c.isAI) {
+      out += '<div class="ty-status">🤖 ' + _esc(c.name) + ' is thinking…</div>';
+    } else if (_game.phase === 'debt' && _game.debt) {
+      var to = _game.debt.to ? _playerById(_game.debt.to).name : 'the bank';
+      out += '<div class="ty-debt">⚠️ You owe ' + _money(_game.debt.amount) + ' to ' + _esc(to) + '. Mortgage or sell buildings to raise it.</div>';
+      out += '<button type="button" class="ty-btn" data-action="open-build">Mortgage / Sell</button>';
+      out += '<button type="button" class="ty-btn ty-btn-primary" data-action="pay-debt"' + (c.money >= _game.debt.amount ? '' : ' disabled') + '>Pay ' + _money(_game.debt.amount) + '</button>';
+      out += '<button type="button" class="ty-btn ty-btn-danger" data-action="bankrupt">Go Bankrupt</button>';
+    } else if (_game.phase === 'roll') {
+      if (c.inJail) {
+        out += '<div class="ty-status">🔒 You are in Jail (turn ' + (c.jailTurns + 1) + ' of 3). Roll doubles to escape.</div>';
+        out += '<button type="button" class="ty-btn ty-btn-primary" data-action="roll">🎲 Roll for Doubles</button>';
+        out += '<button type="button" class="ty-btn" data-action="pay-jail">Pay $50 Fine</button>';
+        if (c.jailCards > 0) out += '<button type="button" class="ty-btn" data-action="use-jail-card">Use Get Out Free Card</button>';
+      } else {
+        out += '<button type="button" class="ty-btn ty-btn-primary" data-action="roll">🎲 Roll Dice</button>';
+      }
+    } else if (_game.phase === 'buy') {
+      var sq = D.SQUARES[c.pos];
+      out += '<div class="ty-status">🏠 ' + _esc(sq.name) + ' is unowned — ' + _money(sq.price) + '.</div>';
+      out += '<button type="button" class="ty-btn ty-btn-primary" data-action="buy"' + (c.money >= sq.price ? '' : ' disabled') + '>Buy for ' + _money(sq.price) + '</button>';
+      out += '<button type="button" class="ty-btn" data-action="decline">Decline</button>';
+    } else if (_game.phase === 'end') {
+      out += '<button type="button" class="ty-btn ty-btn-primary" data-action="end-turn">End Turn</button>';
+    }
+    if (_isHumanTurn() && (_game.phase === 'roll' || _game.phase === 'end')) {
+      out += '<button type="button" class="ty-btn" data-action="open-build">🏗️ Build / Mortgage</button>';
+      out += '<button type="button" class="ty-btn" data-action="open-trade">🤝 Trade</button>';
+    }
+    return out;
+  }
+
+  function render() {
+    if (!_root || !_game) return;
+    var dice = _game.dice || [0, 0];
+    var diceHtml = (dice[0] ? _diceFace(dice[0]) + _diceFace(dice[1]) : '<span class="ty-die ty-die-idle">?</span><span class="ty-die ty-die-idle">?</span>');
+    var squares = '';
+    for (var i = 0; i < 40; i++) squares += _squareHtml(i);
+    var c = _current();
+    var turnText = _game.phase === 'over' ? 'Game over' :
+      (c ? (c.isAI ? c.name + '’s turn' : 'Your turn') + ' — ' + _game.phase : '');
+    // Board center: the illustrated town square behind a dark veil so
+    // the dice, log, and buttons stay readable.
+    var centerStyle = (D.ART && D.ART.board) ?
+      ' style="background-image:linear-gradient(rgba(8,14,10,0.82), rgba(8,14,10,0.82)), url(\'' + _esc(D.ART.board) + '\')"' : '';
+    var cardBanner = '';
+    if (_lastCard && D.ART && D.ART.decks) {
+      var deckArt = _lastCard.deck === 'fortune' ? D.ART.decks.fortune : D.ART.decks.event;
+      cardBanner = '<div class="ty-carddraw"><img class="ty-carddraw-art" src="' + _esc(deckArt) + '" alt=""><span>' + _esc(_lastCard.text) + '</span></div>';
+    }
+    var jailBanner = '';
+    if (_lastJail && D.ART && D.ART.jail) {
+      jailBanner = '<div class="ty-jailbanner"><img class="ty-jailbanner-art" src="' + _esc(D.ART.jail) + '" alt=""><span>Sent to Jail!</span></div>';
+    }
+    _root.innerHTML =
+      '<div class="ty-game">' +
+        '<div class="ty-header">' +
+          '<span class="ty-title">' + _esc(D.TITLE) + '</span>' +
+          '<span class="ty-turn">' + _esc(turnText) + '</span>' +
+          '<span class="ty-headbtns">' +
+            '<button type="button" class="ty-iconbtn" data-action="music" aria-label="Music">♪</button>' +
+            '<button type="button" class="ty-iconbtn" data-action="rules" aria-label="Rules">?</button>' +
+            '<button type="button" class="ty-iconbtn" data-action="menu" aria-label="Menu">☰</button>' +
+          '</span>' +
+        '</div>' +
+        '<div class="ty-players">' + _playersHtml() + '</div>' +
+        '<div class="ty-boardwrap"><div class="ty-board">' + squares +
+          '<div class="ty-center"' + centerStyle + '>' +
+            '<div class="ty-dice" id="ty-dice">' + diceHtml + '</div>' +
+            cardBanner + jailBanner +
+            '<div class="ty-log">' + _logHtml() + '</div>' +
+            '<div class="ty-actions">' + _actionsHtml() + '</div>' +
+          '</div>' +
+        '</div></div>' +
+        '<div class="ty-sheet-backdrop" id="ty-backdrop" hidden></div>' +
+        '<div class="ty-sheet" id="ty-sheet" hidden></div>' +
+      '</div>';
+    _markMusicBtn();
+    _injectQuit();
+  }
+
+  function _markMusicBtn() {
+    try {
+      var btn = _root.querySelector('[data-action="music"]');
+      if (!btn || !AUDIO) return;
+      var on = AUDIO.isMusicOn();
+      btn.classList.toggle('ty-off', !on);
+      btn.textContent = on ? '♪' : '♪̸';
+    } catch (e) { /* cosmetic */ }
+  }
+
+  function _injectQuit() {
+    try {
+      var w = _win();
+      if (w && w.PhoneShell && typeof w.PhoneShell.injectQuitButton === 'function') {
+        var header = _root.querySelector('.ty-headbtns');
+        if (header) w.PhoneShell.injectQuitButton(header, { compact: true });
+      }
+    } catch (e) { /* quit is best-effort */ }
+  }
+
+  // --- sheets ------------------------------------------------------------
+  function _showSheet(html) {
+    var backdrop = _root.querySelector('#ty-backdrop');
+    var sheet = _root.querySelector('#ty-sheet');
+    if (!backdrop || !sheet) return;
+    _sheetOpenedAt = Date.now();
+    sheet.innerHTML = html;
+    backdrop.hidden = false;
+    sheet.hidden = false;
+    if (AUDIO) { try { AUDIO.blip('click'); } catch (e) { /* ignore */ } }
+  }
+  function _hideSheet() {
+    var backdrop = _root.querySelector('#ty-backdrop');
+    var sheet = _root.querySelector('#ty-sheet');
+    if (backdrop) backdrop.hidden = true;
+    if (sheet) { sheet.hidden = true; sheet.innerHTML = ''; }
+    _sheetSq = null;
+  }
+
+  function _propertySheet(sq) {
+    _sheetSq = sq;
+    var def = D.SQUARES[sq];
+    var owner = _game.owns[sq];
+    var ownerP = owner ? _playerById(owner) : null;
+    var you = _playerById('you');
+    var html = '<div class="ty-sheet-card"><button type="button" class="ty-sheet-x" data-action="close-sheet">✕</button>';
+    if (def.kind === 'street') {
+      html += '<div class="ty-card-color" style="background:' + D.GROUPS[def.group].color + '"></div>';
+      if (D.ART && D.ART.sets && D.ART.sets[def.group]) html += '<img class="ty-card-art" src="' + _esc(D.ART.sets[def.group]) + '" alt="">';
+      html += '<h2>' + _esc(def.name) + '</h2><div class="ty-card-sub">' + _esc(D.GROUPS[def.group].name) + ' set · ' + _money(def.price) + '</div>';
+      var n = E.housesOn(_game, sq);
+      var rows = [['Base rent', def.rents[0]], ['1 house', def.rents[1]], ['2 houses', def.rents[2]], ['3 houses', def.rents[3]], ['4 houses', def.rents[4]], ['Hotel', def.rents[5]]];
+      html += '<table class="ty-rents">' + rows.map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + _money(r[1]) + '</td></tr>'; }).join('') + '</table>';
+      html += '<div class="ty-card-sub">House cost ' + _money(def.houseCost) + ' · Mortgage value ' + _money(Math.floor(def.price / 2)) + '</div>';
+      html += '<div class="ty-card-sub">Buildings here: ' + (_game.hotels[sq] ? 'Hotel' : n + ' house(s)') + '</div>';
+    } else if (def.kind === 'station') {
+      html += '<h2>' + _esc(def.name) + '</h2><div class="ty-card-sub">Harbor Line station · ' + _money(def.price) + '</div>';
+      if (D.ART && D.ART.station) html += '<img class="ty-card-art" src="' + _esc(D.ART.station) + '" alt="">';
+      html += '<table class="ty-rents"><tr><td>1 station</td><td>$25</td></tr><tr><td>2 stations</td><td>$50</td></tr><tr><td>3 stations</td><td>$100</td></tr><tr><td>4 stations</td><td>$200</td></tr></table>';
+    } else if (def.kind === 'utility') {
+      html += '<h2>' + _esc(def.name) + '</h2><div class="ty-card-sub">Utility · ' + _money(def.price) + '</div>';
+      html += '<div class="ty-card-sub">Rent is 4× the dice roll with one utility, 10× with both.</div>';
+    } else {
+      html += '<h2>' + _esc(def.name) + '</h2><div class="ty-card-sub">' + _esc(_kindNote(def.kind)) + '</div>';
+      if (D.ART) {
+        var kindArt = { fortune: D.ART.decks && D.ART.decks.fortune, event: D.ART.decks && D.ART.decks.event,
+          jail: D.ART.jail, gotojail: D.ART.jail, go: D.ART.splash, parking: D.ART.board }[def.kind];
+        if (kindArt) html += '<img class="ty-card-art" src="' + _esc(kindArt) + '" alt="">';
+      }
+    }
+    html += '<div class="ty-card-sub">Owner: ' + (ownerP ? _esc(ownerP.name) : 'Bank (unowned)') + (_game.mortgaged[sq] ? ' · MORTGAGED' : '') + '</div>';
+    if (_isHumanTurn() && owner === 'you') {
+      if (def.kind === 'street') {
+        var can = E.canBuildOn(_game, 'you', sq);
+        html += '<button type="button" class="ty-btn ty-btn-primary" data-action="build" data-sq="' + sq + '"' + (can.ok && you.money >= def.houseCost ? '' : ' disabled') + '>' + (can.hotel ? 'Build Hotel (' + _money(def.houseCost) + ')' : 'Build House (' + _money(def.houseCost) + ')') + '</button>';
+        if (!can.ok) html += '<div class="ty-card-sub">' + _esc(can.reason || '') + '</div>';
+        html += '<button type="button" class="ty-btn" data-action="sell-house" data-sq="' + sq + '"' + (n > 0 ? '' : ' disabled') + '>Sell Building (' + _money(Math.floor(def.houseCost / 2)) + ')</button>';
+      }
+      if (_game.mortgaged[sq]) {
+        html += '<button type="button" class="ty-btn" data-action="unmortgage" data-sq="' + sq + '">Lift Mortgage (' + _money(Math.floor(def.price / 2 * 1.1)) + ')</button>';
+      } else if (n === 0) {
+        html += '<button type="button" class="ty-btn" data-action="mortgage" data-sq="' + sq + '">Mortgage (' + _money(Math.floor(def.price / 2)) + ')</button>';
+      }
+    }
+    if (_isHumanTurn() && _game.phase === 'buy' && _current().pos === sq && !owner) {
+      html += '<button type="button" class="ty-btn ty-btn-primary" data-action="buy">Buy for ' + _money(def.price) + '</button>';
+    }
+    html += '</div>';
+    _showSheet(html);
+  }
+
+  function _kindNote(kind) {
+    return {
+      go: 'Collect $200 every time you pass GO.',
+      tax: 'Pay the stated amount to the bank.',
+      fortune: 'Draw a Fortune card — good news or bad, the town decides.',
+      event: 'Draw a Town Event card.',
+      jail: 'Just visiting — or locked up. Roll doubles, pay $50, or use a card to get out.',
+      parking: 'Free Parking. No jackpot in Tycoon Town — just a breather.',
+      gotojail: 'Go directly to Jail. Do not pass GO.'
+    }[kind] || '';
+  }
+
+  function _buildSheet() {
+    _sheetSq = null;
+    var you = _playerById('you');
+    var props = E.playerProps(_game, 'you');
+    var html = '<div class="ty-sheet-card"><button type="button" class="ty-sheet-x" data-action="close-sheet">✕</button><h2>Build &amp; Mortgage</h2>';
+    html += '<div class="ty-card-sub">Your money: ' + _money(you.money) + ' — houses must be built evenly across a set; a mortgaged street earns no rent and blocks building on its set.</div>';
+    if (!props.length) html += '<div class="ty-card-sub">You own no properties yet.</div>';
+    props.forEach(function (sq) {
+      var def = D.SQUARES[sq];
+      var n = E.housesOn(_game, sq);
+      html += '<div class="ty-build-row"><span class="ty-build-name">' + _esc(def.name) + ' <i>' + (def.kind === 'street' ? D.GROUPS[def.group].name : def.kind) + '</i></span>';
+      html += '<span class="ty-build-info">' + (_game.mortgaged[sq] ? 'MORTGAGED' : (_game.hotels[sq] ? 'Hotel' : n + ' house(s)')) + '</span>';
+      if (def.kind === 'street' && !_game.mortgaged[sq]) {
+        var can = E.canBuildOn(_game, 'you', sq);
+        html += '<button type="button" class="ty-btn ty-btn-small" data-action="build" data-sq="' + sq + '"' + (can.ok && you.money >= def.houseCost ? '' : ' disabled') + '>+' + (can.hotel ? 'Hotel' : 'House') + ' ' + _money(def.houseCost) + '</button>';
+        html += '<button type="button" class="ty-btn ty-btn-small" data-action="sell-house" data-sq="' + sq + '"' + (n > 0 ? '' : ' disabled') + '>Sell ' + _money(Math.floor(def.houseCost / 2)) + '</button>';
+      }
+      if (_game.mortgaged[sq]) {
+        html += '<button type="button" class="ty-btn ty-btn-small" data-action="unmortgage" data-sq="' + sq + '">Lift ' + _money(Math.floor(def.price / 2 * 1.1)) + '</button>';
+      } else if (n === 0) {
+        html += '<button type="button" class="ty-btn ty-btn-small" data-action="mortgage" data-sq="' + sq + '">Mortgage ' + _money(Math.floor(def.price / 2)) + '</button>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+    _showSheet(html);
+  }
+
+  function _tradeSheet() {
+    _sheetSq = null;
+    var you = _playerById('you');
+    var myProps = E.playerProps(_game, 'you');
+    var html = '<div class="ty-sheet-card"><button type="button" class="ty-sheet-x" data-action="close-sheet">✕</button><h2>Offer a Trade</h2>';
+    html += '<div class="ty-card-sub">Pick what you give and what you want. The other player accepts when your offer is worth at least what they give up (their streets are worth more to them when they complete a set).</div>';
+    html += '<label class="ty-field">Trade with <select id="ty-trade-who">' +
+      _game.players.filter(function (p) { return p.isAI && !p.bankrupt; }).map(function (p) {
+        return '<option value="' + p.id + '">' + _esc(p.name) + '</option>';
+      }).join('') + '</select></label>';
+    html += '<div class="ty-trade-cols"><div><h3>You give</h3>' +
+      myProps.map(function (sq) {
+        return '<label class="ty-check"><input type="checkbox" class="ty-give" value="' + sq + '"> ' + _esc(D.SQUARES[sq].name) + '</label>';
+      }).join('') +
+      '<label class="ty-field">Cash <input id="ty-give-cash" type="number" min="0" max="' + you.money + '" value="0"></label></div>';
+    html += '<div><h3>You want</h3><div id="ty-want-list"></div>' +
+      '<label class="ty-field">Cash <input id="ty-want-cash" type="number" min="0" value="0"></label></div></div>';
+    html += '<button type="button" class="ty-btn ty-btn-primary" data-action="submit-trade">Send Offer</button>';
+    html += '<div class="ty-card-sub" id="ty-trade-result"></div></div>';
+    _showSheet(html);
+    _refreshWantList();
+    var who = _root.querySelector('#ty-trade-who');
+    if (who) who.addEventListener('change', _refreshWantList);
+  }
+
+  function _refreshWantList() {
+    var who = _root.querySelector('#ty-trade-who');
+    var list = _root.querySelector('#ty-want-list');
+    if (!who || !list) return;
+    var props = E.playerProps(_game, who.value);
+    list.innerHTML = props.length ? props.map(function (sq) {
+      return '<label class="ty-check"><input type="checkbox" class="ty-want" value="' + sq + '"> ' + _esc(D.SQUARES[sq].name) + '</label>';
+    }).join('') : '<div class="ty-card-sub">They own nothing.</div>';
+  }
+
+  function _rulesSheet() {
+    var html = '<div class="ty-sheet-card"><button type="button" class="ty-sheet-x" data-action="close-sheet">✕</button><h2>How to Play</h2>' +
+      ((D.ART && D.ART.tokens) ? '<img class="ty-rules-art" src="' + _esc(D.ART.tokens) + '" alt="">' : '') +
+      '<div class="ty-rules">' +
+      '<p>Buy streets, build houses and hotels, and collect rent until you are the last solvent player in town.</p>' +
+      '<p>Roll the dice and move around the board. Passing GO pays $200. Landing on an unowned property lets you buy it.</p>' +
+      '<p>Own a whole color set and rent doubles; build houses evenly across the set, then a hotel after 4 houses.</p>' +
+      '<p>Stations pay $25 / $50 / $100 / $200 by how many you own. Utilities pay 4× (one) or 10× (both) the dice roll.</p>' +
+      '<p>Jail: roll doubles, pay $50, or use a Get Out of Jail Free card. Three doubles in a row sends you to Jail. After 3 failed turns you pay the fine.</p>' +
+      '<p>Short on cash? Mortgage a property for half its price (no rent while mortgaged) or sell buildings for half. Lift a mortgage for half plus 10%.</p>' +
+      '<p>Trade with rivals — they accept when your offer is worth what they give up, and a street that completes their set is worth more to them.</p>' +
+      '<p>Go bankrupt and you are out. Free Parking pays nothing. Your game auto-saves after every move.</p>' +
+      '</div></div>';
+    _showSheet(html);
+  }
+
+  function _menuSheet() {
+    var stats = SAVE ? SAVE.loadStats() : { games: 0, wins: 0, bestWorth: 0 };
+    var html = '<div class="ty-sheet-card"><button type="button" class="ty-sheet-x" data-action="close-sheet">✕</button><h2>Menu</h2>' +
+      ((D.ART && D.ART.splash) ? '<img class="ty-menu-art" src="' + _esc(D.ART.splash) + '" alt="">' : '') +
+      '<div class="ty-card-sub">Games played: ' + stats.games + ' · Won: ' + stats.wins + ' · Best net worth: ' + _money(stats.bestWorth) + '</div>' +
+      '<button type="button" class="ty-btn ty-btn-primary" data-action="new-game">New Game</button>' +
+      '<button type="button" class="ty-btn" data-action="rules">How to Play</button>' +
+      '<button type="button" class="ty-btn ty-btn-danger" data-action="delete-save">Delete Save</button>' +
+      '</div>';
+    _showSheet(html);
+  }
+
+  function _tradeOfferSheet() {
+    var t = _game.pendingTrade;
+    if (!t) return;
+    var from = _playerById(t.from);
+    function names(bundle, ownerId) {
+      var parts = (bundle.props || []).map(function (sq) { return D.SQUARES[sq].name; });
+      if (bundle.cash) parts.push(_money(bundle.cash));
+      return parts.join(', ') || 'nothing';
+    }
+    var html = '<div class="ty-sheet-card"><h2>💼 ' + _esc(from.name) + ' offers a trade</h2>' +
+      '<div class="ty-card-sub">' + _esc(from.name) + ' gives you: <b>' + _esc(names(t.offer)) + '</b></div>' +
+      '<div class="ty-card-sub">In return they want: <b>' + _esc(names(t.ask)) + '</b></div>' +
+      '<button type="button" class="ty-btn ty-btn-primary" data-action="accept-trade">Accept</button>' +
+      '<button type="button" class="ty-btn" data-action="decline-trade">Decline</button></div>';
+    _showSheet(html);
+  }
+
+  function _gameOverSheet() {
+    var w = _playerById(_game.winner);
+    var you = _playerById('you');
+    var won = _game.winner === 'you';
+    var html = '<div class="ty-sheet-card ty-over"><h2>' + (won ? '🏆 You win ' + _esc(D.TITLE) + '!' : '🏆 ' + _esc(w ? w.name : 'Nobody') + ' wins') + '</h2>' +
+      ((D.ART && D.ART.victory) ? '<img class="ty-over-art" src="' + _esc(D.ART.victory) + '" alt="">' : '') +
+      '<img class="ty-over-face" src="' + _esc(w ? w.portrait : '') + '" alt="" onerror="this.style.display=\'none\'">' +
+      '<div class="ty-card-sub">' + (won ? 'You are the last solvent player in town. The streets are yours!' : 'You went bankrupt. ' + _esc(w ? w.name : '') + ' owns the town now — rematch?') + '</div>' +
+      '<div class="ty-card-sub">Your net worth: ' + _money(E.netWorth(_game, 'you')) + ' · Turns: ' + _game.turnCount + '</div>' +
+      '<button type="button" class="ty-btn ty-btn-primary" data-action="new-game">New Game</button></div>';
+    _showSheet(html);
+  }
+
+  // --- actions -------------------------------------------------------------
+  function _afterAction(events, sound) {
+    _noteEvents(events);
+    if (sound && AUDIO) { try { AUDIO.blip(sound); } catch (e) { /* ignore */ } }
+    _autosave();
+    render();
+    _maybeGameOver();
+    if (_game.phase !== 'over') _maybeRunAi();
+  }
+
+  function _maybeGameOver() {
+    if (_game.phase === 'over' && !_overRecorded) {
+      _overRecorded = true;
+      if (AUDIO) { try { AUDIO.blip('victory'); } catch (e) { /* ignore */ } }
+      try {
+        if (SAVE) SAVE.recordResult(_game.winner === 'you', E.netWorth(_game, 'you'));
+        SAVE.clearGame();
+      } catch (e) { /* ignore */ }
+      _gameOverSheet();
+    }
+  }
+
+  function _maybeRunAi() {
+    if (_aiRunning || !_game || _game.phase === 'over') return;
+    var c = _current();
+    if (!c || !c.isAI || c.bankrupt) return;
+    if (_game.pendingTrade) { _tradeOfferSheet(); return; }
+    _aiRunning = true;
+    _aiTimer = setTimeout(_aiStep, 700);
+  }
+
+  function _aiStep() {
+    _aiTimer = null;
+    if (!_game || _game.phase === 'over') { _aiRunning = false; return; }
+    var c = _current();
+    if (!c || !c.isAI || c.bankrupt) { _aiRunning = false; render(); return; }
+    var r;
+    try { r = E.aiTakeTurn(_game, c.id); } catch (e) { _aiRunning = false; return; }
+    _noteEvents(r.events);
+    _pulseSq = null;
+    _autosave();
+    render();
+    if (_game.phase === 'over') { _aiRunning = false; _maybeGameOver(); return; }
+    if (_game.pendingTrade) { _aiRunning = false; _tradeOfferSheet(); return; }
+    var next = _current();
+    if (next && next.isAI && !next.bankrupt) {
+      _aiTimer = setTimeout(_aiStep, 700);
+    } else {
+      _aiRunning = false;
+      render();
+    }
+  }
+
+  function _humanBankruptFlow() {
+    // The human is out; the AIs play on (fast) until a champion emerges.
+    render();
+    var note = _el('div', 'ty-status', 'You went bankrupt — the remaining players finish the game…');
+    var actions = _root.querySelector('.ty-actions');
+    if (actions) actions.appendChild(note);
+    _aiRunning = true;
+    _aiTimer = setTimeout(function _fastAi() {
+      if (!_game || _game.phase === 'over') { _aiRunning = false; _maybeGameOver(); return; }
+      var c = _current();
+      if (c && c.isAI && !c.bankrupt) {
+        try { E.aiTakeTurn(_game, c.id); } catch (e) { /* ignore */ }
+        if (_game.pendingTrade) {
+          // No human left to answer: the offer is declined.
+          try { E.answerTrade(_game, false); } catch (e) { /* ignore */ }
+        }
+        _autosave();
+        render();
+      }
+      if (_game.phase === 'over') { _aiRunning = false; _maybeGameOver(); return; }
+      _aiTimer = setTimeout(_fastAi, 350);
+    }, 500);
+  }
+
+  function _doRoll() {
+    if (!_isHumanTurn() || _game.phase !== 'roll') return;
+    _lastCard = null;
+    _lastJail = false;
+    _pulseSq = null;
+    var c = _current();
+    var diceEl = _root.querySelector('#ty-dice');
+    if (diceEl) diceEl.classList.add('ty-rolling');
+    var ticks = 0;
+    if (_diceTimer) clearInterval(_diceTimer);
+    _diceTimer = setInterval(function () {
+      ticks++;
+      if (diceEl) diceEl.innerHTML = _diceFace(1 + Math.floor(Math.random() * 6)) + _diceFace(1 + Math.floor(Math.random() * 6));
+      if (ticks >= 6) {
+        clearInterval(_diceTimer);
+        _diceTimer = null;
+        if (diceEl) diceEl.classList.remove('ty-rolling');
+        var r;
+        try { r = E.rollDice(_game, c.id); } catch (e) { return; }
+        if (AUDIO) { try { AUDIO.blip(r.dice && r.dice[0] === r.dice[1] ? 'cash' : 'dice'); } catch (e) { /* ignore */ } }
+        _afterAction(r.events, null);
+      }
+    }, 90);
+  }
+
+  function _onTap(ev) {
+    var t = ev.target;
+    while (t && t !== _root && !(t.getAttribute && t.getAttribute('data-action'))) t = t.parentNode;
+    if (!t || t === _root) {
+      // Backdrop tap: guarded by the 350ms rule (the tap that opened
+      // the sheet must not be the one that closes it).
+      if (ev.target && ev.target.id === 'ty-backdrop') {
+        if (Date.now() - _sheetOpenedAt < 350) return;
+        _hideSheet();
+      }
+      return;
+    }
+    var action = t.getAttribute('data-action');
+    var sq = t.getAttribute('data-sq');
+    if (sq !== null && sq !== undefined) sq = parseInt(sq, 10);
+    if (AUDIO) { try { AUDIO.ensureStarted(); } catch (e) { /* ignore */ } }
+    switch (action) {
+      case 'square':
+        if (typeof sq === 'number' && !isNaN(sq)) _propertySheet(sq);
+        break;
+      case 'close-sheet': _hideSheet(); break;
+      case 'roll': _doRoll(); break;
+      case 'buy': {
+        _pulseSq = _current() ? _current().pos : null;
+        var b = E.buyProperty(_game, 'you');
+        if (b.ok) _afterAction(b.events, 'cash');
+        break;
+      }
+      case 'decline': {
+        var d = E.declineBuy(_game, 'you');
+        if (d.ok) _afterAction(d.events, null);
+        break;
+      }
+      case 'end-turn': {
+        var e = E.endTurn(_game, 'you');
+        if (e.ok) _afterAction(e.events, null);
+        break;
+      }
+      case 'pay-jail': {
+        var f = E.payJailFine(_game, 'you');
+        if (f.ok) _afterAction(f.events, 'cash');
+        break;
+      }
+      case 'use-jail-card': {
+        var u = E.useJailCard(_game, 'you');
+        if (u.ok) _afterAction(u.events, null);
+        break;
+      }
+      case 'pay-debt': {
+        var pd = E.payDebt(_game, 'you');
+        if (pd.ok) _afterAction(pd.events, 'cash');
+        break;
+      }
+      case 'bankrupt': {
+        var bk = E.declareBankrupt(_game, 'you');
+        if (bk.ok) { _autosave(); _humanBankruptFlow(); }
+        break;
+      }
+      case 'build': {
+        _pulseSq = sq;
+        var br = E.build(_game, 'you', sq);
+        if (br.ok) { _afterAction(br.events, 'build'); if (_sheetSq !== null && _sheetSq !== undefined) _propertySheet(_sheetSq); }
+        else render();
+        break;
+      }
+      case 'sell-house': {
+        _pulseSq = sq;
+        var sh = E.sellHouse(_game, 'you', sq);
+        if (sh.ok) { _afterAction(sh.events, 'build'); if (_sheetSq !== null && _sheetSq !== undefined) _propertySheet(_sheetSq); }
+        break;
+      }
+      case 'mortgage': {
+        _pulseSq = sq;
+        var mo = E.mortgage(_game, 'you', sq);
+        if (mo.ok) { _afterAction(mo.events, 'cash'); if (_sheetSq !== null && _sheetSq !== undefined) _propertySheet(_sheetSq); }
+        break;
+      }
+      case 'unmortgage': {
+        _pulseSq = sq;
+        var um = E.unmortgage(_game, 'you', sq);
+        if (um.ok) { _afterAction(um.events, 'cash'); if (_sheetSq !== null && _sheetSq !== undefined) _propertySheet(_sheetSq); }
+        break;
+      }
+      case 'open-build': _buildSheet(); break;
+      case 'open-trade': _tradeSheet(); break;
+      case 'rules': _rulesSheet(); break;
+      case 'menu': _menuSheet(); break;
+      case 'music': {
+        if (AUDIO) { try { AUDIO.toggleMusic(); } catch (e) { /* ignore */ } }
+        _markMusicBtn();
+        break;
+      }
+      case 'submit-trade': {
+        var who = _root.querySelector('#ty-trade-who');
+        var giveCash = _root.querySelector('#ty-give-cash');
+        var wantCash = _root.querySelector('#ty-want-cash');
+        var result = _root.querySelector('#ty-trade-result');
+        if (!who) break;
+        var give = [], want = [];
+        _root.querySelectorAll('.ty-give:checked').forEach(function (cb) { give.push(parseInt(cb.value, 10)); });
+        _root.querySelectorAll('.ty-want:checked').forEach(function (cb) { want.push(parseInt(cb.value, 10)); });
+        var gc = Math.max(0, parseInt(giveCash ? giveCash.value : '0', 10) || 0);
+        var wc = Math.max(0, parseInt(wantCash ? wantCash.value : '0', 10) || 0);
+        var you = _playerById('you');
+        if (gc > you.money) { if (result) result.textContent = 'You do not have that much cash.'; break; }
+        if (!give.length && !gc) { if (result) result.textContent = 'Offer something first.'; break; }
+        if (!want.length && !wc) { if (result) result.textContent = 'Ask for something first.'; break; }
+        var offer = { props: give, cash: gc };
+        var ask = { props: want, cash: wc };
+        var target = _playerById(who.value);
+        if (E.aiAcceptsTrade(_game, who.value, offer, ask)) {
+          var tr = E.applyTrade(_game, 'you', who.value, offer, ask);
+          _hideSheet();
+          _afterAction(tr.events, 'cash');
+        } else {
+          if (result) result.textContent = target.name + ' declined — your offer is worth less than what you asked for. (A street that completes their set is worth more to them.)';
+          if (AUDIO) { try { AUDIO.blip('bad'); } catch (e) { /* ignore */ } }
+        }
+        break;
+      }
+      case 'accept-trade': {
+        var at = E.answerTrade(_game, true);
+        _hideSheet();
+        if (at.ok) _afterAction(at.events, 'cash');
+        break;
+      }
+      case 'decline-trade': {
+        var dt = E.answerTrade(_game, false);
+        _hideSheet();
+        if (dt.ok) _afterAction(dt.events, null);
+        break;
+      }
+      case 'new-game': {
+        _hideSheet();
+        newGame();
+        break;
+      }
+      case 'delete-save': {
+        try { if (SAVE) SAVE.clearGame(); } catch (e) { /* ignore */ }
+        _hideSheet();
+        newGame();
+        break;
+      }
+      default: break;
+    }
+  }
+
+  // --- lifecycle -----------------------------------------------------------
+  function newGame(seed) {
+    _overRecorded = false;
+    _lastCard = null;
+    _lastJail = false;
+    _pulseSq = null;
+    _aiRunning = false;
+    if (_aiTimer) { clearTimeout(_aiTimer); _aiTimer = null; }
+    try { if (SAVE) SAVE.clearGame(); } catch (e) { /* ignore */ }
+    _game = E.createGame(seed);
+    _autosave();
+    render();
+    return _game;
+  }
+
+  function loadSaved() {
+    try {
+      if (SAVE) {
+        var saved = SAVE.loadGame();
+        if (saved && saved.players && saved.players.length === 4) {
+          _game = E.deserialize(saved);
+          _overRecorded = _game.phase === 'over';
+          render();
+          return true;
+        }
+      }
+    } catch (e) { /* fall through to a new game */ }
+    return false;
+  }
+
+  function init(mount) {
+    if (!mount || !D || !E) return false;
+    _root = mount;
+    try { _root.addEventListener('click', _onTap); } catch (e) { /* ignore */ }
+    try {
+      _root.addEventListener('pointerdown', function () {
+        if (AUDIO) { try { AUDIO.ensureStarted(); } catch (e2) { /* ignore */ } }
+      });
+    } catch (e) { /* ignore */ }
+    if (!_game) {
+      if (!loadSaved()) {
+        _game = E.createGame();
+        _autosave();
+      }
+    }
+    render();
+    _started = true;
+    return true;
+  }
+
+  function onOpen() {
+    if (!_started) return;
+    if (AUDIO) { try { AUDIO.ensureStarted(); } catch (e) { /* ignore */ } }
+    render();
+    _maybeRunAi();
+  }
+
+  function onClose() {
+    if (_aiTimer) { clearTimeout(_aiTimer); _aiTimer = null; }
+    _aiRunning = false;
+    if (_diceTimer) { clearInterval(_diceTimer); _diceTimer = null; }
+    // Pause the Tycoon track and hand music back to the shared system.
+    if (AUDIO) { try { AUDIO.stop(); } catch (e) { /* ignore */ } }
+    _autosave();
+  }
+
+  // Deterministic full-game simulation (proof/test hook): plays a fresh
+  // seeded game with the AI policy for every seat and returns the
+  // winner + turn count. Does not touch the live game.
+  function debugFastForward(seed) {
+    var g = E.createGame(typeof seed === 'number' ? seed : 1);
+    var r = E.fastForward(g, 1500);
+    return { winner: r.winner, turns: g.turnCount, log: g.log.slice(-10) };
+  }
+
+  var api = {
+    init: init,
+    render: render,
+    onOpen: onOpen,
+    onClose: onClose,
+    newGame: newGame,
+    loadSaved: loadSaved,
+    debugFastForward: debugFastForward,
+    _game: function () { return _game; }
+  };
+
+  if (typeof window !== 'undefined' && window) {
+    window.TycoonGame = api;
+    window.__TYCOON__ = api;
+  }
+  return api;
+})();
+</script>
+<script>
+// source: tycoon-wire.js
+// TycoonWire — mounts Tycoon Town into #app-tycoon and owns the
+// shell hooks.
+//
+// Boot (at eval, Snake pattern): expose window.__TYCOON_WIRE__,
+// mount the game via TycoonGame.init, inject the header Music toggle
+// state through the game itself. onOpen re-renders (the board is laid
+// out while hidden at boot) and restarts AI turns; onClose pauses and
+// auto-saves.
+//
+// SaveRegistry hooks: reinit starts a fresh game; reload re-reads
+// storage and re-renders.
+//
+// UMD: global TycoonWire. Never throws.
+var TycoonWire = (function () {
+  'use strict';
+
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+  function _log(e) {
+    try {
+      if (typeof console !== 'undefined' && console && console.error) console.error('[ty-wire]', e);
+    } catch (e2) { /* logging is best-effort */ }
+  }
+  function _resolveGame() {
+    try {
+      var w = _win();
+      if (w && w.TycoonGame) return w.TycoonGame;
+      if (typeof TycoonGame !== 'undefined' && TycoonGame) return TycoonGame;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _resolveSave() {
+    try {
+      var w = _win();
+      if (w && w.TycoonSave) return w.TycoonSave;
+      if (typeof TycoonSave !== 'undefined' && TycoonSave) return TycoonSave;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _resolveRegistry() {
+    try {
+      var w = _win();
+      if (w && w.SaveRegistry) return w.SaveRegistry;
+      if (typeof SaveRegistry !== 'undefined' && SaveRegistry) return SaveRegistry;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _mount() {
+    try {
+      var w = _win();
+      var doc = (w && w.document) || (typeof document !== 'undefined' ? document : null);
+      if (!doc) return false;
+      var section = doc.getElementById('app-tycoon');
+      if (!section) return false;
+      var game = _resolveGame();
+      if (!game || typeof game.init !== 'function') return false;
+      return !!game.init(section);
+    } catch (e) {
+      _log(e);
+      return false;
+    }
+  }
+
+  var _mounted = false;
+  try { _mounted = _mount(); } catch (e) { _log(e); }
+
+  // SaveRegistry hooks (guarded; the save module registers the entry).
+  try {
+    var SR = _resolveRegistry();
+    if (SR && typeof SR.extend === 'function') {
+      SR.extend('tycoon', {
+        reinit: function () {
+          try {
+            var game = _resolveGame();
+            if (game && typeof game.newGame === 'function') game.newGame();
+          } catch (e) { _log(e); }
+        },
+        reload: function () {
+          try {
+            var game = _resolveGame();
+            if (game && typeof game.loadSaved === 'function') game.loadSaved();
+            else if (game && typeof game.render === 'function') game.render();
+          } catch (e) { _log(e); }
+        }
+      });
+    }
+  } catch (e) { /* registry is best-effort */ }
+
+  function onOpen() {
+    try {
+      if (!_mounted) _mounted = _mount();
+      var game = _resolveGame();
+      if (game && typeof game.onOpen === 'function') game.onOpen();
+    } catch (e) { _log(e); }
+  }
+
+  function onClose() {
+    try {
+      var game = _resolveGame();
+      if (game && typeof game.onClose === 'function') game.onClose();
+    } catch (e) { _log(e); }
+  }
+
+  var api = {
+    onOpen: onOpen,
+    onClose: onClose,
+    mounted: function () { return _mounted; }
+  };
+
+  if (typeof window !== 'undefined' && window) {
+    window.TycoonWire = api;
+    window.__TYCOON_WIRE__ = api;
+  }
+  return api;
+})();
 </script>
 </body>
 </html>
