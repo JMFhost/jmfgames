@@ -6305,7 +6305,7 @@ body {
   left: 50%;
   bottom: 6px;
   transform: translateX(-50%);
-  width: 64px; /* wide enough for the full sig name (e.g. ⚡ Emberbrand) */
+  width: 84px; /* KK 5-STAR: wide enough for the full sig name + star (e.g. ⚡ Springtide ★5); the strip cell is ~100px at 320px, so 84px still fits with margin */
   height: 14px;
   padding: 0 1px;
   border: 1px solid #b98a3d;
@@ -58920,6 +58920,10 @@ if (typeof window !== 'undefined') {
       captainId: null,
       heroValor: {},
       heroTrees: {},
+      /* KK 5-STAR: heroSigStars default {} = every hero ★1;
+         valorPaid default {} = no stage has ever paid any hero. */
+      heroSigStars: {},
+      valorPaid: {},
       teamCompanions: [],
       keeperSkills: {},
       introSeen: false,
@@ -58962,6 +58966,10 @@ if (typeof window !== 'undefined') {
         if (keeperIdList().indexOf(merged.captainId) < 0) merged.captainId = null;
         if (!merged.heroValor || typeof merged.heroValor !== "object") merged.heroValor = {};
         if (!merged.heroTrees || typeof merged.heroTrees !== "object") merged.heroTrees = {};
+        /* KK 5-STAR: old saves have neither field — backfill {} =
+           every hero ★1, no stage ever paid. Version stays 1. */
+        if (!merged.heroSigStars || typeof merged.heroSigStars !== "object") merged.heroSigStars = {};
+        if (!merged.valorPaid || typeof merged.valorPaid !== "object") merged.valorPaid = {};
         /* KK H2 */ if (!Array.isArray(merged.teamCompanions)) merged.teamCompanions = [];
         merged.teamCompanions = teamCompanionsForSave(merged);
         if (!merged.loadout || !merged.loadout.length) merged.loadout = base.loadout.slice();
@@ -60370,10 +60378,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
   // /* KK H2 */ Per-hero skill trees (HEROES-DESIGN §7). Every hero
   // // carries its OWN tree in its def (tree.branches, 2 branches x 3
   // // nodes, costs 3/5/8, 32 Valor to max one hero). Valor is
-  // // per-hero (§7.1): +1 per stage first-clear with that hero as
-  // // captain, +1 bonus per 3-star first-clear (max 2/stage); replays
-  // // and Night Watch earn NOTHING. Node effects are ABSOLUTE target
-  // // values merged from the learned nodes (highest learned tier wins
+  // // per-hero (binding, Jesse Nov 22, 2026): +1 to EVERY hero
+  // // deployed to a stage the first time it is cleared at 3 stars;
+  // // replays and Night Watch earn NOTHING. Pre-rule 3-star clears
+  // // pay once, on the next 3-star replay with that hero deployed
+  // // (valorPaid catch-up, Nov 23, 2026 — see grantHeroValor).
+  // // Node effects are ABSOLUTE target values merged from the learned
   // // per key); with zero nodes learned the merged object is empty,
   // // so unleveled behavior is byte-identical to the shipped game.
   // // heroTreeNodeList returns [{branch, node}] for one hero's tree;
@@ -60499,35 +60509,101 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     return true;
   }
 
-  // Valor grant (§7.1): first-clear only, captain only, never on
-  // Night Watch, never on replay. Returns the amount granted (0, 1
-  // or 2). The caller owns the first-clear determination (it knows
-  // whether the stage was cleared before this win).
-  // /* KK QUIT-SKILLS */ Valor economy (Jesse, Nov 22, 2026 —
-  // binding): Valor is earned ONLY by clearing a stage at 3 stars.
-  // EVERY hero deployed to that battlefield earns +1 Valor — captain
-  // and both companions alike. Once a stage has 3 stars, replaying it
-  // earns NOTHING (no farming). A stage first cleared below 3 stars
-  // and later re-cleared at 3 stars DOES earn (first time at 3 stars
-  // only). Night Watch pays nothing. Per-hero storage
-  // (heroValor[heroId]) is unchanged. Max supply: 85 stages x 3
-  // deployed heroes = 255 Valor events; maxing one hero's tree costs
-  // 32, all ten cost 320 — a full-roster max is NOT reachable from
-  // stage clears alone (choice is mandatory); maxing any five (160)
-  // fits inside the supply.
-  function grantHeroValor(saveState, deployedHeroIds, starsEarned, prevStars, isNightWatch) {
+  // /* KK 5-STAR (Nov 23, 2026 — Jesse: "allow the skills to be
+  // // upgradeable up to 5 stars") */ Signature stars: a SEPARATE
+  // // layer on each hero's signature, on top of (not instead of) the
+  // // tree. heroSigStars is { heroId: 1..5 }; absent = ★1.
+  // // Cost ladder (single source of truth — the UI reads this too):
+  // // ★2 = 2, ★3 = 4, ★4 = 6, ★5 = 8 Valor (20 to max one hero).
+  // // Stars are PERMANENT: heroRespec refunds tree nodes only and
+  // // never touches heroSigStars.
+  function heroSigStars(saveState, heroId) {
+    if (!saveState) return 1;
+    if (!saveState.heroSigStars) saveState.heroSigStars = {};
+    const v = saveState.heroSigStars[heroId];
+    if (typeof v !== "number" || v !== Math.floor(v)) return 1;
+    if (v < 1) return 1;
+    if (v > 5) return 5;
+    return v;
+  }
+
+  function heroSigStarCost(nextStar) {
+    if (nextStar === 2) return 2;
+    if (nextStar === 3) return 4;
+    if (nextStar === 4) return 6;
+    if (nextStar === 5) return 8;
+    return null;
+  }
+
+  function heroCanUpgradeSig(saveState, heroId) {
+    if (!saveState) return { ok: false, reason: "unknown" };
+    const cur = heroSigStars(saveState, heroId);
+    if (cur >= 5) return { ok: false, reason: "max" };
+    const cost = heroSigStarCost(cur + 1);
+    if (cost === null) return { ok: false, reason: "max" };
+    if (heroValor(saveState, heroId) < cost) return { ok: false, reason: "valor" };
+    return { ok: true, reason: "" };
+  }
+
+  function heroUpgradeSig(saveState, heroId) {
+    if (!saveState) return false;
+    const check = heroCanUpgradeSig(saveState, heroId);
+    if (!check.ok) return false;
+    const cur = heroSigStars(saveState, heroId);
+    const cost = heroSigStarCost(cur + 1);
+    if (!saveState.heroValor) saveState.heroValor = {};
+    if (!saveState.heroSigStars) saveState.heroSigStars = {};
+    saveState.heroValor[heroId] = Math.max(0, heroValor(saveState, heroId) - cost);
+    saveState.heroSigStars[heroId] = cur + 1;
+    return true;
+  }
+
+  // Valor grant (binding, Jesse Nov 22, 2026): +1 Valor to EVERY
+  // // hero deployed to a stage the first time it is cleared at 3
+  // // stars. Night Watch pays nothing; 1–2-star clears pay nothing.
+  // // /* KK 5-STAR */ valorPaid catch-up (Nov 23, 2026 — a rule
+  // // change — APPROVED by Jesse Nov 23 ~9:55 AM CT (tapped yes;
+  // // the freeze still needs his separate push yes). It is named in
+  // // the push summary, not shipped quietly. The fix pays on exactly
+  // // one replay per stage-hero pair, and only for stages 3-starred
+  // // BEFORE the Valor economy existed (clears that never had a
+  // // chance to pay). The old `prevStars >= 3` gate is DELETED and
+  // // replaced by the valorPaid flag:
+  // // saveState.valorPaid[levelId][heroId] is set the first time
+  // // that stage pays that hero, and blocks every later payment to
+  // // that hero for that stage. Each stage still pays each hero
+  // // ONCE, ever — supply stays capped at 255 events (85 stages x
+  // // 3 deployed heroes); a veteran earns the catch-up only by
+  // // replaying those stages at 3 stars with the hero deployed.
+  // // No replay-pays, no Night-Watch-pays, no lump sum, no
+  // // migration backfill. prevStars is kept in the signature for
+  // // call-site compatibility but is IGNORED (the flag subsumes it).
+  function grantHeroValor(saveState, deployedHeroIds, starsEarned, prevStars, isNightWatch, levelId) {
     if (!saveState) return 0;
     if (isNightWatch) return 0;
     if ((starsEarned || 0) < 3) return 0;
-    if ((prevStars || 0) >= 3) return 0;
     if (!deployedHeroIds || !deployedHeroIds.length) return 0;
     if (!saveState.heroValor) saveState.heroValor = {};
+    if (!saveState.valorPaid) saveState.valorPaid = {};
+    // prevStars is intentionally unused when levelId is known: the
+    // flag subsumes it. Without a levelId the flag cannot record, so
+    // the old prevStars gate stands as the fallback (a levelId-less
+    // caller can never farm a 3-starred stage). The production call
+    // site always passes lv.id.
+    if (!levelId && (prevStars || 0) >= 3) return 0;
+    void prevStars;
+    const paidForLevel = (levelId && saveState.valorPaid[levelId]) || null;
     let granted = 0;
     for (let i = 0; i < deployedHeroIds.length; i++) {
       const id = deployedHeroIds[i];
       if (!id) continue;
+      if (levelId && paidForLevel && paidForLevel[id]) continue;
       saveState.heroValor[id] = heroValor(saveState, id) + 1;
       granted += 1;
+      if (levelId) {
+        if (!saveState.valorPaid[levelId]) saveState.valorPaid[levelId] = {};
+        saveState.valorPaid[levelId][id] = true;
+      }
     }
     return granted;
   }
@@ -60646,10 +60722,112 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     return out;
   }
 
+  // /* KK 5-STAR */ Star table: per-hero, per-star (★1–★5) values
+  // // for the star layer in heroSignatureAtStars. Star 1 = the
+  // // shard base, unchanged. harmMul multiplies the EFFECTIVE
+  // // (tree-modified) harm; cdMul is (table CD ÷ base CD) and
+  // // multiplies the effective cooldown; every other listed value
+  // // is an absolute target the star layer takes the max() of
+  // // against the tree-modified value — EXCEPT Wren's summonCountAdd
+  // // (ADDITIVE over the tree count) and summonHpMul/summonHarmMul
+  // // (MULTIPLICATIVE with the tree multipliers). All numbers are
+  // // the DESIGN-5STAR.md §2 tables, computed from the shard base.
+  // // G1 (Wren ★5 vs the 2-summon field cap): NO fallback needed —
+  // // tryFireHeroSignature's summon branch enforces no field cap
+  // // (pickKindleCallLane only fails when all 5 lanes are taken);
+  // // only the AI refuses at >= 2 living summons, and it already
+  // // did so for the tree-A2 2-creature call. ★5 keeps +1 creature.
+  var HERO_SIG_STAR_TABLE = {
+    rowan: [
+      { harmMul: 1, cdMul: 1, radiusCells: 3.0, burnDps: 2, burnDurSec: 3 },
+      { harmMul: 1.25, cdMul: 38 / 40, radiusCells: 3.0, burnDps: 2.5, burnDurSec: 3 },
+      { harmMul: 1.5, cdMul: 36 / 40, radiusCells: 3.5, burnDps: 3, burnDurSec: 3 },
+      { harmMul: 1.75, cdMul: 34 / 40, radiusCells: 3.5, burnDps: 3.5, burnDurSec: 3 },
+      { harmMul: 2, cdMul: 32 / 40, radiusCells: 3.5, burnDps: 4, burnDurSec: 4 }
+    ],
+    rai: [
+      { harmMul: 1, cdMul: 1, targets: 3, dazeSec: 0.5 },
+      { harmMul: 1.25, cdMul: 33 / 35, targets: 3, dazeSec: 0.5 },
+      { harmMul: 1.5, cdMul: 31 / 35, targets: 4, dazeSec: 0.5 },
+      { harmMul: 1.75, cdMul: 29 / 35, targets: 4, dazeSec: 0.75 },
+      { harmMul: 2, cdMul: 27 / 35, targets: 5, dazeSec: 0.75 }
+    ],
+    neve: [
+      { harmMul: 1, cdMul: 1, radiusCells: 3.0, slowFrac: 0.5, slowDurSec: 4 },
+      { harmMul: 1.25, cdMul: 43 / 45, radiusCells: 3.0, slowFrac: 0.55, slowDurSec: 4 },
+      { harmMul: 1.5, cdMul: 41 / 45, radiusCells: 3.5, slowFrac: 0.55, slowDurSec: 5 },
+      { harmMul: 1.75, cdMul: 39 / 45, radiusCells: 3.5, slowFrac: 0.6, slowDurSec: 5 },
+      { harmMul: 2, cdMul: 37 / 45, radiusCells: 3.5, slowFrac: 0.65, slowDurSec: 6 }
+    ],
+    sora: [
+      { cdMul: 1, durSec: 8, hasteFrac: 0.2, rangeAddCells: 1 },
+      { cdMul: 48 / 50, durSec: 9, hasteFrac: 0.25, rangeAddCells: 1 },
+      { cdMul: 46 / 50, durSec: 10, hasteFrac: 0.3, rangeAddCells: 1 },
+      { cdMul: 44 / 50, durSec: 11, hasteFrac: 0.35, rangeAddCells: 2 },
+      { cdMul: 42 / 50, durSec: 12, hasteFrac: 0.4, rangeAddCells: 2 }
+    ],
+    wren: [
+      { cdMul: 1, summonHpMul: 1, summonHarmMul: 1, summonCountAdd: 0 },
+      { cdMul: 80 / 90, summonHpMul: 1.25, summonHarmMul: 1, summonCountAdd: 0 },
+      { cdMul: 70 / 90, summonHpMul: 1.25, summonHarmMul: 1.15, summonCountAdd: 0 },
+      { cdMul: 60 / 90, summonHpMul: 1.5, summonHarmMul: 1.15, summonCountAdd: 0 },
+      { cdMul: 50 / 90, summonHpMul: 1.5, summonHarmMul: 1.3, summonCountAdd: 1 }
+    ],
+    dain: [
+      { harmMul: 1, cdMul: 1, radiusCells: 2.5 },
+      { harmMul: 1.25, cdMul: 43 / 45, radiusCells: 2.5 },
+      { harmMul: 1.5, cdMul: 41 / 45, radiusCells: 3.0 },
+      { harmMul: 1.75, cdMul: 39 / 45, radiusCells: 3.0 },
+      { harmMul: 2, cdMul: 37 / 45, radiusCells: 3.0, knockbackCells: 0.5 }
+    ],
+    nia: [
+      { harmMul: 1, cdMul: 1, targets: 3, drenchedFrac: 0.25, drenchedHits: 1 },
+      { harmMul: 1.25, cdMul: 38 / 40, targets: 3, drenchedFrac: 0.3, drenchedHits: 1 },
+      { harmMul: 1.5, cdMul: 36 / 40, targets: 4, drenchedFrac: 0.3, drenchedHits: 1 },
+      { harmMul: 1.75, cdMul: 34 / 40, targets: 4, drenchedFrac: 0.35, drenchedHits: 2 },
+      { harmMul: 2, cdMul: 32 / 40, targets: 5, drenchedFrac: 0.4, drenchedHits: 2 }
+    ],
+    lysa: [
+      { cdMul: 1, durSec: 8, heal: 20, boltHarmFrac: 0.3 },
+      { cdMul: 48 / 50, durSec: 9, heal: 25, boltHarmFrac: 0.35 },
+      { cdMul: 46 / 50, durSec: 10, heal: 30, boltHarmFrac: 0.4 },
+      { cdMul: 44 / 50, durSec: 11, heal: 35, boltHarmFrac: 0.45 },
+      { cdMul: 42 / 50, durSec: 12, heal: 40, boltHarmFrac: 0.5 }
+    ],
+    kael: [
+      { harmMul: 1, cdMul: 1, radiusCells: 3.0, weakenFrac: 0.25, weakenDurSec: 4 },
+      { harmMul: 1.25, cdMul: 43 / 45, radiusCells: 3.0, weakenFrac: 0.3, weakenDurSec: 4 },
+      { harmMul: 1.5, cdMul: 41 / 45, radiusCells: 3.5, weakenFrac: 0.3, weakenDurSec: 5 },
+      { harmMul: 1.75, cdMul: 39 / 45, radiusCells: 3.5, weakenFrac: 0.35, weakenDurSec: 5 },
+      { harmMul: 2, cdMul: 37 / 45, radiusCells: 3.5, weakenFrac: 0.4, weakenDurSec: 6 }
+    ],
+    fern: [
+      { harmMul: 1, cdMul: 1, radiusCells: 2.5, rootSec: 2.0 },
+      { harmMul: 1.25, cdMul: 48 / 50, radiusCells: 2.5, rootSec: 2.5 },
+      { harmMul: 1.5, cdMul: 46 / 50, radiusCells: 3.0, rootSec: 2.5 },
+      { harmMul: 1.75, cdMul: 44 / 50, radiusCells: 3.0, rootSec: 3.0 },
+      { harmMul: 2, cdMul: 42 / 50, radiusCells: 3.0, rootSec: 3.5 }
+    ]
+  };
+
+  // Secondary keys the star layer takes max(tree value, star value)
+  // for. Wren's summon keys are NOT here (additive / multiplicative).
+  var HERO_SIG_STAR_MAX_KEYS = ["radiusCells", "targets", "durSec", "slowFrac",
+    "slowDurSec", "burnDps", "burnDurSec", "dazeSec", "hasteFrac", "rangeAddCells",
+    "heal", "boltHarmFrac", "drenchedFrac", "drenchedHits", "weakenFrac",
+    "weakenDurSec", "rootSec", "knockbackCells"];
+
   // Effective signature for one hero: the def's base signature
-  // merged with the hero's learned tree effects (absolute values).
-  // Returns a FRESH object — the def's data is never mutated.
+  // merged with the hero's learned tree effects (absolute values),
+  // then the star layer (DESIGN-5STAR.md §2.11). Returns a FRESH
+  // object — the def's data is never mutated. At ★1 the star layer
+  // is the identity, so unleveled behavior is byte-identical to the
+  // shipped game.
   function heroSignature(heroDef, saveState) {
+    return heroSignatureAtStars(heroDef, saveState, heroSigStars(saveState, heroDef && heroDef.id));
+  }
+
+  function heroSignatureAtStars(heroDef, saveState, stars) {
     const base = (heroDef && heroDef.signature) || {};
     const out = {};
     const keys = Object.keys(base);
@@ -60673,6 +60851,50 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
     if (typeof eff.summonHarmMul === "number") out.summonHarmMul = eff.summonHarmMul;
     if (typeof eff.summonHealPerSec === "number") out.summonHealPerSec = eff.summonHealPerSec;
     if (typeof eff.auraRadius === "number") out.auraRadius = eff.auraRadius;
+    // /* KK 5-STAR */ New merge keys (DESIGN-5STAR.md §0.4/§2.11):
+    // effect KEY names for EXISTING effect types only — no new
+    // effect type is invented. No tree node emits these keys today,
+    // so these lines are no-ops until one does; they exist so the
+    // star layer and the tree share one vocabulary.
+    if (typeof eff.sigBurnDps === "number") out.burnDps = eff.sigBurnDps;
+    if (typeof eff.sigBurnDurSec === "number") out.burnDurSec = eff.sigBurnDurSec;
+    if (typeof eff.sigDazeSec === "number") out.dazeSec = eff.sigDazeSec;
+    if (typeof eff.sigSlowDurSec === "number") out.slowDurSec = eff.sigSlowDurSec;
+    if (typeof eff.sigHasteFrac === "number") out.hasteFrac = eff.sigHasteFrac;
+    if (typeof eff.sigRangeAddCells === "number") out.rangeAddCells = eff.sigRangeAddCells;
+    if (typeof eff.sigDrenchedFrac === "number") out.drenchedFrac = eff.sigDrenchedFrac;
+    if (typeof eff.sigDrenchedHits === "number") out.drenchedHits = eff.sigDrenchedHits;
+    if (typeof eff.sigBoltHarmFrac === "number") out.boltHarmFrac = eff.sigBoltHarmFrac;
+    if (typeof eff.sigWeakenFrac === "number") out.weakenFrac = eff.sigWeakenFrac;
+    if (typeof eff.sigWeakenDurSec === "number") out.weakenDurSec = eff.sigWeakenDurSec;
+    // /* KK 5-STAR */ Star layer (FINAL, after the tree merge).
+    const s = (typeof stars === "number" && stars === Math.floor(stars))
+      ? Math.max(1, Math.min(5, stars)) : 1;
+    if (s > 1 && heroDef && HERO_SIG_STAR_TABLE[heroDef.id]) {
+      const row = HERO_SIG_STAR_TABLE[heroDef.id][s - 1];
+      if (typeof row.harmMul === "number" && typeof out.harm === "number") {
+        out.harm = Math.round(out.harm * row.harmMul);
+      }
+      if (typeof row.cdMul === "number" && typeof out.cooldownSec === "number") {
+        out.cooldownSec = Math.round(out.cooldownSec * row.cdMul);
+      }
+      for (let k = 0; k < HERO_SIG_STAR_MAX_KEYS.length; k++) {
+        const key = HERO_SIG_STAR_MAX_KEYS[k];
+        if (typeof row[key] === "number" &&
+            (typeof out[key] !== "number" || out[key] < row[key])) {
+          out[key] = row[key];
+        }
+      }
+      if (typeof row.summonHpMul === "number") {
+        out.summonHpMul = (out.summonHpMul || 1) * row.summonHpMul;
+      }
+      if (typeof row.summonHarmMul === "number") {
+        out.summonHarmMul = (out.summonHarmMul || 1) * row.summonHarmMul;
+      }
+      if (typeof row.summonCountAdd === "number" && row.summonCountAdd !== 0) {
+        out.summonCount = (out.summonCount || 1) + row.summonCountAdd;
+      }
+    }
     return out;
   }
 
@@ -62802,6 +63024,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
       const def = keeperDefById(h.defId) || {};
       const sig = def.signature || {};
       const locked = sig.kind === "summon" && !highestUnlockedSummonCreature(saveState);
+      // /* KK 5-STAR */ sigCdTotal comes from the EFFECTIVE
+      // signature (base + tree + stars), not the base — otherwise
+      // the cooldown sweep is wrong for any upgraded hero.
+      const effSig = heroSignature(def, saveState);
       out.push({
         id: h.defId, name: def.name || h.defId, lane: h.lane,
         homeLane: h.homeLane,
@@ -62809,8 +63035,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
         hp: h.hp, maxHp: h.maxHp, alive: !!h.alive,
         reviveSecLeft: h.alive ? 0 : Math.max(0, Math.ceil(h.reviveT || 0)),
         sigId: sig.id || "", sigName: sig.name || "",
+        sigStars: heroSigStars(saveState, h.defId),
         sigCdLeft: Math.max(0, h.sigCd || 0),
-        sigCdTotal: h.sigCdTotal || sig.cooldownSec || 0,
+        sigCdTotal: h.sigCdTotal || effSig.cooldownSec || sig.cooldownSec || 0,
         isCaptain: !!h.isCaptain,
         // /* KKSPELLS */ sliding: the sprite is mid-slide toward the
         // // CURRENT lane (lane above); the selection ring follows the
@@ -65396,7 +65623,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = KKFX;
 // allyLaneBoltValue are DELETED with tap-a-lane / ally movement
 // (KKSPELLS-DESIGN.md §1.2) — removed from this export list and from
 // the globalThis block below; no export of them remains.
-var KKEngine = { createMulberry32: createMulberry32, getLevelById: getLevelById, levelLabel: levelLabel, isLevelCleared: isLevelCleared, nextUncompletedLevelId: nextUncompletedLevelId, isLevelEnterable: isLevelEnterable, isWorldFullyCleared: isWorldFullyCleared, isWorldUnlocked: isWorldUnlocked, computeUnlockedWorlds: computeUnlockedWorlds, syncUnlockedWorlds: syncUnlockedWorlds, isNightWatchUnlocked: isNightWatchUnlocked, defenderGrantLevelId: defenderGrantLevelId, defenderUnlockLabel: defenderUnlockLabel, getDefenderData: getDefenderData, isDefenderUnlocked: isDefenderUnlocked, grantLevelUnlocks: grantLevelUnlocks, sanitizeLoadout: sanitizeLoadout, almanacCounterText: almanacCounterText, keeperData: keeperData, keeperDefList: keeperDefList, keeperIdList: keeperIdList, keeperDefById: keeperDefById, keeperDefForSave: keeperDefForSave, captainDefForSave: captainDefForSave, heroDefList: heroDefList, setCaptain: setCaptain, keeperDefOrFallback: keeperDefOrFallback, keeperName: keeperName, keeperArtSnapshot: keeperArtSnapshot, keeperRenderText: keeperRenderText, keeperSpeakerLabel: keeperSpeakerLabel, keeperPortraitKey: keeperPortraitKey, keeperNodeList: keeperNodeList, keeperNodeById: keeperNodeById, keeperSpellDef: keeperSpellDef, keeperDerivedStats: keeperDerivedStats, keeperBoltHarmForWorld: keeperBoltHarmForWorld, keeperTotalStars: keeperTotalStars, keeperClaimedStoryQuests: keeperClaimedStoryQuests, keeperPointsEarned: keeperPointsEarned, keeperPointsSpent: keeperPointsSpent, keeperPointsAvailable: keeperPointsAvailable, keeperNextPointInfo: keeperNextPointInfo, keeperCanBuyNode: keeperCanBuyNode, keeperBuyNode: keeperBuyNode, keeperRespec: keeperRespec, keeperSpellUnlocked: keeperSpellUnlocked, heroTreeDef: heroTreeDef, heroTreeNodeList: heroTreeNodeList, heroTreeNodeById: heroTreeNodeById, heroOwnedNodes: heroOwnedNodes, heroNodesLearned: heroNodesLearned, heroValor: heroValor, heroTreeEffects: heroTreeEffects, heroCanBuyNode: heroCanBuyNode, heroBuyNode: heroBuyNode, heroRespec: heroRespec, grantHeroValor: grantHeroValor, teamCompanionsForSave: teamCompanionsForSave, setTeamCompanions: setTeamCompanions, fieldedHeroDefs: fieldedHeroDefs, homeLaneForFielded: homeLaneForFielded, heroBoltElement: heroBoltElement, heroSignature: heroSignature, applyWeakenToEnemy: applyWeakenToEnemy, foeHarmOut: foeHarmOut, highestUnlockedSummonCreatures: highestUnlockedSummonCreatures, keeperHeroConfig: keeperHeroConfig, keeperRegenConfig: keeperRegenConfig, keeperRegenRateFor: keeperRegenRateFor, keeperRegenEnabled: keeperRegenEnabled, allyKeeperConfig: allyKeeperConfig, keeperArtSnapshotForDef: keeperArtSnapshotForDef, spellCasterDefForSave: spellCasterDefForSave, spellCasterHero: spellCasterHero, keeperMoveConfig: keeperMoveConfig, KEEPER_MOVE: KEEPER_MOVE, orderHeroMove: orderHeroMove, heroDodgeReflex: heroDodgeReflex, laneThreatCount: laneThreatCount, heroByDefId: heroByDefId, heroStateSnapshot: heroStateSnapshot, heroStateHash: heroStateHash, restoreHeroStates: restoreHeroStates, keeperAlive: keeperAlive, allyKeeperAlive: allyKeeperAlive, allyKeeperFieldPos: allyKeeperFieldPos, allyKeeperRenderPos: allyKeeperRenderPos, backfillAllyKeeperState: backfillAllyKeeperState, damageAllyKeeper: damageAllyKeeper, allyThreatTier: allyThreatTier, foeEngagedWithFrontKeeper: foeEngagedWithFrontKeeper, chooseAllyKeeperTargets: chooseAllyKeeperTargets, allyKeeperFireBolt: allyKeeperFireBolt, activateAllyKeeperSpell: activateAllyKeeperSpell, allyCastSpellIfWarranted: allyCastSpellIfWarranted, stepAllyKeeperDecision: stepAllyKeeperDecision, stepAllyKeeper: stepAllyKeeper, keeperRenderPos: keeperRenderPos, keeperFieldPos: keeperFieldPos, keeperCellDist: keeperCellDist, chooseKeeperTargets: chooseKeeperTargets, keeperFireBolt: keeperFireBolt, stepKeeper: stepKeeper, stepHeroes: stepHeroes, stepOneHero: stepOneHero, damageHero: damageHero, heroFieldPos: heroFieldPos, heroRenderPos: heroRenderPos, heroFireBolt: heroFireBolt, chooseHeroTargets: chooseHeroTargets, applyBurnToEnemy: applyBurnToEnemy, applyKeeperBoltElement: applyKeeperBoltElement, tryFireHeroSignature: tryFireHeroSignature, fireHeroSignature: fireHeroSignature, fireCaptainSignature: fireCaptainSignature, fireHeroSignatureManual: fireHeroSignatureManual, heroAISignatureReady: heroAISignatureReady, heroStripState: heroStripState, keeperHeroes: keeperHeroes, heroStateForLane: heroStateForLane, anyHeroAlive: anyHeroAlive, spawnSummonCreature: spawnSummonCreature, stepSummons: stepSummons, highestUnlockedSummonCreature: highestUnlockedSummonCreature, summonCreatureRoster: summonCreatureRoster, healAllHeroes: healAllHeroes, backfillHeroes: backfillHeroes, activateKeeperSpell: activateKeeperSpell, TD_TEXT_OVERRIDES: TD_TEXT_OVERRIDES, TRAY_DISPLAY_NAMES: TRAY_DISPLAY_NAMES, KEEPER_FALLBACK: KEEPER_FALLBACK, getDefenderSpecWithUpgrades: getDefenderSpecWithUpgrades, getEnemySpec: getEnemySpec, advanceQuestProgress: advanceQuestProgress, pointSegDistSq: pointSegDistSq, segIntersectsSeg: segIntersectsSeg, pointInRect: pointInRect, segRectDist: segRectDist, scalePathPoint: scalePathPoint, buildPathGeometry: buildPathGeometry, refreshPathGeometry: refreshPathGeometry, isRoadCell: isRoadCell, getPathPlotAtPoint: getPathPlotAtPoint, levelHasEnemy: levelHasEnemy, nightWatchHasEnemy: nightWatchHasEnemy, createBattleSession: createBattleSession, laneCenterY: laneCenterY, bossScriptFor: bossScriptFor, bossPhaseInfo: bossPhaseInfo, bossCadence: bossCadence, bossPhaseBanner: bossPhaseBanner, summonLabel: summonLabel, spawnBossMinions: spawnBossMinions, startGloomTide: startGloomTide, fogPulseActive: fogPulseActive, fogStartColFor: fogStartColFor, fogAppliesTo: fogAppliesTo, updateBossPhase: updateBossPhase, runBossCycle: runBossCycle, getDefenderAt: getDefenderAt, getTowerPlotAtPoint: getTowerPlotAtPoint, canPlaceDefender: canPlaceDefender, placeDefender: placeDefender, shovelDefender: shovelDefender, activateKeeperPower: activateKeeperPower, grantLumen: grantLumen, collectMoteAt: collectMoteAt, applyHarmToEnemy: applyHarmToEnemy, applySlowToEnemy: applySlowToEnemy, applyRootToEnemy: applyRootToEnemy, applyKnockbackToEnemy: applyKnockbackToEnemy, startNextWave: startNextWave, startBossEntrance: startBossEntrance, spawnEnemyInstance: spawnEnemyInstance, stepBattleSession: stepBattleSession, runScriptedLevelVerification: runScriptedLevelVerification };
+var KKEngine = { createMulberry32: createMulberry32, getLevelById: getLevelById, levelLabel: levelLabel, isLevelCleared: isLevelCleared, nextUncompletedLevelId: nextUncompletedLevelId, isLevelEnterable: isLevelEnterable, isWorldFullyCleared: isWorldFullyCleared, isWorldUnlocked: isWorldUnlocked, computeUnlockedWorlds: computeUnlockedWorlds, syncUnlockedWorlds: syncUnlockedWorlds, isNightWatchUnlocked: isNightWatchUnlocked, defenderGrantLevelId: defenderGrantLevelId, defenderUnlockLabel: defenderUnlockLabel, getDefenderData: getDefenderData, isDefenderUnlocked: isDefenderUnlocked, grantLevelUnlocks: grantLevelUnlocks, sanitizeLoadout: sanitizeLoadout, almanacCounterText: almanacCounterText, keeperData: keeperData, keeperDefList: keeperDefList, keeperIdList: keeperIdList, keeperDefById: keeperDefById, keeperDefForSave: keeperDefForSave, captainDefForSave: captainDefForSave, heroDefList: heroDefList, setCaptain: setCaptain, keeperDefOrFallback: keeperDefOrFallback, keeperName: keeperName, keeperArtSnapshot: keeperArtSnapshot, keeperRenderText: keeperRenderText, keeperSpeakerLabel: keeperSpeakerLabel, keeperPortraitKey: keeperPortraitKey, keeperNodeList: keeperNodeList, keeperNodeById: keeperNodeById, keeperSpellDef: keeperSpellDef, keeperDerivedStats: keeperDerivedStats, keeperBoltHarmForWorld: keeperBoltHarmForWorld, keeperTotalStars: keeperTotalStars, keeperClaimedStoryQuests: keeperClaimedStoryQuests, keeperPointsEarned: keeperPointsEarned, keeperPointsSpent: keeperPointsSpent, keeperPointsAvailable: keeperPointsAvailable, keeperNextPointInfo: keeperNextPointInfo, keeperCanBuyNode: keeperCanBuyNode, keeperBuyNode: keeperBuyNode, keeperRespec: keeperRespec, keeperSpellUnlocked: keeperSpellUnlocked, heroTreeDef: heroTreeDef, heroTreeNodeList: heroTreeNodeList, heroTreeNodeById: heroTreeNodeById, heroOwnedNodes: heroOwnedNodes, heroNodesLearned: heroNodesLearned, heroValor: heroValor, heroTreeEffects: heroTreeEffects, heroCanBuyNode: heroCanBuyNode, heroBuyNode: heroBuyNode, heroRespec: heroRespec, heroSigStars: heroSigStars, heroSigStarCost: heroSigStarCost, heroCanUpgradeSig: heroCanUpgradeSig, heroUpgradeSig: heroUpgradeSig, heroSignatureAtStars: heroSignatureAtStars, grantHeroValor: grantHeroValor, teamCompanionsForSave: teamCompanionsForSave, setTeamCompanions: setTeamCompanions, fieldedHeroDefs: fieldedHeroDefs, homeLaneForFielded: homeLaneForFielded, heroBoltElement: heroBoltElement, heroSignature: heroSignature, applyWeakenToEnemy: applyWeakenToEnemy, foeHarmOut: foeHarmOut, highestUnlockedSummonCreatures: highestUnlockedSummonCreatures, keeperHeroConfig: keeperHeroConfig, keeperRegenConfig: keeperRegenConfig, keeperRegenRateFor: keeperRegenRateFor, keeperRegenEnabled: keeperRegenEnabled, allyKeeperConfig: allyKeeperConfig, keeperArtSnapshotForDef: keeperArtSnapshotForDef, spellCasterDefForSave: spellCasterDefForSave, spellCasterHero: spellCasterHero, keeperMoveConfig: keeperMoveConfig, KEEPER_MOVE: KEEPER_MOVE, orderHeroMove: orderHeroMove, heroDodgeReflex: heroDodgeReflex, laneThreatCount: laneThreatCount, heroByDefId: heroByDefId, heroStateSnapshot: heroStateSnapshot, heroStateHash: heroStateHash, restoreHeroStates: restoreHeroStates, keeperAlive: keeperAlive, allyKeeperAlive: allyKeeperAlive, allyKeeperFieldPos: allyKeeperFieldPos, allyKeeperRenderPos: allyKeeperRenderPos, backfillAllyKeeperState: backfillAllyKeeperState, damageAllyKeeper: damageAllyKeeper, allyThreatTier: allyThreatTier, foeEngagedWithFrontKeeper: foeEngagedWithFrontKeeper, chooseAllyKeeperTargets: chooseAllyKeeperTargets, allyKeeperFireBolt: allyKeeperFireBolt, activateAllyKeeperSpell: activateAllyKeeperSpell, allyCastSpellIfWarranted: allyCastSpellIfWarranted, stepAllyKeeperDecision: stepAllyKeeperDecision, stepAllyKeeper: stepAllyKeeper, keeperRenderPos: keeperRenderPos, keeperFieldPos: keeperFieldPos, keeperCellDist: keeperCellDist, chooseKeeperTargets: chooseKeeperTargets, keeperFireBolt: keeperFireBolt, stepKeeper: stepKeeper, stepHeroes: stepHeroes, stepOneHero: stepOneHero, damageHero: damageHero, heroFieldPos: heroFieldPos, heroRenderPos: heroRenderPos, heroFireBolt: heroFireBolt, chooseHeroTargets: chooseHeroTargets, applyBurnToEnemy: applyBurnToEnemy, applyKeeperBoltElement: applyKeeperBoltElement, tryFireHeroSignature: tryFireHeroSignature, fireHeroSignature: fireHeroSignature, fireCaptainSignature: fireCaptainSignature, fireHeroSignatureManual: fireHeroSignatureManual, heroAISignatureReady: heroAISignatureReady, heroStripState: heroStripState, keeperHeroes: keeperHeroes, heroStateForLane: heroStateForLane, anyHeroAlive: anyHeroAlive, spawnSummonCreature: spawnSummonCreature, stepSummons: stepSummons, highestUnlockedSummonCreature: highestUnlockedSummonCreature, summonCreatureRoster: summonCreatureRoster, healAllHeroes: healAllHeroes, backfillHeroes: backfillHeroes, activateKeeperSpell: activateKeeperSpell, TD_TEXT_OVERRIDES: TD_TEXT_OVERRIDES, TRAY_DISPLAY_NAMES: TRAY_DISPLAY_NAMES, KEEPER_FALLBACK: KEEPER_FALLBACK, getDefenderSpecWithUpgrades: getDefenderSpecWithUpgrades, getEnemySpec: getEnemySpec, advanceQuestProgress: advanceQuestProgress, pointSegDistSq: pointSegDistSq, segIntersectsSeg: segIntersectsSeg, pointInRect: pointInRect, segRectDist: segRectDist, scalePathPoint: scalePathPoint, buildPathGeometry: buildPathGeometry, refreshPathGeometry: refreshPathGeometry, isRoadCell: isRoadCell, getPathPlotAtPoint: getPathPlotAtPoint, levelHasEnemy: levelHasEnemy, nightWatchHasEnemy: nightWatchHasEnemy, createBattleSession: createBattleSession, laneCenterY: laneCenterY, bossScriptFor: bossScriptFor, bossPhaseInfo: bossPhaseInfo, bossCadence: bossCadence, bossPhaseBanner: bossPhaseBanner, summonLabel: summonLabel, spawnBossMinions: spawnBossMinions, startGloomTide: startGloomTide, fogPulseActive: fogPulseActive, fogStartColFor: fogStartColFor, fogAppliesTo: fogAppliesTo, updateBossPhase: updateBossPhase, runBossCycle: runBossCycle, getDefenderAt: getDefenderAt, getTowerPlotAtPoint: getTowerPlotAtPoint, canPlaceDefender: canPlaceDefender, placeDefender: placeDefender, shovelDefender: shovelDefender, activateKeeperPower: activateKeeperPower, grantLumen: grantLumen, collectMoteAt: collectMoteAt, applyHarmToEnemy: applyHarmToEnemy, applySlowToEnemy: applySlowToEnemy, applyRootToEnemy: applyRootToEnemy, applyKnockbackToEnemy: applyKnockbackToEnemy, startNextWave: startNextWave, startBossEntrance: startBossEntrance, spawnEnemyInstance: spawnEnemyInstance, stepBattleSession: stepBattleSession, runScriptedLevelVerification: runScriptedLevelVerification };
 if (typeof window !== 'undefined') {
   try {
     window.KKEngine = KKEngine;
@@ -65620,6 +65847,11 @@ if (typeof globalThis !== 'undefined') {
     globalThis.heroCanBuyNode = heroCanBuyNode;
     globalThis.heroBuyNode = heroBuyNode;
     globalThis.heroRespec = heroRespec;
+    globalThis.heroSigStars = heroSigStars;
+    globalThis.heroSigStarCost = heroSigStarCost;
+    globalThis.heroCanUpgradeSig = heroCanUpgradeSig;
+    globalThis.heroUpgradeSig = heroUpgradeSig;
+    globalThis.heroSignatureAtStars = heroSignatureAtStars;
     globalThis.grantHeroValor = grantHeroValor;
     globalThis.teamCompanionsForSave = teamCompanionsForSave;
     globalThis.setTeamCompanions = setTeamCompanions;
@@ -67792,6 +68024,11 @@ var KKGameMethods = {
           const hid = btn.getAttribute("data-hero-id");
           const nid = btn.getAttribute("data-node-id");
           if (hid && nid) self.buyHeroNode(hid, nid);
+        } else if (btn.classList.contains("td-hero-sig-upgrade-btn")) {
+          // /* KK 5-STAR */ Signature star upgrade button on the
+          // tree screen.
+          const hid = btn.getAttribute("data-hero-id");
+          if (hid) self.upgradeHeroSig(hid);
         } else if (id === "td-btn-htree-back") {
           self.showScreen(self.heroTreeReturnScreen || "map");
         } else if (id === "td-btn-htree-respec") {
@@ -68731,6 +68968,107 @@ var KKUIMethods = {
       if (!tree || !tree.nodes) return 0;
       return Object.keys(tree.nodes).length;
     },
+    // /* KK 5-STAR */ Signature star level for one hero (1–5, ★1
+    // when the save has no heroSigStars yet). Reads the engine when
+    // available so clamping lives in one place.
+    heroSigStarsFor: function(heroId) {
+      try {
+        if (typeof KKEngine !== "undefined" && KKEngine && typeof KKEngine.heroSigStars === "function") {
+          return KKEngine.heroSigStars(this.saveState, heroId);
+        }
+      } catch (e) { /* fall through to the local read */ }
+      const hs = (this.saveState && this.saveState.heroSigStars) || {};
+      const v = hs[heroId];
+      if (typeof v !== "number" || v !== Math.floor(v)) return 1;
+      return Math.max(1, Math.min(5, v));
+    },
+    // /* KK 5-STAR */ Plain-words kind label for a signature — never
+    // the raw kind string.
+    heroSigKindLabel: function(kind) {
+      if (kind === "aoe") return "Area burst";
+      if (kind === "bolt") return "Chain bolt";
+      if (kind === "buff") return "Team buff";
+      if (kind === "summon") return "Free summon";
+      return "";
+    },
+    // /* KK 5-STAR */ One-line effective numbers for a signature, e.g.
+    // "113 harm, 36s cooldown, 3.5-cell radius, burn 3/s × 3s".
+    // `sig` must already be the EFFECTIVE signature (heroSignature).
+    heroSigSummary: function(sig) {
+      if (!sig) return "";
+      const parts = [];
+      const pct = function(v) { return Math.round(v * 100) + "%"; };
+      if (typeof sig.harm === "number") parts.push(sig.harm + " harm");
+      if (sig.kind === "summon") {
+        parts.push((sig.summonCount || 1) + " creature" + ((sig.summonCount || 1) === 1 ? "" : "s"));
+        if (typeof sig.summonHpMul === "number") parts.push("HP ×" + sig.summonHpMul);
+        if (typeof sig.summonHarmMul === "number") parts.push("harm ×" + sig.summonHarmMul);
+      }
+      if (typeof sig.heal === "number") parts.push("heal " + sig.heal);
+      if (typeof sig.durSec === "number") parts.push(sig.durSec + "s duration");
+      if (typeof sig.radiusCells === "number") parts.push(sig.radiusCells + "-cell radius");
+      if (typeof sig.targets === "number") parts.push(sig.targets + " targets");
+      if (typeof sig.burnDps === "number") parts.push("burn " + sig.burnDps + "/s × " + (sig.burnDurSec || 3) + "s");
+      if (typeof sig.slowFrac === "number") parts.push("slow " + pct(sig.slowFrac) + " × " + (sig.slowDurSec || 4) + "s");
+      if (typeof sig.dazeSec === "number") parts.push("daze " + sig.dazeSec + "s");
+      if (typeof sig.drenchedFrac === "number") parts.push("drenched " + pct(sig.drenchedFrac) + " × " + (sig.drenchedHits || 1) + " hit" + ((sig.drenchedHits || 1) === 1 ? "" : "s"));
+      if (typeof sig.weakenFrac === "number") parts.push("weaken " + pct(sig.weakenFrac) + " × " + (sig.weakenDurSec || 4) + "s");
+      if (typeof sig.rootSec === "number") parts.push("root " + sig.rootSec + "s");
+      if (typeof sig.knockbackCells === "number") parts.push("knockback " + sig.knockbackCells + " cells");
+      if (typeof sig.hasteFrac === "number") parts.push("haste +" + pct(sig.hasteFrac));
+      if (typeof sig.rangeAddCells === "number") parts.push("range +" + sig.rangeAddCells + " cell" + (sig.rangeAddCells === 1 ? "" : "s"));
+      if (typeof sig.boltHarmFrac === "number") parts.push("bolt harm +" + pct(sig.boltHarmFrac));
+      if (sig.allLanes) parts.push("all lanes");
+      if (typeof sig.cooldownSec === "number") parts.push(sig.cooldownSec + "s cooldown");
+      return parts.join(", ");
+    },
+    // /* KK 5-STAR */ Changed fields between two effective
+    // signatures, as "131 harm (+18), 34s cooldown (−2s)". Only
+    // fields that actually changed are listed.
+    heroSigDeltaText: function(cur, next) {
+      if (!cur || !next) return "";
+      const fields = [
+        ["harm", " harm", 0], ["cooldownSec", "s cooldown", 0],
+        ["radiusCells", "-cell radius", 0], ["targets", " targets", 0],
+        ["durSec", "s duration", 0], ["burnDps", "/s burn", 1],
+        ["burnDurSec", "s burn", 0], ["dazeSec", "s daze", 2],
+        ["slowFrac", "% slow", 100], ["slowDurSec", "s slow", 0],
+        ["hasteFrac", "% haste", 100], ["rangeAddCells", " range", 0],
+        ["heal", " heal", 0], ["boltHarmFrac", "% bolt harm", 100],
+        ["drenchedFrac", "% drenched", 100], ["drenchedHits", " drenched hits", 0],
+        ["weakenFrac", "% weaken", 100], ["weakenDurSec", "s weaken", 0],
+        ["rootSec", "s root", 1], ["knockbackCells", " cells knockback", 1],
+        ["summonCount", " creatures", 0], ["summonHpMul", "× summon HP", 0],
+        ["summonHarmMul", "× summon harm", 0]
+      ];
+      const out = [];
+      for (let i = 0; i < fields.length; i++) {
+        const key = fields[i][0];
+        const label = fields[i][1];
+        const scale = fields[i][2];
+        const a = cur[key];
+        const b = next[key];
+        if (typeof b !== "number") continue;
+        if (typeof a === "number" && a === b) continue;
+        const fmt = function(v) {
+          if (scale === 100) return Math.round(v * 100);
+          if (scale === 1) return (Math.round(v * 10) / 10);
+          if (scale === 2) return (Math.round(v * 100) / 100);
+          return v;
+        };
+        let delta = "";
+        if (typeof a === "number") {
+          const d = (b - a) * (scale === 100 ? 100 : 1);
+          const dr = Math.round(d * 100) / 100;
+          delta = " (" + (dr > 0 ? "+" : "") + dr + ")";
+          if (key === "cooldownSec") delta = " (" + (dr > 0 ? "+" : "−") + Math.abs(dr) + "s)";
+        } else {
+          delta = " (new)";
+        }
+        out.push(fmt(b) + label + delta);
+      }
+      return out.join(", ");
+    },
     // /* KKSPELLS H1-BALANCE */ World-scaled bolt label (Jesse, Nov 19):
     // the bolt table is W1 5 / W2 6 / W3 7 / W4-W6 8. Screens with no
     // battle world (choice, skills, Almanac) show the range, never
@@ -68799,12 +69137,13 @@ var KKUIMethods = {
         const power = this.heroPowerLabel(hDef);
         const valor = this.heroValorFor(hDef.id);
         const nodes = this.heroNodesLearned(hDef.id);
+        const stars = this.heroSigStarsFor(hDef.id);
         html += [
           '<div class="td-panel td-choice-card">',
           '  <div class="td-hero-choice-portrait">' + pImg + '</div>',
           '  <div style="font-size:15px; font-weight:800; color:#ffe38f; text-align:center;">' + hDef.name + '</div>',
           '  <div style="font-size:11px; color:#7ce8ff; text-align:center;">' + power + ' · <span style="color:' + hDef.boltColor + ';">&#9679; ' + (hDef.colorName || "") + '</span></div>',
-          '  <div style="font-size:11px; color:#d9c9a3; text-align:center;">Valor ' + valor + ' · ' + nodes + '/6 nodes</div>',
+          '  <div style="font-size:11px; color:#d9c9a3; text-align:center;">Valor ' + valor + ' · ' + nodes + '/6 nodes · ★' + stars + '</div>',
           '  <div style="font-size:11px; color:#e6dcc5; text-align:center; margin:4px 0;">' + (hDef.blurb || "") + '</div>',
           '  <div style="font-size:10px; color:#d9c9a3; text-align:center;">Light Bolt: ' + this.boltHarmLabel(bolt) + ' every ' + (bolt.intervalSec || 2.4) + 's</div>',
           '  <button class="td-btn td-btn-primary td-choose-captain-btn" data-hero-id="' + hDef.id + '" style="width:100%; margin-top:6px;">Choose ' + hDef.name + '</button>',
@@ -69222,13 +69561,14 @@ var KKUIMethods = {
           c._hintText = hintText;
           if (c.hint.textContent !== hintText) c.hint.textContent = hintText;
         }
-        // /* KK HERO-SKILLS */ Skill chip state (GUARDED writes
-        // only): label "⚡ <Signature>"; ready = gold + glow, cooling
+        // /* KK 5-STAR */ Skill chip state (GUARDED writes
+        // only): label "⚡ <Signature> ★<n>"; ready = gold + glow, cooling
         // = dimmed, locked = dimmed, down = hidden (the revive
         // countdown already shows in the portrait center).
         const cdLeft2 = (typeof e.sigCdLeft === "number" && e.sigCdLeft > 0) ? e.sigCdLeft : 0;
         const skillState = !e.alive ? "down" : (canFire ? "ready" : (cdLeft2 > 0.05 ? "cooling" : "locked"));
-        const skillText = (e.sigName || "Skill") ? ("⚡ " + (e.sigName || "Skill")) : "⚡ Skill";
+        const skillStars = (typeof e.sigStars === "number" && e.sigStars >= 1 && e.sigStars <= 5) ? e.sigStars : 1;
+        const skillText = (e.sigName || "Skill") ? ("⚡ " + (e.sigName || "Skill") + " ★" + skillStars) : "⚡ Skill ★1";
         if (c._skillText !== skillText) {
           c._skillText = skillText;
           if (c.skill.textContent !== skillText) c.skill.textContent = skillText;
@@ -69376,13 +69716,55 @@ var KKUIMethods = {
       const tree = def.tree || { branches: [] };
       const valor = this.heroValorFor(heroId);
       const nodes = this.heroNodesLearned(heroId);
+      const stars = this.heroSigStarsFor(heroId);
       const sig = def.signature || {};
       const kd = keeperData();
       const bolt = kd.bolt || {};
       if (title) title.textContent = def.name + " — Skill Tree";
-      if (pill) pill.textContent = valor + " Valor · " + nodes + "/6 nodes";
+      if (pill) pill.textContent = valor + " Valor · " + nodes + "/6 nodes · ★" + stars;
       const pKey = (def.portraits && def.portraits.calm) || "keeper_sigil";
       const pImg = KKArt.portraitHtml(pKey);
+      // /* KK 5-STAR */ Effective signatures at the current star and
+      // // the next star (tree nodes reflected — heroSignature is the
+      // // single choke point, so the preview can never disagree with
+      // // battle). The cost and the new numbers show BEFORE buying.
+      let effSig = null;
+      let nextSig = null;
+      try {
+        if (typeof KKEngine !== "undefined" && KKEngine && typeof KKEngine.heroSignature === "function") {
+          effSig = KKEngine.heroSignature(def, this.saveState);
+          if (stars < 5 && typeof KKEngine.heroSignatureAtStars === "function") {
+            nextSig = KKEngine.heroSignatureAtStars(def, this.saveState, stars + 1);
+          }
+        }
+      } catch (e) { effSig = null; nextSig = null; }
+      if (!effSig) effSig = sig;
+      const starRow = "★★★★★".slice(0, stars) + "☆☆☆☆☆".slice(0, 5 - stars);
+      let sigCheck = { ok: false, reason: "unknown" };
+      let sigCost = null;
+      try {
+        if (typeof KKEngine !== "undefined" && KKEngine && typeof KKEngine.heroCanUpgradeSig === "function") {
+          sigCheck = KKEngine.heroCanUpgradeSig(this.saveState, heroId);
+        }
+        if (typeof KKEngine !== "undefined" && KKEngine && typeof KKEngine.heroSigStarCost === "function") {
+          sigCost = KKEngine.heroSigStarCost(stars + 1);
+        }
+      } catch (e) { sigCheck = { ok: false, reason: "unknown" }; }
+      let sigPanel = '<div class="td-panel"><div style="font-size:13px; font-weight:800; color:#ffe38f;">Signature: ' + (sig.name || "") + ' <span style="color:#ffd86b;">' + starRow + '</span> <span style="font-size:11px; color:#7ce8ff;">(' + this.heroSigKindLabel(sig.kind) + ')</span></div>' +
+        '<div style="font-size:11px; color:#e6dcc5; margin-top:3px;">★' + stars + ' ' + (sig.name || "") + ' — ' + this.heroSigSummary(effSig) + '</div>';
+      if (stars >= 5) {
+        sigPanel += '<div style="font-size:11px; color:#ffd86b; margin-top:4px;">★5 MAX — signature fully upgraded</div><div style="margin-top:6px;"><span class="td-pill">MAX ★★★★★</span></div>';
+      } else if (nextSig) {
+        sigPanel += '<div style="font-size:11px; color:#d9c9a3; margin-top:3px;">★' + (stars + 1) + ': ' + this.heroSigSummary(nextSig) + ' <span style="color:#7ce8ff;">(' + this.heroSigDeltaText(effSig, nextSig) + ')</span></div>';
+        if (sigCheck.ok) {
+          sigPanel += '<div style="margin-top:6px;"><button class="td-btn td-btn-primary td-hero-sig-upgrade-btn" data-hero-id="' + heroId + '">Upgrade to ★' + (stars + 1) + ' (' + sigCost + ' Valor)</button></div>';
+        } else if (sigCheck.reason === "valor") {
+          sigPanel += '<div style="margin-top:6px;"><button class="td-btn" disabled>' + sigCost + ' Valor</button></div>';
+        } else {
+          sigPanel += '<div style="margin-top:6px;"><button class="td-btn" disabled>' + sigCost + ' Valor</button></div>';
+        }
+      }
+      sigPanel += '</div>';
       let html = [
         '<div class="td-panel" style="display:flex; gap:10px; align-items:center;">',
         '  <div style="width:54px; height:54px; flex-shrink:0;">' + pImg + '</div>',
@@ -69390,11 +69772,13 @@ var KKUIMethods = {
         '    <div style="font-size:13px; font-weight:800; color:#ffe38f;">' + def.name + ' <span style="font-size:11px; color:#7ce8ff;">(' + this.heroPowerLabel(def) + ' · ' + (def.colorName || "") + ')</span></div>',
         '    <div style="font-size:11px; color:#e6dcc5;">Signature: ' + (sig.name || "") + (sig.cooldownSec ? ' · ' + sig.cooldownSec + 's cooldown' : '') + '</div>',
         '    <div style="font-size:11px; color:#e6dcc5;">Light Bolt: ' + this.boltHarmLabel(bolt) + ' every ' + (bolt.intervalSec || 2.4) + 's</div>',
-        '    <div style="font-size:11px; color:#e6dcc5;">Valor: ' + valor + ' · Nodes: ' + nodes + '/6</div>',
+        '    <div style="font-size:11px; color:#e6dcc5;">Valor: ' + valor + ' · Nodes: ' + nodes + '/6 · Stars: ★' + stars + '</div>',
         '  </div>',
         '</div>',
+        sigPanel,
         '<div class="td-panel" style="font-size:11px; color:#d9c9a3; line-height:1.5;">' +
-          (tree.pointsRule || "Valor: +1 per stage first-clear with this hero as captain, +1 bonus per 3-star first-clear (max 2 per stage). Replays and Night Watch earn nothing. Valor is per-hero, never shared.") +
+          (tree.pointsRule || "Valor: +1 for each hero deployed to a stage the first time it is cleared at 3 stars (win with no wards lost, under par time). First clears at 1–2 stars earn nothing; replays and Night Watch earn nothing. Each stage pays each hero once — including stages cleared at 3 stars before this update, on the next 3-star replay with that hero deployed. Valor is per hero, never shared — it buys only that hero's tree nodes and signature stars.") +
+          '<br>' + (tree.starRule || "Signature stars: each hero's signature upgrades from ★1 to ★5. Each star makes the signature stronger (more harm, faster cooldown, longer effects). Upgrading costs Valor — ★2 costs 2, ★3 costs 4, ★4 costs 6, ★5 costs 8 (20 total per hero). Stars are permanent and are never refunded by respec.") +
           '<br>' + (tree.fairnessNote || "Node effects apply in battle as soon as they are learned. The tree never gates story progress.") +
         '</div>'
       ].join("\n");
@@ -69460,6 +69844,22 @@ var KKUIMethods = {
         }
       } catch (e) { bought = false; }
       if (bought) {
+        TDSave.save(this.saveState);
+        TDAudio.playSfx("upgrade_chime");
+        this.renderHeroTreeScreen(heroId);
+      }
+    },
+    // /* KK 5-STAR */ Buy the next signature star (mirrors
+    // buyHeroNode: silent no-op when the check fails — unreachable
+    // from the UI, which only enables the button when affordable).
+    upgradeHeroSig: function(heroId) {
+      let upgraded = false;
+      try {
+        if (typeof KKEngine !== "undefined" && KKEngine && typeof KKEngine.heroUpgradeSig === "function") {
+          upgraded = !!KKEngine.heroUpgradeSig(this.saveState, heroId);
+        }
+      } catch (e) { upgraded = false; }
+      if (upgraded) {
         TDSave.save(this.saveState);
         TDAudio.playSfx("upgrade_chime");
         this.renderHeroTreeScreen(heroId);
@@ -70360,10 +70760,14 @@ var KKUIMethods = {
 
         // /* KK QUIT-SKILLS */ Valor economy (Jesse, Nov 22, 2026 —
         // // binding): +1 Valor to EVERY hero deployed to the battle,
-        // // but ONLY on a first-time 3-star clear. A stage first
-        // // cleared below 3 stars and later re-cleared at 3 stars
-        // // DOES earn; a replayed 3-star stage earns nothing.
-        // // Night Watch pays nothing. Per-hero, never shared.
+        // // but ONLY the first time a stage is cleared at 3 stars.
+        // // /* KK 5-STAR */ valorPaid catch-up: the grant takes lv.id
+        // // and pays once per stage-hero pair, so a stage 3-starred
+        // // before the Valor economy existed pays on its next 3-star
+        // // replay with that hero deployed; every later replay pays
+        // // 0. Night Watch pays nothing. Per-hero, never shared.
+        // // The victory line below renders whenever the grant returns
+        // // > 0, so a catch-up replay shows "+N Valor" as proof.
         let valorWon = 0;
         let valorText = "";
         try {
@@ -70373,7 +70777,7 @@ var KKUIMethods = {
             for (let d = 0; d < deployed.length; d++) {
               if (deployed[d] && deployed[d].id) deployedIds.push(deployed[d].id);
             }
-            valorWon = KKEngine.grantHeroValor(this.saveState, deployedIds, s.starsEarned, prevStars, false) || 0;
+            valorWon = KKEngine.grantHeroValor(this.saveState, deployedIds, s.starsEarned, prevStars, false, lv.id) || 0;
             if (valorWon > 0) {
               valorText = " · +" + valorWon + " Valor for the deployed heroes";
             }
@@ -70527,20 +70931,21 @@ var KKUIMethods = {
       // // screen). Defenders tab is the unchanged forge list.
       if (this.currentWorkshopTab === "heroes") {
         const heroes = this.heroDefs();
-        let html = '<div class="td-panel" style="font-size:11px; color:#d9c9a3; line-height:1.5;">Every hero has their own skill tree. Valor: +1 per stage first-clear with that hero as captain, +1 bonus per 3-star first-clear. Replays and Night Watch earn nothing.</div>';
+        let html = '<div class="td-panel" style="font-size:11px; color:#d9c9a3; line-height:1.5;">Every hero has their own skill tree. Valor: +1 for each hero deployed to a stage the first time it is cleared at 3 stars. First clears at 1–2 stars earn nothing; replays and Night Watch earn nothing. Each stage pays each hero once — including stages cleared at 3 stars before this update, on the next 3-star replay with that hero deployed. Valor is per hero, never shared — it buys only that hero\'s tree nodes and signature stars.</div>';
         for (let i = 0; i < heroes.length; i++) {
           const hDef = heroes[i];
           const pKey = (hDef.portraits && hDef.portraits.calm) || "keeper_sigil";
           const sig = hDef.signature || {};
           const valor = this.heroValorFor(hDef.id);
           const nodes = this.heroNodesLearned(hDef.id);
+          const stars = this.heroSigStarsFor(hDef.id);
           const isCap = hDef.id === this.heroCaptainId(this.saveState);
           html += [
             '<div class="td-panel" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">',
             '  <div style="width:42px; height:42px; flex-shrink:0;">' + KKArt.portraitHtml(pKey) + '</div>',
             '  <div style="flex:1;">',
             '    <div style="font-size:12px; font-weight:800; color:#ffe38f;">' + hDef.name + ' <span style="color:#7ce8ff; font-size:10px;">(' + this.heroPowerLabel(hDef) + ' · ' + (hDef.colorName || "") + (isCap ? ' · Captain' : '') + ')</span></div>',
-            '    <div style="font-size:11px; color:#d9c9a3;">Valor ' + valor + ' · ' + nodes + '/6 nodes · ' + (sig.name || "") + '</div>',
+            '    <div style="font-size:11px; color:#d9c9a3;">Valor ' + valor + ' · ' + nodes + '/6 nodes · ★' + stars + ' · ' + (sig.name || "") + '</div>',
             '  </div>',
             '  <button class="td-btn td-btn-primary td-open-htree-btn" data-hero-id="' + hDef.id + '" data-return="workshop">Open Tree</button>',
             '</div>'
@@ -70763,6 +71168,7 @@ var KKUIMethods = {
           const tree = hDef.tree || { branches: [] };
           const valor = this.heroValorFor(hDef.id);
           const nodes = this.heroNodesLearned(hDef.id);
+          const stars = this.heroSigStarsFor(hDef.id);
           let treeHtml = "";
           const branches = tree.branches || [];
           for (let b = 0; b < branches.length; b++) {
@@ -70781,7 +71187,7 @@ var KKUIMethods = {
             '  <div style="width:48px; height:48px; flex-shrink:0;">' + KKArt.portraitHtml(pKey) + '</div>',
             '  <div style="flex:1;">',
             '    <div style="font-size:13px; font-weight:800; color:#ffe38f;">' + hDef.name + ' <span style="font-size:11px; color:#7ce8ff;">(' + this.heroPowerLabel(hDef) + ' · ' + (hDef.colorName || "") + ')</span></div>',
-            '    <div style="font-size:11px; color:#d9c9a3;">Valor ' + valor + ' · ' + nodes + '/6 nodes · Signature: ' + (sig.name || "") + (sig.cooldownSec ? ' · ' + sig.cooldownSec + 's' : '') + '</div>',
+            '    <div style="font-size:11px; color:#d9c9a3;">Valor ' + valor + ' · ' + nodes + '/6 nodes · ★' + stars + ' · Signature: ' + (sig.name || "") + (sig.cooldownSec ? ' · ' + sig.cooldownSec + 's' : '') + '</div>',
             '    <div style="font-size:11px; color:#e6dcc5;">' + (hDef.blurb || "") + '</div>',
             treeHtml,
             '    <button class="td-btn td-open-htree-btn" data-hero-id="' + hDef.id + '" data-return="almanac" style="margin-top:6px;">Open Skill Tree</button>',
