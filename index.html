@@ -11772,6 +11772,7 @@ button.mr-setup-preview:focus-visible {
   --cl-win: #2ecc71;
   --cl-lose: #e74c3c;
   --cl-scale: 1;
+  position: relative;
   box-sizing: border-box;
   /* Clear the 48px shell status bar, which overlays the top of the
      screen — same treatment as the other games in this shell. */
@@ -12098,7 +12099,7 @@ button.mr-setup-preview:focus-visible {
 .cl-portrait.lg .cl-initials { font-size: 28px; }
 
 /* ------------------------------------------------------ game screens */
-.cl-game { display: flex; flex-direction: column; gap: 10px; }
+.cl-game { display: flex; flex-direction: column; gap: 8px; }
 
 .cl-game-head {
   display: flex;
@@ -12127,20 +12128,23 @@ button.mr-setup-preview:focus-visible {
   background: var(--cl-panel);
   border: 1px solid var(--cl-line);
   border-radius: 12px;
-  padding: 8px;
+  padding: 6px;
 }
 
 .cl-chip {
-  min-width: 52px;
-  padding: 8px 6px;
+  min-width: 48px;
+  padding: 7px 6px;
   font-weight: 800;
   border-radius: 22px;
 }
+/* Compact bet row (blackjack done phase): chips + Min/Max on one row,
+   no Bet value — keeps "Deal again" on screen. */
+.cl-betrow.compact .cl-chip { min-width: 40px; padding: 6px 4px; }
 .cl-chip.sel { border-color: var(--cl-gold); color: var(--cl-gold-soft); box-shadow: 0 0 0 1px var(--cl-gold); }
 .cl-bet-val { font-weight: 800; font-size: 18px; color: var(--cl-gold-soft); margin-left: auto; }
 
 .cl-result {
-  min-height: 44px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -12155,6 +12159,9 @@ button.mr-setup-preview:focus-visible {
 .cl-result.win { background: #0d3d20; border-color: var(--cl-win); color: #b8f5cd; }
 .cl-result.lose { background: #3d100c; border-color: var(--cl-lose); color: #ffd2cc; }
 .cl-result.push { background: var(--cl-panel-2); }
+/* Empty result box (no result yet) takes no space — the play screen is
+   not pushed down by a placeholder line. */
+.cl-result:empty { display: none; }
 
 .cl-hint {
   font-size: 13px;
@@ -12173,14 +12180,24 @@ button.mr-setup-preview:focus-visible {
 .cl-coach-bar .cl-btn { flex: 1 1 0; }
 
 /* ------------------------------------------------------------ cards */
-.cl-cards { display: flex; gap: 6px; flex-wrap: wrap; min-height: 62px; align-items: center; }
+.cl-cards { display: flex; gap: 6px; flex-wrap: wrap; min-height: 88px; align-items: center; }
 /* Real playing cards: white face, red/black suits, corner indices top-left
    + bottom-right (rotated), classic pip layouts, typographic court panels,
-   and one uniform patterned back. Sizes/animations untouched. */
+   and one uniform patterned back. Sizes/animations untouched.
+   GEOMETRY (measured Nov 22 2026 — Jesse's close-ups): the old 44x62
+   card with stacked corner indices could not lay pips out cleanly —
+   rows sat 8.4px apart against 13px glyphs and the top/bottom pips sat
+   on the corner indices (9-spade overlaps measured 35px2). The fix is
+   INLINE corner indices (rank+suit on one line, index height = rank
+   font) on a bigger card: rows sit 13.5px apart against 13px pips,
+   with 1.25px clearance to each index, and columns 16.7px apart
+   against ~8.5px pip widths. Small cards show one big centre suit
+   instead of a pip grid: a 4-row grid cannot fit a 56px-tall card at
+   any readable pip size (H >= 8 + 2*index + 4*pip). */
 .cl-card {
   position: relative;
-  width: 44px;
-  height: 62px;
+  width: 58px;
+  height: 88px;
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
@@ -12189,7 +12206,7 @@ button.mr-setup-preview:focus-visible {
   background: #ffffff;
   color: #161616;
   border: 1px solid #b9b2a0;
-  border-radius: 6px;
+  border-radius: 7px;
   font-weight: 800;
   font-size: 17px;
   line-height: 1.05;
@@ -12198,23 +12215,25 @@ button.mr-setup-preview:focus-visible {
   transition: transform .15s ease;
 }
 .cl-card.red { color: #c8102e; }
-/* Corner indices: rank over suit, stacked tight. */
-.cl-card .cl-idx { position: absolute; display: flex; flex-direction: column; align-items: center; line-height: 1; font-weight: 800; }
-.cl-card .cl-idx .cl-rank { font-size: 12px; }
-.cl-card .cl-idx .cl-suit { font-size: 10px; margin-top: 1px; }
-.cl-card .cl-idx.tl { top: 2px; left: 3px; }
-.cl-card .cl-idx.br { bottom: 2px; right: 3px; transform: rotate(180deg); }
+/* Corner indices: rank + suit side by side on one line. */
+.cl-card .cl-idx { position: absolute; display: flex; flex-direction: row; align-items: center; gap: 1px; line-height: 1; font-weight: 800; }
+.cl-card .cl-idx .cl-rank { font-size: 13px; }
+.cl-card .cl-idx .cl-suit { font-size: 11px; }
+.cl-card .cl-idx.tl { top: 3px; left: 4px; }
+.cl-card .cl-idx.br { bottom: 3px; right: 4px; transform: rotate(180deg); }
 /* Center field between the indices. */
-.cl-card .cl-center { position: absolute; inset: 13px 3px; }
+.cl-card .cl-center { position: absolute; inset: 17px 4px; }
 .cl-card .cl-pips { position: absolute; inset: 0; }
 .cl-card .cl-pip { position: absolute; transform: translate(-50%, -50%); font-size: 13px; line-height: 1; }
 .cl-card .cl-pip.flip { transform: translate(-50%, -50%) rotate(180deg); }
-.cl-card .cl-ace { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 28px; line-height: 1; }
+/* Big centre suit: hidden on full cards, the whole face on small ones. */
+.cl-card .cl-mid-suit { display: none; }
+.cl-card .cl-ace { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 34px; line-height: 1; }
 /* Court cards: gold-framed two-tone panel, big serif rank letter + suit. */
 .cl-card .cl-court { position: absolute; inset: 0; border: 1px solid currentColor; border-radius: 3px; background: linear-gradient(180deg, #fffdf6 0 49%, #f3e2b0 51% 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .cl-card .cl-court::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px solid rgba(0, 0, 0, .18); }
-.cl-card .cl-court .cl-court-letter { font-family: Georgia, 'Times New Roman', serif; font-size: 20px; font-weight: 900; line-height: 1; }
-.cl-card .cl-court .cl-court-suit { font-size: 13px; line-height: 1; margin-top: 2px; }
+.cl-card .cl-court .cl-court-letter { font-family: Georgia, 'Times New Roman', serif; font-size: 24px; font-weight: 900; line-height: 1; }
+.cl-card .cl-court .cl-court-suit { font-size: 15px; line-height: 1; margin-top: 2px; }
 .cl-card.back {
   background-color: #8e1620;
   background-image:
@@ -12224,16 +12243,20 @@ button.mr-setup-preview:focus-visible {
   border-color: #5a0d14;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 0 0 2px #fdfbf5, inset 0 0 0 4px #8e1620;
 }
-.cl-card.back::after { content: ''; position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; background: #f5e9c8; border: 1px solid #fdfbf5; transform: rotate(45deg); }
-.cl-card.small { width: 34px; height: 48px; }
-.cl-card.small .cl-idx .cl-rank { font-size: 10px; }
-.cl-card.small .cl-idx .cl-suit { font-size: 8px; }
-.cl-card.small .cl-center { inset: 11px 2px; }
+.cl-card.back::after { content: ''; position: absolute; left: 50%; top: 50%; width: 15px; height: 15px; margin: -7px 0 0 -7px; background: #f5e9c8; border: 1px solid #fdfbf5; transform: rotate(45deg); }
+.cl-card.small { width: 40px; height: 56px; }
+.cl-card.small .cl-idx .cl-rank { font-size: 12px; }
+.cl-card.small .cl-idx .cl-suit { font-size: 10px; }
+.cl-card.small .cl-idx.tl { top: 2px; left: 3px; }
+.cl-card.small .cl-idx.br { bottom: 2px; right: 3px; }
+.cl-card.small .cl-center { inset: 14px 3px; }
+.cl-card.small .cl-pips { display: none; }
+.cl-card.small .cl-mid-suit { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; line-height: 1; }
 .cl-card.small .cl-pip { font-size: 10px; }
 .cl-card.small .cl-ace { font-size: 20px; }
 .cl-card.small .cl-court .cl-court-letter { font-size: 15px; }
 .cl-card.small .cl-court .cl-court-suit { font-size: 10px; }
-.cl-card.small.back::after { width: 9px; height: 9px; margin: -5px 0 0 -5px; }
+.cl-card.small.back::after { width: 11px; height: 11px; margin: -5px 0 0 -5px; }
 .cl-card.sel { transform: translateY(-8px); border-color: var(--cl-gold); box-shadow: 0 0 0 2px var(--cl-gold); }
 .cl-card.playable { cursor: pointer; }
 /* The Tiến Lên hand renders cards as <button>s: the generic
@@ -12243,6 +12266,26 @@ button.mr-setup-preview:focus-visible {
 .cl-root button.cl-card { background: #ffffff; color: #161616; border-color: #b9b2a0; border-radius: 6px; padding: 0; min-height: 0; min-width: 0; }
 .cl-root button.cl-card.red { color: #c8102e; }
 .cl-root button.cl-card.sel:active { transform: translateY(-8px); }
+
+/* Blackjack phases: the coach bar is learning UI — it belongs to the
+   bet phase, not mid-hand. Hiding it in play/done keeps Hit/Stand on
+   screen. The muted rules footer is hidden in done phase for the same
+   reason (Rules & Odds still has it). */
+.cl-game.cl-bj-phase-play .cl-coach-bar,
+.cl-game.cl-bj-phase-done .cl-coach-bar { display: none; }
+.cl-game.cl-bj-phase-done > p.cl-muted { display: none; }
+
+/* Card peek overlay: tap a face-up table card to see it large. */
+.cl-peek { position: absolute; inset: 0; z-index: 40; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: rgba(5, 10, 8, .85); }
+/* The peek card is scaled 2.05x by transform, which does not move layout:
+   without this margin the enlarged card paints over the label below it
+   (measured: label rect sat fully inside the scaled card rect). The margin
+   is the visual overflow on each side: (2.05-1)/2 x 88 = 46px vertical,
+   (2.05-1)/2 x 58 = 30px horizontal. */
+.cl-peek-card { transform: scale(2.05); margin: 47px 31px; }
+.cl-peek-card .cl-card { box-shadow: 0 8px 24px rgba(0, 0, 0, .6); }
+.cl-peek-label { font-size: 20px; font-weight: 900; color: var(--cl-gold-soft); }
+.cl-peek-hint { font-size: 13px; color: var(--cl-muted); }
 
 /* ------------------------------------------------- casino table scene
    Green felt, warm overhead light, gold rim — the table card games
@@ -12297,7 +12340,7 @@ button.mr-setup-preview:focus-visible {
 .cl-seat-tag { font-size: 10px; font-weight: 800; line-height: 1; margin-top: 3px; padding: 3px 7px; border-radius: 9px; border: 1px solid var(--cl-gold); color: var(--cl-gold-soft); }
 .cl-seat-tag.fill { background: var(--cl-gold); color: #1a1a1a; border-color: var(--cl-gold); }
 .cl-seat-tag.muted { border-color: var(--cl-line); color: var(--cl-muted); }
-.cl-seat-cards { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 4px; min-height: 48px; }
+.cl-seat-cards { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 4px; min-height: 88px; }
 .cl-seat-cards .cl-fan { display: flex; }
 .cl-seat-cards .cl-fan .cl-card + .cl-card { margin-left: -22px; }
 .cl-seat.wide { width: 100%; }
@@ -12734,14 +12777,14 @@ button.mr-setup-preview:focus-visible {
 
 /* Card flip wrapper (blackjack hole card, hold'em showdown, baccarat
    third cards): two faces, front shown unless .show-back. */
-.cl-flip { display: inline-block; position: relative; width: 44px; height: 62px; transform-style: preserve-3d; vertical-align: middle; }
+.cl-flip { display: inline-block; position: relative; width: 58px; height: 88px; transform-style: preserve-3d; vertical-align: middle; }
 .cl-flip-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
 .cl-flip-face.front { transform: rotateY(0deg); }
 .cl-flip-face.back { transform: rotateY(180deg); }
 .cl-flip.show-back .cl-flip-face.front { transform: rotateY(180deg); }
 .cl-flip.show-back .cl-flip-face.back { transform: rotateY(0deg); }
-.cl-flip.small { width: 34px; height: 48px; }
-.cl-flip.small .cl-card { width: 34px; height: 48px; }
+.cl-flip.small { width: 40px; height: 56px; }
+.cl-flip.small .cl-card { width: 40px; height: 56px; }
 
 /* Roulette wheel visual: CSS ring above the number grid; the ball is a
    visual only — the drawn number + payout logic are untouched.
@@ -12778,20 +12821,29 @@ button.mr-setup-preview:focus-visible {
   .cl-root { font-size: 14px; }
   .cl-bank-val { font-size: 19px; }
   .cl-symbol { height: 44px; font-size: 24px; }
-  .cl-card { width: 38px; height: 54px; }
-  .cl-card .cl-idx .cl-rank { font-size: 11px; }
-  .cl-card .cl-idx .cl-suit { font-size: 9px; }
-  .cl-card .cl-center { inset: 11px 2px; }
+  .cl-card { width: 52px; height: 78px; }
+  .cl-card .cl-idx .cl-rank { font-size: 12px; }
+  .cl-card .cl-idx .cl-suit { font-size: 10px; }
+  .cl-card .cl-center { inset: 16px 3px; }
   .cl-card .cl-pip { font-size: 11px; }
-  .cl-card .cl-ace { font-size: 23px; }
-  .cl-card .cl-court .cl-court-letter { font-size: 17px; }
-  .cl-card .cl-court .cl-court-suit { font-size: 11px; }
+  .cl-card .cl-ace { font-size: 30px; }
+  .cl-card .cl-court .cl-court-letter { font-size: 21px; }
+  .cl-card .cl-court .cl-court-suit { font-size: 13px; }
+  .cl-card.back::after { width: 13px; height: 13px; margin: -6px 0 0 -6px; }
+  .cl-card.small { width: 36px; height: 50px; }
+  .cl-card.small .cl-idx .cl-rank { font-size: 11px; }
+  .cl-card.small .cl-mid-suit { font-size: 18px; }
+  .cl-flip { width: 52px; height: 78px; }
+  .cl-flip.small { width: 36px; height: 50px; }
+  .cl-flip.small .cl-card { width: 36px; height: 50px; }
+  .cl-cards { min-height: 78px; }
+  .cl-seat-cards { min-height: 78px; }
   .cl-table { padding: 8px 6px; gap: 6px; }
   .cl-seat .cl-portrait { width: 38px; height: 38px; }
   .cl-seat .cl-initials { font-size: 13px; }
   .cl-seat-name { font-size: 10px; }
   .cl-seat-sub { font-size: 9px; }
-  .cl-seat-cards { min-height: 42px; }
+  .cl-seat-cards { min-height: 78px; }
   .cl-talk { font-size: 9px; }
   .cl-rocket-mult { font-size: 36px; }
   .cl-wheel-visual { width: 104px; height: 104px; --ball-orbit: 38px; }
@@ -12801,7 +12853,85 @@ button.mr-setup-preview:focus-visible {
   .cl-wheel-hub { font-size: 20px; }
 }
 
+/* --------------------------------------------------------- short fit */
+@media (max-height: 700px) {
+  /* Short screens: smaller cards + compact chrome so the play controls
+     stay on screen without scrolling. The bet-row pot line is hidden
+     mid-hand (the hand label already shows the bet). */
+  .cl-card { width: 52px; height: 78px; }
+  .cl-card .cl-idx .cl-rank { font-size: 12px; }
+  .cl-card .cl-idx .cl-suit { font-size: 10px; }
+  .cl-card .cl-center { inset: 16px 3px; }
+  .cl-card .cl-pip { font-size: 11px; }
+  .cl-card .cl-ace { font-size: 30px; }
+  .cl-card .cl-court .cl-court-letter { font-size: 21px; }
+  .cl-card .cl-court .cl-court-suit { font-size: 13px; }
+  .cl-card.back::after { width: 13px; height: 13px; margin: -6px 0 0 -6px; }
+  .cl-flip { width: 52px; height: 78px; }
+  .cl-cards { min-height: 78px; }
+  .cl-seat-cards { min-height: 78px; }
+  .cl-game { gap: 5px; }
+  .cl-game-head h2 { font-size: 18px; }
+  /* Play/done phases hide the game head at short heights (the table
+     carries the state); the bet phase keeps it for orientation. */
+  .cl-game.cl-bj-phase-play .cl-game-head,
+  .cl-game.cl-bj-phase-done .cl-game-head { display: none; }
+  .cl-table { padding: 6px; gap: 6px; }
+  .cl-table-you { padding-top: 6px; gap: 4px; }
+  .cl-seat .cl-portrait { width: 28px; height: 28px; }
+  .cl-seat .cl-initials { font-size: 13px; }
+  .cl-seat-name { margin-top: 2px; }
+  .cl-seat-cards { margin-top: 2px; }
+  .cl-hand-label { margin: 0; }
+  .cl-hint { padding: 4px 8px; font-size: 12px; }
+  .cl-betrow { padding: 4px; gap: 4px; }
+  .cl-chip { min-width: 44px; padding: 6px 4px; font-size: 13px; }
+  .cl-bet-val { font-size: 16px; }
+  .cl-result { padding: 6px 10px; min-height: 32px; }
+  .cl-game .cl-btn.big { padding: 10px; }
+  .cl-coach-bar .cl-btn { padding: 6px 4px; font-size: 13px; }
+  .cl-game > p.cl-muted { display: none; }
+  .cl-game.cl-bj-phase-play .cl-table-mid,
+  .cl-game.cl-bj-phase-done .cl-table-mid { display: none; }
+  /* Done phase at short heights: the dealer talk repeats the result
+     box, so it hides here. */
+  .cl-game.cl-bj-phase-done .cl-talk { display: none; }
+  .cl-game-tile { min-height: 70px; padding: 6px 4px; }
+  .cl-tile-icon { font-size: 24px; }
+  .cl-symbol { height: 44px; }
+}
+
 @media (max-height: 600px) {
+  /* Very short screens: smallest cards, chrome stripped to the table +
+     the play controls. The coach hint and game head are hidden here
+     (hand total + dealer upcard stay visible); they return on taller
+     screens. */
+  .cl-card { width: 48px; height: 72px; }
+  .cl-card .cl-idx .cl-rank { font-size: 11px; }
+  .cl-card .cl-idx .cl-suit { font-size: 9px; }
+  .cl-card .cl-center { inset: 15px 3px; }
+  .cl-card .cl-pip { font-size: 10px; }
+  .cl-card .cl-ace { font-size: 27px; }
+  .cl-card .cl-court .cl-court-letter { font-size: 19px; }
+  .cl-card .cl-court .cl-court-suit { font-size: 12px; }
+  .cl-card.back::after { width: 12px; height: 12px; margin: -6px 0 0 -6px; }
+  .cl-flip { width: 48px; height: 72px; }
+  .cl-cards { min-height: 72px; }
+  .cl-seat-cards { min-height: 72px; }
+  .cl-card.small { width: 36px; height: 51px; }
+  .cl-card.small .cl-idx .cl-rank { font-size: 11px; }
+  .cl-card.small .cl-mid-suit { font-size: 18px; }
+  .cl-flip.small { width: 36px; height: 51px; }
+  .cl-flip.small .cl-card { width: 36px; height: 51px; }
+  .cl-game-head { display: none; }
+  .cl-coach-bar { display: none; }
+  .cl-hint { display: none; }
+  .cl-seat .cl-portrait { width: 30px; height: 30px; }
+  /* Done phase at very short heights: seat portraits hide so the
+     cards + result + "Deal again" all fit (faces return on taller
+     screens and in bet/play phases). */
+  .cl-game.cl-bj-phase-done .cl-seat .cl-portrait { display: none; }
+  .cl-table { padding: 6px 4px; gap: 4px; }
   .cl-game-tile { min-height: 70px; padding: 6px 4px; }
   .cl-tile-icon { font-size: 24px; }
   .cl-symbol { height: 44px; }
@@ -117335,10 +117465,13 @@ var CLGame = (function () {
       for (var i = 0; i < lay.length; i++) {
         var col = lay[i][0], row = lay[i][1];
         pips += '<span class="cl-pip' + (row > 1.5 ? ' flip' : '') +
-          '" style="left:' + (22 + col * 28) + '%;top:' + (15 + row * 23.33) + '%">' +
+          '" style="left:' + (16.7 + col * 33.3) + '%;top:' + (12.5 + row * 25) + '%">' +
           sym + '</span>';
       }
-      center = '<span class="cl-center"><span class="cl-pips">' + pips + '</span></span>';
+      /* The mid-suit is the small-card face: .cl-card.small hides the
+         pip grid (a 4-row grid cannot fit a 56px-tall card at any
+         readable pip size) and shows this one big suit glyph instead. */
+      center = '<span class="cl-center"><span class="cl-pips">' + pips + '</span><span class="cl-mid-suit">' + sym + '</span></span>';
     }
     return idx + center;
   }
@@ -117351,6 +117484,54 @@ var CLGame = (function () {
 
   function _cardBackHTML(small) {
     return '<span class="cl-card back' + (small ? ' small' : '') + '"><span>&nbsp;</span></span>';
+  }
+
+  /* ------------------------------------------------- card peek (tap to
+     enlarge). Any face-up table card (never a back, never a Tiến Lên
+     hand button — tap selects there) opens a large overlay of that
+     card; tap anywhere to close. */
+  var _SUIT_NAMES = { S: 'Spades', C: 'Clubs', D: 'Diamonds', H: 'Hearts' };
+  var _SUIT_LETTER = { '♠': 'S', '♣': 'C', '♦': 'D', '♥': 'H' };
+  function _peekCardFor(target) {
+    if (!target || !target.closest) return null;
+    var card = target.closest('.cl-card');
+    if (!card || card.classList.contains('back')) return null;
+    if (card.tagName === 'BUTTON') return null;
+    if (!card.closest('.cl-table') && !card.closest('.cl-hand-box')) return null;
+    return card;
+  }
+  function _peekLabel(card) {
+    var tl = card.querySelector('.cl-idx.tl');
+    var rank = tl ? ((tl.querySelector('.cl-rank') || {}).textContent || '') : '';
+    var suit = tl ? ((tl.querySelector('.cl-suit') || {}).textContent || '') : '';
+    var rn = { J: 'Jack', Q: 'Queen', K: 'King', A: 'Ace' }[rank] || rank;
+    return rn + ' of ' + (_SUIT_NAMES[_SUIT_LETTER[suit]] || suit);
+  }
+  function _peekCardObj(card) {
+    var tl = card.querySelector('.cl-idx.tl');
+    var rank = tl ? ((tl.querySelector('.cl-rank') || {}).textContent || '') : '';
+    var suit = tl ? ((tl.querySelector('.cl-suit') || {}).textContent || '') : '';
+    var r = { J: 11, Q: 12, K: 13, A: 14 }[rank] || parseInt(rank, 10);
+    return { r: r, s: _SUIT_LETTER[suit] || 'S' };
+  }
+  function _openCardPeek(card) {
+    try {
+      _closeCardPeek();
+      var ov = _doc().createElement('div');
+      ov.className = 'cl-peek';
+      ov.id = 'cl-peek';
+      ov.innerHTML = '<div class="cl-peek-card">' + _cardHTML(_peekCardObj(card)) + '</div>' +
+        '<div class="cl-peek-label">' + _esc(_peekLabel(card)) + '</div>' +
+        '<div class="cl-peek-hint">Tap anywhere to close</div>';
+      _root.appendChild(ov);
+      _playClick();
+    } catch (e) { /* peek is cosmetic; never break the game */ }
+  }
+  function _closeCardPeek() {
+    try {
+      var ov = _doc() ? _doc().getElementById('cl-peek') : null;
+      if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
+    } catch (e) { /* ignore */ }
   }
 
   /* ------------------------------------------- casino table scene.
@@ -117535,11 +117716,19 @@ var CLGame = (function () {
     return { total: total, soft: aces > 0, bust: total > 21, blackjack: cards.length === 2 && total === 21 };
   }
 
-  function _betRowHTML(gameId, bet, min, max, chips) {
+  function _betRowHTML(gameId, bet, min, max, chips, compact) {
     var chipsHtml = '';
     for (var i = 0; i < chips.length; i++) {
       var c = chips[i];
       chipsHtml += '<button type="button" class="cl-chip' + (bet === c ? ' sel' : '') + '" data-cl-action="set-bet" data-game="' + gameId + '" data-amt="' + c + '">' + _fmt(c) + '</button>';
+    }
+    /* Compact = chips + Min/Max on one row, no Bet value (the bet is
+       already shown in the hand label / result). Used by blackjack's
+       done phase so "Deal again" stays on screen. */
+    if (compact) {
+      return '<div class="cl-betrow compact">' + chipsHtml +
+        '<button type="button" class="cl-chip" data-cl-action="set-bet" data-game="' + gameId + '" data-amt="min">Min</button>' +
+        '<button type="button" class="cl-chip" data-cl-action="set-bet" data-game="' + gameId + '" data-amt="max">Max</button></div>';
     }
     return '<div class="cl-betrow">' + chipsHtml +
       '<button type="button" class="cl-chip" data-cl-action="set-bet" data-game="' + gameId + '" data-amt="min">Min</button>' +
@@ -117571,7 +117760,9 @@ var CLGame = (function () {
   }
 
   function _resultElHTML(text) {
-    return '<div class="cl-result" id="cl-result">' + _esc(text || 'Place your bet to begin.') + '</div>';
+    /* Empty when there is no result: .cl-result:empty hides the box, so
+       the play screen is not pushed down by a placeholder line. */
+    return '<div class="cl-result" id="cl-result">' + _esc(text || '') + '</div>';
   }
 
   /* ------------------------------------------------------------ openGame */
@@ -118153,9 +118344,15 @@ var CLGame = (function () {
       actions = '<button type="button" class="cl-btn gold big" data-cl-action="bj-deal">Deal again</button>';
     }
     _screenEl.innerHTML =
-      '<div class="cl-game">' + _gameHeadHTML('blackjack', _practiceBanner()) +
+      '<div class="cl-game cl-bj-phase-' + g.phase + '">' + _gameHeadHTML('blackjack', _practiceBanner()) +
       tableHtml + hintHtml +
-      _betRowHTML('blackjack', g.bet, 5, 500, [5, 25, 50, 100, 500]) +
+      /* The bet row is dead UI mid-hand (the bet is already placed —
+         the hand label and pot still show it), so it is hidden in the
+         play phase to keep Hit/Stand on screen. Done phase gets the
+         compact one-row chips so "Deal again" stays visible too. */
+      (g.phase === 'play' ? '' :
+        g.phase === 'done' ? _betRowHTML('blackjack', g.bet, 5, 500, [5, 25, 50, 100, 500], true) :
+        _betRowHTML('blackjack', g.bet, 5, 500, [5, 25, 50, 100, 500])) +
       actions + _resultElHTML(g.resultText) +
       '<p class="cl-muted">6-deck shoe. Dealer stands on all 17s. Blackjack pays 3:2. Double any two cards, split up to 3 hands. No surrender, no insurance.</p>' +
       '</div>';
@@ -119304,7 +119501,7 @@ var CLGame = (function () {
       for (var c = 0; c < sorted.length; c++) {
         var card = sorted[c];
         var sel = g.selected && g.selected.indexOf(card) >= 0;
-        myCards += '<button type="button" class="cl-card' + ((card.s === 'H' || card.s === 'D') ? ' red' : '') + (sel ? ' sel' : '') + ' playable' + ((tlDeal && !_reducedMotion()) ? ' cl-anim cl-anim-deal' : '') + '"' + (tlDeal ? ' style="animation-delay:' + (c * 35) + 'ms"' : '') + ' data-cl-action="tl-toggle-card" data-r="' + card.r + '" data-s="' + card.s + '">' +
+        myCards += '<button type="button" class="cl-card small' + ((card.s === 'H' || card.s === 'D') ? ' red' : '') + (sel ? ' sel' : '') + ' playable' + ((tlDeal && !_reducedMotion()) ? ' cl-anim cl-anim-deal' : '') + '"' + (tlDeal ? ' style="animation-delay:' + (c * 35) + 'ms"' : '') + ' data-cl-action="tl-toggle-card" data-r="' + card.r + '" data-s="' + card.s + '">' +
           _cardFaceInner(card) + '</button>';
       }
       var hintHtml = '';
@@ -119907,6 +120104,12 @@ var CLGame = (function () {
     if (!el) {
       // Tap on the modal backdrop closes the modal.
       if (e.target === _modalEl) _closeModal();
+      // Card peek: tap an open peek to close it, tap a face-up table
+      // card to enlarge it. Cards carry no data-cl-action, so this
+      // branch is the only place a card tap can land.
+      if (_doc() && _doc().getElementById('cl-peek')) { _closeCardPeek(); return; }
+      var peekCard = _peekCardFor(e.target);
+      if (peekCard) { _openCardPeek(peekCard); return; }
       return;
     }
     var action = el.getAttribute('data-cl-action');
