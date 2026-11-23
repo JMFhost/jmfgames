@@ -12922,11 +12922,11 @@ button.mr-setup-preview:focus-visible {
    the ball/hub with it. --ball-orbit is the ball's distance from center. */
 .cl-wheel-visual { position: relative; width: 150px; height: 150px; --ball-orbit: 58px; margin: 0 auto; border-radius: 50%; border: 3px solid var(--cl-gold-deep); background-color: #083d21; overflow: hidden; }
 .cl-wheel-svg { display: block; border-radius: 50%; }
-.cl-wheel-ball-orbit { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.cl-wheel-ball-orbit { position: absolute; inset: 0; z-index: 2; pointer-events: none; transform-origin: center; }
 .cl-wheel-ball-orbit .cl-wheel-ball { top: 10px; left: 50%; margin: -7px 0 0 -7px; }
 .cl-wheel-hub { z-index: 3; }
 @keyframes cl-wheel-spin2 { from { transform: rotate(0deg); } to { transform: rotate(var(--wheel-end, 2160deg)); } }
-@keyframes cl-ball-orbit2 { from { transform: rotate(0deg); } to { transform: rotate(-2160deg); } }
+@keyframes cl-ball-orbit2 { from { transform: rotate(0deg); } to { transform: rotate(var(--ball-end, -2160deg)); } }
 .cl-anim-wheel2 { animation: cl-wheel-spin2 4500ms cubic-bezier(.2,.7,.3,1) both; transform-origin: center; }
 .cl-anim-ball2 { animation: cl-ball-orbit2 4500ms cubic-bezier(.2,.7,.3,1) both; }
 .cl-wheel-ring { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(#b01e1e 0 9.7%, #1c1c1c 9.7% 19.4%, #b01e1e 19.4% 29.1%, #1c1c1c 29.1% 38.8%, #b01e1e 38.8% 48.6%, #1c1c1c 48.6% 58.3%, #b01e1e 58.3% 68%, #1c1c1c 68% 77.7%, #b01e1e 77.7% 87.4%, #1c1c1c 87.4% 97.3%, #0d7a3a 97.3% 100%); }
@@ -20745,17 +20745,10 @@ var BZAudio = (function () {
         [130.81, 164.81, 196.00]  // C major: C3 E3 G3
       ],
       melody: [523.25, 0, 440.00, 349.23, 0, 392.00, 523.25, 0, 440.00, 587.33, 0, 523.25],
-      velocity: [0.9, 0.85, 0.95, 0.9] },
-    // CASINO (Nov 23, 2026): three original 256 s MP3 loops, NOT synth
-    // songs. A file song has no progression/melody/velocity — the
-    // scheduler counts 64 bars (256 s / 4 s) and advances at the
-    // boundary; _playFileSong drives the audio element. They play
-    // under the `casino` theme (Settings picker) and while Casino
-    // Life is open (theme override from cl-wire.js — the stored
-    // theme is never changed).
-    { name: 'Casino Lounge', themes: ['casino'], file: 'assets/casino/audio/casino-lounge.mp3' },
-    { name: 'Casino Swing', themes: ['casino'], file: 'assets/casino/audio/casino-swing.mp3' },
-    { name: 'Casino Bossa', themes: ['casino'], file: 'assets/casino/audio/casino-bossa.mp3' }
+      velocity: [0.9, 0.85, 0.95, 0.9] }
+    // (Nov 23, 2026 — standing rule: shell music only, no per-game
+    // music. The three Casino Life mp3 loops formerly listed here
+    // were removed; Casino Life now plays the stored shell theme.)
   ];
 
   // Music themes (Nov 21, 2026): the Settings picker offers one list.
@@ -20771,8 +20764,7 @@ var BZAudio = (function () {
     { id: 'adventure', label: 'Adventure' },
     { id: 'calm', label: 'Calm' },
     { id: 'classic', label: 'Classic' },
-    { id: 'oath', label: 'Summoner\u2019s Oath' },
-    { id: 'casino', label: 'Casino Life' }
+    { id: 'oath', label: 'Summoner\u2019s Oath' }
   ];
   var DEFAULT_MUSIC_THEME = 'christmas';
 
@@ -20803,7 +20795,7 @@ var BZAudio = (function () {
 
   function _cycleLength(song) {
     try {
-      // File-backed track (Casino Life loops): each loop is 256 s,
+      // File-backed track: each loop is 256 s,
       // i.e. 256 / BAR_LEN bars; the scheduler advances at that
       // boundary exactly like a synth song's cycle.
       if (song && song.file) return Math.max(1, Math.round(256 / BAR_LEN));
@@ -22848,7 +22840,7 @@ var BZAudio = (function () {
   function _scheduleBar() {
     try {
       var song = SONGS[_songIndex] || SONGS[0];
-      // File-backed track (Casino Life loops): the mp3 plays through
+      // File-backed track: the mp3 plays through
       // its own element; the scheduler only counts bars and advances
       // at the boundary, exactly like a synth song's cycle. No
       // AudioContext is needed for these, so this branch runs before
@@ -115645,52 +115637,62 @@ var CLEngine = (function () {
       weights: { WILD: 2, SEVEN: 3, BELL: 5, BAR: 6, CHERRY: 8, LEMON: 10, PLUM: 12, ORANGE: 15, SCATTER: 3 },
       paytable: JSON.parse(JSON.stringify(SLOT_PAYTABLE)),
       volatility: 'medium', art: 'machine-fruits.webp',
-      display: { WILD: '\uD83D\uDC51', SEVEN: '7', BELL: '\uD83D\uDD14', BAR: 'BAR', CHERRY: '\uD83C\uDF52', LEMON: '\uD83C\uDF4B', PLUM: '\uD83C\uDF47', ORANGE: '\uD83C\uDF53', SCATTER: '\u2605' } },
+      display: { WILD: '\uD83D\uDC51', SEVEN: '7', BELL: '\uD83D\uDD14', BAR: 'BAR', CHERRY: '\uD83C\uDF52', LEMON: '\uD83C\uDF4B', PLUM: '\uD83C\uDF47', ORANGE: '\uD83C\uDF53', SCATTER: '\u2605' },
+      labels: { WILD: 'Wild', SEVEN: 'Seven', BELL: 'Bell', BAR: 'Bar', CHERRY: 'Cherry', LEMON: 'Lemon', PLUM: 'Plum', ORANGE: 'Orange', SCATTER: 'Scatter' } },
     { id: 'egypt', name: "Pharaoh's Gold", rows: 3, lines: SLOT_PAYLINES,
       weights: { WILD: 2, SEVEN: 2, BELL: 4, BAR: 5, CHERRY: 8, LEMON: 10, PLUM: 12, ORANGE: 18, SCATTER: 3 },
       paytable: { WILD: { 3: 61, 4: 243, 5: 911 }, SEVEN: { 3: 49, 4: 182, 5: 547 }, BELL: { 3: 24, 4: 91, 5: 304 }, BAR: { 3: 18, 4: 61, 5: 213 }, CHERRY: { 3: 9, 4: 36, 5: 122 }, LEMON: { 3: 7, 4: 24, 5: 91 }, PLUM: { 3: 6, 4: 18, 5: 61 }, ORANGE: { 3: 4, 4: 12, 5: 36 } },
       volatility: 'high', art: 'machine-egypt.webp',
-      display: { WILD: '\uD83D\uDC51', SEVEN: '7', BELL: '\uD83C\uDF3A', BAR: 'BAR', CHERRY: '\uD83C\uDF52', LEMON: '\uD83C\uDF4B', PLUM: '\uD83C\uDF47', ORANGE: '\uD83C\uDF53', SCATTER: '\u2600\uFE0F' } },
+      display: { WILD: '\uD83D\uDC51', SEVEN: '7', BELL: '\uD83C\uDFFA', BAR: '\u2696\uFE0F', CHERRY: '\uD83D\uDC0D', LEMON: '\uD83E\uDD82', PLUM: '\uD83D\uDC41\uFE0F', ORANGE: '\uD83D\uDD3A', SCATTER: '\u2600\uFE0F' },
+      labels: { WILD: 'Crown', SEVEN: 'Seven', BELL: 'Amphora', BAR: 'Scales', CHERRY: 'Cobra', LEMON: 'Scorpion', PLUM: 'Eye of Horus', ORANGE: 'Pyramid', SCATTER: 'Sun' } },
     { id: 'neon', name: 'Neon Nights', rows: 3, lines: SLOT_PAYLINES,
       weights: { WILD: 3, SEVEN: 4, BELL: 6, BAR: 7, CHERRY: 9, LEMON: 10, PLUM: 11, ORANGE: 11, SCATTER: 3 },
       paytable: { WILD: { 3: 39, 4: 147, 5: 587 }, SEVEN: { 3: 29, 4: 117, 5: 391 }, BELL: { 3: 20, 4: 78, 5: 244 }, BAR: { 3: 15, 4: 59, 5: 196 }, CHERRY: { 3: 8, 4: 29, 5: 98 }, LEMON: { 3: 8, 4: 20, 5: 78 }, PLUM: { 3: 6, 4: 15, 5: 49 }, ORANGE: { 3: 4, 4: 10, 5: 29 } },
       volatility: 'low', art: 'machine-neon.webp',
-      display: { WILD: '\uD83D\uDC51', SEVEN: '7', BELL: '\uD83D\uDCA1', BAR: 'BAR', CHERRY: '\uD83C\uDF52', LEMON: '\uD83C\uDF4B', PLUM: '\uD83C\uDF47', ORANGE: '\uD83C\uDF53', SCATTER: '\u26A1' } },
+      display: { WILD: '\uD83D\uDCA1', SEVEN: '7', BELL: '\uD83C\uDFB5', BAR: '\uD83C\uDF78', CHERRY: '\uD83D\uDD2E', LEMON: '\u26A1', PLUM: '\uD83C\uDFB0', ORANGE: '\uD83C\uDF08', SCATTER: '\u2728' },
+      labels: { WILD: 'Bulb', SEVEN: 'Seven', BELL: 'Note', BAR: 'Cocktail', CHERRY: 'Crystal', LEMON: 'Bolt', PLUM: 'Slots', ORANGE: 'Rainbow', SCATTER: 'Sparkles' } },
     { id: 'lucky7', name: 'Lucky Sevens', rows: 3, lines: SLOT_PAYLINES,
       weights: { WILD: 2, SEVEN: 6, BELL: 5, BAR: 6, CHERRY: 8, LEMON: 9, PLUM: 11, ORANGE: 14, SCATTER: 3 },
       paytable: { WILD: { 3: 44, 4: 176, 5: 706 }, SEVEN: { 3: 62, 4: 220, 5: 685 }, BELL: { 3: 22, 4: 88, 5: 265 }, BAR: { 3: 18, 4: 66, 5: 220 }, CHERRY: { 3: 9, 4: 35, 5: 110 }, LEMON: { 3: 9, 4: 22, 5: 88 }, PLUM: { 3: 7, 4: 18, 5: 53 }, ORANGE: { 3: 4, 4: 11, 5: 35 } },
       volatility: 'medium', art: 'machine-lucky7.webp',
-      display: { WILD: '\uD83D\uDC51', SEVEN: '7', BELL: '\uD83D\uDD14', BAR: 'BAR', CHERRY: '\uD83C\uDF52', LEMON: '\uD83C\uDF4B', PLUM: '\uD83C\uDF47', ORANGE: '\uD83C\uDF53', SCATTER: '\uD83C\uDF40' } },
+      display: { WILD: '\uD83C\uDF40', SEVEN: '7', BELL: '\uD83D\uDD14', BAR: 'BAR', CHERRY: '\uD83D\uDCB0', LEMON: '\uD83C\uDFB2', PLUM: '\uD83D\uDCB5', ORANGE: '\uD83E\uDD47', SCATTER: '\uD83C\uDF1F' },
+      labels: { WILD: 'Clover', SEVEN: 'Seven', BELL: 'Bell', BAR: 'Bar', CHERRY: 'Money Bag', LEMON: 'Dice', PLUM: 'Cash', ORANGE: 'Gold Medal', SCATTER: 'Star' } },
     { id: 'pirate', name: "Pirate's Bounty", rows: 4, lines: SLOT_LINES_4,
       weights: { WILD: 2, SEVEN: 3, BELL: 5, BAR: 6, CHERRY: 8, LEMON: 10, PLUM: 12, ORANGE: 15, SCATTER: 2 },
       paytable: { WILD: { 3: 61, 4: 255, 5: 1022 }, SEVEN: { 3: 51, 4: 204, 5: 613 }, BELL: { 3: 26, 4: 102, 5: 306 }, BAR: { 3: 20, 4: 77, 5: 255 }, CHERRY: { 3: 10, 4: 41, 5: 128 }, LEMON: { 3: 10, 4: 26, 5: 102 }, PLUM: { 3: 8, 4: 20, 5: 61 }, ORANGE: { 3: 5, 4: 12, 5: 41 } },
       volatility: 'medium', art: 'machine-pirate.webp',
-      display: { WILD: '\uD83D\uDC51', SEVEN: '7', BELL: '\u2693', BAR: 'BAR', CHERRY: '\uD83C\uDF52', LEMON: '\uD83C\uDF4B', PLUM: '\uD83C\uDF47', ORANGE: '\uD83C\uDF53', SCATTER: '\uD83D\uDC80' } },
+      display: { WILD: '\uD83C\uDFF4', SEVEN: '7', BELL: '\u2693', BAR: '\uD83E\uDDED', CHERRY: '\u2694\uFE0F', LEMON: '\uD83E\uDD9C', PLUM: '\uD83C\uDFDD\uFE0F', ORANGE: '\uD83D\uDCA3', SCATTER: '\uD83D\uDC80' },
+      labels: { WILD: 'Flag', SEVEN: 'Seven', BELL: 'Anchor', BAR: 'Compass', CHERRY: 'Swords', LEMON: 'Parrot', PLUM: 'Island', ORANGE: 'Cannonball', SCATTER: 'Skull' } },
     { id: 'sakura', name: 'Sakura Dreams', rows: 4, lines: SLOT_LINES_4,
       weights: { WILD: 2, SEVEN: 3, BELL: 5, BAR: 6, CHERRY: 9, LEMON: 10, PLUM: 11, ORANGE: 15, SCATTER: 2 },
       paytable: { WILD: { 3: 66, 4: 263, 5: 1035 }, SEVEN: { 3: 52, 4: 207, 5: 659 }, BELL: { 3: 26, 4: 103, 5: 301 }, BAR: { 3: 21, 4: 75, 5: 245 }, CHERRY: { 3: 10, 4: 42, 5: 132 }, LEMON: { 3: 9, 4: 26, 5: 103 }, PLUM: { 3: 8, 4: 21, 5: 66 }, ORANGE: { 3: 5, 4: 13, 5: 42 } },
       volatility: 'high', art: 'machine-sakura.webp',
-      display: { WILD: '\uD83D\uDC51', SEVEN: '7', BELL: '\uD83C\uDF90', BAR: 'BAR', CHERRY: '\uD83C\uDF38', LEMON: '\uD83C\uDF4B', PLUM: '\uD83C\uDF47', ORANGE: '\uD83C\uDF53', SCATTER: '\uD83C\uDF8E' } },
+      display: { WILD: '\uD83C\uDF38', SEVEN: '7', BELL: '\uD83C\uDF8F', BAR: '\u26E9\uFE0F', CHERRY: '\uD83D\uDC20', LEMON: '\uD83C\uDF8E', PLUM: '\uD83C\uDFEE', ORANGE: '\uD83C\uDF90', SCATTER: '\uD83C\uDF86' },
+      labels: { WILD: 'Blossom', SEVEN: 'Seven', BELL: 'Carp', BAR: 'Torii', CHERRY: 'Koi', LEMON: 'Dolls', PLUM: 'Lantern', ORANGE: 'Wind Chime', SCATTER: 'Fireworks' } },
     { id: 'diamond', name: 'Diamond Deluxe', rows: 3, lines: SLOT_PAYLINES,
       weights: { WILD: 3, SEVEN: 3, BELL: 5, BAR: 6, CHERRY: 8, LEMON: 10, PLUM: 12, ORANGE: 14, SCATTER: 3 },
       paytable: { WILD: { 3: 78, 4: 304, 5: 1217 }, SEVEN: { 3: 39, 4: 157, 5: 478 }, BELL: { 3: 19, 4: 78, 5: 243 }, BAR: { 3: 16, 4: 61, 5: 200 }, CHERRY: { 3: 8, 4: 30, 5: 96 }, LEMON: { 3: 8, 4: 19, 5: 78 }, PLUM: { 3: 6, 4: 16, 5: 48 }, ORANGE: { 3: 3, 4: 10, 5: 30 } },
       volatility: 'high', art: 'machine-diamond.webp',
-      display: { WILD: '\uD83D\uDC8E', SEVEN: '7', BELL: '\uD83D\uDD14', BAR: 'BAR', CHERRY: '\uD83C\uDF52', LEMON: '\uD83C\uDF4B', PLUM: '\uD83C\uDF47', ORANGE: '\uD83C\uDF53', SCATTER: '\u2605' } },
+      display: { WILD: '\uD83D\uDC8E', SEVEN: '7', BELL: '\uD83D\uDD37', BAR: '\uD83D\uDD36', CHERRY: '\uD83D\uDCA0', LEMON: '\uD83D\uDD39', PLUM: '\uD83D\uDD38', ORANGE: '\uD83D\uDC8D', SCATTER: '\u2B50' },
+      labels: { WILD: 'Gem', SEVEN: 'Seven', BELL: 'Blue Diamond', BAR: 'Orange Diamond', CHERRY: 'Crystal', LEMON: 'Blue Gem', PLUM: 'Orange Gem', ORANGE: 'Ring', SCATTER: 'Star' } },
     { id: 'goldrush', name: 'Gold Rush', rows: 3, lines: SLOT_PAYLINES,
       weights: { WILD: 2, SEVEN: 4, BELL: 5, BAR: 6, CHERRY: 8, LEMON: 10, PLUM: 12, ORANGE: 14, SCATTER: 3 },
       paytable: { WILD: { 3: 60, 4: 250, 5: 1000 }, SEVEN: { 3: 60, 4: 240, 5: 750 }, BELL: { 3: 25, 4: 100, 5: 300 }, BAR: { 3: 20, 4: 75, 5: 250 }, CHERRY: { 3: 10, 4: 40, 5: 125 }, LEMON: { 3: 10, 4: 25, 5: 100 }, PLUM: { 3: 8, 4: 20, 5: 60 }, ORANGE: { 3: 5, 4: 12, 5: 40 } },
       volatility: 'medium', art: 'machine-goldrush.webp',
-      display: { WILD: '\uD83D\uDC51', SEVEN: '7', BELL: '\uD83D\uDD14', BAR: 'BAR', CHERRY: '\uD83C\uDF52', LEMON: '\uD83C\uDF4B', PLUM: '\uD83C\uDF47', ORANGE: '\u26CF\uFE0F', SCATTER: '\u2605' } },
+      display: { WILD: '\u26CF\uFE0F', SEVEN: '7', BELL: '\u2692\uFE0F', BAR: 'BAR', CHERRY: '\uD83D\uDCB0', LEMON: '\uD83C\uDFC6', PLUM: '\uD83E\uDE99', ORANGE: '\uD83E\uDD47', SCATTER: '\uD83C\uDF35' },
+      labels: { WILD: 'Pick', SEVEN: 'Seven', BELL: 'Hammer', BAR: 'Bar', CHERRY: 'Money Bag', LEMON: 'Trophy', PLUM: 'Coin', ORANGE: 'Gold Medal', SCATTER: 'Cactus' } },
     { id: 'jungle', name: 'Jungle Jackpot', rows: 3, lines: SLOT_PAYLINES,
       weights: { WILD: 2, SEVEN: 3, BELL: 6, BAR: 6, CHERRY: 9, LEMON: 10, PLUM: 11, ORANGE: 14, SCATTER: 3 },
       paytable: { WILD: { 3: 58, 4: 233, 5: 953 }, SEVEN: { 3: 48, 4: 191, 5: 582 }, BELL: { 3: 23, 4: 95, 5: 297 }, BAR: { 3: 19, 4: 74, 5: 244 }, CHERRY: { 3: 11, 4: 40, 5: 127 }, LEMON: { 3: 10, 4: 25, 5: 101 }, PLUM: { 3: 8, 4: 21, 5: 64 }, ORANGE: { 3: 5, 4: 13, 5: 42 } },
       volatility: 'medium', art: 'machine-jungle.webp',
-      display: { WILD: '\uD83E\uDD81', SEVEN: '7', BELL: '\uD83D\uDD14', BAR: 'BAR', CHERRY: '\uD83C\uDF52', LEMON: '\uD83C\uDF4B', PLUM: '\uD83C\uDF47', ORANGE: '\uD83C\uDF53', SCATTER: '\uD83C\uDF3F' } },
+      display: { WILD: '\uD83E\uDD81', SEVEN: '7', BELL: '\uD83D\uDC18', BAR: '\uD83E\uDD8D', CHERRY: '\uD83D\uDC12', LEMON: '\uD83E\uDD8B', PLUM: '\uD83C\uDF3A', ORANGE: '\uD83C\uDF34', SCATTER: '\uD83E\uDD65' },
+      labels: { WILD: 'Lion', SEVEN: 'Seven', BELL: 'Elephant', BAR: 'Gorilla', CHERRY: 'Monkey', LEMON: 'Butterfly', PLUM: 'Hibiscus', ORANGE: 'Palm', SCATTER: 'Coconut' } },
     { id: 'midnight', name: 'Midnight Magic', rows: 3, lines: SLOT_PAYLINES,
       weights: { WILD: 2, SEVEN: 3, BELL: 5, BAR: 7, CHERRY: 8, LEMON: 11, PLUM: 12, ORANGE: 13, SCATTER: 3 },
       paytable: { WILD: { 3: 63, 4: 250, 5: 1011 }, SEVEN: { 3: 50, 4: 202, 5: 626 }, BELL: { 3: 25, 4: 101, 5: 298 }, BAR: { 3: 20, 4: 75, 5: 245 }, CHERRY: { 3: 10, 4: 40, 5: 125 }, LEMON: { 3: 10, 4: 25, 5: 101 }, PLUM: { 3: 8, 4: 20, 5: 60 }, ORANGE: { 3: 5, 4: 13, 5: 40 } },
       volatility: 'medium', art: 'machine-midnight.webp',
-      display: { WILD: '\uD83C\uDF19', SEVEN: '7', BELL: '\uD83D\uDD14', BAR: 'BAR', CHERRY: '\uD83C\uDF52', LEMON: '\uD83C\uDF4B', PLUM: '\uD83C\uDF47', ORANGE: '\uD83C\uDF53', SCATTER: '\u2B50' } }
+      display: { WILD: '\uD83C\uDF19', SEVEN: '7', BELL: '\uD83D\uDD2E', BAR: '\uD83E\uDD89', CHERRY: '\u2B50', LEMON: '\uD83D\uDD6F\uFE0F', PLUM: '\uD83E\uDD87', ORANGE: '\uD83C\uDF0C', SCATTER: '\uD83C\uDFA9' },
+      labels: { WILD: 'Moon', SEVEN: 'Seven', BELL: 'Crystal', BAR: 'Owl', CHERRY: 'Star', LEMON: 'Candle', PLUM: 'Bat', ORANGE: 'Milky Way', SCATTER: 'Top Hat' } }
   ];
 
   function slotMachine(id) {
@@ -115708,6 +115710,7 @@ var CLEngine = (function () {
         paytable: JSON.parse(JSON.stringify(m.paytable)),
         volatility: m.volatility, art: m.art,
         display: Object.assign({}, m.display),
+        labels: Object.assign({}, m.labels),
         rtp: slotsRtpFor(m.id)
       };
     });
@@ -115919,12 +115922,26 @@ var CLEngine = (function () {
       { prize: 5000, odds: 0.0005 } ] }
   ];
 
-  // Ten symbols, 20 cells (4 rows x 5 cols). A losing ticket shows
-  // every symbol exactly twice (no symbol 3 times); a winning ticket
-  // shows the winning symbol exactly 3 times and every other symbol
-  // at most twice. The cells ARE the ticket: the UI renders them
-  // directly and never builds its own.
-  var SCRATCH_SYMBOLS = ['\uD83C\uDF52', '\u2B50', '\uD83D\uDD14', '\uD83C\uDF47', '\uD83C\uDF4B', '\uD83C\uDF53', '\uD83D\uDC8E', '\uD83C\uDF40', '\uD83C\uDFB0', '\uD83D\uDC51'];
+  // Ten symbols per tier, 20 cells (4 rows x 5 cols). Every tier has
+  // its OWN themed pool (exactly 10 distinct symbols — the generator
+  // math below depends on it); the five pools are pairwise disjoint.
+  // A losing ticket shows every symbol of its tier exactly twice (no
+  // symbol 3 times); a winning ticket shows the winning symbol exactly
+  // 3 times and every other symbol at most twice. The cells ARE the
+  // ticket: the UI renders them directly and never builds its own.
+  // $1 Lucky Sevens: sevens / casino luck. $5 Gold Rush: gold.
+  // $10 Emerald: green / nature. $25 Diamond Deluxe: diamonds / luxury.
+  // $50 Sapphire: blue / sea & ice.
+  var SCRATCH_SYMBOL_POOLS = {
+    1: ['7\uFE0F\u20E3', '\uD83C\uDFB0', '\uD83D\uDD14', '\u2B50', '\uD83C\uDF40', '\uD83C\uDFB2', '\uD83C\uDFAF', '\uD83C\uDF52', '\uD83C\uDFA9', '\uD83C\uDCCF'],
+    5: ['\u26CF\uFE0F', '\uD83E\uDD47', '\uD83C\uDFC6', '\uD83D\uDC51', '\uD83E\uDE99', '\uD83D\uDCB0', '\u2728', '\uD83D\uDC9B', '\uD83C\uDFC5', '\uD83C\uDF87'],
+    10: ['\uD83D\uDC9A', '\uD83C\uDF43', '\uD83C\uDF3F', '\uD83C\uDF4F', '\uD83D\uDFE2', '\uD83C\uDF33', '\uD83E\uDD5D', '\uD83E\uDD52', '\uD83C\uDF48', '\uD83C\uDF35'],
+    25: ['\uD83D\uDC8E', '\uD83D\uDD37', '\uD83D\uDC8D', '\uD83D\uDCA0', '\uD83D\uDD39', '\uD83C\uDF80', '\uD83D\uDC60', '\uD83D\uDC5C', '\uD83D\uDC57', '\uD83D\uDD76\uFE0F'],
+    50: ['\uD83D\uDC99', '\uD83D\uDD35', '\uD83C\uDF00', '\uD83C\uDF0A', '\uD83D\uDC33', '\uD83E\uDD8B', '\uD83D\uDC2C', '\uD83D\uDCA7', '\u2744\uFE0F', '\uD83E\uDDCA']
+  };
+  // Legacy alias: the $1 pool, kept so old consumers of
+  // SCRATCH_SYMBOLS keep working. New code uses SCRATCH_SYMBOL_POOLS.
+  var SCRATCH_SYMBOLS = SCRATCH_SYMBOL_POOLS[1].slice();
   var SCRATCH_CELL_COUNT = 20;
 
   function scratchTables() {
@@ -115961,24 +115978,26 @@ var CLEngine = (function () {
     }
     var winSymbol = null;
     var cells = [];
+    // The ticket uses its own tier's symbol pool.
+    var pool = SCRATCH_SYMBOL_POOLS[tier] || SCRATCH_SYMBOLS;
     if (prize > 0) {
-      winSymbol = SCRATCH_SYMBOLS[Math.floor(rng() * SCRATCH_SYMBOLS.length)];
+      winSymbol = pool[Math.floor(rng() * pool.length)];
       cells.push(winSymbol, winSymbol, winSymbol);
       // Decoys: every other symbol at most twice (9 symbols x 2 = 18
       // slots for the remaining 17 cells), so no second triple.
       var decoys = [];
-      for (var d = 0; d < SCRATCH_SYMBOLS.length; d++) {
-        if (SCRATCH_SYMBOLS[d] === winSymbol) continue;
-        decoys.push(SCRATCH_SYMBOLS[d], SCRATCH_SYMBOLS[d]);
+      for (var d = 0; d < pool.length; d++) {
+        if (pool[d] === winSymbol) continue;
+        decoys.push(pool[d], pool[d]);
       }
       decoys = shuffle(decoys, rng);
       for (var w2 = 0; w2 < SCRATCH_CELL_COUNT - 3; w2++) cells.push(decoys[w2]);
     } else {
       // Losing ticket: every symbol exactly twice = 20 cells, no triple.
-      var pool = [];
-      for (var d2 = 0; d2 < SCRATCH_SYMBOLS.length; d2++) pool.push(SCRATCH_SYMBOLS[d2], SCRATCH_SYMBOLS[d2]);
-      pool = shuffle(pool, rng);
-      cells = pool;
+      var pool2 = [];
+      for (var d2 = 0; d2 < pool.length; d2++) pool2.push(pool[d2], pool[d2]);
+      pool2 = shuffle(pool2, rng);
+      cells = pool2;
     }
     cells = shuffle(cells, rng);
     return { tier: tier, prize: prize, cells: cells, winSymbol: winSymbol };
@@ -116265,6 +116284,13 @@ var CLEngine = (function () {
     scratchTables: scratchTables,
     scratchTicket: scratchTicket,
     SCRATCH_SYMBOLS: SCRATCH_SYMBOLS.slice(),
+    SCRATCH_SYMBOL_POOLS: (function () {
+      var out = {};
+      for (var k in SCRATCH_SYMBOL_POOLS) {
+        if (Object.prototype.hasOwnProperty.call(SCRATCH_SYMBOL_POOLS, k)) out[k] = SCRATCH_SYMBOL_POOLS[k].slice();
+      }
+      return out;
+    })(),
     tlCombos: tlCombos,
     tlBeats: tlBeats,
     tlLegal: tlLegal,
@@ -124283,6 +124309,9 @@ var CLGame = (function () {
     ORANGE: '\uD83C\uDF53', SCATTER: '\u2605'
   };
 
+  /* Engine symbol names in display order (matches SLOT_SPIN_FILLERS). */
+  var SLOT_ENGINE_NAMES = ['WILD', 'SEVEN', 'BELL', 'BAR', 'CHERRY', 'LEMON', 'PLUM', 'ORANGE', 'SCATTER'];
+
   // Slot machine configs, resolved from the engine when it has landed
   // (full config incl. line arrays + display glyphs), else the local
   // single-machine fallback. The displayed paytable is always built
@@ -124327,6 +124356,16 @@ var CLGame = (function () {
     return [_slotsMachineCfg('fruits')];
   }
 
+  /* Picker sample: five of the machine's themed glyphs, so the theme
+     reads on the card even before its art loads. */
+  function _slotsPickerGlyphs(mc) {
+    var disp = (mc && mc.display) || SLOT_ENGINE_DISPLAY;
+    var sample = ['WILD', 'SEVEN', 'CHERRY', 'ORANGE', 'SCATTER'];
+    var out = '';
+    for (var i = 0; i < sample.length; i++) out += disp[sample[i]] || SLOT_ENGINE_DISPLAY[sample[i]];
+    return out;
+  }
+
   function _slotsMultText(v) {
     var r = Math.round(v * 100) / 100;
     return (r === Math.floor(r) ? String(r) : r.toFixed(2).replace(/0$/, '')) + '\u00d7';
@@ -124367,6 +124406,7 @@ var CLGame = (function () {
       picker += '<button type="button" class="cl-machine' + (g.machine === mc.id ? ' sel' : '') + '" data-cl-action="slots-machine" data-machine="' + _esc(mc.id) + '"' + (g.spinning ? ' disabled' : '') + '>' +
         '<span class="cl-machine-art"><img src="assets/casino/slots/' + _esc(mc.art || ('machine-' + mc.id + '.webp')) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'"></span>' +
         '<span class="cl-machine-name">' + _esc(mc.name) + '</span>' +
+        '<span class="cl-machine-glyphs" style="font-size:11px;line-height:1.2;white-space:nowrap">' + _esc(_slotsPickerGlyphs(mc)) + '</span>' +
         '<span class="cl-machine-meta">5x' + (mc.rows || 3) + ' \u2022 ' + (typeof mc.rtp === 'number' ? (mc.rtp * 100).toFixed(1) + '%' : '') + '</span></button>';
     }
     picker += '</div>';
@@ -124392,16 +124432,18 @@ var CLGame = (function () {
     var lines = Array.isArray(machine.lines) ? machine.lines.length : (machine.lines || 20);
     var lb = 1 / lines;
     var names = ['WILD', 'SEVEN', 'BELL', 'BAR', 'CHERRY', 'LEMON', 'PLUM', 'ORANGE'];
-    var labels = { WILD: 'Wild', SEVEN: 'Seven', BELL: 'Bell', BAR: 'Bar', CHERRY: 'Cherry', LEMON: 'Lemon', PLUM: 'Plum', ORANGE: 'Orange' };
+    /* Per-machine symbol names (engine labels map); the hardcoded map
+       is only the fallback for configs without labels. */
+    var labels = machine.labels || { WILD: 'Wild', SEVEN: 'Seven', BELL: 'Bell', BAR: 'Bar', CHERRY: 'Cherry', LEMON: 'Lemon', PLUM: 'Plum', ORANGE: 'Orange' };
     var rowsHtml = '';
     for (var i = 0; i < names.length; i++) {
       var sym = names[i];
       var pays = pt[sym];
       if (!pays) continue;
-      rowsHtml += '<tr><td>' + _esc(disp[sym] || sym) + ' ' + labels[sym] + '</td><td>3: ' + _slotsMultText(pays[3] * lb) +
+      rowsHtml += '<tr><td>' + _esc(disp[sym] || sym) + ' ' + _esc(labels[sym] || sym) + '</td><td>3: ' + _slotsMultText(pays[3] * lb) +
         ' &nbsp; 4: ' + _slotsMultText(pays[4] * lb) + ' &nbsp; 5: ' + _slotsMultText(pays[5] * lb) + '</td></tr>';
     }
-    rowsHtml += '<tr><td>' + _esc(disp.SCATTER || '\u2605') + ' Scatter</td><td>3+ anywhere: 10 free spins, wins doubled</td></tr>';
+    rowsHtml += '<tr><td>' + _esc(disp.SCATTER || '\u2605') + ' ' + _esc((labels && labels.SCATTER) || 'Scatter') + '</td><td>3+ anywhere: 10 free spins, wins doubled</td></tr>';
     var rtp = typeof machine.rtp === 'number' ? (machine.rtp * 100).toFixed(1) + '%' : 'about 96%';
     return '<table class="cl-paytable">' + rowsHtml + '</table>' +
       '<p class="cl-muted">' + _esc(machine.name) + ' — RTP ' + rtp + '. ' + lines + ' paylines, left to right. ' +
@@ -124598,8 +124640,23 @@ var CLGame = (function () {
     if (!_slotsTimer) _slotsSettle(); /* no timer available: settle at once */
   }
 
-  /* Filler glyphs for the spinning strips (engine display set). */
+  /* Filler glyphs for the spinning strips (fruits set — the fallback
+     when the current machine has no display map). */
   var SLOT_SPIN_FILLERS = ['\uD83D\uDC51', '7', '\uD83D\uDD14', 'BAR', '\uD83C\uDF52', '\uD83C\uDF4B', '\uD83C\uDF47', '\uD83C\uDF53', '\u2605'];
+
+  /* Spinning-strip fillers for the CURRENT machine: the machine's own
+     themed display glyphs in engine order, so the spin animation never
+     flashes the fruit fallback on a themed machine. */
+  function _slotsSpinFillers() {
+    var disp = null;
+    try { disp = _slotsMachineCfg((_game && _game.machine) || 'fruits').display || null; } catch (e) { /* fallback */ }
+    if (!disp) return SLOT_SPIN_FILLERS.slice();
+    var out = [];
+    for (var i = 0; i < SLOT_ENGINE_NAMES.length; i++) {
+      out.push(disp[SLOT_ENGINE_NAMES[i]] || SLOT_ENGINE_DISPLAY[SLOT_ENGINE_NAMES[i]]);
+    }
+    return out;
+  }
 
   function _slotsWinText(prefix, payout, bet, isFree) {
     return prefix + 'Win ' + _fmt(payout) + (isFree ? ' (free spin, 2x)' : ' — net ' + ((payout - bet) >= 0 ? '+' : '') + _fmt(payout - bet));
@@ -124749,12 +124806,13 @@ var CLGame = (function () {
     var g = _game;
     geom = geom || _slotsMeasureGeom();
     if (!fillers) {
+      var spinFillers = _slotsSpinFillers();
       fillers = [];
       for (var reel = 0; reel < 5; reel++) {
         var arr = [];
         for (var f = 0; f < 12; f++) {
-          if (rng) arr.push(SLOT_SPIN_FILLERS[Math.floor(rng() * SLOT_SPIN_FILLERS.length)]);
-          else arr.push(SLOT_SPIN_FILLERS[(reel * 12 + f) % SLOT_SPIN_FILLERS.length]);
+          if (rng) arr.push(spinFillers[Math.floor(rng() * spinFillers.length)]);
+          else arr.push(spinFillers[(reel * 12 + f) % spinFillers.length]);
         }
         fillers.push(arr);
       }
@@ -125880,6 +125938,52 @@ var CLGame = (function () {
     return true;
   }
 
+  // Roulette wheel landing angles.
+  // Pocket i sits at angle i*step (step = 360/37, 0 = top, clockwise) in
+  // the wheel's own frame. If the wheel's final rotation is W, pocket i
+  // ends on screen at i*step + W; the ball orbit's final rotation B puts
+  // the ball on screen at B. The ball lands in the result pocket iff
+  // B == winIdx*step + W (mod 360).
+  //
+  // OLD (broken) behaviour: W = 2160 - winIdx*step rotated the result
+  // pocket to the top while the ball keyframe was a FIXED -2160deg
+  // (== top, no result variable — unlike the retired cl-ball-orbit
+  // keyframe, which read var(--ball-angle)). The ball therefore came to
+  // rest at 12 o'clock on EVERY spin: the wheel did all the work and
+  // the landing spot never varied.
+  // NEW: the wheel spins 6 turns PLUS the result pocket's own angle
+  // (W = 2160 + winIdx*step), so the pocket's screen angle is
+  // 2*winIdx*step, and the ball spins 6 turns the other way to end
+  // exactly there (B = 2*winIdx*step - 2160). Both final angles are
+  // derived from the settled result alone — no new randomness — and the
+  // landing spot takes all 37 pocket positions. Same 4500ms, same
+  // easing; settlement/payouts untouched.
+  var ROULETTE_SPIN_TURNS = 6;
+  function _rouletteSpinAngles(winIdx) {
+    var step = 360 / 37;
+    return {
+      wheelEnd: 360 * ROULETTE_SPIN_TURNS + winIdx * step,
+      ballEnd: 2 * winIdx * step - 360 * ROULETTE_SPIN_TURNS
+    };
+  }
+  // Rest (settled) orientations: the animation's final frame, mod 360.
+  // The settle re-render must use these, or the wheel/ball would snap
+  // when the 4500ms timer fires.
+  function _rouletteRestAngles(winIdx) {
+    var a = _rouletteSpinAngles(winIdx);
+    function norm(x) { return ((x % 360) + 360) % 360; }
+    return { wheelRot: norm(a.wheelEnd), ballRot: norm(a.ballEnd) };
+  }
+  // Test seam / contract: which pocket centre sits at screen angle
+  // `angle` when the wheel is rotated by wheelRot. Inverts the forward
+  // mapping above; the node landing test drives this directly.
+  function _roulettePocketAtAngle(angle, wheelRot, order) {
+    var step = 360 / 37;
+    var rel = (((angle - wheelRot) % 360) + 360) % 360;
+    var idx = Math.round(rel / step) % 37;
+    return order[idx];
+  }
+
   function _rouletteWheelHTML(g, spinning) {
     var order = _rouletteOrder();
     var step = 360 / 37;
@@ -125897,22 +126001,26 @@ var CLGame = (function () {
       wedges += '<path d="M75 75 L' + p0.x + ' ' + p0.y + ' A70 70 0 0 1 ' + p1.x + ' ' + p1.y + ' Z" fill="' + fill + '" stroke="#0a0f0d" stroke-width="0.6"/>' +
         '<text x="' + pm.x + '" y="' + pm.y + '" fill="#fff" font-size="9" font-weight="700" text-anchor="middle" dominant-baseline="central">' + n + '</text>';
     }
-    var rot = 0;
     var svgAttrs = '';
+    var ballAttrs = '';
     if (typeof g.lastSpin === 'number') {
-      var idx = order.indexOf(g.lastSpin);
-      rot = (360 * 6 - idx * step) % 360;
-      svgAttrs = ' style="transform:rotate(' + rot.toFixed(1) + 'deg)"';
+      // Rest state: wheel + ball sit exactly where the spin animation
+      // ends (see _rouletteRestAngles), so the settle re-render cannot
+      // snap — the ball rests on the result pocket, wherever it is.
+      var rest = _rouletteRestAngles(order.indexOf(g.lastSpin));
+      svgAttrs = ' style="transform:rotate(' + rest.wheelRot.toFixed(1) + 'deg)"';
+      ballAttrs = ' style="transform:rotate(' + rest.ballRot.toFixed(1) + 'deg)"';
     }
     if (spinning && !_reducedMotion()) {
       var winIdx = order.indexOf(g.lastSpin);
-      var end = 360 * 6 - winIdx * step;
-      svgAttrs = ' class="cl-anim cl-anim-wheel2" style="--wheel-end:' + end.toFixed(1) + 'deg"';
+      var a = _rouletteSpinAngles(winIdx);
+      svgAttrs = ' class="cl-anim cl-anim-wheel2" style="--wheel-end:' + a.wheelEnd.toFixed(1) + 'deg"';
+      ballAttrs = ' style="--ball-end:' + a.ballEnd.toFixed(1) + 'deg"';
     }
     var hub = spinning ? '?' : (typeof g.lastSpin === 'number' ? String(g.lastSpin) : '?');
     var ball = spinning && !_reducedMotion()
-      ? '<div class="cl-wheel-ball-orbit cl-anim cl-anim-ball2"><div class="cl-wheel-ball"></div></div>'
-      : '<div class="cl-wheel-ball-orbit"><div class="cl-wheel-ball"></div></div>';
+      ? '<div class="cl-wheel-ball-orbit cl-anim cl-anim-ball2"' + ballAttrs + '><div class="cl-wheel-ball"></div></div>'
+      : '<div class="cl-wheel-ball-orbit"' + ballAttrs + '><div class="cl-wheel-ball"></div></div>';
     return '<div class="cl-wheel-visual" style="background-image:url(assets/casino/games/roulette-rim.webp);background-size:cover;">' +
       '<svg class="cl-wheel-svg" viewBox="0 0 150 150" width="150" height="150" aria-hidden="true"' + svgAttrs + '>' + wedges +
       '<circle cx="75" cy="75" r="30" fill="#083d21" stroke="#9a7b1e" stroke-width="2"/></svg>' +
@@ -126791,7 +126899,20 @@ var CLGame = (function () {
     25: [[0, 0.70], [25, 0.18], [50, 0.08], [125, 0.03], [250, 0.008], [625, 0.0015], [2500, 0.0005]],
     50: [[0, 0.70], [50, 0.18], [100, 0.08], [250, 0.03], [500, 0.008], [1250, 0.0015], [5000, 0.0005]]
   };
-  var SCRATCH_SYMBOLS = ['\uD83C\uDF52', '\u2B50', '\uD83D\uDD14', '\uD83C\uDF47', '\uD83C\uDF4B', '\uD83C\uDF53', '\uD83D\uDC8E', '\uD83C\uDF40', '\uD83C\uDFB0', '\uD83D\uDC51'];
+  // Per-tier symbol pools (mirror of CLEngine.SCRATCH_SYMBOL_POOLS).
+  // Each tier has its OWN 10-symbol themed pool; the five pools are
+  // pairwise disjoint. The ticket's cells always come from the engine,
+  // so these are used only by the local fallback in _scratchBuy — and
+  // the fallback must use the ticket's own tier pool, never one global
+  // pool. SCRATCH_SYMBOLS is the legacy $1-pool alias.
+  var SCRATCH_SYMBOL_POOLS = {
+    1: ['7\uFE0F\u20E3', '\uD83C\uDFB0', '\uD83D\uDD14', '\u2B50', '\uD83C\uDF40', '\uD83C\uDFB2', '\uD83C\uDFAF', '\uD83C\uDF52', '\uD83C\uDFA9', '\uD83C\uDCCF'],
+    5: ['\u26CF\uFE0F', '\uD83E\uDD47', '\uD83C\uDFC6', '\uD83D\uDC51', '\uD83E\uDE99', '\uD83D\uDCB0', '\u2728', '\uD83D\uDC9B', '\uD83C\uDFC5', '\uD83C\uDF87'],
+    10: ['\uD83D\uDC9A', '\uD83C\uDF43', '\uD83C\uDF3F', '\uD83C\uDF4F', '\uD83D\uDFE2', '\uD83C\uDF33', '\uD83E\uDD5D', '\uD83E\uDD52', '\uD83C\uDF48', '\uD83C\uDF35'],
+    25: ['\uD83D\uDC8E', '\uD83D\uDD37', '\uD83D\uDC8D', '\uD83D\uDCA0', '\uD83D\uDD39', '\uD83C\uDF80', '\uD83D\uDC60', '\uD83D\uDC5C', '\uD83D\uDC57', '\uD83D\uDD76\uFE0F'],
+    50: ['\uD83D\uDC99', '\uD83D\uDD35', '\uD83C\uDF00', '\uD83C\uDF0A', '\uD83D\uDC33', '\uD83E\uDD8B', '\uD83D\uDC2C', '\uD83D\uDCA7', '\u2744\uFE0F', '\uD83E\uDDCA']
+  };
+  var SCRATCH_SYMBOLS = SCRATCH_SYMBOL_POOLS[1].slice();
   var SCRATCH_ART = { 1: 'ticket-lucky7.webp', 5: 'ticket-gold.webp', 10: 'ticket-emerald.webp', 25: 'ticket-diamond.webp', 50: 'ticket-sapphire.webp' };
   var SCRATCH_CELL_COUNT = 20; /* 4 rows x 5 cols */
 
@@ -126889,8 +127010,16 @@ var CLGame = (function () {
         acc += table[i][1];
         if (roll < acc) { prize = table[i][0]; break; }
       }
-      var syms = (_engine && Array.isArray(_engine.SCRATCH_SYMBOLS) && _engine.SCRATCH_SYMBOLS.length)
-        ? _engine.SCRATCH_SYMBOLS : SCRATCH_SYMBOLS;
+      // The fallback ticket uses its own tier's symbol pool: the
+      // engine's pool when available, else this file's mirror.
+      var syms = null;
+      if (_engine && _engine.SCRATCH_SYMBOL_POOLS && Array.isArray(_engine.SCRATCH_SYMBOL_POOLS[g.bet]) && _engine.SCRATCH_SYMBOL_POOLS[g.bet].length) {
+        syms = _engine.SCRATCH_SYMBOL_POOLS[g.bet];
+      } else if (Array.isArray(SCRATCH_SYMBOL_POOLS[g.bet]) && SCRATCH_SYMBOL_POOLS[g.bet].length) {
+        syms = SCRATCH_SYMBOL_POOLS[g.bet];
+      } else {
+        syms = SCRATCH_SYMBOLS;
+      }
       var winSym = null;
       var cells = [];
       if (prize > 0) {
@@ -126970,9 +127099,13 @@ var CLGame = (function () {
     if (_game.practice && _coachGame === 'scratch') _coachStep = Math.min(_coachStep + 1, 3);
   }
 
+  // NOTE (scratch-stall fix): a settled ticket must stay revealable.
+  // _scratchCheckSettle/_scratchSettle still gate payout exactly once
+  // (both early-return when ticket.done), so dropping `done` here only
+  // unblocks revealing the remaining cells after the win banner shows.
   function _scratchWipeReveal(idx) {
     var g = _game;
-    if (!g || !g.ticket || g.ticket.done) return;
+    if (!g || !g.ticket) return;
     var t = g.ticket;
     if (t.revealed[idx] || _scratchPending[idx]) return;
     if (_reducedMotion()) { _scratchReveal(idx, false); return; }
@@ -127005,7 +127138,10 @@ var CLGame = (function () {
     g._scratchRevealing = true;
     var win = _win();
     var next = function () {
-      if (!_game || !_game.ticket || _game.ticket.done) { if (_game) _game._scratchRevealing = false; return; }
+      // NOTE (scratch-stall fix): do NOT abort the stagger chain when the
+      // ticket settles mid-chain — the 3rd winning symbol settles the
+      // ticket, and aborting here is what stranded covered cells.
+      if (!_game || !_game.ticket) { if (_game) _game._scratchRevealing = false; return; }
       if (step >= pending.length) { _game._scratchRevealing = false; return; }
       var idx = pending[step++];
       _scratchWipeReveal(idx);
@@ -127045,7 +127181,10 @@ var CLGame = (function () {
 
   function _scratchReveal(idx, all) {
     var g = _game;
-    if (!g || !g.ticket || g.ticket.done) return;
+    // NOTE (scratch-stall fix): see _scratchWipeReveal — a settled ticket
+    // must stay revealable. _scratchCheckSettle returns false once done
+    // and _scratchSettle is done-guarded, so no second payout is possible.
+    if (!g || !g.ticket) return;
     var t = g.ticket;
     if (all) {
       for (var i = 0; i < SCRATCH_CELL_COUNT; i++) t.revealed[i] = true;
@@ -127724,7 +127863,11 @@ var CLGame = (function () {
     GAME_IDS: GAME_IDS.slice(),
     // Test seam: the pure Tien Len settlement (zero-sum math only — no
     // DOM, no profile). The node settlement test drives this directly.
-    _internals: { _tlSettle: _tlSettle }
+    // Roulette landing angles (same pattern): the node landing test
+    // drives these directly — no DOM, no timers, no settlement. The
+    // wheel HTML generator is exposed too, so the test parses the
+    // --wheel-end / --ball-end values the real render emits.
+    _internals: { _tlSettle: _tlSettle, _rouletteSpinAngles: _rouletteSpinAngles, _rouletteRestAngles: _rouletteRestAngles, _roulettePocketAtAngle: _roulettePocketAtAngle, _rouletteOrder: _rouletteOrder, _rouletteWheelHTML: _rouletteWheelHTML }
   };
 
   try {
@@ -128010,13 +128153,19 @@ var CLWire = (function () {
         game.measureAndClampContainer();
       }
       if (typeof game.onOpen === 'function') {
-        /* Casino Life music (Nov 23, 2026): while Casino Life is open,
-           the scheduler plays the casino theme's mp3 loops; the stored
-           theme is untouched. Oath-wire precedent. */
+        /* Casino Life music (Nov 23, 2026 — standing rule: shell music
+           only, no per-game music): the casino mp3 loops are removed,
+           so Casino Life plays the stored shell theme like every other
+           game. Restart the shared music shuffle if the setting is on
+           (FL-wire precedent). Never stops music; a no-op when looping
+           or when the setting is off. */
         try {
           var audio = _global('BZAudio');
-          if (audio && typeof audio.setThemeOverride === 'function') audio.setThemeOverride('casino');
-        } catch (e) { /* best-effort */ }
+          if (audio && typeof audio.isMusicOn === 'function' &&
+              typeof audio.startMusic === 'function' && audio.isMusicOn()) {
+            audio.startMusic();
+          }
+        } catch (e) { /* music restart is best-effort */ }
         game.onOpen();
         return true;
       }
@@ -128045,10 +128194,6 @@ var CLWire = (function () {
       if (!game || !game.rootEl) return false;
       if (typeof game.onClose === 'function') {
         game.onClose();
-        try {
-          var audio = _global('BZAudio');
-          if (audio && typeof audio.clearThemeOverride === 'function') audio.clearThemeOverride();
-        } catch (e) { /* best-effort */ }
         return true;
       }
       if (typeof game.pause === 'function') {
