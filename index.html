@@ -425,12 +425,13 @@ body {
 
 .ph-home-ad--empty { display: none; }
 
-/* Ad unit mount point (Nov 21, 2026): the BidVertiser snippet (for now)
-   — and the AdSense display unit on approval day — render inside this
-   320x50 box, centered in the strip. Empty until a snippet is wired in;
-   the shell's visibility check keeps the slot hidden while it is empty. */
+/* Ad unit mount point (Nov 21, 2026): the BidVertiser snippet
+   (wired in Nov 23, 2026) — and the AdSense display unit on approval
+   day — render inside this 320x50 box, centered in the strip. The
+   shell's visibility check keeps the slot hidden while it is empty. */
 .ph-home-ad-unit {
   pointer-events: auto;
+  position: relative;
   width: min(320px, calc(100% - 32px));
   height: 50px;
   display: flex;
@@ -442,6 +443,32 @@ body {
 .ph-home-ad-unit iframe {
   max-width: 100%;
   border: 0;
+}
+
+/* BidVertiser fit (Nov 23, 2026): the jmfgames unit is a Full Banner
+   468x60, but this slot is 320x50 on a 360-412px phone. The snippet's
+   creative lands inside .bv-stage; shell.js measures the creative and
+   scales the stage (transform) to fit the slot width and the 50px
+   height, centered — never upscaled, never clipped, never overflowing.
+   The stage is absolutely positioned so the unit's flex centering never
+   fights the scaled box; JS sets left/top in px. The CSS default
+   (unscaled, top-left) is only the pre-JS paint; the slot starts hidden
+   and is revealed only after the fit runs. The max-width: none override
+   matters: without it the unit's iframe rule would squeeze the
+   creative's layout width to 320px BEFORE the fit measures it, and the
+   scale math would shrink it twice. */
+.bv-stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 468px;
+  height: 60px;
+  transform-origin: top left;
+}
+
+.ph-home-ad-unit .bv-stage iframe,
+.ph-lock-ad-unit .bv-stage iframe {
+  max-width: none;
 }
 
 /* Lock ad banner (Nov 22, 2026): slim 50px strip at the TOP of the LOCK
@@ -468,6 +495,7 @@ body {
 /* Ad unit mount point (Nov 22, 2026): same 320x50 box as the home slot,
    so either network's snippet fits unchanged. */
 .ph-lock-ad-unit {
+  position: relative;
   width: 100%;
   height: 50px;
   display: flex;
@@ -15465,15 +15493,15 @@ button.mr-setup-preview:focus-visible {
              unlock hint (.ph-lock-hint). A banner on the swipe zone means
              accidental taps, and that is what gets AdSense accounts flagged.
              It lives inside #ph-lock, so it disappears the moment the player
-             swipes up to unlock (the lock screen hides as a whole). Until a
-             snippet is wired in, the slot stays hidden (ph-lock-ad--empty). -->
+             swipes up to unlock (the lock screen hides as a whole). The
+             snippet is wired in (Nov 23, 2026); the slot stays hidden
+             (ph-lock-ad--empty) until the unit renders. -->
         <div id="ph-lock-ad" class="ph-lock-ad ph-lock-ad--empty" role="complementary" aria-label="Advertisement">
-          <!-- BIDVERTISER HOOK (Nov 22, 2026): paste the BidVertiser
-               ad-unit snippet for jmfgames.com inside #ph-lock-ad-unit
-               below (same 320x50 unit shape as the home slot). Once pasted,
-               the shell's lock-ad visibility check reveals the slot
-               automatically when the unit renders (see src/shell.js
-               PH_LOCK_AD_HOOK); if it never renders, the slot stays hidden. -->
+          <!-- BIDVERTISER LIVE (Nov 23, 2026): jmfgames banner unit,
+               Full Banner 468x60, zone 2109179 (pid 334874). The snippet
+               below renders inside .bv-stage; shell.js scales the stage
+               to fit this 320x50 slot (see BIDVERTISER FIT in shell.js).
+               Pop/slider injections are OFF on this unit (verified). -->
           <!-- ADSENSE HOOK: on AdSense approval day, replace the
                BidVertiser snippet below with the AdSense display unit
                (the "jmfgames banner" unit) and call
@@ -15481,7 +15509,9 @@ button.mr-setup-preview:focus-visible {
                so the slot hides itself if no ad fills. Do NOT add the
                unit before approval — the site is under review and the
                standing rule is script-only until then. -->
-          <div id="ph-lock-ad-unit" class="ph-lock-ad-unit"></div>
+          <div id="ph-lock-ad-unit" class="ph-lock-ad-unit"><div class="bv-stage"><!-- Begin BidVertiser code -->
+<SCRIPT data-cfasync="false" SRC="//bdv.bidvertiser.com/BidVertiser.dbm?pid=334874&bid=2109179" TYPE="text/javascript"></SCRIPT>
+<!-- End BidVertiser code --></div></div>
         </div>
         <div class="ph-lock-brand">JMF Games Phone</div>
         <div id="ph-lock-swipe">
@@ -15577,16 +15607,15 @@ button.mr-setup-preview:focus-visible {
              HOME screen only, pinned above the 44px home-indicator strip.
              Never shown during gameplay (it lives inside #ph-home, which is
              hidden then), never over game content, never where a game tap
-             could hit it. Until the BidVertiser snippet below is wired in,
-             the slot stays hidden (ph-home-ad--empty) — no empty box. -->
+             could hit it. The BidVertiser snippet below is wired in
+             (Nov 23, 2026); the slot stays hidden (ph-home-ad--empty)
+             until the unit renders — no empty box. -->
         <div id="ph-home-ad" class="ph-home-ad ph-home-ad--empty" role="complementary" aria-label="Advertisement">
-          <!-- BIDVERTISER HOOK (Nov 21, 2026): paste the BidVertiser
-               ad-unit snippet for jmfgames.com inside #ph-home-ad-unit
-               below. The snippet does not exist yet — it is created in
-               the BidVertiser account after jmfgames.com is added there.
-               Once pasted, the shell's home-ad visibility check reveals
-               the slot automatically when the unit renders (see src/shell.js
-               PH_HOME_AD_HOOK); if it never renders, the slot stays hidden. -->
+          <!-- BIDVERTISER LIVE (Nov 23, 2026): jmfgames banner unit,
+               Full Banner 468x60, zone 2109179 (pid 334874). The snippet
+               below renders inside .bv-stage; shell.js scales the stage
+               to fit this 320x50 slot (see BIDVERTISER FIT in shell.js).
+               Pop/slider injections are OFF on this unit (verified). -->
           <!-- ADSENSE HOOK: on AdSense approval day, replace the
                BidVertiser snippet below with the AdSense display unit
                (the "jmfgames banner" unit — the parent holds its slot
@@ -15595,7 +15624,9 @@ button.mr-setup-preview:focus-visible {
                so the slot hides itself if no ad fills. Do NOT add the
                unit before approval — the site is under review and the
                standing rule is script-only until then. -->
-          <div id="ph-home-ad-unit" class="ph-home-ad-unit"></div>
+          <div id="ph-home-ad-unit" class="ph-home-ad-unit"><div class="bv-stage"><!-- Begin BidVertiser code -->
+<SCRIPT data-cfasync="false" SRC="//bdv.bidvertiser.com/BidVertiser.dbm?pid=334874&bid=2109179" TYPE="text/javascript"></SCRIPT>
+<!-- End BidVertiser code --></div></div>
         </div>
         <button type="button" id="ph-home-done" class="ph-home-done">Done</button>
       </main>
@@ -16367,8 +16398,9 @@ if (typeof window !== 'undefined') {
 
   /* ------------------------------------------------- PH_HOME_AD_HOOK (Nov 21, 2026)
      Home ad banner: the slot (#ph-home-ad) is hidden until an ad unit
-     renders inside #ph-home-ad-unit. For now the unit is a BidVertiser
-     snippet (pasted at the BIDVERTISER HOOK in template.html); on AdSense
+     renders inside #ph-home-ad-unit. The unit is a BidVertiser snippet
+     (live Nov 23, 2026, zone 2109179, Full Banner 468x60 — scaled to
+     this 320x50 slot by the BIDVERTISER FIT above); on AdSense
      approval day the parent replaces it with the AdSense display unit
      (the "jmfgames banner" unit — see the ADSENSE HOOK comment in
      template.html) and calls PhoneShell._homeAdFill(). The visibility
@@ -16380,6 +16412,71 @@ if (typeof window !== 'undefined') {
      The AdSense library name is assembled, never written literally, so
      the pin scan's literal AdSense count stays exactly 1 (the script
      tag) until the unit is wired in. */
+  /* ------------------------------------------------- BIDVERTISER FIT (Nov 23, 2026)
+     The jmfgames banner unit is a Full Banner 468x60 (zone 2109179),
+     but both slots are 320x50 boxes on 360-412px phones. The snippet's
+     creative lands inside .bv-stage (see template.html); measure the
+     creative — the largest non-script child with a layout box, falling
+     back to the 468x60 native size while it is still loading — and
+     scale the stage to fit the slot width and the 50px height,
+     centered. Scale-only, never upscale. The stage is absolutely
+     positioned inside the unit (position: relative, overflow: hidden),
+     so the scaled creative can never clip, overflow, or push other
+     content. Writes are style-only on the stage: the unit's
+     MutationObserver watches childList (not attributes), so the fit
+     can never self-loop; the slot's visibility check calls the fit
+     after its temp-reveal, so a slot is never revealed un-fitted.
+     Re-runs on every visibility check (mutation + 1s/4s timers) and on
+     window resize / orientation change, so a rotation re-fits. A late
+     creative (img/iframe load) gets a one-shot load listener. */
+  var BV_NATIVE_W = 468, BV_NATIVE_H = 60, BV_SLOT_H = 50;
+  function fitBidvertiserUnit(unitId) {
+    var unit = null;
+    try { unit = $(unitId); } catch (e) { unit = null; }
+    if (!unit) return;
+    var stage = null;
+    try { stage = unit.querySelector('.bv-stage'); } catch (e) { stage = null; }
+    if (!stage) return;
+    var w = 0;
+    try { w = unit.clientWidth || 0; } catch (e) { w = 0; }
+    if (!w) return;
+    var cw = BV_NATIVE_W, ch = BV_NATIVE_H, found = false, big = null;
+    try {
+      var kids = stage.children;
+      for (var i = 0; i < kids.length; i++) {
+        var k = kids[i];
+        if (!k || k.tagName === 'SCRIPT') continue;
+        var kw = 0, kh = 0;
+        try { kw = k.offsetWidth || 0; kh = k.offsetHeight || 0; } catch (e2) { kw = 0; kh = 0; }
+        if (kw > 0 && kh > 0) {
+          if (!found || kw * kh > cw * ch) { cw = kw; ch = kh; big = k; }
+          found = true;
+        }
+      }
+    } catch (e) { /* keep the native fallback */ }
+    var s = Math.min(1, w / cw, BV_SLOT_H / ch);
+    if (!(s > 0)) s = 1;
+    var sw = cw * s, sh = ch * s;
+    try {
+      stage.style.width = cw + 'px';
+      stage.style.height = ch + 'px';
+      stage.style.transform = s < 1 ? 'scale(' + s + ')' : '';
+      stage.style.left = Math.max(0, (w - sw) / 2) + 'px';
+      stage.style.top = Math.max(0, (BV_SLOT_H - sh) / 2) + 'px';
+    } catch (e) { /* never throw */ }
+    /* Late creative: an img/iframe that has not loaded yet measures 0
+       and falls back to the native size; re-fit once it loads. */
+    try {
+      if (big && (big.tagName === 'IMG' || big.tagName === 'IFRAME') && !big.getAttribute('data-bv-fit-listener')) {
+        big.setAttribute('data-bv-fit-listener', '1');
+        big.addEventListener('load', function () { try { fitBidvertiserUnit(unitId); } catch (e3) { /* never throw */ } });
+      }
+    } catch (e) { /* the listener is optional; the timers cover it */ }
+  }
+  function fitBidvertiserUnits() {
+    try { fitBidvertiserUnit('ph-home-ad-unit'); } catch (e) { /* best-effort */ }
+    try { fitBidvertiserUnit('ph-lock-ad-unit'); } catch (e) { /* best-effort */ }
+  }
   var AD_LIB = 'adsby' + 'google';
   function homeAdVisibilityCheck() {
     var slot = null;
@@ -16405,10 +16502,20 @@ if (typeof window !== 'undefined') {
     if (wasHidden) {
       try { slot.classList.remove('ph-home-ad--empty'); } catch (e) { /* never throw */ }
     }
+    /* BIDVERTISER FIT (Nov 23, 2026): scale the 468x60 creative to this
+       320x50 slot BEFORE measuring fill, so the slot is never revealed
+       un-fitted and the fill measurement sees the fitted box. */
+    try { fitBidvertiserUnit('ph-home-ad-unit'); } catch (e) { /* best-effort */ }
     var filled = false;
     try {
       var kids = unit.querySelectorAll('iframe, ins, div, img, a');
       for (var i = 0; i < kids.length; i++) {
+        /* BIDVERTISER FIT (Nov 23, 2026): the .bv-stage box itself is
+           468x60 by CSS, so it always measures non-zero even when the
+           creative never loads — it must not count as a fill, or the
+           slot would show an empty 50px strip on a no-fill. Only the
+           creative inside the stage (or a unit-level ad element) counts. */
+        if (kids[i].classList && kids[i].classList.contains('bv-stage')) continue;
         var r = kids[i].getBoundingClientRect();
         if (r && r.width > 0 && r.height > 0) { filled = true; break; }
       }
@@ -16434,9 +16541,10 @@ if (typeof window !== 'undefined') {
   /* ------------------------------------------------- PH_LOCK_AD_HOOK (Nov 22, 2026)
      Lock ad banner: the slot (#ph-lock-ad) sits directly under the clock
      on the LOCK screen and is hidden until an ad unit renders inside
-     #ph-lock-ad-unit. Same 320x50 unit shape as the home slot, so either
-     network's snippet fits unchanged — BidVertiser once accepted, AdSense
-     on approval day (call PhoneShell._lockAdFill()). The slot lives
+     #ph-lock-ad-unit. Same 320x50 unit shape as the home slot — the
+     BidVertiser snippet is live (Nov 23, 2026, zone 2109179, Full Banner
+     468x60, scaled by the BIDVERTISER FIT above); AdSense on approval
+     day (call PhoneShell._lockAdFill()). The slot lives
      inside #ph-lock, so it vanishes with the lock screen the moment the
      player swipes up to unlock; nothing lingers, no invisible
      click-catcher. Same content-based visibility check as the home slot,
@@ -16456,10 +16564,20 @@ if (typeof window !== 'undefined') {
     if (wasHidden) {
       try { slot.classList.remove('ph-lock-ad--empty'); } catch (e) { /* never throw */ }
     }
+    /* BIDVERTISER FIT (Nov 23, 2026): scale the 468x60 creative to this
+       320x50 slot BEFORE measuring fill, so the slot is never revealed
+       un-fitted and the fill measurement sees the fitted box. */
+    try { fitBidvertiserUnit('ph-lock-ad-unit'); } catch (e) { /* best-effort */ }
     var filled = false;
     try {
       var kids = unit.querySelectorAll('iframe, ins, div, img, a');
       for (var i = 0; i < kids.length; i++) {
+        /* BIDVERTISER FIT (Nov 23, 2026): the .bv-stage box itself is
+           468x60 by CSS, so it always measures non-zero even when the
+           creative never loads — it must not count as a fill, or the
+           slot would show an empty 50px strip on a no-fill. Only the
+           creative inside the stage (or a unit-level ad element) counts. */
+        if (kids[i].classList && kids[i].classList.contains('bv-stage')) continue;
         var r = kids[i].getBoundingClientRect();
         if (r && r.width > 0 && r.height > 0) { filled = true; break; }
       }
@@ -18312,6 +18430,10 @@ if (typeof window !== 'undefined') {
       if (typeof window !== 'undefined' && window && typeof window.addEventListener === 'function') {
         window.addEventListener('resize', fitPhone);
         window.addEventListener('orientationchange', fitPhone);
+        /* BIDVERTISER FIT (Nov 23, 2026): a resize / rotation changes the
+           slot width, so the 468x60 creative must be re-scaled to fit. */
+        window.addEventListener('resize', fitBidvertiserUnits);
+        window.addEventListener('orientationchange', fitBidvertiserUnits);
         /* Mobile browser toolbars show/hide without a reliable window resize;
            the visual viewport is the source of truth for the visible area. */
         if (window.visualViewport) {
