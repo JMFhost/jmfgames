@@ -14782,6 +14782,463 @@ button.mr-setup-preview:focus-visible {
   .ty-log { max-height: 60px; }
 }
 </style>
+<style>
+/* source: wq-game.css */
+/* Word Quest — all styles scoped under #app-wordquest / .wq- prefix.
+   Never leak into other games. Journey map, level map, Daily, and the
+   puzzle screen fit 390x844 AND 360x568 without overflow (flexible
+   sizing, compact rules for short screens). */
+
+#app-wordquest {
+  background: linear-gradient(180deg, #eaf6ff 0%, #d6ecff 40%, #efe6ff 100%);
+  color: #1e3a5f;
+  font-family: inherit;
+  overflow: hidden;
+}
+
+#app-wordquest .wq-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  padding: 6px 8px 8px;
+  box-sizing: border-box;
+  gap: 6px;
+  position: relative;
+  /* Clear the 48px shell status bar (Sugar pattern): without this the
+     game header sits under the clock/signal icons. Floor 48px keeps
+     the header clear on short screens; the 66px cap absorbs the slack
+     on tall screens. */
+  padding-top: clamp(48px, calc(100vh - 596px), 66px);
+  padding-top: clamp(48px, calc(100dvh - 596px), 66px);
+}
+
+/* ---------- top bar ---------- */
+#app-wordquest .wq-topbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  flex: 0 0 auto;
+}
+#app-wordquest .wq-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #0b5fa5;
+  text-shadow: 0 1px 0 #fff;
+  white-space: nowrap;
+}
+#app-wordquest .wq-topbar .wq-spacer { flex: 1 1 auto; }
+#app-wordquest .wq-iconbtn {
+  min-width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid #b8d4ec;
+  background: #fff;
+  color: #0b5fa5;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 8px;
+}
+#app-wordquest .wq-iconbtn:active { background: #d6ecff; }
+
+/* ---------- shared bits ---------- */
+#app-wordquest .wq-btn {
+  min-height: 46px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(180deg, #1d8fe0, #0b5fa5);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(11, 95, 165, 0.4);
+  padding: 6px 18px;
+}
+#app-wordquest .wq-btn.wq-secondary {
+  background: #fff;
+  color: #0b5fa5;
+  border: 2px solid #b8d4ec;
+  box-shadow: none;
+}
+#app-wordquest .wq-back {
+  border: none;
+  background: none;
+  color: #0b5fa5;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 4px 6px 4px 0;
+}
+#app-wordquest .wq-foot {
+  text-align: center;
+  font-size: 12px;
+  color: #5a7ba0;
+  margin: 6px 4px 0;
+}
+
+/* ---------- journey map ---------- */
+#app-wordquest .wq-journey {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 2px 2px 10px;
+}
+#app-wordquest .wq-map-head { text-align: center; margin: 2px 0 8px; }
+#app-wordquest .wq-map-head h2 { margin: 0; font-size: 22px; color: #0b5fa5; }
+#app-wordquest .wq-map-head p { margin: 2px 0 0; font-size: 13px; color: #5a7ba0; }
+#app-wordquest .wq-daily-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: linear-gradient(90deg, #ffd94d, #ff9d2e);
+  border: 2px solid #fff;
+  border-radius: 14px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(180, 120, 20, 0.35);
+  box-sizing: border-box;
+}
+#app-wordquest .wq-daily-card.wq-daily-done { opacity: 0.75; }
+#app-wordquest .wq-daily-ico { font-size: 26px; line-height: 1; }
+#app-wordquest .wq-daily-text { flex: 1 1 auto; display: flex; flex-direction: column; }
+#app-wordquest .wq-daily-title { font-size: 17px; font-weight: 800; color: #5a3a00; }
+#app-wordquest .wq-daily-sub { font-size: 12px; font-weight: 600; color: #7a5a00; }
+#app-wordquest .wq-daily-go { font-size: 24px; font-weight: 800; color: #5a3a00; }
+#app-wordquest .wq-pack-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#app-wordquest .wq-pack {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: 2px solid #b8d4ec;
+  border-radius: 14px;
+  padding: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(11, 95, 165, 0.15);
+  box-sizing: border-box;
+}
+#app-wordquest .wq-pack.wq-locked { opacity: 0.55; cursor: default; box-shadow: none; }
+#app-wordquest .wq-pack-art {
+  width: 64px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 10px;
+  flex: 0 0 auto;
+  background: #d6ecff;
+}
+#app-wordquest .wq-pack-body { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; }
+#app-wordquest .wq-pack-name { font-size: 16px; font-weight: 800; color: #0b5fa5; }
+#app-wordquest .wq-pack-blurb {
+  font-size: 12px;
+  color: #5a7ba0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#app-wordquest .wq-pack-meta { font-size: 12px; font-weight: 700; color: #b8860b; }
+
+/* ---------- level map ---------- */
+#app-wordquest .wq-levels {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 2px 2px 10px;
+}
+#app-wordquest .wq-levels-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#app-wordquest .wq-levels-head h2 { margin: 0; font-size: 22px; color: #0b5fa5; }
+#app-wordquest .wq-levels-art {
+  width: 100%;
+  max-height: 130px;
+  object-fit: cover;
+  border-radius: 14px;
+  margin: 8px 0;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(11, 95, 165, 0.2);
+  background: #d6ecff;
+}
+#app-wordquest .wq-nodes {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+#app-wordquest .wq-node {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  border: 2px solid #fff;
+  background: linear-gradient(160deg, #4db2ff, #0b5fa5);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(11, 95, 165, 0.3);
+  padding: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+#app-wordquest .wq-node.wq-locked { background: #b9c9d8; color: #6d8299; cursor: default; box-shadow: none; }
+#app-wordquest .wq-node-num { font-size: 19px; font-weight: 800; line-height: 1; }
+#app-wordquest .wq-node-stars { font-size: 9px; letter-spacing: 0; color: #ffd94d; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4); }
+#app-wordquest .wq-node-time { font-size: 9px; color: #d6ecff; }
+
+/* ---------- Daily screen ---------- */
+#app-wordquest .wq-daily {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 2px 2px 10px;
+}
+#app-wordquest .wq-daily-head { display: flex; align-items: center; gap: 8px; }
+#app-wordquest .wq-daily-head h2 { margin: 0; font-size: 22px; color: #0b5fa5; }
+#app-wordquest .wq-daily-panel {
+  background: #fff;
+  border: 2px solid #b8d4ec;
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 10px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(11, 95, 165, 0.15);
+}
+#app-wordquest .wq-daily-panel p { font-size: 14px; color: #1e3a5f; margin: 6px 0; }
+#app-wordquest .wq-daily-date { font-size: 20px; font-weight: 800; color: #0b5fa5; }
+
+/* ---------- puzzle ---------- */
+#app-wordquest .wq-puzzle {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-height: 0;
+}
+#app-wordquest .wq-hud {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+#app-wordquest .wq-level-label {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0b5fa5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+#app-wordquest .wq-timer {
+  font-size: 17px;
+  font-weight: 800;
+  color: #1e3a5f;
+  background: #fff;
+  border: 2px solid #b8d4ec;
+  border-radius: 10px;
+  padding: 2px 8px;
+  flex: 0 0 auto;
+}
+#app-wordquest .wq-score-box { text-align: right; line-height: 1.1; flex: 0 0 auto; }
+#app-wordquest .wq-score-num { font-size: 20px; font-weight: 800; color: #0b5fa5; }
+#app-wordquest .wq-score-cap { font-size: 9px; font-weight: 700; letter-spacing: 1px; color: #5a7ba0; }
+#app-wordquest .wq-board-wrap {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+#app-wordquest .wq-board {
+  display: grid;
+  gap: 2px;
+  width: min(100%, 330px);
+  aspect-ratio: 1 / 1;
+  background: rgba(255, 255, 255, 0.6);
+  border: 3px solid #fff;
+  border-radius: 14px;
+  padding: 4px;
+  box-sizing: border-box;
+  box-shadow: 0 4px 14px rgba(11, 95, 165, 0.25), inset 0 0 0 1px #cfe6f8;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#app-wordquest .wq-cell {
+  border: none;
+  border-radius: 6px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.75);
+  color: #1e3a5f;
+  font-size: var(--wq-fs, 16px);
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#app-wordquest .wq-cell.wq-sel {
+  background: #ffd94d;
+  color: #5a3a00;
+  transform: scale(1.08);
+  z-index: 2;
+  box-shadow: 0 0 8px rgba(255, 180, 0, 0.8);
+}
+#app-wordquest .wq-cell.wq-anchor {
+  outline: 3px solid #1d8fe0;
+  outline-offset: -1px;
+}
+#app-wordquest .wq-cell.wq-given {
+  background: #fff3bf;
+  color: #8a6d00;
+  outline: 2px dashed #e0a800;
+  outline-offset: -2px;
+}
+#app-wordquest .wq-cell.wq-found {
+  background: #43aa5b;
+  color: #fff;
+  animation: wq-found-pop 0.3s ease-out;
+}
+#app-wordquest .wq-hints {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+#app-wordquest .wq-hint-btn {
+  min-height: 42px;
+  padding: 4px 14px;
+  border-radius: 12px;
+  border: 2px solid #b8d4ec;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0b5fa5;
+  cursor: pointer;
+}
+#app-wordquest .wq-hint-btn:disabled { opacity: 0.45; cursor: default; }
+#app-wordquest .wq-hint-btn:active { background: #d6ecff; }
+#app-wordquest .wq-words {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: center;
+  max-height: 76px;
+  overflow: hidden;
+}
+#app-wordquest .wq-word {
+  background: #fff;
+  border: 1.5px solid #b8d4ec;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e3a5f;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+#app-wordquest .wq-word.wq-word-found {
+  border-color: #43aa5b;
+  background: #e7f7ec;
+  color: #2b7a3e;
+  text-decoration: line-through;
+}
+
+/* ---------- sheets / toast ---------- */
+#app-wordquest .wq-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(30, 58, 95, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  padding: 16px;
+  box-sizing: border-box;
+}
+#app-wordquest .wq-sheet {
+  background: #f2f9ff;
+  border-radius: 18px;
+  border: 3px solid #9ecfec;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  padding: 18px 16px;
+  width: 100%;
+  max-width: 300px;
+  text-align: center;
+  box-sizing: border-box;
+}
+#app-wordquest .wq-sheet h2 { margin: 0 0 6px; font-size: 24px; color: #0b5fa5; }
+#app-wordquest .wq-sheet p { margin: 4px 0; font-size: 15px; color: #1e3a5f; }
+#app-wordquest .wq-sheet-stars { font-size: 34px; letter-spacing: 6px; color: #f7c948; margin: 4px 0; }
+#app-wordquest .wq-sheet-stars .wq-star-off { color: #b9c9d8; }
+#app-wordquest .wq-sheet .wq-btnrow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+#app-wordquest .wq-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 70px;
+  transform: translateX(-50%);
+  background: rgba(30, 58, 95, 0.92);
+  color: #fff;
+  border-radius: 12px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 15;
+  pointer-events: none;
+  white-space: normal;
+  text-align: center;
+  max-width: 86%;
+}
+
+@keyframes wq-found-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+/* ---------- short screens (360x568 etc.): shrink chrome, keep board big ---------- */
+@media (max-height: 640px) {
+  /* Keep the 48px status-bar floor here too (the base clamp already
+     floors at 48px on short screens — never re-zero it). */
+  #app-wordquest .wq-root { gap: 4px; padding-top: 48px; }
+  #app-wordquest .wq-title { font-size: 17px; }
+  #app-wordquest .wq-iconbtn { min-width: 34px; height: 34px; }
+  #app-wordquest .wq-topbar { min-height: 38px; }
+  #app-wordquest .wq-board { width: min(100%, 252px); }
+  #app-wordquest .wq-level-label { font-size: 13px; }
+  #app-wordquest .wq-timer { font-size: 15px; }
+  #app-wordquest .wq-score-num { font-size: 17px; }
+  #app-wordquest .wq-hint-btn { min-height: 38px; padding: 2px 10px; font-size: 13px; }
+  #app-wordquest .wq-word { font-size: 12px; padding: 2px 8px; }
+  #app-wordquest .wq-words { max-height: 62px; }
+  #app-wordquest .wq-pack-art { width: 52px; height: 40px; }
+  #app-wordquest .wq-map-head h2 { font-size: 19px; }
+  #app-wordquest .wq-levels-art { max-height: 96px; }
+}
+</style>
 </head>
 <body>
 <div id="ph-stage">
@@ -14887,6 +15344,12 @@ button.mr-setup-preview:focus-visible {
             <span class="ph-icon-label">Tycoon Town</span>
           </button>
           <!-- /TYCOON -->
+          <!-- WORD QUEST -->
+          <button type="button" class="ph-app-icon" data-app="wordquest" aria-label="Word Quest">
+            <span class="ph-icon" style="background:linear-gradient(150deg,#1d8fe0 0%,#6a5ae0 100%)" aria-hidden="true"><svg viewBox="0 0 48 48" width="38" height="38" aria-hidden="true" focusable="false"><rect x="6" y="6" width="36" height="36" rx="8" fill="#ffffff" opacity="0.16"/><text x="13" y="20" font-family="inherit" font-size="11" font-weight="800" fill="#ffffff">W</text><text x="24" y="20" font-family="inherit" font-size="11" font-weight="800" fill="#ffd94d">O</text><text x="13" y="34" font-family="inherit" font-size="11" font-weight="800" fill="#ffffff">R</text><text x="24" y="34" font-family="inherit" font-size="11" font-weight="800" fill="#ffd94d">D</text><circle cx="35" cy="33" r="7" fill="none" stroke="#ffffff" stroke-width="3"/><line x1="40" y1="38" x2="45" y2="43" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/></svg></span>
+            <span class="ph-icon-label">Word Quest</span>
+          </button>
+          <!-- /WORD QUEST -->
           <button type="button" class="ph-app-icon" data-app="solitaire" aria-label="Solitaire">
             <span class="ph-icon ph-icon-cards" aria-hidden="true"><span class="ph-fan"><i></i><i></i><i></i></span></span>
             <span class="ph-icon-label">Solitaire</span>
@@ -14953,6 +15416,9 @@ button.mr-setup-preview:focus-visible {
       <!-- TYCOON -->
       <section id="app-tycoon" class="ph-app" aria-label="Tycoon Town"></section>
       <!-- /TYCOON -->
+      <!-- WORD QUEST -->
+      <section id="app-wordquest" class="ph-app" aria-label="Word Quest"></section>
+      <!-- /WORD QUEST -->
       <section id="app-settings" class="ph-app" aria-label="Settings">
         <div class="ph-panel">
           <h1 class="ph-panel-title">Settings</h1>
@@ -15381,7 +15847,7 @@ if (typeof window !== 'undefined') {
   /* Default home order: every icon alphabetical by display name
      (case-insensitive), games and utilities in one list. This list must
      match what sortHomeAlphabetical computes from the registered titles. */
-  var DEFAULT_HOME_ORDER = ['about', 'angrymonkeys', 'blockzen', 'blockfall', 'chess', 'chessquest', 'lava', 'invesim', 'kindlekeep', 'settings', 'snake', 'solitaire'];
+  var DEFAULT_HOME_ORDER = ['about', 'angrymonkeys', 'blockzen', 'blockfall', 'chess', 'chessquest', 'lava', 'invesim', 'kindlekeep', 'settings', 'snake', 'solitaire', 'wordquest'];
   /* The pre-alphabetical default (games first, then utilities). A stored
      order identical to this list means the player never reorganized. */
   var LEGACY_DEFAULT_HOME_ORDER = ['angrymonkeys', 'blockfall', 'blockzen', 'chess', 'chessquest', 'invesim', 'kindlekeep', 'solitaire', 'about', 'settings'];
@@ -15405,7 +15871,8 @@ if (typeof window !== 'undefined') {
     oath: 'summoners-oath',
     solitaire: 'solitaire',
     snake: 'snake',
-    tycoon: 'tycoon-town'
+    tycoon: 'tycoon-town',
+    wordquest: 'word-quest'
   };
   var SLUG_TO_APP = {};
   (function () {
@@ -15903,7 +16370,8 @@ if (typeof window !== 'undefined') {
   var SPLASH_THEME_CLASSES = ['ph-splash--blockzen', 'ph-splash--solitaire',
     'ph-splash--blockfall', 'ph-splash--chess', 'ph-splash--angrymonkeys',
     'ph-splash--kindlekeep', 'ph-splash--chessquest', 'ph-splash--mathrealms',
-    'ph-splash--lava', 'ph-splash--casino', 'ph-splash--oath', 'ph-splash--snake'];
+    'ph-splash--lava', 'ph-splash--casino', 'ph-splash--oath', 'ph-splash--snake',
+    'ph-splash--wordquest'];
   var SPLASH_THEMES = {
     blockzen: {
       cls: 'ph-splash--blockzen',
@@ -16134,6 +16602,29 @@ if (typeof window !== 'undefined') {
         { star: true, x: 120, y: 118, s: 5, d: 0.8 },
         { star: true, x: 24, y: 100, s: 4, d: 1.1 },
         { flash: true, x: 74, y: 52, w: 100, h: 40, d: 1.9 }
+      ]
+    }
+    /* WORD QUEST (Nov 23, 2026): Word Quest — letter tiles spell out
+       the quest, stars kindle around them, a flash as the last word
+       is found. Motif 'wordquest' reuses the num/star/flash renderer
+       branches (the num pieces carry single letters). Tagline matches
+       the game; timing exactly 3000ms via SPLASH_MS. Note: the
+       ph-splash--wordquest background class has no shell.css rule yet
+       and falls back to the plain splash (same as sugar). */
+    , wordquest: {
+      cls: 'ph-splash--wordquest',
+      tag: 'Find the words. Finish the quest.',
+      motif: 'wordquest',
+      pieces: [
+        { num: true, text: 'W', x: 30, y: 20, d: 0.05 },
+        { num: true, text: 'O', x: 96, y: 8, d: 0.2 },
+        { num: true, text: 'R', x: 162, y: 22, d: 0.35 },
+        { num: true, text: 'D', x: 206, y: 48, d: 0.5 },
+        { star: true, x: 66, y: 52, s: 5, d: 0.4 },
+        { star: true, x: 128, y: 76, s: 4, d: 0.7 },
+        { star: true, x: 184, y: 12, s: 4, d: 1.0 },
+        { star: true, x: 118, y: 118, s: 6, d: 1.2 },
+        { flash: true, x: 24, y: 122, w: 200, h: 14, d: 1.9 }
       ]
     }
   };
@@ -17501,6 +17992,26 @@ if (typeof window !== 'undefined') {
           if (typeof window !== 'undefined' && window.TycoonWire &&
               typeof window.TycoonWire.onClose === 'function') {
             window.TycoonWire.onClose();
+          }
+        } catch (e) { /* never throws */ }
+      } });
+    /* WORD QUEST (Nov 23, 2026): Word Quest. Delegated to the Word
+       Quest wire, which no-ops until the game lands. Guarded and
+       wordquest-scoped; never throws. Do not init the wire here. */
+    PhoneShell.registerApp('wordquest', { title: 'Word Quest', game: true, el: $('app-wordquest'),
+      onOpen: function () {
+        try {
+          if (typeof window !== 'undefined' && window.WordQuestWire &&
+              typeof window.WordQuestWire.onOpen === 'function') {
+            window.WordQuestWire.onOpen();
+          }
+        } catch (e) { /* never throws */ }
+      },
+      onClose: function () {
+        try {
+          if (typeof window !== 'undefined' && window.WordQuestWire &&
+              typeof window.WordQuestWire.onClose === 'function') {
+            window.WordQuestWire.onClose();
           }
         } catch (e) { /* never throws */ }
       } });
@@ -26205,6 +26716,14 @@ var BZSettings = (function () {
       'player. Play against three rivals — Maya, Leo, and Rosa — with ' +
       'Fortune and Town Event cards, jail, trades, and mortgages, ' +
       'and your game auto-saves after every move.'));
+    body.appendChild(_el('p', 'bz-about-text',
+      'Word Quest is a word-search puzzle built for touch. Swipe or ' +
+      'drag across the letters to find the hidden words across 12 ' +
+      'destinations and 120 levels, from 8x8 grids up to 14x14 with ' +
+      'diagonals and backwards words — plus a fresh Daily puzzle every ' +
+      'day. Every word you find shows its short definition, and ' +
+      'finishing levels with three stars or completing the Daily earns ' +
+      'hints to reveal a letter or a whole word.'));
     body.appendChild(_el('p', 'bz-about-text',
       'The green chart icon on the home screen opens the companion ' +
       'investing simulation in this same tab.'));
@@ -142398,6 +142917,3419 @@ var TycoonWire = (function () {
   }
   return api;
 })();
+</script>
+<script>
+// source: wq-words.js
+// Word Quest — word packs with definitions.
+// window.WQ_WORDS = { packs: [ { id, name, scene, blurb, words: [ { w, d } ] } ] }
+window.WQ_WORDS = { packs: [
+  { id: "animals", name: "Animal Kingdom", scene: "animals", blurb: "Meet amazing animals from every corner of the world.",
+    words: [
+      { w: "ELEPHANT", d: "Largest land animal." },
+      { w: "GIRAFFE", d: "Tallest animal with a long neck." },
+      { w: "DOLPHIN", d: "Smart sea mammal that leaps." },
+      { w: "PENGUIN", d: "Flightless bird that swims." },
+      { w: "KANGAROO", d: "Australian animal that hops." },
+      { w: "LEOPARD", d: "Spotted big cat." },
+      { w: "CHEETAH", d: "Fastest land animal." },
+      { w: "PANTHER", d: "Sleek black big cat." },
+      { w: "JAGUAR", d: "Spotted cat from the Americas." },
+      { w: "BUFFALO", d: "Large horned wild ox." },
+      { w: "RACCOON", d: "Masked animal that washes food." },
+      { w: "SQUIRREL", d: "Bushy-tailed tree climber." },
+      { w: "HAMSTER", d: "Small pet with cheek pouches." },
+      { w: "BADGER", d: "Burrowing animal with stripes." },
+      { w: "OTTER", d: "Playful river swimmer." },
+      { w: "BEAVER", d: "Animal that builds dams." },
+      { w: "COYOTE", d: "Wild dog of the plains." },
+      { w: "FOX", d: "Clever orange wild dog." },
+      { w: "WOLF", d: "Wild dog that howls." },
+      { w: "BEAR", d: "Large furry forest animal." },
+      { w: "LION", d: "Big cat called king of beasts." },
+      { w: "TIGER", d: "Striped big cat." },
+      { w: "ZEBRA", d: "Striped horse-like animal." },
+      { w: "MONKEY", d: "Tree-swinging playful primate." },
+      { w: "GORILLA", d: "Largest great ape." },
+      { w: "PANDA", d: "Black and white bamboo eater." },
+      { w: "KOALA", d: "Australian tree-dwelling marsupial." },
+      { w: "CAMEL", d: "Desert animal with humps." },
+      { w: "HORSE", d: "Animal people ride and race." },
+      { w: "DONKEY", d: "Small sturdy farm animal." },
+      { w: "GOAT", d: "Horned farm animal that climbs." },
+      { w: "SHEEP", d: "Woolly farm animal." },
+      { w: "RABBIT", d: "Long-eared hopping animal." },
+      { w: "TURTLE", d: "Slow animal with a shell." },
+      { w: "LIZARD", d: "Scaly reptile that basks." }
+    ] },
+  { id: "food", name: "Food Feast", scene: "food", blurb: "Taste your way through yummy foods from around the world.",
+    words: [
+      { w: "PIZZA", d: "Flat bread with cheese topping." },
+      { w: "PASTA", d: "Italian noodles in sauce." },
+      { w: "BURGER", d: "Beef patty in a bun." },
+      { w: "SANDWICH", d: "Filling between bread slices." },
+      { w: "SALAD", d: "Fresh mixed vegetables dish." },
+      { w: "SOUP", d: "Warm liquid meal in a bowl." },
+      { w: "BREAD", d: "Baked food made from flour." },
+      { w: "BUTTER", d: "Creamy spread made from milk." },
+      { w: "CHEESE", d: "Food made from curdled milk." },
+      { w: "APPLE", d: "Crisp round red fruit." },
+      { w: "BANANA", d: "Curved yellow fruit." },
+      { w: "ORANGE", d: "Round juicy citrus fruit." },
+      { w: "GRAPES", d: "Small round fruit in bunches." },
+      { w: "CARROT", d: "Orange root vegetable." },
+      { w: "POTATO", d: "Starchy vegetable that grows underground." },
+      { w: "TOMATO", d: "Red juicy fruit used as vegetable." },
+      { w: "ONION", d: "Layered bulb that makes eyes water." },
+      { w: "GARLIC", d: "Strong bulb used for flavor." },
+      { w: "PEPPER", d: "Spicy vegetable or seasoning." },
+      { w: "HONEY", d: "Sweet food made by bees." },
+      { w: "SUGAR", d: "Sweet crystals from cane." },
+      { w: "CHOCOLATE", d: "Sweet treat made from cocoa." },
+      { w: "COOKIE", d: "Small sweet baked treat." },
+      { w: "CAKE", d: "Sweet baked dessert." },
+      { w: "PANCAKE", d: "Flat round breakfast cake." },
+      { w: "MUFFIN", d: "Small round baked cake." },
+      { w: "POPCORN", d: "Popped corn kernels snack." },
+      { w: "PEANUT", d: "Nut that grows underground." },
+      { w: "ALMOND", d: "Oval edible tree nut." },
+      { w: "RICE", d: "Grain eaten worldwide." },
+      { w: "NOODLE", d: "Long thin pasta strip." },
+      { w: "CURRY", d: "Spiced sauce dish." },
+      { w: "TACOS", d: "Mexican folded tortilla dish." },
+      { w: "STEAK", d: "Thick slice of grilled meat." },
+      { w: "BACON", d: "Cured pork strips." },
+      { w: "SAUSAGE", d: "Seasoned ground meat in casing." },
+      { w: "WAFFLE", d: "Crisp griddled breakfast cake." }
+    ] },
+  { id: "countries", name: "Around the World", scene: "countries", blurb: "Travel the globe and discover countries far and wide.",
+    words: [
+      { w: "FRANCE", d: "European country famous for Paris." },
+      { w: "GERMANY", d: "European country known for cars." },
+      { w: "ITALY", d: "Boot-shaped country of pasta." },
+      { w: "SPAIN", d: "Country of flamenco and sunshine." },
+      { w: "GREECE", d: "Ancient land of Athens." },
+      { w: "TURKEY", d: "Country linking Europe and Asia." },
+      { w: "EGYPT", d: "Land of pyramids and Nile." },
+      { w: "MOROCCO", d: "North African kingdom of markets." },
+      { w: "KENYA", d: "African country of safaris." },
+      { w: "NIGERIA", d: "Most populous African country." },
+      { w: "INDIA", d: "South Asian country of spices." },
+      { w: "CHINA", d: "Large Asian country with Great Wall." },
+      { w: "JAPAN", d: "Island country of cherry blossoms." },
+      { w: "KOREA", d: "Peninsula country in East Asia." },
+      { w: "THAILAND", d: "Southeast Asian country of temples." },
+      { w: "VIETNAM", d: "Southeast Asian country of rice." },
+      { w: "MALAYSIA", d: "Tropical country of rainforests." },
+      { w: "INDONESIA", d: "Island nation of many volcanoes." },
+      { w: "AUSTRALIA", d: "Continent country of kangaroos." },
+      { w: "BRAZIL", d: "Largest South American country." },
+      { w: "MEXICO", d: "Country south of the United States." },
+      { w: "CANADA", d: "Northern country of maple leaves." },
+      { w: "ARGENTINA", d: "South American country of tango." },
+      { w: "CHILE", d: "Long narrow South American country." },
+      { w: "PERU", d: "Andean country of Machu Picchu." },
+      { w: "COLOMBIA", d: "South American country of coffee." },
+      { w: "POLAND", d: "Central European country on Baltic." },
+      { w: "NORWAY", d: "Nordic land of fjords." },
+      { w: "SWEDEN", d: "Nordic country of forests." },
+      { w: "FINLAND", d: "Nordic land of a thousand lakes." },
+      { w: "DENMARK", d: "Nordic country of fairy tales." },
+      { w: "ICELAND", d: "Island of volcanoes and glaciers." },
+      { w: "IRELAND", d: "Green island country of Ireland." },
+      { w: "PORTUGAL", d: "Atlantic country west of Spain." },
+      { w: "AUSTRIA", d: "Alpine country of music." }
+    ] },
+  { id: "sports", name: "Sports Arena", scene: "sports", blurb: "Step into the arena and play every sport under the sun.",
+    words: [
+      { w: "SOCCER", d: "Game played by kicking a ball." },
+      { w: "TENNIS", d: "Racket game over a net." },
+      { w: "BASEBALL", d: "Bat and ball American game." },
+      { w: "BASKETBALL", d: "Hoop game played with hands." },
+      { w: "FOOTBALL", d: "Game of touchdowns and tackles." },
+      { w: "HOCKEY", d: "Fast game played on ice." },
+      { w: "GOLF", d: "Game of hitting balls into holes." },
+      { w: "BOXING", d: "Fighting sport with padded gloves." },
+      { w: "WRESTLING", d: "Sport of grappling holds." },
+      { w: "SWIMMING", d: "Racing through water." },
+      { w: "CYCLING", d: "Racing on bicycles." },
+      { w: "RUNNING", d: "Racing on foot." },
+      { w: "SKATING", d: "Gliding on ice or wheels." },
+      { w: "SKIING", d: "Sliding down snow on skis." },
+      { w: "SURFING", d: "Riding ocean waves on boards." },
+      { w: "DIVING", d: "Plunging into water gracefully." },
+      { w: "ARCHERY", d: "Sport of shooting arrows." },
+      { w: "FENCING", d: "Sport of sword fighting." },
+      { w: "ROWING", d: "Propelling boats with oars." },
+      { w: "SAILING", d: "Traveling by wind in boats." },
+      { w: "RUGBY", d: "Rough ball game from England." },
+      { w: "CRICKET", d: "Bat and ball game." },
+      { w: "VOLLEYBALL", d: "Team game over a high net." },
+      { w: "BADMINTON", d: "Racket game with a shuttlecock." },
+      { w: "HANDBALL", d: "Fast team game throwing balls." },
+      { w: "SOFTBALL", d: "Baseball-like game with big ball." },
+      { w: "MARATHON", d: "Long distance running race." },
+      { w: "SPRINT", d: "Short fast running race." },
+      { w: "JUDO", d: "Japanese art of throws." },
+      { w: "KARATE", d: "Japanese art of striking." },
+      { w: "GYMNASTICS", d: "Sport of flips and balance." },
+      { w: "BOWLING", d: "Rolling balls to knock pins." },
+      { w: "DARTS", d: "Game of throwing at targets." },
+      { w: "CHESS", d: "Board game of strategy." },
+      { w: "YOGA", d: "Practice of poses and breathing." }
+    ] },
+  { id: "science", name: "Science Lab", scene: "science", blurb: "Put on your goggles and discover how the world works.",
+    words: [
+      { w: "ATOM", d: "Smallest piece of matter." },
+      { w: "MOLECULE", d: "Two or more joined atoms." },
+      { w: "NEUTRON", d: "Neutral particle in atoms." },
+      { w: "PROTON", d: "Positive particle in atoms." },
+      { w: "ELECTRON", d: "Tiny negative particle in atoms." },
+      { w: "GRAVITY", d: "Force that pulls things down." },
+      { w: "ENERGY", d: "Power that makes things work." },
+      { w: "MAGNET", d: "Object that attracts iron." },
+      { w: "VOLTAGE", d: "Push that moves electric current." },
+      { w: "CURRENT", d: "Flow of electricity." },
+      { w: "CIRCUIT", d: "Path for electric current." },
+      { w: "FUSION", d: "Joining atoms to release energy." },
+      { w: "FISSION", d: "Splitting atoms to release energy." },
+      { w: "OXYGEN", d: "Gas we breathe to live." },
+      { w: "HYDROGEN", d: "Lightest gas in the universe." },
+      { w: "NITROGEN", d: "Gas making most of air." },
+      { w: "CARBON", d: "Element found in all life." },
+      { w: "CALCIUM", d: "Mineral that builds bones." },
+      { w: "SODIUM", d: "Metal found in salt." },
+      { w: "ACID", d: "Sour substance that can dissolve." },
+      { w: "ALKALI", d: "Base that balances acids." },
+      { w: "ENZYME", d: "Protein that speeds reactions." },
+      { w: "CELL", d: "Smallest unit of life." },
+      { w: "NUCLEUS", d: "Control center of a cell." },
+      { w: "GENETICS", d: "Study of genes and heredity." },
+      { w: "BACTERIA", d: "Tiny single-celled living things." },
+      { w: "VIRUS", d: "Tiny germ that infects cells." },
+      { w: "FOSSIL", d: "Ancient remains preserved in rock." },
+      { w: "MINERAL", d: "Natural solid found in earth." },
+      { w: "CRYSTAL", d: "Solid with a regular shape." },
+      { w: "SPECTRUM", d: "Range of colors in light." },
+      { w: "PHOTON", d: "Tiny packet of light." },
+      { w: "LASER", d: "Focused beam of light." },
+      { w: "PLASMA", d: "Hot glowing state of matter." },
+      { w: "VACUUM", d: "Space with no air." }
+    ] },
+  { id: "space", name: "Outer Space", scene: "space", blurb: "Blast off and explore planets, stars, and galaxies.",
+    words: [
+      { w: "PLANET", d: "World that orbits a star." },
+      { w: "GALAXY", d: "Huge group of stars." },
+      { w: "NEBULA", d: "Cloud of gas in space." },
+      { w: "COMET", d: "Icy body with a glowing tail." },
+      { w: "ASTEROID", d: "Rocky body orbiting the sun." },
+      { w: "METEOR", d: "Streak of light from space rock." },
+      { w: "ORBIT", d: "Path around a planet or star." },
+      { w: "ROCKET", d: "Vehicle that launches into space." },
+      { w: "SATELLITE", d: "Object orbiting Earth." },
+      { w: "ASTRONAUT", d: "Person who travels in space." },
+      { w: "TELESCOPE", d: "Tool for viewing distant stars." },
+      { w: "ECLIPSE", d: "Blocking of sun or moon." },
+      { w: "SOLAR", d: "Related to the sun." },
+      { w: "LUNAR", d: "Related to the moon." },
+      { w: "COSMOS", d: "The whole universe." },
+      { w: "STARDUST", d: "Dust made from ancient stars." },
+      { w: "STAR", d: "Glowing ball of gas." },
+      { w: "MOON", d: "Natural satellite of Earth." },
+      { w: "MARS", d: "Red planet next to Earth." },
+      { w: "VENUS", d: "Hottest planet near Earth." },
+      { w: "JUPITER", d: "Largest planet in our system." },
+      { w: "SATURN", d: "Planet famous for its rings." },
+      { w: "URANUS", d: "Tilted ice giant planet." },
+      { w: "NEPTUNE", d: "Farthest planet from the sun." },
+      { w: "MERCURY", d: "Smallest planet near the sun." },
+      { w: "PLUTO", d: "Small dwarf planet." },
+      { w: "CRATER", d: "Bowl-shaped dent from impact." },
+      { w: "LAUNCH", d: "Takeoff of a rocket." },
+      { w: "MODULE", d: "Separate part of a spacecraft." },
+      { w: "SPACESUIT", d: "Suit protecting astronauts outside." },
+      { w: "QUASAR", d: "Bright distant object in space." },
+      { w: "COSMONAUT", d: "Russian space traveler." },
+      { w: "ZENITH", d: "Point directly overhead in sky." },
+      { w: "SUPERNOVA", d: "Huge explosion of a star." },
+      { w: "PULSAR", d: "Spinning star sending radio pulses." }
+    ] },
+  { id: "music", name: "Music Hall", scene: "music", blurb: "Tune in and find the instruments and sounds of music.",
+    words: [
+      { w: "GUITAR", d: "Stringed instrument you strum." },
+      { w: "PIANO", d: "Keyboard instrument with hammers." },
+      { w: "VIOLIN", d: "Small stringed instrument played with bow." },
+      { w: "CELLO", d: "Large stringed instrument played seated." },
+      { w: "FLUTE", d: "Wind instrument you blow across." },
+      { w: "TRUMPET", d: "Brass instrument with valves." },
+      { w: "TROMBONE", d: "Brass instrument with a slide." },
+      { w: "CLARINET", d: "Woodwind instrument with a reed." },
+      { w: "SAXOPHONE", d: "Curved brass wind instrument." },
+      { w: "DRUM", d: "Instrument you hit for beat." },
+      { w: "BANJO", d: "Stringed instrument with round body." },
+      { w: "HARP", d: "Tall instrument with plucked strings." },
+      { w: "OBOE", d: "Woodwind with a double reed." },
+      { w: "MELODY", d: "Tune you can hum." },
+      { w: "RHYTHM", d: "Pattern of beats in music." },
+      { w: "HARMONY", d: "Notes sounding together pleasantly." },
+      { w: "CHORUS", d: "Repeated part of a song." },
+      { w: "VERSE", d: "Part of a song before chorus." },
+      { w: "TEMPO", d: "Speed of a piece of music." },
+      { w: "PITCH", d: "How high or low a note sounds." },
+      { w: "OCTAVE", d: "Eight-note span in music." },
+      { w: "CHORD", d: "Three or more notes together." },
+      { w: "SCALE", d: "Series of notes in order." },
+      { w: "NOTE", d: "Single musical sound." },
+      { w: "SONG", d: "Music with words to sing." },
+      { w: "SINGER", d: "Person who sings." },
+      { w: "BAND", d: "Group of musicians playing together." },
+      { w: "ORCHESTRA", d: "Large group of classical musicians." },
+      { w: "CONCERT", d: "Live music performance." },
+      { w: "STAGE", d: "Raised platform for performers." },
+      { w: "LYRICS", d: "Words of a song." },
+      { w: "ALBUM", d: "Collection of songs released together." },
+      { w: "JAZZ", d: "Music style with swing and improvisation." },
+      { w: "BLUES", d: "Soulful American music style." },
+      { w: "ROCK", d: "Loud guitar-driven music style." },
+      { w: "OPERA", d: "Drama sung with orchestral music." }
+    ] },
+  { id: "nature", name: "Nature Trail", scene: "nature", blurb: "Wander the wild trail through forests, rivers, and rainbows.",
+    words: [
+      { w: "FOREST", d: "Large area covered with trees." },
+      { w: "MEADOW", d: "Grassy field full of flowers." },
+      { w: "RIVER", d: "Large stream flowing to sea." },
+      { w: "STREAM", d: "Small flowing body of water." },
+      { w: "MOUNTAIN", d: "Very high land rising up." },
+      { w: "VALLEY", d: "Low land between hills." },
+      { w: "DESERT", d: "Dry sandy place with little rain." },
+      { w: "ISLAND", d: "Land surrounded by water." },
+      { w: "VOLCANO", d: "Mountain that erupts lava." },
+      { w: "GLACIER", d: "Slow-moving river of ice." },
+      { w: "CANYON", d: "Deep valley cut by river." },
+      { w: "CAVE", d: "Hollow place inside rock." },
+      { w: "CLIFF", d: "Steep rock face." },
+      { w: "BEACH", d: "Sandy shore by the sea." },
+      { w: "BLOSSOM", d: "Flower of a tree." },
+      { w: "PETAL", d: "Colored part of a flower." },
+      { w: "LEAF", d: "Green part of a plant." },
+      { w: "BRANCH", d: "Arm growing from a tree." },
+      { w: "ROOT", d: "Part of plant under ground." },
+      { w: "SEED", d: "Small part that grows plants." },
+      { w: "FLOWER", d: "Colorful blooming part of plant." },
+      { w: "TULIP", d: "Cup-shaped spring flower." },
+      { w: "DAISY", d: "White-petaled cheerful flower." },
+      { w: "ROSE", d: "Fragrant flower with thorns." },
+      { w: "LILY", d: "Elegant trumpet-shaped flower." },
+      { w: "IVY", d: "Climbing plant with green leaves." },
+      { w: "OAK", d: "Strong tree with acorns." },
+      { w: "PINE", d: "Evergreen tree with needles." },
+      { w: "MAPLE", d: "Tree with sweet sap." },
+      { w: "WILLOW", d: "Tree with drooping branches." },
+      { w: "RAIN", d: "Water falling from clouds." },
+      { w: "SNOW", d: "Soft white frozen flakes." },
+      { w: "STORM", d: "Wild weather with wind." },
+      { w: "CLOUD", d: "Floating mass of water vapor." },
+      { w: "SUNSET", d: "Sun going down at evening." },
+      { w: "RAINBOW", d: "Arch of colors after rain." }
+    ] },
+  { id: "ocean", name: "Ocean Deep", scene: "ocean", blurb: "Dive beneath the waves and meet creatures of the deep.",
+    words: [
+      { w: "WHALE", d: "Largest animal in the sea." },
+      { w: "SHARK", d: "Sea hunter with sharp teeth." },
+      { w: "ORCA", d: "Black and white killer whale." },
+      { w: "OCTOPUS", d: "Eight-armed sea creature." },
+      { w: "SQUID", d: "Ten-armed sea creature." },
+      { w: "JELLYFISH", d: "Stinging sea creature with tentacles." },
+      { w: "SEAHORSE", d: "Tiny fish with curled tail." },
+      { w: "STARFISH", d: "Star-shaped sea animal." },
+      { w: "CRAB", d: "Sea animal with claws." },
+      { w: "LOBSTER", d: "Sea creature with big claws." },
+      { w: "SHRIMP", d: "Small sea creature to eat." },
+      { w: "CLAM", d: "Shellfish that buries in sand." },
+      { w: "OYSTER", d: "Shellfish that can make pearls." },
+      { w: "MUSSEL", d: "Dark-shelled edible shellfish." },
+      { w: "CORAL", d: "Tiny animals forming reefs." },
+      { w: "REEF", d: "Ridge of coral near surface." },
+      { w: "TIDE", d: "Rise and fall of sea." },
+      { w: "WAVE", d: "Moving ridge of water." },
+      { w: "FOAM", d: "Bubbles on top of waves." },
+      { w: "SAND", d: "Tiny grains on the beach." },
+      { w: "SHELL", d: "Hard cover of sea animals." },
+      { w: "PEARL", d: "Shiny gem from oysters." },
+      { w: "ANCHOR", d: "Heavy weight holding ships." },
+      { w: "SAILOR", d: "Person who works on ships." },
+      { w: "CAPTAIN", d: "Leader of a ship." },
+      { w: "PIRATE", d: "Sea robber with a flag." },
+      { w: "TREASURE", d: "Hidden gold and jewels." },
+      { w: "LAGOON", d: "Shallow water near shore." },
+      { w: "ABYSS", d: "Very deep part of ocean." },
+      { w: "TRENCH", d: "Deep narrow cut in seafloor." },
+      { w: "HARBOR", d: "Safe place for ships." },
+      { w: "LIGHTHOUSE", d: "Tower guiding ships with light." },
+      { w: "DIVER", d: "Person who swims underwater." },
+      { w: "SNORKEL", d: "Tube for breathing while swimming." },
+      { w: "SUBMARINE", d: "Boat that travels underwater." },
+      { w: "TSUNAMI", d: "Giant wave from an earthquake." },
+      { w: "PLANKTON", d: "Tiny drifting sea life." },
+      { w: "KELP", d: "Large seaweed in oceans." },
+      { w: "SEAWEED", d: "Plant growing in the sea." }
+    ] },
+  { id: "history", name: "Ancient History", scene: "history", blurb: "Travel back in time to pyramids, castles, and ancient kings.",
+    words: [
+      { w: "PYRAMID", d: "Stone tomb of ancient Egypt." },
+      { w: "PHARAOH", d: "Ruler of ancient Egypt." },
+      { w: "SPHINX", d: "Lion statue with human head." },
+      { w: "MUMMY", d: "Preserved body from ancient Egypt." },
+      { w: "TEMPLE", d: "Building for worship." },
+      { w: "CASTLE", d: "Fortified home of kings." },
+      { w: "KNIGHT", d: "Armored warrior on horseback." },
+      { w: "VIKING", d: "Norse seafarer and warrior." },
+      { w: "SAMURAI", d: "Japanese warrior of honor." },
+      { w: "GLADIATOR", d: "Roman fighter in the arena." },
+      { w: "COLOSSEUM", d: "Huge Roman arena in Rome." },
+      { w: "EMPEROR", d: "Ruler of an empire." },
+      { w: "KINGDOM", d: "Land ruled by a king." },
+      { w: "DYNASTY", d: "Family of rulers in succession." },
+      { w: "ANCIENT", d: "Very old, from long ago." },
+      { w: "RELIC", d: "Object from the distant past." },
+      { w: "RUINS", d: "Remains of old buildings." },
+      { w: "SCROLL", d: "Rolled paper used for writing." },
+      { w: "PAPYRUS", d: "Ancient Egyptian writing paper." },
+      { w: "HIEROGLYPH", d: "Picture writing of ancient Egypt." },
+      { w: "TOTEM", d: "Carved pole of native peoples." },
+      { w: "ARMOR", d: "Metal clothing for protection." },
+      { w: "SWORD", d: "Long bladed fighting weapon." },
+      { w: "SHIELD", d: "Flat guard against weapons." },
+      { w: "CROWN", d: "Jeweled headpiece of royalty." },
+      { w: "THRONE", d: "Special chair for a ruler." },
+      { w: "PALACE", d: "Grand home of royalty." },
+      { w: "MARKET", d: "Place where goods are sold." },
+      { w: "VOYAGE", d: "Long journey by sea." },
+      { w: "EXPLORER", d: "Person who discovers new lands." },
+      { w: "CARAVAN", d: "Group traveling together for trade." },
+      { w: "MONUMENT", d: "Structure honoring a person." },
+      { w: "STATUE", d: "Carved figure of stone." },
+      { w: "MOSAIC", d: "Picture made of small tiles." },
+      { w: "POTTERY", d: "Objects made from baked clay." },
+      { w: "BRONZE", d: "Metal made of copper and tin." },
+      { w: "MARBLE", d: "Smooth stone used for statues." },
+      { w: "SILK", d: "Soft cloth from silkworms." },
+      { w: "SPICE", d: "Flavoring from dried plants." },
+      { w: "COMPASS", d: "Tool that points north." },
+      { w: "ASTROLABE", d: "Old tool for finding stars." }
+    ] },
+  { id: "city", name: "City Life", scene: "city", blurb: "Explore the buzzing streets, towers, and lights of the city.",
+    words: [
+      { w: "BRIDGE", d: "Structure crossing over water." },
+      { w: "TUNNEL", d: "Passage through a hill." },
+      { w: "TOWER", d: "Tall narrow building." },
+      { w: "SKYLINE", d: "Outline of city buildings." },
+      { w: "AVENUE", d: "Wide city street." },
+      { w: "STREET", d: "Road in a town." },
+      { w: "PLAZA", d: "Open public square." },
+      { w: "BAZAAR", d: "Marketplace with many stalls." },
+      { w: "METRO", d: "Underground city train system." },
+      { w: "SUBWAY", d: "Underground train in cities." },
+      { w: "TRAM", d: "Streetcar running on rails." },
+      { w: "TAXI", d: "Car you hire for rides." },
+      { w: "BUS", d: "Large vehicle carrying passengers." },
+      { w: "TRAIN", d: "Cars pulled along railway tracks." },
+      { w: "AIRPORT", d: "Place where planes land." },
+      { w: "STATION", d: "Place where trains stop." },
+      { w: "HOTEL", d: "Building where travelers stay." },
+      { w: "MUSEUM", d: "Place showing art and history." },
+      { w: "THEATER", d: "Place for plays and shows." },
+      { w: "CINEMA", d: "Place where movies are shown." },
+      { w: "LIBRARY", d: "Place to borrow books." },
+      { w: "STADIUM", d: "Large arena for sports." },
+      { w: "OFFICE", d: "Room where people work." },
+      { w: "APARTMENT", d: "Home inside a larger building." },
+      { w: "FACTORY", d: "Building where goods are made." },
+      { w: "WAREHOUSE", d: "Large building for storing goods." },
+      { w: "BAKERY", d: "Shop that bakes bread." },
+      { w: "CAFE", d: "Small shop for coffee." },
+      { w: "RESTAURANT", d: "Place where you eat meals." },
+      { w: "PHARMACY", d: "Shop selling medicines." },
+      { w: "HOSPITAL", d: "Place where sick people heal." },
+      { w: "POLICE", d: "Officers who keep order." },
+      { w: "FIREHOUSE", d: "Home base of firefighters." },
+      { w: "TRAFFIC", d: "Cars moving on roads." },
+      { w: "CROSSWALK", d: "Marked path for crossing streets." },
+      { w: "SIDEWALK", d: "Paved path for walking." },
+      { w: "LAMP", d: "Device giving light." },
+      { w: "FOUNTAIN", d: "Water spraying in the air." },
+      { w: "PARK", d: "Green place for play." },
+      { w: "GARDEN", d: "Place where plants grow." },
+      { w: "ZOO", d: "Place where animals are kept." },
+      { w: "CIRCUS", d: "Show with acrobats and clowns." },
+      { w: "PARADE", d: "Procession marching through streets." },
+      { w: "FESTIVAL", d: "Joyful public celebration." }
+    ] },
+  { id: "school", name: "School Days", scene: "school", blurb: "Back to class — find the words that make learning fun.",
+    words: [
+      { w: "TEACHER", d: "Person who teaches students." },
+      { w: "STUDENT", d: "Person who goes to school." },
+      { w: "PUPIL", d: "Young learner in school." },
+      { w: "LESSON", d: "Something taught in class." },
+      { w: "HOMEWORK", d: "Schoolwork done at home." },
+      { w: "TEXTBOOK", d: "Book used for study." },
+      { w: "NOTEBOOK", d: "Book for writing notes." },
+      { w: "PENCIL", d: "Tool for writing and drawing." },
+      { w: "ERASER", d: "Tool that removes pencil marks." },
+      { w: "RULER", d: "Tool for drawing straight lines." },
+      { w: "CRAYON", d: "Colored wax stick for drawing." },
+      { w: "SCISSORS", d: "Tool for cutting paper." },
+      { w: "BACKPACK", d: "Bag carried on your back." },
+      { w: "LUNCHBOX", d: "Box for carrying lunch." },
+      { w: "DESK", d: "Table where students work." },
+      { w: "CHAIR", d: "Seat for sitting." },
+      { w: "CHALK", d: "White stick for writing on boards." },
+      { w: "BOARD", d: "Surface teachers write on." },
+      { w: "CLOCK", d: "Device showing the time." },
+      { w: "CALENDAR", d: "Chart showing days and months." },
+      { w: "READING", d: "Looking at words to understand." },
+      { w: "WRITING", d: "Putting words down on paper." },
+      { w: "SPELLING", d: "Writing words with correct letters." },
+      { w: "NUMBERS", d: "Symbols used for counting." },
+      { w: "SCIENCE", d: "Study of the natural world." },
+      { w: "MATH", d: "Study of numbers and shapes." },
+      { w: "GEOGRAPHY", d: "Study of lands and places." },
+      { w: "ART", d: "Creative drawing and painting." },
+      { w: "GYM", d: "Room for exercise and sports." },
+      { w: "CLASS", d: "Group of students learning together." },
+      { w: "GRADE", d: "Mark showing how you did." },
+      { w: "EXAM", d: "Test of what you learned." },
+      { w: "QUIZ", d: "Short test in class." },
+      { w: "TEST", d: "Check of knowledge or skill." },
+      { w: "PROJECT", d: "Big task done for class." },
+      { w: "REPORT", d: "Written account of findings." },
+      { w: "ESSAY", d: "Short piece of writing." },
+      { w: "POEM", d: "Writing with rhythm and rhyme." },
+      { w: "STORY", d: "Tale told in words." },
+      { w: "QUESTION", d: "Sentence asking for an answer." },
+      { w: "ANSWER", d: "Reply to a question." }
+    ] }
+] };
+</script>
+<script>
+// source: wq-data.js
+// wq-data.js — Word Quest static data: packs, level table, difficulty,
+// Daily generator, stars/scoring rules.
+//
+// UMD: global WordQuestData + module.exports. Pure data, no DOM, never
+// throws. No Math.random anywhere — all randomness is seeded (see
+// wq-engine.js).
+//
+// Pack content (names, scenes, word lists + definitions) lives in
+// wq-words.js (window.WQ_WORDS). This module reads it through
+// getPacks()/getPackWords() and falls back to FALLBACK_PACKS (pack
+// ids/names/scenes only, no words) when the content file has not
+// landed yet, so the engine, tests and UI can all run against the
+// contract: WQ_WORDS = { packs: [ { id, name, scene, blurb,
+// words: [ { w, d } ] } ] } — 12 packs, >=30 words each, A-Z only,
+// 3-12 letters, definitions <=12 words.
+var WordQuestData = (function () {
+  'use strict';
+
+  var WQ_TITLE = 'Word Quest';
+  var PACK_COUNT = 12;
+  var LEVELS_PER_PACK = 10;
+  var LEVEL_COUNT = 120;
+
+  // Fallback pack table (ids/names/scenes only). Used only when
+  // wq-words.js has not landed; the content worker's packs replace
+  // these wholesale via getPacks(). Scene = image basename under
+  // assets/word-quest/scenes/<scene>.webp.
+  var FALLBACK_PACKS = [
+    { id: 'ocean',    name: 'Ocean Voyage',  scene: 'ocean',    blurb: 'Dive in and find the words of the sea.' },
+    { id: 'forest',   name: 'Forest Trail',  scene: 'forest',   blurb: 'Wander the woods and spot hidden words.' },
+    { id: 'desert',   name: 'Desert Dunes',  scene: 'desert',   blurb: 'Cross the dunes one word at a time.' },
+    { id: 'mountain', name: 'Mountain Peaks', scene: 'mountain', blurb: 'Climb high and claim every word.' },
+    { id: 'garden',   name: 'Garden Bloom',  scene: 'garden',   blurb: 'Words are blooming — pick them all.' },
+    { id: 'kitchen',  name: 'Kitchen Table', scene: 'kitchen',  blurb: 'Something tasty is hidden in the grid.' },
+    { id: 'space',    name: 'Star Voyage',   scene: 'space',    blurb: 'Search the stars for words.' },
+    { id: 'farm',     name: 'Farm Days',     scene: 'farm',     blurb: 'Down on the farm, words hide in plain sight.' },
+    { id: 'city',     name: 'City Lights',   scene: 'city',     blurb: 'The city never sleeps — neither do its words.' },
+    { id: 'winter',   name: 'Winter Lodge',  scene: 'winter',   blurb: 'Cozy up and find words by the fire.' },
+    { id: 'jungle',   name: 'Jungle Trek',   scene: 'jungle',   blurb: 'Hack through the green and find them all.' },
+    { id: 'castle',   name: 'Castle Quest',  scene: 'castle',   blurb: 'Storm the castle — every word is treasure.' }
+  ];
+
+  // Art / audio manifests — the game loads art/audio ONLY through these.
+  var WQ_ART = {
+    'splash-art': 'assets/word-quest/scenes/splash-art.webp',
+    'mascot': 'assets/word-quest/scenes/mascot.webp',
+    'victory-scene': 'assets/word-quest/scenes/victory-scene.webp'
+  };
+  var WQ_AUDIO = {
+    sfx: {
+      tick: 'assets/word-quest/audio/tick.wav',
+      found: 'assets/word-quest/audio/found.wav',
+      win: 'assets/word-quest/audio/win.wav'
+    }
+  };
+
+  function _clone(o) {
+    try { return JSON.parse(JSON.stringify(o)); } catch (e) { return null; }
+  }
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+  function _wordsRoot() {
+    try {
+      if (typeof WQ_WORDS !== 'undefined' && WQ_WORDS) return WQ_WORDS;
+      var w = _win();
+      if (w && w.WQ_WORDS) return w.WQ_WORDS;
+      if (typeof globalThis !== 'undefined' && globalThis.WQ_WORDS) return globalThis.WQ_WORDS;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  // FNV-1a string hash -> uint32. Deterministic across runtimes.
+  function _hashSeed(str) {
+    var h = 0x811c9dc5;
+    var s = String(str == null ? '' : str);
+    for (var i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 0x01000193);
+    }
+    return h >>> 0;
+  }
+  function _mulberry32(seed) {
+    var s = seed >>> 0;
+    return function () {
+      s |= 0; s = (s + 0x6D2B79F5) | 0;
+      var t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // --- packs ---------------------------------------------------------------
+  // Returns the 12 pack descriptors (content packs when present, else
+  // the fallback table). Never throws; always returns 12 entries.
+  function getPacks() {
+    try {
+      var root = _wordsRoot();
+      if (root && Array.isArray(root.packs) && root.packs.length >= PACK_COUNT) {
+        var out = [];
+        for (var i = 0; i < PACK_COUNT; i++) {
+          var p = root.packs[i] || {};
+          out.push({
+            id: typeof p.id === 'string' && p.id ? p.id : FALLBACK_PACKS[i].id,
+            name: typeof p.name === 'string' && p.name ? p.name : FALLBACK_PACKS[i].name,
+            scene: typeof p.scene === 'string' && p.scene ? p.scene : FALLBACK_PACKS[i].scene,
+            blurb: typeof p.blurb === 'string' ? p.blurb : FALLBACK_PACKS[i].blurb
+          });
+        }
+        return out;
+      }
+    } catch (e) { /* fall through to fallback */ }
+    return _clone(FALLBACK_PACKS);
+  }
+  function packScenePath(packIdx) {
+    var packs = getPacks();
+    var p = packs[packIdx] || packs[0];
+    return 'assets/word-quest/scenes/' + p.scene + '.webp';
+  }
+  // Word entries [{w, d}] for a pack, or null when the content file
+  // has not landed (or the pack has no usable words).
+  function getPackWords(packIdx) {
+    try {
+      var root = _wordsRoot();
+      if (!root || !Array.isArray(root.packs)) return null;
+      var p = root.packs[packIdx];
+      if (!p || !Array.isArray(p.words) || p.words.length < 1) return null;
+      var out = [];
+      for (var i = 0; i < p.words.length; i++) {
+        var e = p.words[i];
+        if (!e || typeof e.w !== 'string') continue;
+        var w = e.w.toUpperCase().replace(/[^A-Z]/g, '');
+        if (w.length >= 3 && w.length <= 12) {
+          out.push({ w: w, d: typeof e.d === 'string' ? e.d : '' });
+        }
+      }
+      return out.length ? out : null;
+    } catch (e) { return null; }
+  }
+  // Every word in the whole game, pooled (for the Daily). Null when
+  // the content file has not landed.
+  function getAllWords() {
+    var all = [];
+    for (var i = 0; i < PACK_COUNT; i++) {
+      var words = getPackWords(i);
+      if (!words) return null;
+      for (var j = 0; j < words.length; j++) all.push(words[j]);
+    }
+    return all.length ? all : null;
+  }
+  function hasContent() {
+    return !!getPackWords(0);
+  }
+
+  // --- difficulty ----------------------------------------------------------
+  // Direction keys: E = left->right, S = top->bottom,
+  // SE/SW = diagonal down, W/N/NE/NW = backwards (reversed).
+  var DIRECTIONS = {
+    E: [0, 1], S: [1, 0], W: [0, -1], N: [-1, 0],
+    SE: [1, 1], SW: [1, -1], NE: [-1, 1], NW: [-1, -1]
+  };
+  // Bands (level within pack, 1-10):
+  //   L1-2:  8x8,  H/V only,        6 words
+  //   L3-4:  9x9,  H/V only,        7 words
+  //   L5-6:  10x10, +diagonal,      8 words
+  //   L7-8:  12x12, +diagonal,     10 words
+  //   L9-10: 14x14, +diagonal+backwards, 12 words
+  var BANDS = [
+    { min: 1, max: 2, size: 8, dirs: ['E', 'S'], wordCount: 6 },
+    { min: 3, max: 4, size: 9, dirs: ['E', 'S'], wordCount: 7 },
+    { min: 5, max: 6, size: 10, dirs: ['E', 'S', 'SE', 'SW'], wordCount: 8 },
+    { min: 7, max: 8, size: 12, dirs: ['E', 'S', 'SE', 'SW'], wordCount: 10 },
+    { min: 9, max: 10, size: 14, dirs: ['E', 'S', 'SE', 'SW', 'W', 'N', 'NE', 'NW'], wordCount: 12 }
+  ];
+  function bandForLevel(level) {
+    for (var i = 0; i < BANDS.length; i++) {
+      if (level >= BANDS[i].min && level <= BANDS[i].max) return BANDS[i];
+    }
+    return BANDS[0];
+  }
+  // Fixed, reproducible level def. Seed is a pure function of
+  // (pack, level), so every level is identical on every device.
+  function levelDef(packIdx, level) {
+    if (typeof packIdx !== 'number' || packIdx < 0 || packIdx >= PACK_COUNT) return null;
+    if (typeof level !== 'number' || level < 1 || level > LEVELS_PER_PACK) return null;
+    var band = bandForLevel(level);
+    return {
+      pack: packIdx, level: level, size: band.size,
+      dirs: band.dirs.slice(), wordCount: band.wordCount,
+      seed: _hashSeed('wq-level-' + packIdx + '-' + level)
+    };
+  }
+  // Keep a word only when it is not a substring of (and does not
+  // contain) any word already kept: a listed word inside another
+  // listed word would occur twice on the grid (once inside the
+  // longer word) and could never validate exactly-once. `pool` is
+  // already seeded-shuffled, so the pick stays deterministic.
+  function _pickWords(pool, count) {
+    var kept = [];
+    for (var i = 0; i < pool.length && kept.length < count; i++) {
+      var w = pool[i].w.toUpperCase();
+      var clash = false;
+      for (var j = 0; j < kept.length; j++) {
+        var k = kept[j].w.toUpperCase();
+        if (k.indexOf(w) !== -1 || w.indexOf(k) !== -1) { clash = true; break; }
+      }
+      if (!clash) kept.push(pool[i]);
+    }
+    return kept;
+  }
+
+  // Seeded word pick for a level: same (pack, level) -> same words.
+  // Words are drawn from the pack's list without replacement, and
+  // only words that FIT the grid are eligible (a 9-letter word can
+  // never sit in an 8x8 grid). Content rule this implies: every pack
+  // needs >=6 words of <=8 letters (L1-2), >=7 of <=9 (L3-4),
+  // >=8 of <=10 (L5-6), >=10 of <=12 (L7-8); L9-10 take any word
+  // up to 12 letters on a 14x14 grid.
+  function selectLevelWords(packWords, def) {
+    if (!Array.isArray(packWords) || !packWords.length || !def) return null;
+    var rng = _mulberry32(def.seed ^ 0x9e3779b9);
+    var seen = {};
+    var pool = [];
+    for (var k = 0; k < packWords.length; k++) {
+      var e = packWords[k];
+      if (!e || typeof e.w !== 'string') continue;
+      var w = e.w.toUpperCase();
+      if (w.length > def.size || seen[w]) continue;
+      seen[w] = true;
+      pool.push(e);
+    }
+    if (!pool.length) return null;
+    for (var i = pool.length - 1; i > 0; i--) {
+      var j = Math.floor(rng() * (i + 1));
+      var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+    }
+    // Long words first at placement time; keep the draw order stable.
+    return _pickWords(pool, Math.min(def.wordCount, pool.length));
+  }
+
+  // --- Daily ---------------------------------------------------------------
+  // Deterministic from the UTC calendar date: same date -> identical
+  // puzzle (words + grid). 10x10, 8 words, H/V + diagonal.
+  // dateStr is 'YYYY-MM-DD' (UTC).
+  function dailySeed(dateStr) {
+    return _hashSeed('wq-daily-' + String(dateStr || ''));
+  }
+  function dailyDef(dateStr) {
+    return {
+      kind: 'daily', date: String(dateStr || ''), size: 10,
+      dirs: ['E', 'S', 'SE', 'SW'], wordCount: 8,
+      seed: dailySeed(dateStr)
+    };
+  }
+  function selectDailyWords(allWords, dateStr) {
+    if (!Array.isArray(allWords) || allWords.length < 8) return null;
+    var def = dailyDef(dateStr);
+    var rng = _mulberry32(def.seed ^ 0x85ebca6b);
+    // Pool-wide dedupe (the same word may appear in several packs)
+    // and the same fit rule as levels: only words <= 10 letters fit
+    // the 10x10 Daily grid.
+    var seen = {};
+    var pool = [];
+    for (var k = 0; k < allWords.length; k++) {
+      var e = allWords[k];
+      if (!e || typeof e.w !== 'string') continue;
+      var w = e.w.toUpperCase();
+      if (w.length > def.size || seen[w]) continue;
+      seen[w] = true;
+      pool.push(e);
+    }
+    if (pool.length < 8) return null;
+    for (var i = pool.length - 1; i > 0; i--) {
+      var j = Math.floor(rng() * (i + 1));
+      var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+    }
+    return _pickWords(pool, 8);
+  }
+  // UTC 'YYYY-MM-DD' for a Date (defaults to now).
+  function utcDateStr(d) {
+    try {
+      var dt = d instanceof Date ? d : new Date();
+      return dt.toISOString().slice(0, 10);
+    } catch (e) { return ''; }
+  }
+  // UTC 'YYYY-MM-DD' for the day before the given date string.
+  function prevUtcDateStr(dateStr) {
+    try {
+      var dt = new Date(String(dateStr) + 'T00:00:00Z');
+      dt.setUTCDate(dt.getUTCDate() - 1);
+      return dt.toISOString().slice(0, 10);
+    } catch (e) { return ''; }
+  }
+
+  // --- stars / score ---------------------------------------------------------
+  // Par time: 30s base + 15s per word. Stars are earned on the win:
+  //   3 stars: no hints used and finished within par
+  //   2 stars: at most 1 hint used and finished within 1.5x par
+  //   1 star:  otherwise (a win always earns at least 1 star)
+  function parTimeSecs(def) {
+    if (!def) return 150;
+    return 30 + (def.wordCount || 8) * 15;
+  }
+  function starsFor(def, elapsedSecs, hintsUsed) {
+    var par = parTimeSecs(def);
+    var elapsed = typeof elapsedSecs === 'number' ? elapsedSecs : par;
+    var hints = typeof hintsUsed === 'number' ? hintsUsed : 0;
+    if (hints === 0 && elapsed <= par) return 3;
+    if (hints <= 1 && elapsed <= Math.floor(par * 1.5)) return 2;
+    return 1;
+  }
+  // Score: 10 points per found letter + a time bonus on the win of
+  // 2 points per second under par (never negative).
+  function scoreFor(foundWords, elapsedSecs, def) {
+    var pts = 0;
+    for (var i = 0; i < (foundWords || []).length; i++) {
+      pts += (foundWords[i] || '').length * 10;
+    }
+    if (def) {
+      var bonus = Math.max(0, parTimeSecs(def) - (elapsedSecs || 0)) * 2;
+      pts += bonus;
+    }
+    return pts;
+  }
+
+  var api = {
+    WQ_TITLE: WQ_TITLE,
+    PACK_COUNT: PACK_COUNT,
+    LEVELS_PER_PACK: LEVELS_PER_PACK,
+    LEVEL_COUNT: LEVEL_COUNT,
+    FALLBACK_PACKS: FALLBACK_PACKS,
+    WQ_ART: WQ_ART,
+    WQ_AUDIO: WQ_AUDIO,
+    DIRECTIONS: DIRECTIONS,
+    BANDS: BANDS,
+    getPacks: getPacks,
+    packScenePath: packScenePath,
+    getPackWords: getPackWords,
+    getAllWords: getAllWords,
+    hasContent: hasContent,
+    bandForLevel: bandForLevel,
+    levelDef: levelDef,
+    selectLevelWords: selectLevelWords,
+    dailySeed: dailySeed,
+    dailyDef: dailyDef,
+    selectDailyWords: selectDailyWords,
+    utcDateStr: utcDateStr,
+    prevUtcDateStr: prevUtcDateStr,
+    parTimeSecs: parTimeSecs,
+    starsFor: starsFor,
+    scoreFor: scoreFor,
+    hashSeed: _hashSeed,
+    RNG: _mulberry32
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  if (typeof window !== 'undefined' && window) {
+    window.WordQuestData = api;
+    window.__WQ_DATA__ = api;
+  }
+  return api;
+})();
+</script>
+<script>
+// source: wq-engine.js
+// wq-engine.js — Word Quest pure-logic word-search engine.
+//
+// UMD: global WordQuestEngine + module.exports. NO DOM, no Math.random
+// anywhere — all randomness flows through the seeded RNG (mulberry32),
+// so every level and every Daily is deterministic from its seed.
+//
+// Placement rules:
+//   - Words are placed longest-first; candidate cells/directions are
+//     tried in seeded order. Crossings are allowed ONLY where the
+//     letters match; any other overlap is rejected. Every listed word
+//     is placed exactly once.
+//   - Empty cells are filled with seeded random A-Z letters.
+//   - After filling, the grid is checked for accidental duplicate
+//     occurrences of any listed word (filler letters can spell one by
+//     chance); the filler is re-rolled until every word occurs exactly
+//     once (or the refill budget is spent, in which case the puzzle is
+//     still returned with extraOccurrences reported — the node suite
+//     asserts this never happens across all 120 levels + Dailies).
+//
+// Grid representation: puzzle.grid is an array of row strings
+// ('ABCDEFGHIJ'), so puzzles are plain JSON and snapshot-safe.
+// placements: [{ word, def, cells: [[r,c]...], dir }].
+var WordQuestEngine = (function () {
+  'use strict';
+
+  var _Data = null;
+  try {
+    if (typeof module !== 'undefined' && module.exports &&
+        typeof require === 'function') _Data = require('./wq-data.js');
+  } catch (e) { _Data = null; }
+  if (!_Data) {
+    try {
+      var _w = (typeof window !== 'undefined') ? window : null;
+      if (_w && _w.WordQuestData) _Data = _w.WordQuestData;
+      else if (typeof globalThis !== 'undefined' && globalThis.WordQuestData) _Data = globalThis.WordQuestData;
+    } catch (e) { /* data access stays null-safe */ }
+  }
+
+  var MAX_PLACE_ATTEMPTS = 200;   // whole-grid placement retries
+  var MAX_FILL_REROLLS = 50;      // filler re-rolls to kill duplicates
+  var LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+  // --- RNG -------------------------------------------------------------------
+  function _mulberry32(seed) {
+    var s = seed >>> 0;
+    return function () {
+      s |= 0; s = (s + 0x6D2B79F5) | 0;
+      var t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function RNG(seed) { return _mulberry32(seed); }
+  function _hashSeed(str) {
+    if (_Data && typeof _Data.hashSeed === 'function') return _Data.hashSeed(str);
+    var h = 0x811c9dc5;
+    var s = String(str == null ? '' : str);
+    for (var i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 0x01000193);
+    }
+    return h >>> 0;
+  }
+  function _clone(o) {
+    try { return JSON.parse(JSON.stringify(o)); } catch (e) { return null; }
+  }
+  function _shuffle(rng, arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(rng() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  // --- directions --------------------------------------------------------------
+  var DIR_VECTORS = {
+    E: [0, 1], S: [1, 0], W: [0, -1], N: [-1, 0],
+    SE: [1, 1], SW: [1, -1], NE: [-1, 1], NW: [-1, -1]
+  };
+  var ALL_DIRS = ['E', 'S', 'W', 'N', 'SE', 'SW', 'NE', 'NW'];
+  function dirVector(key) {
+    return DIR_VECTORS[key] || null;
+  }
+
+  // --- placement ---------------------------------------------------------------
+  // Can `word` sit at (r, c) running in direction `vec`? Every cell
+  // must be in bounds and either empty or holding the same letter.
+  function _fits(cells, word, r, c, vec) {
+    var size = cells.length;
+    for (var i = 0; i < word.length; i++) {
+      var rr = r + vec[0] * i;
+      var cc = c + vec[1] * i;
+      if (rr < 0 || rr >= size || cc < 0 || cc >= size) return false;
+      var cur = cells[rr][cc];
+      if (cur !== null && cur !== word[i]) return false;
+    }
+    return true;
+  }
+  function _writeWord(cells, word, r, c, vec) {
+    var placed = [];
+    for (var i = 0; i < word.length; i++) {
+      var rr = r + vec[0] * i;
+      var cc = c + vec[1] * i;
+      cells[rr][cc] = word[i];
+      placed.push([rr, cc]);
+    }
+    return placed;
+  }
+
+  // One placement pass over the word list. Returns placements or null
+  // when any word cannot be placed in this pass.
+  function _placeAll(words, size, dirKeys, rng) {
+    var cells = [];
+    for (var r = 0; r < size; r++) {
+      var row = [];
+      for (var c = 0; c < size; c++) row.push(null);
+      cells.push(row);
+    }
+    // Longest first (seeded shuffle breaks length ties), so long
+    // words get the open board and short words fill the crossings.
+    var order = _shuffle(rng, words.map(function (w, i) { return i; }));
+    order.sort(function (a, b) { return words[b].length - words[a].length; });
+    var placements = [];
+    for (var oi = 0; oi < order.length; oi++) {
+      var word = words[order[oi]];
+      var cands = [];
+      for (var rr = 0; rr < size; rr++) {
+        for (var cc = 0; cc < size; cc++) {
+          for (var di = 0; di < dirKeys.length; di++) {
+            cands.push([rr, cc, dirKeys[di]]);
+          }
+        }
+      }
+      cands = _shuffle(rng, cands);
+      var done = null;
+      for (var ci = 0; ci < cands.length; ci++) {
+        var cand = cands[ci];
+        var vec = DIR_VECTORS[cand[2]];
+        if (!vec) continue;
+        if (_fits(cells, word, cand[0], cand[1], vec)) {
+          var placedCells = _writeWord(cells, word, cand[0], cand[1], vec);
+          done = { word: word, cells: placedCells, dir: cand[2] };
+          break;
+        }
+      }
+      if (!done) return null;
+      placements.push(done);
+    }
+    return { cells: cells, placements: placements };
+  }
+
+  // Rows of the placed-only grid: placed letters as-is, empty cells
+  // as '#', which never matches a letter. Used to catch structural
+  // duplicates (a short word like ZOO spelled a second time by
+  // crossing letters) that no filler re-roll could ever fix.
+  function _placedGrid(cells) {
+    var grid = [];
+    for (var r = 0; r < cells.length; r++) {
+      var row = '';
+      for (var c = 0; c < cells[r].length; c++) {
+        row += cells[r][c] !== null ? cells[r][c] : '#';
+      }
+      grid.push(row);
+    }
+    return grid;
+  }
+
+  function _fill(cells, rng) {
+    var size = cells.length;
+    var grid = [];
+    for (var r = 0; r < size; r++) {
+      var row = '';
+      for (var c = 0; c < size; c++) {
+        row += cells[r][c] !== null ? cells[r][c]
+          : LETTERS[Math.floor(rng() * 26)];
+      }
+      grid.push(row);
+    }
+    return grid;
+  }
+
+  // --- scanning / validation -----------------------------------------------------
+  // Find `word` in the grid (row strings) in any of the 8 directions.
+  // Returns { cells, dir } for the first occurrence, or null.
+  function findWord(grid, word) {
+    if (!grid || !grid.length || !word) return null;
+    var size = grid.length;
+    var w = String(word).toUpperCase();
+    for (var r = 0; r < size; r++) {
+      for (var c = 0; c < size; c++) {
+        if (grid[r][c] !== w[0]) continue;
+        for (var d = 0; d < ALL_DIRS.length; d++) {
+          var vec = DIR_VECTORS[ALL_DIRS[d]];
+          var ok = true;
+          var cells = [];
+          for (var i = 0; i < w.length; i++) {
+            var rr = r + vec[0] * i;
+            var cc = c + vec[1] * i;
+            if (rr < 0 || rr >= size || cc < 0 || cc >= size || grid[rr][cc] !== w[i]) {
+              ok = false;
+              break;
+            }
+            cells.push([rr, cc]);
+          }
+          if (ok) return { cells: cells, dir: ALL_DIRS[d] };
+        }
+      }
+    }
+    return null;
+  }
+  // How many times does `word` occur in the grid (all starts, all
+  // 8 directions)? A clean puzzle has exactly 1 per listed word.
+  function countOccurrences(grid, word) {
+    if (!grid || !grid.length || !word) return 0;
+    var size = grid.length;
+    var w = String(word).toUpperCase();
+    var count = 0;
+    for (var r = 0; r < size; r++) {
+      for (var c = 0; c < size; c++) {
+        if (grid[r][c] !== w[0]) continue;
+        for (var d = 0; d < ALL_DIRS.length; d++) {
+          var vec = DIR_VECTORS[ALL_DIRS[d]];
+          var ok = true;
+          for (var i = 0; i < w.length; i++) {
+            var rr = r + vec[0] * i;
+            var cc = c + vec[1] * i;
+            if (rr < 0 || rr >= size || cc < 0 || cc >= size || grid[rr][cc] !== w[i]) {
+              ok = false;
+              break;
+            }
+          }
+          if (ok) count++;
+        }
+      }
+    }
+    return count;
+  }
+  // Every listed word findable, and occurring exactly once.
+  function validatePuzzle(puzzle) {
+    if (!puzzle || !Array.isArray(puzzle.grid) || !Array.isArray(puzzle.placements)) {
+      return { ok: false, reason: 'bad-puzzle' };
+    }
+    var words = [];
+    for (var i = 0; i < puzzle.placements.length; i++) words.push(puzzle.placements[i].word);
+    var missing = [];
+    var extra = [];
+    for (var j = 0; j < words.length; j++) {
+      var n = countOccurrences(puzzle.grid, words[j]);
+      if (n === 0) missing.push(words[j]);
+      else if (n > 1) extra.push({ word: words[j], count: n });
+    }
+    return { ok: missing.length === 0 && extra.length === 0, missing: missing, extra: extra };
+  }
+
+  // --- generation ------------------------------------------------------------------
+  // words: array of strings (already uppercased A-Z). def: { size,
+  // dirs, wordCount, seed }. Returns a puzzle or null when placement
+  // fails after every retry (callers treat null as a hard failure —
+  // the node suite asserts it never happens for real levels).
+  function generatePuzzle(words, def) {
+    if (!Array.isArray(words) || !words.length || !def ||
+        typeof def.size !== 'number' || !Array.isArray(def.dirs) || !def.dirs.length) {
+      return null;
+    }
+    var clean = [];
+    var seenWord = {};
+    for (var i = 0; i < words.length; i++) {
+      var w = String(words[i]).toUpperCase().replace(/[^A-Z]/g, '');
+      if (w.length >= 3 && !seenWord[w]) { seenWord[w] = true; clean.push(w); }
+    }
+    if (!clean.length) return null;
+    var size = def.size;
+    var dirKeys = def.dirs.slice();
+    var baseSeed = (def.seed == null ? 1 : def.seed) >>> 0;
+    var attempt;
+    for (attempt = 0; attempt < MAX_PLACE_ATTEMPTS; attempt++) {
+      var rng = RNG((baseSeed ^ Math.imul(attempt + 1, 2654435761)) >>> 0);
+      var placed = _placeAll(clean, size, dirKeys, rng);
+      if (!placed) continue;
+      // Structural check first: if the placed letters alone already
+      // spell some word twice (crossings can do this for 3-letter
+      // words), this placement is unusable — retry with a fresh seed.
+      // Only then fill + de-duplicate the filler.
+      var structural = false;
+      var pg = _placedGrid(placed.cells);
+      for (var si = 0; si < clean.length; si++) {
+        if (countOccurrences(pg, clean[si]) > 1) { structural = true; break; }
+      }
+      if (structural) continue;
+      // Fill + de-duplicate: re-roll the filler until every word
+      // occurs exactly once.
+      var grid = null;
+      var extra = null;
+      var reroll;
+      for (reroll = 0; reroll <= MAX_FILL_REROLLS; reroll++) {
+        grid = _fill(placed.cells, rng);
+        extra = [];
+        for (var wi = 0; wi < clean.length; wi++) {
+          var n = countOccurrences(grid, clean[wi]);
+          if (n > 1) extra.push({ word: clean[wi], count: n });
+        }
+        if (!extra.length) break;
+      }
+      var puzzle = {
+        size: size, grid: grid, seed: baseSeed,
+        dirs: dirKeys.slice(),
+        placements: placed.placements.map(function (p) {
+          return { word: p.word, cells: p.cells, dir: p.dir };
+        }),
+        attempts: attempt + 1,
+        extraOccurrences: extra && extra.length ? extra : []
+      };
+      // Attach definitions when the caller passed {w, d} entries.
+      return puzzle;
+    }
+    return null;
+  }
+
+  // Attach definitions to a puzzle's placements from [{w, d}] entries.
+  function attachDefinitions(puzzle, entries) {
+    if (!puzzle || !Array.isArray(entries)) return puzzle;
+    var byWord = {};
+    for (var i = 0; i < entries.length; i++) {
+      if (entries[i] && entries[i].w) byWord[String(entries[i].w).toUpperCase()] = entries[i].d || '';
+    }
+    for (var j = 0; j < puzzle.placements.length; j++) {
+      puzzle.placements[j].def = byWord[puzzle.placements[j].word] || '';
+    }
+    return puzzle;
+  }
+
+  // Full level build: def from WordQuestData.levelDef, words from the
+  // pack's entries. Returns { def, puzzle } or null.
+  function generateLevel(packIdx, level, entries) {
+    if (!_Data || typeof _Data.levelDef !== 'function') return null;
+    var def = _Data.levelDef(packIdx, level);
+    if (!def) return null;
+    var picked = _Data.selectLevelWords(entries, def);
+    if (!picked || !picked.length) return null;
+    var words = picked.map(function (e) { return e.w; });
+    var puzzle = generatePuzzle(words, def);
+    if (!puzzle) return null;
+    attachDefinitions(puzzle, picked);
+    return { def: def, puzzle: puzzle };
+  }
+
+  // Daily build: same date -> identical puzzle. allEntries is the
+  // pooled [{w, d}] list from every pack.
+  function generateDaily(allEntries, dateStr) {
+    if (!_Data || typeof _Data.dailyDef !== 'function') return null;
+    var def = _Data.dailyDef(dateStr);
+    var picked = _Data.selectDailyWords(allEntries, dateStr);
+    if (!picked || !picked.length) return null;
+    var words = picked.map(function (e) { return e.w; });
+    var puzzle = generatePuzzle(words, def);
+    if (!puzzle) return null;
+    attachDefinitions(puzzle, picked);
+    return { def: def, puzzle: puzzle, date: def.date };
+  }
+
+  // --- selection ---------------------------------------------------------------------
+  // Cells on the straight line from start to end (8 directions), or
+  // null when the two cells are not on one line. A single cell
+  // selects itself.
+  function selectionCells(start, end) {
+    if (!start || !end) return null;
+    var r0 = start[0], c0 = start[1], r1 = end[0], c1 = end[1];
+    var dr = r1 - r0, dc = c1 - c0;
+    if (dr === 0 && dc === 0) return [[r0, c0]];
+    var steps = Math.max(Math.abs(dr), Math.abs(dc));
+    if (Math.abs(dr) !== 0 && Math.abs(dc) !== 0 && Math.abs(dr) !== Math.abs(dc)) return null;
+    var sr = dr === 0 ? 0 : dr / Math.abs(dr);
+    var sc = dc === 0 ? 0 : dc / Math.abs(dc);
+    var cells = [];
+    for (var i = 0; i <= steps; i++) cells.push([r0 + sr * i, c0 + sc * i]);
+    return cells;
+  }
+  // The word spelled by a cell list on the grid, or '' when out of
+  // bounds. Also returns the reversed spelling for backwards picks.
+  function selectionWord(grid, cells) {
+    if (!grid || !cells || !cells.length) return '';
+    var fwd = '';
+    for (var i = 0; i < cells.length; i++) {
+      var r = cells[i][0], c = cells[i][1];
+      if (r < 0 || r >= grid.length || c < 0 || c >= grid.length) return '';
+      fwd += grid[r][c];
+    }
+    return fwd;
+  }
+  // Match a selection against the puzzle's word list. Returns the
+  // placement when the selected cells spell a listed word (forwards
+  // or backwards along its placed cells), else null.
+  function matchSelection(puzzle, cells) {
+    if (!puzzle || !cells || !cells.length) return null;
+    var word = selectionWord(puzzle.grid, cells);
+    if (!word) return null;
+    var rev = word.split('').reverse().join('');
+    for (var i = 0; i < puzzle.placements.length; i++) {
+      var p = puzzle.placements[i];
+      if (p.word === word || p.word === rev) {
+        // The selection must cover exactly the placed cells.
+        if (cells.length !== p.cells.length) continue;
+        return p;
+      }
+    }
+    return null;
+  }
+
+  var api = {
+    RNG: RNG,
+    hashSeed: _hashSeed,
+    DIR_VECTORS: DIR_VECTORS,
+    ALL_DIRS: ALL_DIRS,
+    dirVector: dirVector,
+    generatePuzzle: generatePuzzle,
+    attachDefinitions: attachDefinitions,
+    generateLevel: generateLevel,
+    generateDaily: generateDaily,
+    findWord: findWord,
+    countOccurrences: countOccurrences,
+    validatePuzzle: validatePuzzle,
+    selectionCells: selectionCells,
+    selectionWord: selectionWord,
+    matchSelection: matchSelection,
+    MAX_PLACE_ATTEMPTS: MAX_PLACE_ATTEMPTS,
+    MAX_FILL_REROLLS: MAX_FILL_REROLLS
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  if (typeof window !== 'undefined' && window) {
+    window.WordQuestEngine = api;
+    window.__WQ_ENGINE__ = api;
+  }
+  return api;
+})();
+</script>
+<script>
+// source: wq-save.js
+// wq-save.js — Word Quest persistent data + SaveRegistry entry.
+//
+// Keys (all jmf-phone-*, per the registry convention):
+//   jmf-phone-wordquest-save-v1  — progress profile (stars, best
+//                              times, unlocked packs/levels, hint
+//                              balances, Daily streak, settings) +
+//                              mid-puzzle snapshot (null when not
+//                              mid-puzzle)
+//   jmf-phone-wordquest-stats-v1 — games played / won / words found
+//
+// HINT RULE (binding, see wq-game.js): hints are earned in-game only,
+// never bought.
+//   - +1 letter hint AND +1 word hint the FIRST time a level is
+//     completed with 3 stars (replaying an already-3-starred level
+//     earns nothing — no farming).
+//   - +1 letter hint AND +1 word hint for each Daily completed, once
+//     per calendar date (UTC).
+// Starting balances: 3 letter hints, 2 word hints.
+//
+// UMD: global WordQuestSave + module.exports. Never throws. Registers
+// with SaveRegistry at eval time when it exists (guarded) and
+// attaches reinit/reload hooks.
+var WordQuestSave = (function () {
+  'use strict';
+
+  var SAVE_KEY = 'jmf-phone-wordquest-save-v1';
+  var STATS_KEY = 'jmf-phone-wordquest-stats-v1';
+  var PACK_COUNT = 12;
+  var LEVELS_PER_PACK = 10;
+
+  var DEFAULT_PROGRESS = {
+    stars: {},            // 'pack:level' -> 0..3 (best)
+    bestTime: {},         // 'pack:level' -> best seconds
+    dailyBest: {},        // 'YYYY-MM-DD' -> best seconds
+    hints: { letter: 3, word: 2 },
+    daily: { lastPlayed: null, streak: 0, completed: {} },
+    settings: { showTimer: true },
+    snapshot: null        // mid-puzzle state, or null
+  };
+  var DEFAULT_STATS = { games: 0, wins: 0, wordsFound: 0, bestScore: 0 };
+
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+  function _ls() {
+    try {
+      if (typeof localStorage !== 'undefined' && localStorage) return localStorage;
+      var w = _win();
+      if (w && w.localStorage) return w.localStorage;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _get(key) {
+    try {
+      var store = _ls();
+      if (!store) return null;
+      var raw = store.getItem(key);
+      return (typeof raw === 'string' && raw) ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function _set(key, value) {
+    try {
+      var store = _ls();
+      if (!store) return false;
+      store.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) { return false; }
+  }
+  function _del(key) {
+    try { var store = _ls(); if (store) store.removeItem(key); return true; } catch (e) { return false; }
+  }
+  function _clone(o) { try { return JSON.parse(JSON.stringify(o)); } catch (e) { return null; } }
+  function _withDefaults(saved, defaults) {
+    var out = _clone(defaults) || {};
+    if (saved && typeof saved === 'object') {
+      for (var k in defaults) {
+        if (Object.prototype.hasOwnProperty.call(defaults, k) &&
+            typeof saved[k] === typeof defaults[k]) out[k] = saved[k];
+      }
+    }
+    return out;
+  }
+  function _signal(reason) {
+    try {
+      var w = _win();
+      if (w && typeof w.CustomEvent === 'function' &&
+          typeof w.dispatchEvent === 'function') {
+        w.dispatchEvent(new w.CustomEvent('wordquest-save-changed', { detail: { reason: reason } }));
+      }
+    } catch (e) { /* signalling is best-effort */ }
+  }
+  function _levelKey(packIdx, level) { return packIdx + ':' + level; }
+
+  // --- progress profile ------------------------------------------------------
+  function loadProgress() {
+    var p = _withDefaults(_get(SAVE_KEY), DEFAULT_PROGRESS);
+    if (!p.stars || typeof p.stars !== 'object') p.stars = {};
+    if (!p.bestTime || typeof p.bestTime !== 'object') p.bestTime = {};
+    if (!p.dailyBest || typeof p.dailyBest !== 'object') p.dailyBest = {};
+    if (!p.hints || typeof p.hints !== 'object') p.hints = _clone(DEFAULT_PROGRESS.hints);
+    p.hints.letter = typeof p.hints.letter === 'number' ? Math.max(0, p.hints.letter) : 3;
+    p.hints.word = typeof p.hints.word === 'number' ? Math.max(0, p.hints.word) : 2;
+    if (!p.daily || typeof p.daily !== 'object') p.daily = _clone(DEFAULT_PROGRESS.daily);
+    if (typeof p.daily.streak !== 'number' || p.daily.streak < 0) p.daily.streak = 0;
+    if (!p.daily.completed || typeof p.daily.completed !== 'object') p.daily.completed = {};
+    if (!p.settings || typeof p.settings !== 'object') p.settings = _clone(DEFAULT_PROGRESS.settings);
+    return p;
+  }
+  function saveProgress(progress) {
+    if (!progress || typeof progress !== 'object') return false;
+    return _set(SAVE_KEY, _withDefaults(progress, DEFAULT_PROGRESS));
+  }
+  function resetProgress() {
+    var ok = _del(SAVE_KEY);
+    _signal('reset');
+    return ok;
+  }
+
+  // --- unlocks ---------------------------------------------------------------
+  // Pack 0 is open. A later pack opens once the previous pack has at
+  // least one starred level. Within a pack, level 1 is open and each
+  // next level opens once the previous one is starred.
+  function isPackUnlocked(progress, packIdx) {
+    if (packIdx <= 0) return true;
+    if (!progress || !progress.stars) return false;
+    var prev = packIdx - 1;
+    for (var l = 1; l <= LEVELS_PER_PACK; l++) {
+      if ((progress.stars[_levelKey(prev, l)] || 0) > 0) return true;
+    }
+    return false;
+  }
+  function isLevelUnlocked(progress, packIdx, level) {
+    if (!isPackUnlocked(progress, packIdx)) return false;
+    if (level <= 1) return true;
+    return (progress.stars[_levelKey(packIdx, level - 1)] || 0) > 0;
+  }
+  function packStars(progress, packIdx) {
+    var total = 0;
+    if (!progress || !progress.stars) return 0;
+    for (var l = 1; l <= LEVELS_PER_PACK; l++) total += (progress.stars[_levelKey(packIdx, l)] || 0);
+    return total;
+  }
+  function totalStars(progress) {
+    var total = 0;
+    if (!progress || !progress.stars) return 0;
+    for (var k in progress.stars) total += (progress.stars[k] || 0);
+    return total;
+  }
+
+  // --- level results -----------------------------------------------------------
+  // Record a finished level: best stars kept, best time kept, hint
+  // award on the FIRST 3-star completion of that level (+1 letter,
+  // +1 word). Returns { progress, awarded } or null.
+  function recordLevelWin(packIdx, level, stars, timeSecs) {
+    try {
+      if (typeof packIdx !== 'number' || packIdx < 0 || packIdx >= PACK_COUNT) return null;
+      if (typeof level !== 'number' || level < 1 || level > LEVELS_PER_PACK) return null;
+      var p = loadProgress();
+      var s = Math.max(0, Math.min(3, stars | 0));
+      var key = _levelKey(packIdx, level);
+      var prev = p.stars[key] || 0;
+      p.stars[key] = Math.max(prev, s);
+      if (typeof timeSecs === 'number' && timeSecs > 0) {
+        if (!p.bestTime[key] || timeSecs < p.bestTime[key]) p.bestTime[key] = timeSecs;
+      }
+      var awarded = false;
+      if (s >= 3 && prev < 3) {
+        p.hints.letter += 1;
+        p.hints.word += 1;
+        awarded = true;
+      }
+      saveProgress(p);
+      return { progress: p, awarded: awarded };
+    } catch (e) { return null; }
+  }
+
+  // Record a finished Daily: once per UTC date. Awards +1 letter and
+  // +1 word hint, and advances the streak (consecutive UTC days).
+  // Returns { progress, awarded, streak } or null.
+  function recordDailyComplete(dateStr, timeSecs) {
+    try {
+      if (typeof dateStr !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null;
+      var p = loadProgress();
+      if (p.daily.completed[dateStr]) {
+        if (typeof timeSecs === 'number' && timeSecs > 0) {
+          if (!p.dailyBest[dateStr] || timeSecs < p.dailyBest[dateStr]) {
+            p.dailyBest[dateStr] = timeSecs;
+            saveProgress(p);
+          }
+        }
+        return { progress: p, awarded: false, streak: p.daily.streak };
+      }
+      p.daily.completed[dateStr] = true;
+      // Prune old entries (keep the last 400 days).
+      var dates = Object.keys(p.daily.completed).sort();
+      while (dates.length > 400) {
+        delete p.daily.completed[dates.shift()];
+      }
+      var prevDate = '';
+      try {
+        var dt = new Date(dateStr + 'T00:00:00Z');
+        dt.setUTCDate(dt.getUTCDate() - 1);
+        prevDate = dt.toISOString().slice(0, 10);
+      } catch (e) { prevDate = ''; }
+      p.daily.streak = (p.daily.lastPlayed === prevDate) ? (p.daily.streak + 1) : 1;
+      p.daily.lastPlayed = dateStr;
+      p.hints.letter += 1;
+      p.hints.word += 1;
+      if (typeof timeSecs === 'number' && timeSecs > 0) {
+        if (!p.dailyBest[dateStr] || timeSecs < p.dailyBest[dateStr]) p.dailyBest[dateStr] = timeSecs;
+      }
+      saveProgress(p);
+      return { progress: p, awarded: true, streak: p.daily.streak };
+    } catch (e) { return null; }
+  }
+
+  // --- hints ---------------------------------------------------------------------
+  function addHint(kind, n) {
+    try {
+      if (kind !== 'letter' && kind !== 'word') return null;
+      var p = loadProgress();
+      p.hints[kind] = Math.max(0, (p.hints[kind] || 0) + (n | 0));
+      saveProgress(p);
+      return p.hints[kind];
+    } catch (e) { return null; }
+  }
+  // Spend one hint from inventory. Returns true when one was held.
+  function spendHint(kind) {
+    try {
+      if (kind !== 'letter' && kind !== 'word') return false;
+      var p = loadProgress();
+      if ((p.hints[kind] || 0) <= 0) return false;
+      p.hints[kind]--;
+      saveProgress(p);
+      return true;
+    } catch (e) { return false; }
+  }
+
+  // --- mid-puzzle snapshot ---------------------------------------------------------
+  // The puzzle is plain JSON already (row strings + placements), so
+  // the snapshot stores as-is. Shape:
+  //   { kind: 'level'|'daily', pack, level, date, puzzle,
+  //     found: [word,...], given: ['r:c',...], elapsed, hintsUsed, score,
+  //     savedAt }
+  function saveSnapshot(snap) {
+    try {
+      if (!snap || typeof snap !== 'object' || !snap.puzzle) return false;
+      var p = loadProgress();
+      var copy = _clone(snap) || null;
+      if (!copy) return false;
+      copy.savedAt = Date.now();
+      p.snapshot = copy;
+      return saveProgress(p);
+    } catch (e) { return false; }
+  }
+  function loadSnapshot() {
+    try {
+      var p = loadProgress();
+      if (!p.snapshot || typeof p.snapshot !== 'object' || !p.snapshot.puzzle) return null;
+      return p.snapshot;
+    } catch (e) { return null; }
+  }
+  function clearSnapshot() {
+    try {
+      var p = loadProgress();
+      if (!p.snapshot) return true;
+      p.snapshot = null;
+      return saveProgress(p);
+    } catch (e) { return false; }
+  }
+  function hasSnapshot() { return !!loadSnapshot(); }
+
+  // Tycoon-style aliases.
+  function loadGame() { return loadSnapshot(); }
+  function saveGame(snap) { return saveSnapshot(snap); }
+  function clearGame() { return clearSnapshot(); }
+  function hasSave() { return hasSnapshot(); }
+
+  // --- stats ---------------------------------------------------------------------
+  function loadStats() { return _withDefaults(_get(STATS_KEY), DEFAULT_STATS); }
+  function saveStats(stats) {
+    if (!stats || typeof stats !== 'object') return false;
+    return _set(STATS_KEY, _withDefaults(stats, DEFAULT_STATS));
+  }
+  function recordResult(won, score, wordsFound) {
+    var stats = loadStats();
+    stats.games++;
+    if (won) stats.wins++;
+    if (typeof wordsFound === 'number') stats.wordsFound += wordsFound;
+    if (typeof score === 'number' && score > stats.bestScore) stats.bestScore = score;
+    saveStats(stats);
+    return stats;
+  }
+
+  // --- SaveRegistry hooks ---------------------------------------------------------
+  // reinit: wipe both keys (Settings "delete save") and signal the UI.
+  // reload: re-read the profile from storage and signal.
+  function reinit() {
+    try { _del(SAVE_KEY); } catch (e) { /* never throws */ }
+    try { _del(STATS_KEY); } catch (e) { /* never throws */ }
+    _signal('reinit');
+    return true;
+  }
+  function reload() {
+    var p = loadProgress();
+    _signal('reload');
+    return p;
+  }
+
+  try {
+    var SR = null;
+    var w = _win();
+    if (w && w.SaveRegistry) SR = w.SaveRegistry;
+    else if (typeof SaveRegistry !== 'undefined' && SaveRegistry) SR = SaveRegistry;
+    if (SR && typeof SR.register === 'function') {
+      SR.register({ id: 'wordquest', name: 'Word Quest', keys: [SAVE_KEY, STATS_KEY] });
+      if (typeof SR.extend === 'function') {
+        SR.extend('wordquest', { reinit: reinit, reload: reload });
+      }
+    }
+  } catch (e) { /* registry is best-effort */ }
+
+  var api = {
+    SAVE_KEY: SAVE_KEY,
+    STATS_KEY: STATS_KEY,
+    loadProgress: loadProgress,
+    saveProgress: saveProgress,
+    resetProgress: resetProgress,
+    isPackUnlocked: isPackUnlocked,
+    isLevelUnlocked: isLevelUnlocked,
+    packStars: packStars,
+    totalStars: totalStars,
+    recordLevelWin: recordLevelWin,
+    recordDailyComplete: recordDailyComplete,
+    addHint: addHint,
+    spendHint: spendHint,
+    saveSnapshot: saveSnapshot,
+    loadSnapshot: loadSnapshot,
+    clearSnapshot: clearSnapshot,
+    hasSnapshot: hasSnapshot,
+    loadGame: loadGame,
+    saveGame: saveGame,
+    clearGame: clearGame,
+    hasSave: hasSave,
+    loadStats: loadStats,
+    saveStats: saveStats,
+    recordResult: recordResult,
+    reinit: reinit,
+    reload: reload
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  if (typeof window !== 'undefined' && window) {
+    window.WordQuestSave = api;
+    window.__WQ_SAVE__ = api;
+  }
+  return api;
+})();
+</script>
+<script>
+// source: wq-audio.js
+// wq-audio.js — Word Quest sound effects ONLY.
+//
+// Word Quest has NO music of its own: the phone's shared shell music
+// keeps playing while the game is open (there is no setShellMusic /
+// startMusic / stopMusic here, and no music file). What this module
+// owns is three short WAV effects:
+//   tick  — selection moves to a new cell while dragging
+//   found — a word is found (chime)
+//   win   — puzzle complete (fanfare)
+// Files live at assets/word-quest/audio/*.wav (see WQ_AUDIO in
+// wq-data.js). A WebAudio blip is the fallback when a file cannot
+// play (node / standalone / missing Audio). Everything is gated by
+// the shell's sound setting when readable.
+//
+// MISSING-FILE RULE (Nov 23, 2026 — outage #20: the three SFX wavs
+// did not land, so they are OWED for the resume check): a missing
+// file must NEVER produce a console error or a crash. An <audio>
+// element pointed at a 404 URL logs "Failed to load resource" in
+// Chromium, so play() NEVER creates an Audio element for a file
+// whose existence is unproven. First use of a kind fires a lazy
+// HEAD check; until that check resolves ok, play() uses the blip
+// only. A 404 marks the kind bad (blip forever, silently). A fetch
+// that itself fails (no fetch / network down) falls back to the
+// direct Audio attempt — the Audio path still swallows play()
+// rejections and load errors. Loading this module creates no Audio
+// element at all (fully lazy), so merely opening the game is silent.
+//
+// UMD: global WordQuestAudio + module.exports. Never throws.
+var WordQuestAudio = (function () {
+  'use strict';
+
+  var _sfx = {};          // kind -> <audio> element
+  var _sfxFailed = {};    // kind -> true (file unusable; use blip)
+  var _sfxState = {};     // kind -> 'checking' | 'ok' | 'bad' (lazy HEAD check)
+  var _ctx = null;
+  var _DataNode = null;
+  try {
+    if (typeof module !== 'undefined' && module.exports &&
+        typeof require === 'function') _DataNode = require('./wq-data.js');
+  } catch (e) { _DataNode = null; }
+
+  var _FALLBACK_SRC = {
+    tick: 'assets/word-quest/audio/tick.wav',
+    found: 'assets/word-quest/audio/found.wav',
+    win: 'assets/word-quest/audio/win.wav'
+  };
+  // WebAudio blip frequencies per SFX kind (fallback only).
+  var _BLIP_FREQ = { tick: 700, found: 880, win: 1040 };
+
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+  function _settings() {
+    try {
+      var w = _win();
+      if (w && w.BZSettings && typeof w.BZSettings.readSettings === 'function') return w.BZSettings.readSettings();
+      if (typeof BZSettings !== 'undefined' && BZSettings && typeof BZSettings.readSettings === 'function') return BZSettings.readSettings();
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _data() {
+    try {
+      if (_DataNode && _DataNode.WQ_AUDIO) return _DataNode.WQ_AUDIO;
+      if (typeof WordQuestData !== 'undefined' && WordQuestData && WordQuestData.WQ_AUDIO) return WordQuestData.WQ_AUDIO;
+      var w = _win();
+      if (w && w.WordQuestData && w.WordQuestData.WQ_AUDIO) return w.WordQuestData.WQ_AUDIO;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _sfxSrc(kind) {
+    var d = _data();
+    if (d && d.sfx && d.sfx[kind]) return d.sfx[kind];
+    return _FALLBACK_SRC[kind] || null;
+  }
+  function _soundOn() {
+    var s = _settings();
+    if (s && typeof s.sound === 'boolean') return s.sound;
+    return true;
+  }
+  function _audioCtx() {
+    try {
+      if (_ctx) return _ctx;
+      var w = _win();
+      var AC = (w && (w.AudioContext || w.webkitAudioContext)) ||
+        (typeof AudioContext !== 'undefined' ? AudioContext : null) ||
+        (typeof webkitAudioContext !== 'undefined' ? webkitAudioContext : null);
+      if (!AC) return null;
+      _ctx = new AC();
+      return _ctx;
+    } catch (e) { return null; }
+  }
+  function _blipFallback(kind) {
+    var ctx = _audioCtx();
+    if (!ctx) return;
+    try {
+      if (ctx.state === 'suspended' && typeof ctx.resume === 'function') ctx.resume();
+      var freq = _BLIP_FREQ[kind] || 660;
+      var o = ctx.createOscillator();
+      var g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.08, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start();
+      o.stop(ctx.currentTime + 0.2);
+    } catch (e) { /* audio is best-effort */ }
+  }
+
+  // Lazy existence check: HEAD the file once per kind. Only a
+  // res.ok result ever lets play() create an Audio element, so a
+  // missing file can never log a failed-resource console error.
+  // No fetch (node) or a fetch that itself rejects: assume ok and
+  // let the Audio path (or the blip, where Audio is absent) decide.
+  function _checkFile(kind, src) {
+    _sfxState[kind] = 'checking';
+    try {
+      var w = _win();
+      var F = (w && w.fetch) || (typeof fetch === 'function' ? fetch : null);
+      if (!F) { _sfxState[kind] = 'ok'; return; }
+      F(src, { method: 'HEAD' }).then(function (res) {
+        var ok = !!(res && res.ok);
+        _sfxState[kind] = ok ? 'ok' : 'bad';
+        if (!ok) _sfxFailed[kind] = true;
+      }, function () { _sfxState[kind] = 'ok'; });
+    } catch (e) { _sfxState[kind] = 'ok'; }
+  }
+
+  // Play one sound effect. kind: tick, found, win.
+  function play(kind) {
+    if (!_soundOn()) return;
+    if (kind !== 'tick' && kind !== 'found' && kind !== 'win') return;
+    var src = _sfxSrc(kind);
+    if (src && !_sfxFailed[kind]) {
+      // First use (or still checking / proven missing): never touch
+      // <audio> — blip only. The HEAD check runs once, lazily.
+      if (!_sfxState[kind]) _checkFile(kind, src);
+      if (_sfxState[kind] !== 'ok') { _blipFallback(kind); return; }
+      try {
+        if (typeof Audio !== 'function') { _blipFallback(kind); return; }
+        var a = _sfx[kind];
+        if (!a) {
+          a = new Audio();
+          a.src = src;
+          a.preload = 'auto';
+          a.volume = 0.9;
+          a.addEventListener('error', function () { _sfxFailed[kind] = true; });
+          _sfx[kind] = a;
+        }
+        a.currentTime = 0;
+        var p = a.play();
+        if (p && typeof p.catch === 'function') p.catch(function () { /* ignore */ });
+        return;
+      } catch (e) { /* fall through to WebAudio blip */ }
+    }
+    _blipFallback(kind);
+  }
+  function blip(kind) { play(kind); }
+
+  function debugState() {
+    return {
+      soundOn: _soundOn(),
+      sfxLoaded: Object.keys(_sfx),
+      sfxFailed: Object.keys(_sfxFailed),
+      sfxState: Object.keys(_sfxState).map(function (k) { return k + ':' + _sfxState[k]; })
+    };
+  }
+
+  var api = {
+    play: play,
+    blip: blip,
+    debugState: debugState
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  if (typeof window !== 'undefined' && window) {
+    window.WordQuestAudio = api;
+    window.__WQ_AUDIO__ = api;
+  }
+  return api;
+})();
+</script>
+<script>
+// source: wq-game.js
+// WordQuestGame — Word Quest UI: journey map, level map, Daily, puzzle.
+//
+// Owns the DOM inside #app-wordquest. All logic goes through
+// WordQuestEngine; all persistence through WordQuestSave; all sound
+// through WordQuestAudio (SFX only); all word content through
+// WordQuestData (which reads wq-words.js).
+//
+// MUSIC: Word Quest has no music of its own and never touches the
+// shell music — the phone's shared music keeps playing while the game
+// is open. There is no music toggle, no music file, no music code.
+//
+// UMD: global WordQuestGame (+ window.__WQ__ verification handle).
+// Never throws at boot; degrades gracefully if art/audio/save/words
+// are missing. Original names/art only — no third-party trademarks.
+var WordQuestGame = (function () {
+  'use strict';
+
+  // --- resolvers (guarded: every dependency may be absent) ---------------
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+  function _engine() {
+    try {
+      var w = _win();
+      if (w && w.WordQuestEngine) return w.WordQuestEngine;
+      if (typeof WordQuestEngine !== 'undefined' && WordQuestEngine) return WordQuestEngine;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _save() {
+    try {
+      var w = _win();
+      if (w && w.WordQuestSave) return w.WordQuestSave;
+      if (typeof WordQuestSave !== 'undefined' && WordQuestSave) return WordQuestSave;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _audio() {
+    try {
+      var w = _win();
+      if (w && w.WordQuestAudio) return w.WordQuestAudio;
+      if (typeof WordQuestAudio !== 'undefined' && WordQuestAudio) return WordQuestAudio;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _data() {
+    try {
+      var w = _win();
+      if (w && w.WordQuestData) return w.WordQuestData;
+      if (typeof WordQuestData !== 'undefined' && WordQuestData) return WordQuestData;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _log(e) {
+    try {
+      if (typeof console !== 'undefined' && console && console.error) console.error('[wq-game]', e);
+    } catch (e2) { /* logging is best-effort */ }
+  }
+
+  // --- state ---------------------------------------------------------------
+  var _mount = null;
+  var _root = null;
+  var _els = {};
+  var _inited = false;
+  var _open = false;
+  var _screen = 'journey';       // 'journey' | 'levels' | 'daily' | 'puzzle'
+  var _packIdx = 0;
+  var _def = null;               // level/daily def
+  var _puzzle = null;            // { size, grid, placements, ... }
+  var _isDaily = false;
+  var _dailyDate = '';
+  var _found = {};               // word -> true
+  var _given = {};               // 'r:c' -> true (letter-hint reveals)
+  var _selCells = [];            // live selection cell list
+  var _drag = null;              // { start:[r,c], pointerId, moved }
+  var _tapAnchor = null;         // [r,c] for tap-start/tap-end
+  var _elapsed = 0;              // seconds in this puzzle
+  var _timerId = null;
+  var _paused = false;
+  var _won = false;
+  var _hintsUsed = 0;
+  var _hintRng = null;           // seeded RNG for hint picks
+  var _progress = null;
+  var _toastTimer = null;
+  var _winTimer = null;
+
+  function _fmt(n) {
+    try { return Number(n).toLocaleString('en-US'); } catch (e) { return String(n); }
+  }
+  function _fmtTime(secs) {
+    var s = Math.max(0, Math.floor(secs || 0));
+    var m = Math.floor(s / 60);
+    var r = s % 60;
+    return m + ':' + (r < 10 ? '0' : '') + r;
+  }
+  function _key(r, c) { return r + ':' + c; }
+  function _clone(o) {
+    try { return JSON.parse(JSON.stringify(o)); } catch (e) { return null; }
+  }
+  function _clearTimer(t) {
+    try { if (t) clearTimeout(t); } catch (e) { /* ignore */ }
+    return null;
+  }
+  function _play(kind) {
+    try {
+      var a = _audio();
+      if (a && typeof a.play === 'function') a.play(kind);
+    } catch (e) { /* audio is best-effort */ }
+  }
+  function _loadProgress() {
+    try {
+      var s = _save();
+      if (s && typeof s.loadProgress === 'function') _progress = s.loadProgress() || _progress;
+    } catch (e) { /* keep last progress */ }
+    if (!_progress) {
+      _progress = { stars: {}, bestTime: {}, dailyBest: {}, hints: { letter: 3, word: 2 },
+        daily: { lastPlayed: null, streak: 0, completed: {} },
+        settings: { showTimer: true }, snapshot: null };
+    }
+    return _progress;
+  }
+  function _foundWords() {
+    var out = [];
+    for (var w in _found) if (_found[w]) out.push(w);
+    return out;
+  }
+  function _foundCount() { return _foundWords().length; }
+  function _liveScore() {
+    var pts = 0;
+    var words = _foundWords();
+    for (var i = 0; i < words.length; i++) pts += words[i].length * 10;
+    return pts;
+  }
+
+  // --- DOM helpers -----------------------------------------------------------
+  function _el(tag, cls, text) {
+    var e = null;
+    try {
+      e = document.createElement(tag || 'div');
+      if (cls) e.className = cls;
+      if (text != null) e.textContent = text;
+    } catch (err) { /* element creation failed */ }
+    return e;
+  }
+  function _clear(node) {
+    try { while (node && node.firstChild) node.removeChild(node.firstChild); } catch (e) { /* ignore */ }
+  }
+  function _show(node, on) {
+    try { if (node && node.style) node.style.display = on ? '' : 'none'; } catch (e) { /* ignore */ }
+  }
+  function _toast(msg, ms) {
+    try {
+      if (!_els.toast) return;
+      _els.toast.textContent = msg;
+      _show(_els.toast, true);
+      _toastTimer = _clearTimer(_toastTimer);
+      _toastTimer = setTimeout(function () { _show(_els.toast, false); }, ms || 1800);
+    } catch (e) { /* toast is best-effort */ }
+  }
+
+  // --- chrome ------------------------------------------------------------------
+  function _buildChrome() {
+    _root = _el('div', 'wq-root');
+    _mount.appendChild(_root);
+
+    // Top bar: title, spacer, quit-puzzle, pause. The quit button is
+    // the game's OWN control (NOT PhoneShell.injectQuitButton, which
+    // is being removed phone-wide): it abandons the current puzzle
+    // with no penalty and no meta written, landing on the level map.
+    var topbar = _el('div', 'wq-topbar');
+    try { topbar.id = 'topbar'; } catch (e) { /* id is best-effort */ }
+    topbar.appendChild(_el('div', 'wq-title', 'Word Quest'));
+    topbar.appendChild(_el('div', 'wq-spacer'));
+    var quitBtn = _el('button', 'wq-iconbtn', '\u2715');
+    try {
+      quitBtn.type = 'button';
+      quitBtn.id = 'wqQuitBtn';
+      quitBtn.title = 'Quit puzzle';
+      quitBtn.setAttribute('aria-label', 'Quit puzzle');
+      quitBtn.addEventListener('click', function () {
+        try { _play('tick'); } catch (e) { /* ignore */ }
+        try { quitPuzzle(); } catch (e2) { _log(e2); }
+      });
+    } catch (e) { /* quit button is best-effort */ }
+    topbar.appendChild(quitBtn);
+    var pauseBtn = _el('button', 'wq-iconbtn', '\u275A\u275A');
+    try {
+      pauseBtn.type = 'button';
+      pauseBtn.id = 'pauseBtn';
+      pauseBtn.title = 'Pause';
+      pauseBtn.setAttribute('aria-label', 'Pause');
+      pauseBtn.addEventListener('click', function () {
+        try { _play('tick'); } catch (e) { /* ignore */ }
+        try { if (_screen === 'puzzle' && !_paused && !_won) showPause(); } catch (e2) { /* ignore */ }
+      });
+    } catch (e) { /* pause button is best-effort */ }
+    topbar.appendChild(pauseBtn);
+    _root.appendChild(topbar);
+    _els.topbar = topbar;
+    _els.quitBtn = quitBtn;
+    _els.pauseBtn = pauseBtn;
+
+    // Four screens; only one visible at a time.
+    _els.journey = _el('div', 'wq-journey');
+    _root.appendChild(_els.journey);
+    _els.levels = _el('div', 'wq-levels');
+    _root.appendChild(_els.levels);
+    _els.daily = _el('div', 'wq-daily');
+    _root.appendChild(_els.daily);
+    _els.puzzle = _el('div', 'wq-puzzle');
+    _root.appendChild(_els.puzzle);
+
+    _els.toast = _el('div', 'wq-toast');
+    _show(_els.toast, false);
+    _root.appendChild(_els.toast);
+    _els.sheetHost = _el('div', 'wq-sheet-host');
+    _root.appendChild(_els.sheetHost);
+
+    // Timer pauses when the app hides (tab switch / phone lock).
+    try {
+      if (typeof document !== 'undefined' && document &&
+          typeof document.addEventListener === 'function') {
+        document.addEventListener('visibilitychange', function () {
+          try {
+            if (document.hidden) pauseTimer();
+            else if (_open && _screen === 'puzzle' && !_paused && !_won) startTimer();
+          } catch (e) { /* best-effort */ }
+        });
+      }
+    } catch (e) { /* listener is optional */ }
+  }
+
+  function _setScreen(name) {
+    _screen = name;
+    try {
+      _show(_els.journey, name === 'journey');
+      _show(_els.levels, name === 'levels');
+      _show(_els.daily, name === 'daily');
+      _show(_els.puzzle, name === 'puzzle');
+      var onPuzzle = name === 'puzzle';
+      _show(_els.quitBtn, onPuzzle);
+      _show(_els.pauseBtn, onPuzzle);
+      _hideSheet();
+    } catch (e) { _log(e); }
+  }
+
+  // --- journey map ---------------------------------------------------------------
+  function _packs() {
+    try {
+      var d = _data();
+      if (d && typeof d.getPacks === 'function') return d.getPacks();
+    } catch (e) { /* fall through */ }
+    return [];
+  }
+  function _renderJourney() {
+    _loadProgress();
+    var host = _els.journey;
+    if (!host) return;
+    _clear(host);
+    var head = _el('div', 'wq-map-head');
+    head.appendChild(_el('h2', null, 'Word Quest'));
+    var total = 0;
+    try {
+      var s = _save();
+      if (s && typeof s.totalStars === 'function') total = s.totalStars(_progress) || 0;
+    } catch (e) { /* ignore */ }
+    var streak = (_progress.daily && _progress.daily.streak) || 0;
+    head.appendChild(_el('p', null, total + ' stars  \u00B7  Daily streak ' + streak + ' day' + (streak === 1 ? '' : 's')));
+    host.appendChild(head);
+
+    // Daily card (always on top).
+    try {
+      var d = _data();
+      var today = d && typeof d.utcDateStr === 'function' ? d.utcDateStr() : '';
+      var done = !!(_progress.daily && _progress.daily.completed && _progress.daily.completed[today]);
+      var card = _el('button', 'wq-daily-card' + (done ? ' wq-daily-done' : ''));
+      try {
+        card.type = 'button';
+        card.addEventListener('click', function () {
+          try { _play('tick'); } catch (e) { /* ignore */ }
+          try { toDaily(); } catch (e2) { _log(e2); }
+        });
+        card.appendChild(_el('span', 'wq-daily-ico', '\u2600'));
+        var dtext = _el('span', 'wq-daily-text');
+        dtext.appendChild(_el('span', 'wq-daily-title', 'Daily Puzzle'));
+        dtext.appendChild(_el('span', 'wq-daily-sub',
+          done ? 'Done today — play again for fun' : 'A fresh 10x10 puzzle every day'));
+        card.appendChild(dtext);
+        card.appendChild(_el('span', 'wq-daily-go', '\u203A'));
+      } catch (e) { /* daily card is best-effort */ }
+      host.appendChild(card);
+    } catch (e) { /* daily card is best-effort */ }
+
+    // Resume button when a mid-puzzle snapshot exists.
+    try {
+      var sv = _save();
+      if (sv && typeof sv.loadSnapshot === 'function') {
+        var snap = sv.loadSnapshot();
+        if (snap && snap.puzzle) {
+          var resumeBtn = _el('button', 'wq-btn', 'Resume Puzzle');
+          try {
+            resumeBtn.style.margin = '0 auto 10px';
+            resumeBtn.style.display = 'block';
+            resumeBtn.style.minWidth = '220px';
+            resumeBtn.addEventListener('click', function () {
+              try { _play('tick'); } catch (e) { /* ignore */ }
+              try { restoreSnapshot(); } catch (e2) { /* ignore */ }
+            });
+          } catch (e) { /* button is best-effort */ }
+          host.appendChild(resumeBtn);
+        }
+      }
+    } catch (e) { /* resume button is best-effort */ }
+
+    // 12 destination cards.
+    var packs = _packs();
+    var list = _el('div', 'wq-pack-list');
+    for (var i = 0; i < packs.length; i++) {
+      (function (packIdx) {
+        var p = packs[packIdx];
+        var locked = false;
+        var stars = 0;
+        try {
+          var sv2 = _save();
+          if (sv2) {
+            if (typeof sv2.isPackUnlocked === 'function') locked = !sv2.isPackUnlocked(_progress, packIdx);
+            if (typeof sv2.packStars === 'function') stars = sv2.packStars(_progress, packIdx) || 0;
+          }
+        } catch (e) { /* lock/stars are best-effort */ }
+        var card2 = _el('button', 'wq-pack' + (locked ? ' wq-locked' : ''));
+        try {
+          card2.type = 'button';
+          card2.setAttribute('aria-label', locked ? p.name + ' (locked)' : p.name);
+          if (locked) card2.disabled = true;
+          var img = _el('img', 'wq-pack-art');
+          try {
+            img.src = 'assets/word-quest/scenes/' + p.scene + '.webp';
+            img.alt = '';
+            img.addEventListener('error', function () {
+              try { if (img.parentNode) img.parentNode.removeChild(img); } catch (e2) { /* ignore */ }
+            });
+            card2.appendChild(img);
+          } catch (e2) { /* art is best-effort */ }
+          var body = _el('span', 'wq-pack-body');
+          body.appendChild(_el('span', 'wq-pack-name', locked ? '\uD83D\uDD12 ' + p.name : p.name));
+          body.appendChild(_el('span', 'wq-pack-blurb', p.blurb || ''));
+          var meta = _el('span', 'wq-pack-meta');
+          var starTxt = '';
+          for (var si = 0; si < 3; si++) starTxt += (si < Math.min(3, Math.round(stars / 10)) ? '\u2605' : '\u2606');
+          meta.appendChild(_el('span', 'wq-pack-stars', stars + ' / 30 ' + starTxt));
+          body.appendChild(meta);
+          card2.appendChild(body);
+          if (!locked) {
+            card2.addEventListener('click', function () {
+              try { _play('tick'); } catch (e) { /* ignore */ }
+              try { toLevels(packIdx); } catch (e2) { _log(e2); }
+            });
+          }
+        } catch (e) { /* card is best-effort */ }
+        list.appendChild(card2);
+      })(i);
+    }
+    host.appendChild(list);
+    var foot = _el('p', 'wq-foot', 'Swipe or drag across letters to find the hidden words. Tap a letter, then tap another, if you prefer.');
+    host.appendChild(foot);
+  }
+
+  function toJourney() {
+    try {
+      stopTimer();
+      _puzzle = null;
+      _def = null;
+      _isDaily = false;
+      _setScreen('journey');
+      _renderJourney();
+    } catch (e) { _log(e); }
+  }
+
+  // --- level map ---------------------------------------------------------------------
+  function toLevels(packIdx) {
+    try {
+      if (typeof packIdx === 'number') _packIdx = packIdx;
+      stopTimer();
+      _setScreen('levels');
+      _renderLevels();
+    } catch (e) { _log(e); }
+  }
+  function _renderLevels() {
+    _loadProgress();
+    var host = _els.levels;
+    if (!host) return;
+    _clear(host);
+    var packs = _packs();
+    var p = packs[_packIdx] || { name: 'Pack', scene: '' };
+    var head = _el('div', 'wq-levels-head');
+    var back = _el('button', 'wq-back', '\u2039 Map');
+    try {
+      back.type = 'button';
+      back.addEventListener('click', function () {
+        try { _play('tick'); } catch (e) { /* ignore */ }
+        try { toJourney(); } catch (e2) { /* ignore */ }
+      });
+    } catch (e) { /* back is best-effort */ }
+    head.appendChild(back);
+    head.appendChild(_el('h2', null, p.name));
+    host.appendChild(head);
+    try {
+      var img = _el('img', 'wq-levels-art');
+      img.src = 'assets/word-quest/scenes/' + p.scene + '.webp';
+      img.alt = '';
+      img.addEventListener('error', function () {
+        try { if (img.parentNode) img.parentNode.removeChild(img); } catch (e2) { /* ignore */ }
+      });
+      host.appendChild(img);
+    } catch (e) { /* art is best-effort */ }
+    var nodes = _el('div', 'wq-nodes');
+    for (var level = 1; level <= 10; level++) {
+      (function (lv) {
+        var locked = false;
+        var stars = 0;
+        var best = null;
+        try {
+          var sv = _save();
+          if (sv) {
+            if (typeof sv.isLevelUnlocked === 'function') locked = !sv.isLevelUnlocked(_progress, _packIdx, lv);
+            stars = (_progress.stars[_packIdx + ':' + lv] || 0);
+            best = _progress.bestTime[_packIdx + ':' + lv] || null;
+          }
+        } catch (e) { /* node state is best-effort */ }
+        var node = _el('button', 'wq-node' + (locked ? ' wq-locked' : ''));
+        try {
+          node.type = 'button';
+          node.setAttribute('aria-label', locked ? 'Level ' + lv + ' (locked)' : 'Level ' + lv);
+          if (locked) node.disabled = true;
+          node.appendChild(_el('span', 'wq-node-num', locked ? '\uD83D\uDD12' : String(lv)));
+          if (stars > 0) node.appendChild(_el('span', 'wq-node-stars', '\u2605'.repeat(stars)));
+          if (best != null) node.appendChild(_el('span', 'wq-node-time', _fmtTime(best)));
+          if (!locked) {
+            node.addEventListener('click', function () {
+              try { _play('tick'); } catch (e) { /* ignore */ }
+              try { startLevel(_packIdx, lv); } catch (e2) { _log(e2); }
+            });
+          }
+        } catch (e) { /* node is best-effort */ }
+        nodes.appendChild(node);
+      })(level);
+    }
+    host.appendChild(nodes);
+  }
+
+  // --- Daily screen --------------------------------------------------------------------
+  function toDaily() {
+    try {
+      stopTimer();
+      _setScreen('daily');
+      _renderDaily();
+    } catch (e) { _log(e); }
+  }
+  function _renderDaily() {
+    _loadProgress();
+    var host = _els.daily;
+    if (!host) return;
+    _clear(host);
+    var d = _data();
+    var today = d && typeof d.utcDateStr === 'function' ? d.utcDateStr() : '';
+    var done = !!(_progress.daily && _progress.daily.completed && _progress.daily.completed[today]);
+    var best = (_progress.dailyBest && _progress.dailyBest[today]) || null;
+    var streak = (_progress.daily && _progress.daily.streak) || 0;
+    var head = _el('div', 'wq-daily-head');
+    var back = _el('button', 'wq-back', '\u2039 Map');
+    try {
+      back.type = 'button';
+      back.addEventListener('click', function () {
+        try { _play('tick'); } catch (e) { /* ignore */ }
+        try { toJourney(); } catch (e2) { /* ignore */ }
+      });
+    } catch (e) { /* back is best-effort */ }
+    head.appendChild(back);
+    head.appendChild(_el('h2', null, 'Daily Puzzle'));
+    host.appendChild(head);
+    var card = _el('div', 'wq-daily-panel');
+    card.appendChild(_el('div', 'wq-daily-date', today));
+    card.appendChild(_el('p', null, 'A fresh 10x10 puzzle every day — 8 hidden words, drawn from every destination.'));
+    card.appendChild(_el('p', null, 'Streak: ' + streak + ' day' + (streak === 1 ? '' : 's') + (done ? '  \u00B7  Done today' : '')));
+    if (best != null) card.appendChild(_el('p', null, 'Best time today: ' + _fmtTime(best)));
+    card.appendChild(_el('p', 'wq-foot', 'Finishing the Daily earns +1 letter hint and +1 word hint.'));
+    var play = _el('button', 'wq-btn', done ? 'Play Again' : 'Play Today\u2019s Puzzle');
+    try {
+      play.type = 'button';
+      play.addEventListener('click', function () {
+        try { _play('tick'); } catch (e) { /* ignore */ }
+        try { startDaily(today); } catch (e2) { _log(e2); }
+      });
+    } catch (e) { /* play is best-effort */ }
+    card.appendChild(play);
+    host.appendChild(card);
+  }
+
+  // --- puzzle screen ---------------------------------------------------------------
+  function _puzzleLabel() {
+    if (_isDaily) return 'Daily \u00B7 ' + _dailyDate;
+    var packs = _packs();
+    var p = packs[_packIdx] || { name: 'Pack' };
+    return p.name + ' \u00B7 Level ' + (_def ? _def.level : '');
+  }
+
+  function _buildPuzzleChrome() {
+    var host = _els.puzzle;
+    _clear(host);
+    var hud = _el('div', 'wq-hud');
+    var label = _el('div', 'wq-level-label', _puzzleLabel());
+    var timer = _el('div', 'wq-timer', '0:00');
+    var score = _el('div', 'wq-score-box');
+    score.appendChild(_el('div', 'wq-score-num', '0'));
+    score.appendChild(_el('div', 'wq-score-cap', 'SCORE'));
+    hud.appendChild(label);
+    hud.appendChild(timer);
+    hud.appendChild(score);
+    host.appendChild(hud);
+    _els.puzzleLabel = label;
+    _els.timerEl = timer;
+    _els.scoreNum = score.firstChild;
+
+    var boardWrap = _el('div', 'wq-board-wrap');
+    var board = _el('div', 'wq-board');
+    boardWrap.appendChild(board);
+    host.appendChild(boardWrap);
+    _els.board = board;
+    _wireBoard(board);
+
+    var hints = _el('div', 'wq-hints');
+    var letterBtn = _el('button', 'wq-hint-btn', '');
+    var wordBtn = _el('button', 'wq-hint-btn', '');
+    try {
+      letterBtn.type = 'button';
+      wordBtn.type = 'button';
+      letterBtn.addEventListener('click', function () {
+        try { useHint('letter'); } catch (e) { _log(e); }
+      });
+      wordBtn.addEventListener('click', function () {
+        try { useHint('word'); } catch (e) { _log(e); }
+      });
+    } catch (e) { /* hint buttons are best-effort */ }
+    hints.appendChild(letterBtn);
+    hints.appendChild(wordBtn);
+    host.appendChild(hints);
+    _els.letterBtn = letterBtn;
+    _els.wordBtn = wordBtn;
+
+    var words = _el('div', 'wq-words');
+    host.appendChild(words);
+    _els.wordList = words;
+  }
+
+  function _renderHints() {
+    try {
+      _loadProgress();
+      var l = (_progress.hints && _progress.hints.letter) || 0;
+      var w = (_progress.hints && _progress.hints.word) || 0;
+      if (_els.letterBtn) {
+        _els.letterBtn.textContent = '\uD83D\uDD0D Letter  (' + l + ')';
+        _els.letterBtn.disabled = l <= 0 || _won;
+      }
+      if (_els.wordBtn) {
+        _els.wordBtn.textContent = '\u2728 Word  (' + w + ')';
+        _els.wordBtn.disabled = w <= 0 || _won;
+      }
+    } catch (e) { /* hint counts are best-effort */ }
+  }
+
+  function _renderWordList() {
+    var host = _els.wordList;
+    if (!host || !_puzzle) return;
+    _clear(host);
+    for (var i = 0; i < _puzzle.placements.length; i++) {
+      var p = _puzzle.placements[i];
+      var chip = _el('span', 'wq-word' + (_found[p.word] ? ' wq-word-found' : ''), p.word);
+      host.appendChild(chip);
+    }
+  }
+
+  function _renderHUD() {
+    try {
+      if (_els.puzzleLabel) _els.puzzleLabel.textContent = _puzzleLabel();
+      if (_els.timerEl) _els.timerEl.textContent = _fmtTime(_elapsed);
+      if (_els.scoreNum) _els.scoreNum.textContent = _fmt(_liveScore());
+      _renderHints();
+    } catch (e) { /* HUD is best-effort */ }
+  }
+
+  // Full board rebuild from the live puzzle. Found words keep their
+  // highlight; letter-hint reveals keep theirs; the live selection
+  // is drawn on top.
+  function _renderBoard() {
+    var board = _els.board;
+    if (!board || !_puzzle) return;
+    _clear(board);
+    var size = _puzzle.size;
+    try {
+      board.style.gridTemplateColumns = 'repeat(' + size + ', 1fr)';
+      board.style.gridTemplateRows = 'repeat(' + size + ', 1fr)';
+      // Cell font scales with the board: ~52% of the cell width.
+      var bw = 0;
+      try { bw = board.clientWidth || board.offsetWidth || 0; } catch (e) { bw = 0; }
+      if (!bw) bw = 330;
+      var fs = Math.max(11, Math.floor((bw / size) * 0.52));
+      board.style.setProperty('--wq-fs', fs + 'px');
+    } catch (e) { /* board shape is best-effort */ }
+    var foundCells = {};
+    for (var i = 0; i < _puzzle.placements.length; i++) {
+      var pl = _puzzle.placements[i];
+      if (!_found[pl.word]) continue;
+      for (var j = 0; j < pl.cells.length; j++) foundCells[_key(pl.cells[j][0], pl.cells[j][1])] = true;
+    }
+    var selCells = {};
+    for (var s = 0; s < _selCells.length; s++) selCells[_key(_selCells[s][0], _selCells[s][1])] = true;
+    for (var r = 0; r < size; r++) {
+      for (var c = 0; c < size; c++) {
+        var k = _key(r, c);
+        var cls = 'wq-cell';
+        if (foundCells[k]) cls += ' wq-found';
+        else if (_given[k]) cls += ' wq-given';
+        if (selCells[k]) cls += ' wq-sel';
+        if (_tapAnchor && _tapAnchor[0] === r && _tapAnchor[1] === c) cls += ' wq-anchor';
+        var btn = _el('button', cls, _puzzle.grid[r][c]);
+        try {
+          btn.type = 'button';
+          btn.setAttribute('data-r', String(r));
+          btn.setAttribute('data-c', String(c));
+          btn.setAttribute('aria-label', 'Row ' + (r + 1) + ' column ' + (c + 1) + ' letter ' + _puzzle.grid[r][c]);
+        } catch (e) { /* cell attrs are best-effort */ }
+        board.appendChild(btn);
+      }
+    }
+  }
+
+  function _renderPuzzle() {
+    try {
+      _buildPuzzleChrome();
+      _setScreen('puzzle');
+      _renderHUD();
+      _renderBoard();
+      _renderWordList();
+      _hideSheet();
+    } catch (e) { _log(e); }
+  }
+
+  // --- puzzle lifecycle --------------------------------------------------------------
+  function _resetRun(def, puzzle, isDaily, dailyDate) {
+    _def = def;
+    _puzzle = puzzle;
+    _isDaily = !!isDaily;
+    _dailyDate = dailyDate || '';
+    _found = {};
+    _given = {};
+    _selCells = [];
+    _drag = null;
+    _tapAnchor = null;
+    _elapsed = 0;
+    _paused = false;
+    _won = false;
+    _hintsUsed = 0;
+    _winTimer = _clearTimer(_winTimer);
+    try {
+      var eng = _engine();
+      _hintRng = eng && typeof eng.RNG === 'function' ? eng.RNG((puzzle.seed || 1) ^ 0x5eed) : null;
+    } catch (e) { _hintRng = null; }
+    try {
+      var s = _save();
+      if (s && typeof s.clearSnapshot === 'function') s.clearSnapshot();
+    } catch (e) { /* snapshot clear is best-effort */ }
+    _renderPuzzle();
+    startTimer();
+  }
+
+  function startLevel(packIdx, level) {
+    try {
+      var eng = _engine();
+      var d = _data();
+      if (!eng || typeof eng.generateLevel !== 'function' || !d) {
+        _toast('Word Quest is still loading — try again.');
+        return false;
+      }
+      var entries = d.getPackWords ? d.getPackWords(packIdx) : null;
+      if (!entries) {
+        _toast('Word lists are still loading — try again.');
+        return false;
+      }
+      var built = eng.generateLevel(packIdx, level, entries);
+      if (!built || !built.puzzle) { _toast('Could not start that level.'); return false; }
+      _packIdx = packIdx;
+      _resetRun(built.def, built.puzzle, false, '');
+      _play('tick');
+      return true;
+    } catch (e) { _log(e); return false; }
+  }
+
+  function startDaily(dateStr) {
+    try {
+      var eng = _engine();
+      var d = _data();
+      if (!eng || typeof eng.generateDaily !== 'function' || !d) {
+        _toast('Word Quest is still loading — try again.');
+        return false;
+      }
+      var all = d.getAllWords ? d.getAllWords() : null;
+      if (!all) {
+        _toast('Word lists are still loading — try again.');
+        return false;
+      }
+      var built = eng.generateDaily(all, dateStr);
+      if (!built || !built.puzzle) { _toast('Could not start the Daily.'); return false; }
+      _resetRun(built.def, built.puzzle, true, dateStr);
+      _play('tick');
+      return true;
+    } catch (e) { _log(e); return false; }
+  }
+
+  function restoreSnapshot() {
+    try {
+      var s = _save();
+      var eng = _engine();
+      if (!s || typeof s.loadSnapshot !== 'function' || !eng) return false;
+      var snap = s.loadSnapshot();
+      if (!snap || !snap.puzzle || !snap.def) return false;
+      _def = snap.def;
+      _puzzle = snap.puzzle;
+      _isDaily = snap.kind === 'daily';
+      _dailyDate = snap.date || '';
+      _packIdx = typeof snap.pack === 'number' ? snap.pack : 0;
+      _found = {};
+      for (var i = 0; i < (snap.found || []).length; i++) _found[snap.found[i]] = true;
+      _given = {};
+      for (var j = 0; j < (snap.given || []).length; j++) _given[snap.given[j]] = true;
+      _selCells = [];
+      _drag = null;
+      _tapAnchor = null;
+      _elapsed = snap.elapsed || 0;
+      _hintsUsed = snap.hintsUsed || 0;
+      _paused = false;
+      _won = false;
+      try {
+        _hintRng = typeof eng.RNG === 'function' ? eng.RNG((_puzzle.seed || 1) ^ 0x5eed ^ (_hintsUsed + 1)) : null;
+      } catch (e) { _hintRng = null; }
+      _renderPuzzle();
+      startTimer();
+      _toast('Puzzle resumed');
+      return true;
+    } catch (e) { _log(e); return false; }
+  }
+
+  function _saveSnapshot() {
+    try {
+      if (!_puzzle || _won || _screen !== 'puzzle') return false;
+      var s = _save();
+      if (!s || typeof s.saveSnapshot !== 'function') return false;
+      var given = [];
+      for (var k in _given) if (_given[k]) given.push(k);
+      return !!s.saveSnapshot({
+        kind: _isDaily ? 'daily' : 'level',
+        pack: _packIdx,
+        level: _def ? _def.level : 0,
+        date: _dailyDate,
+        def: _def,
+        puzzle: _puzzle,
+        found: _foundWords(),
+        given: given,
+        elapsed: _elapsed,
+        hintsUsed: _hintsUsed,
+        score: _liveScore()
+      });
+    } catch (e) { /* saving is best-effort */ }
+    return false;
+  }
+  function _clearSnapshot() {
+    try {
+      var s = _save();
+      if (s && typeof s.clearSnapshot === 'function') s.clearSnapshot();
+    } catch (e) { /* ignore */ }
+  }
+
+  // Quit puzzle: abandon the run with NO penalty and NO meta written,
+  // and land on the pack/level map (Daily -> journey). No confirm.
+  function quitPuzzle() {
+    try {
+      stopTimer();
+      _clearSnapshot();
+      _puzzle = null;
+      _def = null;
+      _selCells = [];
+      _drag = null;
+      _tapAnchor = null;
+      _paused = false;
+      if (_isDaily) toJourney();
+      else toLevels(_packIdx);
+      _isDaily = false;
+    } catch (e) { _log(e); }
+  }
+
+  function pause() {
+    try {
+      if (_screen === 'puzzle' && _puzzle && !_won) {
+        _paused = true;
+        pauseTimer();
+        _saveSnapshot();
+      }
+    } catch (e) { /* pause is best-effort */ }
+  }
+  function resume() {
+    try {
+      _paused = false;
+      _hideSheet();
+      if (_screen === 'puzzle' && !_won) startTimer();
+    } catch (e) { /* ignore */ }
+  }
+
+  // --- timer ---------------------------------------------------------------------------
+  function startTimer() {
+    try {
+      stopTimer();
+      if (!_open) return;
+      if (typeof setInterval !== 'function') return;
+      _timerId = setInterval(function () {
+        try {
+          if (_screen !== 'puzzle' || _paused || _won || !_open) return;
+          _elapsed++;
+          if (_els.timerEl) _els.timerEl.textContent = _fmtTime(_elapsed);
+        } catch (e) { /* timer tick is best-effort */ }
+      }, 1000);
+    } catch (e) { /* timer is best-effort */ }
+  }
+  function stopTimer() {
+    try { if (_timerId) clearInterval(_timerId); } catch (e) { /* ignore */ }
+    _timerId = null;
+  }
+  function pauseTimer() { stopTimer(); }
+
+  // --- found / win -------------------------------------------------------------------------
+  function _onWordFound(placement) {
+    _found[placement.word] = true;
+    _play('found');
+    _renderBoard();
+    _renderWordList();
+    _renderHUD();
+    var defn = placement.def || '';
+    _toast(placement.word + (defn ? ' — ' + defn : ' found!'), defn ? 3400 : 1800);
+    if (_foundCount() >= _puzzle.placements.length) {
+      _winTimer = _clearTimer(_winTimer);
+      _winTimer = setTimeout(function () {
+        try { _finishPuzzle(); } catch (e) { _log(e); }
+      }, 700);
+    }
+  }
+
+  function _finishPuzzle() {
+    try {
+      if (!_puzzle || _won) return;
+      _won = true;
+      stopTimer();
+      var d = _data();
+      var stars = 1;
+      try {
+        if (d && typeof d.starsFor === 'function') stars = d.starsFor(_def, _elapsed, _hintsUsed) || 1;
+      } catch (e) { stars = 1; }
+      var score = _liveScore();
+      try {
+        if (d && typeof d.scoreFor === 'function') score = d.scoreFor(_foundWords(), _elapsed, _def);
+      } catch (e) { /* keep live score */ }
+      var awarded = false;
+      var streak = 0;
+      try {
+        var s = _save();
+        if (s) {
+          if (_isDaily && typeof s.recordDailyComplete === 'function') {
+            var dr = s.recordDailyComplete(_dailyDate, _elapsed);
+            if (dr) { awarded = dr.awarded; streak = dr.streak; }
+          } else if (typeof s.recordLevelWin === 'function') {
+            var lr = s.recordLevelWin(_packIdx, _def.level, stars, _elapsed);
+            if (lr) awarded = lr.awarded;
+          }
+          if (typeof s.recordResult === 'function') s.recordResult(true, score, _foundCount());
+        }
+      } catch (e) { /* progress save is best-effort */ }
+      _clearSnapshot();
+      _loadProgress();
+      _renderHints();
+      _play('win');
+      var lines = [];
+      lines.push({ html: _starsHtml(stars) });
+      lines.push('Solved in ' + _fmtTime(_elapsed) + ' — score ' + _fmt(score) + '.');
+      if (awarded) lines.push('+1 letter hint and +1 word hint earned!');
+      if (_isDaily) lines.push('Daily streak: ' + streak + ' day' + (streak === 1 ? '' : 's') + '.');
+      var buttons = [];
+      if (!_isDaily && _def && _def.level < 10) {
+        buttons.push({ label: 'Next Level', onClick: function () { startLevel(_packIdx, _def.level + 1); } });
+      }
+      buttons.push({ label: 'Replay', onClick: function () {
+        if (_isDaily) startDaily(_dailyDate); else startLevel(_packIdx, _def.level);
+      } });
+      buttons.push({ label: _isDaily ? 'Journey Map' : 'Level Map', secondary: true, onClick: function () {
+        if (_isDaily) toJourney(); else toLevels(_packIdx);
+      } });
+      _sheet(_isDaily ? 'Daily Complete!' : 'Puzzle Complete!', lines, buttons, 'victory-scene');
+    } catch (e) { _log(e); }
+  }
+
+  // --- hints -----------------------------------------------------------------------------------
+  // Reveal-a-letter: shows one unrevealed letter of a random unfound
+  // word (seeded pick). Reveal-a-word: finds a whole unfound word.
+  // Both spend from the earned-only hint balance.
+  function useHint(kind) {
+    try {
+      if (!_puzzle || _won || _paused || _screen !== 'puzzle') return { ok: false, reason: 'not-playing' };
+      if (kind !== 'letter' && kind !== 'word') return { ok: false, reason: 'unknown-hint' };
+      if (_foundCount() >= _puzzle.placements.length) return { ok: false, reason: 'already-won' };
+      var s = _save();
+      var spent = false;
+      try { spent = s && typeof s.spendHint === 'function' ? !!s.spendHint(kind) : false; } catch (e) { spent = false; }
+      if (!spent) {
+        _toast('No ' + kind + ' hints left — earn more with 3-star wins and Daily puzzles.', 2600);
+        return { ok: false, reason: 'none-left' };
+      }
+      _loadProgress();
+      _hintsUsed++;
+      var unfound = [];
+      for (var i = 0; i < _puzzle.placements.length; i++) {
+        if (!_found[_puzzle.placements[i].word]) unfound.push(_puzzle.placements[i]);
+      }
+      if (!unfound.length) {
+        try { if (s && typeof s.addHint === 'function') s.addHint(kind, 1); } catch (e) { /* refund */ }
+        _loadProgress();
+        return { ok: false, reason: 'already-won' };
+      }
+      var pick = unfound[0];
+      if (_hintRng) {
+        pick = unfound[Math.floor(_hintRng() * unfound.length)];
+      }
+      if (kind === 'letter') {
+        var hidden = [];
+        for (var j = 0; j < pick.cells.length; j++) {
+          var k = _key(pick.cells[j][0], pick.cells[j][1]);
+          if (!_given[k]) hidden.push(pick.cells[j]);
+        }
+        if (!hidden.length) {
+          // Every letter of this word is already revealed: fall back
+          // to another unfound word, or reveal the word itself.
+          var other = null;
+          for (var o = 0; o < unfound.length; o++) {
+            if (unfound[o] === pick) continue;
+            var hasHidden = false;
+            for (var h = 0; h < unfound[o].cells.length; h++) {
+              if (!_given[_key(unfound[o].cells[h][0], unfound[o].cells[h][1])]) { hasHidden = true; break; }
+            }
+            if (hasHidden) { other = unfound[o]; break; }
+          }
+          if (other) pick = other;
+          else {
+            _onWordFound(pick);
+            _renderHints();
+            return { ok: true, kind: 'letter', word: pick.word, revealedWord: true };
+          }
+          hidden = [];
+          for (var j2 = 0; j2 < pick.cells.length; j2++) {
+            var k2 = _key(pick.cells[j2][0], pick.cells[j2][1]);
+            if (!_given[k2]) hidden.push(pick.cells[j2]);
+          }
+        }
+        var cell = hidden[0];
+        if (_hintRng && hidden.length > 1) cell = hidden[Math.floor(_hintRng() * hidden.length)];
+        _given[_key(cell[0], cell[1])] = true;
+        _play('tick');
+        _renderBoard();
+        _renderHints();
+        _toast('Hint: ' + _puzzle.grid[cell[0]][cell[1]] + ' is in "' + pick.word + '".', 2600);
+        return { ok: true, kind: 'letter', word: pick.word, cell: cell };
+      }
+      // Word hint: the whole word is found.
+      _onWordFound(pick);
+      _renderHints();
+      return { ok: true, kind: 'word', word: pick.word };
+    } catch (e) { _log(e); return { ok: false, reason: 'error' }; }
+  }
+
+  // --- input: drag/swipe selection + tap-start/tap-end -------------------------------
+  function _cellFromEvent(e) {
+    try {
+      var t = e.target || null;
+      while (t && t !== _els.board) {
+        if (t.getAttribute && t.getAttribute('data-r') != null) {
+          return [parseInt(t.getAttribute('data-r'), 10), parseInt(t.getAttribute('data-c'), 10)];
+        }
+        t = t.parentNode;
+      }
+    } catch (err) { /* ignore */ }
+    return null;
+  }
+  function _cellFromPoint(x, y) {
+    try {
+      if (typeof document === 'undefined' || !document ||
+          typeof document.elementFromPoint !== 'function') return null;
+      var t = document.elementFromPoint(x, y);
+      while (t && t !== _els.board) {
+        if (t.getAttribute && t.getAttribute('data-r') != null) {
+          return [parseInt(t.getAttribute('data-r'), 10), parseInt(t.getAttribute('data-c'), 10)];
+        }
+        t = t.parentNode;
+      }
+    } catch (err) { /* ignore */ }
+    return null;
+  }
+  function _setSelection(start, end) {
+    try {
+      var eng = _engine();
+      if (!eng || typeof eng.selectionCells !== 'function' || !start) {
+        _selCells = start ? [start] : [];
+      } else {
+        var cells = eng.selectionCells(start, end || start);
+        _selCells = cells || [start];
+      }
+      var prevLen = _selCells.length;
+      _renderBoard();
+      if (prevLen > 1) _play('tick');
+    } catch (e) { /* selection render is best-effort */ }
+  }
+  function _clearSelection() {
+    _selCells = [];
+    _tapAnchor = null;
+    _renderBoard();
+  }
+  // Commit a start->end selection: a listed word (forwards or
+  // backwards) is found; anything else just clears, no penalty.
+  function _commitSelection(start, end) {
+    try {
+      var eng = _engine();
+      if (!eng || !_puzzle) { _clearSelection(); return { ok: false, reason: 'no-engine' }; }
+      var cells = eng.selectionCells(start, end);
+      if (!cells) {
+        _clearSelection();
+        _toast('Words run in a straight line.');
+        return { ok: false, reason: 'not-straight' };
+      }
+      _selCells = cells;
+      var placement = eng.matchSelection(_puzzle, cells);
+      _selCells = [];
+      _tapAnchor = null;
+      if (!placement) {
+        _renderBoard();
+        return { ok: false, reason: 'no-word' };
+      }
+      if (_found[placement.word]) {
+        _renderBoard();
+        _toast('"' + placement.word + '" is already found.');
+        return { ok: false, reason: 'already-found' };
+      }
+      _onWordFound(placement);
+      return { ok: true, word: placement.word };
+    } catch (e) { _log(e); _clearSelection(); return { ok: false, reason: 'error' }; }
+  }
+  function _onTapCell(cell) {
+    if (!_puzzle || _won || _paused) return;
+    if (!cell) { _clearSelection(); return; }
+    if (!_tapAnchor) {
+      _tapAnchor = cell;
+      _selCells = [cell];
+      _renderBoard();
+      _toast('Tap another letter to finish the word.', 1400);
+      return;
+    }
+    if (_tapAnchor[0] === cell[0] && _tapAnchor[1] === cell[1]) {
+      _clearSelection();
+      return;
+    }
+    var start = _tapAnchor;
+    _tapAnchor = null;
+    _commitSelection(start, cell);
+  }
+  function _wireBoard(board) {
+    if (!board) return;
+    try {
+      board.addEventListener('pointerdown', function (e) {
+        try {
+          if (_screen !== 'puzzle' || !_puzzle || _won || _paused) return;
+          var cell = _cellFromEvent(e);
+          if (!cell) return;
+          _drag = { start: cell, pointerId: e.pointerId, moved: false, x: e.clientX, y: e.clientY };
+          _selCells = [cell];
+          _renderBoard();
+          try {
+            if (typeof board.setPointerCapture === 'function') board.setPointerCapture(e.pointerId);
+          } catch (e2) { /* capture is best-effort */ }
+          try { if (e.preventDefault) e.preventDefault(); } catch (e3) { /* ignore */ }
+        } catch (err) { /* pointerdown is best-effort */ }
+      });
+      board.addEventListener('pointermove', function (e) {
+        try {
+          if (!_drag || _drag.pointerId !== e.pointerId) return;
+          if (_screen !== 'puzzle' || !_puzzle || _won || _paused) return;
+          var dx = (e.clientX || 0) - _drag.x;
+          var dy = (e.clientY || 0) - _drag.y;
+          if (Math.abs(dx) + Math.abs(dy) < 8 && !_drag.moved) return;
+          var cell = _cellFromPoint(e.clientX, e.clientY);
+          if (!cell) return;
+          if (cell[0] === _drag.start[0] && cell[1] === _drag.start[1] && !_drag.moved) return;
+          _drag.moved = true;
+          _tapAnchor = null;
+          _setSelection(_drag.start, cell);
+        } catch (err) { /* pointermove is best-effort */ }
+      });
+      function _endDrag(e) {
+        try {
+          if (!_drag) return;
+          var d = _drag;
+          _drag = null;
+          if (_screen !== 'puzzle' || !_puzzle || _won || _paused) return;
+          if (d.moved) {
+            var cell = _cellFromPoint(e.clientX, e.clientY) || d.start;
+            _commitSelection(d.start, cell);
+          } else {
+            _onTapCell(d.start);
+          }
+        } catch (err) { /* pointerup is best-effort */ }
+      }
+      board.addEventListener('pointerup', _endDrag);
+      board.addEventListener('pointercancel', function () {
+        try { _drag = null; _selCells = []; _renderBoard(); } catch (e) { /* ignore */ }
+      });
+      // Keyboard fallback: arrows extend the tap anchor selection.
+      board.addEventListener('keydown', function (e) {
+        try {
+          if (!_tapAnchor || _screen !== 'puzzle' || !_puzzle) return;
+          var map = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
+          var d = map[e.key];
+          if (!d) return;
+          var to = [_tapAnchor[0] + d[0], _tapAnchor[1] + d[1]];
+          if (to[0] < 0 || to[0] >= _puzzle.size || to[1] < 0 || to[1] >= _puzzle.size) return;
+          if (e.preventDefault) e.preventDefault();
+          _commitSelection(_tapAnchor, to);
+        } catch (err) { /* keyboard is best-effort */ }
+      });
+    } catch (e) { /* board wiring is best-effort */ }
+  }
+
+  // --- sheets --------------------------------------------------------------------
+  function _hideSheet() {
+    try { if (_els.sheetHost) _clear(_els.sheetHost); } catch (e) { /* ignore */ }
+  }
+  function _sheet(title, lines, buttons, artKey) {
+    var host = _els.sheetHost;
+    if (!host) return;
+    _clear(host);
+    var back = _el('div', 'wq-sheet-backdrop');
+    var sheet = _el('div', 'wq-sheet');
+    try {
+      if (artKey) {
+        var d = _data();
+        var src = (d && d.WQ_ART && d.WQ_ART[artKey]) || '';
+        if (src) {
+          var img = _el('img');
+          img.src = src;
+          img.alt = '';
+          img.style.maxWidth = '100%';
+          img.style.borderRadius = '12px';
+          img.style.marginBottom = '6px';
+          img.addEventListener('error', function () {
+            try { if (img.parentNode) img.parentNode.removeChild(img); } catch (e) { /* ignore */ }
+          });
+          sheet.appendChild(img);
+        }
+      }
+    } catch (e) { /* sheet art is best-effort */ }
+    sheet.appendChild(_el('h2', null, title));
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      if (line && line.html) sheet.appendChild(line.html);
+      else if (typeof line === 'string') sheet.appendChild(_el('p', null, line));
+    }
+    var row = _el('div', 'wq-btnrow');
+    for (var j = 0; j < buttons.length; j++) {
+      (function (b) {
+        var btn = _el('button', 'wq-btn' + (b.secondary ? ' wq-secondary' : ''), b.label);
+        try {
+          btn.type = 'button';
+          btn.addEventListener('click', function () {
+            try { _play('tick'); } catch (e) { /* ignore */ }
+            try { b.onClick(); } catch (e2) { _log(e2); }
+          });
+        } catch (e) { /* button is best-effort */ }
+        row.appendChild(btn);
+      })(buttons[j]);
+    }
+    sheet.appendChild(row);
+    back.appendChild(sheet);
+    host.appendChild(back);
+  }
+  function _starsHtml(stars) {
+    var wrap = _el('div', 'wq-sheet-stars');
+    try {
+      for (var i = 0; i < 3; i++) {
+        wrap.appendChild(_el('span', i < stars ? '' : 'wq-star-off', '\u2605'));
+      }
+    } catch (e) { /* ignore */ }
+    return wrap;
+  }
+  function showPause() {
+    try {
+      if (_screen !== 'puzzle' || !_puzzle) return;
+      pause();
+      _sheet('Paused', [_puzzleLabel() + ' — progress saved.'], [
+        { label: 'Resume', onClick: function () { resume(); } },
+        { label: 'Restart Puzzle', onClick: function () {
+          if (_isDaily) startDaily(_dailyDate); else startLevel(_packIdx, _def.level);
+        } },
+        { label: 'Quit Puzzle', secondary: true, onClick: function () { quitPuzzle(); } }
+      ], null);
+    } catch (e) { _log(e); }
+  }
+
+  // --- wire-facing lifecycle ---------------------------------------------------------
+  function handleOpen() {
+    try {
+      _open = true;
+      if (_screen === 'puzzle' && _puzzle && !_won) {
+        if (_paused) showPause();
+        else { _renderPuzzle(); startTimer(); }
+      } else {
+        // Fresh open: resume a mid-puzzle snapshot, else the map.
+        if (!restoreSnapshot()) toJourney();
+      }
+      syncAudio();
+    } catch (e) { _log(e); }
+  }
+  function handleClose() {
+    try {
+      _open = false;
+      pause();
+      stopTimer();
+    } catch (e) { _log(e); }
+  }
+  // No-op by design: Word Quest has no music of its own and never
+  // touches the shell music. The wire calls this for symmetry with
+  // the other games; the shared loop simply keeps playing.
+  function syncAudio() { return true; }
+  function reloadSave() {
+    try {
+      _loadProgress();
+      if (_screen === 'journey') _renderJourney();
+      else if (_screen === 'levels') _renderLevels();
+      else if (_screen === 'daily') _renderDaily();
+      else _renderHUD();
+    } catch (e) { _log(e); }
+  }
+  function screen() { return _screen; }
+  function render() {
+    try {
+      if (_screen === 'journey') _renderJourney();
+      else if (_screen === 'levels') _renderLevels();
+      else if (_screen === 'daily') _renderDaily();
+      else _renderPuzzle();
+    } catch (e) { _log(e); }
+  }
+
+  // --- debug / proof hooks --------------------------------------------------------------
+  function debugState() {
+    var out = {
+      inited: _inited, open: _open, screen: _screen,
+      pack: _packIdx, level: _def ? _def.level : null,
+      isDaily: _isDaily, dailyDate: _dailyDate,
+      size: _puzzle ? _puzzle.size : null,
+      found: _foundCount(), total: _puzzle ? _puzzle.placements.length : null,
+      elapsed: _elapsed, hintsUsed: _hintsUsed,
+      hints: _progress ? _progress.hints : null,
+      paused: _paused, won: _won
+    };
+    try {
+      var a = _audio();
+      if (a && typeof a.debugState === 'function') out.audio = a.debugState();
+    } catch (e) { /* audio debug is best-effort */ }
+    return out;
+  }
+
+  // --- init --------------------------------------------------------------------------------
+  function init(mountEl) {
+    try {
+      if (_inited) return true;
+      if (!mountEl || typeof document === 'undefined' || !document) return false;
+      _mount = mountEl;
+      _loadProgress();
+      _buildChrome();
+      _inited = true;
+      try {
+        var w = _win();
+        if (w) {
+          w.__WQ__ = {
+            game: api,
+            state: function () { return _puzzle; },
+            def: function () { return _def; },
+            foundCount: function () { return _foundCount(); },
+            // Proof hook: programmatically select start->end and commit.
+            select: function (start, end) {
+              try {
+                if (!_puzzle || _won || _paused) return { ok: false, reason: 'not-playing' };
+                return _commitSelection(start, end);
+              } catch (e) { return { ok: false, reason: 'error' }; }
+            },
+            // Proof hook: the placed cells of the first unfound word.
+            firstUnfound: function () {
+              try {
+                if (!_puzzle) return null;
+                for (var i = 0; i < _puzzle.placements.length; i++) {
+                  if (!_found[_puzzle.placements[i].word]) return _puzzle.placements[i];
+                }
+                return null;
+              } catch (e) { return null; }
+            },
+            useHint: useHint,
+            debugState: debugState
+          };
+        }
+      } catch (e) { /* verification handle is best-effort */ }
+      try { toJourney(); } catch (e) { /* map render is best-effort */ }
+      return true;
+    } catch (e) {
+      _log(e);
+      return false;
+    }
+  }
+
+  var api = {
+    init: init,
+    startLevel: startLevel,
+    startDaily: startDaily,
+    restoreSnapshot: restoreSnapshot,
+    quitPuzzle: quitPuzzle,
+    toJourney: toJourney,
+    toLevels: toLevels,
+    toDaily: toDaily,
+    pause: pause,
+    resume: resume,
+    showPause: showPause,
+    useHint: useHint,
+    handleOpen: handleOpen,
+    handleClose: handleClose,
+    syncAudio: syncAudio,
+    reloadSave: reloadSave,
+    screen: screen,
+    render: render,
+    debugState: debugState,
+    state: function () { return _puzzle; },
+    def: function () { return _def; },
+    foundCount: function () { return _foundCount(); }
+  };
+
+  return api;
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = WordQuestGame;
+if (typeof window !== 'undefined') {
+  try { window.WordQuestGame = WordQuestGame; } catch (e) { /* best-effort */ }
+}
+</script>
+<script>
+// source: wq-wire.js
+// WordQuestWire — mounts Word Quest into #app-wordquest and owns the
+// shell hooks.
+//
+// Boot (at eval, ss-wire pattern): expose window.__WQ__, mount the
+// game via WordQuestGame.init. onOpen resumes a mid-puzzle snapshot
+// (or shows the journey map); onClose auto-pauses + saves the
+// snapshot and stops the timer.
+//
+// Differences from ss-wire, all deliberate:
+//   - NO header music toggle: Word Quest has no music of its own, so
+//     there is nothing to toggle — the shell music keeps playing.
+//   - NO quit button injection: PhoneShell.injectQuitButton is being
+//     removed phone-wide. The game owns its own "Quit puzzle" button
+//     in its top bar (wq-game.js), which abandons the run with no
+//     penalty and lands on the level map.
+//   - The 3s splash (tap to skip, exactly 3000ms via SPLASH_MS) is
+//     the shell's SPLASH_THEMES['wordquest'] entry in shell.js — the
+//     wire does not run a splash of its own.
+//
+// SaveRegistry hooks: reinit clears the save and returns to the map;
+// reload re-reads storage and refreshes the map/HUD. The save module
+// (wq-save.js) already registers id 'wordquest' at eval; the wire
+// re-extends the hooks here so they survive a re-register.
+//
+// UMD: global WordQuestWire (+ window.__WQ__ verification handle). Never throws.
+var WordQuestWire = (function () {
+  'use strict';
+
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+  function _log(e) {
+    try {
+      if (typeof console !== 'undefined' && console && console.error) console.error('[wq-wire]', e);
+    } catch (e2) { /* logging is best-effort */ }
+  }
+  function _resolveGame() {
+    try {
+      var w = _win();
+      if (w && w.WordQuestGame) return w.WordQuestGame;
+      if (typeof WordQuestGame !== 'undefined' && WordQuestGame) return WordQuestGame;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _resolveSave() {
+    try {
+      var w = _win();
+      if (w && w.WordQuestSave) return w.WordQuestSave;
+      if (typeof WordQuestSave !== 'undefined' && WordQuestSave) return WordQuestSave;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _mount() {
+    try {
+      if (typeof document === 'undefined' || !document) return null;
+      return document.getElementById('app-wordquest');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function _extendRegistry() {
+    try {
+      var SR = null;
+      var w = _win();
+      if (w && w.SaveRegistry) SR = w.SaveRegistry;
+      else if (typeof SaveRegistry !== 'undefined' && SaveRegistry) SR = SaveRegistry;
+      if (SR && typeof SR.extend === 'function') {
+        SR.extend('wordquest', { reinit: reinit, reload: reload });
+      }
+    } catch (e) { /* registry is best-effort */ }
+  }
+
+  function boot() {
+    try {
+      if (typeof window === 'undefined' || typeof document === 'undefined') return;
+      try {
+        window.__WQ__ = window.__WQ__ || {};
+        if (window.WordQuestGame) window.__WQ__.game = window.WordQuestGame;
+        if (window.WordQuestSave) window.__WQ__.save = window.WordQuestSave;
+      } catch (e) {
+        _log(e);
+      }
+      var mount = _mount();
+      var game = _resolveGame();
+      if (!game || !mount) {
+        // The game script may land after this wire in the build order;
+        // one delayed retry covers it without a boot loop.
+        try {
+          setTimeout(function () {
+            try {
+              var g2 = _resolveGame();
+              var m2 = _mount();
+              if (!g2 || !m2) return;
+              boot();
+            } catch (e) { /* retry is best-effort */ }
+          }, 500);
+        } catch (e) { /* retry is best-effort */ }
+        return;
+      }
+      var ok = false;
+      try { ok = game.init(mount); } catch (e) { _log(e); return; }
+      if (!ok) return;
+      _extendRegistry();
+      // A save wipe/reload from Settings while the game is live:
+      // refresh the map/HUD so the UI follows storage.
+      try {
+        var win = _win();
+        if (win && typeof win.addEventListener === 'function') {
+          win.addEventListener('wordquest-save-changed', function () {
+            try {
+              var g = _resolveGame();
+              if (g && typeof g.reloadSave === 'function') g.reloadSave();
+            } catch (e2) { /* never throw */ }
+          });
+        }
+      } catch (e) { /* listener is optional */ }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  function onOpen() {
+    try {
+      var game = _resolveGame();
+      if (!game) return;
+      try {
+        if (typeof game.handleOpen === 'function') game.handleOpen();
+      } catch (e) { /* best-effort */ }
+      try {
+        if (typeof game.render === 'function') game.render();
+      } catch (e) { /* the open handler re-renders */ }
+      try {
+        if (typeof game.syncAudio === 'function') game.syncAudio();
+      } catch (e) { /* best-effort */ }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  function onClose() {
+    try {
+      var game = _resolveGame();
+      if (!game) return;
+      try {
+        if (typeof game.handleClose === 'function') game.handleClose();
+      } catch (e) { /* auto-pause + save is best-effort */ }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  /* Settings "delete save" for Word Quest: wipe progress + stats,
+     refresh the UI back to the journey map. The save module's own
+     reinit does the wipe; this only re-reads and re-renders. */
+  function reinit() {
+    try {
+      var save = _resolveSave();
+      if (save && typeof save.reinit === 'function') {
+        try { save.reinit(); } catch (e) { /* wipe is best-effort */ }
+      }
+      var game = _resolveGame();
+      if (game) {
+        try {
+          if (typeof game.reloadSave === 'function') game.reloadSave();
+        } catch (e) { /* best-effort */ }
+        try {
+          if (typeof game.toJourney === 'function') game.toJourney();
+        } catch (e) { /* best-effort */ }
+      }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  /* Settings "reload save": re-read storage and refresh the map/HUD. */
+  function reload() {
+    try {
+      var game = _resolveGame();
+      if (game && typeof game.reloadSave === 'function') game.reloadSave();
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  var api = {
+    boot: boot,
+    onOpen: onOpen,
+    onClose: onClose,
+    reinit: reinit,
+    reload: reload
+  };
+
+  try {
+    boot();
+  } catch (e) {
+    _log(e);
+  }
+
+  return api;
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = WordQuestWire;
+if (typeof window !== 'undefined') {
+  try { window.WordQuestWire = WordQuestWire; } catch (e) { /* best-effort */ }
+}
 </script>
 </body>
 </html>
