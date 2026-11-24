@@ -14461,8 +14461,8 @@ button.mr-setup-preview:focus-visible {
 }
 .ty-headbtns { display: flex; align-items: center; gap: 4px; }
 .ty-iconbtn {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.35);
   background: rgba(255, 255, 255, 0.12);
@@ -14476,21 +14476,21 @@ button.mr-setup-preview:focus-visible {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 6px;
-  padding: 0 10px 8px;
+  padding: 0 10px 6px;
 }
 .ty-player {
   background: rgba(0, 0, 0, 0.28);
   border: 2px solid transparent;
   border-radius: 10px;
-  padding: 5px 4px;
+  padding: 4px 4px;
   text-align: center;
   min-width: 0;
 }
 .ty-player.ty-active { border-color: #fde68a; box-shadow: 0 0 0 1px #fde68a; }
 .ty-player.ty-bankrupt { opacity: 0.45; }
 .ty-face {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   object-fit: cover;
   object-position: 50% 18%;
@@ -14509,7 +14509,16 @@ button.mr-setup-preview:focus-visible {
 .ty-pmoney { display: block; font-size: 11px; color: #bbf7d0; }
 .ty-out { display: block; font-size: 10px; color: #fca5a5; font-weight: 800; }
 
-.ty-boardwrap { padding: 0 8px 8px; }
+/* Nov 23, 2026 (Jesse): the board fills the phone — the wrap grows to
+   the remaining viewport height and the board stretches to fill it
+   (the old aspect-ratio: 1/1 capped the board at its width and left
+   ~350px of dead green below it on tall phones). */
+.ty-boardwrap {
+  padding: 0 8px 6px;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
 .ty-board {
   display: grid;
   grid-template-columns: repeat(11, 1fr);
@@ -14517,7 +14526,7 @@ button.mr-setup-preview:focus-visible {
   width: 100%;
   max-width: 374px;
   margin: 0 auto;
-  aspect-ratio: 1 / 1;
+  flex: 1;
   background: #f8f5e8;
   border-radius: 10px;
   padding: 3px;
@@ -14535,22 +14544,45 @@ button.mr-setup-preview:focus-visible {
   color: #1f2937;
   font-family: inherit;
   text-align: center;
+  /* Grid blowout guard: without these, a long word's min-content width
+     forces its track wider than 1fr and the board overflows the screen. */
+  min-width: 0;
+  min-height: 0;
 }
 .ty-sq.ty-here { outline: 2px solid #f59e0b; outline-offset: -2px; }
 .ty-color { display: block; height: 5px; width: 100%; }
 .ty-sq-top .ty-color { position: absolute; bottom: 0; left: 0; }
+/* Bottom-row color bar is absolute at the top (was in-flow, eating 5px
+   of the name/price stack's height). */
+.ty-sq-bottom .ty-color { position: absolute; top: 0; left: 0; }
 .ty-sq-left .ty-color { position: absolute; top: 0; right: 0; width: 5px; height: 100%; }
 .ty-sq-right .ty-color { position: absolute; top: 0; left: 0; width: 5px; height: 100%; }
+/* REBASE2 (Nov 23): side-column bars are absolute OVER the square's edge
+   (5px). The name/price must clear them — a long half ("tion", "enue",
+   "Power") otherwise runs under the bar and its last letter is hidden
+   behind it (caught by viewing renders; the rect-based gates missed it
+   because the text fits the square, only not the bar-free part). */
+.ty-sq-left .ty-name, .ty-sq-left .ty-price { padding-right: 6px; }
+.ty-sq-right .ty-name, .ty-sq-right .ty-price { padding-left: 6px; }
 .ty-name {
   display: block;
   font-size: 6.5px;
   line-height: 1.15;
   font-weight: 700;
-  padding: 1px;
-  word-break: break-word;
+  padding: 1px 0;
+  /* Soft hyphens (inserted by _shyName in tycoon-game.js) are the
+     break points: long words split at syllables with a hyphen
+     ("Light-house"). overflow-wrap is deliberately NOT set — in this
+     Chromium it breaks words anywhere with no hyphen, overriding the
+     soft hyphens. hyphens: auto is a harmless extra on phones whose
+     dictionary can add more (still hyphenated) break points. */
+  hyphens: auto;
 }
 .ty-sq-top .ty-name, .ty-sq-bottom .ty-name { padding-top: 6px; }
 .ty-sq-top .ty-name { padding-bottom: 6px; padding-top: 1px; }
+/* Top-row price clears the bottom color bar (it had no clearance and
+   was the most-cut text on the board). */
+.ty-sq-top .ty-price { padding-bottom: 6px; }
 .ty-price { display: block; font-size: 6px; color: #6b7280; }
 .ty-houses { position: absolute; top: 1px; left: 1px; display: flex; gap: 1px; }
 .ty-houses i { width: 4px; height: 4px; background: #16a34a; border-radius: 1px; display: block; }
@@ -14666,6 +14698,12 @@ button.mr-setup-preview:focus-visible {
   color: #d1fae5;
   max-height: 76px;
   overflow: hidden;
+  /* Visible panel even when empty (a fresh game has no log lines yet),
+     so the center reads as dice / log / actions, not dice / void. */
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  padding: 6px 8px;
+  min-height: 40px;
 }
 .ty-logline { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ty-logline:last-child { color: #fef9c3; font-weight: 700; }
@@ -14780,6 +14818,50 @@ button.mr-setup-preview:focus-visible {
   .ty-name { font-size: 6px; }
   .ty-title { font-size: 16px; }
   .ty-log { max-height: 60px; }
+}
+
+/* Tall phones: the board is much taller now, so the text can be bigger
+   too — and the center panel (dice/log/actions) grows into the space. */
+@media (min-height: 700px) {
+  .ty-name { font-size: 7.5px; }
+  .ty-price { font-size: 7px; }
+  /* REBASE2: side columns stay at the 6.5px base size. At 360px wide
+     their text box (after the 6px bar clearance) is too narrow for
+     7.5px "Power" / "Boule-" — an over-wide line anchors left and its
+     tail runs under the bar. */
+  .ty-sq-left .ty-name, .ty-sq-right .ty-name { font-size: 6.5px; }
+  .ty-die { width: 44px; height: 44px; }
+  /* The log reserves its 5-line space even before the first roll —
+     a fresh game has an empty log, so without this the center has a
+     big dark void in the middle. */
+  .ty-log { max-height: 140px; min-height: 68px; font-size: 10px; }
+  .ty-center { gap: 8px; justify-content: space-evenly; }
+  .ty-btn { padding: 12px 18px; font-size: 15px; }
+}
+
+/* Short phones: the board is shorter, so the text, the color bar and
+   the color-bar clearances shrink with it. (The 660px line covers the
+   640px viewport too — its rows are only ~45px tall.) */
+@media (max-height: 660px) {
+  .ty-color { height: 3px; }
+  .ty-sq-top .ty-name { padding-bottom: 2px; }
+  .ty-sq-top .ty-price { padding-bottom: 2px; }
+  .ty-sq-bottom .ty-name { padding-top: 4px; }
+}
+/* Shortest phones (568px): the rows are only ~34px tall once the
+   player portraits load (the layout gate first measured them with
+   broken portraits — the row was 48px, not the real 80px — and passed
+   a 2px overflow on the two 3-line bottom squares). Compact the
+   players row to buy board height, and shrink the square text so the
+   worst 3-line name + price fits with margin. */
+@media (max-height: 600px) {
+  .ty-name { font-size: 5.5px; }
+  .ty-price { font-size: 5px; }
+  .ty-sq-bottom .ty-name { padding-top: 2px; }
+  .ty-face { width: 22px; height: 22px; }
+  .ty-player { padding: 3px 4px; }
+  .ty-players { padding-bottom: 4px; }
+  .ty-pname, .ty-pmoney { font-size: 10px; }
 }
 </style>
 <style>
@@ -142200,6 +142282,28 @@ var TycoonGame = (function () {
   }
 
   // --- rendering ---------------------------------------------------------
+  // Soft-hyphen map (Nov 23, 2026): board labels only. Long words break
+  // at syllables with a hyphen ("Light-house") instead of anywhere
+  // ("Lighthou/se") or being cut off at the square edge. The data names
+  // are untouched — sheets, trades and the log use the plain names.
+  // Every word wider than the narrowest square content width (~26px at
+  // the 7.5px tall-phone font) is mapped; all other words fit whole.
+  var _TY_SHY = {
+    Waterworks: 'Water&shy;works', Lighthouse: 'Light&shy;house',
+    Rosewood: 'Rose&shy;wood', Boulevard: 'Boule&shy;vard',
+    Sunbeam: 'Sun&shy;beam', Diamond: 'Dia&shy;mond',
+    Crescent: 'Cres&shy;cent', Fortune: 'For&shy;tune',
+    Parking: 'Park&shy;ing', Festival: 'Fes&shy;tival',
+    Visiting: 'Vis&shy;it&shy;ing', Avenue: 'Av&shy;enue',
+    Terrace: 'Ter&shy;race', Seagull: 'Sea&shy;gull',
+    Station: 'Sta&shy;tion', Marina: 'Ma&shy;rina',
+    Harbor: 'Har&shy;bor', Golden: 'Gold&shy;en',
+    Sunset: 'Sun&shy;set', Willow: 'Wil&shy;low', Palace: 'Pal&shy;ace'
+  };
+  function _shyName(name) {
+    return _esc(name).split(' ').map(function (w) { return _TY_SHY[w] || w; }).join(' ');
+  }
+
   function _squareHtml(i) {
     var sq = D.SQUARES[i];
     var gp = _gridPos(i);
@@ -142237,7 +142341,7 @@ var TycoonGame = (function () {
     var here = _current() && _current().pos === i ? ' ty-here' : '';
     var pulse = (_pulseSq === i) ? ' ty-pulse' : '';
     return '<button type="button" class="' + cls + here + pulse + '" data-action="square" data-sq="' + i + '" style="grid-row:' + gp.row + ';grid-column:' + gp.col + '">' +
-      colorBar + '<span class="ty-name">' + _esc(sq.name) + '</span>' + price + houses + mort + ownerDot +
+      colorBar + '<span class="ty-name">' + _shyName(sq.name) + '</span>' + price + houses + mort + ownerDot +
       '<span class="ty-tokens">' + tokens + '</span></button>';
   }
 
