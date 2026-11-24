@@ -500,39 +500,9 @@ body {
   outline-offset: 2px;
 }
 
-/* Shared Quit button (Nov 22, 2026 — Jesse): an explicit Quit in every
-   game's top bar. Same pill language as the audio toggles, red-tinted
-   so it reads as an exit, not a setting. */
-.ph-quit-btn {
-  appearance: none;
-  min-height: 32px;
-  padding: 0 12px;
-  border: 1px solid rgba(255, 120, 120, 0.55);
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.35);
-  color: #ff9e9e;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  touch-action: manipulation;
-  white-space: nowrap;
-}
-
-.ph-quit-btn--compact {
-  min-width: 36px;
-  padding: 0 8px;
-  font-size: 15px;
-}
-
-.ph-quit-btn:active {
-  transform: scale(0.96);
-}
-
-.ph-quit-btn:focus-visible {
-  outline: 2px solid #ff9e9e;
-  outline-offset: 2px;
-}
+/* Nov 23, 2026 (Jesse): the shared Quit button is REMOVED — the
+   shell home button is now the only way home. .ph-quit-btn styles
+   deleted with it (zero call sites remain). */
 
 /* Block game icon: small original block pattern on a teal tile. */
 .ph-icon-blocks {
@@ -1909,6 +1879,18 @@ body {
   .bz-btn {
     padding: 8px 9px;
     font-size: 13px;
+  }
+}
+
+/* Nov 23, 2026: the Quit button takes the old Home button's slot. Keep
+   its horizontal padding tight so the header stays within its fit
+   budget (Quit text is wider than the mark it replaces). */
+.bz-quit {
+  padding: 8px 10px;
+}
+@media (max-width: 374px) {
+  .bz-quit {
+    padding: 8px 8px;
   }
 }
 
@@ -15699,114 +15681,12 @@ if (typeof window !== 'undefined') {
     }
   }
 
-  /* Shared Quit button (Nov 22, 2026 — Jesse): an explicit Quit in
-     every game's top bar that returns to the phone home screen. Same
-     never-throws / idempotent style as injectAudioToggles. No confirm
-     dialog: quitting is defeat-equivalent with no penalty — meta
-     progress only writes on victory (or on the game's own UI actions)
-     and is already saved, and a mid-battle attempt is abandoned, not
-     lost. opts.onQuit (optional) runs first, best-effort — a game can
-     pause itself there (Kindlekeep does); its failure never blocks
-     the quit. */
-  function injectQuitButton(container, opts) {
-    try {
-      if (!container || typeof container.querySelector !== 'function') return false;
-      if (typeof document === 'undefined' || !document ||
-          typeof document.createElement !== 'function') return false;
-      opts = opts || {};
-      var existing = null;
-      try {
-        existing = container.querySelector('[data-ph-quit]');
-      } catch (e) { existing = null; }
-      if (existing) return existing;
-      var btn = document.createElement('button');
-      try { btn.type = 'button'; } catch (e) { /* silent */ }
-      var cls = 'ph-quit-btn';
-      if (opts.compact) cls += ' ph-quit-btn--compact';
-      try { btn.className = cls; } catch (e) { /* silent */ }
-      try {
-        btn.setAttribute('data-ph-quit', 'true');
-        btn.setAttribute('aria-label', 'Quit to home');
-        if (opts.id) btn.id = opts.id;
-      } catch (e) { /* silent */ }
-      try { btn.textContent = opts.compact ? '\u2715' : '\u2715 Quit'; } catch (e) { /* silent */ }
-      try {
-        if (btn.addEventListener) {
-          btn.addEventListener('click', function () {
-            try {
-              if (typeof opts.onQuit === 'function') {
-                try { opts.onQuit(); } catch (e) { /* pre-quit hook must not block */ }
-              }
-            } catch (e2) { /* silent */ }
-            try {
-              if (typeof PhoneShell !== 'undefined' && PhoneShell &&
-                  typeof PhoneShell.goHome === 'function') {
-                PhoneShell.goHome();
-                return;
-              }
-            } catch (e3) { /* fall through to the direct path */ }
-            try {
-              closeCurrent();
-              hideApps();
-              showHome();
-              _clearHash();
-            } catch (e4) { /* never throw */ }
-          });
-        }
-      } catch (e) { /* a button without listeners still renders */ }
-      try {
-        if (opts.before && opts.before.parentNode === container &&
-            typeof container.insertBefore === 'function') {
-          container.insertBefore(btn, opts.before);
-        } else if (typeof container.appendChild === 'function') {
-          container.appendChild(btn);
-        }
-      } catch (e) { /* silent */ }
-      return btn;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  /* OATH QUIT WATCH (Nov 22, 2026 — Jesse): Oath builds its topbar
-     from an HTML string in oath-game.js (owned by the parallel Oath
-     coordinator — this tree must not touch oath-* files), so the quit
-     button cannot be injected by the game itself. The shell watches
-     #app-oath and re-injects the compact quit button into every
-     .oath-topbar-toggles whenever Oath re-renders a screen. Started
-     on Oath open, stopped on Oath close; never throws. */
-  var _oathQuitObserver = null;
-  function _injectOathQuit() {
-    try {
-      var root = $('app-oath');
-      if (!root || typeof root.querySelectorAll !== 'function') return;
-      var slots = root.querySelectorAll('.oath-topbar-toggles');
-      for (var i = 0; i < slots.length; i++) {
-        try { injectQuitButton(slots[i], { compact: true }); } catch (e) { /* best-effort */ }
-      }
-    } catch (e) { /* never throw */ }
-  }
-  function _startOathQuitWatch() {
-    try {
-      _injectOathQuit();
-      var root = $('app-oath');
-      if (!root) return;
-      if (typeof MutationObserver === 'undefined') return;
-      if (_oathQuitObserver) { try { _oathQuitObserver.disconnect(); } catch (e) { /* silent */ } }
-      _oathQuitObserver = new MutationObserver(function () {
-        try { _injectOathQuit(); } catch (e) { /* never throw */ }
-      });
-      _oathQuitObserver.observe(root, { childList: true, subtree: true });
-    } catch (e) { /* never throw */ }
-  }
-  function _stopOathQuitWatch() {
-    try {
-      if (_oathQuitObserver) {
-        _oathQuitObserver.disconnect();
-        _oathQuitObserver = null;
-      }
-    } catch (e) { /* never throw */ }
-  }
+  /* Nov 23, 2026 (Jesse): the shared Quit button is REMOVED.
+     The shell's fading home button is now the only way home, in
+     every game; each game has its own surrender/quit-stage control
+     that abandons the attempt and lands on that game's map/menu.
+     injectQuitButton, the Oath quit watch, and .ph-quit-btn styles
+     are all deleted (zero call sites remain). */
 
   /* ------------------------------------------------- PH_HOME_AD_HOOK (Nov 21, 2026)
      Home ad banner: the slot (#ph-home-ad) is hidden until an ad unit
@@ -17187,10 +17067,6 @@ if (typeof window !== 'undefined') {
        for the home row and every game's top bar. */
     injectAudioToggles: injectAudioToggles,
 
-    /* Shared Quit button (Nov 22, 2026 — Jesse): an explicit Quit in
-       every game's top bar that returns to the phone home screen. */
-    injectQuitButton: injectQuitButton,
-
     appInfo: function (id) {
       var app = registry[id];
       if (!app) return null;
@@ -17349,6 +17225,28 @@ if (typeof window !== 'undefined') {
             window.BZGame.render();
           }
         } catch (e) { /* re-render is best-effort; the next move re-renders */ }
+        // Nov 23, 2026: resume the Blitz clock after a shell-home
+        // leave (BZWire.onClose froze it). BZWire.onOpen also
+        // re-renders; the calls are no-ops in Classic/Daily.
+        try {
+          if (typeof window !== 'undefined' && window.BZWire &&
+              typeof window.BZWire.onOpen === 'function') {
+            window.BZWire.onOpen();
+          }
+        } catch (e) { /* never throws */ }
+      },
+      // Nov 23, 2026: Block Zen had NO onClose — the Blitz clock is
+      // wire-owned and its document.hidden pause never fires when the
+      // app is only hidden behind the home screen, so the clock ran
+      // down behind home. BZWire.onClose freezes it + persists the
+      // run; onOpen (above) re-arms it.
+      onClose: function () {
+        try {
+          if (typeof window !== 'undefined' && window.BZWire &&
+              typeof window.BZWire.onClose === 'function') {
+            window.BZWire.onClose();
+          }
+        } catch (e) { /* never throws */ }
       } });
     /* CASINO: Casino Life. Delegated to the Casino wire, which
        no-ops until the game lands. Guarded and casino-scoped; never
@@ -17388,7 +17286,6 @@ if (typeof window !== 'undefined') {
             window.OathWire.onOpen();
           }
         } catch (e) { /* never throws */ }
-        try { _startOathQuitWatch(); } catch (e) { /* never throws */ }
       },
       onClose: function () {
         try {
@@ -17397,7 +17294,6 @@ if (typeof window !== 'undefined') {
             window.OathWire.onClose();
           }
         } catch (e) { /* never throws */ }
-        try { _stopOathQuitWatch(); } catch (e) { /* never throws */ }
       } });
     PhoneShell.registerApp('chess', { title: 'Chess', game: true, el: $('app-chess'),
       /* Re-measure + re-render on open (Blockfall pattern): the board is
@@ -17546,6 +17442,27 @@ if (typeof window !== 'undefined') {
             window.SolGame.render();
           }
         } catch (e) { /* re-render is best-effort; the next move re-renders */ }
+        // Nov 23, 2026: restart the display-only elapsed timer after
+        // a shell-home leave (onClose froze it). No-op before init
+        // and once the deal is won.
+        try {
+          if (typeof window !== 'undefined' && window.SolGame &&
+              typeof window.SolGame.onAppShown === 'function') {
+            window.SolGame.onAppShown();
+          }
+        } catch (e) { /* never throws */ }
+      },
+      // Nov 23, 2026: Solitaire had NO onClose — the 500ms elapsed
+      // timer kept running behind the home screen. onAppHidden stops
+      // it (freezing the display-only elapsed); onOpen (above)
+      // restarts it while a deal is in progress.
+      onClose: function () {
+        try {
+          if (typeof window !== 'undefined' && window.SolGame &&
+              typeof window.SolGame.onAppHidden === 'function') {
+            window.SolGame.onAppHidden();
+          }
+        } catch (e) { /* never throws */ }
       } });
     /* SNAKE (Nov 21, 2026): Snake. Delegated to the Snake wire, which
        no-ops until the game lands. Guarded and snake-scoped; never
@@ -18507,21 +18424,18 @@ var BZGame = (function () {
     _root.appendChild(artBg);
 
     // Header: home/back, score, best, restart.
-    // /* KK QUIT-SKILLS */ The Home button IS the Quit button: it already
-    // calls PhoneShell.goHome. It is labelled with the shared Quit mark
-    // (\u2715) instead of "\u2039 Home" so Block Zen carries the same explicit
-    // Quit affordance as every other game. A SEPARATE injected \u2715 was
-    // tried first and broke the header fit at every viewport (the
-    // header is already at its fit limit -- the music/sound toggles
-    // overlapped the Score/Best readout, 12 shared-fit failures);
-    // relabelling the existing button keeps the header at 6 items.
+    // Header: quit, score, best, restart. (Nov 23, 2026: the Home
+    // button (labelled with the shared Quit mark) was removed -- the
+    // shell's fading home button is the only way home now. The Quit
+    // button takes its slot: it ends the run (see quitRun) instead
+    // of leaving the game.)
     var header = _el('div', 'bz-header');
-    var homeBtn = _el('button', 'bz-btn bz-home', '\u2715');
-    homeBtn.id = 'bz-home';
-    homeBtn.type = 'button';
-    homeBtn.setAttribute('aria-label', 'Quit to home');
-    homeBtn.addEventListener('click', _goHome);
-    header.appendChild(homeBtn);
+    var quitBtn = _el('button', 'bz-btn bz-quit', 'Quit');
+    quitBtn.id = 'bz-quit';
+    quitBtn.type = 'button';
+    quitBtn.setAttribute('aria-label', 'Quit run');
+    quitBtn.addEventListener('click', function () { quitRun(); });
+    header.appendChild(quitBtn);
 
     var stats = _el('div', 'bz-stats');
     var scoreBox = _el('div', 'bz-stat');
@@ -18626,8 +18540,13 @@ var BZGame = (function () {
     _overlay.appendChild(card);
     _overlay.addEventListener('click', function (e) {
       var btn = _closest(e.target, 'bz-btn');
-      if (btn && (btn.getAttribute('data-bz-restart') || btn.id === 'bz-gameover-restart')) {
+      if (!btn) return;
+      if (btn.getAttribute('data-bz-restart') || btn.id === 'bz-gameover-restart') {
         newGame();
+      } else if (btn.getAttribute('data-bz-modes')) {
+        // Quit overlay: dismiss to the mode bar so another mode can be
+        // picked. The run stays over (input is gated on _gameOver).
+        _hideOverlay();
       }
     });
     _root.appendChild(_overlay);
@@ -18770,15 +18689,6 @@ var BZGame = (function () {
     if (!_overlay) return;
     _overlay.hidden = true;
     _overlay.classList.remove('bz-visible');
-  }
-
-  function _goHome() {
-    try {
-      if (typeof window !== 'undefined' && window.PhoneShell &&
-          typeof window.PhoneShell.goHome === 'function') {
-        window.PhoneShell.goHome();
-      }
-    } catch (err) { /* shell absent or failed: never throw */ }
   }
 
   // --------------------------------------------------------------- drawing
@@ -19477,8 +19387,10 @@ var BZGame = (function () {
   // HQ Blitz (Nov 22, 2026): end the game on demand (the clock ran
   // out). Mirrors the natural game-over path exactly: the dead board is
   // saved (so resume refuses it) and onGameOver fires with the score.
-  // A no-op when the game is already over.
-  function endGame() {
+  // A no-op when the game is already over. `quit` (Nov 23, 2026) marks
+  // a player-initiated quit: the payload carries quit:true so the wire
+  // skips the best-score write and titles the overlay "RUN QUIT".
+  function endGame(quit) {
     if (_gameOver) return false;
     _gameOver = true;
     _showOverlay();
@@ -19486,8 +19398,16 @@ var BZGame = (function () {
     _render();
     _renderTray();
     _call('onStateChange', state());
-    _call('onGameOver', { score: _score, best: _best });
+    _call('onGameOver', { score: _score, best: _best, quit: !!quit });
     return true;
+  }
+
+  // Nov 23, 2026 (Jesse): "Quit" — abandon the current run
+  // (defeat-equivalent, no penalty) and land on the game-over overlay,
+  // which offers Play Again (retry) and Change Mode (pick another mode).
+  // The run's score is NOT saved as a best on quit (see endGame).
+  function quitRun() {
+    return endGame(true);
   }
 
   function state() {
@@ -19639,6 +19559,7 @@ var BZGame = (function () {
     init: init,
     newGame: newGame,
     endGame: endGame,
+    quitRun: quitRun,
     state: state,
     restore: restore,
     setTheme: setTheme,
@@ -20106,6 +20027,14 @@ var BZUI = (function () {
       var badge = opts.isNewBest
         ? '<p class="bz-gameover-badge">NEW BEST!</p>'
         : '';
+      // Nov 23, 2026: on a player quit, offer Change Mode alongside Play
+      // Again — the overlay covers the mode bar, so without this button
+      // the player could not pick another mode after quitting. The game
+      // handles data-bz-modes by dismissing the overlay (the run stays
+      // over; input is gated on game over).
+      var modesBtn = opts.quit
+        ? ' <button type="button" class="bz-btn" data-bz-modes="1">Change mode</button>'
+        : '';
       overlay.innerHTML =
         '<div class="bz-gameover-card">' +
         '<h2 class="bz-gameover-title">' + title + '</h2>' +
@@ -20113,6 +20042,7 @@ var BZUI = (function () {
         '<p class="bz-gameover-score">Score: ' + score + '</p>' +
         '<p class="bz-gameover-best">Best: ' + best + '</p>' +
         '<button type="button" class="bz-btn bz-again" id="bz-gameover-restart" data-bz-restart="1">Play Again</button>' +
+        modesBtn +
         ' <button type="button" class="bz-btn bz-delete-save" id="bz-delete-save" data-bz-delete-save="1">Delete save</button>' +
         '</div>';
       overlay.hidden = false;
@@ -26543,11 +26473,11 @@ if (typeof window !== 'undefined') {
         } catch (e) {
           _injectMusicButtonLegacy(mount);
         }
-        // /* KK QUIT-SKILLS */ No separate Quit button is injected here:
-        // Block Zen's header is already at its fit limit, and a 7th
-        // header item overlaps the Score/Best readout at every viewport
-        // (12 shared-fit failures). The header's own Home button IS the
-        // Quit button (bz-game.js: labelled ✕, calls PhoneShell.goHome).
+        // No separate Quit button is injected here: Block Zen's header
+        // is already at its fit limit, and a 7th header item overlaps
+        // the Score/Best readout at every viewport (12 shared-fit
+        // failures). The header's own Quit button (bz-game.js: ends the
+        // run) takes the slot the old Home button held.
         return;
       }
       _injectMusicButtonLegacy(mount);
@@ -26832,7 +26762,10 @@ if (typeof window !== 'undefined') {
               : 0;
             var best = _best();
             var isNewBest = false;
-            if (score > best) {
+            // Nov 23, 2026: a player-initiated quit writes NO meta — the
+            // run's score is never saved as a best (defeat-equivalent,
+            // no penalty). Natural game-overs still record bests.
+            if (!payload.quit && score > best) {
               best = score;
               isNewBest = true;
               _saveBestFor(best);
@@ -26850,15 +26783,18 @@ if (typeof window !== 'undefined') {
                 overlay = null;
               }
               // HQ titles: Blitz time-up says so; Daily says the day is
-              // done. Classic keeps the plain GAME OVER.
+              // done. Classic keeps the plain GAME OVER. A player quit
+              // says RUN QUIT and offers a Change Mode button.
               var title = 'GAME OVER';
-              if (_blitzTimeUp) { title = "TIME'S UP!"; _blitzTimeUp = false; }
+              if (payload.quit) title = 'RUN QUIT';
+              else if (_blitzTimeUp) { title = "TIME'S UP!"; _blitzTimeUp = false; }
               else if (_mode === 'daily') title = 'DAILY DONE';
               ui.showGameOver(overlay || mount, {
                 score: score,
                 best: best,
                 isNewBest: isNewBest,
-                title: title
+                title: title,
+                quit: !!payload.quit
               });
               _applyGameoverArt();
             }
@@ -27119,6 +27055,28 @@ if (typeof window !== 'undefined') {
     } catch (e) {
       _log(e);
     }
+
+      // Nov 23, 2026: shell home-button pause. Block Zen had no onClose:
+      // the Blitz clock is wire-owned (bz-modes timer) and its
+      // document.hidden pause never fires when the app is only hidden
+      // behind the home screen, so the clock ran down behind home.
+      // onClose freezes the clock + persists the run (with the frozen
+      // remaining time, so a reload resumes it); onOpen re-arms it.
+      // Classic/Daily have no clock — the calls are no-ops there.
+      try {
+        if (typeof window !== 'undefined') {
+          window.BZWire = {
+            onClose: function () {
+              try { if (modes && typeof modes.pauseTimer === 'function') modes.pauseTimer(); } catch (e) { /* best-effort */ }
+              try { if (save && game && game.state) _saveStateFor(game.state()); } catch (e) { /* best-effort */ }
+            },
+            onOpen: function () {
+              try { if (modes && typeof modes.resumeTimer === 'function') modes.resumeTimer(); } catch (e) { /* best-effort */ }
+              try { if (game && typeof game.render === 'function') game.render(); } catch (e) { /* best-effort */ }
+            }
+          };
+        }
+      } catch (e) { /* handle export is best-effort */ }
   }
 
   try {
@@ -30580,16 +30538,12 @@ var SolGame = (function () {
 
     _root = _el('div', 'sol-game');
 
-    // Header: back control + score/moves/time, then the action buttons.
+    // Header: score/moves/time, then the action buttons. (Nov 23, 2026:
+    // the Home back control was removed -- the shell's fading home
+    // button is the only way home now.)
     var header = _el('div', 'sol-header');
     var topRow = _el('div', 'sol-header-top');
-    var backBtn = _el('button', 'sol-btn sol-back', '\u2039 Home');
-    backBtn.id = 'sol-back';
-    backBtn.type = 'button';
-    backBtn.setAttribute('aria-label', 'Back to home');
-    backBtn.addEventListener('click', _goHome);
-    topRow.appendChild(backBtn);
-
+    var stats = _el('div', 'sol-stats');
     var stats = _el('div', 'sol-stats');
     var scoreBox = _el('div', 'sol-stat');
     scoreBox.appendChild(_el('span', 'sol-label', 'Score'));
@@ -30654,12 +30608,6 @@ var SolGame = (function () {
         window.PhoneShell.injectAudioToggles(actions, { compact: true });
       }
     } catch (e) { /* audio toggles are best-effort */ }
-    try {
-      if (typeof window !== 'undefined' && window.PhoneShell &&
-          typeof window.PhoneShell.injectQuitButton === 'function') {
-        window.PhoneShell.injectQuitButton(actions, { compact: true });
-      }
-    } catch (e) { /* quit button is best-effort */ }
     header.appendChild(actions);
 
     // Stats row placeholder: filled by the wire via SolUI.renderStats
@@ -30722,15 +30670,6 @@ var SolGame = (function () {
     _root.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
     mount.appendChild(_root);
-  }
-
-  function _goHome() {
-    try {
-      if (typeof window !== 'undefined' && window.PhoneShell &&
-          typeof window.PhoneShell.goHome === 'function') {
-        window.PhoneShell.goHome();
-      }
-    } catch (err) { /* shell absent or failed: never throw */ }
   }
 
   // --------------------------------------------------------------- rendering
@@ -31606,6 +31545,13 @@ var SolGame = (function () {
     hint: hint,
     autoFinish: autoFinish,
     render: render,
+    // Nov 23, 2026 (Jesse): shell home-button pause. Solitaire had no
+    // onClose: the 500ms elapsed timer kept running behind the home
+    // screen. Hidden stops the timer (freezing the display-only
+    // elapsed); shown restarts it only while a game is in progress
+    // and not yet won. The timer never affects scoring.
+    onAppHidden: function () { _stopTimer(); },
+    onAppShown: function () { if (_started && !_wonFired) _startTimer(); },
     layout: _computeLayout,
     _computeLayout: _computeLayout,
     _layoutFor: _layoutFor,
@@ -33480,10 +33426,11 @@ try {
 //
 // showGameOver(parent, opts) — builds the #bf-gameover overlay
 //   (class bf-overlay) in parent. opts: {score, lines, level, best,
-//   isNewBest, onNewGame, onHome}. Any existing overlay in parent is
+//   isNewBest, onNewGame}. Any existing overlay in parent is
 //   replaced, so repeated calls never stack overlays. Buttons:
-//   #bf-over-new ("New Game"), #bf-over-home ("Home"). Returns the
-//   overlay element, or null when nothing was built.
+//   #bf-over-new ("New Game"). (Nov 23, 2026: the "Home" button was
+//   removed — the shell's fading home button is the only way home.)
+//   Returns the overlay element, or null when nothing was built.
 // hideGameOver(parent) — removes any #bf-gameover overlay in parent.
 // showPauseSheet(parent, opts) — builds the #bf-pause-sheet sheet
 //   (class bf-sheet) in parent. opts: {onResume, onNewGame,
@@ -33492,7 +33439,8 @@ try {
 //   BZAudio/BZSettings globals). Buttons: #bf-sheet-resume ("Resume"),
 //   #bf-sheet-new ("New Game"), #bf-sheet-clear ("Delete Save"), and
 //   a Music on/off switch row (last; same persisted setting as shell
-//   Settings, see _musicToggleRow).
+//   Settings, see _musicToggleRow). ("Quit game" lives in the buttons
+//   row, not the sheet — see bf-game.js.)
 //   Delete uses an ARMED CONFIRM: the first tap arms the button (its
 //   label becomes "Tap again to confirm" and it gains the bf-armed
 //   class); a second tap within 3000ms fires onClearSave. The arm
@@ -33707,12 +33655,7 @@ var BFUI = (function () {
         _call(opts.onNewGame);
       });
       _setId(btnNew, 'bf-over-new');
-      var btnHome = _button(doc, 'Home', function () {
-        _call(opts.onHome);
-      });
-      _setId(btnHome, 'bf-over-home');
       card.appendChild(btnNew);
-      card.appendChild(btnHome);
       overlay.appendChild(card);
       parent.appendChild(overlay);
       return overlay;
@@ -34617,11 +34560,11 @@ var BFGame = (function () {
 
     _root = _el('div', 'bf-game');
 
-    // Header: home, score/lines/level/best.
+    // Header: score/lines/level/best. (Nov 23, 2026: the Home button
+    // was removed -- the shell's fading home button is the only way
+    // home now; no duplicate home button in any game.)
     var header = _el('div', 'bf-header');
-    var homeBtn = _button('bf-home', 'bf-btn bf-home', '\u2039 Home', 'Back to home');
-    homeBtn.addEventListener('click', _goHome);
-    header.appendChild(homeBtn);
+    var stats = _el('div', 'bf-stats');
     var stats = _el('div', 'bf-stats');
     var defs = [
       ['Score', 'bf-score', 'score'],
@@ -34656,16 +34599,12 @@ var BFGame = (function () {
         window.PhoneShell.injectAudioToggles(header, { compact: true });
       }
     } catch (e) { /* audio toggles are best-effort */ }
-    try {
-      if (typeof window !== 'undefined' && window.PhoneShell &&
-          typeof window.PhoneShell.injectQuitButton === 'function') {
-        window.PhoneShell.injectQuitButton(header, { compact: true });
-      }
-    } catch (e) { /* quit button is best-effort */ }
     _root.appendChild(header);
     _headerEl = header;
 
-    // Buttons row: New Game, Pause.
+    // Buttons row: New Game, Pause, Quit. (Nov 23, 2026: the Quit
+    // button is here — always visible during play — instead of only
+    // in the pause sheet. It abandons the game; see quitGame.)
     var btnRow = _el('div', 'bf-buttons');
     var newBtn = _button('bf-new', 'bf-btn', 'New Game', 'Start a new game');
     newBtn.addEventListener('click', function () { newGame(); });
@@ -34676,6 +34615,9 @@ var BFGame = (function () {
       else pause();
     });
     btnRow.appendChild(_pauseBtn);
+    var quitBtn = _button('bf-quit', 'bf-btn', 'Quit', 'Quit this game');
+    quitBtn.addEventListener('click', function () { quitGame(); });
+    btnRow.appendChild(quitBtn);
     _root.appendChild(btnRow);
     _buttonsEl = btnRow;
 
@@ -34792,15 +34734,6 @@ var BFGame = (function () {
 
   function _updatePauseBtn() {
     if (_pauseBtn) _pauseBtn.textContent = _paused ? 'Resume' : 'Pause';
-  }
-
-  function _goHome() {
-    try {
-      if (typeof window !== 'undefined' && window.PhoneShell &&
-          typeof window.PhoneShell.goHome === 'function') {
-        window.PhoneShell.goHome();
-      }
-    } catch (err) { /* shell absent or failed: never throw */ }
   }
 
   // --------------------------------------------------------------- drawing
@@ -35589,6 +35522,40 @@ var BFGame = (function () {
     _call('onPauseChange', false);
   }
 
+  // Nov 23, 2026 (Jesse): "Quit game" — abandon the current game
+  // (defeat-equivalent, no penalty) and land on the game-over overlay,
+  // which offers New Game (retry). Mirrors the engine's game-over path:
+  // the loop stops, onAction(gameover) + onStateChange fire, then
+  // onGameOver fires last so the wire shows the overlay. A no-op when
+  // no game is live or it is already over. The payload carries
+  // quit:true so the wire skips the stats/best write (a quit writes
+  // NO meta — the mid-game save is still cleared so the abandoned run
+  // can never restore, exactly as for a natural loss).
+  function quitGame() {
+    if (!_started || !_state || _state.gameOver || _gameOverFired) return false;
+    _gameOverFired = true;
+    _paused = false;
+    _updatePauseBtn();
+    _stopLoop();
+    _resetTransient();
+    _state.gameOver = true;
+    var st = _state;
+    _call('onAction', {
+      type: 'gameover',
+      score: (typeof st.score === 'number') ? st.score : 0,
+      lines: (typeof st.lines === 'number') ? st.lines : 0,
+      level: (typeof st.level === 'number') ? st.level : 1
+    });
+    _call('onStateChange', state());
+    _call('onGameOver', {
+      score: (typeof st.score === 'number') ? st.score : 0,
+      lines: (typeof st.lines === 'number') ? st.lines : 0,
+      level: (typeof st.level === 'number') ? st.level : 1,
+      quit: true
+    });
+    return true;
+  }
+
   function isPaused() {
     return _paused;
   }
@@ -35623,6 +35590,7 @@ var BFGame = (function () {
     pause: pause,
     resume: resume,
     isPaused: isPaused,
+    quitGame: quitGame,
     destroy: destroy,
     GEOMETRY: {
       SCREEN_W: SCREEN_W, COLS: COLS, ROWS: ROWS,
@@ -35732,12 +35700,11 @@ if (typeof window !== 'undefined') {
 // document.visibilitychange and calls onAppHidden() when the page
 // hides. "Started" means the state shows play in progress: a live
 // falling piece, pieces placed, a score, lines, or any filled board
-// cell; an untouched fresh state is left alone. The game's own Home
-// button (#bf-home) calls PhoneShell.goHome directly and is owned by
-// the game; the overlay Home button hides the overlay and calls
-// PhoneShell.goHome when it exists. destroy() removes the theme and
-// visibility listeners only; it does not destroy the game or touch
-// saves.
+// cell; an untouched fresh state is left alone. (Nov 23, 2026: the
+// game's own Home button and the overlay Home button were both
+// removed — the shell home button is now the only way home.)
+// destroy() removes the theme and visibility listeners only; it does
+// not destroy the game or touch saves.
 //
 // Verification handle: window.__BF__ = {game, engine, save, ui},
 // merged with any existing __BF__ fields; the boot block merges a
@@ -36043,15 +36010,6 @@ var BFWire = (function () {
         }
       }
 
-      function _overHome() {
-        _hideOver();
-        try {
-          var shell = _global('PhoneShell');
-          if (shell && shell.goHome) shell.goHome();
-        } catch (e) {
-          /* going home is best-effort without a shell */
-        }
-      }
 
       function _onAction(kind, payload) {
         try {
@@ -36136,8 +36094,14 @@ var BFWire = (function () {
           var prevBest = _best();
           var best = Math.max(prevBest, score);
           var recordedStats = null;
+          // Nov 23, 2026: a player-initiated quit writes NO meta — the
+          // stats/best write below is skipped when payload.quit (the
+          // overlay still shows the run's score, and the mid-game save
+          // is still cleared so the abandoned run can never restore).
+          var isQuit = !!(payload && payload.quit);
+          if (isQuit) best = prevBest;
           try {
-            if (save && save.recordGame) {
+            if (!isQuit && save && save.recordGame) {
               // clears = lines: the rows cleared and the lines count
               // are the same thing in this game, and the game-over
               // payload carries no separate clears field.
@@ -36161,8 +36125,9 @@ var BFWire = (function () {
             /* best-effort */
           }
           // The previous best was read BEFORE recording, so a tie
-          // with the old best is not a new best.
-          var isNewBest = score > prevBest && score > 0;
+          // with the old best is not a new best. A quit never records
+          // a best either (see above).
+          var isNewBest = !isQuit && score > prevBest && score > 0;
           try {
             if (game.setBest) game.setBest(best);
           } catch (e) {
@@ -36190,8 +36155,7 @@ var BFWire = (function () {
                 level: level,
                 best: best,
                 isNewBest: isNewBest,
-                onNewGame: _overNewGame,
-                onHome: _overHome
+                onNewGame: _overNewGame
               });
             }
           } catch (e) {
@@ -45176,29 +45140,7 @@ var CHSGame = (function () {
     }
     _sheetCardEl.appendChild(_sheetActionButton('Lesson list', false,
       'data-chs-complete-action', 'list', function () { _showLessonList(); }));
-    _sheetCardEl.appendChild(_sheetActionButton('Home', false,
-      'data-chs-complete-action', 'home', function () {
-        _hideSheet();
-        _goHome();
-      }));
     _showSheet();
-  }
-
-  // Home (lesson-complete sheet): the shell's goHome when present
-  // (the Solitaire pattern); without a shell, fall back to the
-  // setup screen so the button always lands somewhere sane.
-  function _goHome() {
-    var wentHome = false;
-    try {
-      if (typeof window !== 'undefined' && window.PhoneShell &&
-          typeof window.PhoneShell.goHome === 'function') {
-        window.PhoneShell.goHome();
-        wentHome = true;
-      }
-    } catch (err) {
-      wentHome = false;
-    }
-    if (!wentHome) _showSetupOptions();
   }
 
   // Undo button: 2-player asks for a confirm first (the take-back is
@@ -45403,12 +45345,6 @@ var CHSGame = (function () {
         window.PhoneShell.injectAudioToggles(controls, { compact: true });
       }
     } catch (e) { /* audio toggles are best-effort */ }
-    try {
-      if (typeof window !== 'undefined' && window.PhoneShell &&
-          typeof window.PhoneShell.injectQuitButton === 'function') {
-        window.PhoneShell.injectQuitButton(controls, { compact: true });
-      }
-    } catch (e) { /* quit button is best-effort */ }
     _root.appendChild(controls);
 
     // Collapsible move list.
@@ -54389,7 +54325,10 @@ var _screenRenderers = {
     });
     btns.appendChild(soundBtn);
     btns.appendChild(_mkBtn('❓ How to Play', 'am-btn-big', function () { _showScreen('help'); }));
-    btns.appendChild(_mkBtn('✕ Quit to Menu', 'am-btn-big', function () {
+    // Nov 23, 2026 (Jesse): relabeled "✕ Quit to Menu" → "Quit level"
+    // (the ✕ is gone phone-wide; this quits the current level to the
+    // level map, same handler as before).
+    btns.appendChild(_mkBtn('Quit level', 'am-btn-big', function () {
       setPaused(false);
       _quitToMenu();
     }));
@@ -57925,9 +57864,6 @@ var AMWire = (function () {
       var shell = _global('PhoneShell');
       if (shell && typeof shell.injectAudioToggles === 'function') {
         shell.injectAudioToggles(header, { compact: true });
-      }
-      if (shell && typeof shell.injectQuitButton === 'function') {
-        shell.injectQuitButton(header, { compact: true });
       }
     } catch (e) { /* audio toggles are best-effort */ }
   }
@@ -67438,23 +67374,6 @@ var KKGameMethods = {
           window.PhoneShell.injectAudioToggles(_audioGroup, { compact: true });
         }
       } catch (e) { /* audio toggles are best-effort */ }
-      // Nov 22, 2026: explicit Quit in the same button group (Jesse).
-      // onQuit pauses a live battle first — quitting abandons the
-      // attempt (same as losing), and the battle must not keep running
-      // behind the home screen. Meta progress is already saved.
-      try {
-        var _quitSelf = this;
-        if (_audioGroup && typeof window !== 'undefined' && window.PhoneShell &&
-            typeof window.PhoneShell.injectQuitButton === 'function') {
-          window.PhoneShell.injectQuitButton(_audioGroup, { compact: true,
-            onQuit: function () {
-              try {
-                if (_quitSelf.currentScreen === 'battle' && !_quitSelf.isPaused &&
-                    typeof _quitSelf.pause === 'function') _quitSelf.pause();
-              } catch (e) { /* never throw */ }
-            } });
-        }
-      } catch (e) { /* quit button is best-effort */ }
       this.bindEvents();
       this.measureAndClampContainer();
 
@@ -67546,6 +67465,24 @@ var KKGameMethods = {
       if (TDAudio.music && TDAudio.currentTrackId) {
         TDAudio.startBarAlignedTrack(TDAudio.currentTrackId);
       }
+    },
+    // Nov 23, 2026 (Jesse): "Quit stage" — abandon the current stage
+    // attempt (defeat-equivalent, no penalty) and return to the map.
+    // Stops the battle FIRST, then leaves. Deliberately NOT resume():
+    // the old pause-quit handler resumed first, which restarted the
+    // battle music track before leaving. No meta/state write of any
+    // kind here: no save, no Valor, no Glimmer, no stars. TDAudio.paused
+    // is left alone (false) so showScreen("map") can route the map music;
+    // the battle track is dead via stopTrackLoop and the engine tick is
+    // gated by isPaused, so nothing keeps running behind the map.
+    quitStage: function() {
+      if (this.currentScreen !== "battle") return;
+      this.isPaused = true;
+      TDAudio.stopTrackLoop();
+      this.battleSession = null;
+      const modal = this.rootEl && this.rootEl.querySelector("#td-pause-modal");
+      if (modal) modal.classList.remove("td-open");
+      this.showScreen("map");
     },
     destroy: function() {
       if (this.rafId) {
@@ -67888,9 +67825,7 @@ var KKGameMethods = {
             self.startBattleSessionNow(self.battleSession.levelId, self.battleSession.isNightWatch);
           }
         } else if (id === "td-btn-pause-quit") {
-          self.resume();
-          self.battleSession = null;
-          self.showScreen("map");
+          self.quitStage();
         } else if (id === "td-btn-res-retry") {
           if (self.battleSession) {
             self.startBattleSessionNow(self.battleSession.levelId, self.battleSession.isNightWatch);
@@ -68845,8 +68780,8 @@ var KKUIMethods = {
         '      <button id="td-btn-pause-sound" class="td-btn">ON</button>',
         '    </div>',
         '    <button id="td-btn-pause-resume" class="td-btn td-btn-primary">Resume Watch</button>',
+        '    <button id="td-btn-pause-quit" class="td-btn td-btn-primary">Quit stage</button>',
         '    <button id="td-btn-pause-restart" class="td-btn">Restart Level</button>',
-        '    <button id="td-btn-pause-quit" class="td-btn">Quit to Map</button>',
         '  </div>',
         '</div>'
       ].join("\n");
@@ -80252,11 +80187,6 @@ var CHQUI = (function () {
           // (the head is a flex row: spacer | title | toggles).
           try { head.insertBefore(_el(doc, 'div', 'chq-head-spacer'), head.firstChild); } catch (e2) { /* best-effort */ }
         }
-        try {
-          if (typeof shell.injectQuitButton === 'function') {
-            shell.injectQuitButton(audioRow, { compact: true });
-          }
-        } catch (e2) { /* quit button is best-effort */ }
       }
     } catch (e) { /* audio toggles are best-effort */ }
     return head;
@@ -104905,15 +104835,6 @@ var MRUI = (function () {
     head.appendChild(el('div', 'mr-header-title', title));
     var right = el('div', 'mr-header-right');
     right.appendChild(musicChip(vm));
-    // Nov 22, 2026: explicit Quit in every header (Jesse). header()
-    // runs on every screen render with a fresh `right`, so the button
-    // re-injects with each render (injectQuitButton is idempotent).
-    try {
-      if (typeof window !== 'undefined' && window.PhoneShell &&
-          typeof window.PhoneShell.injectQuitButton === 'function') {
-        window.PhoneShell.injectQuitButton(right, { compact: true });
-      }
-    } catch (e) { /* quit button is best-effort */ }
     head.appendChild(right);
     return head;
   }
@@ -111446,9 +111367,6 @@ var FLGame = (function () {
       var shell = _global('PhoneShell');
       if (shell && typeof shell.injectAudioToggles === 'function') {
         shell.injectAudioToggles(row, { before: helpBtn });
-      }
-      if (shell && typeof shell.injectQuitButton === 'function') {
-        shell.injectQuitButton(row, { before: helpBtn, compact: true });
       }
     } catch (e) { /* audio toggles are best-effort */ }
     row.appendChild(helpBtn);
@@ -123344,7 +123262,7 @@ var CLGame = (function () {
     _mount.innerHTML =
       '<div class="cl-root" id="cl-root">' +
         '<header class="cl-topbar">' +
-          '<button class="cl-back" type="button" data-cl-action="back" aria-label="Back">&lsaquo; Back</button>' +
+          '<button class="cl-back" type="button" data-cl-action="back" aria-label="Leave table">&lsaquo; Leave table</button>' +
           '<div class="cl-bank"><span class="cl-bank-label">Bankroll</span>' +
           '<span class="cl-bank-val" id="cl-bankroll">$1,000</span></div>' +
           '<div class="cl-toggles">' +
@@ -123367,17 +123285,6 @@ var CLGame = (function () {
     _goalTextEl = _doc().getElementById('cl-goal-text');
     _musicBtn = _doc().getElementById('cl-music-btn');
     _soundBtn = _doc().getElementById('cl-sound-btn');
-    // Nov 22, 2026: explicit Quit in the topbar toggles (Jesse).
-    // _buildDom rebuilds the topbar, so the injection lives here and
-    // re-runs on every build (injectQuitButton is idempotent).
-    try {
-      var _clToggles = _doc().querySelector('.cl-toggles');
-      var _clWin = _win();
-      if (_clToggles && _clWin && _clWin.PhoneShell &&
-          typeof _clWin.PhoneShell.injectQuitButton === 'function') {
-        _clWin.PhoneShell.injectQuitButton(_clToggles, { compact: true });
-      }
-    } catch (e) { /* quit button is best-effort */ }
     if (_root) {
       _root.addEventListener('click', _onClick);
       _root.addEventListener('input', _onInput);
@@ -139125,7 +139032,7 @@ if (typeof window !== 'undefined') {
 /* Phone mount markup (from the M1 template body). The wire
    inserts this into #app-snake at boot; ids are unique
    page-wide (verified: none collide with the live dist). */
-var MARKUP='<div class="sn-root"><div id="topbar"><div id="title">SNAKE</div><div class="spacer"></div><button class="iconbtn" id="pauseBtn" title="Pause (P)">&#10074;&#10074;</button><button class="iconbtn" id="muteBtn" title="Mute (M)">&#128266;</button></div><div id="hud"><div class="chip">SCORE<b id="score">0</b></div><div class="chip">BEST<b id="best">0</b></div><div class="chip">LEVEL<b id="level">1</b></div><div class="chip timer" id="timerChip">TIME<b id="timeLeft">60</b></div><div class="chip power" id="shieldChip">SHIELD</div><div class="chip power" id="slowChip">SLOW-MO</div></div><div id="stage"><canvas id="game"></canvas><div id="hint">PRESS ANY ARROW / WASD<br>OR SWIPE TO START</div><div class="screen" id="menuScreen"><h1>SNAKE</h1><div class="small">EAT &middot; GROW &middot; SURVIVE</div><div class="segrow" id="modeRow"><button class="seg on" data-mode="classic">CLASSIC</button><button class="seg" data-mode="obstacles">OBSTACLES</button><button class="seg" data-mode="time">TIME ATTACK</button><button class="seg" data-mode="maze">MAZE</button><button class="seg" data-mode="portal">PORTAL</button></div><div class="segrow" id="themeRow"><button class="seg on" data-theme="neon">NEON</button><button class="seg" data-theme="forest">FOREST</button><button class="seg" data-theme="ocean">OCEAN</button><button class="seg" data-theme="ember">EMBER</button><button class="seg" data-theme="frost">FROST</button></div><div class="btnrow"><button class="btn primary" id="playBtn">PLAY</button><button class="btn" id="statsBtn">STATS</button></div><div class="small">Arrows / WASD to steer, swipe on touch<br>P pause &middot; M mute &middot; gold apple +5 &middot; slow-mo &middot; shield saves one hit</div></div><div class="screen" id="pauseScreen"><h2>PAUSED</h2><div class="btnrow"><button class="btn primary" id="resumeBtn">RESUME</button><button class="btn" id="restartBtn2">RESTART</button><button class="btn" id="menuBtn2">MENU</button></div></div><div class="screen" id="overScreen"><h1 id="overTitle">GAME OVER</h1><div id="newBest">NEW BEST!</div><div class="big" id="overScore">0</div><div class="small" id="overInfo"></div><div class="btnrow"><button class="btn primary" id="againBtn">PLAY AGAIN</button><button class="btn" id="menuBtn3">MENU</button></div><div class="small">Enter also restarts</div></div><div class="screen" id="statsScreen"><h2>STATS</h2><div id="statsGrid"></div><button class="btn" id="statsBack">BACK</button></div></div></div>';
+var MARKUP='<div class="sn-root"><div id="topbar"><div id="title">SNAKE</div><div class="spacer"></div><button class="iconbtn" id="pauseBtn" title="Pause (P)">&#10074;&#10074;</button><button class="iconbtn" id="muteBtn" title="Mute (M)">&#128266;</button></div><div id="hud"><div class="chip">SCORE<b id="score">0</b></div><div class="chip">BEST<b id="best">0</b></div><div class="chip">LEVEL<b id="level">1</b></div><div class="chip timer" id="timerChip">TIME<b id="timeLeft">60</b></div><div class="chip power" id="shieldChip">SHIELD</div><div class="chip power" id="slowChip">SLOW-MO</div></div><div id="stage"><canvas id="game"></canvas><div id="hint">PRESS ANY ARROW / WASD<br>OR SWIPE TO START</div><div class="screen" id="menuScreen"><h1>SNAKE</h1><div class="small">EAT &middot; GROW &middot; SURVIVE</div><div class="segrow" id="modeRow"><button class="seg on" data-mode="classic">CLASSIC</button><button class="seg" data-mode="obstacles">OBSTACLES</button><button class="seg" data-mode="time">TIME ATTACK</button><button class="seg" data-mode="maze">MAZE</button><button class="seg" data-mode="portal">PORTAL</button></div><div class="segrow" id="themeRow"><button class="seg on" data-theme="neon">NEON</button><button class="seg" data-theme="forest">FOREST</button><button class="seg" data-theme="ocean">OCEAN</button><button class="seg" data-theme="ember">EMBER</button><button class="seg" data-theme="frost">FROST</button></div><div class="btnrow"><button class="btn primary" id="playBtn">PLAY</button><button class="btn" id="statsBtn">STATS</button></div><div class="small">Arrows / WASD to steer, swipe on touch<br>P pause &middot; M mute &middot; gold apple +5 &middot; slow-mo &middot; shield saves one hit</div></div><div class="screen" id="pauseScreen"><h2>PAUSED</h2><div class="btnrow"><button class="btn primary" id="resumeBtn">RESUME</button><button class="btn" id="restartBtn2">RESTART</button><button class="btn" id="menuBtn2">QUIT RUN</button></div></div><div class="screen" id="overScreen"><h1 id="overTitle">GAME OVER</h1><div id="newBest">NEW BEST!</div><div class="big" id="overScore">0</div><div class="small" id="overInfo"></div><div class="btnrow"><button class="btn primary" id="againBtn">PLAY AGAIN</button><button class="btn" id="menuBtn3">MENU</button></div><div class="small">Enter also restarts</div></div><div class="screen" id="statsScreen"><h2>STATS</h2><div id="statsGrid"></div><button class="btn" id="statsBack">BACK</button></div></div></div>';
 var cv=null,ctx=null;
 var dpr=1,SZ=480;
 function bindCanvas(){
@@ -142279,7 +142186,6 @@ var TycoonGame = (function () {
         '<div class="ty-sheet" id="ty-sheet" hidden></div>' +
       '</div>';
     _markMusicBtn();
-    _injectQuit();
   }
 
   function _markMusicBtn() {
@@ -142290,16 +142196,6 @@ var TycoonGame = (function () {
       btn.classList.toggle('ty-off', !on);
       btn.textContent = on ? '♪' : '♪̸';
     } catch (e) { /* cosmetic */ }
-  }
-
-  function _injectQuit() {
-    try {
-      var w = _win();
-      if (w && w.PhoneShell && typeof w.PhoneShell.injectQuitButton === 'function') {
-        var header = _root.querySelector('.ty-headbtns');
-        if (header) w.PhoneShell.injectQuitButton(header, { compact: true });
-      }
-    } catch (e) { /* quit is best-effort */ }
   }
 
   // --- sheets ------------------------------------------------------------
@@ -142466,10 +142362,16 @@ var TycoonGame = (function () {
 
   function _menuSheet() {
     var stats = SAVE ? SAVE.loadStats() : { games: 0, wins: 0, bestWorth: 0 };
+    // Nov 23, 2026 (Jesse): "Surrender" — concede the match (same
+    // path as going bankrupt). Shown only while a game is live; after
+    // the match is over there is nothing to surrender.
+    var you = _playerById('you');
+    var canSurrender = !!(_game && _game.phase !== 'over' && you && !you.bankrupt);
     var html = '<div class="ty-sheet-card"><button type="button" class="ty-sheet-x" data-action="close-sheet">✕</button><h2>Menu</h2>' +
       ((D.ART && D.ART.splash) ? '<img class="ty-menu-art" src="' + _esc(D.ART.splash) + '" alt="">' : '') +
       '<div class="ty-card-sub">Games played: ' + stats.games + ' · Won: ' + stats.wins + ' · Best net worth: ' + _money(stats.bestWorth) + '</div>' +
       '<button type="button" class="ty-btn ty-btn-primary" data-action="new-game">New Game</button>' +
+      (canSurrender ? '<button type="button" class="ty-btn ty-btn-danger" data-action="surrender">Surrender</button>' : '') +
       '<button type="button" class="ty-btn" data-action="rules">How to Play</button>' +
       '<button type="button" class="ty-btn ty-btn-danger" data-action="delete-save">Delete Save</button>' +
       '</div>';
@@ -142664,6 +142566,15 @@ var TycoonGame = (function () {
       case 'bankrupt': {
         var bk = E.declareBankrupt(_game, 'you');
         if (bk.ok) { _autosave(); _humanBankruptFlow(); }
+        break;
+      }
+      // Nov 23, 2026 (Jesse): "Surrender" — same path as going
+      // bankrupt (concede the match, AIs finish fast, game-over sheet
+      // with New Game). The loss is recorded in Tycoon stats exactly
+      // as a natural bankruptcy is.
+      case 'surrender': {
+        var sd = E.declareBankrupt(_game, 'you');
+        if (sd.ok) { _autosave(); _humanBankruptFlow(); }
         break;
       }
       case 'build': {
