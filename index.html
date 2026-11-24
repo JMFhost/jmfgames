@@ -10718,6 +10718,13 @@ button.mr-setup-preview:focus-visible {
   letter-spacing: 0.02em;
   color: #ffb347;
   white-space: nowrap;
+  /* LAVA-EXPANSION */ The title shrinks instead of overlapping
+  // the Music/Sound buttons: it takes the free space and
+  // ellipsizes; the buttons keep flex-shrink: 0.
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .fl-score {
   font-size: 12px;
@@ -11123,7 +11130,7 @@ button.mr-setup-preview:focus-visible {
   border: 1px solid rgba(255, 179, 71, 0.5);
   border-bottom: 0;
   border-radius: 16px 16px 0 0;
-  padding: 18px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+  padding: 18px 18px calc(18px + env(safe-area-inset-bottom, 0px) + 28px); /* LAVA-EXPANSION */ +28px so the Save Avatar button clears the Android home/gesture bar at every height
   text-align: left;
   color: #ffe9d6;
 }
@@ -11216,6 +11223,23 @@ button.mr-setup-preview:focus-visible {
   opacity: 0.45;
   filter: brightness(0.65);
   transform: scale(0.82, 0.78);
+}
+/* LAVA-EXPANSION — monster type looks (CSS-only, same eyes/bang/
+   mouth as the blob; only the body palette + glow change). */
+.fl-blob--imp {
+  background: radial-gradient(circle at 50% 30%, #ffe14d 0%, #ff8a1a 35%, #c22e00 70%, #5c0a00 100%);
+  box-shadow: 0 0 12px rgba(255, 140, 20, 0.9), 0 0 24px rgba(255, 80, 0, 0.5), inset 0 -4px 8px rgba(120, 10, 0, 0.55);
+  border-radius: 50% 50% 40% 40% / 62% 62% 38% 38%;
+}
+.fl-blob--wisp {
+  background: radial-gradient(circle at 50% 30%, #ffffff 0%, #bfe9ff 35%, #4d9de0 70%, #1c4d8f 100%);
+  box-shadow: 0 0 12px rgba(140, 200, 255, 0.9), 0 0 24px rgba(80, 140, 255, 0.5), inset 0 -4px 8px rgba(20, 60, 140, 0.55);
+  border-radius: 50% 50% 46% 46% / 50% 50% 50% 50%;
+}
+.fl-blob--bat {
+  background: radial-gradient(circle at 50% 30%, #d9b8ff 0%, #8a4de0 35%, #4d1a8f 70%, #1c0a3d 100%);
+  box-shadow: 0 0 12px rgba(160, 90, 255, 0.9), 0 0 24px rgba(120, 40, 220, 0.5), inset 0 -4px 8px rgba(40, 10, 90, 0.55);
+  border-radius: 50% 50% 46% 46% / 58% 58% 42% 42%;
 }
 @media (prefers-reduced-motion: reduce) {
   /* LAVA2B — the wobble is decoration and goes; the wind-up is
@@ -11486,10 +11510,16 @@ button.mr-setup-preview:focus-visible {
 }
 
 /* narrow screens: keep the header compact so the arena keeps room */
-@media (max-width: 340px) {
+@media (max-width: 420px) { /* LAVA-EXPANSION */ was 340px; 420 covers 390/412 phones
   .fl-title { font-size: 15px; }
   .fl-score { font-size: 10px; }
   .fl-screen h1 { font-size: 26px; }
+  /* LAVA-EXPANSION: the game-level "Music: On" button duplicates
+     the shell Music toggle (injected right beside it, two-way
+     synced). Hiding it on narrow screens frees ~95px so the
+     title reads "Floor Is Lava" instead of truncating to "Flo...".
+     The shell Music toggle stays and still controls music. */
+  #fl-music-btn { display: none; }
 }
 
 /* ------------------------------------------------ M4: modes + arenas */
@@ -27102,9 +27132,13 @@ var BZSettings = (function () {
     body.appendChild(_el('p', 'bz-about-text',
       'Floor Is Lava is a climb race built for touch. Tap to jump from ' +
       'platform to platform and keep climbing while the lava rises ' +
-      'below — the last survivor wins. Dodge Lava Blobs, play Quick ' +
-      'Race, Lava League, Endless Climb, the Daily Challenge, or ' +
-      'Practice, and quit a race any time from the pause menu.'));
+      'below — the last survivor wins. Climb 25 stages, each with its ' +
+      'own giant themed background, from Volcano Crater to Sky Summit. ' +
+      'Face four monster types — Lava Blobs, Ember Imps, Frost Wisps, ' +
+      'and Storm Bats — and rivals that get harder as you advance. ' +
+      'Pick from 12 male and 12 female avatars, play Quick Race, Lava ' +
+      'League, Endless Climb, the Daily Challenge, or Practice, and ' +
+      'quit a race any time from the pause menu.'));
     body.appendChild(_el('p', 'bz-about-text',
       'Casino Life is a casino built for touch. Start with $1,000 in ' +
       'play chips and work your way to $10,000 across fifteen games — ' +
@@ -107272,7 +107306,13 @@ var FLEngine = (function () {
   // negative-y platforms render and play, M2).
   /* LAVA2 */ var SUMMIT_Y_BY_ARENA = {
     volcano: 100, livingroom: -100, playground: -200,
-    kitchen: -300, candyland: -400
+    kitchen: -300, candyland: -400,
+    /* LAVA-EXPANSION */ beach: -450, forest: -500, desert: -500,
+    snow: -550, jungle: -550, space: -600, pirate: -600,
+    haunted: -650, farm: -650, city: -700, castle: -700,
+    ocean: -750, mountain: -750, carnival: -800, glacier: -800,
+    temple: -850, library: -850, bakery: -900, harbor: -900,
+    summit: -950
   };
   /* LAVA2 */ var PX_PER_M = 50; // climb is (2900-100)/50 = 56.0 m.
   /* LAVA2 */ var LAVA_CHASE_PX_PER_S = 26; // constant chase pace (§1.3).
@@ -107393,6 +107433,73 @@ var FLEngine = (function () {
   var BITE_MS = 3000; // bite stun: cannot jump for 3s
   var SATED_MS = 5000; // cooldown after a successful bite
   var MISS_SATED_MS = 2000; // cooldown after a missed bite
+  // /* LAVA-EXPANSION */ Monster types (Nov 23, 2026): four kinds
+  // of hunter, one table. Every type shares the 0.5s telegraph and
+  // the no-bite guard; only the chase speed, reach, and bite
+  // effect differ. The blob's row IS the shipped behavior
+  // (170px / 800ms / 3s stun / 5s sated), so stages 1-5 play
+  // exactly as before.
+  //   blob: Lava Blob — 3s stun.
+  //   imp:  Ember Imp — faster (450ms hops, 200px reach), 2s stun
+  //         + shoved down one rung.
+  //   wisp: Frost Wisp — slow (1200ms hops, 140px reach), chill
+  //         6s: jumps take 2x as long (0.7s arc).
+  //   bat:  Storm Bat — far reach (260px), swoop shove down one
+  //         rung (no stun), then a long 8s sated cooldown.
+  var MONSTER_TYPES = {
+    blob: { name: 'Lava Blob', hopMs: 800, rangePx: 170, biteMs: 3000, satedMs: 5000, effect: 'stun' },
+    imp: { name: 'Ember Imp', hopMs: 450, rangePx: 200, biteMs: 2000, satedMs: 5000, effect: 'stun-shove' },
+    wisp: { name: 'Frost Wisp', hopMs: 1200, rangePx: 140, biteMs: 0, chillMs: 6000, satedMs: 5000, effect: 'chill' },
+    bat: { name: 'Storm Bat', hopMs: 600, rangePx: 260, biteMs: 0, satedMs: 8000, effect: 'shove' }
+  };
+  // Type mix by stage band (0-based stage index): the first five
+  // stages are blob-only (shipped behavior); imps join at stage 6,
+  // wisps at 11, bats at 16.
+  var MONSTER_MIX = [
+    { maxStage: 4, w: { blob: 100 } },
+    { maxStage: 9, w: { blob: 70, imp: 30 } },
+    { maxStage: 14, w: { blob: 50, imp: 25, wisp: 25 } },
+    { maxStage: 19, w: { blob: 40, imp: 25, wisp: 20, bat: 15 } },
+    { maxStage: 24, w: { blob: 30, imp: 25, wisp: 20, bat: 25 } }
+  ];
+  function _monsterParams(blob) {
+    var t = (blob && typeof blob.type === 'string' && MONSTER_TYPES[blob.type])
+      ? blob.type : 'blob';
+    return MONSTER_TYPES[t];
+  }
+  function monsterParams(blob) {
+    return _monsterParams(blob);
+  }
+  // Derived rng for the type draw — same family as _blobRng,
+  // different salt, so the type draw never correlates with (or
+  // disturbs) the blob/no-blob density draw: the SET of blob
+  // platforms for a seed is identical to live.
+  function _monsterTypeRng(seed, platformId) {
+    var h = Math.imul((seed | 0) ^ Math.imul(platformId + 1, 1103515245), 2654435761);
+    h ^= h >>> 15;
+    h = Math.imul(h, 2246822519);
+    h ^= h >>> 13;
+    return createRng(h);
+  }
+  function _monsterTypeFor(stageIdx, seed, platformId) {
+    var idx = (typeof stageIdx === 'number' && isFinite(stageIdx))
+      ? Math.max(0, Math.min(24, Math.floor(stageIdx))) : 0;
+    var band = MONSTER_MIX[0];
+    for (var i = 0; i < MONSTER_MIX.length; i++) {
+      if (idx <= MONSTER_MIX[i].maxStage) { band = MONSTER_MIX[i]; break; }
+      band = MONSTER_MIX[i];
+    }
+    var w = band.w;
+    if (w.blob === 100) return 'blob';
+    var r = _monsterTypeRng(seed, platformId).next() * 100;
+    var acc = 0;
+    var types = ['blob', 'imp', 'wisp', 'bat'];
+    for (var t = 0; t < types.length; t++) {
+      acc += (w[types[t]] || 0);
+      if (r < acc) return types[t];
+    }
+    return 'blob';
+  }
   // /* LAVA-MONSTERS-REBASE */ No-bite guard (Nov 22, 2026): a
   // bite stuns its victim for BITE_MS while the lava keeps
   // rising, so a bite with the lava already close is a
@@ -107511,6 +107618,40 @@ var FLEngine = (function () {
 
   var DIFFICULTIES = ['chill', 'normal', 'spicy'];
 
+  // /* LAVA-EXPANSION */ AI difficulty ramp (Nov 23, 2026): super
+  // easy on stage 1, super hard by stage 25. Linear in the 0-based
+  // stage index: reaction 1.35x -> 0.55x, score error 1.5x -> 0.4x.
+  // Pure function of (tier, stageIndex) — deterministic, no stream
+  // drawn. newMatch stores the effective values per AI player
+  // (aiReactionMs / aiScoreErr); the helpers below read them, and
+  // fall back to the tier values when the fields are absent, so
+  // hand-built / legacy states keep playing.
+  function stageAi(stageIndex) {
+    var t = _clamp(stageIndex, 0, 24) / 24;
+    return {
+      reactionMul: 1.35 - 0.80 * t,
+      scoreErrMul: 1.5 - 1.1 * t
+    };
+  }
+  function _aiReactionMs(p) {
+    var tier = (p.tier && AI_TIERS[p.tier]) ? AI_TIERS[p.tier] : AI_TIERS.skilled;
+    return (typeof p.aiReactionMs === 'number' && p.aiReactionMs > 0)
+      ? p.aiReactionMs : tier.reactionMs;
+  }
+  function _aiScoreErr(p) {
+    var tier = (p.tier && AI_TIERS[p.tier]) ? AI_TIERS[p.tier] : AI_TIERS.skilled;
+    var pers = (p.rivalId && PERSONALITIES[p.rivalId]) ? PERSONALITIES[p.rivalId] : null;
+    var base = tier.scoreErr * (pers ? pers.errMul : 1);
+    return (typeof p.aiScoreErr === 'number' && p.aiScoreErr >= 0)
+      ? p.aiScoreErr : base;
+  }
+  // /* LAVA-EXPANSION */ Jump arc duration: 350ms normally, 700ms
+  // while chilled (Frost Wisp bite). Pure function of the player's
+  // chillUntil vs timeMs — no stream drawn.
+  function _jumpMs(state, p) {
+    return (p && state.timeMs < (p.chillUntil || 0)) ? JUMP_MS * 2 : JUMP_MS;
+  }
+
   // The 6 rivals (kept verbatim from v34). Tiers drive the M2
   // skill model (reaction time, score error, weights);
   // /* LAVA2B */ L3-M3 — PERSONALITIES drive climb style only
@@ -107580,13 +107721,139 @@ var FLEngine = (function () {
                 1, 4, 6, 5, 1, 4, 6, 5, 1, 4,
                 4, 5, 4, 0, 1, 4, 5, 1, 0, 4,
                 0, 5, 1, 4, 0, 5, 1, 4, 0, 5]
+ ,
+    /* LAVA-EXPANSION */
+    beach: [
+              4, 5, 4, 0, 1, 4, 5, 1, 0, 4,
+              0, 5, 1, 4, 0, 5, 1, 4, 0, 5,
+              1, 4, 6, 5, 1, 4, 6, 5, 1, 4,
+              5, 1, 4, 6, 5, 1, 4, 6, 5, 1
+              ],
+    forest: [
+              0, 5, 1, 4, 0, 5, 1, 4, 0, 5,
+              5, 1, 4, 6, 5, 1, 4, 6, 5, 1,
+              1, 4, 6, 5, 1, 4, 6, 5, 1, 4,
+              4, 5, 4, 0, 1, 4, 5, 1, 0, 4
+              ],
+    desert: [
+              1, 0, 4, 0, 5, 1, 4, 0, 5, 1,
+              4, 0, 5, 1, 4, 6, 5, 1, 4, 6,
+              5, 1, 4, 5, 1, 4, 6, 5, 1, 4,
+              6, 5, 1, 4, 5, 4, 0, 1, 4, 5
+              ],
+    snow: [
+              4, 0, 5, 1, 4, 0, 5, 1, 4, 6,
+              5, 1, 4, 6, 5, 1, 4, 5, 1, 4,
+              6, 5, 1, 4, 6, 5, 1, 4, 5, 4,
+              0, 1, 4, 5, 1, 0, 4, 0, 5, 1
+              ],
+    jungle: [
+              5, 1, 4, 6, 5, 1, 4, 6, 5, 1,
+              0, 5, 1, 4, 0, 5, 1, 4, 0, 5,
+              1, 4, 6, 5, 1, 4, 6, 5, 1, 4,
+              4, 5, 4, 0, 1, 4, 5, 1, 0, 4
+              ],
+    space: [
+              0, 5, 1, 4, 0, 5, 1, 4, 0, 5,
+              1, 4, 6, 5, 1, 4, 6, 5, 1, 4,
+              4, 5, 4, 0, 1, 4, 5, 1, 0, 4,
+              5, 1, 4, 6, 5, 1, 4, 6, 5, 1
+              ],
+    pirate: [
+              1, 4, 6, 5, 1, 4, 6, 5, 1, 4,
+              4, 5, 4, 0, 1, 4, 5, 1, 0, 4,
+              5, 1, 4, 6, 5, 1, 4, 6, 5, 1,
+              0, 5, 1, 4, 0, 5, 1, 4, 0, 5
+              ],
+    haunted: [
+              4, 5, 4, 0, 1, 4, 5, 1, 0, 4,
+              5, 1, 4, 6, 5, 1, 4, 6, 5, 1,
+              1, 4, 6, 5, 1, 4, 6, 5, 1, 4,
+              0, 5, 1, 4, 0, 5, 1, 4, 0, 5
+              ],
+    farm: [
+              5, 1, 4, 6, 5, 1, 4, 6, 5, 1,
+              1, 4, 6, 5, 1, 4, 6, 5, 1, 4,
+              0, 5, 1, 4, 0, 5, 1, 4, 0, 5,
+              4, 5, 4, 0, 1, 4, 5, 1, 0, 4
+              ],
+    city: [
+              4, 0, 5, 5, 1, 4, 6, 5, 1, 4,
+              6, 5, 1, 1, 4, 6, 5, 1, 4, 6,
+              5, 1, 4, 4, 5, 4, 0, 1, 4, 5,
+              1, 0, 4, 0, 5, 1, 4, 0, 5, 1
+              ],
+    castle: [
+              1, 4, 6, 5, 1, 4, 6, 5, 1, 4,
+              5, 1, 4, 6, 5, 1, 4, 6, 5, 1,
+              4, 5, 4, 0, 1, 4, 5, 1, 0, 4,
+              0, 5, 1, 4, 0, 5, 1, 4, 0, 5
+              ],
+    ocean: [
+              4, 5, 4, 0, 1, 4, 5, 1, 0, 4,
+              0, 5, 1, 4, 0, 5, 1, 4, 0, 5,
+              5, 1, 4, 6, 5, 1, 4, 6, 5, 1,
+              1, 4, 6, 5, 1, 4, 6, 5, 1, 4
+              ],
+    mountain: [
+              5, 1, 4, 6, 5, 1, 4, 6, 5, 1,
+              4, 5, 4, 0, 1, 4, 5, 1, 0, 4,
+              0, 5, 1, 4, 0, 5, 1, 4, 0, 5,
+              1, 4, 6, 5, 1, 4, 6, 5, 1, 4
+              ],
+    carnival: [
+              0, 5, 1, 4, 0, 5, 1, 4, 0, 5,
+              1, 4, 6, 5, 1, 4, 6, 5, 1, 4,
+              5, 1, 4, 6, 5, 1, 4, 6, 5, 1,
+              4, 5, 4, 0, 1, 4, 5, 1, 0, 4
+              ],
+    glacier: [
+              4, 0, 5, 1, 4, 0, 5, 4, 5, 4,
+              0, 1, 4, 5, 1, 0, 4, 5, 1, 4,
+              6, 5, 1, 4, 6, 5, 1, 1, 4, 6,
+              5, 1, 4, 6, 5, 1, 4, 0, 5, 1
+              ],
+    temple: [
+              6, 5, 1, 4, 6, 5, 1, 1, 4, 6,
+              5, 1, 4, 6, 5, 1, 4, 4, 5, 4,
+              0, 1, 4, 5, 1, 0, 4, 0, 5, 1,
+              4, 0, 5, 1, 4, 0, 5, 5, 1, 4
+              ],
+    library: [
+              6, 5, 1, 4, 5, 4, 0, 1, 4, 5,
+              1, 0, 4, 0, 5, 1, 4, 0, 5, 1,
+              4, 0, 5, 1, 4, 6, 5, 1, 4, 6,
+              5, 1, 4, 5, 1, 4, 6, 5, 1, 4
+              ],
+    bakery: [
+              4, 0, 5, 4, 5, 4, 0, 1, 4, 5,
+              1, 0, 4, 5, 1, 4, 6, 5, 1, 4,
+              6, 5, 1, 1, 4, 6, 5, 1, 4, 6,
+              5, 1, 4, 0, 5, 1, 4, 0, 5, 1
+              ],
+    harbor: [
+              4, 0, 5, 1, 4, 0, 5, 1, 4, 0,
+              5, 5, 1, 4, 6, 5, 1, 4, 6, 5,
+              1, 1, 4, 6, 5, 1, 4, 6, 5, 1,
+              4, 4, 5, 4, 0, 1, 4, 5, 1, 0
+              ],
+    summit: [
+              4, 5, 4, 0, 1, 4, 5, 1, 0, 4,
+              5, 1, 4, 6, 5, 1, 4, 6, 5, 1,
+              0, 5, 1, 4, 0, 5, 1, 4, 0, 5,
+              1, 4, 6, 5, 1, 4, 6, 5, 1, 4
+              ],
   };
   // /* LAVA2 */ Mean rung spacing per arena (px): tighter spacing =
   // more rungs = a busier climb. Volcano 70 (teaching) down to
   // Candy Land 65. Actual spacing per rung is mean ± 10 seeded,
   // clamped to [55, 85].
   /* LAVA2 */ var RUNG_DY_MEAN = {
-    volcano: 70, livingroom: 68, playground: 67, kitchen: 66, candyland: 65
+    volcano: 70, livingroom: 68, playground: 67, kitchen: 66, candyland: 65,
+    /* LAVA-EXPANSION */ beach: 64, forest: 64, desert: 63, snow: 63,
+    jungle: 63, space: 62, pirate: 62, haunted: 62, farm: 61, city: 61,
+    castle: 61, ocean: 60, mountain: 60, carnival: 60, glacier: 59,
+    temple: 59, library: 59, bakery: 58, harbor: 58, summit: 58
   };
   // Arena registry (kept from v34; hazards are M4 — the engine
   // only knows the arena's identity in M1).
@@ -107595,9 +107862,32 @@ var FLEngine = (function () {
     { id: 'livingroom', name: 'Living Room', hazard: 'cushion' },
     { id: 'playground', name: 'Playground', hazard: 'swing' },
     { id: 'kitchen', name: 'Kitchen', hazard: 'stove' },
-    { id: 'candyland', name: 'Candy Land', hazard: 'wobble' }
+    { id: 'candyland', name: 'Candy Land', hazard: 'wobble' },
+    /* LAVA-EXPANSION */ { id: 'beach', name: 'Sunny Beach', hazard: 'swing' },
+    { id: 'forest', name: 'Whisper Forest', hazard: 'cushion' },
+    { id: 'desert', name: 'Dune Desert', hazard: 'stove' },
+    { id: 'snow', name: 'Snow Peak', hazard: 'wobble' },
+    { id: 'jungle', name: 'Jungle Ruins', hazard: 'swing' },
+    { id: 'space', name: 'Star Station', hazard: 'cushion' },
+    { id: 'pirate', name: 'Pirate Ship', hazard: 'stove' },
+    { id: 'haunted', name: 'Haunted Manor', hazard: 'wobble' },
+    { id: 'farm', name: 'Sunny Farm', hazard: 'swing' },
+    { id: 'city', name: 'Neon City', hazard: 'cushion' },
+    { id: 'castle', name: 'Ember Castle', hazard: 'stove' },
+    { id: 'ocean', name: 'Deep Ocean', hazard: 'wobble' },
+    { id: 'mountain', name: 'Mist Mountain', hazard: 'swing' },
+    { id: 'carnival', name: 'Carnival Night', hazard: 'cushion' },
+    { id: 'glacier', name: 'Glacier Caves', hazard: 'stove' },
+    { id: 'temple', name: 'Sun Temple', hazard: 'wobble' },
+    { id: 'library', name: 'Grand Library', hazard: 'swing' },
+    { id: 'bakery', name: 'Sugar Bakery', hazard: 'cushion' },
+    { id: 'harbor', name: 'Mist Harbor', hazard: 'stove' },
+    { id: 'summit', name: 'Sky Summit', hazard: 'wobble' }
   ];
-  var ARENA_IDS = ['volcano', 'livingroom', 'playground', 'kitchen', 'candyland'];
+  var ARENA_IDS = ['volcano', 'livingroom', 'playground', 'kitchen', 'candyland',
+    'beach', 'forest', 'desert', 'snow', 'jungle', 'space', 'pirate', 'haunted',
+    'farm', 'city', 'castle', 'ocean', 'mountain', 'carnival', 'glacier',
+    'temple', 'library', 'bakery', 'harbor', 'summit'];
   var MODES = ['quick', 'league', 'endless', 'daily', 'practice'];
   var SPAWN_PLATFORMS = [0, 1, 2, 3];
 
@@ -107699,7 +107989,7 @@ var FLEngine = (function () {
       var to = _platformById(state, p.jumping.to);
       if (from && to) {
         return arcPoint(from, to,
-          _clamp((state.timeMs - p.jumping.startMs) / JUMP_MS, 0, 1));
+          _clamp((state.timeMs - p.jumping.startMs) / _jumpMs(state, p), 0, 1));
       }
     }
     if (p.platformId === null || p.platformId === undefined) {
@@ -108264,7 +108554,7 @@ var FLEngine = (function () {
     // /* LAVA2B */ Blobs continue past rung 40 at the same rate
     // (same seeded rule; Practice never extends with blobs).
     if (state.mode !== 'practice' && Array.isArray(state.blobs)) {
-      var nbl = placeBlobs(state.seed, added);
+      var nbl = placeBlobs(state.seed, added, state.arena);
       for (var bj = 0; bj < nbl.length; bj++) state.blobs.push(nbl[bj]);
     }
     return added;
@@ -108303,9 +108593,15 @@ var FLEngine = (function () {
     return createRng(h);
   }
 
-  function placeBlobs(seed, platforms) {
+  function placeBlobs(seed, platforms, arenaId) {
     var out = [];
     if (!Array.isArray(platforms)) return out;
+    // /* LAVA-EXPANSION */ Stage band for the type mix: the arena
+    // of the course being placed (extension calls pass the match
+    // arena; the 2-arg form defaults to the blob-only band, so
+    // the shipped volcano behavior is unchanged).
+    var stageIdx = ARENA_IDS.indexOf(arenaId);
+    if (stageIdx < 0) stageIdx = 0;
     var byRung = {};
     for (var i = 0; i < platforms.length; i++) {
       var p = platforms[i];
@@ -108316,7 +108612,8 @@ var FLEngine = (function () {
       var blob = { id: p.id, platformId: p.id, state: 'idle',
         windUpEndsAt: 0, coolDownEndsAt: 0,
         homePlatformId: p.id, targetId: null, nextHopAt: 0,
-        lungeEndsAt: 0, satedEndsAt: 0, chaseStartedAt: 0 };
+        lungeEndsAt: 0, satedEndsAt: 0, chaseStartedAt: 0,
+        /* LAVA-EXPANSION */ type: _monsterTypeFor(stageIdx, seed, p.id) };
       out.push(blob);
       if (!byRung[p.rung]) byRung[p.rung] = [];
       byRung[p.rung].push(blob);
@@ -108356,7 +108653,7 @@ var FLEngine = (function () {
   }
 
   // /* LAVA-MONSTERS */ Chase-acquisition target: the nearest
-  // alive racer whose platform is within CHASE_RANGE_PX
+  // alive racer whose platform is within the monster's range
   // vertically of the blob's platform — but NOT already within
   // a player's jump (110px) of it. Up close the blob is a
   // wind-up trap, not a hunter: a racer standing on an adjacent
@@ -108367,7 +108664,12 @@ var FLEngine = (function () {
   // exclusion), so the bite still lands. Ties break by lowest
   // player index (players are stored in id order, strict <
   // keeps the first).
-  function _chaseAcquireTarget(state, blobPlat) {
+  // /* LAVA-EXPANSION */ The range is the monster's own
+  // (blob 170 / imp 200 / wisp 140 / bat 260).
+  function _chaseAcquireTarget(state, blob) {
+    var blobPlat = _platformById(state, blob.platformId);
+    if (!blobPlat) return null;
+    var rangePx = _monsterParams(blob).rangePx;
     var best = null;
     var bestDy = Infinity;
     for (var i = 0; i < state.players.length; i++) {
@@ -108378,7 +108680,7 @@ var FLEngine = (function () {
       var plat = _platformById(state, p.platformId);
       if (!plat) continue;
       var dy = Math.abs(plat.y - blobPlat.y);
-      if (dy > CHASE_RANGE_PX) continue;
+      if (dy > rangePx) continue;
       if (dist(plat, blobPlat) <= JUMP_RANGE_PX) continue;
       if (dy < bestDy) { bestDy = dy; best = p; }
     }
@@ -108463,7 +108765,7 @@ var FLEngine = (function () {
     }
     if (state.timeMs >= blob.nextHopAt) {
       _blobHopToward(state, blob, targetPlat);
-      blob.nextHopAt = state.timeMs + CHASE_HOP_MS;
+      blob.nextHopAt = state.timeMs + _monsterParams(blob).hopMs;
     }
     if (blob.platformId === target.platformId && !target.jumping) {
       blob.state = 'lunging';
@@ -108484,35 +108786,58 @@ var FLEngine = (function () {
   // /* LAVA-MONSTERS */ The lunge fires: a hit ONLY when the
   // locked target is still standing on the blob's platform —
   // a target that jumped away during the 500ms telegraph
-  // dodges it (no freeze). A hit freezes the target for 3s
-  // (applyFreeze — the lava keeps rising during the stun) and
-  // sates the blob for 5s; a miss sates it for 2s. The bite
+  // dodges it (no freeze). A hit applies the monster's bite
+  // effect and sates the blob; a miss sates it for 2s. The bite
   // never hits another occupant: only the locked target.
   // /* LAVA-MONSTERS-REBASE */ No-bite guard: when the lava is
   // within noBiteGuardPx of the victim's platform top, the bite
   // is withheld — a 3s stun there is a guaranteed death, and a
   // fair monster does not deal those. The blob goes sated for
   // MISS_SATED_MS (like a dodge) and the feed says so; this is
-  // NOT counted as a bite anywhere.
+  // NOT counted as a bite anywhere. The guard withholds EVERY
+  // bite effect (stun, chill, shove alike — a drop toward the
+  // lava is as deadly as a stun).
+  // /* LAVA-EXPANSION */ Bite effects by type: blob 3s stun
+  // ('got bitten!'); imp 2s stun + shove down one rung
+  // ('got bitten! Ember Imp bite!'); wisp chill 6s — jumps take
+  // 2x as long ('got chilled by a Frost Wisp!'); bat swoop shove
+  // down one rung, no stun, long 8s sated ('got swooped by a
+  // Storm Bat!'). The blob's feed lines are byte-identical to
+  // live ('You got bitten!', 'The blob spares You - lava too
+  // close!') — the gates assert them verbatim.
   function _biteFire(state, blob) {
     var target = _playerById(state, blob.targetId);
     var hit = target && target.alive && !target.jumping &&
       target.platformId === blob.platformId;
+    var params = _monsterParams(blob);
     if (hit) {
       var tplat = _platformById(state, target.platformId);
       var lavaGap = tplat ? (state.lavaY - (tplat.y + (tplat.sink || 0))) : Infinity;
       if (lavaGap <= noBiteGuardPx(state)) {
-        _pushEvent(state, 'monster', 'The blob spares ' + target.name + ' - lava too close!');
+        var sparedBy = (params.name === 'Lava Blob') ? 'The blob' : 'The ' + params.name;
+        _pushEvent(state, 'monster', sparedBy + ' spares ' + target.name + ' - lava too close!');
         blob.state = 'sated';
         blob.satedEndsAt = state.timeMs + MISS_SATED_MS;
         blob.targetId = null;
         blob.lungeEndsAt = 0;
         return;
       }
-      applyFreeze(state, target.id, BITE_MS);
-      _pushEvent(state, 'monster', target.name + ' got bitten!');
+      if (params.effect === 'stun') {
+        applyFreeze(state, target.id, params.biteMs);
+        _pushEvent(state, 'monster', target.name + ' got bitten!');
+      } else if (params.effect === 'stun-shove') {
+        applyFreeze(state, target.id, params.biteMs);
+        _dropToBelow(state, target, tplat.y, 'shove');
+        _pushEvent(state, 'monster', target.name + ' got bitten! Ember Imp bite!');
+      } else if (params.effect === 'chill') {
+        target.chillUntil = state.timeMs + params.chillMs;
+        _pushEvent(state, 'monster', target.name + ' got chilled by a Frost Wisp!');
+      } else if (params.effect === 'shove') {
+        _dropToBelow(state, target, tplat.y, 'shove');
+        _pushEvent(state, 'monster', target.name + ' got swooped by a Storm Bat!');
+      }
       blob.state = 'sated';
-      blob.satedEndsAt = state.timeMs + SATED_MS;
+      blob.satedEndsAt = state.timeMs + params.satedMs;
     } else {
       if (target && target.alive) {
         _pushEvent(state, 'monster', target.name + ' dodged the bite!');
@@ -108580,7 +108905,7 @@ var FLEngine = (function () {
           }
         }
       } else if (blob.state === 'idle') {
-        var near = _chaseAcquireTarget(state, plat);
+        var near = _chaseAcquireTarget(state, blob);
         if (near) {
           blob.state = 'chasing';
           blob.targetId = near.id;
@@ -108594,7 +108919,7 @@ var FLEngine = (function () {
         if (state.timeMs >= blob.lungeEndsAt) _biteFire(state, blob);
       } else if (blob.state === 'sated') {
         if (state.timeMs >= blob.satedEndsAt) {
-          var again = _chaseAcquireTarget(state, plat);
+          var again = _chaseAcquireTarget(state, blob);
           if (again) {
             blob.state = 'chasing';
             blob.targetId = again.id;
@@ -108619,7 +108944,7 @@ var FLEngine = (function () {
           blob.targetId = null;
         } else if (state.timeMs >= blob.nextHopAt) {
           _blobHopToward(state, blob, home);
-          blob.nextHopAt = state.timeMs + CHASE_HOP_MS;
+          blob.nextHopAt = state.timeMs + _monsterParams(blob).hopMs;
           if (blob.platformId === blob.homePlatformId) {
             blob.state = 'idle';
             blob.targetId = null;
@@ -109045,13 +109370,22 @@ var FLEngine = (function () {
   }
 
   // ------------------------------------------------------------ race
-  function _drawRivals(state, difficulty) {
+  function _drawRivals(state, difficulty, stageIdx) {
     // M2 tier mix (kept verbatim from v34): Chill draws mostly
     // Rookie, Normal mixes Rookie + Skilled, Spicy draws Skilled +
     // Pro. Weighted pools (a rival's weight = how many copies of
     // it are in the draw pool); always 3 distinct rivals, seeded.
     // Difficulty changes the tier MIX only — never the rules, the
     // lava, or any reaction time within a tier.
+    // /* LAVA-EXPANSION */ Stage ramp: the mix shifts one step
+    // harder every 6 stages (stages 1-6 shift 0 — exactly as
+    // shipped; 7-12 shift +1; 13+ shift +2, clamped to Spicy).
+    // The stage never makes a race easier than its difficulty.
+    var diffIdx = DIFFICULTIES.indexOf(difficulty);
+    if (diffIdx < 0) diffIdx = 1;
+    var shift = Math.floor(_clamp(stageIdx || 0, 0, 24) / 6);
+    var effIdx = Math.min(2, diffIdx + shift);
+    difficulty = DIFFICULTIES[effIdx];
     var pool;
     if (difficulty === 'chill') {
       pool = ['pip', 'pip', 'pip', 'pip', 'momo', 'momo', 'momo', 'momo',
@@ -109151,7 +109485,12 @@ var FLEngine = (function () {
     // no sabotage, no placements): the human climbs alone. The
     // race modes (quick/league/daily) draw 3 rivals as before.
     var solo = (mode === 'endless' || mode === 'practice');
-    var rivals = solo ? [] : _drawRivals(state, difficulty);
+    // /* LAVA-EXPANSION */ AI ramp: the stage index drives both
+    // the tier mix (_drawRivals) and the per-rival effective
+    // reaction/score-error (stageAi) stored on each AI player.
+    var stageIdx = ARENA_IDS.indexOf(arena);
+    var ramp = stageAi(stageIdx);
+    var rivals = solo ? [] : _drawRivals(state, difficulty, stageIdx);
     var names = solo ? [playerName]
       : [playerName, rivals[0].name, rivals[1].name, rivals[2].name];
     var kinds = solo ? ['human'] : ['human', 'ai', 'ai', 'ai'];
@@ -109163,7 +109502,7 @@ var FLEngine = (function () {
     // /* LAVA2B */ Lava Blobs for the initial course (seeded
     // pattern; Practice gets none).
     state.blobs = (mode === 'practice')
-      ? [] : placeBlobs(seed, state.platforms);
+      ? [] : placeBlobs(seed, state.platforms, arena);
     // /* LAVA-HAZARDS */ Hazard schedule: dedicated stream seeded
     // from the match seed; first event 20–35 s in (height-gated
     // to 14 m at trigger time, so the opening climb stays clean).
@@ -109182,6 +109521,14 @@ var FLEngine = (function () {
     for (var i = 0; i < names.length; i++) {
       var plat = _platformById(state, SPAWN_PLATFORMS[i]);
       var c = _center(plat);
+      // /* LAVA-EXPANSION */ Effective AI values for this rival:
+      // tier base x stage ramp (human: 0, never read).
+      var effReaction = 0, effScoreErr = 0;
+      if (tiers[i] && AI_TIERS[tiers[i]]) {
+        effReaction = Math.round(AI_TIERS[tiers[i]].reactionMs * ramp.reactionMul);
+        var pers0 = (rivalIds[i] && PERSONALITIES[rivalIds[i]]) ? PERSONALITIES[rivalIds[i]] : null;
+        effScoreErr = AI_TIERS[tiers[i]].scoreErr * (pers0 ? pers0.errMul : 1) * ramp.scoreErrMul;
+      }
       state.players.push({
         id: i,
         name: names[i],
@@ -109195,12 +109542,14 @@ var FLEngine = (function () {
         jumping: null, // {from, to, startMs, fromPoint?}
         frozenUntil: 0,
         pendingFreezeUntil: 0,
+        chillUntil: 0, // /* LAVA-EXPANSION */ Frost Wisp chill ends here (0 = none)
+        aiReactionMs: effReaction, // /* LAVA-EXPANSION */ effective reaction (tier x ramp)
+        aiScoreErr: effScoreErr, // /* LAVA-EXPANSION */ effective score error (tier x personality x ramp)
         arrivedAt: 0,
-        // /* LAVA2 */ M2: first decision at the rival's own tier
-        // reaction time (900/600/400ms); the human (tier null)
-        // never decides.
-        nextAiAt: (tiers[i] && AI_TIERS[tiers[i]])
-          ? AI_TIERS[tiers[i]].reactionMs : 0,
+        // /* LAVA2 */ M2: first decision at the rival's own
+        // effective reaction time (tier x stage ramp; the human
+        // (tier null) never decides).
+        nextAiAt: effReaction,
         // /* LAVA2B */ L3-M3 — slideUntil: the wobble slide window
         // ends at this timeMs (0 = none). The only timed player
         // effect left; it belongs to the Candy Land hazard.
@@ -109310,7 +109659,7 @@ var FLEngine = (function () {
     // MILESTONE, not a finish — touching it banks it like a
     // checkpoint (once per player) and the course continues above.
     // /* LAVA2 */ M4 — the milestone height is the COURSE's
-    // summit (56.0 m on Volcano, up to 66.0 m on Candy Land),
+    // summit (56.0 m on Volcano, up to 77.0 m on Sky Summit),
     // not a hardcoded 56.0.
     if (target.summit && !p.summitReached) {
       p.summitReached = true;
@@ -109638,7 +109987,10 @@ var FLEngine = (function () {
       monster;
     if (p.tier && p.rivalId) {
       // Seeded error: Rookie misjudges, Pro is near-optimal.
-      var err = tier.scoreErr * (pers ? pers.errMul : 1);
+      // /* LAVA-EXPANSION */ The effective error (tier x
+      // personality x stage ramp) — early stages misjudge more,
+      // late stages near-perfectly.
+      var err = _aiScoreErr(p);
       score += (_next(state) * 2 - 1) * err;
     }
     return score;
@@ -109661,12 +110013,12 @@ var FLEngine = (function () {
     var tier = AI_TIERS[p.tier] || AI_TIERS.skilled;
     var pers = PERSONALITIES[p.rivalId] || null;
     if (state.timeMs < p.frozenUntil) {
-      p.nextAiAt = state.timeMs + tier.reactionMs;
+      p.nextAiAt = state.timeMs + _aiReactionMs(p);
       return;
     }
     var options = reachableFrom(state, p.platformId, jumpRange(state, p));
     if (!options.length) {
-      p.nextAiAt = state.timeMs + tier.reactionMs;
+      p.nextAiAt = state.timeMs + _aiReactionMs(p);
       return;
     }
     var cur = _platformById(state, p.platformId);
@@ -109693,7 +110045,7 @@ var FLEngine = (function () {
       // lava more as it accelerates, without any rubber-banding
       // (the pace is a pure function of race time).
       var lavaDist = state.lavaY - (cur.y + cur.sink + PLATFORM_H);
-      if (lavaDist < lavaPace(state) * tier.reactionMs / 1000 + 100) danger = true;
+      if (lavaDist < lavaPace(state) * _aiReactionMs(p) / 1000 + 100) danger = true;
     }
     if (state.timeMs < (p.slideUntil || 0)) danger = true;
     // /* LAVA2B */ A blob winding up under the AI means jump NOW
@@ -109717,7 +110069,7 @@ var FLEngine = (function () {
     if (bestId !== null && (danger || bestScore > curScore + margin)) {
       requestJump(state, p.id, bestId);
     }
-    p.nextAiAt = state.timeMs + tier.reactionMs;
+    p.nextAiAt = state.timeMs + _aiReactionMs(p);
   }
 
   // /* LAVA2 */ Crumble gate (M1 defect fix): true when every
@@ -109792,7 +110144,7 @@ var FLEngine = (function () {
     for (i = 0; i < state.players.length; i++) {
       p = state.players[i];
       if (p.alive && p.jumping &&
-          state.timeMs >= p.jumping.startMs + JUMP_MS) {
+          state.timeMs >= p.jumping.startMs + _jumpMs(state, p)) {
         _landPlayer(state, p);
       }
     }
@@ -110306,6 +110658,10 @@ var FLEngine = (function () {
     /* LAVA2B */ BLOB_SCORE_WINDING: BLOB_SCORE_WINDING,
     /* LAVA-MONSTERS */ CHASE_RANGE_PX: CHASE_RANGE_PX,
     /* LAVA-MONSTERS */ CHASE_HOP_MS: CHASE_HOP_MS,
+    /* LAVA-EXPANSION */ MONSTER_TYPES: MONSTER_TYPES,
+    /* LAVA-EXPANSION */ MONSTER_MIX: MONSTER_MIX,
+    /* LAVA-EXPANSION */ monsterParams: monsterParams,
+    /* LAVA-EXPANSION */ stageAi: stageAi,
     /* LAVA-MONSTERS */ CHASE_GIVEUP_PX: CHASE_GIVEUP_PX,
     /* LAVA-MONSTERS */ CHASE_TIMEOUT_MS: CHASE_TIMEOUT_MS,
     /* LAVA-MONSTERS */ BITE_TELEGRAPH_MS: BITE_TELEGRAPH_MS,
@@ -111027,10 +111383,14 @@ try {
 //     ONLY, floored — the boxes-grabbed term died with the powers).
 //     Best height per course is kept in
 //     raceStats.bestHeightM (recordBestHeight).
-//   - Arena unlocks (plan §6): Volcano open; Living Room after 1
-//     match win; Playground at Blaze; Kitchen at Inferno; Candy
-//     Land at Magma. Quick Match can be played on any unlocked
-//     arena; Daily rotates through unlocked arenas by weekday.
+//   - Arena unlocks (plan §6, /* LAVA-EXPANSION */ 25 stages):
+//     Volcano open; each later stage unlocks on WINNING the
+//     previous stage (2+ stars), with rank gates on the three
+//     milestone stages (Star Station at Blaze, Ember Castle at
+//     Inferno, Sun Temple at Magma). A stage already visited
+//     (any stars) stays unlocked. Quick Match can be played on
+//     any unlocked arena; Daily rotates through unlocked
+//     arenas by weekday.
 //   - Shop (cosmetics only): skins, jump trails, platform themes,
 //     victory poses. Buying requires the coins and deducts them;
 //     equipping requires ownership. Nothing changes gameplay.
@@ -111075,22 +111435,67 @@ var FLModes = (function () {
     legend: 'spicy'
   };
   var WINS_PER_RANK = 3;
-  var ARENA_IDS = ['volcano', 'livingroom', 'playground', 'kitchen', 'candyland'];
+  // /* LAVA-EXPANSION */ 25 stages (Nov 23, 2026): the 5 shipped
+  // arenas + 20 more. A stage IS an arena: stage N = ARENA_IDS[N-1].
+  var ARENA_IDS = ['volcano', 'livingroom', 'playground', 'kitchen', 'candyland',
+    'beach', 'forest', 'desert', 'snow', 'jungle', 'space', 'pirate', 'haunted',
+    'farm', 'city', 'castle', 'ocean', 'mountain', 'carnival', 'glacier',
+    'temple', 'library', 'bakery', 'harbor', 'summit'];
   var ARENA_NAMES = {
     volcano: 'Volcano Crater',
     livingroom: 'Living Room',
     playground: 'Playground',
     kitchen: 'Kitchen',
-    candyland: 'Candy Land'
+    candyland: 'Candy Land',
+    beach: 'Sunny Beach',
+    forest: 'Whisper Forest',
+    desert: 'Dune Desert',
+    snow: 'Snow Peak',
+    jungle: 'Jungle Ruins',
+    space: 'Star Station',
+    pirate: 'Pirate Ship',
+    haunted: 'Haunted Manor',
+    farm: 'Sunny Farm',
+    city: 'Neon City',
+    castle: 'Ember Castle',
+    ocean: 'Deep Ocean',
+    mountain: 'Mist Mountain',
+    carnival: 'Carnival Night',
+    glacier: 'Glacier Caves',
+    temple: 'Sun Temple',
+    library: 'Grand Library',
+    bakery: 'Sugar Bakery',
+    harbor: 'Mist Harbor',
+    summit: 'Sky Summit'
   };
   // Unlock requirement text shown in the arena select for locked
   // arenas (the rule itself is in isArenaUnlocked).
   var ARENA_UNLOCK_TEXT = {
     volcano: 'Open from the start',
-    livingroom: 'Win 1 match',
-    playground: 'Reach Blaze rank',
-    kitchen: 'Reach Inferno rank',
-    candyland: 'Reach Magma rank'
+    livingroom: 'Win on Volcano Crater',
+    playground: 'Win on Living Room',
+    kitchen: 'Win on Playground',
+    candyland: 'Win on Kitchen',
+    beach: 'Win on Candy Land',
+    forest: 'Win on Sunny Beach',
+    desert: 'Win on Whisper Forest',
+    snow: 'Win on Dune Desert',
+    jungle: 'Win on Snow Peak',
+    space: 'Win on Jungle Ruins · Reach Blaze rank',
+    pirate: 'Win on Star Station',
+    haunted: 'Win on Pirate Ship',
+    farm: 'Win on Haunted Manor',
+    city: 'Win on Sunny Farm',
+    castle: 'Win on Neon City · Reach Inferno rank',
+    ocean: 'Win on Ember Castle',
+    mountain: 'Win on Deep Ocean',
+    carnival: 'Win on Mist Mountain',
+    glacier: 'Win on Carnival Night',
+    temple: 'Win on Glacier Caves · Reach Magma rank',
+    library: 'Win on Sun Temple',
+    bakery: 'Win on Grand Library',
+    harbor: 'Win on Sugar Bakery',
+    summit: 'Win on Mist Harbor'
   };
 
   var XP_ROUND = 10;
@@ -111344,18 +111749,27 @@ var FLModes = (function () {
 
   // ------------------------------------------------------------ unlocks
   // save: the FLSave profile shape; stats: the FLSave stats shape.
-  // Living Room unlocks on the first match win (any mode — League
-  // matches are Quick Matches with rank stakes); the rest unlock
-  // on League rank.
+  // /* LAVA-EXPANSION */ Stage chain (Nov 23, 2026): a stage
+  // unlocks on WINNING the previous stage — a win banks 2-3 stars
+  // (quick or league), so stars[prev] >= 2 is the win signal.
+  // Grandfather clause: a stage the player has already visited
+  // (any stars banked) stays unlocked — a veteran keeps every
+  // stage they could already play. The three milestone stages
+  // also need a League rank (space Blaze, castle Inferno, temple
+  // Magma). Volcano is open from the start.
   function isArenaUnlocked(arenaId, save, stats) {
     if (arenaId === 'volcano') return true;
+    var idx = ARENA_IDS.indexOf(arenaId);
+    if (idx < 0) return false;
+    var stars = (save && save.stars) ? save.stars : {};
+    if (_num0(stars[arenaId]) >= 1) return true;
+    var prev = ARENA_IDS[idx - 1];
+    if (_num0(stars[prev]) < 2) return false;
     var rank = (save && save.league && save.league.rank) || 'ember';
-    var wins = (stats && typeof stats.matchesWon === 'number') ? stats.matchesWon : 0;
-    if (arenaId === 'livingroom') return wins >= 1;
-    if (arenaId === 'playground') return rankIndex(rank) >= rankIndex('blaze');
-    if (arenaId === 'kitchen') return rankIndex(rank) >= rankIndex('inferno');
-    if (arenaId === 'candyland') return rankIndex(rank) >= rankIndex('magma');
-    return false;
+    if (arenaId === 'space') return rankIndex(rank) >= rankIndex('blaze');
+    if (arenaId === 'castle') return rankIndex(rank) >= rankIndex('inferno');
+    if (arenaId === 'temple') return rankIndex(rank) >= rankIndex('magma');
+    return true;
   }
 
   function unlockedArenas(save, stats) {
@@ -112466,13 +112880,14 @@ var FLGame = (function () {
   function _codexHtml() {
     return '<h2>How the Race Stays Fair</h2>' +
       '<p><b>Four players. One tower. Last survivor wins.</b> The lava starts at 26px per second and speeds up as the race goes on — the same ramp for every player, every race; it never slows down, never targets anyone.</p>' +
-      '<p><b>Checkpoints</b> (every 700px) are milestones: they bank your progress and pay 10 XP each time you land on one. The summit is a milestone too — 56.0 m on Volcano, up to 66.0 m on Candy Land — a banner, 10 XP, and the race goes on. <b>Fall in the lava and you are out immediately — no respawn, no rescue bubble, no second chances.</b> The last racer still climbing wins. Places are by elimination order (two racers falling on the same tick are placed by who was higher).</p>' +
+      '<p><b>Checkpoints</b> (every 700px) are milestones: they bank your progress and pay 10 XP each time you land on one. The summit is a milestone too — 56.0 m on Volcano, up to 77.0 m on Sky Summit — a banner, 10 XP, and the race goes on. <b>Fall in the lava and you are out immediately — no respawn, no rescue bubble, no second chances.</b> The last racer still climbing wins. Places are by elimination order (two racers falling on the same tick are placed by who was higher).</p>' +
       '<p><b>Modes:</b> Quick Race is 4-player survival (stars: survive past 28 m, win, win past 56 m). Lava League is the same race with rank stakes — 3 race wins take the next Cup, from Ember Cup to Legend Cup. Endless Climb is solo score attack — your score is the meters you climb, nothing else. Daily Challenge is one seeded course a day — 1st 100 / 2nd 60 / 3rd 40 / 4th 20 points plus meters climbed. Practice is an empty course with the lava paused until you start it — no stars, no XP.</p>' +
       '<p><b>Falling without lava</b> (a missed jump) is not a fall: you land on the platform below and lose height, not a strike.</p>' +
       '<p><b>Platforms</b> sink while you stand on them and recover when empty. A platform only starts crumbling once every racer has passed it — a crumble can never remove a bridge you still need. Crumbling platforms shake for 3 seconds, then fall.</p>' +
       '<p><b>The finish:</b> there is no finish line. The course climbs endlessly, the lava speeds up, and the race ends the moment one racer remains — the last survivor wins. Your place and height are live at the top; the strip on the right shows all four racers, the milestones, and the lava.</p>' +
       '<h2>Monsters</h2>' +
       '<p><b>Lava Blobs</b> sit on platforms along the climb — wobbling blobs of lava with two eyes. <b>They hunt now: when a racer climbs within reach, a blob hops platform to platform after them</b> — eyes tracking its prey, body pulsing faster as it closes in. <b>If it catches you it lunges — swelling up with its toothy mouth open for 0.5 seconds — then bites: you are stunned for 3 seconds and cannot jump while the lava keeps rising.</b> Jump away during the 0.5s lunge and the bite misses. After a bite the blob is sated for 5 seconds (2 seconds after a miss) — full and sleepy, it will not chase, bite, or shove until it recovers — then it hunts again, or hops back to its home platform if its prey climbed too far above it. A chase gives up after 10 seconds without a bite. <b>A blob never bites when the lava is right below you</b> — a 3-second stun there would be a death sentence, so it holds back and goes sated instead.</p>' +
+      '<p><b>Four monster types</b> hunt the climb — the later the stage, the nastier the mix. <b>Lava Blob</b> (every stage): the classic — 3-second stun bite. <b>Ember Imp</b> (stage 6+): faster hops, longer reach, and its bite stuns for 2 seconds <i>and</i> shoves you down one rung. <b>Frost Wisp</b> (stage 11+): slow and far-sighted — its bite <b>chills you for 6 seconds, and while chilled your jumps take twice as long</b> (0.7s arc). <b>Storm Bat</b> (stage 16+): the longest reach of all — its swoop <b>knocks you down one rung with no stun</b>, then it rests for 8 seconds. Every monster shares the same rules: a 0.5s lunge telegraph you can dodge, and <b>no monster ever bites when the lava is right below you</b>.</p>' +
       '<p><b>Land on a blob\'s platform and it winds up for 0.5 seconds</b> — it swells, brightens, and shows a \"!\" — <b>then shoves everyone standing on that platform down to the platform below.</b> You are NOT stunned after a shove: you can jump immediately, but the height is lost. If there is no platform below, you free-fall — you may land lower, or hit the lava. A blob that is already hunting, lunging, sated, or heading home never winds up: landing on a hunting blob\'s platform is punished by the lunge and bite instead, never by a shove.</p>' +
       '<p><b>After a shove the blob cools down for 4 seconds</b> — dimmed and deflated, safe to cross. If the platform is empty when the wind-up finishes, nothing happens and the blob goes back to waiting. A platform the lava dissolves takes its blob with it.</p>' +
       '<p><b>Counterplay is dodging — there is no way to defeat a blob.</b> (1) <b>Route around:</b> every rung always has at least one blob-free platform, and the first blob is never below 14 m, so the opening climb is clean. (2) <b>Touch-and-go:</b> your jump arc is 0.35s and the wind-up is 0.5s — land and jump away immediately and you escape before the shove lands. (3) <b>Keep moving:</b> a blob only bites a racer standing on its platform — jump during the 0.5s lunge and the bite misses. (4) <b>Wait out the cooldown:</b> after a blob shoves someone else, it is safe for 4 seconds; after a bite, it is sated for 5 seconds.</p>' +
@@ -112487,7 +112902,7 @@ var FLGame = (function () {
       '<h2>Rivals &amp; Difficulty</h2>' +
       // /* LAVA2B */ L3-M3 — rivals rewritten climb-style only:
       // item habits died with the powers.
-      '<p><b>Chill</b> draws mostly Rookie rivals (Pip, Momo), <b>Normal</b> mixes Rookie + Skilled, <b>Spicy</b> draws Skilled + Pro (Sable, Kaito, Yuki, Rin). Difficulty changes which rivals you face AND how fast they climb: Rookie rivals react in 0.9 seconds, Skilled in 0.6, Pro in 0.4. <b>Pip</b> sometimes picks a bad platform. <b>Sable</b> waits for the safe platform. <b>Kaito</b> takes the risky fast line. <b>Yuki</b> takes only the safest platform. <b>Rin</b> reads the course near-perfectly. The lava never slows down for a losing player, and no rival gets a hidden boost when you are ahead.</p>';
+      '<p><b>Chill</b> draws mostly Rookie rivals (Pip, Momo), <b>Normal</b> mixes Rookie + Skilled, <b>Spicy</b> draws Skilled + Pro (Sable, Kaito, Yuki, Rin). Difficulty changes which rivals you face AND how fast they climb: Rookie rivals react in 0.9 seconds, Skilled in 0.6, Pro in 0.4. <b>The rivals get harder as you advance stages:</b> on the early stages they react slower and misjudge more (super easy), and by stage 25 they react almost twice as fast and barely misjudge at all (super hard) — the later stages also draw tougher rivals even on Chill. <b>Pip</b> sometimes picks a bad platform. <b>Sable</b> waits for the safe platform. <b>Kaito</b> takes the risky fast line. <b>Yuki</b> takes only the safest platform. <b>Rin</b> reads the course near-perfectly. The lava never slows down for a losing player, and no rival gets a hidden boost when you are ahead.</p>';
   }
 
   function _showHowToPlay() {
@@ -112506,12 +112921,12 @@ var FLGame = (function () {
       '<li>The dotted arc previews a jump in flight. The pulsing platform is the next rung up.</li>' +
       '<li>The lava starts at 26px per second and speeds up as the race goes on — the same ramp for everyone. Platforms below the lava line dissolve. When the lava gets close the screen warns you — "LAVA!" — and the bottom edge glows.</li>' +
       '<li>Platforms sink while you stand on them and recover when empty. Crumbling platforms shake for 3 seconds, then fall.</li>' +
-      '<li>Checkpoints are milestones every 700px — bank your height and 10 XP each. The summit is a milestone too — 56.0 m on Volcano, 60.0 m in the Living Room, 62.0 m on the Playground, 64.0 m in the Kitchen, 66.0 m on Candy Land. Fall in the lava and you are out immediately — no respawn.</li>' +
+      '<li>Checkpoints are milestones every 700px — bank your height and 10 XP each. The summit is a milestone too — 56.0 m on Volcano, up to 77.0 m on Sky Summit. Fall in the lava and you are out immediately — no respawn.</li>' +
       '<li><b>Course hazards:</b> Living Room cushions bounce you up to the highest platform in reach (once per landing). Playground platforms swing side to side. Kitchen stoves heat up while you stand on them — a hot stove sinks twice as fast (watch the heat meter). Candy Land platforms wobble when shared — after 1.5 seconds together the later arrival is shoved off.</li>' +
       '<li><b>Modes:</b> Quick Race is 4-player survival (last one standing wins; stars: survive past 28 m, win, win past 56 m). Lava League is the same race with rank stakes — 3 wins take the next Cup. Endless Climb is solo score attack: climb as high as you can, your score is the meters you climb, nothing else. Daily Challenge is one seeded course a day — 1st 100 / 2nd 60 / 3rd 40 / 4th 20 points plus meters climbed. Practice is an empty course with the lava paused until you start it.</li>' +
       '<li>Missed a jump? You land on the platform below and lose height — no strike, just lost time.</li>' +
       '<li>Last survivor wins — there is no finish line. The course climbs endlessly and the race ends when one racer remains. Your place and height are live at the top; the strip on the right shows all four racers, the milestones, and the lava.</li>' +
-      '<li><b>Lava Blobs:</b> wobbling lava monsters sit on some platforms (never below 14 m, never on checkpoints or the only platform of a rung). Land on one and it winds up for 0.5s — swells, brightens, shows "!" — then shoves everyone on that platform down to the one below. They also hunt: a blob hops after a nearby racer and bites (3s stun, lava keeps rising) if it catches them — jump away during its 0.5s lunge and the bite misses. Dodge them: route around, touch-and-go before the wind-up ends (your jump is 0.35s), or cross during the 4s cooldown after a shove. They hunt rivals too. See <b>Monsters</b> on the menu for the full list.</li>' +
+      '<li><b>Monsters:</b> four types guard the climb — <b>Lava Blob</b> (3s stun bite), <b>Ember Imp</b> (2s stun + shove down a rung), <b>Frost Wisp</b> (chill 6s — jumps take twice as long), <b>Storm Bat</b> (swoop shove down a rung, no stun). They sit on some platforms (never below 14 m, never on checkpoints or the only platform of a rung). Land on one and it winds up for 0.5s — swells, brightens, shows "!" — then shoves everyone on that platform down to the one below. They also hunt: a monster hops after a nearby racer and bites if it catches them — jump away during its 0.5s lunge and the bite misses. No monster ever bites when the lava is right below you. Dodge them: route around, touch-and-go before the wind-up ends (your jump is 0.35s), or cross during the cooldown after a shove. They hunt rivals too. See <b>Monsters</b> on the menu for the full list.</li>' +
       '<li><b>Hazards:</b> about once every 20–35 seconds a world event strikes the leaders — <b>Lightning</b> (stuns 1.5s), <b>Gust</b> (shoves you down a rung), <b>Frozen Snow</b> (freezes you 2s), or <b>Rockfall</b> (crumbles the platform). Every hazard warns you for 0.5s first — jump off the marked platform and it misses you. Rivals are hit exactly the same way. See <b>Hazards</b> on the menu for the full list.</li>' +
       '</ul>' +
       '<p>Race tip: keep moving. Standing still is never safe for long.</p>' +
@@ -114563,7 +114978,12 @@ var FLGame = (function () {
       if (!el) {
         el = _el('div', 'fl-blob', '');
         el.id = 'fl-blob-' + blob.platformId;
-        el.setAttribute('aria-label', 'Lava Blob');
+        // /* LAVA-EXPANSION */ The monster type names the aria
+        // label and the look class (fl-blob--imp / --wisp / --bat).
+        var mtype = (blob.type && typeof blob.type === 'string') ? blob.type : 'blob';
+        var mlabel = mtype === 'imp' ? 'Ember Imp' : mtype === 'wisp' ? 'Frost Wisp' :
+          mtype === 'bat' ? 'Storm Bat' : 'Lava Blob';
+        el.setAttribute('aria-label', mlabel);
         el.appendChild(_el('span', 'fl-blob-eye', ''));
         el.appendChild(_el('span', 'fl-blob-eye', ''));
         el.appendChild(_el('span', 'fl-blob-bang', '!'));
@@ -114614,7 +115034,7 @@ var FLGame = (function () {
           else look = dx < 0 ? 'left' : 'right';
         }
       }
-      var key = (blob.state || 'idle') + '|' + look;
+      var key = (blob.state || 'idle') + '|' + look + '|' + ((blob.type && typeof blob.type === 'string') ? blob.type : 'blob');
       if (_blobStateCache[blob.platformId] !== key) {
         _blobStateCache[blob.platformId] = key;
         try {
@@ -114624,6 +115044,11 @@ var FLGame = (function () {
           el.classList.toggle('fl-blob-lunging', key.indexOf('lunging|') === 0);
           el.classList.toggle('fl-blob-sated', key.indexOf('sated|') === 0);
           el.classList.toggle('fl-blob-returning', key.indexOf('returning|') === 0);
+          // /* LAVA-EXPANSION */ Monster type look (CSS-only art).
+          var mtype = (blob.type && typeof blob.type === 'string') ? blob.type : 'blob';
+          el.classList.toggle('fl-blob--imp', mtype === 'imp');
+          el.classList.toggle('fl-blob--wisp', mtype === 'wisp');
+          el.classList.toggle('fl-blob--bat', mtype === 'bat');
           el.classList.toggle('fl-blob-look-left', look === 'left');
           el.classList.toggle('fl-blob-look-right', look === 'right');
           el.classList.toggle('fl-blob-look-up', look === 'up');
@@ -114644,21 +115069,29 @@ var FLGame = (function () {
   }
 
   // /* LAVA-MONSTERS */ Bite feedback: watch the feed events
-  // for new 'got bitten!' lines (kind 'monster'). Each new bite
+  // for new monster-hit lines (kind 'monster'). Each new hit
   // plays the growl once, flashes the victim's token (~900ms),
-  // and toasts a human victim ("Bitten! Stunned 3s"); the feed
-  // line itself is the "BITTEN!" indicator. Tracked by event
-  // time so a re-sync never replays a bite.
+  // and toasts a human victim; the feed line itself is the
+  // indicator. Tracked by event time so a re-sync never replays
+  // a hit.
+  // /* LAVA-EXPANSION */ Three hit markers: 'got bitten!' (blob
+  // 3s stun / imp 2s stun + shove), 'got chilled' (wisp — jumps
+  // take 2x as long for 6s), 'got swooped' (bat — knocked down
+  // a rung, no stun). Each toasts its own effect.
   function _syncBites(st) {
     if (!st || !Array.isArray(st.events)) return;
     var maxT = _lastBiteSeenT;
     for (var i = 0; i < st.events.length; i++) {
       var e = st.events[i];
       if (!e || e.kind !== 'monster' || typeof e.text !== 'string') continue;
-      if (e.text.indexOf('got bitten!') === -1) continue;
+      var marker = null, toast = null;
+      if (e.text.indexOf('got bitten!') !== -1) { marker = ' got bitten!'; toast = 'Bitten! Stunned'; }
+      else if (e.text.indexOf('got chilled') !== -1) { marker = ' got chilled'; toast = 'Chilled! Jumps are slow'; }
+      else if (e.text.indexOf('got swooped') !== -1) { marker = ' got swooped'; toast = 'Swooped! Knocked down a rung'; }
+      else continue;
       if (typeof e.t !== 'number' || e.t <= _lastBiteSeenT) continue;
       if (e.t > maxT) maxT = e.t;
-      var name = e.text.split(' got bitten!')[0];
+      var name = e.text.split(marker)[0];
       var victim = null;
       for (var k = 0; k < (st.players || []).length; k++) {
         if (st.players[k].name === name) { victim = st.players[k]; break; }
@@ -114669,7 +115102,7 @@ var FLGame = (function () {
         else if (audio && typeof audio.playFlFreeze === 'function') audio.playFlFreeze();
       } catch (e2) { /* best-effort */ }
       if (victim) {
-        if (victim.id === 0) _toast('Bitten! Stunned 3s');
+        if (victim.id === 0) _toast(toast);
         (function (pid) {
           try {
             var els = _playerEls[pid];
@@ -115357,13 +115790,20 @@ if (typeof globalThis !== 'undefined') {
 // 6 rivals x 3 expressions (18 files at 480x600 webp):
 //   pip, momo (rookie); sable, kaito (skilled); yuki, rin (pro)
 //   expressions neutral / determined / defeated
-// 6 player avatars x 3 expressions (18 files at 480x600 webp):
-//   male:   male-ash, male-brook, male-cedar
-//   female: female-ivy, female-lark, female-maren
+// 24 player avatars x 3 expressions (72 files at 480x600 webp):
+//   male:   male-ash, male-brook, male-cedar, male-gabe, male-jude,
+//           male-kai, male-nico, male-rex, male-luca, male-arlo,
+//           male-zane, male-liam
+//   female: female-ivy, female-lark, female-maren, female-belle,
+//           female-flora, female-iris, female-grace, female-hazel,
+//           female-luna, female-sara, female-mika, female-yuna
 //   expressions neutral / determined / defeated
-// 5 arena backdrops (720x1120 jpg): volcano, livingroom, playground,
-//   kitchen, candyland — plus splash.webp (585x1266 webp, baked splash
-//   motif: character leaping between glowing platforms over lava).
+// 25 arena backdrops (720x1120 jpg): volcano, livingroom, playground,
+//   kitchen, candyland, beach, forest, desert, snow, jungle, space,
+//   pirate, haunted, farm, city, castle, ocean, mountain, carnival,
+//   glacier, temple, library, bakery, harbor, summit — plus
+//   splash.webp (585x1266 webp, baked splash motif: character
+//   leaping between glowing platforms over lava).
 //
 // The art ships as asset files under assets/lava/ with a manifest
 // (lava-manifest.json) — the chess / Angry Monkeys portrait pattern —
@@ -115439,17 +115879,37 @@ var FLPortraits = (function () {
     'male-ash':   { group: 'player', gender: 'male', hair: 'messy ash-brown', eyes: 'green', outfit: 'orange t-shirt, open cream overshirt', accent: '#F5A623' },
     'male-brook': { group: 'player', gender: 'male', hair: 'dark-blond undercut', eyes: 'blue', outfit: 'navy-blue hoodie', accent: '#4FC3F7' },
     'male-cedar': { group: 'player', gender: 'male', hair: 'short black curly', eyes: 'brown', outfit: 'red flannel shirt over dark tee', accent: '#E4572E' },
+    // /* LAVA-EXPANSION */ 9 new male avatars (Nov 23, 2026): 12 male total.
+    'male-gabe':  { group: 'player', gender: 'male', hair: 'curly sandy-blond', eyes: 'green', outfit: 'teal jacket over white shirt', accent: '#2E9E8F' },
+    'male-jude':  { group: 'player', gender: 'male', hair: 'straight black fringe', eyes: 'grey', outfit: 'grey hoodie', accent: '#9AA0A6' },
+    'male-kai':   { group: 'player', gender: 'male', hair: 'spiky dark-red', eyes: 'amber', outfit: 'black t-shirt under open red jacket', accent: '#E53935' },
+    'male-nico':  { group: 'player', gender: 'male', hair: 'wavy chestnut-brown', eyes: 'brown', outfit: 'cream sweater', accent: '#D9A05B' },
+    'male-rex':   { group: 'player', gender: 'male', hair: 'very short platinum buzz-cut', eyes: 'blue', outfit: 'denim jacket over grey shirt', accent: '#5B8DD9' },
+    'male-luca':  { group: 'player', gender: 'male', hair: 'messy dark-brown', eyes: 'hazel', outfit: 'green flannel shirt', accent: '#6A994E' },
+    'male-arlo':  { group: 'player', gender: 'male', hair: 'tousled copper-orange', eyes: 'brown', outfit: 'mustard-yellow shirt', accent: '#D9A404' },
+    'male-zane':  { group: 'player', gender: 'male', hair: 'slicked-back silver', eyes: 'violet', outfit: 'charcoal coat over black shirt', accent: '#8E6CC8' },
+    'male-liam':  { group: 'player', gender: 'male', hair: 'neat side-parted auburn', eyes: 'green', outfit: 'navy-blue sweater', accent: '#2E4A7A' },
     'female-ivy':   { group: 'player', gender: 'female', hair: 'wavy auburn, past shoulders', eyes: 'hazel', outfit: 'teal sweater', accent: '#2A9D8F' },
     'female-lark':  { group: 'player', gender: 'female', hair: 'short blonde pixie cut', eyes: 'grey', outfit: 'sunny yellow jacket over white top', accent: '#F2C200' },
-    'female-maren': { group: 'player', gender: 'female', hair: 'long dark-brown braid over one shoulder', eyes: 'brown', outfit: 'lavender top', accent: '#9B7ED9' }
+    'female-maren': { group: 'player', gender: 'female', hair: 'long dark-brown braid over one shoulder', eyes: 'brown', outfit: 'lavender top', accent: '#9B7ED9' },
+    // /* LAVA-EXPANSION */ 9 new female avatars (Nov 23, 2026): 12 female total.
+    'female-belle': { group: 'player', gender: 'female', hair: 'long golden-blonde loose braid', eyes: 'blue', outfit: 'soft pink cardigan', accent: '#F2A0B5' },
+    'female-flora': { group: 'player', gender: 'female', hair: 'curly dark-brown with flower clip', eyes: 'brown', outfit: 'sage-green blouse', accent: '#8FAE8B' },
+    'female-iris':  { group: 'player', gender: 'female', hair: 'straight shoulder-length violet-purple', eyes: 'grey', outfit: 'lavender hoodie', accent: '#B388EB' },
+    'female-grace': { group: 'player', gender: 'female', hair: 'long straight black with bangs', eyes: 'dark-brown', outfit: 'white blouse with red ribbon', accent: '#E57373' },
+    'female-hazel': { group: 'player', gender: 'female', hair: 'shoulder-length wavy honey-brown', eyes: 'hazel', outfit: 'rust-orange sweater', accent: '#C67B4A' },
+    'female-luna':  { group: 'player', gender: 'female', hair: 'long silver-white high ponytail', eyes: 'pale-blue', outfit: 'dark-blue jacket', accent: '#7FC4E8' },
+    'female-sara':  { group: 'player', gender: 'female', hair: 'long dark-brown twin braids', eyes: 'warm brown', outfit: 'yellow cardigan over white shirt', accent: '#F2C200' },
+    'female-mika':  { group: 'player', gender: 'female', hair: 'short choppy black bob, red hairclip', eyes: 'dark', outfit: 'teal t-shirt', accent: '#2A9D8F' },
+    'female-yuna':  { group: 'player', gender: 'female', hair: 'long wavy pink', eyes: 'pink', outfit: 'light-purple dress with white collar', accent: '#F48FB1' }
   };
 
   var RIVALS = ['pip', 'momo', 'sable', 'kaito', 'yuki', 'rin'];
   var PLAYER_AVATARS = {
-    male: ['male-ash', 'male-brook', 'male-cedar'],
-    female: ['female-ivy', 'female-lark', 'female-maren']
+    male: ['male-ash', 'male-brook', 'male-cedar', 'male-gabe', 'male-jude', 'male-kai', 'male-nico', 'male-rex', 'male-luca', 'male-arlo', 'male-zane', 'male-liam'],
+    female: ['female-ivy', 'female-lark', 'female-maren', 'female-belle', 'female-flora', 'female-iris', 'female-grace', 'female-hazel', 'female-luna', 'female-sara', 'female-mika', 'female-yuna']
   };
-  var ARENAS = ['volcano', 'livingroom', 'playground', 'kitchen', 'candyland'];
+  var ARENAS = ['volcano', 'livingroom', 'playground', 'kitchen', 'candyland', 'beach', 'forest', 'desert', 'snow', 'jungle', 'space', 'pirate', 'haunted', 'farm', 'city', 'castle', 'ocean', 'mountain', 'carnival', 'glacier', 'temple', 'library', 'bakery', 'harbor', 'summit'];
 
   var EXPRESSIONS = ['neutral', 'determined', 'defeated'];
 
