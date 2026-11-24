@@ -15239,6 +15239,88 @@ button.mr-setup-preview:focus-visible {
   #app-wordquest .wq-levels-art { max-height: 96px; }
 }
 </style>
+<style>
+/* source: ff-game.css */
+/* Feather Flight — layout, responsive, legibility first. */
+#app-featherflight .ff-root{
+  --bg:#0b1e33; --panel:rgba(10,24,44,.92); --text:#f2f7ff; --dim:rgba(242,247,255,.62);
+  --accent:#38bdf8; --accent2:#ffd94d; --btn:#1c2f47; --btn-hover:#2a4365; --border:rgba(255,255,255,.14);
+}
+#app-featherflight *{margin:0;padding:0;box-sizing:border-box}
+#app-featherflight .ff-root{position:relative;width:100%;max-width:390px;height:100%;margin:0 auto;display:flex;flex-direction:column;gap:6px;padding:clamp(48px,calc(100dvh - 596px),66px) 10px 10px;background:var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,sans-serif;touch-action:none;overscroll-behavior:none;-webkit-user-select:none;user-select:none}
+#app-featherflight #topbar{display:flex;align-items:center;gap:8px;width:100%;padding:0 4px;flex:none}
+#app-featherflight #title{font-weight:800;letter-spacing:2px;font-size:14px;color:var(--accent);white-space:nowrap}
+#app-featherflight #topbar .spacer{flex:1}
+#app-featherflight .iconbtn{width:38px;height:38px;min-width:38px;border-radius:10px;border:1px solid var(--border);background:var(--btn);color:var(--text);font-size:14px;cursor:pointer;display:none;align-items:center;justify-content:center;font-weight:700}
+#app-featherflight .iconbtn:hover{background:var(--btn-hover)}
+#app-featherflight #ffPauseBtn{display:flex}
+#app-featherflight #ffMuteBtn{display:flex}
+#app-featherflight #ffMusicBtn{display:flex}
+#app-featherflight #ffMusicBtn.ff-off{opacity:.45}
+#app-featherflight .ph-quit-btn{flex:none}
+/* Score HUD: big, high-contrast, always readable over the sky. */
+#app-featherflight #ffHud{position:relative;flex:none;height:0;z-index:5;pointer-events:none}
+#app-featherflight .ff-score{position:absolute;left:50%;top:6px;transform:translateX(-50%);font-size:46px;font-weight:800;line-height:1;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.45),0 0 16px rgba(0,0,0,.55);letter-spacing:1px}
+#app-featherflight .ff-score-pop{position:absolute;left:50%;top:56px;transform:translateX(-50%);font-size:22px;font-weight:800;color:var(--accent2);text-shadow:0 2px 8px rgba(0,0,0,.7);opacity:0}
+#app-featherflight .ff-score-pop.go{animation:ff-pop .7s ease-out}
+@keyframes ff-pop{0%{opacity:1;transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,-26px) scale(1.25)}}
+#app-featherflight #ffStage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+#app-featherflight canvas{display:block;border-radius:14px;background:#87ceeb}
+#app-featherflight .ff-screen{position:absolute;inset:0;background:var(--panel);backdrop-filter:blur(4px);border-radius:14px;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:14px;text-align:center;overflow-y:auto;z-index:6}
+#app-featherflight .ff-screen.show{display:flex}
+#app-featherflight .ff-screen h1{font-size:30px;letter-spacing:3px;color:var(--accent);line-height:1.05}
+#app-featherflight .ff-screen h2{font-size:17px;letter-spacing:2px;color:var(--text)}
+#app-featherflight .ff-big{font-size:52px;font-weight:800;color:var(--accent2);line-height:1;text-shadow:0 2px 0 rgba(0,0,0,.4)}
+#app-featherflight .ff-btnrow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+#app-featherflight button.ff-btn{font-family:inherit;font-size:14px;font-weight:700;letter-spacing:1px;padding:12px 22px;min-height:44px;border-radius:12px;border:1px solid var(--border);background:var(--btn);color:var(--text);cursor:pointer}
+#app-featherflight button.ff-btn:hover{background:var(--btn-hover)}
+#app-featherflight button.ff-btn.ff-primary{background:var(--accent);border-color:transparent;color:#06202f}
+#app-featherflight button.ff-btn.ff-primary:hover{filter:brightness(1.12)}
+#app-featherflight .ff-small{font-size:12px;color:var(--dim);letter-spacing:.4px;line-height:1.6}
+#app-featherflight #ffNewBest{display:none;font-size:13px;font-weight:800;color:var(--accent2);letter-spacing:2px}
+/* Menu screen: splash art fills the sheet; the art's top-left sky is
+   clear, so the title sits top-left over it. Bottom block holds best
+   + buttons on a scrim for legibility. */
+#app-featherflight #ffMenuScreen{background-image:linear-gradient(180deg,rgba(6,18,32,.25) 0%,rgba(6,18,32,0) 34%,rgba(6,18,32,.55) 68%,rgba(6,18,32,.82) 100%),url(assets/feather-flight/scenes/splash-art.webp);background-size:cover;background-position:center;justify-content:space-between;align-items:stretch;padding:18px 14px}
+#app-featherflight .ff-title-block{text-align:left}
+#app-featherflight .ff-title-block h1{font-size:44px;letter-spacing:2px;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.35),0 0 22px rgba(0,0,0,.45)}
+#app-featherflight .ff-tagline{margin-top:6px;font-size:14px;font-weight:600;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.8)}
+#app-featherflight .ff-menu-bottom{display:flex;flex-direction:column;align-items:center;gap:10px}
+#app-featherflight .ff-best-line{font-size:15px;font-weight:700;letter-spacing:2px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.8)}
+#app-featherflight .ff-best-line b{color:var(--accent2)}
+/* Select screen: portrait grid + theme row. */
+#app-featherflight #ffSelectScreen{justify-content:flex-start;padding-top:16px}
+#app-featherflight .ff-bird-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+#app-featherflight .ff-bird-btn{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border-radius:12px;border:2px solid var(--border);background:rgba(255,255,255,.06);cursor:pointer;min-height:96px}
+#app-featherflight .ff-bird-btn img{width:100%;max-width:84px;aspect-ratio:1/1;object-fit:cover;border-radius:8px;display:block}
+#app-featherflight .ff-bird-btn.on{border-color:var(--accent2);background:rgba(255,217,77,.14)}
+#app-featherflight .ff-bird-btn.locked{opacity:.55}
+#app-featherflight .ff-bird-btn.locked img{filter:grayscale(.7) brightness(.75)}
+#app-featherflight .ff-bird-name{font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--text)}
+#app-featherflight .ff-lock{font-size:9px;font-weight:800;letter-spacing:1px;color:var(--accent2)}
+#app-featherflight .ff-theme-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%}
+#app-featherflight .ff-theme-btn{font-family:inherit;font-size:13px;font-weight:700;letter-spacing:.5px;padding:10px 16px;min-height:44px;border-radius:20px;border:2px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);cursor:pointer}
+#app-featherflight .ff-theme-btn::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--ff-theme-dot,#7ec850);margin-right:6px}
+#app-featherflight .ff-theme-btn.on{border-color:var(--accent2)}
+#app-featherflight .ff-theme-btn.locked{opacity:.55}
+/* Ready hint. */
+#app-featherflight .ff-hint-screen{background:transparent;backdrop-filter:none;justify-content:flex-start;padding-top:34%}
+#app-featherflight .ff-ready-hint{font-size:22px;font-weight:800;letter-spacing:3px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.45),0 0 18px rgba(0,0,0,.6);animation:ff-bob 1.1s ease-in-out infinite}
+@keyframes ff-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+#app-featherflight .ff-hint-screen .ff-small{color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.8)}
+/* Game over: art behind a scrim, medal big. */
+#app-featherflight #ffOverScreen{background-image:linear-gradient(180deg,rgba(6,18,32,.72) 0%,rgba(6,18,32,.78) 100%),url(assets/feather-flight/scenes/gameover-art.webp);background-size:cover;background-position:center}
+#app-featherflight .ff-medal{width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,.6))}
+#app-featherflight .ff-unlock-line{font-size:14px;font-weight:800;color:var(--accent2);text-shadow:0 2px 8px rgba(0,0,0,.7);min-height:18px}
+/* Short screens: shrink the title + medal so buttons stay tappable. */
+@media (max-height:620px){
+  #app-featherflight .ff-title-block h1{font-size:34px}
+  #app-featherflight .ff-medal{width:72px;height:72px}
+  #app-featherflight .ff-big{font-size:42px}
+  #app-featherflight .ff-bird-btn{min-height:84px}
+  #app-featherflight .ff-bird-btn img{max-width:68px}
+}
+</style>
 </head>
 <body>
 <div id="ph-stage">
@@ -15350,6 +15432,10 @@ button.mr-setup-preview:focus-visible {
             <span class="ph-icon-label">Word Quest</span>
           </button>
           <!-- /WORD QUEST -->
+          <button type="button" class="ph-app-icon" data-app="featherflight" aria-label="Feather Flight">
+            <span class="ph-icon" style="background:linear-gradient(150deg,#7dd3fc 0%,#0369a1 100%)" aria-hidden="true"><svg viewBox="0 0 48 48" width="38" height="38" aria-hidden="true" focusable="false"><ellipse cx="22" cy="28" rx="13" ry="10" fill="#ffd94d"/><path d="M14 24 Q10 12 22 12 Q28 12 30 18 Q24 16 20 20 Q16 22 14 24 Z" fill="#fff7cc"/><path d="M30 22 L40 25 L30 29 Z" fill="#fb923c"/><circle cx="30" cy="24" r="2.2" fill="#101018"/><circle cx="30.8" cy="23.2" r="0.7" fill="#ffffff"/><path d="M12 36 Q20 40 28 36" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.85"/><path d="M8 14 Q12 10 16 13" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/></svg></span>
+            <span class="ph-icon-label">Feather Flight</span>
+          </button>
           <button type="button" class="ph-app-icon" data-app="solitaire" aria-label="Solitaire">
             <span class="ph-icon ph-icon-cards" aria-hidden="true"><span class="ph-fan"><i></i><i></i><i></i></span></span>
             <span class="ph-icon-label">Solitaire</span>
@@ -15419,6 +15505,9 @@ button.mr-setup-preview:focus-visible {
       <!-- WORD QUEST -->
       <section id="app-wordquest" class="ph-app" aria-label="Word Quest"></section>
       <!-- /WORD QUEST -->
+      <!-- FEATHER FLIGHT -->
+      <section id="app-featherflight" class="ph-app" aria-label="Feather Flight"></section>
+      <!-- /FEATHER FLIGHT -->
       <section id="app-settings" class="ph-app" aria-label="Settings">
         <div class="ph-panel">
           <h1 class="ph-panel-title">Settings</h1>
@@ -15847,7 +15936,7 @@ if (typeof window !== 'undefined') {
   /* Default home order: every icon alphabetical by display name
      (case-insensitive), games and utilities in one list. This list must
      match what sortHomeAlphabetical computes from the registered titles. */
-  var DEFAULT_HOME_ORDER = ['about', 'angrymonkeys', 'blockzen', 'blockfall', 'chess', 'chessquest', 'lava', 'invesim', 'kindlekeep', 'settings', 'snake', 'solitaire', 'wordquest'];
+  var DEFAULT_HOME_ORDER = ['about', 'angrymonkeys', 'blockzen', 'blockfall', 'chess', 'chessquest', 'featherflight', 'lava', 'invesim', 'kindlekeep', 'settings', 'snake', 'solitaire', 'wordquest'];
   /* The pre-alphabetical default (games first, then utilities). A stored
      order identical to this list means the player never reorganized. */
   var LEGACY_DEFAULT_HOME_ORDER = ['angrymonkeys', 'blockfall', 'blockzen', 'chess', 'chessquest', 'invesim', 'kindlekeep', 'solitaire', 'about', 'settings'];
@@ -15865,6 +15954,7 @@ if (typeof window !== 'undefined') {
     chess: 'chess',
     casino: 'casino-life',
     chessquest: 'chess-quest',
+    featherflight: 'feather-flight',
     lava: 'floor-is-lava',
     kindlekeep: 'kindlekeep',
     mathrealms: 'math-realms',
@@ -16371,7 +16461,7 @@ if (typeof window !== 'undefined') {
     'ph-splash--blockfall', 'ph-splash--chess', 'ph-splash--angrymonkeys',
     'ph-splash--kindlekeep', 'ph-splash--chessquest', 'ph-splash--mathrealms',
     'ph-splash--lava', 'ph-splash--casino', 'ph-splash--oath', 'ph-splash--snake',
-    'ph-splash--wordquest'];
+    'ph-splash--featherflight', 'ph-splash--wordquest'];
   var SPLASH_THEMES = {
     blockzen: {
       cls: 'ph-splash--blockzen',
@@ -16584,6 +16674,24 @@ if (typeof window !== 'undefined') {
         { star: true, x: 222, y: 108, s: 4, d: 0.9 },
         { star: true, x: 120, y: 8, s: 4, d: 1.2 },
         { flash: true, x: 24, y: 122, w: 200, h: 14, d: 2.0 }
+      ]
+    }
+    /* FEATHER FLIGHT (Nov 22, 2026): a sun, drifting stars, and a
+       flash — the sky the bird flies through. Motif 'sky' needs no
+       new renderer branch (sun/star/flash pieces already exist).
+       Tagline matches the game; timing exactly 3000ms via SPLASH_MS. */
+    , featherflight: {
+      cls: 'ph-splash--featherflight',
+      tag: 'Tap to flap. Thread the gates.',
+      motif: 'sky',
+      pieces: [
+        { sun: true, x: 100, y: 6, s: 56, d: 0.05 },
+        { star: true, x: 30, y: 20, s: 5, d: 0.3 },
+        { star: true, x: 200, y: 14, s: 4, d: 0.5 },
+        { star: true, x: 60, y: 96, s: 4, d: 0.8 },
+        { star: true, x: 180, y: 108, s: 5, d: 1.1 },
+        { star: true, x: 124, y: 130, s: 4, d: 1.4 },
+        { flash: true, x: 24, y: 70, w: 200, h: 12, d: 2.0 }
       ]
     }
     /* TYCOON (Nov 22, 2026): Tycoon Town — gold coins and dice over the
@@ -17978,6 +18086,26 @@ if (typeof window !== 'undefined') {
     /* TYCOON (Nov 22, 2026): Tycoon Town. Delegated to the Tycoon
        wire, which no-ops until the game lands. Guarded and tycoon-scoped;
        never throws. Do not init the wire here. */
+    /* FEATHER FLIGHT (Nov 22, 2026): tap-to-flap arcade game. Delegated
+       to the Feather wire, which no-ops until the game lands. Guarded
+       and featherflight-scoped; never throws. Do not init the wire here. */
+    PhoneShell.registerApp('featherflight', { title: 'Feather Flight', game: true, el: $('app-featherflight'),
+      onOpen: function () {
+        try {
+          if (typeof window !== 'undefined' && window.FeatherWire &&
+              typeof window.FeatherWire.onOpen === 'function') {
+            window.FeatherWire.onOpen();
+          }
+        } catch (e) { /* never throws */ }
+      },
+      onClose: function () {
+        try {
+          if (typeof window !== 'undefined' && window.FeatherWire &&
+              typeof window.FeatherWire.onClose === 'function') {
+            window.FeatherWire.onClose();
+          }
+        } catch (e) { /* never throws */ }
+      } });
     PhoneShell.registerApp('tycoon', { title: 'Tycoon Town', game: true, el: $('app-tycoon'),
       onOpen: function () {
         try {
@@ -26709,6 +26837,11 @@ var BZSettings = (function () {
       'five themes, five modes including Time Attack, Maze, and Portal, ' +
       'golden apples, slow-mo, and a shield that saves one hit. Chase ' +
       'your best score across every mode.'));
+    body.appendChild(_el('p', 'bz-about-text',
+      'Feather Flight is a tap-to-flap arcade game built for touch. ' +
+      'Tap anywhere to flap, thread the gates, and chase your best ' +
+      'score — with six birds and three skies to unlock, and medals ' +
+      'for every 10 gates.'));
     body.appendChild(_el('p', 'bz-about-text',
       'Tycoon Town is a property-trading board game built for touch. ' +
       'Roll the dice, buy the streets of a little town, build houses ' +
@@ -146329,6 +146462,2106 @@ var WordQuestWire = (function () {
 if (typeof module !== 'undefined' && module.exports) module.exports = WordQuestWire;
 if (typeof window !== 'undefined') {
   try { window.WordQuestWire = WordQuestWire; } catch (e) { /* best-effort */ }
+}
+</script>
+<script>
+// source: ff-data.js
+// FeatherFlight data — the ONE place the title lives (FF_TITLE).
+// Rename the game by changing this constant only; every screen,
+// the shell registration, and the About paragraph read it from here
+// at build time via the game module (the shell strings are edited
+// once, by hand, to match).
+//
+// UMD: global FFData + module.exports. Never throws.
+var FFData = (function () {
+  'use strict';
+
+  var FF_TITLE = 'Feather Flight';
+  var FF_SLUG = 'feather-flight';
+  var FF_APP_ID = 'featherflight';
+  var FF_ASSET_BASE = 'assets/feather-flight/';
+
+  /* Physics (world units are logical px on a 390x640 playfield). */
+  var PHYSICS = {
+    WORLD_W: 390,
+    WORLD_H: 640,
+    GROUND_H: 64,
+    BIRD_X: 96,
+    BIRD_R: 16,
+    BIRD_SIZE: 48,
+    GRAVITY: 1600,
+    FLAP_V: -380,
+    TERMINAL_V: 520,
+    SCROLL_START: 165,
+    SCROLL_PER_GATE: 2.5,
+    SCROLL_MAX: 260,
+    GAP_START: 150,
+    GAP_MIN: 132,
+    GAP_SHRINK_PER_GATE: 1,
+    PIPE_W: 68,
+    PIPE_SPACING: 235,
+    FIRST_PIPE_X: 470,
+    STEP_DT: 1 / 120
+  };
+
+  var BIRDS = [
+    { id: 'pip',    name: 'Pip',    unlock: 0,   color: '#ffd94d',
+      desc: 'A sunny little sparrow. Ready from the first flight.' },
+    { id: 'azure',  name: 'Azure', unlock: 10,  color: '#38bdf8',
+      desc: 'A swift bluebird. Unlocks at a best score of 10.' },
+    { id: 'momo',   name: 'Momo',  unlock: 20,  color: '#f472b6',
+      desc: 'A rosy songbird. Unlocks at a best score of 20.' },
+    { id: 'ember',  name: 'Ember', unlock: 30,  color: '#fb923c',
+      desc: 'A fiery finch. Unlocks at a best score of 30.' },
+    { id: 'shadow', name: 'Shadow', unlock: 50, color: '#a78bfa',
+      desc: 'A dusky nightjar. Unlocks at a best score of 50.' },
+    { id: 'aurora', name: 'Aurora', unlock: 100, color: '#5eead4',
+      desc: 'A shimmering sky-bird. Unlocks at a best score of 100.' }
+  ];
+
+  var THEMES = [
+    { id: 'meadow', name: 'Meadow', unlock: 0,
+      obstacle: 'bamboo', color: '#7ec850',
+      desc: 'Sunny meadow skies and bamboo gates.' },
+    { id: 'sunset', name: 'Sunset', unlock: 20,
+      obstacle: 'crystal', color: '#f97316',
+      desc: 'Dusk light and crystal pillars. Unlocks at a best of 20.' },
+    { id: 'night',  name: 'Night', unlock: 50,
+      obstacle: 'cloud', color: '#6366f1',
+      desc: 'Starlight and cloud gates. Unlocks at a best of 50.' }
+  ];
+
+  /* Medals are earned by the score of a single flight. */
+  var MEDALS = [
+    { id: 'bronze',   name: 'Bronze',   score: 10, color: '#cd7f32' },
+    { id: 'silver',   name: 'Silver',   score: 20, color: '#c0c0c0' },
+    { id: 'gold',     name: 'Gold',     score: 30, color: '#ffd700' },
+    { id: 'platinum', name: 'Platinum', score: 40, color: '#7dd3fc' }
+  ];
+
+  /* Per-bird sprite draw offsets (px, logical, added to the bird
+     centre when drawing that pose). The wing poses were made as edits
+     of the mid pose so bodies stay put; azure-down is the loosest on
+     anchoring, so it carries a small nudge — verify in the animation
+     proof renders and adjust here, never in the draw code. */
+  var SPRITE_OFFSETS = {
+    azure: { down: { dx: 0, dy: -2 } }
+  };
+
+  /* Per-obstacle source crop (x, width in the 768 px-wide panel).
+     Measured from the art: the stalk/column is centred but each
+     obstacle has a different true width — bamboo is a narrow stalk
+     (~142-171 px), crystal a wide column (~370 px), cloud wider
+     still (~470-510 px) — so one shared crop leaves bamboo swimming
+     in sky. The crop keeps the column plus a small margin. */
+  var OBSTACLE_CROP = {
+    bamboo: { x: 288, w: 192 },
+    crystal: { x: 170, w: 420 },
+    cloud: { x: 110, w: 530 }
+  };
+
+  function _art(p) { return FF_ASSET_BASE + p; }
+
+  var ART = (function () {
+    var out = { birds: {}, themes: {}, obstacles: {}, scenes: {}, medals: {} };
+    var i, b, t;
+    for (i = 0; i < BIRDS.length; i++) {
+      b = BIRDS[i].id;
+      out.birds[b] = {
+        portrait: _art('birds/portraits/' + b + '.webp'),
+        up: _art('birds/sprites/' + b + '-up.webp'),
+        mid: _art('birds/sprites/' + b + '-mid.webp'),
+        down: _art('birds/sprites/' + b + '-down.webp')
+      };
+    }
+    for (i = 0; i < THEMES.length; i++) {
+      t = THEMES[i].id;
+      out.themes[t] = {
+        sky: _art('themes/' + t + '/sky.webp'),
+        mid: _art('themes/' + t + '/mid.webp'),
+        ground: _art('themes/' + t + '/ground.webp')
+      };
+    }
+    var obs = ['bamboo', 'crystal', 'cloud'];
+    for (i = 0; i < obs.length; i++) {
+      out.obstacles[obs[i]] = {
+        top: _art('obstacles/' + obs[i] + '-top.webp'),
+        bottom: _art('obstacles/' + obs[i] + '-bottom.webp')
+      };
+    }
+    out.scenes.splash = _art('scenes/splash-art.webp');
+    out.scenes.menu = _art('scenes/menu-art.webp');
+    out.scenes.gameover = _art('scenes/gameover-art.webp');
+    for (i = 0; i < MEDALS.length; i++) {
+      out.medals[MEDALS[i].id] = _art('medals/' + MEDALS[i].id + '.webp');
+    }
+    return out;
+  })();
+
+  /* Every art + audio file the game loads (46 art + 8 audio). The
+     game layer preloads from these lists; the browser proof asserts
+     each one answers 200. */
+  var ART_FILES = (function () {
+    var list = [], i, b, t;
+    for (i = 0; i < BIRDS.length; i++) {
+      b = BIRDS[i].id;
+      list.push(ART.birds[b].portrait, ART.birds[b].up,
+        ART.birds[b].mid, ART.birds[b].down);
+    }
+    for (i = 0; i < THEMES.length; i++) {
+      t = THEMES[i].id;
+      list.push(ART.themes[t].sky, ART.themes[t].mid, ART.themes[t].ground);
+    }
+    var obs = ['bamboo', 'crystal', 'cloud'];
+    for (i = 0; i < obs.length; i++) {
+      list.push(ART.obstacles[obs[i]].top, ART.obstacles[obs[i]].bottom);
+    }
+    list.push(ART.scenes.splash, ART.scenes.menu, ART.scenes.gameover);
+    for (i = 0; i < MEDALS.length; i++) list.push(ART.medals[MEDALS[i].id]);
+    return list;
+  })();
+
+  var AUDIO_FILES = {
+    sfx: {
+      flap: _art('audio/flap.mp3'),
+      score: _art('audio/score.mp3'),
+      hit: _art('audio/hit.mp3'),
+      swoosh: _art('audio/swoosh.mp3'),
+      unlock: _art('audio/unlock.mp3'),
+      medal: _art('audio/medal.mp3'),
+      click: _art('audio/click.mp3')
+    }
+  };
+  var AUDIO_FILE_LIST = (function () {
+    var list = [], k;
+    for (k in AUDIO_FILES.sfx) list.push(AUDIO_FILES.sfx[k]);
+    return list;
+  })();
+
+  function medalForScore(score) {
+    var best = null, i;
+    for (i = 0; i < MEDALS.length; i++) {
+      if (score >= MEDALS[i].score) best = MEDALS[i].id;
+    }
+    return best;
+  }
+
+  function unlockedBirds(best) {
+    var out = [], i;
+    for (i = 0; i < BIRDS.length; i++) {
+      if (best >= BIRDS[i].unlock) out.push(BIRDS[i].id);
+    }
+    return out;
+  }
+
+  function unlockedThemes(best) {
+    var out = [], i;
+    for (i = 0; i < THEMES.length; i++) {
+      if (best >= THEMES[i].unlock) out.push(THEMES[i].id);
+    }
+    return out;
+  }
+
+  function birdById(id) {
+    var i;
+    for (i = 0; i < BIRDS.length; i++) if (BIRDS[i].id === id) return BIRDS[i];
+    return BIRDS[0];
+  }
+
+  function themeById(id) {
+    var i;
+    for (i = 0; i < THEMES.length; i++) if (THEMES[i].id === id) return THEMES[i];
+    return THEMES[0];
+  }
+
+  function medalById(id) {
+    var i;
+    for (i = 0; i < MEDALS.length; i++) if (MEDALS[i].id === id) return MEDALS[i];
+    return null;
+  }
+
+  var api = {
+    FF_TITLE: FF_TITLE,
+    FF_SLUG: FF_SLUG,
+    FF_APP_ID: FF_APP_ID,
+    FF_ASSET_BASE: FF_ASSET_BASE,
+    PHYSICS: PHYSICS,
+    BIRDS: BIRDS,
+    THEMES: THEMES,
+    MEDALS: MEDALS,
+    SPRITE_OFFSETS: SPRITE_OFFSETS,
+    OBSTACLE_CROP: OBSTACLE_CROP,
+    ART: ART,
+    ART_FILES: ART_FILES,
+    AUDIO_FILES: AUDIO_FILES,
+    AUDIO_FILE_LIST: AUDIO_FILE_LIST,
+    medalForScore: medalForScore,
+    unlockedBirds: unlockedBirds,
+    unlockedThemes: unlockedThemes,
+    birdById: birdById,
+    themeById: themeById,
+    medalById: medalById
+  };
+  return api;
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = FFData;
+if (typeof window !== 'undefined') {
+  try { window.FFData = FFData; } catch (e) { /* best-effort */ }
+}
+</script>
+<script>
+// source: ff-engine.js
+// FeatherFlight engine — PURE physics / state machine, NO DOM.
+//
+// States: menu -> ready -> playing -> dead. Fixed timestep 1/120 s
+// (step() substeps any dt into 1/120 slices, so the same input
+// sequence always produces the same state trace — determinism is a
+// tested property, see src/ff-engine.test.js). Gap positions come
+// from a seeded mulberry32 RNG whose state lives inside the game
+// state, so a run replays exactly from its seed.
+//
+// Fairness: the gap is ALWAYS passable — gap centre range keeps the
+// whole gap on screen with margin, and the max climb over a
+// gap-crossing window (flap every step) exceeds the gap height for
+// every generated gap (proven in the node tests).
+//
+// UMD: global FFEngine + module.exports. Never throws.
+var FFEngine = (function () {
+  'use strict';
+
+  var P = null;
+  try {
+    if (typeof FFData !== 'undefined' && FFData && FFData.PHYSICS) P = FFData.PHYSICS;
+  } catch (e) { P = null; }
+  if (!P) {
+    try {
+      if (typeof require === 'function') {
+        var _d = require('./ff-data.js');
+        if (_d && _d.PHYSICS) P = _d.PHYSICS;
+      }
+    } catch (e) { /* fall through to the literal fallback */ }
+  }
+  if (!P) {
+    P = { WORLD_W: 390, WORLD_H: 640, GROUND_H: 64, BIRD_X: 96, BIRD_R: 16,
+      BIRD_SIZE: 48, GRAVITY: 1600, FLAP_V: -380, TERMINAL_V: 520,
+      SCROLL_START: 165, SCROLL_PER_GATE: 2.5, SCROLL_MAX: 260,
+      GAP_START: 150, GAP_MIN: 132, GAP_SHRINK_PER_GATE: 1,
+      PIPE_W: 68, PIPE_SPACING: 235, FIRST_PIPE_X: 470, STEP_DT: 1 / 120 };
+  }
+
+  var GROUND_Y = P.WORLD_H - P.GROUND_H;
+  var STEP = P.STEP_DT;
+
+  /* mulberry32 — tiny seeded RNG. State is a single uint32 kept on
+     the game state so runs replay exactly. */
+  function _rngNext(s) {
+    var t = (s.rng + 0x6D2B79F5) >>> 0;
+    s.rng = t;
+    var z = t;
+    z = Math.imul(z ^ (z >>> 15), z | 1);
+    z ^= z + Math.imul(z ^ (z >>> 7), z | 61);
+    return ((z ^ (z >>> 14)) >>> 0) / 4294967296;
+  }
+
+  function _seedFrom(n) {
+    var s = (typeof n === 'number' && isFinite(n)) ? (n >>> 0) : 0;
+    return s === 0 ? 0x9E3779B9 : s;
+  }
+
+  function gapForScore(score) {
+    var g = P.GAP_START - score * P.GAP_SHRINK_PER_GATE;
+    return g < P.GAP_MIN ? P.GAP_MIN : g;
+  }
+
+  function speedForScore(score) {
+    var v = P.SCROLL_START + score * P.SCROLL_PER_GATE;
+    return v > P.SCROLL_MAX ? P.SCROLL_MAX : v;
+  }
+
+  function _gapCentre(s, gap) {
+    var lo = 80 + gap / 2;
+    var hi = GROUND_Y - 80 - gap / 2;
+    if (hi < lo) hi = lo;
+    var c = lo + _rngNext(s) * (hi - lo);
+    /* Slew limit: consecutive gap centres move at most 160 px, so the
+       next gap is always reachable from the previous one at full
+       speed (max climb over the inter-pipe flight exceeds 160 px). */
+    if (typeof s.lastGapY === 'number') {
+      if (c > s.lastGapY + 160) c = s.lastGapY + 160;
+      if (c < s.lastGapY - 160) c = s.lastGapY - 160;
+      if (c < lo) c = lo;
+      if (c > hi) c = hi;
+    }
+    s.lastGapY = c;
+    return c;
+  }
+
+  function _spawnPipe(s, x) {
+    var gap = gapForScore(s.score);
+    s.pipes.push({ x: x, gapY: _gapCentre(s, gap), gap: gap, scored: false });
+  }
+
+  function createGame(opts) {
+    opts = opts || {};
+    var s = {
+      state: 'menu',
+      seed: _seedFrom(opts.seed),
+      rng: _seedFrom(opts.seed),
+      time: 0,
+      bird: { y: P.WORLD_H * 0.45, vy: 0 },
+      pipes: [],
+      score: 0,
+      best: (typeof opts.best === 'number' && isFinite(opts.best)) ? opts.best : 0,
+      speed: P.SCROLL_START,
+      distance: 0,
+      flapAge: 999,
+      deadTime: 0,
+      newBest: false,
+      medal: null,
+      events: []
+    };
+    return s;
+  }
+
+  /* Reset to a fresh run (menu -> ready). Keeps best/seed. */
+  function toReady(s) {
+    if (!s) return;
+    s.state = 'ready';
+    s.time = 0;
+    s.bird.y = P.WORLD_H * 0.45;
+    s.bird.vy = 0;
+    s.pipes = [];
+    s.score = 0;
+    s.speed = P.SCROLL_START;
+    s.distance = 0;
+    s.flapAge = 999;
+    s.deadTime = 0;
+    s.newBest = false;
+    s.medal = null;
+    s.events = [];
+    s.rng = s.seed;
+    _spawnPipe(s, P.FIRST_PIPE_X);
+  }
+
+  function _die(s, kind) {
+    if (s.state === 'dead') return;
+    s.state = 'dead';
+    s.deadTime = 0;
+    if (s.score > s.best) {
+      s.best = s.score;
+      s.newBest = true;
+    }
+    s.events.push({ type: 'hit', kind: kind, score: s.score, best: s.best });
+  }
+
+  function _stepOnce(s, input) {
+    var dt = STEP;
+    s.time += dt;
+    s.flapAge += dt;
+    if (s.state === 'ready') {
+      /* Hover bob; a flap starts play. */
+      s.bird.y = P.WORLD_H * 0.45 + Math.sin(s.time * 3) * 6;
+      if (input && input.flap) {
+        s.state = 'playing';
+        s.bird.vy = P.FLAP_V;
+        s.flapAge = 0;
+        s.events.push({ type: 'flap' });
+      }
+      return;
+    }
+    if (s.state === 'playing') {
+      if (input && input.flap) {
+        s.bird.vy = P.FLAP_V;
+        s.flapAge = 0;
+        s.events.push({ type: 'flap' });
+      }
+      s.bird.vy += P.GRAVITY * dt;
+      if (s.bird.vy > P.TERMINAL_V) s.bird.vy = P.TERMINAL_V;
+      s.bird.y += s.bird.vy * dt;
+      /* Ceiling is a soft clamp, never a death. */
+      if (s.bird.y < 14 + P.BIRD_R) {
+        s.bird.y = 14 + P.BIRD_R;
+        if (s.bird.vy < 0) s.bird.vy = 0;
+      }
+      var dx = s.speed * dt;
+      s.distance += dx;
+      var i, p;
+      for (i = 0; i < s.pipes.length; i++) s.pipes[i].x -= dx;
+      /* Spawn the next pair once the last one is a full spacing in. */
+      var last = s.pipes[s.pipes.length - 1];
+      if (!last || last.x < P.WORLD_W - P.PIPE_SPACING + P.PIPE_W) {
+        _spawnPipe(s, (last ? last.x : P.WORLD_W) + P.PIPE_SPACING);
+      }
+      while (s.pipes.length && s.pipes[0].x < -P.PIPE_W - 20) s.pipes.shift();
+      /* Scoring: the pair's right edge clears the bird. */
+      for (i = 0; i < s.pipes.length; i++) {
+        p = s.pipes[i];
+        if (!p.scored && p.x + P.PIPE_W < P.BIRD_X - P.BIRD_R) {
+          p.scored = true;
+          s.score += 1;
+          s.speed = speedForScore(s.score);
+          s.events.push({ type: 'score', score: s.score });
+        }
+      }
+      /* Collision: circle vs the two obstacle rectangles. */
+      var bx0 = P.BIRD_X - P.BIRD_R, bx1 = P.BIRD_X + P.BIRD_R;
+      for (i = 0; i < s.pipes.length; i++) {
+        p = s.pipes[i];
+        if (p.x + P.PIPE_W < bx0 || p.x > bx1) continue;
+        var gapTop = p.gapY - p.gap / 2;
+        var gapBottom = p.gapY + p.gap / 2;
+        if (s.bird.y - P.BIRD_R < gapTop || s.bird.y + P.BIRD_R > gapBottom) {
+          _die(s, 'pipe');
+          return;
+        }
+      }
+      /* Ground. */
+      if (s.bird.y + P.BIRD_R >= GROUND_Y) {
+        s.bird.y = GROUND_Y - P.BIRD_R;
+        _die(s, 'ground');
+        return;
+      }
+      return;
+    }
+    if (s.state === 'dead') {
+      /* The bird keeps falling until it rests on the ground. */
+      s.deadTime += dt;
+      if (s.bird.y + P.BIRD_R < GROUND_Y) {
+        s.bird.vy += P.GRAVITY * dt;
+        if (s.bird.vy > P.TERMINAL_V) s.bird.vy = P.TERMINAL_V;
+        s.bird.y += s.bird.vy * dt;
+        if (s.bird.y + P.BIRD_R >= GROUND_Y) s.bird.y = GROUND_Y - P.BIRD_R;
+      }
+      return;
+    }
+    /* menu: nothing moves. */
+  }
+
+  /* step(s, input, dt): input {flap:boolean, start:boolean}.
+     Returns the events raised during this call (and clears them). */
+  function step(s, input, dt) {
+    if (!s) return [];
+    s.events = [];
+    if (s.state === 'menu') {
+      if (input && input.start) toReady(s);
+      return s.events;
+    }
+    if (typeof dt !== 'number' || !(dt > 0)) dt = STEP;
+    if (dt > 0.25) dt = 0.25;
+    var acc = dt, guard = 0;
+    while (acc > 0 && guard++ < 40) {
+      var h = acc < STEP ? acc : STEP;
+      _stepOnce(s, input);
+      input = null; /* a flap applies to the first substep only */
+      acc -= h;
+    }
+    return s.events;
+  }
+
+  function medalForScore(score) {
+    if (score >= 40) return 'platinum';
+    if (score >= 30) return 'gold';
+    if (score >= 20) return 'silver';
+    if (score >= 10) return 'bronze';
+    return null;
+  }
+
+  function unlockedBirds(best) {
+    var out = [];
+    var rules = [['pip', 0], ['azure', 10], ['momo', 20], ['ember', 30], ['shadow', 50], ['aurora', 100]];
+    var i;
+    for (i = 0; i < rules.length; i++) if (best >= rules[i][1]) out.push(rules[i][0]);
+    return out;
+  }
+
+  function unlockedThemes(best) {
+    var out = [];
+    var rules = [['meadow', 0], ['sunset', 20], ['night', 50]];
+    var i;
+    for (i = 0; i < rules.length; i++) if (best >= rules[i][1]) out.push(rules[i][0]);
+    return out;
+  }
+
+  /* Snapshot for determinism comparisons (plain JSON). */
+  function snapshot(s) {
+    return JSON.parse(JSON.stringify({
+      state: s.state, rng: s.rng, time: +s.time.toFixed(6),
+      y: +s.bird.y.toFixed(4), vy: +s.bird.vy.toFixed(4),
+      score: s.score, speed: s.speed,
+      pipes: s.pipes.map(function (p) {
+        return { x: +p.x.toFixed(3), gapY: +p.gapY.toFixed(3), gap: p.gap, scored: p.scored };
+      })
+    }));
+  }
+
+  var api = {
+    PHYSICS: P,
+    GROUND_Y: GROUND_Y,
+    createGame: createGame,
+    toReady: toReady,
+    step: step,
+    gapForScore: gapForScore,
+    speedForScore: speedForScore,
+    medalForScore: medalForScore,
+    unlockedBirds: unlockedBirds,
+    unlockedThemes: unlockedThemes,
+    snapshot: snapshot
+  };
+  return api;
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = FFEngine;
+if (typeof window !== 'undefined') {
+  try { window.FFEngine = FFEngine; } catch (e) { /* best-effort */ }
+}
+</script>
+<script>
+// source: ff-save.js
+// FeatherFlight save — persistent data + SaveRegistry entry.
+//
+// Keys (all jmf-phone-*, per the registry convention):
+//   jmf-phone-featherflight-stats-v1 — best score, games played,
+//     medals earned (by id), total gates flown
+//   jmf-phone-featherflight-prefs-v1 — selected bird + theme
+// Selections are stored raw and validated on load against the
+// unlock rules: a locked pick falls back to Pip / Meadow.
+//
+// UMD: global FFSave + module.exports. Never throws.
+var FFSave = (function () {
+  'use strict';
+
+  var STATS_KEY = 'jmf-phone-featherflight-stats-v1';
+  var PREFS_KEY = 'jmf-phone-featherflight-prefs-v1';
+
+  var DEFAULT_STATS = { best: 0, games: 0, gates: 0, medals: {} };
+  var DEFAULT_PREFS = { bird: 'pip', theme: 'meadow' };
+
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+
+  function _lsGet(key) {
+    try {
+      var store = null;
+      if (typeof localStorage !== 'undefined' && localStorage) store = localStorage;
+      else { var w = _win(); if (w && w.localStorage) store = w.localStorage; }
+      if (!store) return null;
+      var raw = store.getItem(key);
+      return (typeof raw === 'string' && raw) ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function _lsSet(key, value) {
+    try {
+      var store = null;
+      if (typeof localStorage !== 'undefined' && localStorage) store = localStorage;
+      else { var w = _win(); if (w && w.localStorage) store = w.localStorage; }
+      if (!store) return false;
+      store.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function _clone(obj) {
+    try { return JSON.parse(JSON.stringify(obj)); } catch (e) { return null; }
+  }
+
+  function _withDefaults(saved, defaults) {
+    var out = _clone(defaults) || {};
+    if (saved && typeof saved === 'object') {
+      for (var k in defaults) {
+        if (Object.prototype.hasOwnProperty.call(defaults, k) &&
+            typeof saved[k] === typeof defaults[k]) out[k] = saved[k];
+      }
+      if (defaults.medals && saved.medals && typeof saved.medals === 'object') {
+        out.medals = {};
+        var m;
+        for (m in saved.medals) {
+          if (saved.medals[m] === true) out.medals[m] = true;
+        }
+      }
+    }
+    return out;
+  }
+
+  function _unlocked(id, kind, best) {
+    try {
+      if (typeof FFEngine !== 'undefined' && FFEngine) {
+        var list = kind === 'bird' ? FFEngine.unlockedBirds(best)
+          : FFEngine.unlockedThemes(best);
+        return list.indexOf(id) >= 0;
+      }
+      if (typeof require === 'function') {
+        var E = require('./ff-engine.js');
+        var l2 = kind === 'bird' ? E.unlockedBirds(best) : E.unlockedThemes(best);
+        return l2.indexOf(id) >= 0;
+      }
+    } catch (e) { /* fall through to the permissive default */ }
+    return true;
+  }
+
+  function loadStats() { return _withDefaults(_lsGet(STATS_KEY), DEFAULT_STATS); }
+  function saveStats(stats) {
+    if (!stats || typeof stats !== 'object') return false;
+    return _lsSet(STATS_KEY, _withDefaults(stats, DEFAULT_STATS));
+  }
+  function loadPrefs() {
+    var prefs = _withDefaults(_lsGet(PREFS_KEY), DEFAULT_PREFS);
+    var best = loadBest();
+    if (typeof prefs.bird !== 'string' || !_unlocked(prefs.bird, 'bird', best)) prefs.bird = 'pip';
+    if (typeof prefs.theme !== 'string' || !_unlocked(prefs.theme, 'theme', best)) prefs.theme = 'meadow';
+    return prefs;
+  }
+  function savePrefs(prefs) {
+    if (!prefs || typeof prefs !== 'object') return false;
+    return _lsSet(PREFS_KEY, _withDefaults(prefs, DEFAULT_PREFS));
+  }
+  function loadBest() {
+    try { return loadStats().best || 0; } catch (e) { return 0; }
+  }
+  function saveBest(best) {
+    try {
+      var s = loadStats();
+      s.best = (typeof best === 'number' && isFinite(best)) ? Math.max(0, Math.floor(best)) : 0;
+      return saveStats(s);
+    } catch (e) {
+      return false;
+    }
+  }
+  function recordRun(score) {
+    try {
+      var s = loadStats();
+      s.games = (s.games || 0) + 1;
+      s.gates = (s.gates || 0) + (score || 0);
+      if (score > (s.best || 0)) s.best = score;
+      var medal = null;
+      try {
+        if (typeof FFEngine !== 'undefined' && FFEngine) medal = FFEngine.medalForScore(score);
+        else if (typeof require === 'function') medal = require('./ff-engine.js').medalForScore(score);
+      } catch (e) { medal = null; }
+      if (medal) s.medals[medal] = true;
+      saveStats(s);
+      return { best: s.best, medal: medal };
+    } catch (e) {
+      return { best: 0, medal: null };
+    }
+  }
+
+  /* SaveRegistry entry: Settings builds its saves section data-driven
+     from owners(), so Feather Flight appears there with no Settings edit. */
+  try {
+    if (typeof SaveRegistry !== 'undefined' && SaveRegistry &&
+        typeof SaveRegistry.register === 'function') {
+      SaveRegistry.register({
+        id: 'featherflight',
+        name: 'Feather Flight',
+        keys: [STATS_KEY, PREFS_KEY]
+      });
+    }
+  } catch (e) { /* registry is best-effort */ }
+
+  return {
+    STATS_KEY: STATS_KEY,
+    PREFS_KEY: PREFS_KEY,
+    DEFAULT_STATS: _clone(DEFAULT_STATS),
+    DEFAULT_PREFS: _clone(DEFAULT_PREFS),
+    loadStats: loadStats,
+    saveStats: saveStats,
+    loadPrefs: loadPrefs,
+    savePrefs: savePrefs,
+    loadBest: loadBest,
+    saveBest: saveBest,
+    recordRun: recordRun
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = FFSave;
+if (typeof window !== 'undefined') {
+  try { window.FFSave = FFSave; } catch (e) { /* best-effort */ }
+}
+</script>
+<script>
+// source: ff-audio.js
+// FeatherAudio — shell music only + file sound effects (rebased Nov 23, 2026).
+//
+// MUSIC RULE (Jesse, Nov 23, 2026): Feather Flight uses ONLY the
+// phone's shared shell music (BZAudio) — it plays NO per-game music
+// track of its own. The old 256 s music loop
+// (Nov 23, 2026 — music rule: the old 256 s music loop is GONE:
+// no WebAudio pad fallback, and the game never silences or resumes
+// the shared loop — the shell music simply keeps playing while the
+// game is open. The header ♪ toggle still works: it drives the
+// shared music setting via BZAudio.setMusic, like every other game.
+//
+// Sound effects are short MP3 files (assets/feather-flight/audio/).
+// WebAudio blips remain as fallback when a file cannot play
+// (node / standalone / missing Audio). Everything is gated by the
+// global sound/music settings when readable.
+//
+// UMD: global FeatherAudio + module.exports. Never throws.
+var FeatherAudio = (function () {
+  'use strict';
+
+  var _musicOn = true;
+  var _sfx = {};          // kind -> <audio> element
+  var _sfxFailed = {};    // kind -> true (file unusable; use WebAudio blip)
+  var _ctx = null;
+  var _FALLBACK_SRC = {
+    flap: 'assets/feather-flight/audio/flap.mp3',
+    score: 'assets/feather-flight/audio/score.mp3',
+    hit: 'assets/feather-flight/audio/hit.mp3',
+    swoosh: 'assets/feather-flight/audio/swoosh.mp3',
+    unlock: 'assets/feather-flight/audio/unlock.mp3',
+    medal: 'assets/feather-flight/audio/medal.mp3',
+    click: 'assets/feather-flight/audio/click.mp3'
+  };
+
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+  function _bzAudio() {
+    try {
+      var w = _win();
+      if (w && w.BZAudio) return w.BZAudio;
+      if (typeof BZAudio !== 'undefined' && BZAudio) return BZAudio;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _settings() {
+    try {
+      var w = _win();
+      if (w && w.BZSettings && typeof w.BZSettings.readSettings === 'function') return w.BZSettings.readSettings();
+      if (typeof BZSettings !== 'undefined' && BZSettings && typeof BZSettings.readSettings === 'function') return BZSettings.readSettings();
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _data() {
+    try {
+      if (typeof FFData !== 'undefined' && FFData && FFData.AUDIO_FILES) return FFData.AUDIO_FILES;
+      var w = _win();
+      if (w && w.FFData && w.FFData.AUDIO_FILES) return w.FFData.AUDIO_FILES;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _sfxSrc(kind) {
+    var d = _data();
+    if (d && d.sfx && d.sfx[kind]) return d.sfx[kind];
+    return _FALLBACK_SRC[kind] || null;
+  }
+
+  function _audioCtx() {
+    try {
+      if (_ctx) return _ctx;
+      var w = _win();
+      var AC = (w && (w.AudioContext || w.webkitAudioContext)) ||
+        (typeof AudioContext !== 'undefined' ? AudioContext : null) ||
+        (typeof webkitAudioContext !== 'undefined' ? webkitAudioContext : null);
+      if (!AC) return null;
+      _ctx = new AC();
+      return _ctx;
+    } catch (e) { return null; }
+  }
+
+  function isMusicOn() {
+    var bz = _bzAudio();
+    if (bz && typeof bz.isMusicOn === 'function') {
+      try { return !!bz.isMusicOn(); } catch (e) { /* fall through */ }
+    }
+    var s = _settings();
+    if (s && typeof s.music === 'boolean') return s.music;
+    return _musicOn;
+  }
+
+  // Drives the SHARED shell music setting only — never starts, stops,
+  // or silences any track of its own (Feather Flight has none).
+  function setMusic(on) {
+    _musicOn = !!on;
+    var bz = _bzAudio();
+    if (bz && typeof bz.setMusic === 'function') {
+      try { bz.setMusic(_musicOn); } catch (e) { /* fall through */ }
+      return _musicOn;
+    }
+    return _musicOn;
+  }
+
+  function toggleMusic() { return setMusic(!isMusicOn()); }
+
+  function isSoundOn() {
+    var s = _settings();
+    if (s && typeof s.sound === 'boolean') return s.sound;
+    return true;
+  }
+
+  function setSound(on) {
+    var bz = _bzAudio();
+    if (bz && typeof bz.setSound === 'function') {
+      try { bz.setSound(!!on); } catch (e) { /* best-effort */ }
+    }
+    return isSoundOn();
+  }
+
+  // Call on open / first tap. Shell music is already playing; there
+  // is no Feather Flight track to start. Returns whether music is on.
+  function ensureStarted() {
+    return isMusicOn();
+  }
+
+  // Call on game close. No-op: there is no track to pause and the
+  // shell music keeps playing across open/close.
+  function stop() {
+    return;
+  }
+
+  function _blipFallback(kind) {
+    var ctx = _audioCtx();
+    if (!ctx) return;
+    try {
+      if (ctx.state === 'suspended' && typeof ctx.resume === 'function') ctx.resume();
+      var freq = kind === 'flap' ? 520 : kind === 'score' ? 880 :
+        kind === 'hit' ? 180 : kind === 'swoosh' ? 660 :
+        kind === 'unlock' ? 990 : kind === 'medal' ? 1100 :
+        kind === 'click' ? 740 : 660;
+      var o = ctx.createOscillator();
+      var g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.08, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start();
+      o.stop(ctx.currentTime + 0.2);
+    } catch (e) { /* best-effort */ }
+  }
+
+  function playSfx(kind) {
+    if (!isSoundOn()) return;
+    var src = _sfxSrc(kind);
+    if (src && !_sfxFailed[kind]) {
+      try {
+        if (typeof Audio !== 'function') { _blipFallback(kind); return; }
+        var a = _sfx[kind];
+        if (!a) {
+          a = new Audio();
+          a.src = src;
+          a.preload = 'auto';
+          a.volume = 0.9;
+          a.addEventListener('error', function () { _sfxFailed[kind] = true; });
+          _sfx[kind] = a;
+        }
+        a.currentTime = 0;
+        var p = a.play();
+        if (p && typeof p.catch === 'function') p.catch(function () { /* ignore */ });
+        return;
+      } catch (e) { /* fall through to WebAudio blip */ }
+    }
+    _blipFallback(kind);
+  }
+
+  // Proof/test hook: report the SFX load state (DOM facts only).
+  // track is always null — Feather Flight has no music track.
+  function debugState() {
+    return {
+      musicOn: isMusicOn(),
+      soundOn: isSoundOn(),
+      track: null,
+      sfxLoaded: Object.keys(_sfx),
+      sfxFailed: Object.keys(_sfxFailed)
+    };
+  }
+
+  var api = {
+    isMusicOn: isMusicOn,
+    setMusic: setMusic,
+    toggleMusic: toggleMusic,
+    isSoundOn: isSoundOn,
+    setSound: setSound,
+    ensureStarted: ensureStarted,
+    stop: stop,
+    playSfx: playSfx,
+    blip: playSfx,
+    debugState: debugState
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  if (typeof window !== 'undefined' && window) {
+    window.FeatherAudio = api;
+    window.__FF_AUDIO__ = api;
+  }
+  return api;
+})();
+</script>
+<script>
+// source: ff-game.js
+// FeatherGame — canvas render + DOM sheets for Feather Flight.
+//
+// The engine (ff-engine.js) owns all physics; this module owns the
+// canvas, input, parallax, animations, and screens. Never throws:
+// a missing art/audio file degrades to a drawn shape / silence.
+//
+// Screens: menu (splash art + title top-left + best + Play/Select),
+// select (bird portraits + theme row), ready (tap-to-flap hint),
+// playing (big score), pause, game over (score/best/medal/restart).
+//
+// UMD: global FeatherGame + module.exports. The wire mounts it into
+// #app-featherflight; standalone pages (no #app-featherflight in the
+// DOM) bind immediately like the other games.
+var FeatherGame = (function () {
+  'use strict';
+
+  var D = (typeof FFData !== 'undefined' && FFData) ? FFData : null;
+  var E = (typeof FFEngine !== 'undefined' && FFEngine) ? FFEngine : null;
+  var SAVE = (typeof FFSave !== 'undefined' && FFSave) ? FFSave : null;
+  var AUDIO = (typeof FeatherAudio !== 'undefined' && FeatherAudio) ? FeatherAudio : null;
+
+  var TITLE = (D && D.FF_TITLE) || 'Feather Flight';
+  var W = 390, H = 640;
+  var P = (D && D.PHYSICS) || { WORLD_W: 390, WORLD_H: 640, GROUND_H: 64, BIRD_X: 96, BIRD_R: 16, BIRD_SIZE: 48, GRAVITY: 1400, FLAP_V: -380, TERMINAL_V: 520, SCROLL_START: 165, SCROLL_PER_GATE: 2.5, SCROLL_MAX: 260, GAP_START: 150, GAP_MIN: 132, GAP_SHRINK_PER_GATE: 1, PIPE_W: 68, PIPE_SPACING: 235, FIRST_PIPE_X: 470, STEP_DT: 1 / 120 };
+  var GROUND_Y = H - P.GROUND_H;
+
+  var MARKUP =
+    '<div class="ff-root">' +
+    '<div id="topbar"><div id="title">FEATHER FLIGHT</div><div class="spacer"></div>' +
+    '<button class="iconbtn" id="ffPauseBtn" title="Pause (P)">&#10074;&#10074;</button>' +
+    '<button class="iconbtn" id="ffMuteBtn" title="Mute (M)">&#128266;</button></div>' +
+    '<div id="ffHud"><div class="ff-score" id="ffScore">0</div>' +
+    '<div class="ff-score-pop" id="ffScorePop"></div></div>' +
+    '<div id="ffStage"><canvas id="ffCanvas"></canvas>' +
+    '<div class="ff-screen" id="ffMenuScreen">' +
+    '<div class="ff-title-block"><h1>Feather<br>Flight</h1>' +
+    '<div class="ff-tagline">Tap to flap. Thread the gates.</div></div>' +
+    '<div class="ff-menu-bottom"><div class="ff-best-line">BEST <b id="ffMenuBest">0</b></div>' +
+    '<div class="ff-btnrow"><button class="ff-btn ff-primary" id="ffPlayBtn">PLAY</button>' +
+    '<button class="ff-btn" id="ffSelectBtn">BIRDS &amp; SKIES</button></div>' +
+    '<div class="ff-small">Tap anywhere to flap &middot; Space works too<br>P pause &middot; M mute</div></div></div>' +
+    '<div class="ff-screen" id="ffSelectScreen">' +
+    '<h2>CHOOSE YOUR BIRD</h2><div class="ff-bird-grid" id="ffBirdGrid"></div>' +
+    '<h2>CHOOSE YOUR SKY</h2><div class="ff-theme-row" id="ffThemeRow"></div>' +
+    '<div class="ff-btnrow"><button class="ff-btn ff-primary" id="ffSelectPlayBtn">PLAY</button>' +
+    '<button class="ff-btn" id="ffSelectBackBtn">BACK</button></div></div>' +
+    '<div class="ff-screen ff-hint-screen" id="ffReadyScreen">' +
+    '<div class="ff-ready-hint">TAP TO FLAP</div>' +
+    '<div class="ff-small">Best <b id="ffReadyBest">0</b></div></div>' +
+    '<div class="ff-screen" id="ffPauseScreen"><h2>PAUSED</h2>' +
+    '<div class="ff-btnrow"><button class="ff-btn ff-primary" id="ffResumeBtn">RESUME</button>' +
+    '<button class="ff-btn" id="ffRestartBtn2">RESTART</button>' +
+    '<button class="ff-btn" id="ffMenuBtn2" aria-label="Quit run">QUIT</button></div></div>' +
+    '<div class="ff-screen" id="ffOverScreen">' +
+    '<h1 id="ffOverTitle">GAME OVER</h1>' +
+    '<div id="ffNewBest">NEW BEST!</div>' +
+    '<img id="ffMedalImg" class="ff-medal" alt="" />' +
+    '<div class="ff-big" id="ffOverScore">0</div>' +
+    '<div class="ff-small" id="ffOverInfo"></div>' +
+    '<div class="ff-unlock-line" id="ffUnlockLine"></div>' +
+    '<div class="ff-btnrow"><button class="ff-btn ff-primary" id="ffAgainBtn">PLAY AGAIN</button>' +
+    '<button class="ff-btn" id="ffMenuBtn3">MENU</button></div>' +
+    '<div class="ff-small">Enter also restarts</div></div>' +
+    '</div></div>';
+
+  var mount = null, root = null, canvas = null, ctx = null;
+  var screens = {};
+  var els = {};
+  var eng = null;
+  var stats = { best: 0, games: 0, gates: 0, medals: {} };
+  var prefs = { bird: 'pip', theme: 'meadow' };
+  var paused = false;
+  var loopActive = true, loopStarted = false, lastT = 0, acc = 0;
+  var scrollX = 0;
+  var flash = 0, shake = 0;
+  var overShown = false, runRecorded = false;
+  var _mounted = false;
+  var imgs = {};
+  var _resizeTimer = null;
+
+  function _log(e) {
+    try { if (typeof console !== 'undefined' && console && console.error) console.error('[ff-game]', e); } catch (e2) { /* silent */ }
+  }
+
+  function $(id) {
+    try { return document.getElementById(id); } catch (e) { return null; }
+  }
+
+  function _el(id) {
+    try { return root ? root.querySelector('#' + id) : null; } catch (e) { return null; }
+  }
+
+  function _sfx(kind) {
+    try { if (AUDIO && typeof AUDIO.playSfx === 'function') AUDIO.playSfx(kind); } catch (e) { /* silent */ }
+  }
+
+  function _loadImages() {
+    try {
+      if (typeof Image === 'undefined' || !D) return;
+      var list = D.ART_FILES || [];
+      for (var i = 0; i < list.length; i++) {
+        (function (src) {
+          try {
+            var im = new Image();
+            im.onload = function () { imgs[src] = im; };
+            im.onerror = function () { /* degrade gracefully */ };
+            im.src = src;
+            imgs[src] = im;
+          } catch (e) { /* one bad file never breaks the game */ }
+        })(list[i]);
+      }
+    } catch (e) { /* image loading is best-effort */ }
+  }
+
+  function _imgReady(src) {
+    var im = imgs[src];
+    return (im && im.complete && im.naturalWidth > 0) ? im : null;
+  }
+
+  function _theme() {
+    try { return D ? D.themeById(prefs.theme) : { id: 'meadow', obstacle: 'bamboo' }; } catch (e) { return { id: 'meadow', obstacle: 'bamboo' }; }
+  }
+
+  function _obstacle() {
+    var t = _theme();
+    return (D && D.ART.obstacles[t.obstacle]) || null;
+  }
+
+  function _birdArt() {
+    try { return D ? D.ART.birds[prefs.bird] : null; } catch (e) { return null; }
+  }
+
+  function _showScreen(name) {
+    try {
+      for (var k in screens) {
+        if (screens[k] && screens[k].classList) screens[k].classList.toggle('show', k === name);
+      }
+    } catch (e) { /* cosmetic */ }
+  }
+
+  function _setScore(n) {
+    try { if (els.score) els.score.textContent = String(n); } catch (e) { /* cosmetic */ }
+  }
+
+  function _popScore() {
+    try {
+      if (!els.pop) return;
+      els.pop.textContent = '+1';
+      els.pop.classList.remove('go');
+      void els.pop.offsetWidth;
+      els.pop.classList.add('go');
+    } catch (e) { /* cosmetic */ }
+  }
+
+  function _syncMuteBtn() {
+    try {
+      if (!els.muteBtn) return;
+      var on = true;
+      try { if (AUDIO && typeof AUDIO.isSoundOn === 'function') on = AUDIO.isSoundOn(); } catch (e) { on = true; }
+      els.muteBtn.innerHTML = on ? '&#128266;' : '&#128263;';
+    } catch (e) { /* cosmetic */ }
+  }
+
+  function _syncPauseBtn() {
+    try {
+      if (!els.pauseBtn) return;
+      els.pauseBtn.innerHTML = paused ? '&#9654;' : '&#10074;&#10074;';
+    } catch (e) { /* cosmetic */ }
+  }
+
+  function _refreshMenu() {
+    try {
+      if (els.menuBest) els.menuBest.textContent = String(stats.best || 0);
+      if (els.readyBest) els.readyBest.textContent = String(stats.best || 0);
+    } catch (e) { /* cosmetic */ }
+  }
+
+  function _buildSelect() {
+    try {
+      if (!D || !els.birdGrid || !els.themeRow) return;
+      var best = stats.best || 0;
+      var i, b, t, btn, img, lock;
+      els.birdGrid.innerHTML = '';
+      for (i = 0; i < D.BIRDS.length; i++) {
+        b = D.BIRDS[i];
+        (function (bird) {
+          var locked = best < bird.unlock;
+          var bEl = document.createElement('button');
+          bEl.type = 'button';
+          bEl.className = 'ff-bird-btn' + (prefs.bird === bird.id ? ' on' : '') + (locked ? ' locked' : '');
+          bEl.setAttribute('aria-label', bird.name + (locked ? ' — unlocks at best ' + bird.unlock : ''));
+          var im = document.createElement('img');
+          im.src = D.ART.birds[bird.id].portrait;
+          im.alt = bird.name;
+          im.draggable = false;
+          im.onerror = function () { try { im.style.display = 'none'; } catch (e) { /* silent */ } };
+          bEl.appendChild(im);
+          var nm = document.createElement('span');
+          nm.className = 'ff-bird-name';
+          nm.textContent = bird.name;
+          bEl.appendChild(nm);
+          if (locked) {
+            lock = document.createElement('span');
+            lock.className = 'ff-lock';
+            lock.textContent = 'BEST ' + bird.unlock;
+            bEl.appendChild(lock);
+          }
+          bEl.addEventListener('click', function (ev) {
+            try { ev.stopPropagation(); } catch (e) { /* silent */ }
+            if (locked) { _sfx('click'); return; }
+            prefs.bird = bird.id;
+            try { if (SAVE) SAVE.savePrefs(prefs); } catch (e) { /* silent */ }
+            _sfx('click');
+            _buildSelect();
+          });
+          els.birdGrid.appendChild(bEl);
+        })(b);
+      }
+      els.themeRow.innerHTML = '';
+      for (i = 0; i < D.THEMES.length; i++) {
+        t = D.THEMES[i];
+        (function (theme) {
+          var locked = best < theme.unlock;
+          btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'ff-theme-btn' + (prefs.theme === theme.id ? ' on' : '') + (locked ? ' locked' : '');
+          btn.textContent = theme.name + (locked ? ' (BEST ' + theme.unlock + ')' : '');
+          btn.style.setProperty('--ff-theme-dot', theme.color);
+          btn.addEventListener('click', function (ev) {
+            try { ev.stopPropagation(); } catch (e) { /* silent */ }
+            if (locked) { _sfx('click'); return; }
+            prefs.theme = theme.id;
+            try { if (SAVE) SAVE.savePrefs(prefs); } catch (e) { /* silent */ }
+            _sfx('swoosh');
+            _buildSelect();
+          });
+          els.themeRow.appendChild(btn);
+        })(t);
+      }
+    } catch (e) { _log(e); }
+  }
+
+  var _lastStageW = 0, _lastStageH = 0;
+  function _resize(force) {
+    try {
+      if (!canvas || !els.stage) return;
+      var r = els.stage.getBoundingClientRect();
+      if (!r || r.width < 10 || r.height < 10) return;
+      if (!force && Math.abs(r.width - _lastStageW) < 1 && Math.abs(r.height - _lastStageH) < 1) return;
+      _lastStageW = r.width; _lastStageH = r.height;
+      var scale = Math.min(r.width / W, r.height / H);
+      var cw = Math.round(W * scale), ch = Math.round(H * scale);
+      var dpr = 1;
+      try { dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1; } catch (e) { dpr = 1; }
+      if (dpr > 2) dpr = 2;
+      canvas.style.width = cw + 'px';
+      canvas.style.height = ch + 'px';
+      canvas.width = Math.max(1, Math.round(cw * dpr));
+      canvas.height = Math.max(1, Math.round(ch * dpr));
+      canvas._ffScale = scale * dpr;
+      canvas._ffDpr = dpr;
+      canvas._ffCssW = cw;
+      canvas._ffCssH = ch;
+    } catch (e) { /* sizing is best-effort */ }
+  }
+
+  function _scheduleResize() {
+    try {
+      if (_resizeTimer) clearTimeout(_resizeTimer);
+      _resizeTimer = setTimeout(_resize, 120);
+    } catch (e) { _resize(); }
+  }
+
+  function _drawLayer(im, scroll, factor, y, h) {
+    if (!ctx || !im) return;
+    try {
+      var tileW = h * (im.naturalWidth / im.naturalHeight);
+      if (!(tileW > 0)) return;
+      var off = -((scroll * factor) % tileW);
+      for (var x = off; x < W; x += tileW) {
+        ctx.drawImage(im, x, y, tileW, h);
+      }
+    } catch (e) { /* one bad layer never breaks the frame */ }
+  }
+
+  function _drawPipe(imTop, imBottom, p) {
+    if (!ctx) return;
+    try {
+      var gapTop = p.gapY - p.gap / 2;
+      var gapBottom = p.gapY + p.gap / 2;
+      /* The obstacle panels are 768 px wide with the stalk/crystal/
+         cloud centred and sky at the sides, so draw the per-obstacle
+         centre crop (ff-data.js OBSTACLE_CROP) into the pipe width —
+         the full width renders a thin stalk inside pale side bands. */
+      var crop = { x: 192, w: 384 };
+      try {
+        var t2 = _theme();
+        if (D && D.OBSTACLE_CROP && D.OBSTACLE_CROP[t2.obstacle]) crop = D.OBSTACLE_CROP[t2.obstacle];
+      } catch (e) { /* default crop stands */ }
+      var SX = crop.x, SW = crop.w;
+      var scale = P.PIPE_W / SW;
+      if (imTop && gapTop > 0) {
+        var srcH = gapTop / scale;
+        if (srcH <= 1920) ctx.drawImage(imTop, SX, 1920 - srcH, SW, srcH, p.x, 0, P.PIPE_W, gapTop);
+        else ctx.drawImage(imTop, SX, 0, SW, 1920, p.x, 0, P.PIPE_W, gapTop);
+      }
+      if (imBottom && gapBottom < GROUND_Y) {
+        var bh = GROUND_Y - gapBottom;
+        var srcH2 = bh / scale;
+        if (srcH2 <= 1920) ctx.drawImage(imBottom, SX, 0, SW, srcH2, p.x, gapBottom, P.PIPE_W, bh);
+        else ctx.drawImage(imBottom, SX, 0, SW, 1920, p.x, gapBottom, P.PIPE_W, bh);
+      }
+      if (!imTop || !imBottom) {
+        /* Missing art fallback: solid obstacle bars. */
+        ctx.fillStyle = '#2f7d32';
+        if (gapTop > 0) ctx.fillRect(p.x, 0, P.PIPE_W, gapTop);
+        if (gapBottom < GROUND_Y) ctx.fillRect(p.x, gapBottom, P.PIPE_W, GROUND_Y - gapBottom);
+      }
+    } catch (e) { /* pipes are best-effort */ }
+  }
+
+  function _birdPose() {
+    if (!eng) return 'mid';
+    if (eng.state === 'ready' || eng.state === 'menu') {
+      var cyc = Math.floor(eng.time * 6) % 3;
+      return cyc === 0 ? 'up' : (cyc === 1 ? 'mid' : 'down');
+    }
+    if (eng.state === 'dead') return 'down';
+    if (eng.bird.vy < -100) return 'up';
+    if (eng.bird.vy > 180) return 'down';
+    return 'mid';
+  }
+
+  function _drawBird() {
+    if (!ctx || !eng) return;
+    try {
+      var art = _birdArt();
+      var pose = _birdPose();
+      var src = art ? art[pose] : null;
+      var im = src ? _imgReady(src) : null;
+      var x = P.BIRD_X, y = eng.bird.y;
+      if (eng.state === 'menu') y += Math.sin(eng.time * 3) * 6;
+      var size = P.BIRD_SIZE;
+      var off = { dx: 0, dy: 0 };
+      try {
+        if (D && D.SPRITE_OFFSETS && D.SPRITE_OFFSETS[prefs.bird] && D.SPRITE_OFFSETS[prefs.bird][pose]) {
+          off = D.SPRITE_OFFSETS[prefs.bird][pose];
+        }
+      } catch (e) { off = { dx: 0, dy: 0 }; }
+      var tilt = 0;
+      if (eng.state === 'playing' || eng.state === 'dead') {
+        tilt = Math.max(-0.45, Math.min(1.35, eng.bird.vy / 520 * 1.4));
+      } else {
+        tilt = Math.sin(eng.time * 3) * 0.08;
+      }
+      ctx.save();
+      ctx.translate(x + (off.dx || 0), y + (off.dy || 0));
+      ctx.rotate(tilt);
+      if (im) {
+        ctx.drawImage(im, -size / 2, -size / 2, size, size);
+      } else {
+        /* Missing sprite fallback: a round bird with a wing. */
+        ctx.fillStyle = '#ffd94d';
+        ctx.beginPath(); ctx.arc(0, 0, size / 2 - 4, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath(); ctx.arc(-6, 2, 9, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#101018';
+        ctx.beginPath(); ctx.arc(8, -6, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fb923c';
+        ctx.beginPath(); ctx.moveTo(18, 0); ctx.lineTo(28, 3); ctx.lineTo(18, 6); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+    } catch (e) { /* bird is best-effort */ }
+  }
+
+  function render(now) {
+    try {
+      if (!ctx || !canvas) return;
+      _resize();
+      var s = canvas._ffScale || 1;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(s, 0, 0, s, 0, 0);
+      /* Shake: visual only, decays in the frame loop. */
+      if (shake > 0.2) {
+        var sx = (Math.random() * 2 - 1) * shake;
+        var sy = (Math.random() * 2 - 1) * shake;
+        ctx.translate(sx, sy);
+      }
+      var t = _theme();
+      var art = (D && D.ART.themes[t.id]) || null;
+      var skyIm = art ? _imgReady(art.sky) : null;
+      var midIm = art ? _imgReady(art.mid) : null;
+      var gndIm = art ? _imgReady(art.ground) : null;
+      if (skyIm) {
+        _drawLayer(skyIm, scrollX, 0.15, 0, H);
+      } else {
+        ctx.fillStyle = t.id === 'night' ? '#0f172a' : (t.id === 'sunset' ? '#7c2d12' : '#87ceeb');
+        ctx.fillRect(0, 0, W, H);
+      }
+      if (midIm) _drawLayer(midIm, scrollX, 0.4, 0, H);
+      var obs = _obstacle();
+      var imTop = obs ? _imgReady(obs.top) : null;
+      var imBottom = obs ? _imgReady(obs.bottom) : null;
+      if (eng) {
+        for (var i = 0; i < eng.pipes.length; i++) _drawPipe(imTop, imBottom, eng.pipes[i]);
+      }
+      if (gndIm) {
+        _drawLayer(gndIm, scrollX, 1, GROUND_Y, P.GROUND_H);
+      } else {
+        ctx.fillStyle = '#4d7c0f';
+        ctx.fillRect(0, GROUND_Y, W, P.GROUND_H);
+      }
+      _drawBird();
+      if (flash > 0.01) {
+        ctx.fillStyle = 'rgba(255,255,255,' + Math.min(0.85, flash) + ')';
+        ctx.fillRect(-20, -20, W + 40, H + 40);
+      }
+    } catch (e) { /* a bad frame never breaks the loop */ }
+  }
+
+  function _handleEvents(events) {
+    try {
+      if (!events) return;
+      for (var i = 0; i < events.length; i++) {
+        var ev = events[i];
+        if (ev.type === 'flap') _sfx('flap');
+        else if (ev.type === 'score') {
+          _sfx('score');
+          _setScore(ev.score);
+          _popScore();
+        } else if (ev.type === 'hit') {
+          _sfx('hit');
+          flash = 1;
+          shake = 14;
+        }
+      }
+    } catch (e) { /* events are best-effort */ }
+  }
+
+  function _showGameOver() {
+    try {
+      overShown = true;
+      var score = eng ? eng.score : 0;
+      var medal = null;
+      try { if (E) medal = E.medalForScore(score); } catch (e) { medal = null; }
+      var beforeBest = stats.best || 0;
+      var result = { best: beforeBest, medal: medal };
+      if (!runRecorded) {
+        runRecorded = true;
+        try {
+          if (SAVE && typeof SAVE.recordRun === 'function') result = SAVE.recordRun(score) || result;
+          stats = SAVE ? SAVE.loadStats() : stats;
+        } catch (e) { /* save is best-effort */ }
+      }
+      var isNewBest = score > beforeBest && score > 0;
+      if (els.overScore) els.overScore.textContent = String(score);
+      if (els.newBest) els.newBest.style.display = isNewBest ? '' : 'none';
+      if (els.overInfo) {
+        els.overInfo.textContent = 'Best ' + (stats.best || 0) + '  ·  ' +
+          (medal ? (medal.charAt(0).toUpperCase() + medal.slice(1)) + ' medal' : 'No medal yet — 10 clears bronze') +
+          '  ·  ' + (stats.games || 0) + ' flights';
+      }
+      if (els.medalImg) {
+        if (medal && D && D.ART.medals[medal]) {
+          els.medalImg.src = D.ART.medals[medal];
+          els.medalImg.style.display = '';
+          _sfx('medal');
+        } else {
+          els.medalImg.style.display = 'none';
+        }
+      }
+      /* New unlocks since this run started. */
+      var unlockText = '';
+      try {
+        if (E && D) {
+          var before = E.unlockedBirds(beforeBest);
+          var after = E.unlockedBirds(stats.best || 0);
+          var nb = [];
+          for (var i = 0; i < after.length; i++) if (before.indexOf(after[i]) < 0) nb.push(D.birdById(after[i]).name);
+          var bt = E.unlockedThemes(beforeBest);
+          var at = E.unlockedThemes(stats.best || 0);
+          var nt = [];
+          for (var j = 0; j < at.length; j++) if (bt.indexOf(at[j]) < 0) nt.push(D.themeById(at[j]).name);
+          if (nb.length) unlockText += 'New bird: ' + nb.join(', ') + '! ';
+          if (nt.length) unlockText += 'New sky: ' + nt.join(', ') + '!';
+          if (unlockText) _sfx('unlock');
+        }
+      } catch (e) { /* unlock line is best-effort */ }
+      if (els.unlockLine) els.unlockLine.textContent = unlockText;
+      _refreshMenu();
+      _buildSelect();
+      _showScreen('over');
+    } catch (e) { _log(e); }
+  }
+
+  function frame(now) {
+    try {
+      if (!loopActive) { loopStarted = false; return; }
+      var dt = lastT ? Math.min(now - lastT, 100) : 16;
+      lastT = now;
+      if (flash > 0) flash = Math.max(0, flash - dt * 0.0028);
+      if (shake > 0) shake = Math.max(0, shake - dt * 0.03);
+      if (!paused && eng) {
+        /* Menu drift: slow parallax + bobbing bird. */
+        if (eng.state === 'menu') { scrollX += dt * 0.02; eng.time += dt / 1000; }
+        else if (eng.state === 'ready') scrollX += dt * 0.03;
+        else if (eng.state === 'playing') scrollX += eng.speed * dt / 1000;
+        acc += dt;
+        var guard = 0;
+        while (acc >= 1000 / 120 && guard++ < 10) {
+          acc -= 1000 / 120;
+          var evs = [];
+          try { evs = E.step(eng, null, 1 / 120); } catch (e) { evs = []; }
+          _handleEvents(evs);
+        }
+        if (eng.state === 'dead' && !overShown && eng.deadTime > 0.9) _showGameOver();
+      }
+      render(now);
+    } catch (e) { /* a bad frame never breaks the loop */ }
+    try {
+      if (loopActive) requestAnimationFrame(frame);
+      else loopStarted = false;
+    } catch (e) { loopStarted = false; }
+  }
+
+  function _flap() {
+    try {
+      if (paused) return;
+      if (!eng) return;
+      if (eng.state === 'menu') return;
+      if (eng.state === 'dead') return;
+      if (typeof AUDIO !== 'undefined' && AUDIO && typeof AUDIO.ensureStarted === 'function') {
+        try { AUDIO.ensureStarted(); } catch (e) { /* best-effort */ }
+      }
+      var evs = [];
+      try { evs = E.step(eng, { flap: true }, 1 / 120); } catch (e) { evs = []; }
+      _handleEvents(evs);
+      /* The first flap leaves 'ready' for 'playing': the ready hint
+         must go with it (it used to stay up over the whole flight). */
+      if (eng.state === 'playing') _showScreen(null);
+    } catch (e) { /* input never throws */ }
+  }
+
+  function _startRun() {
+    try {
+      if (!eng) return;
+      paused = false;
+      overShown = false;
+      runRecorded = false;
+      flash = 0; shake = 0;
+      _setScore(0);
+      try { E.toReady(eng); } catch (e) { /* best-effort */ }
+      _syncPauseBtn();
+      _showScreen('ready');
+      _sfx('swoosh');
+    } catch (e) { _log(e); }
+  }
+
+  function toMenu() {
+    try {
+      paused = false;
+      overShown = false;
+      runRecorded = false;
+      if (eng) eng.state = 'menu';
+      _refreshMenu();
+      _buildSelect();
+      _showScreen('menu');
+      _syncPauseBtn();
+    } catch (e) { _log(e); }
+  }
+
+  function pauseGame() {
+    try {
+      if (!eng || (eng.state !== 'playing' && eng.state !== 'ready')) return;
+      if (paused) return;
+      paused = true;
+      _syncPauseBtn();
+      _showScreen('pause');
+    } catch (e) { /* best-effort */ }
+  }
+
+  function resumeGame() {
+    try {
+      if (!paused) return;
+      paused = false;
+      _syncPauseBtn();
+      _showScreen(eng && eng.state === 'ready' ? 'ready' : null);
+    } catch (e) { /* best-effort */ }
+  }
+
+  function togglePause() {
+    try { if (paused) resumeGame(); else pauseGame(); } catch (e) { /* best-effort */ }
+  }
+
+  function toggleMute() {
+    try {
+      if (!AUDIO) return;
+      var on = true;
+      try { if (typeof AUDIO.isSoundOn === 'function') on = AUDIO.isSoundOn(); } catch (e) { on = true; }
+      try { if (typeof AUDIO.setSound === 'function') AUDIO.setSound(!on); } catch (e) { /* best-effort */ }
+      _syncMuteBtn();
+    } catch (e) { /* best-effort */ }
+  }
+
+  function reloadSave() {
+    try {
+      if (SAVE) {
+        stats = SAVE.loadStats();
+        prefs = SAVE.loadPrefs();
+      }
+      _refreshMenu();
+      _buildSelect();
+      _syncMuteBtn();
+    } catch (e) { /* reload is best-effort */ }
+  }
+
+  function syncAudio() {
+    try { _syncMuteBtn(); } catch (e) { /* best-effort */ }
+  }
+
+  function _bindUi() {
+    try {
+      els.stage = _el('ffStage');
+      els.score = _el('ffScore');
+      els.pop = _el('ffScorePop');
+      els.menuBest = _el('ffMenuBest');
+      els.readyBest = _el('ffReadyBest');
+      els.birdGrid = _el('ffBirdGrid');
+      els.themeRow = _el('ffThemeRow');
+      els.overScore = _el('ffOverScore');
+      els.overInfo = _el('ffOverInfo');
+      els.newBest = _el('ffNewBest');
+      els.medalImg = _el('ffMedalImg');
+      els.unlockLine = _el('ffUnlockLine');
+      els.pauseBtn = _el('ffPauseBtn');
+      els.muteBtn = _el('ffMuteBtn');
+      screens.menu = _el('ffMenuScreen');
+      screens.select = _el('ffSelectScreen');
+      screens.ready = _el('ffReadyScreen');
+      screens.pause = _el('ffPauseScreen');
+      screens.over = _el('ffOverScreen');
+      var stage = els.stage;
+      if (stage) {
+        stage.addEventListener('pointerdown', function (ev) {
+          try {
+            if (!eng) return;
+            if (eng.state === 'playing' || eng.state === 'ready') {
+              try { ev.preventDefault(); } catch (e) { /* silent */ }
+              _flap();
+            }
+          } catch (e) { /* input never throws */ }
+        });
+      }
+      function _click(id, fn) {
+        try {
+          var b = _el(id);
+          if (b && b.addEventListener) b.addEventListener('click', function (ev) {
+            try { ev.stopPropagation(); } catch (e) { /* silent */ }
+            fn();
+          });
+        } catch (e) { /* a missing button is best-effort */ }
+      }
+      _click('ffPlayBtn', function () { _sfx('click'); _startRun(); });
+      _click('ffSelectBtn', function () { _sfx('click'); _buildSelect(); _showScreen('select'); });
+      _click('ffSelectPlayBtn', function () { _sfx('click'); _startRun(); });
+      _click('ffSelectBackBtn', function () { _sfx('click'); _showScreen('menu'); });
+      _click('ffResumeBtn', function () { _sfx('click'); resumeGame(); });
+      _click('ffRestartBtn2', function () { _sfx('click'); _startRun(); });
+      // Quit (Nov 23, 2026): abandon the run — toMenu() writes
+      // NO meta (the save happens only in _showGameOver) and
+      // lands on the FF menu. No confirm; the shell's fading
+      // home button is the only way home.
+      _click('ffMenuBtn2', function () { _sfx('click'); toMenu(); });
+      _click('ffAgainBtn', function () { _sfx('click'); _startRun(); });
+      _click('ffMenuBtn3', function () { _sfx('click'); toMenu(); });
+      _click('ffPauseBtn', function () { _sfx('click'); togglePause(); });
+      _click('ffMuteBtn', function () { toggleMute(); });
+      try {
+        if (typeof window !== 'undefined' && window.addEventListener) {
+          window.addEventListener('keydown', function (ev) {
+            try {
+              if (!mount || !mount.isConnected) return;
+              var k = ev.key || '';
+              if (k === ' ' || k === 'ArrowUp') {
+                if (eng && (eng.state === 'playing' || eng.state === 'ready')) {
+                  try { ev.preventDefault(); } catch (e) { /* silent */ }
+                  _flap();
+                } else if (eng && eng.state === 'dead' && overShown) {
+                  try { ev.preventDefault(); } catch (e) { /* silent */ }
+                  _startRun();
+                }
+              } else if (k === 'p' || k === 'P') togglePause();
+              else if (k === 'm' || k === 'M') toggleMute();
+              else if (k === 'Enter' && eng && eng.state === 'dead' && overShown) _startRun();
+            } catch (e) { /* keys never throw */ }
+          });
+          window.addEventListener('resize', _scheduleResize);
+        }
+      } catch (e) { /* keyboard is best-effort */ }
+    } catch (e) { _log(e); }
+  }
+
+
+  function initPhone(m) {
+    if (_mounted) return true;
+    if (!m || typeof m.innerHTML === 'undefined') return false;
+    try { m.innerHTML = MARKUP; } catch (e) { return false; }
+    mount = m;
+    root = m.querySelector('.ff-root');
+    canvas = _el('ffCanvas');
+    if (canvas && typeof canvas.getContext === 'function') {
+      try { ctx = canvas.getContext('2d'); } catch (e) { ctx = null; }
+    }
+    try {
+      if (SAVE) { stats = SAVE.loadStats(); prefs = SAVE.loadPrefs(); }
+    } catch (e) { /* save is best-effort */ }
+    try {
+      if (E) eng = E.createGame({ best: stats.best || 0, seed: (Date.now() % 2147483647) || 1 });
+    } catch (e) { eng = null; }
+    _loadImages();
+    _bindUi();
+    _buildSelect();
+    _refreshMenu();
+    _syncMuteBtn();
+    _syncPauseBtn();
+    _setScore(0);
+    _showScreen('menu');
+    _resize();
+    _mounted = true;
+    if (!loopStarted) {
+      loopStarted = true;
+      try { requestAnimationFrame(frame); } catch (e) { loopStarted = false; }
+    }
+    return true;
+  }
+
+  function setLoopActive(on) {
+    loopActive = !!on;
+    if (!loopActive) loopStarted = false;
+    else if (!loopStarted) {
+      loopStarted = true;
+      lastT = 0;
+      try { requestAnimationFrame(frame); } catch (e) { loopStarted = false; }
+    }
+  }
+
+  function startLoop() {
+    setLoopActive(true);
+    try { _resize(); } catch (e) { /* best-effort */ }
+    try { render(0); } catch (e) { /* best-effort */ }
+  }
+
+  function state() {
+    try {
+      return {
+        screen: eng ? eng.state : 'menu',
+        score: eng ? eng.score : 0,
+        best: stats.best || 0,
+        bird: prefs.bird,
+        theme: prefs.theme,
+        paused: paused,
+        overShown: overShown,
+        pipes: eng ? eng.pipes.length : 0
+      };
+    } catch (e) { return { screen: 'menu', score: 0, best: 0 }; }
+  }
+
+  /* Test/proof hooks (DOM facts only, never throw). */
+  function debugState() {
+    var audio = null;
+    try { if (AUDIO && typeof AUDIO.debugState === 'function') audio = AUDIO.debugState(); } catch (e) { audio = null; }
+    var loaded = 0, missing = [];
+    try {
+      var list = (D && D.ART_FILES) || [];
+      for (var i = 0; i < list.length; i++) {
+        if (_imgReady(list[i])) loaded++;
+        else missing.push(list[i]);
+      }
+    } catch (e) { /* image census is best-effort */ }
+    return {
+      mounted: _mounted,
+      state: state(),
+      engine: eng ? { state: eng.state, score: eng.score, best: eng.best, y: eng.bird.y, vy: eng.bird.vy, pipes: eng.pipes.length } : null,
+      audio: audio,
+      images: { total: (D && D.ART_FILES ? D.ART_FILES.length : 0), loaded: loaded, missing: missing }
+    };
+  }
+
+  var api = {
+    init: initPhone,
+    render: function () { try { render(0); } catch (e) { /* best-effort */ } },
+    pause: pauseGame,
+    resume: resumeGame,
+    toMenu: toMenu,
+    reloadSave: reloadSave,
+    setLoopActive: setLoopActive,
+    startLoop: startLoop,
+    syncAudio: syncAudio,
+    state: state,
+    debugState: debugState,
+    _flapForTest: _flap,
+    _startRunForTest: _startRun,
+    _engineForTest: function () { return eng; }
+  };
+
+  try {
+    if (typeof window !== 'undefined') {
+      window.FeatherGame = api;
+      window.__FF__ = api;
+    }
+  } catch (e) { /* best-effort */ }
+
+  return api;
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = FeatherGame;
+/* Standalone (no phone shell): the markup is static in the page, so
+   bind and start immediately. In the phone the wire calls init. */
+try {
+  if (typeof document !== 'undefined' && document && !document.getElementById('app-featherflight')) {
+    var _ffMount = null;
+    try { _ffMount = document.getElementById('ff-standalone') || document.body; } catch (e) { _ffMount = null; }
+    if (_ffMount && typeof document.readyState === 'string' && document.readyState !== 'loading') {
+      try { FeatherGame.init(_ffMount); } catch (e) { /* standalone boot is best-effort */ }
+    } else if (typeof document.addEventListener === 'function') {
+      document.addEventListener('DOMContentLoaded', function () {
+        try {
+          var m2 = document.getElementById('ff-standalone') || document.body;
+          FeatherGame.init(m2);
+        } catch (e) { /* standalone boot is best-effort */ }
+      });
+    }
+  }
+} catch (e) { /* standalone boot is best-effort */ }
+</script>
+<script>
+// source: ff-wire.js
+// FeatherWire — mounts Feather Flight into #app-featherflight and
+// owns the shell hooks.
+//
+// Boot (at eval, BZ pattern): expose window.__FF__, mount the game
+// via FeatherGame.init, inject the header Music toggle, and stop the
+// frame loop until the game opens (a 60fps canvas redraw behind a
+// hidden section burns CPU for nothing). onOpen re-starts the loop +
+// re-renders (the canvas is laid out while hidden at boot) and
+// re-syncs audio; onClose auto-pauses + stops the loop. The shell
+// music keeps playing — Feather Flight has no music track of its own.
+//
+// The header has TWO toggles, both publishing to the ONE shared
+// jmf-phone-settings-v1 store (two-way sync with Settings + the home
+// row): ♪ (injected here) — music, via FeatherAudio (BZAudio.setMusic
+// + store); 🔊/🔇 (in the markup) — sound, via the game's own mute
+// button. This wire only re-marks the sound button when the setting
+// changes elsewhere.
+// SaveRegistry hooks: reinit resets stats+prefs and returns to the
+// menu; reload re-reads storage and refreshes the menu.
+//
+// UMD: global FeatherWire (+ window.__FF__ verification handle).
+// Never throws.
+var FeatherWire = (function () {
+  'use strict';
+
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+
+  function _log(e) {
+    try {
+      if (typeof console !== 'undefined' && console && console.error) console.error('[ff-wire]', e);
+    } catch (e2) { /* logging is best-effort */ }
+  }
+
+  function _resolveGame() {
+    try {
+      var w = _win();
+      if (w && w.FeatherGame) return w.FeatherGame;
+      if (typeof FeatherGame !== 'undefined' && FeatherGame) return FeatherGame;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _resolveAudio() {
+    try {
+      var w = _win();
+      if (w && w.FeatherAudio) return w.FeatherAudio;
+      if (typeof FeatherAudio !== 'undefined' && FeatherAudio) return FeatherAudio;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _resolveSettings() {
+    try {
+      var w = _win();
+      if (w && w.BZSettings) return w.BZSettings;
+      if (typeof BZSettings !== 'undefined' && BZSettings) return BZSettings;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _resolveSave() {
+    try {
+      var w = _win();
+      if (w && w.FFSave) return w.FFSave;
+      if (typeof FFSave !== 'undefined' && FFSave) return FFSave;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _setAttr(el, name, value) {
+    try { if (el && el.setAttribute) el.setAttribute(name, value); } catch (e) { /* silent */ }
+  }
+
+  /* Header Music toggle (♪). Mirrors sn-wire.js _injectMusicButton:
+     the button carries the state itself (♪ bright = on, dimmed = off),
+     flips from the stored truth (never a stale closure), and re-marks
+     on 'bz:settings-changed' so Settings / the home row / this button
+     stay in sync. Never throws; a missing topbar skips quietly. */
+  function _injectMusicButton(mount) {
+    try {
+      if (!mount || typeof mount.querySelector !== 'function') return;
+      var topbar = null;
+      try { topbar = mount.querySelector('#topbar'); } catch (e) { topbar = null; }
+      if (!topbar) return;
+      if (typeof document === 'undefined' || !document ||
+          typeof document.createElement !== 'function') return;
+      var kids = topbar.children || [];
+      for (var i = 0; i < kids.length; i++) {
+        try {
+          if (kids[i].getAttribute &&
+              kids[i].getAttribute('data-ff-music-toggle') !== null) return;
+        } catch (e) { /* keep scanning */ }
+      }
+      var audio = _resolveAudio();
+      var settings = _resolveSettings();
+      var win = _win();
+      var btn = document.createElement('button');
+      try { btn.className = 'iconbtn'; } catch (e) { /* silent */ }
+      try { btn.id = 'ffMusicBtn'; } catch (e) { /* silent */ }
+      try { btn.type = 'button'; } catch (e) { /* silent */ }
+      try { btn.title = 'Music'; } catch (e) { /* silent */ }
+      _setAttr(btn, 'data-ff-music-toggle', 'music');
+      _setAttr(btn, 'role', 'switch');
+      _setAttr(btn, 'aria-label', 'Music');
+      function readState() {
+        try {
+          if (audio && typeof audio.isMusicOn === 'function') return !!audio.isMusicOn();
+        } catch (e) { /* fall through */ }
+        try {
+          if (settings && typeof settings.readSettings === 'function') {
+            var value = settings.readSettings().music;
+            if (typeof value === 'boolean') return value;
+          }
+        } catch (e2) { /* fall through */ }
+        return true;
+      }
+      function mark(on) {
+        try { btn.textContent = '\u266A'; } catch (e) { /* silent */ }
+        try {
+          if (btn.classList) btn.classList.toggle('ff-off', !on);
+        } catch (e) { /* silent */ }
+        _setAttr(btn, 'aria-checked', on ? 'true' : 'false');
+      }
+      var available = !!(audio && typeof audio.setMusic === 'function');
+      mark(readState());
+      if (!available) {
+        try { btn.disabled = true; } catch (e) { /* silent */ }
+        _setAttr(btn, 'aria-disabled', 'true');
+      }
+      try {
+        if (btn.addEventListener) {
+          btn.addEventListener('click', function () {
+            try {
+              if (!available) return;
+              var next = !readState();
+              try { audio.setMusic(next); } catch (e) { /* still persist */ }
+              mark(next);
+            } catch (e3) { /* a click handler must never throw */ }
+          });
+        }
+      } catch (e) { /* a button without listeners still renders */ }
+      try {
+        if (win && typeof win.addEventListener === 'function') {
+          var eventName = 'bz:settings-changed';
+          try {
+            if (settings && typeof settings.SETTINGS_CHANGED_EVENT === 'string') {
+              eventName = settings.SETTINGS_CHANGED_EVENT;
+            }
+          } catch (e) { /* default event name stands */ }
+          var onSettingsChanged = function () {
+            try {
+              if (typeof btn.isConnected === 'boolean' && !btn.isConnected) {
+                try {
+                  if (typeof win.removeEventListener === 'function') {
+                    win.removeEventListener(eventName, onSettingsChanged);
+                  }
+                } catch (e2) { /* silent */ }
+                return;
+              }
+              mark(readState());
+              var game = _resolveGame();
+              if (game && typeof game.syncAudio === 'function') {
+                try { game.syncAudio(); } catch (e3) { /* best-effort */ }
+              }
+            } catch (e4) { /* never throw */ }
+          };
+          win.addEventListener(eventName, onSettingsChanged);
+        }
+      } catch (e) { /* the button works without the sync listener */ }
+      try {
+        var pauseBtn = null;
+        try { pauseBtn = topbar.querySelector('#ffPauseBtn'); } catch (e) { pauseBtn = null; }
+        if (pauseBtn && pauseBtn.parentNode === topbar &&
+            typeof topbar.insertBefore === 'function') {
+          topbar.insertBefore(btn, pauseBtn);
+        } else if (typeof topbar.appendChild === 'function') {
+          topbar.appendChild(btn);
+        }
+      } catch (e) {
+        _log(e);
+      }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  function _mount() {
+    try {
+      if (typeof document === 'undefined' || !document) return null;
+      return document.getElementById('app-featherflight');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function boot() {
+    try {
+      if (typeof window === 'undefined' || typeof document === 'undefined') return;
+      try {
+        window.__FF__ = window.__FF__ || {};
+        if (window.FeatherGame) window.__FF__.game = window.FeatherGame;
+        if (window.FFSave) window.__FF__.save = window.FFSave;
+      } catch (e) {
+        _log(e);
+      }
+      var mount = _mount();
+      var game = _resolveGame();
+      if (!game || !mount) return;
+      var ok = false;
+      try { ok = game.init(mount); } catch (e) { _log(e); return; }
+      if (!ok) return;
+      _injectMusicButton(mount);
+      /* The game is not open yet: stop its frame loop until onOpen. */
+      try {
+        if (typeof game.setLoopActive === 'function') game.setLoopActive(false);
+      } catch (e) { /* best-effort */ }
+      try {
+        if (typeof SaveRegistry !== 'undefined' && SaveRegistry &&
+            typeof SaveRegistry.extend === 'function') {
+          SaveRegistry.extend('featherflight', { reinit: reinit, reload: reload });
+        }
+      } catch (e) { /* registry is best-effort */ }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  function onOpen() {
+    try {
+      var game = _resolveGame();
+      if (!game) return;
+      try {
+        if (typeof game.startLoop === 'function') game.startLoop();
+      } catch (e) { /* best-effort */ }
+      try {
+        if (typeof game.render === 'function') game.render();
+      } catch (e) { /* the loop re-renders */ }
+      try {
+        if (typeof game.syncAudio === 'function') game.syncAudio();
+      } catch (e) { /* best-effort */ }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  function onClose() {
+    try {
+      var audio = _resolveAudio();
+      try {
+        if (audio && typeof audio.stop === 'function') audio.stop();
+      } catch (e) { /* audio stop is a no-op (shell music only) */ }
+      var game = _resolveGame();
+      if (!game) return;
+      try {
+        if (typeof game.pause === 'function') game.pause();
+      } catch (e) { /* auto-pause is best-effort */ }
+      try {
+        if (typeof game.setLoopActive === 'function') game.setLoopActive(false);
+      } catch (e) { /* best-effort */ }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  /* Settings "delete save": wipe stats + prefs, refresh the menu. */
+  function reinit() {
+    try {
+      var save = _resolveSave();
+      if (save) {
+        try {
+          if (typeof save.saveStats === 'function' && save.DEFAULT_STATS) {
+            save.saveStats(save.DEFAULT_STATS);
+          }
+        } catch (e) { /* best-effort */ }
+        try {
+          if (typeof save.savePrefs === 'function' && save.DEFAULT_PREFS) {
+            save.savePrefs(save.DEFAULT_PREFS);
+          }
+        } catch (e) { /* best-effort */ }
+      }
+      var game = _resolveGame();
+      if (game) {
+        try {
+          if (typeof game.reloadSave === 'function') game.reloadSave();
+        } catch (e) { /* best-effort */ }
+        try {
+          if (typeof game.toMenu === 'function') game.toMenu();
+        } catch (e) { /* best-effort */ }
+      }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  /* Settings "reload save": re-read storage and refresh the menu. */
+  function reload() {
+    try {
+      var game = _resolveGame();
+      if (game && typeof game.reloadSave === 'function') game.reloadSave();
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  var api = {
+    boot: boot,
+    onOpen: onOpen,
+    onClose: onClose,
+    reinit: reinit,
+    reload: reload
+  };
+
+  try {
+    boot();
+  } catch (e) {
+    _log(e);
+  }
+
+  return api;
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = FeatherWire;
+if (typeof window !== 'undefined') {
+  try { window.FeatherWire = FeatherWire; } catch (e) { /* best-effort */ }
 }
 </script>
 </body>
