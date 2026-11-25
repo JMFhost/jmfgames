@@ -94,6 +94,10 @@ body {
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  /* App resize (Nov 25, 2026): the player's chosen app size, 1 = 100%.
+     Set inline by shell.js (applyAppScale) from the stored appSize;
+     every game/app section scales from it except the home grid. */
+  --app-scale: 1;
 }
 
 /* ---------- Status bar ---------- */
@@ -848,6 +852,23 @@ body {
   overflow-x: hidden;
   overflow-y: auto;
   background: #2a3641;
+}
+
+/* App resize (Nov 25, 2026): every app except home renders at the
+   player's chosen size (see --app-scale on #ph-screen). The section
+   keeps the full screen box visually — its layout box shrinks to
+   100%/scale and the transform scales it back up — so content lays
+   out in a smaller logical viewport and scrolls normally when it
+   overflows; taps land where shown (getBoundingClientRect accounts
+   for the transform). At 50% the whole app fits with no empty frame;
+   at 150% nothing is cut off (the section scrolls). Home never
+   scales: the grid, ad slot and indicator stay exactly as they are. */
+.ph-app:not(#ph-home) {
+  inset: 0 auto auto 0;
+  width: calc(100% / var(--app-scale, 1));
+  height: calc(100% / var(--app-scale, 1));
+  transform: scale(var(--app-scale, 1));
+  transform-origin: 0 0;
 }
 
 .ph-app.active { display: block; }
@@ -2142,6 +2163,35 @@ body {
 
 .bz-theme-card .bz-theme-close {
   margin-top: 14px;
+}
+
+/* ------------------------------------------------- app resize (Nov 25, 2026)
+   At 125%/150% the app section is only 312/260 logical px wide and the
+   single-row header cannot hold Quit + Score/Best + Music + Sound +
+   Restart — the stats crush to ~5px wide and paint over the buttons
+   (seen in renders at both sizes). Wrap: buttons on row 1, stats
+   centered on row 2 (order: 5 puts them last visually; DOM order and
+   tab order are unchanged). _fitBoard() measures header.offsetHeight
+   as chrome, so the board shrinks to fit — no board change needed. */
+#ph-screen[data-app-scale="125"] .bz-header,
+#ph-screen[data-app-scale="150"] .bz-header {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+#ph-screen[data-app-scale="125"] .bz-stats,
+#ph-screen[data-app-scale="150"] .bz-stats {
+  flex-basis: 100%;
+  order: 5;
+}
+#ph-screen[data-app-scale="125"] .bz-header .bz-btn,
+#ph-screen[data-app-scale="150"] .bz-header .bz-btn {
+  padding: 8px 10px;
+}
+/* At 150% the mode buttons are 51 logical px each and "Classic" (13px)
+   truncates to "Clas…". Smaller type + padding lets every label fit. */
+#ph-screen[data-app-scale="150"] .bz-mode-btn {
+  font-size: 12px;
+  padding: 7px 2px;
 }
 </style>
 <style>
@@ -3612,6 +3662,19 @@ body {
   .sol-game.sol-auto-finish .sol-card {
     animation: none;
   }
+}
+
+/* ------------------------------------------------- app resize (Nov 25, 2026)
+   At 150% the section is 260 logical px wide and the five header
+   buttons (New Deal / Daily / Undo / Hint / Menu) need ~258px at
+   their base size — the Menu button is cut off at the right edge.
+   Smaller type + padding fits all five with room to spare. */
+#ph-screen[data-app-scale="150"] .sol-header-actions {
+  gap: 4px;
+}
+#ph-screen[data-app-scale="150"] .sol-header-actions .sol-btn {
+  font-size: 11px;
+  padding: 7px 4px;
 }
 </style>
 <style>
@@ -11944,6 +12007,42 @@ button.mr-setup-preview:focus-visible {
 }
 /* The arc SVG spans the whole course (viewBox 0 0 360 3000);
    the v34 inset/100% rule already fits it — no override. */
+
+/* ------------------------------------------------- app resize (Nov 25, 2026)
+   At 125%/150% the header row (title + Music + Sound + ?) is 240 logical
+   px wide and the buttons take ~200 of it, so the title crushes to
+   "Fl…" (at 125% too — the row padding leaves it ~89px for a ~98px
+   title). Wrap at both sizes: the title takes its own full-width row,
+   buttons on the next. The menu selects also truncate ("Quick Race — sur…"):
+   the 24px menu padding leaves the rows 212px wide, so narrow the
+   padding and the select type at 150% and every option fits. */
+#ph-screen[data-app-scale="125"] .fl-header-row,
+#ph-screen[data-app-scale="150"] .fl-header-row {
+  flex-wrap: wrap;
+}
+#ph-screen[data-app-scale="125"] .fl-title,
+#ph-screen[data-app-scale="150"] .fl-title {
+  flex-basis: 100%;
+}
+#ph-screen[data-app-scale="150"] .fl-screen {
+  padding: 12px;
+}
+#ph-screen[data-app-scale="150"] .fl-diff-row select {
+  font-size: 14px;
+  padding: 6px 8px;
+}
+/* The menu (#fl-menu) is a tall scrollable list (~1066 logical px) in
+   a section that is only 675/563 tall at 125/150%, and it is
+   justify-content: center — so its top slides up UNDER the wrapped
+   105px header (ghost double title, tagline struck through by the
+   Music/Sound row; seen in renders). Start the menu below the header
+   and let it scroll from there. Scoped to #fl-menu so the short
+   overlays (pause / round-over) stay centered. */
+#ph-screen[data-app-scale="125"] #fl-menu,
+#ph-screen[data-app-scale="150"] #fl-menu {
+  justify-content: flex-start;
+  padding-top: 113px;
+}
 </style>
 <style>
 /* source: cl-game.css */
@@ -13212,6 +13311,20 @@ button.mr-setup-preview:focus-visible {
   .cl-symbol { height: 44px; }
 }
 
+#ph-screen[data-app-scale="125"] .cl-back,
+#ph-screen[data-app-scale="150"] .cl-back {
+  padding: 6px 4px;
+  font-size: 13px;
+}
+#ph-screen[data-app-scale="125"] .cl-toggle,
+#ph-screen[data-app-scale="150"] .cl-toggle {
+  padding: 6px 5px;
+  font-size: 12px;
+}
+#ph-screen[data-app-scale="150"] .cl-bank {
+  display: none;
+}
+
 @media (max-height: 600px) {
   /* Very short screens: smallest cards, chrome stripped to the table +
      the play controls. The coach hint and game head are hidden here
@@ -13252,6 +13365,19 @@ button.mr-setup-preview:focus-visible {
   .cl-game-tile { min-height: 70px; padding: 6px 4px; }
   .cl-tile-icon { font-size: 24px; }
   .cl-symbol { height: 44px; }
+}
+
+/* ------------------------------------------------- app resize (Nov 25, 2026)
+   At 125%/150% the topbar (Back + Bank + Music + Sound) is wider than
+   the 312/260-logical-px section: at 150% the Sound toggle is cut off
+   at the right edge, and the bank crushes to a sliver. Tighten Back +
+   toggles at both sizes; at 150% hide the bank outright — the bankroll
+   is still on screen in the goalbar directly below ("$1,000 → $10,000"),
+   so nothing is lost. */
+#ph-screen[data-app-scale="125"] .cl-topbar,
+#ph-screen[data-app-scale="150"] .cl-topbar {
+  gap: 6px;
+  padding: 8px 6px 4px;
 }
 </style>
 <style>
@@ -14983,6 +15109,20 @@ button.mr-setup-preview:focus-visible {
   .ty-players { padding-bottom: 4px; }
   .ty-pname, .ty-pmoney { font-size: 10px; }
 }
+
+/* ------------------------------------------------- app resize (Nov 25, 2026)
+   At 125%/150% the board is height-limited to ~260 logical px wide,
+   so side-column squares are ~23px and a 6.5px name ("Crosby") clips
+   its tail syllables behind the square edge (3 of 19 side names clip
+   at 125%). 5px side names fit; top/bottom rows are untouched. If the
+   render still shows clipping, this is a density limit of a 40-square
+   board at 150%, not a fixable layout bug. */
+#ph-screen[data-app-scale="125"] .ty-sq-left .ty-name,
+#ph-screen[data-app-scale="125"] .ty-sq-right .ty-name,
+#ph-screen[data-app-scale="150"] .ty-sq-left .ty-name,
+#ph-screen[data-app-scale="150"] .ty-sq-right .ty-name {
+  font-size: 5px;
+}
 </style>
 <style>
 /* source: wq-game.css */
@@ -15522,6 +15662,24 @@ button.mr-setup-preview:focus-visible {
   #app-featherflight .ff-bird-btn{min-height:84px}
   #app-featherflight .ff-bird-btn img{max-width:68px}
 }
+
+/* ------------------------------------------------- app resize (Nov 25, 2026)
+   At 150% the topbar ("FEATHER FLIGHT" + 3 icon buttons) is ~297
+   logical px wide in a 260px section — the mute button sits 43px
+   off the right edge and the section scrolls sideways. Smaller title
+   type + smaller buttons bring the row to ~247px. */
+#ph-screen[data-app-scale="150"] #app-featherflight #topbar {
+  gap: 6px;
+}
+#ph-screen[data-app-scale="150"] #app-featherflight #title {
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+#ph-screen[data-app-scale="150"] #app-featherflight .iconbtn {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+}
 </style>
 </head>
 <body>
@@ -15721,6 +15879,7 @@ button.mr-setup-preview:focus-visible {
           <div id="settings-music"></div>
           <div id="settings-music-theme"></div>
           <div id="settings-theme"></div>
+          <div id="settings-app-size"></div>
           <div id="settings-home"></div>
           <div id="settings-about"></div>
         </div>
@@ -16688,6 +16847,84 @@ if (typeof window !== 'undefined') {
        not carry over. */
     var grid = homeGrid();
     if (grid) { try { grid.scrollTop = 0; } catch (e) { /* best-effort */ } }
+  }
+
+  /* App resize (Nov 25, 2026): every game/app renders at the player's
+     chosen size — 50/75/100/125/150% — via the --app-scale custom
+     property on #ph-screen (see shell.css). The value persists in the
+     shared settings key (field appSize); it is read at boot and
+     re-applied on every 'bz:settings-changed', so a tap in Settings
+     takes effect immediately in every open app, and a reload restores
+     it. Sanitized to the five offered sizes; anything else is 100%. */
+  var APP_SIZES = [0.5, 0.75, 1, 1.25, 1.5];
+  var _appScale = 1;
+
+  function _sanitizeAppScale(value) {
+    if (typeof value === 'number') {
+      for (var i = 0; i < APP_SIZES.length; i++) {
+        if (APP_SIZES[i] === value) return value;
+      }
+    }
+    return 1;
+  }
+
+  function _readStoredAppScale() {
+    try {
+      var settings = _resolveSettings();
+      if (settings && typeof settings.readSettings === 'function') {
+        return _sanitizeAppScale(settings.readSettings().appSize);
+      }
+    } catch (e) { /* fall through to the direct read */ }
+    try {
+      var store = null;
+      try {
+        if (typeof localStorage !== 'undefined' && localStorage) store = localStorage;
+      } catch (e2) { /* fall through */ }
+      try {
+        if (!store && typeof window !== 'undefined' && window && window.localStorage) {
+          store = window.localStorage;
+        }
+      } catch (e2) { /* fall through */ }
+      if (store) {
+        var raw = store.getItem(SETTINGS_KEY);
+        if (typeof raw === 'string' && raw) {
+          var parsed = JSON.parse(raw);
+          if (parsed) return _sanitizeAppScale(parsed.appSize);
+        }
+      }
+    } catch (e) { /* fall through to the default */ }
+    return 1;
+  }
+
+  function applyAppScale() {
+    var value = _readStoredAppScale();
+    _appScale = value;
+    try {
+      var screen = $('ph-screen');
+      if (screen && screen.style && typeof screen.style.setProperty === 'function') {
+        screen.style.setProperty('--app-scale', String(value));
+      }
+      /* APP RESIZE (Nov 25, 2026): mirror the scale as a data
+         attribute so per-game CSS can adapt layouts that a pure
+         transform cannot fix — headers and button rows sized for
+         390 logical px overflow at 125%/150% (260/312 logical px).
+         The attribute updates with the setting (boot + every
+         bz:settings-changed), so the rules apply live. */
+      if (screen && screen.dataset) {
+        screen.dataset.appScale = String(Math.round(value * 100));
+      }
+      /* Re-fit live: the app viewport just changed size, so mounted
+         games should re-run their fit logic exactly as on a window
+         resize (Feather Flight's canvas, Block Zen's board, etc.
+         all listen for resize). Best-effort; a game that re-fits on
+         open is unaffected. */
+      try {
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
+          window.dispatchEvent(new Event('resize'));
+        }
+      } catch (e) { /* best-effort */ }
+    } catch (e) { /* best-effort */ }
+    return value;
   }
 
   function hideHome() {
@@ -17959,6 +18196,12 @@ if (typeof window !== 'undefined') {
 
     fitPhone: fitPhone,
 
+    /* App resize (Nov 25, 2026): apply the stored size now; appScale
+       reports the size currently applied. */
+    applyAppScale: applyAppScale,
+
+    appScale: function () { return _appScale; },
+
     /* Shared Music/Sound toggles (Nov 21, 2026): one look and one wiring
        for the home row and every game's top bar. */
     injectAudioToggles: injectAudioToggles,
@@ -18483,6 +18726,17 @@ if (typeof window !== 'undefined') {
         });
       }
     } catch (e) { /* listener is optional; BZSettings also calls updateLockName directly */ }
+    /* App resize (Nov 25, 2026): apply the stored size at boot and
+       re-apply whenever Settings writes (the size picker taps write
+       through BZSettings.writeSettings, which dispatches this event). */
+    try { applyAppScale(); } catch (e) { /* best-effort */ }
+    try {
+      if (typeof window !== 'undefined' && window && typeof window.addEventListener === 'function') {
+        window.addEventListener('bz:settings-changed', function () {
+          try { applyAppScale(); } catch (err) { /* never throw */ }
+        });
+      }
+    } catch (e) { /* listener is optional; a reload applies the stored size */ }
 
     fitPhone();
     try {
@@ -19695,7 +19949,15 @@ var BZGame = (function () {
     if (!(availH > 100) || !(rootW > 0)) return;
     var fitW = Math.floor(availH * SCREEN_W / BOARD_H);
     var target = Math.min(rootW, fitW);
-    if (target < 256) target = 256; // playable floor; never bites >=568px tall
+    // Playable floor (Nov 23, 2026): never bites >=568px tall. APP
+    // RESIZE (Nov 25, 2026): at 125%/150% the section is 312/260
+    // logical px wide and the wrapped header eats ~45px, so fitW can
+    // drop below 256 — forcing 256 then pushes the tray ~12px past
+    // the bottom (caught by the proof at 150%). Only raise to the
+    // floor when both the width and the height allow it; otherwise
+    // the height-constrained size stands (it still renders large —
+    // 240 logical px is 360 visual px at 150%).
+    if (target < 256 && fitW >= 256 && rootW >= 256) target = 256;
     if (Math.abs(target - _fitW) < 1) return;
     _fitW = target;
     if (target >= rootW - 0.5) {
@@ -25838,6 +26100,8 @@ if (typeof window !== 'undefined') {
 //   #settings-sound  — sound toggle, wired to BZAudio.setSound
 //   #settings-music  — music toggle, wired to BZAudio.setMusic
 //   #settings-theme  — theme picker (9 buttons), wired to BZThemes.set
+//   #settings-app-size — app-size picker (50/75/100/125/150%), persisted
+//                      as appSize; PhoneShell.applyAppScale applies it
 //   #settings-home   — Home-screen section (Sort A–Z / Reset layout),
 //                      wired to PhoneShell.sortHomeAlphabetical /
 //                      PhoneShell.resetHomeOrder
@@ -26258,6 +26522,106 @@ var BZSettings = (function () {
             try {
               var detail = (e && e.detail) || {};
               if (typeof detail.theme === 'string') _markTheme(detail.theme);
+            } catch (err) { /* never throw */ }
+          });
+        }
+      } catch (e) { /* listener is optional */ }
+    }
+  }
+
+  // --------------------------------------------- app size picker
+  // App-size picker (Nov 25, 2026): five sizes for every game/app —
+  // 50%, 75%, 100%, 125%, 150%. The choice persists in the shared
+  // settings key (appSize) via writeSettings, so it survives reload;
+  // PhoneShell.applyAppScale (shell.js) reads the same key at boot
+  // and re-applies on every 'bz:settings-changed', so the change
+  // takes effect immediately in every open app (including Settings
+  // itself, which visibly resizes as you tap). The home grid, lock
+  // screen, status bar and ad slots never scale. Buttons reuse the
+  // theme-picker look (bz-theme-picker / bz-theme-btn) so the section
+  // matches the Theme section above it.
+  var APP_SIZES = [0.5, 0.75, 1, 1.25, 1.5];
+  var _appSizeButtons = []; // [{value, button}]
+  var _appSizeStatus = null;
+  var _appSizeListenerAdded = false;
+
+  function _sanitizeAppSize(value) {
+    if (typeof value === 'number' && APP_SIZES.indexOf(value) !== -1) return value;
+    return 1;
+  }
+
+  function _currentAppSize() {
+    return _sanitizeAppSize(readSettings().appSize);
+  }
+
+  function _appSizeLabel(value) {
+    return Math.round(value * 100) + '%';
+  }
+
+  function _markAppSize(value) {
+    for (var i = 0; i < _appSizeButtons.length; i++) {
+      var entry = _appSizeButtons[i];
+      var active = entry.value === value;
+      try {
+        if (entry.button.classList) {
+          entry.button.classList.toggle('bz-theme-active', active);
+        }
+      } catch (e) { /* class toggle is cosmetic */ }
+      try {
+        entry.button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      } catch (e) { /* aria state is best-effort */ }
+    }
+    if (_appSizeStatus) {
+      try {
+        _appSizeStatus.textContent = 'Apps are shown at ' + _appSizeLabel(value) +
+          ' — change takes effect right away.';
+      } catch (e) { /* status line is best-effort */ }
+    }
+  }
+
+  function _buildAppSizePicker(container) {
+    _clear(container);
+    _appSizeButtons = [];
+    container.appendChild(_el('div', 'bz-settings-heading', 'App size'));
+    container.appendChild(_el('p', 'bz-settings-status',
+      'Make games bigger or smaller. 100% is the normal size.'));
+    var picker = _el('div', 'bz-theme-picker');
+    for (var i = 0; i < APP_SIZES.length; i++) {
+      (function (value) {
+        var button = _el('button', 'bz-theme-btn', _appSizeLabel(value));
+        button.type = 'button';
+        button.setAttribute('aria-pressed', 'false');
+        button.setAttribute('aria-label', 'App size: ' + _appSizeLabel(value));
+        button.addEventListener('click', function () {
+          try {
+            writeSettings({ appSize: value });
+            _markAppSize(value);
+          } catch (e) { /* a size failure must not break Settings */ }
+        });
+        _appSizeButtons.push({ value: value, button: button });
+        picker.appendChild(button);
+      })(APP_SIZES[i]);
+    }
+    container.appendChild(picker);
+    _appSizeStatus = _el('p', 'bz-settings-status', '');
+    _appSizeStatus.setAttribute('aria-live', 'polite');
+    container.appendChild(_appSizeStatus);
+    _markAppSize(_currentAppSize());
+
+    // Re-mark if the size changes elsewhere (writeSettings dispatches
+    // 'bz:settings-changed' on every write).
+    if (!_appSizeListenerAdded) {
+      _appSizeListenerAdded = true;
+      try {
+        if (typeof window !== 'undefined' && window &&
+            typeof window.addEventListener === 'function') {
+          window.addEventListener('bz:settings-changed', function (e) {
+            try {
+              var detail = (e && e.detail) || {};
+              var patch = detail.patch || {};
+              if (typeof patch.appSize !== 'undefined') {
+                _markAppSize(_sanitizeAppSize(patch.appSize));
+              }
             } catch (err) { /* never throw */ }
           });
         }
@@ -27383,6 +27747,7 @@ var BZSettings = (function () {
         _buildToggle(el, 'music', 'Music', 'Background music', 'setMusic');
       }],
       ['settings-theme', _buildThemePicker],
+      ['settings-app-size', _buildAppSizePicker],
       ['settings-music-theme', _buildMusicThemePicker],
       ['settings-home', _buildHomeSection],
       ['settings-about', _buildSettingsSave],
@@ -148751,9 +149116,26 @@ var FeatherGame = (function () {
       if (!canvas || !els.stage) return;
       var r = els.stage.getBoundingClientRect();
       if (!r || r.width < 10 || r.height < 10) return;
-      if (!force && Math.abs(r.width - _lastStageW) < 1 && Math.abs(r.height - _lastStageH) < 1) return;
-      _lastStageW = r.width; _lastStageH = r.height;
-      var scale = Math.min(r.width / W, r.height / H);
+      /* APP RESIZE (Nov 25, 2026): the stage lives inside the scaled
+         .ph-app section, so getBoundingClientRect is POST-TRANSFORM
+         (visual) px. At 125%/150% that is 1.25x/1.5x the logical px,
+         so sizing the canvas from it overshoots the section and the
+         section scrolls sideways (canvas 365 logical in a 312 section
+         at 125%). Divide by the app scale (mirrored on #ph-screen by
+         the shell) to get the logical px the canvas CSS size must use.
+         At 100% the scale is 1 and this is byte-identical. */
+      var appScale = 1;
+      try {
+        var scEl = document.getElementById('ph-screen');
+        if (scEl && scEl.dataset && scEl.dataset.appScale) {
+          var parsed = parseFloat(scEl.dataset.appScale) / 100;
+          if (parsed > 0) appScale = parsed;
+        }
+      } catch (e) { /* fall back to 1 */ }
+      var lw = r.width / appScale, lh = r.height / appScale;
+      if (!force && Math.abs(lw - _lastStageW) < 1 && Math.abs(lh - _lastStageH) < 1) return;
+      _lastStageW = lw; _lastStageH = lh;
+      var scale = Math.min(lw / W, lh / H);
       var cw = Math.round(W * scale), ch = Math.round(H * scale);
       var dpr = 1;
       try { dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1; } catch (e) { dpr = 1; }
