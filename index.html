@@ -145208,6 +145208,35 @@ var WordQuestEngine = (function () {
     for (var i = 0; i <= steps; i++) cells.push([r0 + sr * i, c0 + sc * i]);
     return cells;
   }
+  // Snap an arbitrary pointer end to the nearest of the 8 straight lines
+  // from the start cell. A real finger rarely travels exactly on a grid
+  // line; the snap picks the line the finger most nearly follows (the
+  // largest cosine between the drag vector and the line), so a diagonal
+  // dragged a cell off-line still lands on the intended line. Exact
+  // ties resolve axis-first (E, S, W, N before the diagonals).
+  var _SNAP_DIRS = [[0, 1], [1, 0], [0, -1], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+  function snapEnd(start, end) {
+    if (!start || !end) return start ? [start[0], start[1]] : null;
+    var dr = end[0] - start[0], dc = end[1] - start[1];
+    if (dr === 0 && dc === 0) return [start[0], start[1]];
+    var mag = Math.sqrt(dr * dr + dc * dc);
+    var best = null, bestScore = -1;
+    for (var i = 0; i < _SNAP_DIRS.length; i++) {
+      var d = _SNAP_DIRS[i];
+      var dot = dr * d[0] + dc * d[1];
+      if (dot <= 0) continue;
+      var dmag = (d[0] !== 0 && d[1] !== 0) ? Math.SQRT2 : 1;
+      var score = dot / (mag * dmag);
+      if (score > bestScore) { bestScore = score; best = d; }
+    }
+    if (!best) return [start[0], start[1]];
+    var mag2 = best[0] * best[0] + best[1] * best[1];
+    // Floor, not round: the snap never extends past the finger's reach
+    // — a rounded-up step could add a cell the finger never covered.
+    var steps = Math.floor((dr * best[0] + dc * best[1]) / mag2);
+    if (steps < 1) steps = 1;
+    return [start[0] + best[0] * steps, start[1] + best[1] * steps];
+  }
   // The word spelled by a cell list on the grid, or '' when out of
   // bounds. Also returns the reversed spelling for backwards picks.
   function selectionWord(grid, cells) {
@@ -145223,19 +145252,95 @@ var WordQuestEngine = (function () {
   // Match a selection against the puzzle's word list. Returns the
   // placement when the selected cells spell a listed word (forwards
   // or backwards along its placed cells), else null.
+  //
+  // A real finger is imprecise, so matching is tolerant in three
+  // ways, in order:
+  //   (a) exact: the selection covers exactly the placed cells;
+  //   (b) containment: the placed cells appear as one contiguous run
+  //       inside the selection — the finger overshot past either end
+  //       of the word (the fingertip covers the last letter, so this
+  //       is the common human pattern). Longest contained word wins;
+  //   (c) unique prefix: the selection spells the first letters of
+  //       exactly one word (the finger lifted one cell short) and the
+  //       spelled string is not itself another listed word.
+  // A selection that spells nothing listed still returns null and
+  // clears silently, as designed.
+  function _runAt(cells, run) {
+    // Index at which `run` appears as a contiguous run inside `cells`
+    // (forwards or reversed), or -1.
+    if (!cells || !run || !run.length || run.length > cells.length) return -1;
+    for (var s = 0; s + run.length <= cells.length; s++) {
+      var fwd = true, rev = true;
+      for (var i = 0; i < run.length; i++) {
+        if (cells[s + i][0] !== run[i][0] || cells[s + i][1] !== run[i][1]) fwd = false;
+        if (cells[s + i][0] !== run[run.length - 1 - i][0] || cells[s + i][1] !== run[run.length - 1 - i][1]) rev = false;
+        if (!fwd && !rev) break;
+      }
+      if (fwd || rev) return s;
+    }
+    return -1;
+  }
+  // True when `selCells`, in traversal order, is the first k cells of
+  // `placedCells` (a forward pick lifted short) or of reversed
+  // `placedCells` (a backward pick lifted short). A middle run of a
+  // word is NOT a prefix — it must start at one end of the word.
+  function _isPrefixRun(placedCells, selCells) {
+    if (!placedCells || !selCells || !selCells.length ||
+        selCells.length >= placedCells.length) return false;
+    var fwd = true, rev = true;
+    for (var i = 0; i < selCells.length; i++) {
+      if (selCells[i][0] !== placedCells[i][0] ||
+          selCells[i][1] !== placedCells[i][1]) fwd = false;
+      var j = placedCells.length - 1 - i;
+      if (selCells[i][0] !== placedCells[j][0] ||
+          selCells[i][1] !== placedCells[j][1]) rev = false;
+      if (!fwd && !rev) return false;
+    }
+    return true;
+  }
   function matchSelection(puzzle, cells) {
     if (!puzzle || !cells || !cells.length) return null;
     var word = selectionWord(puzzle.grid, cells);
     if (!word) return null;
     var rev = word.split('').reverse().join('');
-    for (var i = 0; i < puzzle.placements.length; i++) {
-      var p = puzzle.placements[i];
+    var i, p;
+    for (i = 0; i < puzzle.placements.length; i++) {
+      p = puzzle.placements[i];
       if (p.word === word || p.word === rev) {
-        // The selection must cover exactly the placed cells.
+        // The selection must cover exactly the placed cells — the word
+        // AND the cells (the old code checked the word and the length
+        // only, which is sound solely because the generator guarantees
+        // each word occurs once; verifying the cells is strictly safer).
         if (cells.length !== p.cells.length) continue;
+        if (_runAt(cells, p.cells) !== 0) continue;
         return p;
       }
     }
+    var best = null, bestLen = 0;
+    for (i = 0; i < puzzle.placements.length; i++) {
+      p = puzzle.placements[i];
+      if (p.cells.length > bestLen && _runAt(cells, p.cells) >= 0) {
+        best = p; bestLen = p.cells.length;
+      }
+    }
+    if (best) return best;
+    if (cells.length < 2) return null;
+    var spelledIsListed = false;
+    for (i = 0; i < puzzle.placements.length; i++) {
+      if (puzzle.placements[i].word === word || puzzle.placements[i].word === rev) {
+        spelledIsListed = true;
+        break;
+      }
+    }
+    if (spelledIsListed) return null;
+    var prefixMatch = null, prefixCount = 0;
+    for (i = 0; i < puzzle.placements.length; i++) {
+      p = puzzle.placements[i];
+      if (_isPrefixRun(p.cells, cells)) {
+        prefixMatch = p; prefixCount++;
+      }
+    }
+    if (prefixCount === 1) return prefixMatch;
     return null;
   }
 
@@ -145253,6 +145358,7 @@ var WordQuestEngine = (function () {
     countOccurrences: countOccurrences,
     validatePuzzle: validatePuzzle,
     selectionCells: selectionCells,
+    snapEnd: snapEnd,
     selectionWord: selectionWord,
     matchSelection: matchSelection,
     MAX_PLACE_ATTEMPTS: MAX_PLACE_ATTEMPTS,
@@ -146490,8 +146596,26 @@ var WordQuestGame = (function () {
     startTimer();
   }
 
-  function startLevel(packIdx, level) {
+  // Resume a mid-puzzle snapshot for this exact level, when one
+  // exists (reload mid-level must restore progress — M5). Returns true
+  // when the snapshot was resumed; the caller generates a fresh level
+  // otherwise. Restart/Replay pass fresh=true to force a new puzzle.
+  function _resumeIfSnapshot(kind, packIdx, level, dateStr) {
     try {
+      var s = _save();
+      if (!s || typeof s.loadSnapshot !== 'function') return false;
+      var snap = s.loadSnapshot();
+      if (!snap || !snap.puzzle || !snap.def) return false;
+      if (snap.kind !== kind) return false;
+      if (kind === 'level' && (snap.pack !== packIdx || snap.level !== level)) return false;
+      if (kind === 'daily' && snap.date !== dateStr) return false;
+      return restoreSnapshot();
+    } catch (e) { return false; }
+  }
+
+  function startLevel(packIdx, level, fresh) {
+    try {
+      if (!fresh && _resumeIfSnapshot('level', packIdx, level, '')) return true;
       var eng = _engine();
       var d = _data();
       if (!eng || typeof eng.generateLevel !== 'function' || !d) {
@@ -146512,8 +146636,9 @@ var WordQuestGame = (function () {
     } catch (e) { _log(e); return false; }
   }
 
-  function startDaily(dateStr) {
+  function startDaily(dateStr, fresh) {
     try {
+      if (!fresh && _resumeIfSnapshot('daily', 0, 0, dateStr)) return true;
       var eng = _engine();
       var d = _data();
       if (!eng || typeof eng.generateDaily !== 'function' || !d) {
@@ -146659,6 +146784,9 @@ var WordQuestGame = (function () {
     _renderBoard();
     _renderWordList();
     _renderHUD();
+    // Continuous snapshot (M5): progress is saved the moment a word is
+    // found, not only on pause — a reload without pausing restores it.
+    _saveSnapshot();
     var defn = placement.def || '';
     _toast(placement.word + (defn ? ' — ' + defn : ' found!'), defn ? 3400 : 1800);
     if (_foundCount() >= _puzzle.placements.length) {
@@ -146712,7 +146840,7 @@ var WordQuestGame = (function () {
         buttons.push({ label: 'Next Level', onClick: function () { startLevel(_packIdx, _def.level + 1); } });
       }
       buttons.push({ label: 'Replay', onClick: function () {
-        if (_isDaily) startDaily(_dailyDate); else startLevel(_packIdx, _def.level);
+        if (_isDaily) startDaily(_dailyDate, true); else startLevel(_packIdx, _def.level, true);
       } });
       buttons.push({ label: _isDaily ? 'Journey Map' : 'Level Map', secondary: true, onClick: function () {
         if (_isDaily) toJourney(); else toLevels(_packIdx);
@@ -146789,6 +146917,7 @@ var WordQuestGame = (function () {
         _renderBoard();
         _renderHints();
         _toast('Hint: ' + _puzzle.grid[cell[0]][cell[1]] + ' is in "' + pick.word + '".', 2600);
+        _saveSnapshot(); // continuous snapshot (M5): a revealed letter survives a reload
         return { ok: true, kind: 'letter', word: pick.word, cell: cell };
       }
       // Word hint: the whole word is found.
@@ -146831,7 +146960,10 @@ var WordQuestGame = (function () {
       if (!eng || typeof eng.selectionCells !== 'function' || !start) {
         _selCells = start ? [start] : [];
       } else {
-        var cells = eng.selectionCells(start, end || start);
+        // Snap the pointer end to the nearest grid line first, so the
+        // live highlight follows the line the finger most nearly means.
+        var snapped = (typeof eng.snapEnd === 'function') ? eng.snapEnd(start, end || start) : (end || start);
+        var cells = eng.selectionCells(start, snapped);
         _selCells = cells || [start];
       }
       var prevLen = _selCells.length;
@@ -146846,11 +146978,15 @@ var WordQuestGame = (function () {
   }
   // Commit a start->end selection: a listed word (forwards or
   // backwards) is found; anything else just clears, no penalty.
+  // The end is snapped to the nearest grid line first (a finger that
+  // drifts off-line or overshoots/undershoots still commits the word
+  // it means — see wq-engine.js matchSelection).
   function _commitSelection(start, end) {
     try {
       var eng = _engine();
       if (!eng || !_puzzle) { _clearSelection(); return { ok: false, reason: 'no-engine' }; }
-      var cells = eng.selectionCells(start, end);
+      var snapped = (typeof eng.snapEnd === 'function') ? eng.snapEnd(start, end) : end;
+      var cells = eng.selectionCells(start, snapped);
       if (!cells) {
         _clearSelection();
         _toast('Words run in a straight line.');
@@ -146899,7 +147035,7 @@ var WordQuestGame = (function () {
           if (_screen !== 'puzzle' || !_puzzle || _won || _paused) return;
           var cell = _cellFromEvent(e);
           if (!cell) return;
-          _drag = { start: cell, pointerId: e.pointerId, moved: false, x: e.clientX, y: e.clientY };
+          _drag = { start: cell, lastCell: cell, pointerId: e.pointerId, moved: false, x: e.clientX, y: e.clientY };
           _selCells = [cell];
           _renderBoard();
           try {
@@ -146919,6 +147055,7 @@ var WordQuestGame = (function () {
           if (!cell) return;
           if (cell[0] === _drag.start[0] && cell[1] === _drag.start[1] && !_drag.moved) return;
           _drag.moved = true;
+          _drag.lastCell = cell;
           _tapAnchor = null;
           _setSelection(_drag.start, cell);
         } catch (err) { /* pointermove is best-effort */ }
@@ -146930,7 +147067,9 @@ var WordQuestGame = (function () {
           _drag = null;
           if (_screen !== 'puzzle' || !_puzzle || _won || _paused) return;
           if (d.moved) {
-            var cell = _cellFromPoint(e.clientX, e.clientY) || d.start;
+            // Lift over a gap between cells (elementFromPoint finds no
+            // cell) commits the last live cell, not the start cell.
+            var cell = _cellFromPoint(e.clientX, e.clientY) || d.lastCell || d.start;
             _commitSelection(d.start, cell);
           } else {
             _onTapCell(d.start);
@@ -147025,7 +147164,7 @@ var WordQuestGame = (function () {
       _sheet('Paused', [_puzzleLabel() + ' — progress saved.'], [
         { label: 'Resume', onClick: function () { resume(); } },
         { label: 'Restart Puzzle', onClick: function () {
-          if (_isDaily) startDaily(_dailyDate); else startLevel(_packIdx, _def.level);
+          if (_isDaily) startDaily(_dailyDate, true); else startLevel(_packIdx, _def.level, true);
         } },
         { label: 'Quit Puzzle', secondary: true, onClick: function () { quitPuzzle(); } }
       ], null);
