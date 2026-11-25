@@ -273,7 +273,19 @@ body {
   position: absolute;
   inset: 0;
   z-index: 10;
-  padding: 64px 22px 48px;
+  /* Home scroll (Nov 25, 2026): the app grid scrolls vertically inside
+     #ph-home (see .ph-home-grid below) so every icon stays reachable at
+     every height. #ph-home is a flex column: the audio row stays fixed
+     at the top, the grid takes the remaining space and scrolls, the Done
+     button (edit mode only) stays pinned at the bottom. The 50px home ad
+     strip sits absolutely positioned at bottom: 44px (above the 44px
+     home-indicator strip), so the bottom padding reserves 98px
+     (44 indicator + 50 ad + 4 clearance) — the grid's scrollable bottom
+     always clears the ad, filled or not. Tall screens are untouched:
+     the grid never reaches the bottom there, so nothing moves. */
+  display: flex;
+  flex-direction: column;
+  padding: 64px 22px 98px;
   background: linear-gradient(170deg, #344e61 0%, #2e4554 45%, #273847 100%);
 }
 
@@ -281,12 +293,33 @@ body {
 
 .ph-home-grid {
   display: grid;
+  /* Home scroll (Nov 25, 2026): the grid is the scroll container for
+     the home screen — overflow-y: auto gives native touch + wheel
+     scrolling. flex: 1 + min-height: 0 lets it take exactly the space
+     between the audio row and the reserved ad strip; the 16px inner
+     bottom padding lets the last row scroll 16px past the box bottom
+     so it lands fully clear of the ad strip at max scroll. Scrollbars
+     are hidden (phone look); the cut-off row is the affordance.
+     Edit mode keeps touch-action: none on the grid (drag-reorder owns
+     the gesture there); wheel scrolling still works in edit mode. */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 16px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
   /* minmax(0, 1fr): a long one-word label ("The Summoner's Oath") must
      not size its track by min-content — with plain 1fr the widest label
      forced its column to ~76px and pushed the 4th column 4px past the
      320px viewport once Snake became the 15th icon (Nov 21, 2026). */
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px 12px;
+}
+
+.ph-home-grid::-webkit-scrollbar {
+  display: none;
 }
 
 .ph-app-icon {
@@ -362,6 +395,9 @@ body {
   .ph-icon-label { font-size: 12px; }
 }
 .ph-home-audio {
+  /* Home scroll (Nov 25, 2026): fixed row at the top of the #ph-home
+     flex column — never shrinks, the grid below takes the scroll. */
+  flex: 0 0 auto;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -773,6 +809,10 @@ body {
 
 .ph-home-done {
   display: none;
+  /* Home scroll (Nov 25, 2026): pinned row at the bottom of the
+     #ph-home flex column in edit mode — never shrinks, always visible
+     even at short heights (it used to fall off-screen at 360x568). */
+  flex: 0 0 auto;
   appearance: none;
   margin: 30px auto 0;
   min-height: 44px;
@@ -16643,6 +16683,11 @@ if (typeof window !== 'undefined') {
   function showHome() {
     var home = $('ph-home');
     if (home) home.classList.remove('ph-home-hidden');
+    /* Home scroll (Nov 25, 2026): home always opens at the top of the
+       grid — a scrolled-down position from before opening a game must
+       not carry over. */
+    var grid = homeGrid();
+    if (grid) { try { grid.scrollTop = 0; } catch (e) { /* best-effort */ } }
   }
 
   function hideHome() {
