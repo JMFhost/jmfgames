@@ -120526,7 +120526,18 @@ if (typeof window !== 'undefined') {
     var g = ctx.g;
     if (!g) return null;
     if (!g.bets) g.bets = freshBets();
-    if (!g.phase) g.phase = 'comeout';
+    else {
+      // crapsPayout returns only bets still on the table, so after a roll
+      // settles every bet g.bets loses its zero-stake keys — and the
+      // craps-bet guard rejects spots whose key is missing. Restore the
+      // full key shape (0 stakes), keeping any live stakes untouched.
+      var fb = freshBets();
+      for (var k in fb) if (!(k in g.bets)) g.bets[k] = 0;
+    }
+    // Craps only knows 'comeout' | 'point'. openGame seeds every table
+    // with the generic phase 'bet'; normalize it here so a fresh table
+    // is a real come-out (Pass / Don't Pass placeable, puck truthful).
+    if (g.phase !== 'comeout' && g.phase !== 'point') g.phase = 'comeout';
     if (!g.point) g.point = 0;
     if (g.bet === undefined || g.bet === null) g.bet = 5;
     if (!g.dice) g.dice = null;
