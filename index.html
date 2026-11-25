@@ -305,7 +305,21 @@ body {
      so it lands fully clear of the ad strip at max scroll. Scrollbars
      are hidden (phone look); the cut-off row is the affordance.
      Edit mode keeps touch-action: none on the grid (drag-reorder owns
-     the gesture there); wheel scrolling still works in edit mode. */
+     the gesture there); wheel scrolling still works in edit mode.
+     Icon resize (Nov 25, 2026): icon geometry comes from the
+     --icon-* variables below (the compact tiers override the bases,
+     never the sizes) multiplied by --icon-scale, so the home icons
+     resize with the separate Icon size setting (50–150%), fully
+     independent of the App size setting that scales game content.
+     The column gap never scales — at 125% on a 390px phone the
+     77.5px tile exactly fills its track, and a scaled gap would
+     push it over. */
+  --icon-base: 62px;
+  --icon-cell: 88px;
+  --icon-gap: 7px;
+  --icon-label: 12.5px;
+  --icon-row-gap: 18px;
+  --icon-col-gap: 12px;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -319,11 +333,43 @@ body {
      forced its column to ~76px and pushed the 4th column 4px past the
      320px viewport once Snake became the 15th icon (Nov 21, 2026). */
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px 12px;
+  gap: calc(var(--icon-row-gap) * var(--icon-scale, 1)) var(--icon-col-gap);
+}
+
+/* Icon resize (Nov 25, 2026): at 150% the 93px tiles no longer fit
+   four across at any phone width, so the grid drops to three columns
+   (6 rows — the grid scrolls, so nothing is lost). At 125% the 77.5px
+   tiles fit four across only at 391px and up, so narrow phones drop
+   to three columns there too. The rules key off data-icon-scale on
+   #ph-screen (set by PhoneShell.applyIconScale), so they apply live
+   when the setting changes. */
+#ph-screen[data-icon-scale="150"] .ph-home-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 389px) {
+  #ph-screen[data-icon-scale="125"] .ph-home-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .ph-home-grid::-webkit-scrollbar {
   display: none;
+}
+
+/* Icon resize (Nov 25, 2026): grid items size to their own content
+   height instead of stretching to the row. A row is sized by
+   max-content — the label measured on ONE line — but laid out at
+   track width the label wraps to 2–3 lines ("Angry Monkeys",
+   "The Summoner's Oath"), so the button's content outgrows its row
+   and the tile flex-shrank to absorb the difference (77.5px tile
+   measured 57.25px at 125%, 38px for Oath). With align-self: start
+   the button grows to its wrapped content, the row grows with it,
+   and the tile keeps its full size at every icon size. At 100% on
+   a normal-width phone nothing changes: every button's content fits
+   its min-height, so rows measure exactly as before. */
+.ph-home-grid .ph-app-icon {
+  align-self: start;
 }
 
 .ph-app-icon {
@@ -333,20 +379,25 @@ body {
   margin: 0;
   padding: 0;
   min-width: 0;
-  min-height: 88px;
+  /* Icon resize (Nov 25, 2026): cell height and the icon/label gap
+     scale with the separate Icon size setting (--icon-scale). */
+  min-height: calc(var(--icon-cell) * var(--icon-scale, 1));
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
+  gap: calc(var(--icon-gap) * var(--icon-scale, 1));
   color: #ffffff;
   font: inherit;
   cursor: pointer;
 }
 
 .ph-icon {
-  width: 62px;
-  height: 62px;
-  border-radius: 17px;
+  /* Icon resize (Nov 25, 2026): the tile scales with the separate
+     Icon size setting; border-radius scales with it so the tile
+     keeps its proportions at every size. */
+  width: calc(var(--icon-base) * var(--icon-scale, 1));
+  height: calc(var(--icon-base) * var(--icon-scale, 1));
+  border-radius: calc(17px * var(--icon-scale, 1));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -354,8 +405,29 @@ body {
     inset 0 1px 1px rgba(255, 255, 255, 0.25);
 }
 
+/* Icon resize (Nov 25, 2026): the glyph inside the tile scales with
+   the tile. The tile is a centered flex box and the art is centered
+   in it, so a transform around each art element's own center keeps
+   it centered at every size — no per-glyph bookkeeping. This covers
+   the inline SVGs (38px), the lantern/knight SVGs, and every
+   CSS-drawn mini (blocks grid, sliders, about mark, chart, fan,
+   falling stack). The Chess Quest tile is a background image, so its
+   size scales separately below. */
+.ph-icon > svg,
+.ph-icon > .ph-mini-grid,
+.ph-icon > .ph-slider-stack,
+.ph-icon > .ph-about-mark,
+.ph-icon > .ph-chart,
+.ph-icon > .ph-fan,
+.ph-icon > .ph-fall-stack,
+.ph-icon > .ph-knight {
+  transform: scale(var(--icon-scale, 1));
+}
+
 .ph-icon-label {
-  font-size: 12.5px;
+  /* Icon resize (Nov 25, 2026): the label scales with the tile, with
+     a 10px floor — at 50% the unclamped 6.25px would be unreadable. */
+  font-size: max(10px, calc(var(--icon-label) * var(--icon-scale, 1)));
   font-weight: 500;
   text-align: center;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
@@ -380,10 +452,18 @@ body {
   #ph-home { padding-top: 46px; }
   .ph-home-audio { margin-bottom: 6px; }
   .ph-home-audio .ph-audio-toggle { min-height: 28px; font-size: 12px; }
-  .ph-home-grid { gap: 8px 8px; }
-  .ph-app-icon { min-height: 76px; gap: 4px; }
-  .ph-icon { width: 48px; height: 48px; }
-  .ph-icon-label { font-size: 12px; }
+  /* Icon resize (Nov 25, 2026): the compact tier now only overrides
+     the --icon-* bases — the sizes themselves still come from
+     --icon-scale, so the values at 100% are exactly what they were
+     (48px tiles, 8px gaps). */
+  .ph-home-grid {
+    --icon-base: 48px;
+    --icon-cell: 76px;
+    --icon-gap: 4px;
+    --icon-label: 12px;
+    --icon-row-gap: 8px;
+    --icon-col-gap: 8px;
+  }
 }
 
 /* Banner tier for mid-short viewports (Nov 21, 2026): 601-700px tall
@@ -393,10 +473,16 @@ body {
   #ph-home { padding-top: 48px; }
   .ph-home-audio { margin-bottom: 6px; }
   .ph-home-audio .ph-audio-toggle { min-height: 28px; font-size: 12px; }
-  .ph-home-grid { gap: 10px 10px; }
-  .ph-app-icon { min-height: 76px; gap: 4px; }
-  .ph-icon { width: 52px; height: 52px; }
-  .ph-icon-label { font-size: 12px; }
+  /* Icon resize (Nov 25, 2026): same variable override as above
+     (52px tiles, 10px gaps at 100% — unchanged values). */
+  .ph-home-grid {
+    --icon-base: 52px;
+    --icon-cell: 76px;
+    --icon-gap: 4px;
+    --icon-label: 12px;
+    --icon-row-gap: 10px;
+    --icon-col-gap: 10px;
+  }
 }
 .ph-home-audio {
   /* Home scroll (Nov 25, 2026): fixed row at the top of the #ph-home
@@ -772,7 +858,9 @@ body {
   background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><path d='M12.5 43 L13 36 C11.5 34.5 9 33 8 31 C6.7 28.8 7.2 26 9.5 24 L12.5 21.5 L19 11.5 L21 4 L24.5 10 L28.5 3.5 L31 10.5 C34.8 12 37.2 14.5 37.7 18 C39.3 19.5 39.6 21.5 38.3 23.5 C36.6 24.5 36 26 36.6 27.5 C38.6 29 38.8 31 37.5 33 C36.2 34.3 36 35.7 36.8 37 C37.6 38.3 37.6 41 37.2 43 Z' fill='%23fff3d6'/><circle cx='23' cy='16.5' r='1.9' fill='%231e2a7a'/><polygon points='40,1 41.6,5 45.9,5.4 42.6,8.3 43.5,12.6 40,10.4 36.5,12.6 37.4,8.3 34.1,5.4 38.4,5' fill='%23f5c542'/><path d='M5 42 Q13 46.5 21 44' stroke='%23f5c542' stroke-width='2' fill='none' stroke-linecap='round'/><path d='M43 42 Q35 46.5 27 44' stroke='%23f5c542' stroke-width='2' fill='none' stroke-linecap='round'/></svg>"), linear-gradient(150deg, #3b4fd8 0%, #1e2a7a 100%);
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: 38px 38px, cover;
+  /* Icon resize (Nov 25, 2026): the knight glyph scales with the
+     separate Icon size setting, like the other tiles' inner art. */
+  background-size: calc(38px * var(--icon-scale, 1)) calc(38px * var(--icon-scale, 1)), cover;
 }
 
 /* ---------- Home edit mode ---------- */
@@ -861,8 +949,10 @@ body {
    out in a smaller logical viewport and scrolls normally when it
    overflows; taps land where shown (getBoundingClientRect accounts
    for the transform). At 50% the whole app fits with no empty frame;
-   at 150% nothing is cut off (the section scrolls). Home never
-   scales: the grid, ad slot and indicator stay exactly as they are. */
+   at 150% nothing is cut off (the section scrolls). Home never scales
+   HERE — the home grid icons scale separately, via --icon-scale and
+   the Icon size setting (see .ph-home-grid); the ad slot, indicator
+   and lock screen never scale. */
 .ph-app:not(#ph-home) {
   inset: 0 auto auto 0;
   width: calc(100% / var(--app-scale, 1));
@@ -15880,6 +15970,7 @@ button.mr-setup-preview:focus-visible {
           <div id="settings-music-theme"></div>
           <div id="settings-theme"></div>
           <div id="settings-app-size"></div>
+          <div id="settings-icon-size"></div>
           <div id="settings-home"></div>
           <div id="settings-about"></div>
         </div>
@@ -16923,6 +17014,69 @@ if (typeof window !== 'undefined') {
           window.dispatchEvent(new Event('resize'));
         }
       } catch (e) { /* best-effort */ }
+    } catch (e) { /* best-effort */ }
+    return value;
+  }
+
+  /* Icon resize (Nov 25, 2026): the home-screen app icons have their
+     OWN size setting — 50/75/100/125/150% — separate from App size.
+     Same five choices, same shared settings key (field iconSize),
+     same persistence, but the two settings never drive each other:
+     applyIconScale reads ONLY iconSize and writes ONLY --icon-scale
+     + data-icon-scale, which the home grid CSS consumes
+     (.ph-home-grid and friends in shell.css). No resize event is
+     dispatched — the grid is pure CSS, nothing re-fits from it. */
+  var ICON_SIZES = [0.5, 0.75, 1, 1.25, 1.5];
+  var _iconScale = 1;
+
+  function _sanitizeIconScale(value) {
+    if (typeof value === 'number') {
+      for (var i = 0; i < ICON_SIZES.length; i++) {
+        if (ICON_SIZES[i] === value) return value;
+      }
+    }
+    return 1;
+  }
+
+  function _readStoredIconScale() {
+    try {
+      var settings = _resolveSettings();
+      if (settings && typeof settings.readSettings === 'function') {
+        return _sanitizeIconScale(settings.readSettings().iconSize);
+      }
+    } catch (e) { /* fall through to the direct read */ }
+    try {
+      var store = null;
+      try {
+        if (typeof localStorage !== 'undefined' && localStorage) store = localStorage;
+      } catch (e2) { /* fall through */ }
+      try {
+        if (!store && typeof window !== 'undefined' && window && window.localStorage) {
+          store = window.localStorage;
+        }
+      } catch (e2) { /* fall through */ }
+      if (store) {
+        var raw = store.getItem(SETTINGS_KEY);
+        if (typeof raw === 'string' && raw) {
+          var parsed = JSON.parse(raw);
+          if (parsed) return _sanitizeIconScale(parsed.iconSize);
+        }
+      }
+    } catch (e) { /* fall through to the default */ }
+    return 1;
+  }
+
+  function applyIconScale() {
+    var value = _readStoredIconScale();
+    _iconScale = value;
+    try {
+      var screen = $('ph-screen');
+      if (screen && screen.style && typeof screen.style.setProperty === 'function') {
+        screen.style.setProperty('--icon-scale', String(value));
+      }
+      if (screen && screen.dataset) {
+        screen.dataset.iconScale = String(Math.round(value * 100));
+      }
     } catch (e) { /* best-effort */ }
     return value;
   }
@@ -18202,6 +18356,13 @@ if (typeof window !== 'undefined') {
 
     appScale: function () { return _appScale; },
 
+    /* Icon resize (Nov 25, 2026): the home icons' own size, separate
+       from App size — applyIconScale reads iconSize only, iconScale
+       reports the size currently applied. */
+    applyIconScale: applyIconScale,
+
+    iconScale: function () { return _iconScale; },
+
     /* Shared Music/Sound toggles (Nov 21, 2026): one look and one wiring
        for the home row and every game's top bar. */
     injectAudioToggles: injectAudioToggles,
@@ -18728,12 +18889,17 @@ if (typeof window !== 'undefined') {
     } catch (e) { /* listener is optional; BZSettings also calls updateLockName directly */ }
     /* App resize (Nov 25, 2026): apply the stored size at boot and
        re-apply whenever Settings writes (the size picker taps write
-       through BZSettings.writeSettings, which dispatches this event). */
+       through BZSettings.writeSettings, which dispatches this event).
+       Icon resize (Nov 25, 2026): same hook for the separate Icon
+       size setting — applyIconScale reads iconSize only, so the two
+       settings never drive each other. */
     try { applyAppScale(); } catch (e) { /* best-effort */ }
+    try { applyIconScale(); } catch (e) { /* best-effort */ }
     try {
       if (typeof window !== 'undefined' && window && typeof window.addEventListener === 'function') {
         window.addEventListener('bz:settings-changed', function () {
           try { applyAppScale(); } catch (err) { /* never throw */ }
+          try { applyIconScale(); } catch (err) { /* never throw */ }
         });
       }
     } catch (e) { /* listener is optional; a reload applies the stored size */ }
@@ -26102,6 +26268,9 @@ if (typeof window !== 'undefined') {
 //   #settings-theme  — theme picker (9 buttons), wired to BZThemes.set
 //   #settings-app-size — app-size picker (50/75/100/125/150%), persisted
 //                      as appSize; PhoneShell.applyAppScale applies it
+//   #settings-icon-size — icon-size picker (50/75/100/125/150%),
+//                      persisted as iconSize, separate from appSize;
+//                      PhoneShell.applyIconScale applies it
 //   #settings-home   — Home-screen section (Sort A–Z / Reset layout),
 //                      wired to PhoneShell.sortHomeAlphabetical /
 //                      PhoneShell.resetHomeOrder
@@ -26536,8 +26705,9 @@ var BZSettings = (function () {
   // PhoneShell.applyAppScale (shell.js) reads the same key at boot
   // and re-applies on every 'bz:settings-changed', so the change
   // takes effect immediately in every open app (including Settings
-  // itself, which visibly resizes as you tap). The home grid, lock
-  // screen, status bar and ad slots never scale. Buttons reuse the
+  // itself, which visibly resizes as you tap). The home grid icons
+  // have their OWN size setting below (Icon size); the lock screen,
+  // status bar and ad slots never scale. Buttons reuse the
   // theme-picker look (bz-theme-picker / bz-theme-btn) so the section
   // matches the Theme section above it.
   var APP_SIZES = [0.5, 0.75, 1, 1.25, 1.5];
@@ -26621,6 +26791,107 @@ var BZSettings = (function () {
               var patch = detail.patch || {};
               if (typeof patch.appSize !== 'undefined') {
                 _markAppSize(_sanitizeAppSize(patch.appSize));
+              }
+            } catch (err) { /* never throw */ }
+          });
+        }
+      } catch (e) { /* listener is optional */ }
+    }
+  }
+
+  // --------------------------------------------- icon size picker
+  // Icon-size picker (Nov 25, 2026 — Jesse: "No separate them"): the
+  // home-screen app icons get their OWN size setting, separate from
+  // App size above — five choices, 50%, 75%, 100%, 125%, 150%.
+  // The choice persists in the shared settings key (iconSize) via
+  // writeSettings, so it survives reload; PhoneShell.applyIconScale
+  // (shell.js) reads the same key at boot and re-applies on every
+  // 'bz:settings-changed', so the change takes effect immediately on
+  // the home grid. The two settings never drive each other: this
+  // picker writes ONLY iconSize, the App size picker writes ONLY
+  // appSize, and each apply function reads ONLY its own field.
+  // Same theme-picker look as the sections above it.
+  var ICON_SIZES = [0.5, 0.75, 1, 1.25, 1.5];
+  var _iconSizeButtons = []; // [{value, button}]
+  var _iconSizeStatus = null;
+  var _iconSizeListenerAdded = false;
+
+  function _sanitizeIconSize(value) {
+    if (typeof value === 'number' && ICON_SIZES.indexOf(value) !== -1) return value;
+    return 1;
+  }
+
+  function _currentIconSize() {
+    return _sanitizeIconSize(readSettings().iconSize);
+  }
+
+  function _iconSizeLabel(value) {
+    return Math.round(value * 100) + '%';
+  }
+
+  function _markIconSize(value) {
+    for (var i = 0; i < _iconSizeButtons.length; i++) {
+      var entry = _iconSizeButtons[i];
+      var active = entry.value === value;
+      try {
+        if (entry.button.classList) {
+          entry.button.classList.toggle('bz-theme-active', active);
+        }
+      } catch (e) { /* class toggle is cosmetic */ }
+      try {
+        entry.button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      } catch (e) { /* aria state is best-effort */ }
+    }
+    if (_iconSizeStatus) {
+      try {
+        _iconSizeStatus.textContent = 'Home icons are shown at ' + _iconSizeLabel(value) +
+          ' — change takes effect right away.';
+      } catch (e) { /* status line is best-effort */ }
+    }
+  }
+
+  function _buildIconSizePicker(container) {
+    _clear(container);
+    _iconSizeButtons = [];
+    container.appendChild(_el('div', 'bz-settings-heading', 'Icon size'));
+    container.appendChild(_el('p', 'bz-settings-status',
+      'Make home-screen app icons bigger or smaller. 100% is the normal size.'));
+    var picker = _el('div', 'bz-theme-picker');
+    for (var i = 0; i < ICON_SIZES.length; i++) {
+      (function (value) {
+        var button = _el('button', 'bz-theme-btn', _iconSizeLabel(value));
+        button.type = 'button';
+        button.setAttribute('aria-pressed', 'false');
+        button.setAttribute('aria-label', 'Icon size: ' + _iconSizeLabel(value));
+        button.addEventListener('click', function () {
+          try {
+            writeSettings({ iconSize: value });
+            _markIconSize(value);
+          } catch (e) { /* a size failure must not break Settings */ }
+        });
+        _iconSizeButtons.push({ value: value, button: button });
+        picker.appendChild(button);
+      })(ICON_SIZES[i]);
+    }
+    container.appendChild(picker);
+    _iconSizeStatus = _el('p', 'bz-settings-status', '');
+    _iconSizeStatus.setAttribute('aria-live', 'polite');
+    container.appendChild(_iconSizeStatus);
+    _markIconSize(_currentIconSize());
+
+    // Re-mark if the size changes elsewhere (writeSettings dispatches
+    // 'bz:settings-changed' on every write).
+    if (!_iconSizeListenerAdded) {
+      _iconSizeListenerAdded = true;
+      try {
+        if (typeof window !== 'undefined' && window &&
+            typeof window.addEventListener === 'function') {
+          window.addEventListener('bz:settings-changed', function (e) {
+            try {
+              var detail = (e && e.detail) || {};
+              var patch = detail.patch || {};
+              if (typeof patch.iconSize !== 'undefined') {
+                _markIconSize(_sanitizeIconSize(patch.iconSize));
               }
             } catch (err) { /* never throw */ }
           });
@@ -27748,6 +28019,7 @@ var BZSettings = (function () {
       }],
       ['settings-theme', _buildThemePicker],
       ['settings-app-size', _buildAppSizePicker],
+      ['settings-icon-size', _buildIconSizePicker],
       ['settings-music-theme', _buildMusicThemePicker],
       ['settings-home', _buildHomeSection],
       ['settings-about', _buildSettingsSave],
