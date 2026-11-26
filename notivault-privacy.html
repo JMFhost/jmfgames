@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-6TBK3H67Y5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-6TBK3H67Y5');
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — NotiVault</title>
+<script>(function(){try{var t=localStorage.getItem('jmfgames-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2453219839747877" crossorigin="anonymous"></script>
+<style>:root{--bg:#0f1420;--text:#e8e8e8;--muted:#9aa3b2;--link:#7db4ff;--surface:#181f2e;--border:#2a3347}html[data-theme="light"]{--bg:#f2f5f8;--text:#1a2233;--muted:#4d5a6b;--link:#0b57d0;--surface:#ffffff;--border:#d3dae2}body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;line-height:1.6;color:var(--text);background:var(--bg)}a{color:var(--link)}.theme-toggle{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:14px;cursor:pointer;float:right}</style>
+</head>
+<body>
+<button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle light and dark theme">☀️ Light</button>
+<h1>Privacy Policy — NotiVault</h1>
+<p><em>Last updated: November 25, 2026</em></p>
+<p>NotiVault is a free notification history app by JMFhost. It saves copies of your notifications on your own phone so you can read them later, even after they have been dismissed or deleted from the notification bar. This policy explains what the app does with your information. The short version: <strong>everything stays on your device. We do not collect, see, share, or sell anything.</strong></p>
+<h2>What the app stores — on your device only</h2>
+<p>When you turn on Notification Access and choose which apps to save, NotiVault stores copies of those notifications in a database on your phone (the app name, title, message text, and time received). It also stores your own settings: which apps you save, which ones use Clean Bar, your theme, and your display preferences. None of this ever leaves your phone. There is no account, no sign-in, and no server. If you uninstall the app, all of it is deleted with it.</p>
+<h2>Notification Access</h2>
+<p>Android only lets NotiVault read notifications after you grant Notification Access in your phone's settings. The app reads notifications only to do what you asked it to do: save a copy locally, and — if you turned on Clean Bar for that app — dismiss the original from the status bar so your notification shade stays clean. NotiVault never reads notifications from apps you did not choose to save, and it never sends notification content anywhere.</p>
+<h2>Notifications the app itself sends</h2>
+<p>If you allow it, NotiVault can post one quiet summary notification telling you how many new notifications were saved and cleared from the bar. You can turn this off in the app's Settings, and you can block the app's notifications entirely in Android settings. The app does not use notifications for anything else.</p>
+<h2>What we do NOT do</h2>
+<p>We do not collect any personal information. We do not use analytics or tracking in the app. We do not show ads in the app. We do not share, sell, or send your notifications, settings, or any other data to anyone — not to us, not to advertisers, not to third parties. The app works fully offline and does not connect to the internet at all.</p>
+<h2>Permissions the app asks for</h2>
+<ul>
+<li><strong>Notification Access (BIND_NOTIFICATION_LISTENER_SERVICE)</strong> — lets the app read and save your notifications and dismiss the ones you chose to clean from the bar. This is the app's core function and only works with your permission.</li>
+<li><strong>List installed apps (QUERY_ALL_PACKAGES)</strong> — lets the app show your installed apps in Per-App Rules so you can pick which ones to save.</li>
+<li><strong>Post notifications (POST_NOTIFICATIONS)</strong> — lets the app show its own silent saved-notifications summary.</li>
+<li><strong>Biometric / fingerprint</strong> — only if you turn on the optional app lock; your fingerprint or PIN never leaves your device and is checked by Android itself, not by us.</li>
+</ul>
+<h2>Export</h2>
+<p>You can export your saved notifications from the app as a CSV or JSON file. That file goes only where you choose to save or share it — the app does not upload it anywhere.</p>
+<h2>Children</h2>
+<p>NotiVault is a general-audience app. Because the app collects nothing from anyone, it knowingly collects no personal information from children either.</p>
+<h2>Changes to this policy</h2>
+<p>If this policy changes, the updated version will be posted on this page with a new "Last updated" date.</p>
+<h2>Contact</h2>
+<p>Questions about this policy or about NotiVault? Email <a href="mailto:jmfhost@gmail.com">jmfhost@gmail.com</a>.</p>
+<p>© 2026 JMFgames. All rights reserved. All games, code, graphics and content on this site are the property of JMFgames and may not be copied, reproduced, distributed or reused without written permission.</p>
+<p><a href="/">← Back to JMFgames</a> · <a href="/about.html">About Us</a> · <a href="/contact.html">Contact Us</a> · <a href="/privacy.html">Privacy Policy</a></p>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  var btn=document.getElementById('themeToggle');
+  function label(t){ return t==='light' ? '🌙 Dark' : '☀️ Light'; }
+  function apply(t){ root.setAttribute('data-theme',t); if(btn) btn.textContent=label(t); try{localStorage.setItem('jmfgames-theme',t);}catch(e){} }
+  if(btn) btn.textContent=label(root.getAttribute('data-theme')||'dark');
+  if(btn) btn.addEventListener('click',function(){ apply(root.getAttribute('data-theme')==='light'?'dark':'light'); });
+})();
+</script>
+</body>
+</html>
