@@ -15771,6 +15771,787 @@ button.mr-setup-preview:focus-visible {
   min-width: 32px;
 }
 </style>
+<style>
+/* source: em-game.css */
+/* Ember Math — burning-sky palette: ember orange-red, charcoal
+   village browns, water-spell blue. Layout is 360x568-safe: the root
+   is a flex column that fills the phone section; the field flexes,
+   the keypad is compact, and nothing is positioned by fixed pixels
+   off the bottom. Game content scales via the shell mechanism — no
+   fixed viewport units here that would fight the app-size transform.
+   HOME INDICATOR FIX (Nov 26, 2026): the shell's home pill sits in
+   the bottom 44px with a centered 44x44 hit target — the keypad's
+   bottom row used to sit under it and its centre taps went home.
+   The keypad carries 50px of bottom padding, so every key's centre
+   clears the strip. */
+
+/* Splash theme background (the shell adds ph-splash--embermath to the
+   splash element; the motif pieces come from shell.js). */
+.ph-splash--embermath {
+  background: linear-gradient(175deg, #3a0d05 0%, #7c2d12 45%, #1c0a06 100%);
+}
+.ph-splash--embermath .ph-splash-game { color: #7dd3fc; }
+
+.em-root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: linear-gradient(180deg, #2b0f08 0%, #7c2d12 55%, #1c0a06 100%);
+  color: #fff7ed;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.em-root * { box-sizing: border-box; }
+
+.em-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.em-bg-fallback {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(140px 70px at 78% 10%, rgba(251, 146, 60, 0.5), transparent 70%),
+    radial-gradient(180px 90px at 18% 6%, rgba(239, 68, 68, 0.35), transparent 70%),
+    linear-gradient(180deg, #2b0f08 0%, #7c2d12 55%, #1c0a06 100%);
+}
+.em-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+.em-screen {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.em-screen[hidden] { display: none; }
+
+/* ---------- Mage select ---------- */
+.em-select { overflow-y: auto; }
+.em-select-inner {
+  margin: auto;
+  width: 100%;
+  max-width: 340px;
+  padding: 18px 20px 22px;
+  text-align: center;
+}
+.em-mage-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 14px 0 10px;
+}
+.em-mage-card {
+  flex: 1;
+  max-width: 150px;
+  padding: 10px 8px 12px;
+  border-radius: 16px;
+  border: 2px solid rgba(253, 186, 116, 0.4);
+  background: rgba(28, 10, 6, 0.72);
+  color: #fff7ed;
+  cursor: pointer;
+  text-align: center;
+}
+.em-mage-card--active {
+  border-color: #38bdf8;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.55);
+  background: rgba(12, 40, 66, 0.8);
+}
+.em-mage-card-img {
+  width: 100%;
+  height: 150px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+}
+.em-mage-card-fallback {
+  display: none;
+  width: 64px;
+  height: 130px;
+  margin: 10px auto;
+  border-radius: 40px 40px 12px 12px;
+  background: linear-gradient(180deg, #334155, #0f172a);
+  box-shadow: 0 0 0 3px rgba(226, 232, 240, 0.25);
+}
+.em-mage-card-name {
+  display: block;
+  margin-top: 6px;
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+}
+.em-mage-card-title {
+  display: block;
+  font-size: 12.5px;
+  color: #fdba74;
+}
+.em-select-note {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: #fecaca;
+}
+
+/* ---------- Menu ---------- */
+.em-menu { overflow-y: auto; }
+.em-menu-inner {
+  margin: auto;
+  width: 100%;
+  max-width: 340px;
+  padding: 18px 20px 22px;
+  text-align: center;
+}
+.em-menu-badge {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 4px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fdba74, #dc2626 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 24px rgba(249, 115, 22, 0.6);
+}
+.em-menu-flame {
+  width: 26px;
+  height: 34px;
+  background: linear-gradient(180deg, #fef08a 0%, #fb923c 50%, #ea580c 100%);
+  clip-path: polygon(50% 0, 88% 55%, 100% 100%, 0 100%, 12% 55%);
+}
+.em-title {
+  margin: 6px 0 4px;
+  font-size: 34px;
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #fff;
+  text-shadow: 0 2px 14px rgba(56, 189, 248, 0.5);
+}
+.em-tagline {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #ffedd5;
+}
+.em-best-line {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: #7dd3fc;
+  font-weight: 700;
+}
+.em-mage-line {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #ffedd5;
+}
+.em-mage-line b { color: #fff; }
+.em-change-mage { display: inline; margin: 0 0 0 4px; padding: 2px 6px; }
+.em-diff-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+.em-diff-btn {
+  flex: 1;
+  padding: 9px 4px;
+  border-radius: 10px;
+  border: 2px solid rgba(253, 186, 116, 0.45);
+  background: rgba(28, 10, 6, 0.6);
+  color: #fff7ed;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.em-diff-btn.em-diff-active {
+  background: #0284c7;
+  border-color: #7dd3fc;
+  color: #fff;
+}
+.em-diff-desc {
+  min-height: 34px;
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: #fdba74;
+}
+.em-theme-label {
+  margin: 2px 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #fdba74;
+}
+.em-theme-row {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.em-theme-btn {
+  flex: 1;
+  padding: 8px 2px;
+  border-radius: 10px;
+  border: 2px solid rgba(253, 186, 116, 0.45);
+  background: rgba(28, 10, 6, 0.6);
+  color: #fff7ed;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.em-theme-btn.em-theme-btn--active {
+  background: #b45309;
+  border-color: #fcd34d;
+  color: #fff;
+}
+.em-select-duo {
+  display: block;
+  width: min(280px, 82%);
+  margin: 0 auto 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(125, 211, 252, 0.45);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+}
+.em-how-img {
+  display: block;
+  width: 100%;
+  margin: 0 0 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(253, 186, 116, 0.35);
+}
+.em-play-btn {
+  display: block;
+  width: 100%;
+  padding: 13px 10px;
+  margin: 4px 0 10px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #38bdf8, #0369a1);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #075985, 0 6px 18px rgba(3, 105, 161, 0.5);
+}
+.em-play-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #075985; }
+.em-link-btn {
+  display: block;
+  margin: 6px auto;
+  padding: 6px 12px;
+  border: none;
+  background: none;
+  color: #7dd3fc;
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.em-how {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(28, 10, 6, 0.72);
+  border: 1px solid rgba(253, 186, 116, 0.35);
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #ffedd5;
+}
+.em-how p { margin: 0 0 8px; }
+.em-how p:last-child { margin-bottom: 0; }
+.em-delete-btn { color: #fca5a5; }
+.em-delete-note {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: #fca5a5;
+}
+
+/* ---------- Play: topbar + HUD ---------- */
+.em-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  padding: 6px 8px;
+  gap: 8px;
+}
+.em-topbar-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+.em-topbar .iconbtn.em-off { opacity: 0.45; }
+.em-hud {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 2px 12px 6px;
+  font-size: 14px;
+  color: #ffedd5;
+}
+.em-hud-item b { color: #fff; font-size: 16px; }
+.em-misses { display: flex; gap: 5px; align-items: center; }
+.em-miss-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 3px 3px 0 0;
+  border: 2px solid rgba(253, 186, 116, 0.7);
+  background: rgba(120, 53, 15, 0.6);
+}
+.em-miss-dot--filled {
+  background: #f97316;
+  border-color: #fdba74;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.95);
+}
+
+/* ---------- Field ---------- */
+.em-field {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 170px;
+  overflow: hidden;
+  border-top: 1px solid rgba(253, 186, 116, 0.3);
+  border-bottom: 1px solid rgba(253, 186, 116, 0.3);
+  background: linear-gradient(180deg, rgba(43, 15, 8, 0.25), rgba(28, 10, 6, 0.55));
+}
+.em-ambient { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.em-ember-dot {
+  position: absolute;
+  top: -8px;
+  border-radius: 50%;
+  background: rgba(251, 146, 60, 0.9);
+  box-shadow: 0 0 6px rgba(251, 146, 60, 0.8);
+  animation: em-ember-fall linear infinite;
+  opacity: 0.8;
+}
+@keyframes em-ember-fall {
+  0% { transform: translateY(-10px) translateX(0); opacity: 0; }
+  12% { opacity: 0.85; }
+  100% { transform: translateY(340px) translateX(-14px); opacity: 0.15; }
+}
+.em-drops { position: absolute; inset: 0; }
+.em-drop {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 76px;
+  min-height: 56px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  z-index: 2;
+}
+.em-drop-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.7));
+}
+.em-drop-drawn {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: radial-gradient(circle at 50% 38%, #fef08a, #f97316 55%, #dc2626);
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.8);
+}
+.em-drop--gold .em-drop-drawn {
+  background: radial-gradient(circle at 50% 38%, #fefce8, #facc15 55%, #a16207);
+  box-shadow: 0 0 20px rgba(250, 204, 21, 0.95);
+}
+.em-drop--gold .em-drop-img { filter: drop-shadow(0 0 12px rgba(250, 204, 21, 0.9)); }
+.em-drop-text {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 56px;
+  padding: 0 4px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  text-align: center;
+  line-height: 1.1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85), 0 0 6px rgba(0, 0, 0, 0.6);
+}
+.em-drop--target::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 3px solid #38bdf8;
+  border-radius: 50%;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.9);
+  animation: em-target-pulse 0.9s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes em-target-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.07); opacity: 0.75; }
+}
+
+/* Village row at the bottom of the field: three houses. One catches
+   fire per miss; smoke rises from the burning ones. */
+.em-village {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  padding: 0 14px;
+  z-index: 1;
+  pointer-events: none;
+}
+.em-house {
+  position: relative;
+  width: 56px;
+  height: 44px;
+}
+.em-house-body {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 0;
+  height: 26px;
+  background: linear-gradient(180deg, #78350f, #451a03);
+  border: 1px solid rgba(0, 0, 0, 0.4);
+}
+.em-house-roof {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 20px;
+  background: #7f1d1d;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.em-house-fire, .em-house-smoke { display: none; position: absolute; }
+.em-house--burning .em-house-fire {
+  display: block;
+  left: 50%;
+  bottom: 22px;
+  width: 22px;
+  height: 30px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #fef08a 0%, #fb923c 50%, #ea580c 100%);
+  clip-path: polygon(50% 0, 88% 55%, 100% 100%, 0 100%, 12% 55%);
+  animation: em-house-flicker 0.5s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 10px rgba(251, 146, 60, 0.9));
+}
+@keyframes em-house-flicker {
+  from { transform: translateX(-50%) scaleY(1); }
+  to { transform: translateX(-50%) scaleY(1.18) scaleX(0.92); }
+}
+.em-house--burning .em-house-smoke {
+  display: block;
+  left: 50%;
+  bottom: 40px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(68, 64, 60, 0.75);
+  filter: blur(2px);
+  animation: em-smoke-rise 1.6s ease-out infinite;
+}
+@keyframes em-smoke-rise {
+  0% { transform: translate(-50%, 0) scale(0.7); opacity: 0.85; }
+  100% { transform: translate(-30%, -46px) scale(2.2); opacity: 0; }
+}
+
+/* The chosen mage, standing in front of the village. */
+.em-mage {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 110px;
+  height: 108px;
+  z-index: 2;
+  pointer-events: none;
+}
+.em-mage-wrap {
+  position: absolute;
+  inset: 0;
+  animation: em-mage-bob 2.2s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+@keyframes em-mage-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+.em-mage-wrap.em-mage--casting { animation: em-mage-thrust 0.6s ease-out; }
+@keyframes em-mage-thrust {
+  0% { transform: translateY(0) rotate(0deg); }
+  35% { transform: translateY(-4px) rotate(-2deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+.em-mage-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.35));
+}
+.em-mage-fallback {
+  display: none;
+  position: absolute;
+  inset: 6px 22px 0;
+  border-radius: 40px 40px 12px 12px;
+  background: linear-gradient(180deg, #1e3a8a, #0f172a);
+  box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.3);
+}
+.em-mage-fallback::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 16px solid transparent;
+  border-right: 16px solid transparent;
+  border-bottom: 26px solid #1e3a8a;
+}
+.em-blast {
+  position: absolute;
+  left: 50%;
+  bottom: 74px;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+.em-blast--on {
+  opacity: 1;
+  animation: em-blast-jet 0.6s ease-out both;
+}
+@keyframes em-blast-jet {
+  0% { width: 10px; height: 26px; }
+  40% { width: 46px; height: 130px; }
+  100% { width: 20px; height: 60px; opacity: 0; }
+}
+.em-blast--on::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(50% 0, 88% 55%, 100% 100%, 0 100%, 12% 55%);
+  background: linear-gradient(180deg, #e0f2fe 0%, #38bdf8 45%, #0369a1 100%);
+  filter: blur(0.5px);
+}
+.em-steam { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.em-steam-puff {
+  position: absolute;
+  bottom: 30px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(226, 232, 240, 0.75);
+  filter: blur(2px);
+  animation: em-steam-rise 0.9s ease-out both;
+}
+@keyframes em-steam-rise {
+  0% { transform: translateY(0) scale(0.6); opacity: 0.9; }
+  100% { transform: translateY(-90px) scale(2.1); opacity: 0; }
+}
+
+/* ---------- Answer row + keypad ---------- */
+.em-answer-row {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 40px;
+  padding: 6px 12px;
+  background: rgba(28, 10, 6, 0.85);
+  border-bottom: 1px solid rgba(253, 186, 116, 0.2);
+}
+.em-target-problem { font-size: 19px; font-weight: 800; color: #fff; }
+.em-input {
+  min-width: 54px;
+  min-height: 30px;
+  padding: 2px 10px;
+  border-radius: 8px;
+  background: rgba(56, 189, 248, 0.16);
+  border: 2px solid rgba(125, 211, 252, 0.5);
+  font-size: 19px;
+  font-weight: 800;
+  color: #7dd3fc;
+  text-align: center;
+}
+.em-input:empty::after { content: '?'; color: rgba(125, 211, 252, 0.45); }
+.em-score-pop {
+  position: absolute;
+  right: 14px;
+  top: 2px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #4ade80;
+  animation: em-pop-rise 0.9s ease-out both;
+  pointer-events: none;
+}
+@keyframes em-pop-rise {
+  0% { transform: translateY(6px); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: translateY(-18px); opacity: 0; }
+}
+.em-shake { animation: em-shake-x 0.35s ease-in-out; }
+@keyframes em-shake-x {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(3px); }
+}
+.em-keypad {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  /* Bottom padding keeps every key clear of the shell's 44px home
+     indicator strip (see header note). */
+  padding: 8px 10px 52px;
+  background: rgba(28, 10, 6, 0.9);
+}
+.em-key {
+  min-height: 42px;
+  border-radius: 10px;
+  border: 1px solid rgba(253, 186, 116, 0.35);
+  background: rgba(69, 26, 3, 0.85);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.em-key:active { background: rgba(234, 88, 12, 0.85); }
+.em-key--back { font-size: 18px; color: #fdba74; }
+.em-key--enter {
+  background: linear-gradient(180deg, #38bdf8, #0369a1);
+  border-color: #7dd3fc;
+  font-size: 15px;
+  letter-spacing: 1px;
+}
+
+/* ---------- Pause sheet + game over ---------- */
+.em-pause, .em-over {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: rgba(12, 4, 2, 0.78);
+  align-items: center;
+  justify-content: center;
+}
+.em-over-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.em-over-bg-fallback {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #450a0a 0%, #7f1d1d 55%, #1c0a06 100%);
+}
+.em-over-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+.em-sheet, .em-over-inner {
+  position: relative;
+  z-index: 1;
+  width: min(300px, 86%);
+  padding: 22px 20px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #7c2d12, #2b0f08);
+  border: 1px solid rgba(253, 186, 116, 0.4);
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+}
+.em-sheet-title, .em-over-title {
+  margin: 0 0 4px;
+  font-size: 26px;
+  font-weight: 800;
+  color: #fff;
+}
+.em-sheet-sub, .em-over-sub {
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #ffedd5;
+}
+.em-sheet-btn {
+  display: block;
+  width: 100%;
+  padding: 11px 10px;
+  margin: 8px 0 0;
+  border-radius: 12px;
+  border: 1px solid rgba(253, 186, 116, 0.45);
+  background: rgba(69, 26, 3, 0.8);
+  color: #fff7ed;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.em-over-score { font-size: 18px; color: #ffedd5; margin-bottom: 2px; }
+.em-over-score b { font-size: 26px; color: #7dd3fc; }
+.em-over-best { font-size: 15px; color: #ffedd5; margin-bottom: 6px; }
+.em-over-best b { color: #fff; }
+.em-newbest {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #38bdf8;
+  color: #082f49;
+  font-size: 12px;
+  font-weight: 800;
+}
+.em-over-stats { margin-bottom: 12px; font-size: 13px; color: #fdba74; }
+
+/* Short screens: keep the keypad + mage + field visible at 360x568. */
+@media (max-height: 600px) {
+  .em-title { font-size: 28px; }
+  .em-menu-inner, .em-select-inner { padding-top: 8px; padding-bottom: 12px; }
+  .em-menu-badge { width: 48px; height: 48px; }
+  .em-mage-card-img { height: 110px; }
+  .em-select-duo { width: min(200px, 70%); margin-bottom: 8px; }
+  .em-key { min-height: 36px; font-size: 18px; }
+  .em-keypad { padding-bottom: 50px; }
+  .em-mage { height: 88px; width: 92px; }
+  .em-field { min-height: 140px; }
+  .em-drop { width: 68px; min-height: 50px; }
+  .em-drop-text { font-size: 14px; min-height: 50px; }
+}
+</style>
 </head>
 <body>
 <div id="ph-stage">
@@ -15888,6 +16669,12 @@ button.mr-setup-preview:focus-visible {
             <span class="ph-icon" style="background:linear-gradient(150deg,#7dd3fc 0%,#0369a1 100%)" aria-hidden="true"><svg viewBox="0 0 48 48" width="38" height="38" aria-hidden="true" focusable="false"><ellipse cx="22" cy="28" rx="13" ry="10" fill="#ffd94d"/><path d="M14 24 Q10 12 22 12 Q28 12 30 18 Q24 16 20 20 Q16 22 14 24 Z" fill="#fff7cc"/><path d="M30 22 L40 25 L30 29 Z" fill="#fb923c"/><circle cx="30" cy="24" r="2.2" fill="#101018"/><circle cx="30.8" cy="23.2" r="0.7" fill="#ffffff"/><path d="M12 36 Q20 40 28 36" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.85"/><path d="M8 14 Q12 10 16 13" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/></svg></span>
             <span class="ph-icon-label">Feather Flight</span>
           </button>
+          <!-- EMBER MATH -->
+          <button type="button" class="ph-app-icon" data-app="embermath" aria-label="Ember Math">
+            <span class="ph-icon" style="background:linear-gradient(150deg,#f97316 0%,#7c2d12 100%)" aria-hidden="true"><svg viewBox="0 0 48 48" width="38" height="38" aria-hidden="true" focusable="false"><path d="M24 4 C27 10 30 12 30 18 A6 6 0 1 1 18 18 C18 14 20 11 22 8 C22.5 11 23 12 24 13 C24.5 10 24 7 24 4 Z" fill="#fb923c"/><path d="M24 16 C25.5 18.5 26.5 19.5 26.5 21.5 A2.5 2.5 0 1 1 21.5 21.5 C21.5 19.5 22.5 18.5 24 16 Z" fill="#fef08a"/><path d="M24 30 C27 33 28.5 35 28.5 37 A4.5 4.5 0 1 1 19.5 37 C19.5 35 21 33 24 30 Z" fill="#38bdf8"/><path d="M24 33 C25.5 34.5 26 35.5 26 37 A2 2 0 1 1 22 37 C22 35.5 22.5 34.5 24 33 Z" fill="#e0f2fe"/></svg></span>
+            <span class="ph-icon-label">Ember Math</span>
+          </button>
+          <!-- /EMBER MATH -->
           <button type="button" class="ph-app-icon" data-app="solitaire" aria-label="Solitaire">
             <span class="ph-icon ph-icon-cards" aria-hidden="true"><span class="ph-fan"><i></i><i></i><i></i></span></span>
             <span class="ph-icon-label">Solitaire</span>
@@ -15961,6 +16748,9 @@ button.mr-setup-preview:focus-visible {
       <!-- FEATHER FLIGHT -->
       <section id="app-featherflight" class="ph-app" aria-label="Feather Flight"></section>
       <!-- /FEATHER FLIGHT -->
+      <!-- EMBER MATH -->
+      <section id="app-embermath" class="ph-app" aria-label="Ember Math"></section>
+      <!-- /EMBER MATH -->
       <section id="app-settings" class="ph-app" aria-label="Settings">
         <div class="ph-panel">
           <h1 class="ph-panel-title">Settings</h1>
@@ -16391,7 +17181,7 @@ if (typeof window !== 'undefined') {
   /* Default home order: every icon alphabetical by display name
      (case-insensitive), games and utilities in one list. This list must
      match what sortHomeAlphabetical computes from the registered titles. */
-  var DEFAULT_HOME_ORDER = ['about', 'angrymonkeys', 'blockzen', 'blockfall', 'chess', 'chessquest', 'featherflight', 'lava', 'invesim', 'kindlekeep', 'settings', 'snake', 'solitaire', 'wordquest'];
+  var DEFAULT_HOME_ORDER = ['about', 'angrymonkeys', 'blockzen', 'blockfall', 'chess', 'chessquest', 'embermath', 'featherflight', 'lava', 'invesim', 'kindlekeep', 'settings', 'snake', 'solitaire', 'wordquest'];
   /* The pre-alphabetical default (games first, then utilities). A stored
      order identical to this list means the player never reorganized. */
   var LEGACY_DEFAULT_HOME_ORDER = ['angrymonkeys', 'blockfall', 'blockzen', 'chess', 'chessquest', 'invesim', 'kindlekeep', 'solitaire', 'about', 'settings'];
@@ -16416,6 +17206,7 @@ if (typeof window !== 'undefined') {
     oath: 'summoners-oath',
     solitaire: 'solitaire',
     snake: 'snake',
+    embermath: 'ember-math',
     tycoon: 'tycoon-town',
     wordquest: 'word-quest'
   };
@@ -17149,7 +17940,7 @@ if (typeof window !== 'undefined') {
     'ph-splash--blockfall', 'ph-splash--chess', 'ph-splash--angrymonkeys',
     'ph-splash--kindlekeep', 'ph-splash--chessquest', 'ph-splash--mathrealms',
     'ph-splash--lava', 'ph-splash--casino', 'ph-splash--oath', 'ph-splash--snake',
-    'ph-splash--featherflight', 'ph-splash--wordquest'];
+    'ph-splash--featherflight', 'ph-splash--wordquest', 'ph-splash--embermath'];
   var SPLASH_THEMES = {
     blockzen: {
       cls: 'ph-splash--blockzen',
@@ -17420,6 +18211,33 @@ if (typeof window !== 'undefined') {
         { star: true, x: 128, y: 76, s: 4, d: 0.7 },
         { star: true, x: 184, y: 12, s: 4, d: 1.0 },
         { star: true, x: 118, y: 118, s: 6, d: 1.2 },
+        { flash: true, x: 24, y: 122, w: 200, h: 14, d: 1.9 }
+      ]
+    }
+    /* EMBER MATH (Nov 26, 2026): Ember Math — numbers and operators
+       rain down as fire drops, stars kindle, embers rise from the
+       burning sky, a flash as the cleansing rain clears the sky.
+       Motif 'embermath' reuses the num/star/ember/flash renderer
+       branches. Tagline matches the game; timing exactly 3000ms via
+       SPLASH_MS. The ph-splash--embermath background class lives in
+       em-game.css. */
+    , embermath: {
+      cls: 'ph-splash--embermath',
+      tag: 'Answer fast, or the village burns.',
+      motif: 'embermath',
+      splashImg: 'assets/ember-math/splash.webp',
+      pieces: [
+        { num: true, text: '7', x: 30, y: 14, d: 0.05 },
+        { num: true, text: '+', x: 82, y: 4, d: 0.2 },
+        { num: true, text: '5', x: 130, y: 16, d: 0.35 },
+        { num: true, text: '=', x: 178, y: 8, d: 0.5 },
+        { star: true, x: 56, y: 66, s: 5, d: 0.4 },
+        { star: true, x: 150, y: 58, s: 4, d: 0.7 },
+        { star: true, x: 200, y: 100, s: 5, d: 1.0 },
+        { star: true, x: 24, y: 104, s: 4, d: 1.2 },
+        { ember: true, x: 104, y: 118, s: 6, d: 0.3 },
+        { ember: true, x: 122, y: 124, s: 5, d: 0.7 },
+        { ember: true, x: 140, y: 116, s: 6, d: 1.1 },
         { flash: true, x: 24, y: 122, w: 200, h: 14, d: 1.9 }
       ]
     }
@@ -18821,6 +19639,26 @@ if (typeof window !== 'undefined') {
           if (typeof window !== 'undefined' && window.TycoonWire &&
               typeof window.TycoonWire.onClose === 'function') {
             window.TycoonWire.onClose();
+          }
+        } catch (e) { /* never throws */ }
+      } });
+    /* EMBER MATH (Nov 26, 2026): Ember Math. Delegated to the Ember
+       Mage wire, which no-ops until the game lands. Guarded and
+       embermath-scoped; never throws. Do not init the wire here. */
+    PhoneShell.registerApp('embermath', { title: 'Ember Math', game: true, el: $('app-embermath'),
+      onOpen: function () {
+        try {
+          if (typeof window !== 'undefined' && window.EmberMathWire &&
+              typeof window.EmberMathWire.onOpen === 'function') {
+            window.EmberMathWire.onOpen();
+          }
+        } catch (e) { /* never throws */ }
+      },
+      onClose: function () {
+        try {
+          if (typeof window !== 'undefined' && window.EmberMathWire &&
+              typeof window.EmberMathWire.onClose === 'function') {
+            window.EmberMathWire.onClose();
           }
         } catch (e) { /* never throws */ }
       } });
@@ -27997,6 +28835,15 @@ var BZSettings = (function () {
       'day. Every word you find shows its short definition, and ' +
       'finishing levels with three stars or completing the Daily earns ' +
       'hints to reveal a letter or a whole word.'));
+    body.appendChild(_el('p', 'bz-about-text',
+      'Ember Math is a falling-math arcade game built for touch. ' +
+      'Flaming drops carrying math problems rain from a burning sky ' +
+      'onto a village — tap one to aim at it, type the answer on the ' +
+      'keypad, and your chosen mage casts a water spell that puts it ' +
+      'out. Three drops through and the village burns down. Pick a ' +
+      'male or female mage, and a rare golden drop turns into a ' +
+      'cleansing rain that clears the whole sky. Every difficulty is ' +
+      'free from the start.'));
     body.appendChild(_el('p', 'bz-about-text',
       'The green chart icon on the home screen opens the companion ' +
       'investing simulation in this same tab.'));
@@ -150325,6 +151172,2520 @@ var FeatherWire = (function () {
 if (typeof module !== 'undefined' && module.exports) module.exports = FeatherWire;
 if (typeof window !== 'undefined') {
   try { window.FeatherWire = FeatherWire; } catch (e) { /* best-effort */ }
+}
+</script>
+<script>
+// source: em-data.js
+// EmberMath data — the ONE place the title, difficulties, scoring and
+// art paths live.
+//
+// Ember Math: flaming drops carrying math problems rain from a
+// burning sky onto a village; the chosen mage casts a water/ice
+// spell that extinguishes each drop when the player types the right
+// answer. Three drops reaching the village and it burns down.
+// Free, completely: no paywall, no locked levels, no daily limit.
+//
+// UMD: global EMData + module.exports. Never throws.
+var EMData = (function () {
+  'use strict';
+
+  var EM_TITLE = 'Ember Math';
+  var EM_SLUG = 'ember-math';
+  var EM_APP_ID = 'embermath';
+  var EM_ASSET_BASE = 'assets/ember-math/';
+
+  /* Difficulties (all free from the start). fallSpeed is the fraction
+     of the field height a drop crosses per second at level 1; spawn
+     is the ms between spawns at level 1. */
+  var DIFFICULTIES = {
+    easy: {
+      id: 'easy', name: 'Easy',
+      ops: ['+', '-'],
+      min: 1, max: 9,
+      fallSpeed: 0.055, spawnMs: 2600,
+      desc: 'Add and subtract, numbers 1 to 9. The embers drift down slowly.'
+    },
+    medium: {
+      id: 'medium', name: 'Medium',
+      ops: ['+', '-', '\u00d7'],
+      min: 2, max: 12,
+      fallSpeed: 0.075, spawnMs: 2200,
+      desc: 'Add, subtract and multiply, numbers up to 12. The fire rain picks up.'
+    },
+    hard: {
+      id: 'hard', name: 'Hard',
+      ops: ['+', '-', '\u00d7', '\u00f7'],
+      min: 3, max: 15,
+      fallSpeed: 0.095, spawnMs: 1900,
+      desc: 'All four operations, numbers up to 15. A full firestorm.'
+    }
+  };
+  var DIFFICULTY_IDS = ['easy', 'medium', 'hard'];
+
+  /* Scoring: 10 points x the level multiplier per solve, plus a combo
+     bonus of +2 for every combo step past the first. A golden drop
+     clears the whole screen: 25 points per drop cleared. */
+  var SCORING = {
+    BASE: 10,
+    COMBO_STEP: 2,
+    GOLDEN_PER_FLAKE: 25,
+    SOLVES_PER_LEVEL: 5
+  };
+
+  var MAX_MISSES = 3;
+  var GOLDEN_CHANCE = 1 / 18;
+  /* Fall speed grows 12% per level past level 1, capped at 2.2x. */
+  var SPEED_PER_LEVEL = 0.12;
+  var SPEED_MAX_MULT = 2.2;
+
+  function _art(p) { return EM_ASSET_BASE + p; }
+
+  var ART = {
+    bgVillage: _art('bg-village.webp'),
+    bgMenu: _art('bg-menu.webp'),
+    bgBurned: _art('bg-burned.webp'),
+    splash: _art('splash.webp'),
+    mageMaleIdle: _art('mage-male-idle.webp'),
+    mageMaleCast: _art('mage-male-cast.webp'),
+    mageMaleDistress: _art('mage-male-distress.webp'),
+    mageFemaleIdle: _art('mage-female-idle.webp'),
+    mageFemaleCast: _art('mage-female-cast.webp'),
+    mageFemaleDistress: _art('mage-female-distress.webp'),
+    dropFire: _art('drop-fire.webp'),
+    dropGold: _art('drop-gold.webp'),
+    bgStorm: _art('bg-storm.webp'),
+    bgDawn: _art('bg-dawn.webp'),
+    bgFestival: _art('bg-festival.webp'),
+    mageDuo: _art('mage-duo.webp'),
+    howto: _art('howto.webp')
+  };
+  var ART_FILES = [
+    ART.bgVillage, ART.bgMenu, ART.bgBurned, ART.splash,
+    ART.mageMaleIdle, ART.mageMaleCast, ART.mageMaleDistress,
+    ART.mageFemaleIdle, ART.mageFemaleCast, ART.mageFemaleDistress,
+    ART.dropFire, ART.dropGold,
+    ART.bgStorm, ART.bgDawn, ART.bgFestival,
+    ART.mageDuo, ART.howto
+  ];
+
+  /* Village themes: the playfield sky the player picks on the menu.
+     'night' is the default burning sky. */
+  var THEMES = [
+    { id: 'night', name: 'Fire Night', art: _art('bg-village.webp') },
+    { id: 'storm', name: 'Firestorm', art: _art('bg-storm.webp') },
+    { id: 'dawn', name: 'Dawn', art: _art('bg-dawn.webp') },
+    { id: 'festival', name: 'Festival', art: _art('bg-festival.webp') }
+  ];
+  var THEME_IDS = ['night', 'storm', 'dawn', 'festival'];
+
+  function themeById(id) {
+    var i;
+    for (i = 0; i < THEMES.length; i++) {
+      if (THEMES[i].id === id) return THEMES[i];
+    }
+    return THEMES[0];
+  }
+
+  /* The two playable mages. */
+  var MAGES = {
+    male: { id: 'male', name: 'Aldric', title: 'Male Mage',
+      desc: 'Deep-blue robes, silver trim, a water-crystal staff.' },
+    female: { id: 'female', name: 'Seraphina', title: 'Female Mage',
+      desc: 'Teal-and-violet robes, gold trim, a water-crystal staff.' }
+  };
+  var MAGE_IDS = ['male', 'female'];
+
+  function mageById(id) {
+    if (id && MAGES[id]) return MAGES[id];
+    return null;
+  }
+
+  /* Mage art by mage id + pose ('idle' | 'cast' | 'distress'). */
+  function mageArt(mageId, pose) {
+    var m = (mageId === 'female') ? 'Female' : 'Male';
+    if (pose === 'cast') return ART['mage' + m + 'Cast'];
+    if (pose === 'distress') return ART['mage' + m + 'Distress'];
+    return ART['mage' + m + 'Idle'];
+  }
+
+  function difficultyById(id) {
+    if (id && DIFFICULTIES[id]) return DIFFICULTIES[id];
+    return DIFFICULTIES.easy;
+  }
+
+  function levelForSolved(solved) {
+    var s = (typeof solved === 'number' && isFinite(solved) && solved > 0) ? Math.floor(solved) : 0;
+    return 1 + Math.floor(s / SCORING.SOLVES_PER_LEVEL);
+  }
+
+  function speedMultForLevel(level) {
+    var m = 1 + SPEED_PER_LEVEL * Math.max(0, (level || 1) - 1);
+    return m > SPEED_MAX_MULT ? SPEED_MAX_MULT : m;
+  }
+
+  function fallSpeedFor(difficultyId, level) {
+    var d = difficultyById(difficultyId);
+    return d.fallSpeed * speedMultForLevel(level);
+  }
+
+  function spawnMsFor(difficultyId, level) {
+    var d = difficultyById(difficultyId);
+    var ms = d.spawnMs / speedMultForLevel(level);
+    return ms < 900 ? 900 : ms;
+  }
+
+  /* Points for one correct solve: base x level + combo bonus.
+     combo is the streak AFTER this solve (1 on the first solve of a
+     streak, so the first solve earns no combo bonus). */
+  function scoreForSolve(level, combo) {
+    var lv = (typeof level === 'number' && isFinite(level) && level >= 1) ? Math.floor(level) : 1;
+    var cb = (typeof combo === 'number' && isFinite(combo) && combo >= 1) ? Math.floor(combo) : 1;
+    return SCORING.BASE * lv + SCORING.COMBO_STEP * (cb - 1);
+  }
+
+  var api = {
+    EM_TITLE: EM_TITLE,
+    EM_SLUG: EM_SLUG,
+    EM_APP_ID: EM_APP_ID,
+    EM_ASSET_BASE: EM_ASSET_BASE,
+    MAGES: MAGES,
+    MAGE_IDS: MAGE_IDS,
+    mageById: mageById,
+    mageArt: mageArt,
+    DIFFICULTIES: DIFFICULTIES,
+    DIFFICULTY_IDS: DIFFICULTY_IDS,
+    SCORING: SCORING,
+    MAX_MISSES: MAX_MISSES,
+    GOLDEN_CHANCE: GOLDEN_CHANCE,
+    SPEED_PER_LEVEL: SPEED_PER_LEVEL,
+    SPEED_MAX_MULT: SPEED_MAX_MULT,
+    ART: ART,
+    ART_FILES: ART_FILES,
+    THEMES: THEMES,
+    THEME_IDS: THEME_IDS,
+    themeById: themeById,
+    difficultyById: difficultyById,
+    levelForSolved: levelForSolved,
+    speedMultForLevel: speedMultForLevel,
+    fallSpeedFor: fallSpeedFor,
+    spawnMsFor: spawnMsFor,
+    scoreForSolve: scoreForSolve
+  };
+  return api;
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = EMData;
+if (typeof window !== 'undefined') {
+  try { window.EMData = EMData; } catch (e) { /* best-effort */ }
+}
+</script>
+<script>
+// source: em-engine.js
+// EmberMath engine — PURE logic, NO DOM.
+//
+// States: menu -> playing -> paused -> dead. Drops fall in
+// normalised field coordinates (x/y are fractions of the field
+// width/height, 0..1), so the engine is resolution-independent and
+// testable in node.
+//
+// Fairness (proven in the node tests):
+//  - division always divides evenly (a = divisor x quotient),
+//  - subtraction never goes negative at any level (a >= b always),
+//  - answers stay in sane ranges (Easy sums <= 18, products and
+//    quotients bounded by the difficulty max).
+// Targeting: the lowest falling drop is auto-targeted; tapping a
+// drop targets it instead. A correct answer extinguishes the targeted
+// drop; a wrong answer shakes and resets the combo but the drop
+// keeps falling. A drop reaching the village (y >= 1) is a miss; 3
+// misses burn the village down (dead). A golden drop (~1 in 18)
+// clears the whole screen when solved. Level ramps every 5 solves
+// (fall speed up).
+//
+// UMD: global EMEngine + module.exports. Never throws.
+var EMEngine = (function () {
+  'use strict';
+
+  var D = null;
+  try {
+    if (typeof EMData !== 'undefined' && EMData && EMData.DIFFICULTIES) D = EMData;
+  } catch (e) { D = null; }
+  if (!D) {
+    try {
+      if (typeof require === 'function') D = require('./em-data.js');
+    } catch (e) { /* fall through to the literal fallback */ }
+  }
+  if (!D) {
+    D = {
+      DIFFICULTIES: {
+        easy: { id: 'easy', ops: ['+', '-'], min: 1, max: 9, fallSpeed: 0.055, spawnMs: 2600 },
+        medium: { id: 'medium', ops: ['+', '-', '\u00d7'], min: 2, max: 12, fallSpeed: 0.075, spawnMs: 2200 },
+        hard: { id: 'hard', ops: ['+', '-', '\u00d7', '\u00f7'], min: 3, max: 15, fallSpeed: 0.095, spawnMs: 1900 }
+      },
+      SCORING: { BASE: 10, COMBO_STEP: 2, GOLDEN_PER_FLAKE: 25, SOLVES_PER_LEVEL: 5 },
+      MAX_MISSES: 3, GOLDEN_CHANCE: 1 / 18,
+      SPEED_PER_LEVEL: 0.12, SPEED_MAX_MULT: 2.2
+    };
+    D.difficultyById = function (id) { return (id && D.DIFFICULTIES[id]) ? D.DIFFICULTIES[id] : D.DIFFICULTIES.easy; };
+    D.levelForSolved = function (s) { return 1 + Math.floor(Math.max(0, s || 0) / 5); };
+    D.speedMultForLevel = function (l) { var m = 1 + 0.12 * Math.max(0, (l || 1) - 1); return m > 2.2 ? 2.2 : m; };
+    D.fallSpeedFor = function (id, l) { return D.difficultyById(id).fallSpeed * D.speedMultForLevel(l); };
+    D.spawnMsFor = function (id, l) { var ms = D.difficultyById(id).spawnMs / D.speedMultForLevel(l); return ms < 900 ? 900 : ms; };
+    D.scoreForSolve = function (level, combo) { return 10 * Math.max(1, level || 1) + 2 * (Math.max(1, combo || 1) - 1); };
+  }
+
+  /* mulberry32 — tiny seeded RNG. State lives on the game state so
+     runs replay exactly from their seed. */
+  function _rngNext(s) {
+    var t = (s.rng + 0x6D2B79F5) >>> 0;
+    s.rng = t;
+    var z = t;
+    z = Math.imul(z ^ (z >>> 15), z | 1);
+    z ^= z + Math.imul(z ^ (z >>> 7), z | 61);
+    return ((z ^ (z >>> 14)) >>> 0) / 4294967296;
+  }
+
+  function _seedFrom(n) {
+    var s = (typeof n === 'number' && isFinite(n)) ? (n >>> 0) : 0;
+    return s === 0 ? 0x9E3779B9 : s;
+  }
+
+  function _randInt(s, lo, hi) {
+    if (hi < lo) hi = lo;
+    return lo + Math.floor(_rngNext(s) * (hi - lo + 1));
+  }
+
+  /* One problem. rngState is any object with a numeric .rng (the game
+     state, or a throwaway {rng: seed} in tests). Division always even,
+     subtraction never negative, answers in sane ranges. */
+  function generateProblem(difficultyId, rngState) {
+    var d = D.difficultyById(difficultyId);
+    var s = rngState || { rng: 0x9E3779B9 };
+    var op = d.ops[Math.floor(_rngNext(s) * d.ops.length)];
+    var a, b, answer;
+    if (op === '+') {
+      a = _randInt(s, d.min, d.max);
+      b = _randInt(s, d.min, d.max);
+      answer = a + b;
+    } else if (op === '-') {
+      a = _randInt(s, d.min, d.max);
+      b = _randInt(s, d.min, a);
+      answer = a - b;
+    } else if (op === '\u00d7') {
+      a = _randInt(s, d.min, d.max);
+      b = _randInt(s, d.min, d.max);
+      answer = a * b;
+    } else { /* division: pick divisor and quotient, a is the product */
+      b = _randInt(s, 2, d.max);
+      answer = _randInt(s, 1, d.max);
+      a = b * answer;
+      op = '\u00f7';
+    }
+    return { a: a, b: b, op: op, answer: answer, text: a + ' ' + op + ' ' + b + ' = ?' };
+  }
+
+  function createGame(opts) {
+    opts = opts || {};
+    var diff = (typeof opts.difficulty === 'string' && D.DIFFICULTIES[opts.difficulty])
+      ? opts.difficulty : 'easy';
+    return {
+      state: 'menu',
+      difficulty: diff,
+      seed: _seedFrom(opts.seed),
+      rng: _seedFrom(opts.seed),
+      time: 0,
+      drops: [],
+      nextDropId: 1,
+      targetId: null,
+      spawnInMs: 0,
+      score: 0,
+      best: (typeof opts.best === 'number' && isFinite(opts.best)) ? Math.max(0, Math.floor(opts.best)) : 0,
+      solved: 0,
+      combo: 0,
+      bestCombo: 0,
+      misses: 0,
+      level: 1,
+      input: '',
+      newBest: false,
+      events: []
+    };
+  }
+
+  function _level(s) {
+    var lv = D.levelForSolved(s.solved);
+    if (lv !== s.level) s.level = lv;
+    return s.level;
+  }
+
+  function _spawnDrop(s, forceGolden) {
+    var golden = !!forceGolden;
+    if (!golden) golden = _rngNext(s) < D.GOLDEN_CHANCE;
+    var problem = generateProblem(s.difficulty, s);
+    var speed = D.fallSpeedFor(s.difficulty, _level(s));
+    var drop = {
+      id: s.nextDropId++,
+      problem: problem,
+      x: 0.10 + _rngNext(s) * 0.80,
+      /* Spawn fully inside the field (drop is ~56px tall, centre-anchored,
+         field min-height 140px): y < 0.18 clips the problem text behind
+         the field's top edge for the first seconds of the fall. */
+      y: 0.18,
+      speed: speed * (0.92 + _rngNext(s) * 0.16),
+      golden: golden,
+      state: 'falling'
+    };
+    s.drops.push(drop);
+    return drop;
+  }
+
+  function _lowestFalling(s) {
+    var best = null, i, f;
+    for (i = 0; i < s.drops.length; i++) {
+      f = s.drops[i];
+      if (f.state !== 'falling') continue;
+      if (!best || f.y > best.y) best = f;
+    }
+    return best;
+  }
+
+  function _retarget(s) {
+    var low = _lowestFalling(s);
+    if (!low) { s.targetId = null; return; }
+    var still = false, i;
+    for (i = 0; i < s.drops.length; i++) {
+      if (s.drops[i].id === s.targetId && s.drops[i].state === 'falling') { still = true; break; }
+    }
+    if (!still) s.targetId = low.id;
+  }
+
+  function _removeDrop(s, id) {
+    var i;
+    for (i = 0; i < s.drops.length; i++) {
+      if (s.drops[i].id === id) { s.drops.splice(i, 1); return true; }
+    }
+    return false;
+  }
+
+  function _die(s) {
+    if (s.state === 'dead') return;
+    s.state = 'dead';
+    if (s.score > s.best) {
+      s.best = s.score;
+      s.newBest = true;
+    }
+    s.events.push({ type: 'dead', score: s.score, best: s.best, newBest: s.newBest });
+  }
+
+  function startGame(s, difficulty) {
+    if (!s) return;
+    if (difficulty && D.DIFFICULTIES[difficulty]) s.difficulty = difficulty;
+    s.state = 'playing';
+    s.time = 0;
+    s.drops = [];
+    s.targetId = null;
+    s.spawnInMs = 0;
+    s.score = 0;
+    s.solved = 0;
+    s.combo = 0;
+    s.bestCombo = 0;
+    s.misses = 0;
+    s.level = 1;
+    s.input = '';
+    s.newBest = false;
+    s.events = [];
+    s.rng = s.seed;
+    _spawnDrop(s, false);
+    _retarget(s);
+  }
+
+  function pause(s) {
+    if (!s) return;
+    if (s.state === 'playing') s.state = 'paused';
+  }
+
+  function resume(s) {
+    if (!s) return;
+    if (s.state === 'paused') s.state = 'playing';
+  }
+
+  function toMenu(s) {
+    if (!s) return;
+    s.state = 'menu';
+    s.drops = [];
+    s.targetId = null;
+    s.input = '';
+    s.events = [];
+  }
+
+  function targetDrop(s, id) {
+    if (!s) return false;
+    var i;
+    for (i = 0; i < s.drops.length; i++) {
+      if (s.drops[i].id === id && s.drops[i].state === 'falling') {
+        s.targetId = id;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /* Submit the typed answer for the targeted drop. Returns an
+     outcome object; engine events are also queued on s.events.
+     Empty input is a no-op (the keypad ENTER with nothing typed). */
+  function submitAnswer(s, text) {
+    if (!s || s.state !== 'playing') return { ok: false, reason: 'not-playing' };
+    var raw = (typeof text === 'string' ? text : String(text == null ? '' : text)).trim();
+    if (raw === '') return { ok: false, reason: 'empty' };
+    var value = parseInt(raw, 10);
+    if (isNaN(value)) return { ok: false, reason: 'empty' };
+    _retarget(s);
+    var target = null, i;
+    for (i = 0; i < s.drops.length; i++) {
+      if (s.drops[i].id === s.targetId) { target = s.drops[i]; break; }
+    }
+    if (!target) return { ok: false, reason: 'no-target' };
+    if (value !== target.problem.answer) {
+      s.combo = 0;
+      s.input = '';
+      s.events.push({ type: 'wrong', dropId: target.id, expected: target.problem.answer, got: value });
+      return { ok: false, reason: 'wrong', expected: target.problem.answer, got: value };
+    }
+    /* Correct. */
+    var wasGolden = !!target.golden;
+    s.combo += 1;
+    if (s.combo > s.bestCombo) s.bestCombo = s.combo;
+    s.solved += 1;
+    _level(s);
+    var gained = D.scoreForSolve(s.level, s.combo);
+    s.score += gained;
+    var cleared = 0, clearedPoints = 0;
+    _removeDrop(s, target.id);
+    if (wasGolden) {
+      /* Golden blast clears every other falling drop: 25 each. */
+      var rest = [];
+      for (i = 0; i < s.drops.length; i++) {
+        if (s.drops[i].state === 'falling') {
+          cleared += 1;
+          clearedPoints += D.SCORING.GOLDEN_PER_FLAKE;
+        } else {
+          rest.push(s.drops[i]);
+        }
+      }
+      s.drops = rest;
+      s.score += clearedPoints;
+    }
+    s.input = '';
+    s.targetId = null;
+    _retarget(s);
+    s.events.push({
+      type: 'solved', dropId: target.id, golden: wasGolden,
+      gained: gained, cleared: cleared, clearedPoints: clearedPoints,
+      score: s.score, combo: s.combo, level: s.level, solved: s.solved
+    });
+    return {
+      ok: true, golden: wasGolden, gained: gained,
+      cleared: cleared, clearedPoints: clearedPoints,
+      score: s.score, combo: s.combo, level: s.level, solved: s.solved
+    };
+  }
+
+  /* Advance the fall by dtMs (clamped). Returns the events raised
+     during this call (and clears them). */
+  function step(s, dtMs) {
+    if (!s) return [];
+    s.events = [];
+    if (s.state !== 'playing') return s.events;
+    var dt = (typeof dtMs === 'number' && isFinite(dtMs) && dtMs > 0) ? dtMs : 16;
+    if (dt > 250) dt = 250;
+    var dtS = dt / 1000;
+    s.time += dtS;
+    var i, f;
+    for (i = 0; i < s.drops.length; i++) {
+      f = s.drops[i];
+      if (f.state === 'falling') f.y += f.speed * dtS;
+    }
+    /* Misses: drops that reached the village. */
+    var missed = [];
+    for (i = s.drops.length - 1; i >= 0; i--) {
+      f = s.drops[i];
+      if (f.state === 'falling' && f.y >= 1) {
+        missed.push(f);
+        s.drops.splice(i, 1);
+      }
+    }
+    for (i = 0; i < missed.length; i++) {
+      s.misses += 1;
+      s.combo = 0;
+      s.events.push({ type: 'miss', dropId: missed[i].id, misses: s.misses });
+      if (s.misses >= D.MAX_MISSES) {
+        _die(s);
+        return s.events;
+      }
+    }
+    _retarget(s);
+    /* Spawning. */
+    s.spawnInMs -= dt;
+    if (s.spawnInMs <= 0) {
+      _spawnDrop(s, false);
+      s.spawnInMs = D.spawnMsFor(s.difficulty, _level(s));
+      _retarget(s);
+    }
+    return s.events;
+  }
+
+  function targetProblem(s) {
+    if (!s) return null;
+    var i;
+    for (i = 0; i < s.drops.length; i++) {
+      if (s.drops[i].id === s.targetId) return s.drops[i].problem;
+    }
+    return null;
+  }
+
+  /* Test/proof hooks (pure state edits, never throw). */
+  function forceSpawnGolden(s) {
+    if (!s) return null;
+    return _spawnDrop(s, true);
+  }
+  function forceMiss(s) {
+    /* Drop the lowest falling drop onto the ground line so the next
+       step() registers a miss. Returns the drop id or null. */
+    if (!s) return null;
+    var low = _lowestFalling(s);
+    if (!low) return null;
+    low.y = 1;
+    return low.id;
+  }
+
+  function snapshot(s) {
+    return JSON.parse(JSON.stringify({
+      state: s.state, difficulty: s.difficulty, time: +s.time.toFixed(3),
+      score: s.score, best: s.best, solved: s.solved, combo: s.combo,
+      misses: s.misses, level: s.level, targetId: s.targetId,
+      drops: s.drops.map(function (f) {
+        return { id: f.id, x: +f.x.toFixed(3), y: +f.y.toFixed(3),
+          golden: f.golden, text: f.problem.text, answer: f.problem.answer };
+      })
+    }));
+  }
+
+  var api = {
+    DATA: D,
+    MAX_MISSES: D.MAX_MISSES,
+    GOLDEN_CHANCE: D.GOLDEN_CHANCE,
+    generateProblem: generateProblem,
+    createGame: createGame,
+    startGame: startGame,
+    pause: pause,
+    resume: resume,
+    toMenu: toMenu,
+    step: step,
+    submitAnswer: submitAnswer,
+    targetDrop: targetDrop,
+    targetProblem: targetProblem,
+    forceSpawnGolden: forceSpawnGolden,
+    forceMiss: forceMiss,
+    snapshot: snapshot
+  };
+  return api;
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = EMEngine;
+if (typeof window !== 'undefined') {
+  try { window.EMEngine = EMEngine; } catch (e) { /* best-effort */ }
+}
+</script>
+<script>
+// source: em-save.js
+// EmberMath save — persistent data + SaveRegistry entry.
+//
+// Key (jmf-embermath-save-v1, per the registry convention):
+//   best score, games played, total problems solved, last difficulty,
+//   chosen mage ('male' | 'female' | null when never chosen).
+// Auto-saved on game over and whenever the best changes; the menu
+// offers a delete-save (with confirm) that wipes the whole record.
+//
+// UMD: global EMSave + module.exports. Never throws.
+var EMSave = (function () {
+  'use strict';
+
+  var SAVE_KEY = 'jmf-embermath-save-v1';
+
+  var DEFAULT_SAVE = { best: 0, games: 0, solved: 0, difficulty: 'easy', mage: null, theme: 'night' };
+
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+
+  function _lsGet(key) {
+    try {
+      var store = null;
+      if (typeof localStorage !== 'undefined' && localStorage) store = localStorage;
+      else { var w = _win(); if (w && w.localStorage) store = w.localStorage; }
+      if (!store) return null;
+      var raw = store.getItem(key);
+      return (typeof raw === 'string' && raw) ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function _lsSet(key, value) {
+    try {
+      var store = null;
+      if (typeof localStorage !== 'undefined' && localStorage) store = localStorage;
+      else { var w = _win(); if (w && w.localStorage) store = w.localStorage; }
+      if (!store) return false;
+      store.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function _lsRemove(key) {
+    try {
+      var store = null;
+      if (typeof localStorage !== 'undefined' && localStorage) store = localStorage;
+      else { var w = _win(); if (w && w.localStorage) store = w.localStorage; }
+      if (!store) return false;
+      store.removeItem(key);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function _clone(obj) {
+    try { return JSON.parse(JSON.stringify(obj)); } catch (e) { return null; }
+  }
+
+  function _withDefaults(saved) {
+    var out = _clone(DEFAULT_SAVE) || { best: 0, games: 0, solved: 0, difficulty: 'easy', mage: null, theme: 'night' };
+    if (saved && typeof saved === 'object') {
+      if (typeof saved.best === 'number' && isFinite(saved.best)) out.best = Math.max(0, Math.floor(saved.best));
+      if (typeof saved.games === 'number' && isFinite(saved.games)) out.games = Math.max(0, Math.floor(saved.games));
+      if (typeof saved.solved === 'number' && isFinite(saved.solved)) out.solved = Math.max(0, Math.floor(saved.solved));
+      if (typeof saved.difficulty === 'string' &&
+          (saved.difficulty === 'easy' || saved.difficulty === 'medium' || saved.difficulty === 'hard')) {
+        out.difficulty = saved.difficulty;
+      }
+      if (saved.mage === 'male' || saved.mage === 'female') out.mage = saved.mage;
+      else if (saved.mage === null) out.mage = null;
+      if (typeof saved.theme === 'string' &&
+          (saved.theme === 'night' || saved.theme === 'storm' || saved.theme === 'dawn' || saved.theme === 'festival')) {
+        out.theme = saved.theme;
+      }
+    }
+    return out;
+  }
+
+  function load() { return _withDefaults(_lsGet(SAVE_KEY)); }
+  function save(data) {
+    if (!data || typeof data !== 'object') return false;
+    return _lsSet(SAVE_KEY, _withDefaults(data));
+  }
+  function loadBest() {
+    try { return load().best || 0; } catch (e) { return 0; }
+  }
+  function saveBest(best) {
+    try {
+      var s = load();
+      s.best = (typeof best === 'number' && isFinite(best)) ? Math.max(0, Math.floor(best)) : 0;
+      return save(s);
+    } catch (e) {
+      return false;
+    }
+  }
+  /* Record one finished game: games +1, solved += n, best updated.
+     Returns the saved record. */
+  function recordGame(score, solved, difficulty) {
+    try {
+      var s = load();
+      s.games = (s.games || 0) + 1;
+      s.solved = (s.solved || 0) + (typeof solved === 'number' && isFinite(solved) ? Math.max(0, Math.floor(solved)) : 0);
+      if (typeof score === 'number' && isFinite(score) && score > (s.best || 0)) s.best = Math.floor(score);
+      if (difficulty === 'easy' || difficulty === 'medium' || difficulty === 'hard') s.difficulty = difficulty;
+      save(s);
+      return s;
+    } catch (e) {
+      return load();
+    }
+  }
+  function setMage(mage) {
+    try {
+      if (mage !== 'male' && mage !== 'female') return false;
+      var s = load();
+      s.mage = mage;
+      return save(s);
+    } catch (e) {
+      return false;
+    }
+  }
+  function loadMage() {
+    try { return load().mage || null; } catch (e) { return null; }
+  }
+  function setDifficulty(difficulty) {
+    try {
+      if (difficulty !== 'easy' && difficulty !== 'medium' && difficulty !== 'hard') return false;
+      var s = load();
+      s.difficulty = difficulty;
+      return save(s);
+    } catch (e) {
+      return false;
+    }
+  }
+  function setTheme(theme) {
+    try {
+      if (theme !== 'night' && theme !== 'storm' && theme !== 'dawn' && theme !== 'festival') return false;
+      var s = load();
+      s.theme = theme;
+      return save(s);
+    } catch (e) {
+      return false;
+    }
+  }
+  function loadTheme() {
+    try { return load().theme || 'night'; } catch (e) { return 'night'; }
+  }
+  function deleteSave() {
+    try { _lsRemove(SAVE_KEY); } catch (e) { /* best-effort */ }
+    return _clone(DEFAULT_SAVE);
+  }
+
+  /* SaveRegistry entry: Settings builds its saves section data-driven
+     from owners(), so Ember Math appears there with no Settings edit. */
+  try {
+    if (typeof SaveRegistry !== 'undefined' && SaveRegistry &&
+        typeof SaveRegistry.register === 'function') {
+      SaveRegistry.register({
+        id: 'embermath',
+        name: 'Ember Math',
+        keys: [SAVE_KEY]
+      });
+    }
+  } catch (e) { /* registry is best-effort */ }
+
+  return {
+    SAVE_KEY: SAVE_KEY,
+    DEFAULT_SAVE: _clone(DEFAULT_SAVE),
+    load: load,
+    save: save,
+    loadBest: loadBest,
+    saveBest: saveBest,
+    recordGame: recordGame,
+    setMage: setMage,
+    loadMage: loadMage,
+    setDifficulty: setDifficulty,
+    setTheme: setTheme,
+    loadTheme: loadTheme,
+    deleteSave: deleteSave
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = EMSave;
+if (typeof window !== 'undefined') {
+  try { window.EMSave = EMSave; } catch (e) { /* best-effort */ }
+}
+</script>
+<script>
+// source: em-audio.js
+// EmberMathAudio — WebAudio synth SFX only. NO music files, NO music
+// track of its own: the phone's shared shell music keeps playing while
+// the game is open (shell music only, per the standing rule).
+//
+// Sounds (all synthesised, nothing to download):
+//   cast       — water/ice spell whoosh (filtered noise sweep up)
+//   correct    — bright two-note chime
+//   extinguish — steam hiss (high noise burst)
+//   crackle    — fire crackle (short crackling noise pops)
+//   wrong      — low buzz
+//   golden     — rising arpeggio (cleansing rain)
+//   defeat     — low descending tone (the village burns down)
+//   click      — short UI blip
+// Every sound respects the shared sound toggle (BZSettings /
+// BZAudio). No AudioContext, no sound — degrade silently, never throw.
+//
+// UMD: global EMAudio + module.exports. Never throws.
+var EMAudio = (function () {
+  'use strict';
+
+  var _ctx = null;
+  var _musicOn = true;
+
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+  function _bzAudio() {
+    try {
+      var w = _win();
+      if (w && w.BZAudio) return w.BZAudio;
+      if (typeof BZAudio !== 'undefined' && BZAudio) return BZAudio;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _settings() {
+    try {
+      var w = _win();
+      if (w && w.BZSettings && typeof w.BZSettings.readSettings === 'function') return w.BZSettings.readSettings();
+      if (typeof BZSettings !== 'undefined' && BZSettings && typeof BZSettings.readSettings === 'function') return BZSettings.readSettings();
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _audioCtx() {
+    try {
+      if (_ctx) return _ctx;
+      var w = _win();
+      var AC = (w && (w.AudioContext || w.webkitAudioContext)) ||
+        (typeof AudioContext !== 'undefined' ? AudioContext : null) ||
+        (typeof webkitAudioContext !== 'undefined' ? webkitAudioContext : null);
+      if (!AC) return null;
+      _ctx = new AC();
+      return _ctx;
+    } catch (e) { return null; }
+  }
+
+  function isMusicOn() {
+    var bz = _bzAudio();
+    if (bz && typeof bz.isMusicOn === 'function') {
+      try { return !!bz.isMusicOn(); } catch (e) { /* fall through */ }
+    }
+    var s = _settings();
+    if (s && typeof s.music === 'boolean') return s.music;
+    return _musicOn;
+  }
+
+  /* Drives the SHARED shell music setting only — never starts, stops,
+     or silences any track of its own (Ember Math has none). */
+  function setMusic(on) {
+    _musicOn = !!on;
+    var bz = _bzAudio();
+    if (bz && typeof bz.setMusic === 'function') {
+      try { bz.setMusic(_musicOn); } catch (e) { /* fall through */ }
+      return _musicOn;
+    }
+    return _musicOn;
+  }
+
+  function toggleMusic() { return setMusic(!isMusicOn()); }
+
+  function isSoundOn() {
+    var s = _settings();
+    if (s && typeof s.sound === 'boolean') return s.sound;
+    var bz = _bzAudio();
+    if (bz && typeof bz.isSoundOn === 'function') {
+      try { return !!bz.isSoundOn(); } catch (e) { /* fall through */ }
+    }
+    return true;
+  }
+
+  function setSound(on) {
+    var bz = _bzAudio();
+    if (bz && typeof bz.setSound === 'function') {
+      try { bz.setSound(!!on); } catch (e) { /* best-effort */ }
+    }
+    return isSoundOn();
+  }
+
+  /* Call on open / first tap. Shell music is already playing; there
+     is no Ember Math track to start. */
+  function ensureStarted() { return isMusicOn(); }
+
+  /* Call on game close. No-op: there is no track to pause and the
+     shell music keeps playing across open/close. */
+  function stop() { return; }
+
+  function _tone(ctx, freq, dur, type, vol, when, slideTo) {
+    try {
+      var o = ctx.createOscillator();
+      var g = ctx.createGain();
+      o.type = type || 'sine';
+      var t0 = ctx.currentTime + (when || 0);
+      o.frequency.setValueAtTime(freq, t0);
+      if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol || 0.08, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start(t0);
+      o.stop(t0 + dur + 0.05);
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _noise(ctx, dur, vol, filterType, freqFrom, freqTo, when) {
+    try {
+      var len = Math.max(1, Math.floor(ctx.sampleRate * dur));
+      var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      var data = buf.getChannelData(0);
+      for (var i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+      var src = ctx.createBufferSource();
+      src.buffer = buf;
+      var filt = ctx.createBiquadFilter();
+      filt.type = filterType || 'bandpass';
+      var t0 = ctx.currentTime + (when || 0);
+      filt.frequency.setValueAtTime(freqFrom || 1200, t0);
+      if (freqTo) filt.frequency.exponentialRampToValueAtTime(freqTo, t0 + dur);
+      filt.Q.value = 0.9;
+      var g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol || 0.12, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      src.connect(filt);
+      filt.connect(g);
+      g.connect(ctx.destination);
+      src.start(t0);
+      src.stop(t0 + dur + 0.05);
+    } catch (e) { /* best-effort */ }
+  }
+
+  function playSfx(kind) {
+    if (!isSoundOn()) return;
+    var ctx = _audioCtx();
+    if (!ctx) return;
+    if (kind === 'fire') kind = 'cast';
+    if (kind === 'melt') kind = 'extinguish';
+    if (kind === 'death') kind = 'defeat';
+    try {
+      if (ctx.state === 'suspended' && typeof ctx.resume === 'function') ctx.resume();
+      if (kind === 'cast') {
+        _noise(ctx, 0.45, 0.15, 'bandpass', 700, 3400);
+        _tone(ctx, 520, 0.3, 'sine', 0.05, 0, 1040);
+      } else if (kind === 'correct') {
+        _tone(ctx, 880, 0.14, 'sine', 0.09, 0);
+        _tone(ctx, 1318, 0.22, 'sine', 0.09, 0.09);
+      } else if (kind === 'extinguish') {
+        _noise(ctx, 0.5, 0.08, 'highpass', 3600, 5200);
+      } else if (kind === 'crackle') {
+        _noise(ctx, 0.12, 0.1, 'bandpass', 1800, 900, 0);
+        _noise(ctx, 0.1, 0.08, 'bandpass', 2400, 1200, 0.12);
+        _noise(ctx, 0.14, 0.09, 'bandpass', 1500, 800, 0.24);
+      } else if (kind === 'wrong') {
+        _tone(ctx, 140, 0.28, 'sawtooth', 0.09, 0, 90);
+      } else if (kind === 'golden') {
+        _tone(ctx, 523, 0.14, 'triangle', 0.1, 0);
+        _tone(ctx, 659, 0.14, 'triangle', 0.1, 0.08);
+        _tone(ctx, 784, 0.14, 'triangle', 0.1, 0.16);
+        _tone(ctx, 1046, 0.3, 'triangle', 0.11, 0.24);
+        _noise(ctx, 0.5, 0.1, 'bandpass', 1400, 3200, 0.1);
+      } else if (kind === 'defeat') {
+        _tone(ctx, 220, 0.9, 'sine', 0.11, 0, 55);
+        _tone(ctx, 110, 0.9, 'triangle', 0.07, 0.1, 40);
+        _noise(ctx, 0.8, 0.05, 'bandpass', 900, 300, 0.1);
+      } else if (kind === 'click') {
+        _tone(ctx, 740, 0.07, 'sine', 0.06, 0);
+      } else {
+        _tone(ctx, 660, 0.12, 'sine', 0.07, 0);
+      }
+    } catch (e) { /* best-effort */ }
+  }
+
+  function debugState() {
+    return {
+      musicOn: isMusicOn(),
+      soundOn: isSoundOn(),
+      track: null,
+      hasAudioContext: !!_ctx
+    };
+  }
+
+  var api = {
+    isMusicOn: isMusicOn,
+    setMusic: setMusic,
+    toggleMusic: toggleMusic,
+    isSoundOn: isSoundOn,
+    setSound: setSound,
+    ensureStarted: ensureStarted,
+    stop: stop,
+    playSfx: playSfx,
+    blip: playSfx,
+    debugState: debugState
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  if (typeof window !== 'undefined' && window) {
+    window.EMAudio = api;
+    window.__EM_AUDIO__ = api;
+  }
+  return api;
+})();
+</script>
+<script>
+// source: em-game.js
+// EmberMathGame — Ember Math UI: mage select, menu, falling-drop
+// playfield, the chosen mage casting at the bottom, the village,
+// on-screen keypad, pause sheet, game-over screen.
+//
+// Owns the DOM inside #app-embermath. All logic goes through
+// EMEngine; all persistence through EMSave; all sound through
+// EMAudio (WebAudio synth SFX only, no music files — the phone's
+// shared shell music keeps playing while the game is open).
+//
+// Art (assets/ember-math/) degrades gracefully: every <img> hides
+// itself silently on error and a CSS fallback shows instead (gradient
+// burning sky, drawn flame drop, mage silhouette, house shapes). A
+// missing art file is never a broken image and never a console error.
+//
+// UMD: global EmberMathGame (+ window.__EM__ verification handle).
+// Never throws at boot; degrades gracefully if art/audio/save are
+// missing. Original names/art only.
+var EmberMathGame = (function () {
+  'use strict';
+
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+  function _resolve(name) {
+    try {
+      var w = _win();
+      if (w && w[name]) return w[name];
+      if (typeof window !== 'undefined' && window && window[name]) return window[name];
+    } catch (e) { /* fall through */ }
+    try {
+      if (typeof globalThis !== 'undefined' && globalThis[name]) return globalThis[name];
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _log(e) {
+    try {
+      if (typeof console !== 'undefined' && console && console.error) console.error('[em-game]', e);
+    } catch (e2) { /* logging is best-effort */ }
+  }
+  function _el(id) {
+    try { return document.getElementById(id); } catch (e) { return null; }
+  }
+  function _data() { return _resolve('EMData'); }
+  function _engineMod() { return _resolve('EMEngine'); }
+  function _saveMod() { return _resolve('EMSave'); }
+  function _audioMod() { return _resolve('EMAudio'); }
+
+  var D = _data();
+  var E = _engineMod();
+  var SAVE = _saveMod();
+  var AUDIO = _audioMod();
+
+  var ASSET_BASE = (D && D.EM_ASSET_BASE) || 'assets/ember-math/';
+  var ART = (D && D.ART) || {
+    bgVillage: ASSET_BASE + 'bg-village.webp',
+    bgMenu: ASSET_BASE + 'bg-menu.webp',
+    bgBurned: ASSET_BASE + 'bg-burned.webp',
+    splash: ASSET_BASE + 'splash.webp',
+    mageMaleIdle: ASSET_BASE + 'mage-male-idle.webp',
+    mageMaleCast: ASSET_BASE + 'mage-male-cast.webp',
+    mageMaleDistress: ASSET_BASE + 'mage-male-distress.webp',
+    mageFemaleIdle: ASSET_BASE + 'mage-female-idle.webp',
+    mageFemaleCast: ASSET_BASE + 'mage-female-cast.webp',
+    mageFemaleDistress: ASSET_BASE + 'mage-female-distress.webp',
+    dropFire: ASSET_BASE + 'drop-fire.webp',
+    dropGold: ASSET_BASE + 'drop-gold.webp',
+    bgStorm: ASSET_BASE + 'bg-storm.webp',
+    bgDawn: ASSET_BASE + 'bg-dawn.webp',
+    bgFestival: ASSET_BASE + 'bg-festival.webp',
+    mageDuo: ASSET_BASE + 'mage-duo.webp',
+    howto: ASSET_BASE + 'howto.webp'
+  };
+
+  var MAX_MISSES = (D && D.MAX_MISSES) || 3;
+  var CAST_MS = 600;
+
+  function _mageArt(mageId, pose) {
+    try {
+      if (D && typeof D.mageArt === 'function') return D.mageArt(mageId, pose);
+    } catch (e) { /* fall through */ }
+    var m = (mageId === 'female') ? 'Female' : 'Male';
+    if (pose === 'cast') return ART['mage' + m + 'Cast'];
+    if (pose === 'distress') return ART['mage' + m + 'Distress'];
+    return ART['mage' + m + 'Idle'];
+  }
+
+  var MARKUP =
+    '<div class="em-root">' +
+    '<div class="em-bg" aria-hidden="true">' +
+      '<img class="em-bg-img" id="emBgImg" src="' + ART.bgVillage + '" alt="">' +
+      '<div class="em-bg-fallback"></div>' +
+    '</div>' +
+    '<div class="em-screen em-select" id="emSelectScreen" hidden>' +
+      '<div class="em-select-inner">' +
+        '<h1 class="em-title">Choose your mage</h1>' +
+        '<p class="em-tagline">Fire rain is falling on the village. Only a mage\'s water spell can put it out.</p>' +
+        '<img class="em-select-duo" id="emSelectDuo" src="' + ART.mageDuo + '" alt="Aldric and Seraphina, the two mages">' +
+        '<div class="em-mage-row">' +
+          '<button type="button" class="em-mage-card" data-mage="male">' +
+            '<img class="em-mage-card-img" src="' + ART.mageMaleIdle + '" alt="">' +
+            '<span class="em-mage-card-fallback" aria-hidden="true"></span>' +
+            '<span class="em-mage-card-name">Aldric</span>' +
+            '<span class="em-mage-card-title">Male Mage</span>' +
+          '</button>' +
+          '<button type="button" class="em-mage-card" data-mage="female">' +
+            '<img class="em-mage-card-img" src="' + ART.mageFemaleIdle + '" alt="">' +
+            '<span class="em-mage-card-fallback" aria-hidden="true"></span>' +
+            '<span class="em-mage-card-name">Seraphina</span>' +
+            '<span class="em-mage-card-title">Female Mage</span>' +
+          '</button>' +
+        '</div>' +
+        '<p class="em-select-note">Your mage is saved — change it any time from the menu.</p>' +
+      '</div>' +
+    '</div>' +
+    '<div class="em-screen em-menu" id="emMenuScreen" hidden>' +
+      '<div class="em-menu-inner">' +
+        '<div class="em-menu-badge" aria-hidden="true"><span class="em-menu-flame"></span></div>' +
+        '<h1 class="em-title">Ember Math</h1>' +
+        '<p class="em-tagline">Flaming drops rain on the village. Solve the math, and your mage\'s water spell puts each one out. Three drops through and the village burns down.</p>' +
+        '<div class="em-best-line">Best: <span id="emMenuBest">0</span></div>' +
+        '<div class="em-mage-line">Mage: <b id="emMenuMage">—</b> <button type="button" class="em-link-btn em-change-mage" id="emChangeMageBtn">Change mage</button></div>' +
+        '<div class="em-diff-row" id="emDiffRow" role="group" aria-label="Difficulty">' +
+          '<button type="button" class="em-diff-btn" data-diff="easy">Easy</button>' +
+          '<button type="button" class="em-diff-btn" data-diff="medium">Medium</button>' +
+          '<button type="button" class="em-diff-btn" data-diff="hard">Hard</button>' +
+        '</div>' +
+        '<p class="em-diff-desc" id="emDiffDesc"></p>' +
+        '<div class="em-theme-label">Village theme</div>' +
+        '<div class="em-theme-row" id="emThemeRow" role="group" aria-label="Village theme">' +
+          '<button type="button" class="em-theme-btn" data-theme="night">Fire Night</button>' +
+          '<button type="button" class="em-theme-btn" data-theme="storm">Firestorm</button>' +
+          '<button type="button" class="em-theme-btn" data-theme="dawn">Dawn</button>' +
+          '<button type="button" class="em-theme-btn" data-theme="festival">Festival</button>' +
+        '</div>' +
+        '<button type="button" class="em-play-btn" id="emPlayBtn">PLAY</button>' +
+        '<button type="button" class="em-link-btn" id="emHowBtn">How to play</button>' +
+        '<div class="em-how" id="emHowBox" hidden>' +
+          '<img class="em-how-img" id="emHowImg" src="' + ART.howto + '" alt="A mage putting out a fire drop">' +
+          '<p>Flaming drops with math problems rain from the sky. Tap a drop to aim at it — or just solve the lowest one.</p>' +
+          '<p>Type the answer on the keypad and press SOLVE before the drop reaches the village. A right answer makes your mage cast a water spell that puts it out.</p>' +
+          '<p>A drop that reaches the village sets a house on fire. Three burning houses and the village burns down — game over.</p>' +
+          '<p>A rare golden drop turns into a cleansing rain that clears the whole sky when you solve it. Every 5 solves the fire rain falls faster and you level up.</p>' +
+        '</div>' +
+        '<button type="button" class="em-link-btn em-delete-btn" id="emDeleteBtn">Delete save</button>' +
+        '<p class="em-delete-note" id="emDeleteNote" hidden>Tap again to erase your best score, stats and mage.</p>' +
+      '</div>' +
+    '</div>' +
+    '<div class="em-screen em-play" id="emPlayScreen" hidden>' +
+      '<div class="em-topbar" id="topbar">' +
+        '<button type="button" class="iconbtn em-pause-btn" id="emPauseBtn" title="Pause" aria-label="Pause">&#10073;&#10073;</button>' +
+        '<span class="em-topbar-title">Ember Math</span>' +
+        '<button type="button" class="iconbtn em-mute-btn" id="emMuteBtn" title="Sound" aria-label="Sound">&#128266;</button>' +
+      '</div>' +
+      '<div class="em-hud">' +
+        '<span class="em-hud-item">Score <b id="emScore">0</b></span>' +
+        '<span class="em-hud-item">Combo <b id="emCombo">x0</b></span>' +
+        '<span class="em-hud-item">Level <b id="emLevel">1</b></span>' +
+        '<span class="em-hud-item em-misses" id="emMisses" aria-label="Burning houses">' +
+          '<i class="em-miss-dot" title="House"></i><i class="em-miss-dot" title="House"></i><i class="em-miss-dot" title="House"></i>' +
+        '</span>' +
+      '</div>' +
+      '<div class="em-field" id="emField">' +
+        '<div class="em-ambient" id="emAmbient" aria-hidden="true"></div>' +
+        '<div class="em-drops" id="emDrops"></div>' +
+        '<div class="em-village" id="emVillage" aria-hidden="true">' +
+          '<span class="em-house"><i class="em-house-roof"></i><i class="em-house-body"></i><i class="em-house-fire"></i><i class="em-house-smoke"></i></span>' +
+          '<span class="em-house"><i class="em-house-roof"></i><i class="em-house-body"></i><i class="em-house-fire"></i><i class="em-house-smoke"></i></span>' +
+          '<span class="em-house"><i class="em-house-roof"></i><i class="em-house-body"></i><i class="em-house-fire"></i><i class="em-house-smoke"></i></span>' +
+        '</div>' +
+        '<div class="em-mage" id="emMage">' +
+          '<div class="em-mage-wrap" id="emMageWrap">' +
+            '<img class="em-mage-img" id="emMageImg" src="' + ART.mageMaleIdle + '" alt="Your mage">' +
+            '<div class="em-mage-fallback" id="emMageFallback" aria-hidden="true"></div>' +
+          '</div>' +
+          '<div class="em-blast" id="emBlast" aria-hidden="true"></div>' +
+          '<div class="em-steam" id="emSteam" aria-hidden="true"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="em-answer-row" id="emAnswerRow">' +
+        '<span class="em-target-problem" id="emTargetProblem">—</span>' +
+        '<span class="em-input" id="emInput" aria-live="polite"></span>' +
+      '</div>' +
+      '<div class="em-keypad" id="emKeypad" role="group" aria-label="Answer keypad">' +
+        '<button type="button" class="em-key" data-key="1">1</button>' +
+        '<button type="button" class="em-key" data-key="2">2</button>' +
+        '<button type="button" class="em-key" data-key="3">3</button>' +
+        '<button type="button" class="em-key" data-key="4">4</button>' +
+        '<button type="button" class="em-key" data-key="5">5</button>' +
+        '<button type="button" class="em-key" data-key="6">6</button>' +
+        '<button type="button" class="em-key" data-key="7">7</button>' +
+        '<button type="button" class="em-key" data-key="8">8</button>' +
+        '<button type="button" class="em-key" data-key="9">9</button>' +
+        '<button type="button" class="em-key em-key--back" data-key="back" aria-label="Backspace">&#9003;</button>' +
+        '<button type="button" class="em-key" data-key="0">0</button>' +
+        '<button type="button" class="em-key em-key--enter" data-key="enter">SOLVE</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="em-screen em-pause" id="emPauseScreen" hidden>' +
+      '<div class="em-sheet">' +
+        '<h2 class="em-sheet-title">Paused</h2>' +
+        '<p class="em-sheet-sub">The fire rain waits for no one — except now.</p>' +
+        '<button type="button" class="em-play-btn" id="emResumeBtn">Resume</button>' +
+        '<button type="button" class="em-sheet-btn" id="emRestartBtn">Restart</button>' +
+        '<button type="button" class="em-sheet-btn" id="emQuitBtn">Quit to menu</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="em-screen em-over" id="emOverScreen" hidden>' +
+      '<div class="em-over-bg" aria-hidden="true">' +
+        '<img class="em-over-bg-img" id="emOverBgImg" src="' + ART.bgBurned + '" alt="">' +
+        '<div class="em-over-bg-fallback"></div>' +
+      '</div>' +
+      '<div class="em-over-inner">' +
+        '<h2 class="em-over-title">The village burned down</h2>' +
+        '<p class="em-over-sub">Three drops got through. The fires took the village — but a mage never gives up.</p>' +
+        '<div class="em-over-score">Score <b id="emOverScore">0</b></div>' +
+        '<div class="em-over-best">Best <b id="emOverBest">0</b> <span id="emNewBest" class="em-newbest" hidden>New best!</span></div>' +
+        '<div class="em-over-stats" id="emOverStats"></div>' +
+        '<button type="button" class="em-play-btn" id="emAgainBtn">Play Again</button>' +
+        '<button type="button" class="em-sheet-btn" id="emOverMenuBtn">Menu</button>' +
+      '</div>' +
+    '</div>' +
+    '</div>';
+
+  var mount = null;
+  var root = null;
+  var eng = null;
+  var stats = { best: 0, games: 0, solved: 0, difficulty: 'easy', mage: null, theme: 'night' };
+  var difficulty = 'easy';
+  var mage = null;
+  var theme = 'night';
+  var paused = false;
+  var overShown = false;
+  var runRecorded = false;
+  var casting = false;
+  var castTimer = null;
+  var loopActive = false;
+  var loopStarted = false;
+  var lastT = 0;
+  var deleteArmed = false;
+  var dropEls = {};
+  var magePose = 'idle';
+
+  var els = {};
+
+  function _sfx(kind) {
+    try {
+      if (AUDIO && typeof AUDIO.playSfx === 'function') AUDIO.playSfx(kind);
+    } catch (e) { /* sound never breaks play */ }
+  }
+
+  function _save() { return _saveMod() || SAVE; }
+
+  function _loadStats() {
+    try {
+      var mod = _save();
+      if (mod && typeof mod.load === 'function') stats = mod.load();
+    } catch (e) { /* save is best-effort */ }
+    if (!stats || typeof stats !== 'object') stats = { best: 0, games: 0, solved: 0, difficulty: 'easy', mage: null, theme: 'night' };
+    if (stats.difficulty === 'easy' || stats.difficulty === 'medium' || stats.difficulty === 'hard') {
+      difficulty = stats.difficulty;
+    }
+    mage = (stats.mage === 'male' || stats.mage === 'female') ? stats.mage : null;
+    theme = (stats.theme === 'night' || stats.theme === 'storm' || stats.theme === 'dawn' || stats.theme === 'festival') ? stats.theme : 'night';
+  }
+
+  /* Village theme: the playfield sky. Applied to the root background
+     image; the game-over screen keeps its own burned art. */
+  function _themeArt(id) {
+    try {
+      if (D && typeof D.themeById === 'function') return D.themeById(id).art;
+    } catch (e) { /* fall through */ }
+    var map = { night: ART.bgVillage, storm: ART.bgStorm, dawn: ART.bgDawn, festival: ART.bgFestival };
+    return map[id] || ART.bgVillage;
+  }
+
+  function _applyTheme() {
+    try {
+      var img = els.bgImg;
+      if (!img) return;
+      var src = _themeArt(theme);
+      try { img.style.display = ''; } catch (e) { /* silent */ }
+      if (img.getAttribute('src') !== src) {
+        try { img.setAttribute('src', src); } catch (e2) { /* silent */ }
+      }
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _chooseTheme(id) {
+    try {
+      if (id !== 'night' && id !== 'storm' && id !== 'dawn' && id !== 'festival') return;
+      theme = id;
+      try {
+        var mod = _save();
+        if (mod && typeof mod.setTheme === 'function') mod.setTheme(id);
+        stats.theme = id;
+      } catch (e) { /* best-effort */ }
+      _applyTheme();
+      _refreshMenu();
+      _sfx('click');
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _recordGameOver() {
+    if (runRecorded) return;
+    runRecorded = true;
+    try {
+      var mod = _save();
+      if (mod && typeof mod.recordGame === 'function') {
+        stats = mod.recordGame(eng ? eng.score : 0, eng ? eng.solved : 0, difficulty);
+      }
+    } catch (e) { /* save is best-effort */ }
+  }
+
+  function _saveBestIfBeaten() {
+    try {
+      if (!eng) return;
+      if (eng.score > (stats.best || 0)) {
+        var mod = _save();
+        if (mod && typeof mod.saveBest === 'function') {
+          mod.saveBest(eng.score);
+          stats.best = eng.score;
+        }
+      }
+    } catch (e) { /* best-effort */ }
+  }
+
+  /* --- art fallbacks: hide a failed <img> silently, show the CSS
+     fallback instead. Never a broken image, never a console error. --- */
+  function _armImgFallback(img, fallbackEl) {
+    try {
+      if (!img) return;
+      img.addEventListener('error', function () {
+        try { img.style.display = 'none'; } catch (e) { /* silent */ }
+        try { if (fallbackEl) fallbackEl.style.display = 'block'; } catch (e2) { /* silent */ }
+      });
+      img.addEventListener('load', function () {
+        try { img.style.display = ''; } catch (e) { /* silent */ }
+        try { if (fallbackEl) fallbackEl.style.display = 'none'; } catch (e2) { /* silent */ }
+      });
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _armCardFallback(img) {
+    try {
+      if (!img) return;
+      img.addEventListener('error', function () {
+        try { img.style.display = 'none'; } catch (e) { /* silent */ }
+        try {
+          var fb = img.parentNode ? img.parentNode.querySelector('.em-mage-card-fallback') : null;
+          if (fb) fb.style.display = 'block';
+        } catch (e2) { /* silent */ }
+      });
+      img.addEventListener('load', function () {
+        try { img.style.display = ''; } catch (e) { /* silent */ }
+        try {
+          var fb = img.parentNode ? img.parentNode.querySelector('.em-mage-card-fallback') : null;
+          if (fb) fb.style.display = 'none';
+        } catch (e2) { /* silent */ }
+      });
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _setMagePose(pose) {
+    magePose = pose;
+    try {
+      var img = els.mageImg;
+      var fb = els.mageFallback;
+      if (!img) return;
+      var src = _mageArt(mage || 'male', pose);
+      try { img.style.display = ''; } catch (e) { /* silent */ }
+      try { if (fb) fb.style.display = 'none'; } catch (e2) { /* silent */ }
+      if (img.getAttribute('src') !== src) {
+        try { img.setAttribute('src', src); } catch (e3) { /* silent */ }
+      }
+    } catch (e) { /* best-effort */ }
+  }
+
+  /* Mage pose follows the miss count, unless mid-cast. Two burning
+     houses and the mage is distressed; the village is what burns. */
+  function _magePoseForMisses() {
+    if (!eng) return 'idle';
+    if (eng.misses >= 2) return 'distress';
+    return 'idle';
+  }
+
+  function _showScreen(name) {
+    try {
+      var map = {
+        select: els.selectScreen, menu: els.menuScreen, play: els.playScreen,
+        pause: els.pauseScreen, over: els.overScreen
+      };
+      var k;
+      for (k in map) {
+        if (map[k]) map[k].hidden = (k !== name);
+      }
+      if (name === 'play' || name === 'pause') {
+        if (els.playScreen) els.playScreen.hidden = false;
+      }
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _mageDisplayName() {
+    try {
+      if (D && typeof D.mageById === 'function') {
+        var m = D.mageById(mage);
+        if (m) return m.name + ' (' + m.title + ')';
+      }
+    } catch (e) { /* fall through */ }
+    return mage === 'female' ? 'Seraphina (Female Mage)' : 'Aldric (Male Mage)';
+  }
+
+  function _refreshMenu() {
+    try {
+      if (els.menuBest) els.menuBest.textContent = String(stats.best || 0);
+      if (els.menuMage) els.menuMage.textContent = mage ? _mageDisplayName() : '—';
+      var btns = root ? root.querySelectorAll('.em-diff-btn') : [];
+      var i, b;
+      for (i = 0; i < btns.length; i++) {
+        b = btns[i];
+        var active = b.getAttribute('data-diff') === difficulty;
+        try { b.classList.toggle('em-diff-active', active); } catch (e) { /* silent */ }
+        try { b.setAttribute('aria-pressed', active ? 'true' : 'false'); } catch (e2) { /* silent */ }
+      }
+      if (els.diffDesc) {
+        var d = D && D.difficultyById ? D.difficultyById(difficulty) : null;
+        els.diffDesc.textContent = d ? d.desc : '';
+      }
+      var themeBtns = root ? root.querySelectorAll('.em-theme-btn') : [];
+      for (i = 0; i < themeBtns.length; i++) {
+        b = themeBtns[i];
+        var tActive = b.getAttribute('data-theme') === theme;
+        try { b.classList.toggle('em-theme-btn--active', tActive); } catch (e) { /* silent */ }
+        try { b.setAttribute('aria-pressed', tActive ? 'true' : 'false'); } catch (e2) { /* silent */ }
+      }
+      _applyTheme();
+      var cards = root ? root.querySelectorAll('.em-mage-card') : [];
+      for (i = 0; i < cards.length; i++) {
+        try { cards[i].classList.toggle('em-mage-card--active', cards[i].getAttribute('data-mage') === mage); } catch (e3) { /* silent */ }
+      }
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _syncMuteBtn() {
+    try {
+      if (!els.muteBtn) return;
+      var on = true;
+      try {
+        if (AUDIO && typeof AUDIO.isSoundOn === 'function') on = AUDIO.isSoundOn();
+      } catch (e) { on = true; }
+      els.muteBtn.innerHTML = on ? '&#128266;' : '&#128263;';
+      try { els.muteBtn.classList.toggle('em-off', !on); } catch (e2) { /* silent */ }
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _syncHud() {
+    try {
+      if (!eng) return;
+      if (els.score) els.score.textContent = String(eng.score);
+      if (els.combo) els.combo.textContent = 'x' + eng.combo;
+      if (els.level) els.level.textContent = String(eng.level);
+      var dots = root ? root.querySelectorAll('.em-miss-dot') : [];
+      var i;
+      for (i = 0; i < dots.length; i++) {
+        try { dots[i].classList.toggle('em-miss-dot--filled', i < eng.misses); } catch (e) { /* silent */ }
+      }
+      var p = eng && eng.targetId ? _targetProblem() : null;
+      if (els.targetProblem) {
+        els.targetProblem.textContent = p ? (p.a + ' ' + p.op + ' ' + p.b + ' = ?') : '—';
+      }
+      if (els.input) els.input.textContent = eng.input || '';
+    } catch (e) { /* best-effort */ }
+  }
+
+  /* Village damage: one house catches fire per miss, smoke rises.
+     Burn order is outside-in (left, right, middle): the mage stands on
+     the middle house, so burning it second would hide its flame behind
+     her — the first two misses must read on the two visible houses. */
+  var BURN_ORDER = [0, 2, 1];
+  function _syncVillage() {
+    try {
+      var houses = root ? root.querySelectorAll('.em-house') : [];
+      var i;
+      for (i = 0; i < houses.length; i++) {
+        try { houses[i].classList.toggle('em-house--burning', eng ? BURN_ORDER.indexOf(i) < eng.misses : false); } catch (e) { /* silent */ }
+      }
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _targetProblem() {
+    try {
+      if (E && typeof E.targetProblem === 'function') return E.targetProblem(eng);
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _clearDrops() {
+    try {
+      if (els.drops) els.drops.innerHTML = '';
+    } catch (e) { /* best-effort */ }
+    dropEls = {};
+  }
+
+  function _syncDrops() {
+    try {
+      if (!eng || !els.drops) return;
+      var seen = {};
+      var i, f, el;
+      for (i = 0; i < eng.drops.length; i++) {
+        f = eng.drops[i];
+        seen[f.id] = true;
+        el = dropEls[f.id];
+        if (!el) {
+          el = document.createElement('button');
+          el.type = 'button';
+          el.className = 'em-drop' + (f.golden ? ' em-drop--gold' : '');
+          el.setAttribute('data-drop-id', String(f.id));
+          el.setAttribute('aria-label', f.problem.text);
+          var img = document.createElement('img');
+          img.className = 'em-drop-img';
+          img.alt = '';
+          img.draggable = false;
+          img.src = f.golden ? ART.dropGold : ART.dropFire;
+          var drawn = document.createElement('span');
+          drawn.className = 'em-drop-drawn';
+          drawn.setAttribute('aria-hidden', 'true');
+          var label = document.createElement('span');
+          label.className = 'em-drop-text';
+          label.textContent = f.problem.text;
+          el.appendChild(img);
+          el.appendChild(drawn);
+          el.appendChild(label);
+          /* Missing art: hide the <img> silently, keep the drawn drop. */
+          (function (im) {
+            im.addEventListener('error', function () {
+              try { im.style.display = 'none'; } catch (e2) { /* silent */ }
+            });
+            im.addEventListener('load', function () {
+              try { im.style.display = ''; } catch (e2) { /* silent */ }
+            });
+          })(img);
+          (function (fid) {
+            el.addEventListener('click', function (ev) {
+              try { ev.stopPropagation(); } catch (e2) { /* silent */ }
+              try {
+                if (E && eng) E.targetDrop(eng, fid);
+                _syncHud();
+                _syncDrops();
+              } catch (e3) { /* input never throws */ }
+            });
+          })(f.id);
+          dropEls[f.id] = el;
+          els.drops.appendChild(el);
+        }
+        try {
+          el.style.left = (f.x * 100).toFixed(2) + '%';
+          el.style.top = (f.y * 100).toFixed(2) + '%';
+          el.classList.toggle('em-drop--target', f.id === eng.targetId);
+          el.classList.toggle('em-drop--gold', !!f.golden);
+        } catch (e2) { /* silent */ }
+      }
+      var ids = Object.keys(dropEls);
+      for (i = 0; i < ids.length; i++) {
+        if (!seen[ids[i]]) {
+          try { if (dropEls[ids[i]].parentNode) dropEls[ids[i]].parentNode.removeChild(dropEls[ids[i]]); } catch (e2) { /* silent */ }
+          delete dropEls[ids[i]];
+        }
+      }
+    } catch (e) { _log(e); }
+  }
+
+  function _steamPuffs(n) {
+    try {
+      if (!els.steam) return;
+      var i, p;
+      for (i = 0; i < n; i++) {
+        p = document.createElement('span');
+        p.className = 'em-steam-puff';
+        p.style.left = (18 + Math.random() * 56) + '%';
+        p.style.animationDelay = (i * 0.06) + 's';
+        els.steam.appendChild(p);
+        (function (node) {
+          setTimeout(function () {
+            try { if (node.parentNode) node.parentNode.removeChild(node); } catch (e2) { /* silent */ }
+          }, 1100);
+        })(p);
+      }
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _cast() {
+    try {
+      casting = true;
+      _setMagePose('cast');
+      try {
+        if (els.blast) els.blast.classList.add('em-blast--on');
+        if (els.mageWrap) els.mageWrap.classList.add('em-mage--casting');
+      } catch (e) { /* silent */ }
+      _steamPuffs(5);
+      try { if (castTimer) clearTimeout(castTimer); } catch (e2) { /* silent */ }
+      castTimer = setTimeout(function () {
+        casting = false;
+        try {
+          if (els.blast) els.blast.classList.remove('em-blast--on');
+          if (els.mageWrap) els.mageWrap.classList.remove('em-mage--casting');
+        } catch (e3) { /* silent */ }
+        _setMagePose(_magePoseForMisses());
+      }, CAST_MS);
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _scorePop(text) {
+    try {
+      if (!els.answerRow) return;
+      var pop = document.createElement('span');
+      pop.className = 'em-score-pop';
+      pop.textContent = text;
+      els.answerRow.appendChild(pop);
+      setTimeout(function () {
+        try { if (pop.parentNode) pop.parentNode.removeChild(pop); } catch (e2) { /* silent */ }
+      }, 900);
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _handleEvents(events) {
+    if (!events || !events.length) return;
+    var i, ev;
+    for (i = 0; i < events.length; i++) {
+      ev = events[i];
+      if (ev.type === 'solved') {
+        _cast();
+        if (ev.golden) { _sfx('golden'); _scorePop('+' + ev.gained + '  CLEANSING RAIN +' + ev.clearedPoints); }
+        else { _sfx('cast'); _sfx('correct'); _sfx('extinguish'); _scorePop('+' + ev.gained); }
+      } else if (ev.type === 'wrong') {
+        _sfx('wrong');
+        try {
+          if (els.answerRow) {
+            els.answerRow.classList.remove('em-shake');
+            void els.answerRow.offsetWidth;
+            els.answerRow.classList.add('em-shake');
+          }
+        } catch (e) { /* silent */ }
+      } else if (ev.type === 'miss') {
+        _sfx('crackle');
+        _syncVillage();
+        if (!casting) _setMagePose(_magePoseForMisses());
+      } else if (ev.type === 'dead') {
+        _showGameOver();
+      }
+    }
+  }
+
+  function _chooseMage(id) {
+    try {
+      if (id !== 'male' && id !== 'female') return;
+      mage = id;
+      try {
+        var mod = _save();
+        if (mod && typeof mod.setMage === 'function') mod.setMage(id);
+        stats.mage = id;
+      } catch (e) { /* best-effort */ }
+      _setMagePose('idle');
+      _refreshMenu();
+      _sfx('click');
+      _showScreen('menu');
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _startRun() {
+    try {
+      if (!E || !eng) return;
+      if (!mage) { _showScreen('select'); return; }
+      paused = false;
+      overShown = false;
+      runRecorded = false;
+      deleteArmed = false;
+      try { if (els.deleteNote) els.deleteNote.hidden = true; } catch (e) { /* silent */ }
+      E.startGame(eng, difficulty);
+      _clearDrops();
+      _setMagePose('idle');
+      _applyTheme();
+      _syncVillage();
+      _syncHud();
+      _syncDrops();
+      _showScreen('play');
+      _sfx('click');
+    } catch (e) { _log(e); }
+  }
+
+  function _showGameOver() {
+    try {
+      overShown = true;
+      _recordGameOver();
+      _sfx('defeat');
+      if (els.overScore) els.overScore.textContent = String(eng ? eng.score : 0);
+      if (els.overBest) els.overBest.textContent = String(stats.best || 0);
+      if (els.newBest) els.newBest.hidden = !(eng && eng.newBest);
+      /* Game over always shows the burned village: there is no win in
+         this game, so a sunny "victory" scene behind "The village burned
+         down" contradicts the loss. The New best! badge celebrates the
+         record instead. */
+      try {
+        if (els.overBgImg) els.overBgImg.hidden = false;
+      } catch (e) { /* best-effort */ }
+      if (els.overStats) {
+        els.overStats.textContent = 'Solved ' + (eng ? eng.solved : 0) +
+          '  ·  Best combo x' + (eng ? eng.bestCombo : 0) +
+          '  ·  Level ' + (eng ? eng.level : 1);
+      }
+      _refreshMenu();
+      _showScreen('over');
+    } catch (e) { _log(e); }
+  }
+
+  function toMenu() {
+    try {
+      _saveBestIfBeaten();
+      paused = false;
+      overShown = false;
+      runRecorded = false;
+      if (E && eng) E.toMenu(eng);
+      _clearDrops();
+      _setMagePose('idle');
+      _syncVillage();
+      _loadStats();
+      _refreshMenu();
+      _showScreen(mage ? 'menu' : 'select');
+    } catch (e) { _log(e); }
+  }
+
+  function pauseGame() {
+    try {
+      if (!eng || eng.state !== 'playing') return;
+      if (paused) return;
+      paused = true;
+      if (E) E.pause(eng);
+      _showScreen('pause');
+    } catch (e) { /* best-effort */ }
+  }
+
+  function resumeGame() {
+    try {
+      if (!paused) return;
+      paused = false;
+      if (E && eng) E.resume(eng);
+      _showScreen('play');
+      lastT = 0;
+    } catch (e) { /* best-effort */ }
+  }
+
+  function togglePause() {
+    try { if (paused) resumeGame(); else pauseGame(); } catch (e) { /* best-effort */ }
+  }
+
+  function toggleMute() {
+    try {
+      if (!AUDIO) return;
+      var on = true;
+      try { if (typeof AUDIO.isSoundOn === 'function') on = AUDIO.isSoundOn(); } catch (e) { on = true; }
+      try { if (typeof AUDIO.setSound === 'function') AUDIO.setSound(!on); } catch (e) { /* best-effort */ }
+      _syncMuteBtn();
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _keyPress(key) {
+    try {
+      if (!eng || eng.state !== 'playing' || paused) return;
+      if (key >= '0' && key <= '9') {
+        if ((eng.input || '').length < 3) eng.input = (eng.input || '') + key;
+        _syncHud();
+      } else if (key === 'back') {
+        eng.input = (eng.input || '').slice(0, -1);
+        _syncHud();
+      } else if (key === 'enter') {
+        if (!eng.input) return;
+        var out = null;
+        try { out = E.submitAnswer(eng, eng.input); } catch (e) { out = null; }
+        _syncHud();
+        _syncDrops();
+        if (out) _handleEvents(eng.events);
+        _syncHud();
+        _syncDrops();
+      }
+    } catch (e) { /* input never throws */ }
+  }
+
+  function _setDifficulty(id) {
+    try {
+      if (id !== 'easy' && id !== 'medium' && id !== 'hard') return;
+      difficulty = id;
+      try {
+        var mod = _save();
+        if (mod && typeof mod.setDifficulty === 'function') mod.setDifficulty(id);
+        stats.difficulty = id;
+      } catch (e) { /* best-effort */ }
+      _refreshMenu();
+      _sfx('click');
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _bindUi() {
+    try {
+      els.selectScreen = _el('emSelectScreen');
+      els.menuScreen = _el('emMenuScreen');
+      els.playScreen = _el('emPlayScreen');
+      els.pauseScreen = _el('emPauseScreen');
+      els.overScreen = _el('emOverScreen');
+      els.menuBest = _el('emMenuBest');
+      els.menuMage = _el('emMenuMage');
+      els.diffDesc = _el('emDiffDesc');
+      els.howBox = _el('emHowBox');
+      els.deleteNote = _el('emDeleteNote');
+      els.score = _el('emScore');
+      els.combo = _el('emCombo');
+      els.level = _el('emLevel');
+      els.misses = _el('emMisses');
+      els.field = _el('emField');
+      els.drops = _el('emDrops');
+      els.ambient = _el('emAmbient');
+      els.village = _el('emVillage');
+      els.mage = _el('emMage');
+      els.mageWrap = _el('emMageWrap');
+      els.mageImg = _el('emMageImg');
+      els.mageFallback = _el('emMageFallback');
+      els.blast = _el('emBlast');
+      els.steam = _el('emSteam');
+      els.answerRow = _el('emAnswerRow');
+      els.targetProblem = _el('emTargetProblem');
+      els.input = _el('emInput');
+      els.keypad = _el('emKeypad');
+      els.pauseBtn = _el('emPauseBtn');
+      els.muteBtn = _el('emMuteBtn');
+      els.overScore = _el('emOverScore');
+      els.overBest = _el('emOverBest');
+      els.newBest = _el('emNewBest');
+      els.overStats = _el('emOverStats');
+      els.bgImg = _el('emBgImg');
+      els.overBgImg = _el('emOverBgImg');
+      els.selectDuo = _el('emSelectDuo');
+      els.howImg = _el('emHowImg');
+
+      _armImgFallback(els.bgImg, null);
+      _armImgFallback(els.overBgImg, null);
+      _armImgFallback(els.selectDuo, null);
+      _armImgFallback(els.howImg, null);
+      _armImgFallback(els.mageImg, els.mageFallback);
+      try {
+        var cardImgs = root ? root.querySelectorAll('.em-mage-card-img') : [];
+        var ci;
+        for (ci = 0; ci < cardImgs.length; ci++) _armCardFallback(cardImgs[ci]);
+      } catch (e) { /* best-effort */ }
+
+      /* Ambient drifting embers: cheap CSS dots, no canvas. */
+      try {
+        if (els.ambient) {
+          var i, dot;
+          for (i = 0; i < 14; i++) {
+            dot = document.createElement('span');
+            dot.className = 'em-ember-dot';
+            dot.style.left = (Math.random() * 100).toFixed(1) + '%';
+            dot.style.animationDuration = (6 + Math.random() * 7).toFixed(1) + 's';
+            dot.style.animationDelay = (-Math.random() * 11).toFixed(1) + 's';
+            var sz = (2 + Math.random() * 3).toFixed(1);
+            dot.style.width = sz + 'px';
+            dot.style.height = sz + 'px';
+            els.ambient.appendChild(dot);
+          }
+        }
+      } catch (e) { /* cosmetic */ }
+
+      function _click(id, fn) {
+        try {
+          var b = _el(id);
+          if (b && b.addEventListener) b.addEventListener('click', function (ev) {
+            try { ev.stopPropagation(); } catch (e2) { /* silent */ }
+            fn();
+          });
+        } catch (e) { /* a missing button is best-effort */ }
+      }
+      _click('emPlayBtn', _startRun);
+      _click('emAgainBtn', _startRun);
+      _click('emResumeBtn', resumeGame);
+      _click('emRestartBtn', _startRun);
+      _click('emQuitBtn', function () { _sfx('click'); toMenu(); });
+      _click('emOverMenuBtn', function () { _sfx('click'); toMenu(); });
+      _click('emPauseBtn', function () { _sfx('click'); togglePause(); });
+      _click('emMuteBtn', toggleMute);
+      _click('emChangeMageBtn', function () { _sfx('click'); _showScreen('select'); });
+      _click('emHowBtn', function () {
+        _sfx('click');
+        try { if (els.howBox) els.howBox.hidden = !els.howBox.hidden; } catch (e) { /* silent */ }
+      });
+      _click('emDeleteBtn', function () {
+        try {
+          if (!deleteArmed) {
+            deleteArmed = true;
+            if (els.deleteNote) els.deleteNote.hidden = false;
+            return;
+          }
+          deleteArmed = false;
+          if (els.deleteNote) els.deleteNote.hidden = true;
+          var mod = _save();
+          if (mod && typeof mod.deleteSave === 'function') stats = mod.deleteSave();
+          difficulty = 'easy';
+          mage = null;
+          theme = 'night';
+          _applyTheme();
+          _setMagePose('idle');
+          _refreshMenu();
+          _sfx('click');
+          _showScreen('select');
+        } catch (e) { /* best-effort */ }
+      });
+      try {
+        var mageCards = root ? root.querySelectorAll('.em-mage-card') : [];
+        var mc;
+        for (mc = 0; mc < mageCards.length; mc++) {
+          (function (card) {
+            card.addEventListener('click', function () {
+              try { _chooseMage(card.getAttribute('data-mage')); } catch (e2) { /* silent */ }
+            });
+          })(mageCards[mc]);
+        }
+      } catch (e) { /* best-effort */ }
+      try {
+        var themeBtns = root ? root.querySelectorAll('.em-theme-btn') : [];
+        var t;
+        for (t = 0; t < themeBtns.length; t++) {
+          (function (btn) {
+            btn.addEventListener('click', function () {
+              try { _chooseTheme(btn.getAttribute('data-theme')); } catch (e2) { /* silent */ }
+            });
+          })(themeBtns[t]);
+        }
+      } catch (e) { /* best-effort */ }
+      try {
+        var diffBtns = root ? root.querySelectorAll('.em-diff-btn') : [];
+        var j;
+        for (j = 0; j < diffBtns.length; j++) {
+          (function (btn) {
+            btn.addEventListener('click', function () {
+              try { _setDifficulty(btn.getAttribute('data-diff')); } catch (e2) { /* silent */ }
+            });
+          })(diffBtns[j]);
+        }
+      } catch (e) { /* best-effort */ }
+      try {
+        if (els.keypad) {
+          var keys = els.keypad.querySelectorAll('.em-key');
+          var k;
+          for (k = 0; k < keys.length; k++) {
+            (function (btn) {
+              btn.addEventListener('click', function () {
+                try { _keyPress(btn.getAttribute('data-key')); } catch (e2) { /* silent */ }
+              });
+            })(keys[k]);
+          }
+        }
+      } catch (e) { /* best-effort */ }
+      try {
+        if (typeof window !== 'undefined' && window.addEventListener) {
+          window.addEventListener('keydown', function (ev) {
+            try {
+              if (!mount || !mount.isConnected) return;
+              if (!eng || eng.state !== 'playing' || paused) return;
+              var k = ev.key || '';
+              if (k >= '0' && k <= '9') { ev.preventDefault(); _keyPress(k); }
+              else if (k === 'Backspace') { ev.preventDefault(); _keyPress('back'); }
+              else if (k === 'Enter') { ev.preventDefault(); _keyPress('enter'); }
+              else if (k === 'p' || k === 'P' || k === 'Escape') togglePause();
+            } catch (e2) { /* keys never throw */ }
+          });
+          document.addEventListener('visibilitychange', function () {
+            try {
+              if (document.hidden) pauseGame();
+            } catch (e2) { /* best-effort */ }
+          });
+        }
+      } catch (e) { /* keyboard is best-effort */ }
+    } catch (e) { _log(e); }
+  }
+
+  function _frame(now) {
+    try {
+      if (!loopActive) { loopStarted = false; return; }
+      var dt = lastT ? (now - lastT) : 16;
+      lastT = now;
+      if (dt < 0) dt = 0;
+      if (dt > 250) dt = 250;
+      if (eng && eng.state === 'playing' && !paused) {
+        var events = null;
+        try { events = E.step(eng, dt); } catch (e) { events = null; }
+        _syncDrops();
+        _syncHud();
+        if (events) _handleEvents(events);
+        _syncDrops();
+        _syncHud();
+      }
+    } catch (e) { _log(e); }
+    try {
+      if (loopActive) requestAnimationFrame(_frame);
+      else loopStarted = false;
+    } catch (e) { loopStarted = false; }
+  }
+
+  function initPhone(m) {
+    if (!m || typeof m.innerHTML === 'undefined') return false;
+    try { m.innerHTML = MARKUP; } catch (e) { return false; }
+    mount = m;
+    root = m.querySelector('.em-root');
+    try {
+      D = _data() || D;
+      E = _engineMod() || E;
+      SAVE = _saveMod() || SAVE;
+      AUDIO = _audioMod() || AUDIO;
+    } catch (e) { /* resolvers are best-effort */ }
+    _loadStats();
+    try {
+      if (E) eng = E.createGame({ best: stats.best || 0, difficulty: difficulty, seed: (Date.now() % 2147483647) || 1 });
+    } catch (e) { eng = null; }
+    _bindUi();
+    _refreshMenu();
+    _syncMuteBtn();
+    _setMagePose('idle');
+    _syncVillage();
+    _showScreen(mage ? 'menu' : 'select');
+    if (!loopStarted) {
+      loopStarted = true;
+      try { requestAnimationFrame(_frame); } catch (e) { loopStarted = false; }
+    }
+    return true;
+  }
+
+  function setLoopActive(on) {
+    loopActive = !!on;
+    if (!loopActive) loopStarted = false;
+    else if (!loopStarted) {
+      loopStarted = true;
+      lastT = 0;
+      try { requestAnimationFrame(_frame); } catch (e) { loopStarted = false; }
+    }
+  }
+
+  function startLoop() {
+    setLoopActive(true);
+    try { _syncHud(); _syncDrops(); } catch (e) { /* best-effort */ }
+  }
+
+  function reloadSave() {
+    try {
+      _loadStats();
+      _refreshMenu();
+      _syncMuteBtn();
+    } catch (e) { /* reload is best-effort */ }
+  }
+
+  function syncAudio() {
+    try { _syncMuteBtn(); } catch (e) { /* best-effort */ }
+  }
+
+  function state() {
+    try {
+      return {
+        screen: eng ? eng.state : 'menu',
+        score: eng ? eng.score : 0,
+        best: stats.best || 0,
+        difficulty: difficulty,
+        mage: mage,
+        theme: theme,
+        paused: paused,
+        overShown: overShown,
+        misses: eng ? eng.misses : 0,
+        level: eng ? eng.level : 1,
+        drops: eng ? eng.drops.length : 0
+      };
+    } catch (e) { return { screen: 'menu', score: 0, best: 0 }; }
+  }
+
+  function debugState() {
+    var audio = null;
+    try { if (AUDIO && typeof AUDIO.debugState === 'function') audio = AUDIO.debugState(); } catch (e) { audio = null; }
+    var artFiles = [];
+    try {
+      var list = (D && D.ART_FILES) || [];
+      for (var i = 0; i < list.length; i++) artFiles.push(list[i]);
+    } catch (e) { /* art census is best-effort */ }
+    return {
+      mounted: !!mount,
+      state: state(),
+      engine: eng ? (E && typeof E.snapshot === 'function' ? E.snapshot(eng) : null) : null,
+      audio: audio,
+      artFiles: artFiles,
+      magePose: magePose
+    };
+  }
+
+  var api = {
+    init: initPhone,
+    render: function () { try { _syncHud(); _syncDrops(); } catch (e) { /* best-effort */ } },
+    pause: pauseGame,
+    resume: resumeGame,
+    toMenu: toMenu,
+    reloadSave: reloadSave,
+    setLoopActive: setLoopActive,
+    startLoop: startLoop,
+    syncAudio: syncAudio,
+    state: state,
+    debugState: debugState,
+    _startRunForTest: _startRun,
+    _engineForTest: function () { return eng; },
+    _forceMissForTest: function () {
+      try {
+        if (!E || !eng) return null;
+        var id = E.forceMiss(eng);
+        if (id === null) return null;
+        var events = E.step(eng, 16);
+        _syncDrops();
+        _syncHud();
+        _syncVillage();
+        _handleEvents(events);
+        _syncDrops();
+        _syncHud();
+        _syncVillage();
+        return id;
+      } catch (e) { return null; }
+    },
+    _spawnGoldenForTest: function () {
+      try {
+        if (!E || !eng) return null;
+        var f = E.forceSpawnGolden(eng);
+        _syncDrops();
+        _syncHud();
+        return f ? f.id : null;
+      } catch (e) { return null; }
+    },
+    _keyPressForTest: _keyPress,
+    _setDifficultyForTest: _setDifficulty,
+    _chooseThemeForTest: _chooseTheme,
+    _chooseMageForTest: _chooseMage,
+    _mageForTest: function () { return mage; }
+  };
+
+  try {
+    if (typeof window !== 'undefined') {
+      window.EmberMathGame = api;
+      window.__EM__ = api;
+    }
+  } catch (e) { /* best-effort */ }
+
+  return api;
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = EmberMathGame;
+</script>
+<script>
+// source: em-wire.js
+// EmberMathWire — mounts Ember Math into #app-embermath and owns the
+// shell hooks.
+//
+// Boot (at eval, BZ pattern): expose window.__EM__, mount the game
+// via EmberMathGame.init, inject the header Music toggle, and stop the
+// frame loop until the game opens (a 60fps rAF loop behind a hidden
+// section burns CPU for nothing). onOpen re-starts the loop +
+// re-renders and re-syncs audio; onClose auto-pauses + stops the
+// loop. The shell music keeps playing — Ember Math has no music track
+// of its own.
+//
+// The header has TWO toggles, both publishing to the ONE shared
+// jmf-phone-settings-v1 store (two-way sync with Settings + the home
+// row): ♪ (injected here) — music, via EMAudio (BZAudio.setMusic
+// + store); 🔊/🔇 (in the markup) — sound, via the game's own mute
+// button. This wire only re-marks the sound button when the setting
+// changes elsewhere.
+// SaveRegistry hooks: reinit resets the save and returns to the
+// menu; reload re-reads storage and refreshes the menu.
+//
+// UMD: global EmberMathWire (+ window.__EM__ verification handle).
+// Never throws.
+var EmberMathWire = (function () {
+  'use strict';
+
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+
+  function _log(e) {
+    try {
+      if (typeof console !== 'undefined' && console && console.error) console.error('[em-wire]', e);
+    } catch (e2) { /* logging is best-effort */ }
+  }
+
+  function _resolveGame() {
+    try {
+      var w = _win();
+      if (w && w.EmberMathGame) return w.EmberMathGame;
+      if (typeof EmberMathGame !== 'undefined' && EmberMathGame) return EmberMathGame;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _resolveAudio() {
+    try {
+      var w = _win();
+      if (w && w.EMAudio) return w.EMAudio;
+      if (typeof EMAudio !== 'undefined' && EMAudio) return EMAudio;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _resolveSettings() {
+    try {
+      var w = _win();
+      if (w && w.BZSettings) return w.BZSettings;
+      if (typeof BZSettings !== 'undefined' && BZSettings) return BZSettings;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _resolveSave() {
+    try {
+      var w = _win();
+      if (w && w.EMSave) return w.EMSave;
+      if (typeof EMSave !== 'undefined' && EMSave) return EMSave;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _setAttr(el, name, value) {
+    try { if (el && el.setAttribute) el.setAttribute(name, value); } catch (e) { /* silent */ }
+  }
+
+  /* Header Music toggle (♪). Mirrors ff-wire.js _injectMusicButton:
+     the button carries the state itself (♪ bright = on, dimmed = off),
+     flips from the stored truth (never a stale closure), and re-marks
+     on 'bz:settings-changed' so Settings / the home row / this button
+     stay in sync. Never throws; a missing topbar skips quietly. */
+  function _injectMusicButton(mount) {
+    try {
+      if (!mount || typeof mount.querySelector !== 'function') return;
+      var topbar = null;
+      try { topbar = mount.querySelector('#topbar'); } catch (e) { topbar = null; }
+      if (!topbar) return;
+      if (typeof document === 'undefined' || !document ||
+          typeof document.createElement !== 'function') return;
+      var kids = topbar.children || [];
+      for (var i = 0; i < kids.length; i++) {
+        try {
+          if (kids[i].getAttribute &&
+              kids[i].getAttribute('data-em-music-toggle') !== null) return;
+        } catch (e) { /* keep scanning */ }
+      }
+      var audio = _resolveAudio();
+      var settings = _resolveSettings();
+      var win = _win();
+      var btn = document.createElement('button');
+      try { btn.className = 'iconbtn'; } catch (e) { /* silent */ }
+      try { btn.id = 'emMusicBtn'; } catch (e) { /* silent */ }
+      try { btn.type = 'button'; } catch (e) { /* silent */ }
+      try { btn.title = 'Music'; } catch (e) { /* silent */ }
+      _setAttr(btn, 'data-em-music-toggle', 'music');
+      _setAttr(btn, 'role', 'switch');
+      _setAttr(btn, 'aria-label', 'Music');
+      function readState() {
+        try {
+          if (audio && typeof audio.isMusicOn === 'function') return !!audio.isMusicOn();
+        } catch (e) { /* fall through */ }
+        try {
+          if (settings && typeof settings.readSettings === 'function') {
+            var value = settings.readSettings().music;
+            if (typeof value === 'boolean') return value;
+          }
+        } catch (e2) { /* fall through */ }
+        return true;
+      }
+      function mark(on) {
+        try { btn.textContent = '\u266A'; } catch (e) { /* silent */ }
+        try {
+          if (btn.classList) btn.classList.toggle('em-off', !on);
+        } catch (e) { /* silent */ }
+        _setAttr(btn, 'aria-checked', on ? 'true' : 'false');
+      }
+      var available = !!(audio && typeof audio.setMusic === 'function');
+      mark(readState());
+      if (!available) {
+        try { btn.disabled = true; } catch (e) { /* silent */ }
+        _setAttr(btn, 'aria-disabled', 'true');
+      }
+      try {
+        if (btn.addEventListener) {
+          btn.addEventListener('click', function () {
+            try {
+              if (!available) return;
+              var next = !readState();
+              try { audio.setMusic(next); } catch (e) { /* still persist */ }
+              mark(next);
+            } catch (e3) { /* a click handler must never throw */ }
+          });
+        }
+      } catch (e) { /* a button without listeners still renders */ }
+      try {
+        if (win && typeof win.addEventListener === 'function') {
+          var eventName = 'bz:settings-changed';
+          try {
+            if (settings && typeof settings.SETTINGS_CHANGED_EVENT === 'string') {
+              eventName = settings.SETTINGS_CHANGED_EVENT;
+            }
+          } catch (e) { /* default event name stands */ }
+          var onSettingsChanged = function () {
+            try {
+              if (typeof btn.isConnected === 'boolean' && !btn.isConnected) {
+                try {
+                  if (typeof win.removeEventListener === 'function') {
+                    win.removeEventListener(eventName, onSettingsChanged);
+                  }
+                } catch (e2) { /* silent */ }
+                return;
+              }
+              mark(readState());
+              var game = _resolveGame();
+              if (game && typeof game.syncAudio === 'function') {
+                try { game.syncAudio(); } catch (e3) { /* best-effort */ }
+              }
+            } catch (e4) { /* never throw */ }
+          };
+          win.addEventListener(eventName, onSettingsChanged);
+        }
+      } catch (e) { /* the button works without the sync listener */ }
+      try {
+        var pauseBtn = null;
+        try { pauseBtn = topbar.querySelector('#emPauseBtn'); } catch (e) { pauseBtn = null; }
+        if (pauseBtn && pauseBtn.parentNode === topbar &&
+            typeof topbar.insertBefore === 'function') {
+          topbar.insertBefore(btn, pauseBtn);
+        } else if (typeof topbar.appendChild === 'function') {
+          topbar.appendChild(btn);
+        }
+      } catch (e) {
+        _log(e);
+      }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  function _mount() {
+    try {
+      if (typeof document === 'undefined' || !document) return null;
+      return document.getElementById('app-embermath');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function boot() {
+    try {
+      if (typeof window === 'undefined' || typeof document === 'undefined') return;
+      try {
+        window.__EM__ = window.__EM__ || {};
+        if (window.EmberMathGame) window.__EM__.game = window.EmberMathGame;
+        if (window.EMSave) window.__EM__.save = window.EMSave;
+      } catch (e) {
+        _log(e);
+      }
+      var mount = _mount();
+      var game = _resolveGame();
+      if (!game || !mount) return;
+      var ok = false;
+      try { ok = game.init(mount); } catch (e) { _log(e); return; }
+      if (!ok) return;
+      _injectMusicButton(mount);
+      /* The game is not open yet: stop its frame loop until onOpen. */
+      try {
+        if (typeof game.setLoopActive === 'function') game.setLoopActive(false);
+      } catch (e) { /* best-effort */ }
+      try {
+        if (typeof SaveRegistry !== 'undefined' && SaveRegistry &&
+            typeof SaveRegistry.extend === 'function') {
+          SaveRegistry.extend('embermath', { reinit: reinit, reload: reload });
+        }
+      } catch (e) { /* registry is best-effort */ }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  function onOpen() {
+    try {
+      var game = _resolveGame();
+      if (!game) return;
+      try {
+        if (typeof game.startLoop === 'function') game.startLoop();
+      } catch (e) { /* best-effort */ }
+      try {
+        if (typeof game.render === 'function') game.render();
+      } catch (e) { /* the loop re-renders */ }
+      try {
+        if (typeof game.syncAudio === 'function') game.syncAudio();
+      } catch (e) { /* best-effort */ }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  function onClose() {
+    try {
+      var audio = _resolveAudio();
+      try {
+        if (audio && typeof audio.stop === 'function') audio.stop();
+      } catch (e) { /* audio stop is a no-op (shell music only) */ }
+      var game = _resolveGame();
+      if (!game) return;
+      try {
+        if (typeof game.pause === 'function') game.pause();
+      } catch (e) { /* auto-pause is best-effort */ }
+      try {
+        if (typeof game.setLoopActive === 'function') game.setLoopActive(false);
+      } catch (e) { /* best-effort */ }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  /* Settings "delete save": wipe the save, refresh the menu. */
+  function reinit() {
+    try {
+      var save = _resolveSave();
+      if (save) {
+        try {
+          if (typeof save.deleteSave === 'function') save.deleteSave();
+        } catch (e) { /* best-effort */ }
+      }
+      var game = _resolveGame();
+      if (game) {
+        try {
+          if (typeof game.reloadSave === 'function') game.reloadSave();
+        } catch (e) { /* best-effort */ }
+        try {
+          if (typeof game.toMenu === 'function') game.toMenu();
+        } catch (e) { /* best-effort */ }
+      }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  /* Settings "reload save": re-read storage and refresh the menu. */
+  function reload() {
+    try {
+      var game = _resolveGame();
+      if (game && typeof game.reloadSave === 'function') game.reloadSave();
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  var api = {
+    boot: boot,
+    onOpen: onOpen,
+    onClose: onClose,
+    reinit: reinit,
+    reload: reload
+  };
+
+  try {
+    boot();
+  } catch (e) {
+    _log(e);
+  }
+
+  return api;
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = EmberMathWire;
+if (typeof window !== 'undefined') {
+  try { window.EmberMathWire = EmberMathWire; } catch (e) { /* best-effort */ }
 }
 </script>
 </body>
