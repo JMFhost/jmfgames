@@ -424,6 +424,18 @@ body {
   transform: scale(var(--icon-scale, 1));
 }
 
+/* Ember Math home icon (Nov 26, 2026): the tile is a real image
+   (assets/ember-math/icon.webp — mage casting + fire rain + math).
+   The img fills the tile and inherits its radius; the orange
+   gradient behind it is the loading fallback. No scale transform:
+   the img already fills the tile at every icon size. */
+.ph-icon > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
 .ph-icon-label {
   /* Icon resize (Nov 25, 2026): the label scales with the tile, with
      a 10px floor — at 50% the unclamped 6.25px would be unreadable. */
@@ -15803,6 +15815,14 @@ button.mr-setup-preview:focus-visible {
   color: #fff7ed;
   font-family: inherit;
   box-sizing: border-box;
+  /* Per-theme word settings (Nov 26, 2026): defaults are the Fire
+     Night values; _applyTheme() overwrites them per theme from
+     em-data.js (ink / dim / accent / scrim). Bright themes get a
+     much stronger dark scrim behind the text. */
+  --em-ink: #fff7ed;
+  --em-dim: #ffedd5;
+  --em-accent: #7dd3fc;
+  --em-scrim: rgba(24, 10, 4, 0.45);
 }
 .em-root * { box-sizing: border-box; }
 
@@ -15847,18 +15867,21 @@ button.mr-setup-preview:focus-visible {
   margin: auto;
   width: 100%;
   max-width: 340px;
-  padding: 18px 20px 22px;
+  padding: 12px 20px 14px;
   text-align: center;
+  /* Per-theme scrim: a dark panel behind the text so the words read
+     on bright theme art (Dawn/Meadow) as well as dark art. */
+  background: var(--em-scrim);
+  border-radius: 18px;
 }
 .em-mage-row {
-  display: flex;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
   justify-content: center;
   margin: 14px 0 10px;
 }
 .em-mage-card {
-  flex: 1;
-  max-width: 150px;
   padding: 10px 8px 12px;
   border-radius: 16px;
   border: 2px solid rgba(253, 186, 116, 0.4);
@@ -15874,7 +15897,7 @@ button.mr-setup-preview:focus-visible {
 }
 .em-mage-card-img {
   width: 100%;
-  height: 150px;
+  height: 104px;
   object-fit: contain;
   filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
 }
@@ -15913,6 +15936,9 @@ button.mr-setup-preview:focus-visible {
   max-width: 340px;
   padding: 18px 20px 22px;
   text-align: center;
+  /* Per-theme scrim — see .em-select-inner. */
+  background: var(--em-scrim);
+  border-radius: 18px;
 }
 .em-menu-badge {
   width: 64px;
@@ -16005,19 +16031,20 @@ button.mr-setup-preview:focus-visible {
   color: #fdba74;
 }
 .em-theme-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   gap: 6px;
   justify-content: center;
   margin-bottom: 10px;
 }
 .em-theme-btn {
-  flex: 1;
   padding: 8px 2px;
   border-radius: 10px;
   border: 2px solid rgba(253, 186, 116, 0.45);
   background: rgba(28, 10, 6, 0.6);
   color: #fff7ed;
-  font-size: 12.5px;
+  font-size: 12px;
+  line-height: 1.2;
   font-weight: 700;
   cursor: pointer;
 }
@@ -16028,8 +16055,11 @@ button.mr-setup-preview:focus-visible {
 }
 .em-select-duo {
   display: block;
-  width: min(280px, 82%);
-  margin: 0 auto 12px;
+  /* Small on purpose: at 280px wide the portrait banner was 436px
+     tall and pushed the 2nd mage row below the fold at 390x844.
+     At 150px the whole 3x2 grid + note fits with room to spare. */
+  width: min(140px, 52%);
+  margin: 0 auto 8px;
   border-radius: 14px;
   border: 1px solid rgba(125, 211, 252, 0.45);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
@@ -16701,8 +16731,8 @@ button.mr-setup-preview:focus-visible {
   .em-title { font-size: 28px; }
   .em-menu-inner, .em-select-inner { padding-top: 8px; padding-bottom: 12px; }
   .em-menu-badge { width: 48px; height: 48px; }
-  .em-mage-card-img { height: 110px; }
-  .em-select-duo { width: min(200px, 70%); margin-bottom: 8px; }
+  .em-mage-card-img { height: 96px; }
+  .em-select-duo { width: min(120px, 55%); margin-bottom: 8px; }
   .em-key { min-height: 36px; font-size: 18px; }
   .em-keypad { padding-bottom: 50px; }
   .em-mage { height: 88px; width: 92px; }
@@ -16710,6 +16740,117 @@ button.mr-setup-preview:focus-visible {
   .em-drop { width: 68px; min-height: 50px; }
   .em-drop-text { font-size: 14px; min-height: 50px; }
 }
+
+/* ---------- Per-theme word settings (Nov 26, 2026) ---------- */
+/* Jesse's Dawn screenshot proved plain white text washes out on
+   bright theme art. Every theme sets its own --em-ink / --em-dim /
+   --em-accent / --em-scrim via _applyTheme(); this section (last in
+   the file, so it wins) wires every word in the game to those
+   variables. Menu, select, HUD, answer row, keypad labels, pause
+   and game-over text all read on all ten themes. */
+.em-title { color: var(--em-ink); text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65), 0 0 24px rgba(0, 0, 0, 0.35); }
+.em-tagline { color: var(--em-dim); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7); }
+.em-best-line { color: var(--em-accent); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7); }
+.em-mage-line { color: var(--em-dim); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7); }
+.em-mage-line b { color: var(--em-ink); }
+.em-grade-label, .em-theme-label { color: var(--em-accent); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7); }
+.em-grade-desc { color: var(--em-accent); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7); }
+.em-grade-btn, .em-theme-btn { color: var(--em-ink); }
+.em-link-btn { color: var(--em-accent); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7); }
+.em-mage-card-name { color: var(--em-ink); }
+.em-mage-card-title { color: var(--em-dim); }
+.em-how { color: var(--em-dim); }
+.em-topbar-title { color: var(--em-ink); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7); }
+.em-hud { color: var(--em-dim); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7); }
+.em-hud-item b { color: var(--em-ink); }
+.em-target-problem { color: var(--em-ink); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7); }
+.em-sheet-title, .em-over-title { color: var(--em-ink); }
+.em-sheet-sub, .em-over-sub { color: var(--em-dim); }
+.em-over-score { color: var(--em-dim); }
+.em-over-score b { color: var(--em-accent); }
+.em-over-best { color: var(--em-dim); }
+.em-over-best b { color: var(--em-ink); }
+.em-over-stats { color: var(--em-accent); }
+.em-sheet-btn { color: var(--em-ink); }
+
+/* ---------- Monsters ---------- */
+.em-monsters { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.em-monster {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: var(--em-mon-size, 64px);
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 2;
+}
+.em-monster-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.7));
+}
+.em-monster--bat .em-monster-img { animation: em-monster-bob 0.7s ease-in-out infinite alternate; }
+@keyframes em-monster-bob {
+  from { transform: translateY(-3px); }
+  to { transform: translateY(3px); }
+}
+.em-monster-badge {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #dc2626;
+  border: 2px solid #fff;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(220, 38, 38, 0.9);
+  animation: em-badge-pulse 0.8s ease-in-out infinite;
+}
+@keyframes em-badge-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+}
+.em-monster-text {
+  display: block;
+  margin-top: 2px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(12, 4, 2, 0.78);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+.em-monster--target { outline: none; }
+.em-monster--target::after {
+  content: '';
+  position: absolute;
+  inset: -6px -4px -18px;
+  border: 3px solid #38bdf8;
+  border-radius: 12px;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.9);
+  animation: em-target-pulse 0.9s ease-in-out infinite;
+  pointer-events: none;
+}
+.em-float--monster { color: #fb923c; font-size: 16px; }
+.em-float--miss { color: #f87171; font-size: 16px; }
+
+/* Long problems (e.g. "847 + 153 =?") get a wider drop and a
+   smaller label so the text never overflows the flame. */
+.em-drop--long { width: 96px; }
+.em-drop--long .em-drop-text { font-size: 12px; }
 </style>
 </head>
 <body>
@@ -16830,7 +16971,7 @@ button.mr-setup-preview:focus-visible {
           </button>
           <!-- EMBER MATH -->
           <button type="button" class="ph-app-icon" data-app="embermath" aria-label="Ember Math">
-            <span class="ph-icon" style="background:linear-gradient(150deg,#f97316 0%,#7c2d12 100%)" aria-hidden="true"><svg viewBox="0 0 48 48" width="38" height="38" aria-hidden="true" focusable="false"><path d="M24 4 C27 10 30 12 30 18 A6 6 0 1 1 18 18 C18 14 20 11 22 8 C22.5 11 23 12 24 13 C24.5 10 24 7 24 4 Z" fill="#fb923c"/><path d="M24 16 C25.5 18.5 26.5 19.5 26.5 21.5 A2.5 2.5 0 1 1 21.5 21.5 C21.5 19.5 22.5 18.5 24 16 Z" fill="#fef08a"/><path d="M24 30 C27 33 28.5 35 28.5 37 A4.5 4.5 0 1 1 19.5 37 C19.5 35 21 33 24 30 Z" fill="#38bdf8"/><path d="M24 33 C25.5 34.5 26 35.5 26 37 A2 2 0 1 1 22 37 C22 35.5 22.5 34.5 24 33 Z" fill="#e0f2fe"/></svg></span>
+            <span class="ph-icon" style="background:linear-gradient(150deg,#f97316 0%,#7c2d12 100%)" aria-hidden="true"><img src="assets/ember-math/icon.webp" alt=""></span>
             <span class="ph-icon-label">Ember Math</span>
           </button>
           <!-- /EMBER MATH -->
@@ -28999,10 +29140,11 @@ var BZSettings = (function () {
       'Flaming drops carrying math problems rain from a burning sky ' +
       'onto a village — tap one to aim at it, type the answer on the ' +
       'keypad, and your chosen mage casts a water spell that puts it ' +
-      'out. Three drops through and the village burns down. Pick a ' +
-      'male or female mage, and a rare golden drop turns into a ' +
-      'cleansing rain that clears the whole sky. Every difficulty is ' +
-      'free from the start.'));
+      'out. Three drops through and the village burns down. Pick from ' +
+      'six mages, fight off attacking monsters as well as the fire ' +
+      'rain, and a rare golden drop turns into a cleansing rain that ' +
+      'clears the whole sky. Six grade levels from Kinder to 5th grade, ' +
+      'all free from the start.'));
     body.appendChild(_el('p', 'bz-about-text',
       'The green chart icon on the home screen opens the companion ' +
       'investing simulation in this same tab.'));
@@ -151341,7 +151483,9 @@ if (typeof window !== 'undefined') {
 // Ember Math: flaming drops carrying math problems rain from a
 // burning sky onto a village; the chosen mage casts a water/ice
 // spell that extinguishes each drop when the player types the right
-// answer. Three drops reaching the village and it burns down.
+// answer. Monsters attack too — ember imps, cinder bats and magma
+// brutes approach the village and must be blasted with math. Three
+// drops or monsters reaching the village and it burns down.
 // Free, completely: no paywall, no locked levels, no daily limit.
 //
 // UMD: global EMData + module.exports. Never throws.
@@ -151362,76 +151506,133 @@ var EMData = (function () {
        '-': a in [aMin, aMax], b in [0, a] (never negative)
        '×': a in [aMin, aMax], b in [bMin, bMax] — or bSet (e.g. [2,5]);
             ansMax caps a so the product stays in the grade's band
-            (2nd grade ×2/×5 never tops 20; 3rd grade never tops 99)
+            (3rd grade never tops 50; 4th never tops 200; 5th never
+            tops 1000)
        '÷': divisor in [dMin, dMax], quotient in [qMin, qMax],
-            a = divisor x quotient (always divides evenly) */
+            a = divisor x quotient (always divides evenly)
+     Bands are Jesse's spec (Nov 26, 2026 — the shipped bands were
+     wrong): Kinder + 0–20; 1st +/− up to 100; 2nd +/− up to 1000;
+     3rd ×/÷ up to 50; 4th ×/÷ up to 200; 5th all four ops up to
+     1000. Pacing is deliberately gentle on the big-number grades:
+     a 3-digit sum takes longer to work out and type than a 1-digit
+     one, so 2nd/5th fall slower and spawn further apart than the
+     old build's faster-is-harder ladder. A drop takes ~0.82 /
+     fallSpeed seconds to cross the field (spawn y 0.18 to village
+     y 1.0): Kinder ~18s, 1st ~16s, 2nd ~16s, 3rd ~14s, 4th ~13s,
+     5th ~12s at level 1 — enough to solve even a 4-digit answer. */
   var GRADES = {
     kinder: {
       id: 'kinder', name: 'Kinder', short: 'Kinder',
       ops: ['+'],
       fallSpeed: 0.045, spawnMs: 3000,
-      desc: 'Counting and adding within 5. The embers drift down slowly.',
-      gen: { '+': { aMin: 0, aMax: 5, bMin: 0, bMax: 5, sumMax: 5 } }
+      desc: 'Adding 0–20. The embers drift down slowly.',
+      gen: { '+': { aMin: 0, aMax: 20, bMin: 0, bMax: 20, sumMax: 20 } }
     },
     first: {
       id: 'first', name: '1st Grade', short: '1st',
       ops: ['+', '-'],
-      fallSpeed: 0.055, spawnMs: 2600,
-      desc: 'Add and subtract within 10.',
+      fallSpeed: 0.05, spawnMs: 2800,
+      desc: 'Plus & minus up to 100.',
       gen: {
-        '+': { aMin: 0, aMax: 10, bMin: 0, bMax: 10, sumMax: 10 },
-        '-': { aMin: 1, aMax: 10 }
+        '+': { aMin: 0, aMax: 100, bMin: 0, bMax: 100, sumMax: 100 },
+        '-': { aMin: 1, aMax: 100 }
       }
     },
     second: {
       id: 'second', name: '2nd Grade', short: '2nd',
-      ops: ['+', '-', '\u00d7'],
-      fallSpeed: 0.065, spawnMs: 2400,
-      desc: 'Add and subtract within 20, and times 2s and 5s.',
+      ops: ['+', '-'],
+      fallSpeed: 0.05, spawnMs: 3400,
+      desc: 'Plus & minus up to 1000.',
       gen: {
-        '+': { aMin: 0, aMax: 20, bMin: 0, bMax: 20, sumMax: 20 },
-        '-': { aMin: 1, aMax: 20 },
-        '\u00d7': { aMin: 1, aMax: 10, bSet: [2, 5], ansMax: 20 }
+        '+': { aMin: 0, aMax: 1000, bMin: 0, bMax: 1000, sumMax: 1000 },
+        '-': { aMin: 1, aMax: 1000 }
       }
     },
     third: {
       id: 'third', name: '3rd Grade', short: '3rd',
-      ops: ['+', '-', '\u00d7', '\u00f7'],
-      fallSpeed: 0.075, spawnMs: 2200,
-      desc: 'Times and division tables up to 10, plus add and subtract.',
+      ops: ['\u00d7', '\u00f7'],
+      fallSpeed: 0.06, spawnMs: 3000,
+      desc: 'Multiply & divide up to 50.',
       gen: {
-        '+': { aMin: 2, aMax: 50, bMin: 2, bMax: 50, sumMax: 99 },
-        '-': { aMin: 1, aMax: 50 },
-        '\u00d7': { aMin: 2, aMax: 10, bMin: 2, bMax: 10, ansMax: 99 },
-        '\u00f7': { dMin: 2, dMax: 10, qMin: 2, qMax: 10 }
+        '\u00d7': { aMin: 2, aMax: 10, bMin: 2, bMax: 10, ansMax: 50 },
+        '\u00f7': { dMin: 2, dMax: 7, qMin: 2, qMax: 7 }
       }
     },
     fourth: {
       id: 'fourth', name: '4th Grade', short: '4th',
-      ops: ['+', '-', '\u00d7', '\u00f7'],
-      fallSpeed: 0.085, spawnMs: 2000,
-      desc: 'Two-digit adding and subtracting, times and division to 12.',
+      ops: ['\u00d7', '\u00f7'],
+      fallSpeed: 0.065, spawnMs: 3200,
+      desc: 'Multiply & divide up to 200.',
       gen: {
-        '+': { aMin: 10, aMax: 99, bMin: 10, bMax: 99, sumMax: 198 },
-        '-': { aMin: 10, aMax: 99 },
-        '\u00d7': { aMin: 2, aMax: 12, bMin: 2, bMax: 12 },
-        '\u00f7': { dMin: 2, dMax: 12, qMin: 2, qMax: 12 }
+        '\u00d7': { aMin: 2, aMax: 20, bMin: 2, bMax: 12, ansMax: 200 },
+        '\u00f7': { dMin: 2, dMax: 12, qMin: 2, qMax: 15 }
       }
     },
     fifth: {
       id: 'fifth', name: '5th Grade', short: '5th',
       ops: ['+', '-', '\u00d7', '\u00f7'],
-      fallSpeed: 0.095, spawnMs: 1900,
-      desc: 'Multi-digit mixed operations — a full firestorm.',
+      fallSpeed: 0.07, spawnMs: 3400,
+      desc: 'All operations up to 1000.',
       gen: {
-        '+': { aMin: 10, aMax: 500, bMin: 10, bMax: 500, sumMax: 999 },
+        '+': { aMin: 10, aMax: 999, bMin: 10, bMax: 999, sumMax: 1000 },
         '-': { aMin: 10, aMax: 999 },
-        '\u00d7': { aMin: 3, aMax: 15, bMin: 3, bMax: 15 },
-        '\u00f7': { dMin: 3, dMax: 15, qMin: 3, qMax: 15 }
+        '\u00d7': { aMin: 3, aMax: 31, bMin: 3, bMax: 31, ansMax: 1000 },
+        '\u00f7': { dMin: 2, dMax: 25, qMin: 2, qMax: 25 }
       }
     }
   };
   var GRADE_IDS = ['kinder', 'first', 'second', 'third', 'fourth', 'fifth'];
+
+  /* Monsters (Nov 26, 2026) — a SECOND threat beside the fire drops.
+     Enemy creatures approach the village along the ground (walkers)
+     or through the air (the bat); if one reaches the village it
+     burns a house — one miss, exactly like a drop through. The
+     player fights them WITH MATH: tap a monster to target it, solve
+     its problem (same grade bands as the drops) and the mage blasts
+     it. Fairness rules, enforced by the engine and proven in tests:
+       - telegraphed: a monster fades/scales in at the field edge
+         with a pulsing "!" badge and a growl, and takes 15–40s to
+         cross — never a surprise arrival;
+       - capped: at most 1 monster at levels 1–2, at most 2 from
+         level 3; never spawned while 4+ drops are falling, and
+         never in the first 20s of a run;
+       - one problem each, same bands as the grade's drops; a wrong
+         answer lets it keep coming, exactly like a drop.
+     speed is field widths per second toward the village centre
+     (x = 0.5); y is the fixed height fraction (walkers on the
+     ground, the bat mid-air). size is the rendered px width. */
+  var MONSTER_TYPES = {
+    imp: {
+      id: 'imp', name: 'Ember Imp', kind: 'walker',
+      speed: 0.02, y: 0.88, size: 64, weight: 5,
+      art: 'monster-imp.webp',
+      desc: 'A small fire imp scuttling in from the edge.'
+    },
+    bat: {
+      id: 'bat', name: 'Cinder Bat', kind: 'flyer',
+      speed: 0.032, y: 0.45, size: 56, weight: 3,
+      art: 'monster-bat.webp',
+      desc: 'A smoky bat swooping in overhead — the fastest monster.'
+    },
+    brute: {
+      id: 'brute', name: 'Magma Brute', kind: 'walker',
+      speed: 0.013, y: 0.88, size: 92, weight: 2,
+      art: 'monster-brute.webp',
+      desc: 'A huge magma golem, slow but impossible to miss.'
+    }
+  };
+  var MONSTER_IDS = ['imp', 'bat', 'brute'];
+  var MONSTER_FIRST_SPAWN_MS = 20000;
+  var MONSTER_SPAWN_MIN_MS = 22000;
+  var MONSTER_SPAWN_VAR_MS = 12000;
+  var MONSTER_RETRY_MS = 3000;
+  var MONSTER_MAX_DROPS_TO_SPAWN = 3;
+  var MONSTER_ARRIVE_DIST = 0.07;
+
+  function monsterById(id) {
+    if (id && MONSTER_TYPES[id]) return MONSTER_TYPES[id];
+    return MONSTER_TYPES.imp;
+  }
 
   /* Old difficulty ids, for save migration only: Easy -> First,
      Medium -> Third, Hard -> Fifth. */
@@ -151460,38 +151661,93 @@ var EMData = (function () {
     bgMenu: _art('bg-menu.webp'),
     bgBurned: _art('bg-burned.webp'),
     splash: _art('splash.webp'),
+    icon: _art('icon.webp'),
     mageMaleIdle: _art('mage-male-idle.webp'),
     mageMaleCast: _art('mage-male-cast.webp'),
     mageMaleDistress: _art('mage-male-distress.webp'),
     mageFemaleIdle: _art('mage-female-idle.webp'),
     mageFemaleCast: _art('mage-female-cast.webp'),
     mageFemaleDistress: _art('mage-female-distress.webp'),
+    mageKaelIdle: _art('mage-kael-idle.webp'),
+    mageKaelCast: _art('mage-kael-cast.webp'),
+    mageKaelDistress: _art('mage-kael-distress.webp'),
+    mageRowanIdle: _art('mage-rowan-idle.webp'),
+    mageRowanCast: _art('mage-rowan-cast.webp'),
+    mageRowanDistress: _art('mage-rowan-distress.webp'),
+    mageLyraIdle: _art('mage-lyra-idle.webp'),
+    mageLyraCast: _art('mage-lyra-cast.webp'),
+    mageLyraDistress: _art('mage-lyra-distress.webp'),
+    mageMiraIdle: _art('mage-mira-idle.webp'),
+    mageMiraCast: _art('mage-mira-cast.webp'),
+    mageMiraDistress: _art('mage-mira-distress.webp'),
+    monsterImp: _art('monster-imp.webp'),
+    monsterBat: _art('monster-bat.webp'),
+    monsterBrute: _art('monster-brute.webp'),
     dropFire: _art('drop-fire.webp'),
     dropGold: _art('drop-gold.webp'),
     bgStorm: _art('bg-storm.webp'),
     bgDawn: _art('bg-dawn.webp'),
     bgFestival: _art('bg-festival.webp'),
+    bgDusk: _art('bg-dusk.webp'),
+    bgFrost: _art('bg-frost.webp'),
+    bgAutumn: _art('bg-autumn.webp'),
+    bgMeadow: _art('bg-meadow.webp'),
+    bgMidnight: _art('bg-midnight.webp'),
+    bgVolcano: _art('bg-volcano.webp'),
     mageDuo: _art('mage-duo.webp'),
     howto: _art('howto.webp')
   };
   var ART_FILES = [
-    ART.bgVillage, ART.bgMenu, ART.bgBurned, ART.splash,
+    ART.bgVillage, ART.bgMenu, ART.bgBurned, ART.splash, ART.icon,
     ART.mageMaleIdle, ART.mageMaleCast, ART.mageMaleDistress,
     ART.mageFemaleIdle, ART.mageFemaleCast, ART.mageFemaleDistress,
+    ART.mageKaelIdle, ART.mageKaelCast, ART.mageKaelDistress,
+    ART.mageRowanIdle, ART.mageRowanCast, ART.mageRowanDistress,
+    ART.mageLyraIdle, ART.mageLyraCast, ART.mageLyraDistress,
+    ART.mageMiraIdle, ART.mageMiraCast, ART.mageMiraDistress,
+    ART.monsterImp, ART.monsterBat, ART.monsterBrute,
     ART.dropFire, ART.dropGold,
     ART.bgStorm, ART.bgDawn, ART.bgFestival,
+    ART.bgDusk, ART.bgFrost, ART.bgAutumn,
+    ART.bgMeadow, ART.bgMidnight, ART.bgVolcano,
     ART.mageDuo, ART.howto
   ];
 
   /* Village themes: the playfield sky the player picks on the menu.
-     'night' is the default burning sky. */
+     'night' is the default burning sky. Ten themes since Nov 26,
+     2026 (six added: dusk, frost, autumn, meadow, midnight,
+     volcano). Every theme keeps the same dark field gradient over
+     the art, so drops, text, mage and village stay legible on all
+     ten — proven in renders per theme. Each theme also carries its
+     OWN word settings (text): ink/dim/accent colours plus a scrim
+     strength tuned to that theme's brightness — bright themes
+     (dawn, meadow, autumn, festival) get a strong dark scrim behind
+     the text, dark themes (night, midnight) a lighter one. Jesse's
+     Nov 26 Dawn screenshot proved one global white-on-bright text
+     colour washes out; the per-theme treatment is the fix. */
   var THEMES = [
-    { id: 'night', name: 'Fire Night', art: _art('bg-village.webp') },
-    { id: 'storm', name: 'Firestorm', art: _art('bg-storm.webp') },
-    { id: 'dawn', name: 'Dawn', art: _art('bg-dawn.webp') },
-    { id: 'festival', name: 'Festival', art: _art('bg-festival.webp') }
+    { id: 'night', name: 'Fire Night', art: _art('bg-village.webp'),
+      text: { ink: '#fff7ed', dim: '#ffedd5', accent: '#7dd3fc', scrim: 'rgba(24,10,4,0.45)' } },
+    { id: 'storm', name: 'Firestorm', art: _art('bg-storm.webp'),
+      text: { ink: '#ffffff', dim: '#fecaca', accent: '#7dd3fc', scrim: 'rgba(20,8,6,0.50)' } },
+    { id: 'dawn', name: 'Dawn', art: _art('bg-dawn.webp'),
+      text: { ink: '#fff7ed', dim: '#ffedd5', accent: '#fde68a', scrim: 'rgba(28,12,4,0.68)' } },
+    { id: 'festival', name: 'Festival', art: _art('bg-festival.webp'),
+      text: { ink: '#ffffff', dim: '#fef3c7', accent: '#fda4af', scrim: 'rgba(24,8,10,0.62)' } },
+    { id: 'dusk', name: 'Ember Dusk', art: _art('bg-dusk.webp'),
+      text: { ink: '#fff7ed', dim: '#e9d5ff', accent: '#fde68a', scrim: 'rgba(24,10,20,0.58)' } },
+    { id: 'frost', name: 'Frost Night', art: _art('bg-frost.webp'),
+      text: { ink: '#ffffff', dim: '#dbeafe', accent: '#bae6fd', scrim: 'rgba(8,18,32,0.50)' } },
+    { id: 'autumn', name: 'Autumn Glow', art: _art('bg-autumn.webp'),
+      text: { ink: '#fffbeb', dim: '#fef3c7', accent: '#fcd34d', scrim: 'rgba(30,14,4,0.64)' } },
+    { id: 'meadow', name: 'Spring Meadow', art: _art('bg-meadow.webp'),
+      text: { ink: '#fffbeb', dim: '#fef9c3', accent: '#fde047', scrim: 'rgba(20,24,6,0.68)' } },
+    { id: 'midnight', name: 'Midnight', art: _art('bg-midnight.webp'),
+      text: { ink: '#ffffff', dim: '#c7d2fe', accent: '#93c5fd', scrim: 'rgba(6,8,20,0.42)' } },
+    { id: 'volcano', name: 'Volcano', art: _art('bg-volcano.webp'),
+      text: { ink: '#ffffff', dim: '#fecaca', accent: '#fca5a5', scrim: 'rgba(24,6,4,0.50)' } }
   ];
-  var THEME_IDS = ['night', 'storm', 'dawn', 'festival'];
+  var THEME_IDS = ['night', 'storm', 'dawn', 'festival', 'dusk', 'frost', 'autumn', 'meadow', 'midnight', 'volcano'];
 
   function themeById(id) {
     var i;
@@ -151501,14 +151757,26 @@ var EMData = (function () {
     return THEMES[0];
   }
 
-  /* The two playable mages. */
+  /* The six playable mages (Nov 26, 2026 — four added: Kael and
+     Rowan, male; Lyra and Mira, female). Each has a distinct robe
+     colour so they read at small size, and the same three poses
+     (idle / cast / distress). artKey builds the ART key:
+     mage + artKey + Idle/Cast/Distress. */
   var MAGES = {
-    male: { id: 'male', name: 'Aldric', title: 'Male Mage',
+    male: { id: 'male', name: 'Aldric', title: 'Male Mage', artKey: 'Male',
       desc: 'Deep-blue robes, silver trim, a water-crystal staff.' },
-    female: { id: 'female', name: 'Seraphina', title: 'Female Mage',
-      desc: 'Teal-and-violet robes, gold trim, a water-crystal staff.' }
+    female: { id: 'female', name: 'Seraphina', title: 'Female Mage', artKey: 'Female',
+      desc: 'Teal-and-violet robes, gold trim, a water-crystal staff.' },
+    kael: { id: 'kael', name: 'Kael', title: 'Male Mage', artKey: 'Kael',
+      desc: 'Crimson robes, gold trim, a water-crystal staff.' },
+    rowan: { id: 'rowan', name: 'Rowan', title: 'Male Mage', artKey: 'Rowan',
+      desc: 'Deep emerald robes, silver trim, a water-crystal staff.' },
+    lyra: { id: 'lyra', name: 'Lyra', title: 'Female Mage', artKey: 'Lyra',
+      desc: 'Violet-lavender robes, silver trim, a water-crystal staff.' },
+    mira: { id: 'mira', name: 'Mira', title: 'Female Mage', artKey: 'Mira',
+      desc: 'Amber-gold robes, bronze trim, a water-crystal staff.' }
   };
-  var MAGE_IDS = ['male', 'female'];
+  var MAGE_IDS = ['male', 'female', 'kael', 'rowan', 'lyra', 'mira'];
 
   function mageById(id) {
     if (id && MAGES[id]) return MAGES[id];
@@ -151517,10 +151785,11 @@ var EMData = (function () {
 
   /* Mage art by mage id + pose ('idle' | 'cast' | 'distress'). */
   function mageArt(mageId, pose) {
-    var m = (mageId === 'female') ? 'Female' : 'Male';
-    if (pose === 'cast') return ART['mage' + m + 'Cast'];
-    if (pose === 'distress') return ART['mage' + m + 'Distress'];
-    return ART['mage' + m + 'Idle'];
+    var m = mageById(mageId);
+    var key = (m && m.artKey) || 'Male';
+    if (pose === 'cast') return ART['mage' + key + 'Cast'];
+    if (pose === 'distress') return ART['mage' + key + 'Distress'];
+    return ART['mage' + key + 'Idle'];
   }
 
   function gradeById(id) {
@@ -151578,6 +151847,15 @@ var EMData = (function () {
     GRADES: GRADES,
     GRADE_IDS: GRADE_IDS,
     DIFFICULTY_TO_GRADE: DIFFICULTY_TO_GRADE,
+    MONSTER_TYPES: MONSTER_TYPES,
+    MONSTER_IDS: MONSTER_IDS,
+    monsterById: monsterById,
+    MONSTER_FIRST_SPAWN_MS: MONSTER_FIRST_SPAWN_MS,
+    MONSTER_SPAWN_MIN_MS: MONSTER_SPAWN_MIN_MS,
+    MONSTER_SPAWN_VAR_MS: MONSTER_SPAWN_VAR_MS,
+    MONSTER_RETRY_MS: MONSTER_RETRY_MS,
+    MONSTER_MAX_DROPS_TO_SPAWN: MONSTER_MAX_DROPS_TO_SPAWN,
+    MONSTER_ARRIVE_DIST: MONSTER_ARRIVE_DIST,
     SCORING: SCORING,
     MAX_MISSES: MAX_MISSES,
     GOLDEN_CHANCE: GOLDEN_CHANCE,
@@ -151616,9 +151894,9 @@ if (typeof window !== 'undefined') {
 // Fairness (proven in the node tests, per grade):
 //  - division always divides evenly (a = divisor x quotient),
 //  - subtraction never goes negative at any grade (a >= b always),
-//  - answers stay in the grade's band (Kinder sums <= 5, 1st sums
-//    <= 10, 2nd sums <= 20 and x2/x5 only, 3rd tables to 10,
-//    4th two-digit and tables to 12, 5th multi-digit, answers <= 999).
+//  - answers stay in the grade's band (Kinder + sums <= 20, 1st
+//    +/− <= 100, 2nd +/− <= 1000, 3rd ×/÷ <= 50, 4th ×/÷ <= 200,
+//    5th all four ops, answers <= 1000).
 // Targeting: the lowest falling drop is auto-targeted; tapping a
 // drop targets it instead. A correct answer extinguishes the targeted
 // drop; a wrong answer shakes and resets the combo but the drop
@@ -151626,6 +151904,18 @@ if (typeof window !== 'undefined') {
 // misses burn the village down (dead). A golden drop (~1 in 18)
 // clears the whole screen when solved. Level ramps every 5 solves
 // (fall speed up).
+//
+// Monsters (Nov 26, 2026): a second threat. Ember imps, cinder bats
+// and magma brutes approach the village along the ground (walkers)
+// or through the air (the bat); one reaching the village burns a
+// house — one miss, like a drop through. They are fought with math:
+// tap a monster to target it (monsters are never auto-targeted),
+// solve its grade-band problem and the mage blasts it. Spawn rules
+// keep them fair: first monster no earlier than 20s into a run, at
+// most 1 at levels 1–2 (2 from level 3), never while 4+ drops are
+// falling, and every monster takes 15–40s to cross, telegraphed with
+// a warning badge and a growl. A golden clear clears drops only —
+// monsters keep coming.
 //
 // UMD: global EMEngine + module.exports. Never throws.
 var EMEngine = (function () {
@@ -151643,19 +151933,31 @@ var EMEngine = (function () {
   if (!D) {
     D = {
       GRADES: {
-        kinder: { id: 'kinder', ops: ['+'], fallSpeed: 0.045, spawnMs: 3000, gen: { '+': { aMin: 0, aMax: 5, bMin: 0, bMax: 5, sumMax: 5 } } },
-        first: { id: 'first', ops: ['+', '-'], fallSpeed: 0.055, spawnMs: 2600, gen: { '+': { aMin: 0, aMax: 10, bMin: 0, bMax: 10, sumMax: 10 }, '-': { aMin: 1, aMax: 10 } } },
-        second: { id: 'second', ops: ['+', '-', '\u00d7'], fallSpeed: 0.065, spawnMs: 2400, gen: { '+': { aMin: 0, aMax: 20, bMin: 0, bMax: 20, sumMax: 20 }, '-': { aMin: 1, aMax: 20 }, '\u00d7': { aMin: 1, aMax: 10, bSet: [2, 5], ansMax: 20 } } },
-        third: { id: 'third', ops: ['+', '-', '\u00d7', '\u00f7'], fallSpeed: 0.075, spawnMs: 2200, gen: { '+': { aMin: 2, aMax: 50, bMin: 2, bMax: 50, sumMax: 99 }, '-': { aMin: 1, aMax: 50 }, '\u00d7': { aMin: 2, aMax: 10, bMin: 2, bMax: 10, ansMax: 99 }, '\u00f7': { dMin: 2, dMax: 10, qMin: 2, qMax: 10 } } },
-        fourth: { id: 'fourth', ops: ['+', '-', '\u00d7', '\u00f7'], fallSpeed: 0.085, spawnMs: 2000, gen: { '+': { aMin: 10, aMax: 99, bMin: 10, bMax: 99, sumMax: 198 }, '-': { aMin: 10, aMax: 99 }, '\u00d7': { aMin: 2, aMax: 12, bMin: 2, bMax: 12 }, '\u00f7': { dMin: 2, dMax: 12, qMin: 2, qMax: 12 } } },
-        fifth: { id: 'fifth', ops: ['+', '-', '\u00d7', '\u00f7'], fallSpeed: 0.095, spawnMs: 1900, gen: { '+': { aMin: 10, aMax: 500, bMin: 10, bMax: 500, sumMax: 999 }, '-': { aMin: 10, aMax: 999 }, '\u00d7': { aMin: 3, aMax: 15, bMin: 3, bMax: 15 }, '\u00f7': { dMin: 3, dMax: 15, qMin: 3, qMax: 15 } } }
+        kinder: { id: 'kinder', ops: ['+'], fallSpeed: 0.045, spawnMs: 3000, gen: { '+': { aMin: 0, aMax: 20, bMin: 0, bMax: 20, sumMax: 20 } } },
+        first: { id: 'first', ops: ['+', '-'], fallSpeed: 0.05, spawnMs: 2800, gen: { '+': { aMin: 0, aMax: 100, bMin: 0, bMax: 100, sumMax: 100 }, '-': { aMin: 1, aMax: 100 } } },
+        second: { id: 'second', ops: ['+', '-'], fallSpeed: 0.05, spawnMs: 3400, gen: { '+': { aMin: 0, aMax: 1000, bMin: 0, bMax: 1000, sumMax: 1000 }, '-': { aMin: 1, aMax: 1000 } } },
+        third: { id: 'third', ops: ['\u00d7', '\u00f7'], fallSpeed: 0.06, spawnMs: 3000, gen: { '\u00d7': { aMin: 2, aMax: 10, bMin: 2, bMax: 10, ansMax: 50 }, '\u00f7': { dMin: 2, dMax: 7, qMin: 2, qMax: 7 } } },
+        fourth: { id: 'fourth', ops: ['\u00d7', '\u00f7'], fallSpeed: 0.065, spawnMs: 3200, gen: { '\u00d7': { aMin: 2, aMax: 20, bMin: 2, bMax: 12, ansMax: 200 }, '\u00f7': { dMin: 2, dMax: 12, qMin: 2, qMax: 15 } } },
+        fifth: { id: 'fifth', ops: ['+', '-', '\u00d7', '\u00f7'], fallSpeed: 0.07, spawnMs: 3400, gen: { '+': { aMin: 10, aMax: 999, bMin: 10, bMax: 999, sumMax: 1000 }, '-': { aMin: 10, aMax: 999 }, '\u00d7': { aMin: 3, aMax: 31, bMin: 3, bMax: 31, ansMax: 1000 }, '\u00f7': { dMin: 2, dMax: 25, qMin: 2, qMax: 25 } } }
       },
+      MONSTER_TYPES: {
+        imp: { id: 'imp', name: 'Ember Imp', kind: 'walker', speed: 0.02, y: 0.88, size: 64, weight: 5, art: 'monster-imp.webp' },
+        bat: { id: 'bat', name: 'Cinder Bat', kind: 'flyer', speed: 0.032, y: 0.45, size: 56, weight: 3, art: 'monster-bat.webp' },
+        brute: { id: 'brute', name: 'Magma Brute', kind: 'walker', speed: 0.013, y: 0.88, size: 92, weight: 2, art: 'monster-brute.webp' }
+      },
+      MONSTER_FIRST_SPAWN_MS: 20000,
+      MONSTER_SPAWN_MIN_MS: 22000,
+      MONSTER_SPAWN_VAR_MS: 12000,
+      MONSTER_RETRY_MS: 3000,
+      MONSTER_MAX_DROPS_TO_SPAWN: 3,
+      MONSTER_ARRIVE_DIST: 0.07,
       SCORING: { BASE: 10, COMBO_STEP: 2, GOLDEN_PER_FLAKE: 25, SOLVES_PER_LEVEL: 5 },
       MAX_MISSES: 3, GOLDEN_CHANCE: 1 / 18,
       SPEED_PER_LEVEL: 0.12, SPEED_MAX_MULT: 2.2
     };
     D.gradeById = function (id) { return (id && D.GRADES[id]) ? D.GRADES[id] : D.GRADES.first; };
     D.difficultyById = D.gradeById;
+    D.monsterById = function (id) { return (id && D.MONSTER_TYPES[id]) ? D.MONSTER_TYPES[id] : D.MONSTER_TYPES.imp; };
     D.levelForSolved = function (s) { return 1 + Math.floor(Math.max(0, s || 0) / 5); };
     D.speedMultForLevel = function (l) { var m = 1 + 0.12 * Math.max(0, (l || 1) - 1); return m > 2.2 ? 2.2 : m; };
     D.fallSpeedFor = function (id, l) { return D.gradeById(id).fallSpeed * D.speedMultForLevel(l); };
@@ -151700,7 +152002,12 @@ var EMEngine = (function () {
       var bMin = (typeof spec.bMin === 'number') ? spec.bMin : 0;
       var bMax = (typeof spec.bMax === 'number') ? spec.bMax : 9;
       var sumMax = (typeof spec.sumMax === 'number') ? spec.sumMax : 18;
-      a = _randInt(s, aMin, aMax);
+      /* Cap a first so the sum can never exceed sumMax: with a big
+         bMin (5th grade: bMin 10, sumMax 1000) an uncapped a = 999
+         would force b = 10 and the answer 1009. */
+      var aHi = Math.min(aMax, sumMax - bMin);
+      if (aHi < aMin) aHi = aMin;
+      a = _randInt(s, aMin, aHi);
       var bHi = Math.min(bMax, sumMax - a);
       if (bHi < bMin) bHi = bMin;
       b = _randInt(s, bMin, bHi);
@@ -151713,8 +152020,8 @@ var EMEngine = (function () {
       answer = a - b;
     } else if (op === '\u00d7') {
       /* b first, then a capped so the product stays inside the
-         grade's answer band (ansMax): 2nd grade ×2/×5 never tops 20,
-         3rd grade 10×10 never tops 99. */
+         grade's answer band (ansMax): 3rd grade never tops 50, 4th
+         never tops 200, 5th never tops 1000. */
       if (spec.bSet && spec.bSet.length) b = spec.bSet[Math.floor(_rngNext(s) * spec.bSet.length)];
       else b = _randInt(s, spec.bMin || 2, spec.bMax || 9);
       var aHi = spec.aMax || 9;
@@ -151748,6 +152055,10 @@ var EMEngine = (function () {
       drops: [],
       nextDropId: 1,
       targetId: null,
+      targetKind: 'drop',
+      monsters: [],
+      nextMonsterId: 1,
+      monsterInMs: D.MONSTER_FIRST_SPAWN_MS || 20000,
       spawnInMs: 0,
       score: 0,
       best: (typeof opts.best === 'number' && isFinite(opts.best)) ? Math.max(0, Math.floor(opts.best)) : 0,
@@ -151789,6 +152100,44 @@ var EMEngine = (function () {
     return drop;
   }
 
+  function _monsterCap(s) {
+    return _level(s) >= 3 ? 2 : 1;
+  }
+
+  /* Spawn one monster at a field edge, walking/flying toward the
+     village centre (x = 0.5). Weighted by type; the monster carries
+     its own grade-band problem. Raises a 'monster' event so the UI
+     can telegraph it (growl + warning). */
+  function _spawnMonster(s, forceType) {
+    var types = [D.monsterById('imp'), D.monsterById('bat'), D.monsterById('brute')];
+    var totalW = 0, i;
+    for (i = 0; i < types.length; i++) totalW += types[i].weight || 1;
+    var roll = _rngNext(s) * totalW;
+    var type = types[0];
+    for (i = 0; i < types.length; i++) {
+      roll -= types[i].weight || 1;
+      if (roll <= 0) { type = types[i]; break; }
+    }
+    if (forceType && D.MONSTER_TYPES[forceType]) type = D.MONSTER_TYPES[forceType];
+    var fromLeft = _rngNext(s) < 0.5;
+    var monster = {
+      id: s.nextMonsterId++,
+      type: type.id,
+      name: type.name,
+      kind: type.kind,
+      x: fromLeft ? 0.02 : 0.98,
+      y: type.y,
+      dir: fromLeft ? 1 : -1,
+      speed: type.speed,
+      size: type.size,
+      problem: generateProblem(s.grade, s),
+      state: 'approaching'
+    };
+    s.monsters.push(monster);
+    s.events.push({ type: 'monster', monsterId: monster.id, monsterType: type.id, name: type.name, x: monster.x });
+    return monster;
+  }
+
   function _lowestFalling(s) {
     var best = null, i, f;
     for (i = 0; i < s.drops.length; i++) {
@@ -151799,14 +152148,27 @@ var EMEngine = (function () {
     return best;
   }
 
+  /* Retargeting keeps the current target while it is still alive
+     (drop OR monster). Otherwise it picks the lowest falling drop.
+     Monsters are NEVER auto-targeted — the player must tap one, so a
+     monster never steals the target from the drop the player is
+     already solving. */
   function _retarget(s) {
-    var low = _lowestFalling(s);
-    if (!low) { s.targetId = null; return; }
-    var still = false, i;
-    for (i = 0; i < s.drops.length; i++) {
-      if (s.drops[i].id === s.targetId && s.drops[i].state === 'falling') { still = true; break; }
+    var i;
+    if (s.targetKind === 'monster' && s.targetId) {
+      for (i = 0; i < s.monsters.length; i++) {
+        if (s.monsters[i].id === s.targetId && s.monsters[i].state === 'approaching') return;
+      }
     }
-    if (!still) s.targetId = low.id;
+    if (s.targetKind === 'drop' && s.targetId) {
+      for (i = 0; i < s.drops.length; i++) {
+        if (s.drops[i].id === s.targetId && s.drops[i].state === 'falling') return;
+      }
+    }
+    var low = _lowestFalling(s);
+    if (!low) { s.targetId = null; s.targetKind = 'drop'; return; }
+    s.targetId = low.id;
+    s.targetKind = 'drop';
   }
 
   function _removeDrop(s, id) {
@@ -151835,6 +152197,10 @@ var EMEngine = (function () {
     s.time = 0;
     s.drops = [];
     s.targetId = null;
+    s.targetKind = 'drop';
+    s.monsters = [];
+    s.nextMonsterId = 1;
+    s.monsterInMs = D.MONSTER_FIRST_SPAWN_MS || 20000;
     s.spawnInMs = 0;
     s.score = 0;
     s.solved = 0;
@@ -151864,7 +152230,9 @@ var EMEngine = (function () {
     if (!s) return;
     s.state = 'menu';
     s.drops = [];
+    s.monsters = [];
     s.targetId = null;
+    s.targetKind = 'drop';
     s.input = '';
     s.events = [];
   }
@@ -151875,6 +152243,23 @@ var EMEngine = (function () {
     for (i = 0; i < s.drops.length; i++) {
       if (s.drops[i].id === id && s.drops[i].state === 'falling') {
         s.targetId = id;
+        s.targetKind = 'drop';
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /* Tap a monster to target it. A monster target is sticky until it
+     is solved or reaches the village; retargeting never switches
+     away from it on its own. */
+  function targetMonster(s, id) {
+    if (!s) return false;
+    var i;
+    for (i = 0; i < s.monsters.length; i++) {
+      if (s.monsters[i].id === id && s.monsters[i].state === 'approaching') {
+        s.targetId = id;
+        s.targetKind = 'monster';
         return true;
       }
     }
@@ -151892,18 +152277,25 @@ var EMEngine = (function () {
     if (isNaN(value)) return { ok: false, reason: 'empty' };
     _retarget(s);
     var target = null, i;
-    for (i = 0; i < s.drops.length; i++) {
-      if (s.drops[i].id === s.targetId) { target = s.drops[i]; break; }
+    var isMonster = s.targetKind === 'monster';
+    if (isMonster) {
+      for (i = 0; i < s.monsters.length; i++) {
+        if (s.monsters[i].id === s.targetId) { target = s.monsters[i]; break; }
+      }
+    } else {
+      for (i = 0; i < s.drops.length; i++) {
+        if (s.drops[i].id === s.targetId) { target = s.drops[i]; break; }
+      }
     }
     if (!target) return { ok: false, reason: 'no-target' };
     if (value !== target.problem.answer) {
       s.combo = 0;
       s.input = '';
-      s.events.push({ type: 'wrong', dropId: target.id, expected: target.problem.answer, got: value });
+      s.events.push({ type: 'wrong', dropId: isMonster ? null : target.id, monster: isMonster, monsterId: isMonster ? target.id : null, expected: target.problem.answer, got: value });
       return { ok: false, reason: 'wrong', expected: target.problem.answer, got: value };
     }
     /* Correct. */
-    var wasGolden = !!target.golden;
+    var wasGolden = !isMonster && !!target.golden;
     s.combo += 1;
     if (s.combo > s.bestCombo) s.bestCombo = s.combo;
     s.solved += 1;
@@ -151911,7 +152303,13 @@ var EMEngine = (function () {
     var gained = D.scoreForSolve(s.level, s.combo);
     s.score += gained;
     var cleared = 0, clearedPoints = 0;
-    _removeDrop(s, target.id);
+    if (isMonster) {
+      for (i = 0; i < s.monsters.length; i++) {
+        if (s.monsters[i].id === target.id) { s.monsters.splice(i, 1); break; }
+      }
+    } else {
+      _removeDrop(s, target.id);
+    }
     if (wasGolden) {
       /* Golden blast clears every other falling drop: 25 each. */
       var rest = [];
@@ -151928,14 +152326,19 @@ var EMEngine = (function () {
     }
     s.input = '';
     s.targetId = null;
+    s.targetKind = 'drop';
     _retarget(s);
     s.events.push({
-      type: 'solved', dropId: target.id, golden: wasGolden,
+      type: 'solved', dropId: isMonster ? null : target.id, monster: isMonster,
+      monsterId: isMonster ? target.id : null, monsterType: isMonster ? target.type : null,
+      golden: wasGolden,
       gained: gained, cleared: cleared, clearedPoints: clearedPoints,
       score: s.score, combo: s.combo, level: s.level, solved: s.solved
     });
     return {
-      ok: true, golden: wasGolden, gained: gained,
+      ok: true, golden: wasGolden, monster: isMonster,
+      monsterId: isMonster ? target.id : null,
+      gained: gained,
       cleared: cleared, clearedPoints: clearedPoints,
       score: s.score, combo: s.combo, level: s.level, solved: s.solved
     };
@@ -151974,6 +152377,27 @@ var EMEngine = (function () {
         return s.events;
       }
     }
+    /* Monsters walk/fly toward the village. A monster that reaches
+       the village burns a house — one miss, like a drop through.
+       Monster speed ramps with level too, but capped at 1.5x so the
+       slowest monster still gives ~25s to answer. */
+    var mMult = D.speedMultForLevel(_level(s));
+    if (mMult > 1.5) mMult = 1.5;
+    for (i = s.monsters.length - 1; i >= 0; i--) {
+      var mon = s.monsters[i];
+      if (mon.state !== 'approaching') continue;
+      mon.x += mon.dir * mon.speed * mMult * dtS;
+      if (Math.abs(mon.x - 0.5) <= (D.MONSTER_ARRIVE_DIST || 0.07)) {
+        s.monsters.splice(i, 1);
+        s.misses += 1;
+        s.combo = 0;
+        s.events.push({ type: 'miss', monster: true, monsterId: mon.id, monsterType: mon.type, name: mon.name, misses: s.misses });
+        if (s.misses >= D.MAX_MISSES) {
+          _die(s);
+          return s.events;
+        }
+      }
+    }
     _retarget(s);
     /* Spawning. */
     s.spawnInMs -= dt;
@@ -151982,12 +152406,32 @@ var EMEngine = (function () {
       s.spawnInMs = D.spawnMsFor(s.grade, _level(s));
       _retarget(s);
     }
+    /* Monster spawning: never in the first 20s, never while the
+       field is crowded, capped by level. If the field is crowded
+       the timer retries soon instead of resetting to the full
+       interval, so the threat still arrives. */
+    s.monsterInMs -= dt;
+    if (s.monsterInMs <= 0) {
+      if (s.monsters.length < _monsterCap(s) && s.drops.length <= (D.MONSTER_MAX_DROPS_TO_SPAWN || 3)) {
+        _spawnMonster(s, null);
+        s.monsterInMs = (D.MONSTER_SPAWN_MIN_MS || 22000) + _rngNext(s) * (D.MONSTER_SPAWN_VAR_MS || 12000);
+      } else {
+        s.monsterInMs = D.MONSTER_RETRY_MS || 3000;
+      }
+      _retarget(s);
+    }
     return s.events;
   }
 
   function targetProblem(s) {
     if (!s) return null;
     var i;
+    if (s.targetKind === 'monster') {
+      for (i = 0; i < s.monsters.length; i++) {
+        if (s.monsters[i].id === s.targetId) return s.monsters[i].problem;
+      }
+      return null;
+    }
     for (i = 0; i < s.drops.length; i++) {
       if (s.drops[i].id === s.targetId) return s.drops[i].problem;
     }
@@ -151998,6 +152442,23 @@ var EMEngine = (function () {
   function forceSpawnGolden(s) {
     if (!s) return null;
     return _spawnDrop(s, true);
+  }
+  function forceSpawnMonster(s, type) {
+    if (!s) return null;
+    return _spawnMonster(s, type || null);
+  }
+  function forceMonsterArrive(s) {
+    /* Move the nearest monster onto the village line so the next
+       step() registers a monster miss. Returns the monster id. */
+    if (!s) return null;
+    var best = null, i;
+    for (i = 0; i < s.monsters.length; i++) {
+      if (s.monsters[i].state !== 'approaching') continue;
+      if (!best || Math.abs(s.monsters[i].x - 0.5) < Math.abs(best.x - 0.5)) best = s.monsters[i];
+    }
+    if (!best) return null;
+    best.x = 0.5;
+    return best.id;
   }
   function forceMiss(s) {
     /* Drop the lowest falling drop onto the ground line so the next
@@ -152013,10 +152474,15 @@ var EMEngine = (function () {
     return JSON.parse(JSON.stringify({
       state: s.state, grade: s.grade, difficulty: s.grade, time: +s.time.toFixed(3),
       score: s.score, best: s.best, solved: s.solved, combo: s.combo,
-      misses: s.misses, level: s.level, targetId: s.targetId,
+      misses: s.misses, level: s.level, targetId: s.targetId, targetKind: s.targetKind,
       drops: s.drops.map(function (f) {
         return { id: f.id, x: +f.x.toFixed(3), y: +f.y.toFixed(3),
           golden: f.golden, text: f.problem.text, answer: f.problem.answer };
+      }),
+      monsters: s.monsters.map(function (m) {
+        return { id: m.id, type: m.type, name: m.name, kind: m.kind,
+          x: +m.x.toFixed(3), y: m.y, dir: m.dir,
+          text: m.problem.text, answer: m.problem.answer };
       })
     }));
   }
@@ -152034,8 +152500,11 @@ var EMEngine = (function () {
     step: step,
     submitAnswer: submitAnswer,
     targetDrop: targetDrop,
+    targetMonster: targetMonster,
     targetProblem: targetProblem,
     forceSpawnGolden: forceSpawnGolden,
+    forceSpawnMonster: forceSpawnMonster,
+    forceMonsterArrive: forceMonsterArrive,
     forceMiss: forceMiss,
     snapshot: snapshot
   };
@@ -152053,9 +152522,13 @@ if (typeof window !== 'undefined') {
 //
 // Key (jmf-embermath-save-v1, per the registry convention):
 //   best score, games played, total problems solved, last grade,
-//   chosen mage ('male' | 'female' | null when never chosen).
+//   chosen mage (one of the six mage ids, or null when never
+//   chosen), chosen village theme (one of the ten theme ids).
 // Auto-saved on game over and whenever the best changes; the menu
 // offers a delete-save (with confirm) that wipes the whole record.
+// Grade keys never change, so no migration is needed when the
+// grade bands change — an existing save loads with its grade, mage
+// and theme intact.
 //
 // Grade migration (Nov 26, 2026): the old Easy/Medium/Hard picker
 // became grade levels. An old save's `difficulty` migrates silently:
@@ -152069,6 +152542,8 @@ var EMSave = (function () {
   var SAVE_KEY = 'jmf-embermath-save-v1';
 
   var GRADE_IDS = ['kinder', 'first', 'second', 'third', 'fourth', 'fifth'];
+  var MAGE_IDS = ['male', 'female', 'kael', 'rowan', 'lyra', 'mira'];
+  var THEME_IDS = ['night', 'storm', 'dawn', 'festival', 'dusk', 'frost', 'autumn', 'meadow', 'midnight', 'volcano'];
   var DIFFICULTY_TO_GRADE = { easy: 'first', medium: 'third', hard: 'fifth' };
 
   var DEFAULT_SAVE = { best: 0, games: 0, solved: 0, grade: 'first', mage: null, theme: 'night' };
@@ -152135,10 +152610,9 @@ var EMSave = (function () {
       /* Keep the migrated value in the legacy field too, so any
          older reader sees a grade id it can map back. */
       out.difficulty = out.grade;
-      if (saved.mage === 'male' || saved.mage === 'female') out.mage = saved.mage;
+      if (typeof saved.mage === 'string' && MAGE_IDS.indexOf(saved.mage) !== -1) out.mage = saved.mage;
       else if (saved.mage === null) out.mage = null;
-      if (typeof saved.theme === 'string' &&
-          (saved.theme === 'night' || saved.theme === 'storm' || saved.theme === 'dawn' || saved.theme === 'festival')) {
+      if (typeof saved.theme === 'string' && THEME_IDS.indexOf(saved.theme) !== -1) {
         out.theme = saved.theme;
       }
     }
@@ -152184,7 +152658,7 @@ var EMSave = (function () {
   }
   function setMage(mage) {
     try {
-      if (mage !== 'male' && mage !== 'female') return false;
+      if (typeof mage !== 'string' || MAGE_IDS.indexOf(mage) === -1) return false;
       var s = load();
       s.mage = mage;
       return save(s);
@@ -152215,7 +152689,7 @@ var EMSave = (function () {
   }
   function setTheme(theme) {
     try {
-      if (theme !== 'night' && theme !== 'storm' && theme !== 'dawn' && theme !== 'festival') return false;
+      if (typeof theme !== 'string' || THEME_IDS.indexOf(theme) === -1) return false;
       var s = load();
       s.theme = theme;
       return save(s);
@@ -152282,6 +152756,8 @@ if (typeof window !== 'undefined') {
 //   golden     — rising arpeggio (cleansing rain)
 //   levelup    — bright rising fanfare (level ramp)
 //   defeat     — low descending tone (the village burns down)
+//   growl      — low monster warning rumble (a monster appears)
+//   monster    — deep blast + thud (a monster is blasted)
 //   click      — short UI blip
 // Every sound respects the shared sound toggle (BZSettings /
 // BZAudio). No AudioContext, no sound — degrade silently, never throw.
@@ -152459,6 +152935,14 @@ var EMAudio = (function () {
         _tone(ctx, 220, 0.9, 'sine', 0.11, 0, 55);
         _tone(ctx, 110, 0.9, 'triangle', 0.07, 0.1, 40);
         _noise(ctx, 0.8, 0.05, 'bandpass', 900, 300, 0.1);
+      } else if (kind === 'growl') {
+        _tone(ctx, 70, 0.55, 'sawtooth', 0.11, 0, 45);
+        _tone(ctx, 105, 0.55, 'sawtooth', 0.07, 0.05, 60);
+        _noise(ctx, 0.5, 0.06, 'lowpass', 300, 120, 0);
+      } else if (kind === 'monster') {
+        _tone(ctx, 180, 0.4, 'sine', 0.12, 0, 40);
+        _noise(ctx, 0.35, 0.1, 'bandpass', 500, 2000, 0);
+        _tone(ctx, 90, 0.25, 'triangle', 0.1, 0.05, 50);
       } else if (kind === 'click') {
         _tone(ctx, 740, 0.07, 'sine', 0.06, 0);
       } else {
@@ -152563,6 +153047,21 @@ var EmberMathGame = (function () {
     mageFemaleIdle: ASSET_BASE + 'mage-female-idle.webp',
     mageFemaleCast: ASSET_BASE + 'mage-female-cast.webp',
     mageFemaleDistress: ASSET_BASE + 'mage-female-distress.webp',
+    mageKaelIdle: ASSET_BASE + 'mage-kael-idle.webp',
+    mageKaelCast: ASSET_BASE + 'mage-kael-cast.webp',
+    mageKaelDistress: ASSET_BASE + 'mage-kael-distress.webp',
+    mageRowanIdle: ASSET_BASE + 'mage-rowan-idle.webp',
+    mageRowanCast: ASSET_BASE + 'mage-rowan-cast.webp',
+    mageRowanDistress: ASSET_BASE + 'mage-rowan-distress.webp',
+    mageLyraIdle: ASSET_BASE + 'mage-lyra-idle.webp',
+    mageLyraCast: ASSET_BASE + 'mage-lyra-cast.webp',
+    mageLyraDistress: ASSET_BASE + 'mage-lyra-distress.webp',
+    mageMiraIdle: ASSET_BASE + 'mage-mira-idle.webp',
+    mageMiraCast: ASSET_BASE + 'mage-mira-cast.webp',
+    mageMiraDistress: ASSET_BASE + 'mage-mira-distress.webp',
+    monsterImp: ASSET_BASE + 'monster-imp.webp',
+    monsterBat: ASSET_BASE + 'monster-bat.webp',
+    monsterBrute: ASSET_BASE + 'monster-brute.webp',
     dropFire: ASSET_BASE + 'drop-fire.webp',
     dropGold: ASSET_BASE + 'drop-gold.webp',
     bgStorm: ASSET_BASE + 'bg-storm.webp',
@@ -152574,6 +153073,15 @@ var EmberMathGame = (function () {
 
   var MAX_MISSES = (D && D.MAX_MISSES) || 3;
   var CAST_MS = 600;
+
+  /* Monster art by type id (imp / bat / brute). */
+  function _monsterArt(typeId) {
+    try {
+      if (D && D.MONSTER_TYPES && D.MONSTER_TYPES[typeId]) return ASSET_BASE + D.MONSTER_TYPES[typeId].art;
+    } catch (e) { /* fall through */ }
+    var map = { imp: 'monster-imp.webp', bat: 'monster-bat.webp', brute: 'monster-brute.webp' };
+    return ASSET_BASE + (map[typeId] || 'monster-imp.webp');
+  }
 
   function _mageArt(mageId, pose) {
     try {
@@ -152595,7 +153103,7 @@ var EmberMathGame = (function () {
       '<div class="em-select-inner">' +
         '<h1 class="em-title">Choose your mage</h1>' +
         '<p class="em-tagline">Fire rain is falling on the village. Only a mage\'s water spell can put it out.</p>' +
-        '<img class="em-select-duo" id="emSelectDuo" src="' + ART.mageDuo + '" alt="Aldric and Seraphina, the two mages">' +
+        '<img class="em-select-duo" id="emSelectDuo" src="' + ART.mageDuo + '" alt="Aldric and Seraphina, two of the six mages">' +
         '<div class="em-mage-row">' +
           '<button type="button" class="em-mage-card" data-mage="male">' +
             '<img class="em-mage-card-img" src="' + ART.mageMaleIdle + '" alt="">' +
@@ -152607,6 +153115,30 @@ var EmberMathGame = (function () {
             '<img class="em-mage-card-img" src="' + ART.mageFemaleIdle + '" alt="">' +
             '<span class="em-mage-card-fallback" aria-hidden="true"></span>' +
             '<span class="em-mage-card-name">Seraphina</span>' +
+            '<span class="em-mage-card-title">Female Mage</span>' +
+          '</button>' +
+          '<button type="button" class="em-mage-card" data-mage="kael">' +
+            '<img class="em-mage-card-img" src="' + ART.mageKaelIdle + '" alt="">' +
+            '<span class="em-mage-card-fallback" aria-hidden="true"></span>' +
+            '<span class="em-mage-card-name">Kael</span>' +
+            '<span class="em-mage-card-title">Male Mage</span>' +
+          '</button>' +
+          '<button type="button" class="em-mage-card" data-mage="rowan">' +
+            '<img class="em-mage-card-img" src="' + ART.mageRowanIdle + '" alt="">' +
+            '<span class="em-mage-card-fallback" aria-hidden="true"></span>' +
+            '<span class="em-mage-card-name">Rowan</span>' +
+            '<span class="em-mage-card-title">Male Mage</span>' +
+          '</button>' +
+          '<button type="button" class="em-mage-card" data-mage="lyra">' +
+            '<img class="em-mage-card-img" src="' + ART.mageLyraIdle + '" alt="">' +
+            '<span class="em-mage-card-fallback" aria-hidden="true"></span>' +
+            '<span class="em-mage-card-name">Lyra</span>' +
+            '<span class="em-mage-card-title">Female Mage</span>' +
+          '</button>' +
+          '<button type="button" class="em-mage-card" data-mage="mira">' +
+            '<img class="em-mage-card-img" src="' + ART.mageMiraIdle + '" alt="">' +
+            '<span class="em-mage-card-fallback" aria-hidden="true"></span>' +
+            '<span class="em-mage-card-name">Mira</span>' +
             '<span class="em-mage-card-title">Female Mage</span>' +
           '</button>' +
         '</div>' +
@@ -152636,6 +153168,12 @@ var EmberMathGame = (function () {
           '<button type="button" class="em-theme-btn" data-theme="storm">Firestorm</button>' +
           '<button type="button" class="em-theme-btn" data-theme="dawn">Dawn</button>' +
           '<button type="button" class="em-theme-btn" data-theme="festival">Festival</button>' +
+          '<button type="button" class="em-theme-btn" data-theme="dusk">Ember Dusk</button>' +
+          '<button type="button" class="em-theme-btn" data-theme="frost">Frost Night</button>' +
+          '<button type="button" class="em-theme-btn" data-theme="autumn">Autumn Glow</button>' +
+          '<button type="button" class="em-theme-btn" data-theme="meadow">Spring Meadow</button>' +
+          '<button type="button" class="em-theme-btn" data-theme="midnight">Midnight</button>' +
+          '<button type="button" class="em-theme-btn" data-theme="volcano">Volcano</button>' +
         '</div>' +
         '<button type="button" class="em-play-btn" id="emPlayBtn">PLAY</button>' +
         '<button type="button" class="em-link-btn" id="emHowBtn">How to play</button>' +
@@ -152644,8 +153182,9 @@ var EmberMathGame = (function () {
           '<p>Flaming drops with math problems rain from the sky. Tap a drop to aim at it — or just solve the lowest one.</p>' +
           '<p>Type the answer on the keypad and press SOLVE before the drop reaches the village. A right answer makes your mage cast a water spell that puts it out.</p>' +
           '<p>A drop that reaches the village sets a house on fire. Three burning houses and the village burns down — game over.</p>' +
+          '<p>Monsters attack too: ember imps scuttle in, cinder bats swoop overhead, magma brutes stomp toward the houses. Tap a monster to aim at it and solve its math problem — your mage walks over and blasts it. A monster that reaches the village burns a house, just like a drop.</p>' +
           '<p>A rare golden drop turns into a cleansing rain that clears the whole sky when you solve it. Every 5 solves the fire rain falls faster and you level up.</p>' +
-          '<p>Pick your grade on the menu — Kinder through 5th Grade. Your mage walks the village front and hurries toward the drop you aim at, so the spell comes from where she stands.</p>' +
+          '<p>Pick your grade on the menu — Kinder through 5th Grade. Your mage walks the village front and hurries toward the drop or monster you aim at, so the spell comes from where she stands.</p>' +
         '</div>' +
         '<button type="button" class="em-link-btn em-delete-btn" id="emDeleteBtn">Delete save</button>' +
         '<p class="em-delete-note" id="emDeleteNote" hidden>Tap again to erase your best score, stats and mage.</p>' +
@@ -152668,6 +153207,7 @@ var EmberMathGame = (function () {
       '<div class="em-field" id="emField">' +
         '<div class="em-ambient" id="emAmbient" aria-hidden="true"></div>' +
         '<div class="em-drops" id="emDrops"></div>' +
+        '<div class="em-monsters" id="emMonsters"></div>' +
         '<div class="em-village-glow" id="emVillageGlow" aria-hidden="true"></div>' +
         '<div class="em-village" id="emVillage" aria-hidden="true">' +
           '<span class="em-house"><i class="em-house-roof"></i><i class="em-house-body"></i><i class="em-house-fire"></i><i class="em-house-smoke"></i></span>' +
@@ -152748,6 +153288,7 @@ var EmberMathGame = (function () {
   var lastT = 0;
   var deleteArmed = false;
   var dropEls = {};
+  var monsterEls = {};
   var magePose = 'idle';
   /* Mage movement: the mage walks the village front (mageX is the
      fraction of the field width, 0..1, measured at the mage's centre)
@@ -152792,8 +153333,10 @@ var EmberMathGame = (function () {
       var map = { easy: 'first', medium: 'third', hard: 'fifth' };
       grade = map[stats.difficulty] || 'first';
     }
-    mage = (stats.mage === 'male' || stats.mage === 'female') ? stats.mage : null;
-    theme = (stats.theme === 'night' || stats.theme === 'storm' || stats.theme === 'dawn' || stats.theme === 'festival') ? stats.theme : 'night';
+    var MAGE_IDS = (D && D.MAGE_IDS) || ['male', 'female', 'kael', 'rowan', 'lyra', 'mira'];
+    mage = (typeof stats.mage === 'string' && MAGE_IDS.indexOf(stats.mage) !== -1) ? stats.mage : null;
+    var THEME_IDS = (D && D.THEME_IDS) || ['night', 'storm', 'dawn', 'festival', 'dusk', 'frost', 'autumn', 'meadow', 'midnight', 'volcano'];
+    theme = (typeof stats.theme === 'string' && THEME_IDS.indexOf(stats.theme) !== -1) ? stats.theme : 'night';
   }
 
   /* Village theme: the playfield sky. Applied to the root background
@@ -152802,25 +153345,61 @@ var EmberMathGame = (function () {
     try {
       if (D && typeof D.themeById === 'function') return D.themeById(id).art;
     } catch (e) { /* fall through */ }
-    var map = { night: ART.bgVillage, storm: ART.bgStorm, dawn: ART.bgDawn, festival: ART.bgFestival };
+    var map = { night: ART.bgVillage, storm: ART.bgStorm, dawn: ART.bgDawn, festival: ART.bgFestival,
+      dusk: ASSET_BASE + 'bg-dusk.webp', frost: ASSET_BASE + 'bg-frost.webp',
+      autumn: ASSET_BASE + 'bg-autumn.webp', meadow: ASSET_BASE + 'bg-meadow.webp',
+      midnight: ASSET_BASE + 'bg-midnight.webp', volcano: ASSET_BASE + 'bg-volcano.webp' };
     return map[id] || ART.bgVillage;
+  }
+
+  /* Per-theme word settings (Nov 26, 2026 — Jesse's Dawn screenshot
+     proved white-on-bright-sky washes out): every theme carries its
+     OWN text treatment in em-data.js — ink, dim, accent and a scrim
+     strength tuned to that theme's brightness. Applied here as CSS
+     variables on the game root, so menu, select, HUD, keypad, pause
+     and game-over text all read on every theme. Bright themes get a
+     much stronger dark scrim behind the text; dark themes get a
+     lighter one. The variables are also the proof's handle: the
+     browser proof reads them per theme and measures the rendered
+     text/background contrast on screenshots. */
+  var THEME_TEXT_DEFAULT = { ink: '#fff7ed', dim: '#ffedd5', accent: '#7dd3fc', scrim: 'rgba(24,10,4,0.45)' };
+  function _themeText(id) {
+    try {
+      if (D && typeof D.themeById === 'function') {
+        var t = D.themeById(id);
+        if (t && t.text) return t.text;
+      }
+    } catch (e) { /* fall through */ }
+    return THEME_TEXT_DEFAULT;
   }
 
   function _applyTheme() {
     try {
       var img = els.bgImg;
-      if (!img) return;
-      var src = _themeArt(theme);
-      try { img.style.display = ''; } catch (e) { /* silent */ }
-      if (img.getAttribute('src') !== src) {
-        try { img.setAttribute('src', src); } catch (e2) { /* silent */ }
+      if (img) {
+        var src = _themeArt(theme);
+        try { img.style.display = ''; } catch (e) { /* silent */ }
+        if (img.getAttribute('src') !== src) {
+          try { img.setAttribute('src', src); } catch (e2) { /* silent */ }
+        }
+      }
+      if (root) {
+        try { root.setAttribute('data-em-theme', theme); } catch (e3) { /* silent */ }
+        var tx = _themeText(theme);
+        try {
+          root.style.setProperty('--em-ink', tx.ink);
+          root.style.setProperty('--em-dim', tx.dim);
+          root.style.setProperty('--em-accent', tx.accent);
+          root.style.setProperty('--em-scrim', tx.scrim);
+        } catch (e4) { /* silent */ }
       }
     } catch (e) { /* best-effort */ }
   }
 
   function _chooseTheme(id) {
     try {
-      if (id !== 'night' && id !== 'storm' && id !== 'dawn' && id !== 'festival') return;
+      var _themeIds = (D && D.THEME_IDS) || ['night', 'storm', 'dawn', 'festival', 'dusk', 'frost', 'autumn', 'meadow', 'midnight', 'volcano'];
+      if (!id || _themeIds.indexOf(id) === -1) return;
       theme = id;
       try {
         var mod = _save();
@@ -152939,7 +153518,10 @@ var EmberMathGame = (function () {
         if (m) return m.name + ' (' + m.title + ')';
       }
     } catch (e) { /* fall through */ }
-    return mage === 'female' ? 'Seraphina (Female Mage)' : 'Aldric (Male Mage)';
+    var _names = { male: 'Aldric (Male Mage)', female: 'Seraphina (Female Mage)',
+      kael: 'Kael (Male Mage)', rowan: 'Rowan (Male Mage)',
+      lyra: 'Lyra (Female Mage)', mira: 'Mira (Female Mage)' };
+    return _names[mage] || 'Aldric (Male Mage)';
   }
 
   function _refreshMenu() {
@@ -153098,6 +153680,9 @@ var EmberMathGame = (function () {
           el.style.top = (f.y * 100).toFixed(2) + '%';
           el.classList.toggle('em-drop--target', f.id === eng.targetId);
           el.classList.toggle('em-drop--gold', !!f.golden);
+          /* Long problems (e.g. "847 + 153 =?") get the wider drop
+             + smaller label so the text never overflows the flame. */
+          el.classList.toggle('em-drop--long', (f.problem.text || '').length > 7);
         } catch (e2) { /* silent */ }
       }
       var ids = Object.keys(dropEls);
@@ -153105,6 +153690,109 @@ var EmberMathGame = (function () {
         if (!seen[ids[i]]) {
           try { if (dropEls[ids[i]].parentNode) dropEls[ids[i]].parentNode.removeChild(dropEls[ids[i]]); } catch (e2) { /* silent */ }
           delete dropEls[ids[i]];
+        }
+      }
+    } catch (e) { _log(e); }
+  }
+
+  function _clearMonsters() {
+    try {
+      if (els.monsters) els.monsters.innerHTML = '';
+    } catch (e) { /* best-effort */ }
+    monsterEls = {};
+  }
+
+  /* Monster nodes mirror _syncDrops: one button per approaching
+     monster, art + pulsing "!" warning badge + its problem text,
+     positioned by engine x/y. Tap to target (monsters are never
+     auto-targeted). */
+  function _syncMonsters() {
+    try {
+      if (!eng || !els.monsters) return;
+      var seen = {};
+      var i, m, el;
+      for (i = 0; i < eng.monsters.length; i++) {
+        m = eng.monsters[i];
+        seen[m.id] = true;
+        el = monsterEls[m.id];
+        if (!el) {
+          el = document.createElement('button');
+          el.type = 'button';
+          el.className = 'em-monster em-monster--' + m.type;
+          el.setAttribute('data-monster-id', String(m.id));
+          el.setAttribute('aria-label', m.name + ': ' + m.problem.text);
+          var img = document.createElement('img');
+          img.className = 'em-monster-img';
+          img.alt = '';
+          img.draggable = false;
+          img.src = _monsterArt(m.type);
+          var badge = document.createElement('span');
+          badge.className = 'em-monster-badge';
+          badge.setAttribute('aria-hidden', 'true');
+          badge.textContent = '!';
+          var label = document.createElement('span');
+          label.className = 'em-monster-text';
+          label.textContent = m.problem.text;
+          el.appendChild(img);
+          el.appendChild(badge);
+          el.appendChild(label);
+          (function (im) {
+            im.addEventListener('error', function () {
+              try { im.style.display = 'none'; } catch (e2) { /* silent */ }
+            });
+            im.addEventListener('load', function () {
+              try { im.style.display = ''; } catch (e2) { /* silent */ }
+            });
+          })(img);
+          (function (mid) {
+            el.addEventListener('click', function (ev) {
+              try { ev.stopPropagation(); } catch (e2) { /* silent */ }
+              try {
+                if (E && eng) E.targetMonster(eng, mid);
+                _syncHud();
+                _syncMonsters();
+                _syncDrops();
+              } catch (e3) { /* input never throws */ }
+            });
+          })(m.id);
+          monsterEls[m.id] = el;
+          els.monsters.appendChild(el);
+        }
+        try {
+          el.style.left = (m.x * 100).toFixed(2) + '%';
+          el.style.top = (m.y * 100).toFixed(2) + '%';
+          el.classList.toggle('em-monster--target', m.id === eng.targetId && eng.targetKind === 'monster');
+          el.style.setProperty('--em-mon-size', (m.size || 64) + 'px');
+          var lab = el.querySelector('.em-monster-text');
+          if (lab) {
+            lab.textContent = m.problem.text;
+            /* Keep the problem label on screen: the monster spawns at
+               the field edge (x 0.02/0.98) and its nowrap label is
+               wider than the sprite, so near an edge the label would
+               clip off-screen and the problem would be unreadable
+               until the monster walks in (up to ~6s for the brute).
+               Slide the label inward just enough to fit; the sprite
+               itself still tracks the engine x. */
+            var fw = els.field ? els.field.clientWidth : 0;
+            if (fw > 0) {
+              var half = 0.16;
+              try {
+                var rg = document.createRange();
+                rg.selectNodeContents(lab);
+                half = (rg.getBoundingClientRect().width + 14) / 2 / fw;
+                rg.detach();
+              } catch (e3) { /* keep the estimate */ }
+              var cx = Math.min(Math.max(m.x, half), 1 - half);
+              lab.style.transform = 'translateX(' + ((cx - m.x) * fw).toFixed(1) + 'px)';
+            }
+          }
+        } catch (e2) { /* silent */ }
+      }
+      var ids = Object.keys(monsterEls);
+      for (i = 0; i < ids.length; i++) {
+        if (!seen[ids[i]]) {
+          try { if (monsterEls[ids[i]].parentNode) monsterEls[ids[i]].parentNode.removeChild(monsterEls[ids[i]]); } catch (e2) { /* silent */ }
+          delete monsterEls[ids[i]];
         }
       }
     } catch (e) { _log(e); }
@@ -153133,14 +153821,21 @@ var EmberMathGame = (function () {
     try {
       casting = true;
       _setMagePose('cast');
-      /* Aim the blast at the targeted drop: the spell comes from
-         where the mage actually stands, leaning toward the drop. */
+      /* Aim the blast at the targeted drop OR monster: the spell
+         comes from where the mage actually stands, leaning toward
+         the target. */
       try {
         var ang = 0;
         if (eng && eng.targetId) {
           var t = null, i;
-          for (i = 0; i < eng.drops.length; i++) {
-            if (eng.drops[i].id === eng.targetId) { t = eng.drops[i]; break; }
+          if (eng.targetKind === 'monster') {
+            for (i = 0; i < eng.monsters.length; i++) {
+              if (eng.monsters[i].id === eng.targetId) { t = eng.monsters[i]; break; }
+            }
+          } else {
+            for (i = 0; i < eng.drops.length; i++) {
+              if (eng.drops[i].id === eng.targetId) { t = eng.drops[i]; break; }
+            }
           }
           if (t) ang = Math.max(-20, Math.min(20, (t.x - mageX) * 90));
         }
@@ -153202,9 +153897,16 @@ var EmberMathGame = (function () {
       var pop = document.createElement('span');
       pop.className = 'em-float-text' + (cls ? ' ' + cls : '');
       pop.textContent = text;
-      pop.style.left = (Math.max(0.06, Math.min(0.94, xFrac)) * 100).toFixed(1) + '%';
-      pop.style.top = (Math.max(0.06, Math.min(0.94, yFrac)) * 100).toFixed(1) + '%';
       els.field.appendChild(pop);
+      /* Clamp by the measured text width, not a fixed fraction: a
+         long float ("+30  IMP BLASTED!") centred at x 0.06 still
+         hangs half off-screen. The old 0.06/0.94 clamp was too
+         small for it. */
+      var fw = els.field.clientWidth || 1;
+      var half = (pop.offsetWidth / 2 + 4) / fw;
+      var cx = Math.min(Math.max(xFrac, half), 1 - half);
+      pop.style.left = (cx * 100).toFixed(1) + '%';
+      pop.style.top = (Math.max(0.06, Math.min(0.94, yFrac)) * 100).toFixed(1) + '%';
       setTimeout(function () {
         try { if (pop.parentNode) pop.parentNode.removeChild(pop); } catch (e2) { /* silent */ }
       }, 1100);
@@ -153264,6 +153966,10 @@ var EmberMathGame = (function () {
           _burstParticles(pos.x, pos.y, 16, true);
           _floatText(pos.x, pos.y, '+' + ev.gained + '  CLEANSING RAIN +' + ev.clearedPoints, 'em-float--gold');
           _goldenShock();
+        } else if (ev.monster) {
+          _sfx('cast'); _sfx('correct'); _sfx('monster');
+          _burstParticles(pos.x, pos.y, burstN, false);
+          _floatText(pos.x, pos.y, '+' + ev.gained + '  ' + (ev.monsterType ? ev.monsterType.toUpperCase() : 'MONSTER') + ' BLASTED!', '');
         } else {
           _sfx('cast'); _sfx('correct'); _sfx('extinguish');
           _burstParticles(pos.x, pos.y, burstN, false);
@@ -153276,6 +153982,11 @@ var EmberMathGame = (function () {
           prevLevel = ev.level;
           _levelUpFanfare(ev.level);
         }
+      } else if (ev.type === 'monster') {
+        /* A monster has appeared at the field edge: telegraph it
+           with a growl and a floating warning. */
+        _sfx('growl');
+        _floatText(ev.x != null ? ev.x : 0.5, 0.8, 'A ' + (ev.name || 'monster') + ' approaches!', 'em-float--monster');
       } else if (ev.type === 'wrong') {
         _sfx('wrong');
         try {
@@ -153288,6 +153999,9 @@ var EmberMathGame = (function () {
       } else if (ev.type === 'miss') {
         _sfx('crackle');
         _syncVillage();
+        if (ev.monster) {
+          _floatText(0.5, 0.82, 'The ' + (ev.name || 'monster') + ' burned a house!', 'em-float--miss');
+        }
         if (!casting) _setMagePose(_magePoseForMisses());
       } else if (ev.type === 'dead') {
         _showGameOver();
@@ -153297,7 +154011,8 @@ var EmberMathGame = (function () {
 
   function _chooseMage(id) {
     try {
-      if (id !== 'male' && id !== 'female') return;
+      var _mageIds = (D && D.MAGE_IDS) || ['male', 'female', 'kael', 'rowan', 'lyra', 'mira'];
+      if (!id || _mageIds.indexOf(id) === -1) return;
       mage = id;
       try {
         var mod = _save();
@@ -153322,6 +154037,7 @@ var EmberMathGame = (function () {
       try { if (els.deleteNote) els.deleteNote.hidden = true; } catch (e) { /* silent */ }
       E.startGame(eng, grade);
       _clearDrops();
+      _clearMonsters();
       /* Fresh run: the mage starts mid-village and walks from there. */
       mageX = 0.5;
       mageTargetX = 0.5;
@@ -153374,6 +154090,7 @@ var EmberMathGame = (function () {
       runRecorded = false;
       if (E && eng) E.toMenu(eng);
       _clearDrops();
+      _clearMonsters();
       _setMagePose('idle');
       _syncVillage();
       _loadStats();
@@ -153445,17 +154162,23 @@ var EmberMathGame = (function () {
   }
 
   /* One movement tick (dtMs, nowMs). The mage hurries toward the
-     currently targeted drop; with nothing targeted she patrols the
-     village front, pausing at each waypoint. Only called while
-     playing — the mage freezes on pause and on game over. */
+     currently targeted drop OR monster; with nothing targeted she
+     patrols the village front, pausing at each waypoint. Only called
+     while playing — the mage freezes on pause and on game over. */
   function _updateMage(dtMs, nowMs) {
     try {
       if (!eng || !els.mage || !els.field) return;
       var dtS = Math.max(0, Math.min(250, dtMs || 16)) / 1000;
       var target = null, i;
       if (eng.targetId) {
-        for (i = 0; i < eng.drops.length; i++) {
-          if (eng.drops[i].id === eng.targetId) { target = eng.drops[i]; break; }
+        if (eng.targetKind === 'monster') {
+          for (i = 0; i < eng.monsters.length; i++) {
+            if (eng.monsters[i].id === eng.targetId) { target = eng.monsters[i]; break; }
+          }
+        } else {
+          for (i = 0; i < eng.drops.length; i++) {
+            if (eng.drops[i].id === eng.targetId) { target = eng.drops[i]; break; }
+          }
         }
       }
       var speed;
@@ -153500,15 +154223,24 @@ var EmberMathGame = (function () {
         if (!eng.input) return;
         var out = null;
         try {
-          /* Capture the targeted drop's position BEFORE the solve
-             removes it, so the burst + floating score land where the
-             drop was. */
+          /* Capture the targeted drop's OR monster's position
+             BEFORE the solve removes it, so the burst + floating
+             score land where the target was. */
           if (eng && eng.targetId) {
             var di;
-            for (di = 0; di < eng.drops.length; di++) {
-              if (eng.drops[di].id === eng.targetId) {
-                lastSolvePos = { x: eng.drops[di].x, y: eng.drops[di].y };
-                break;
+            if (eng.targetKind === 'monster') {
+              for (di = 0; di < eng.monsters.length; di++) {
+                if (eng.monsters[di].id === eng.targetId) {
+                  lastSolvePos = { x: eng.monsters[di].x, y: eng.monsters[di].y };
+                  break;
+                }
+              }
+            } else {
+              for (di = 0; di < eng.drops.length; di++) {
+                if (eng.drops[di].id === eng.targetId) {
+                  lastSolvePos = { x: eng.drops[di].x, y: eng.drops[di].y };
+                  break;
+                }
               }
             }
           }
@@ -153516,9 +154248,11 @@ var EmberMathGame = (function () {
         } catch (e) { out = null; }
         _syncHud();
         _syncDrops();
+        _syncMonsters();
         if (out) _handleEvents(eng.events);
         _syncHud();
         _syncDrops();
+        _syncMonsters();
       }
     } catch (e) { /* input never throws */ }
   }
@@ -153564,6 +154298,7 @@ var EmberMathGame = (function () {
       els.misses = _el('emMisses');
       els.field = _el('emField');
       els.drops = _el('emDrops');
+      els.monsters = _el('emMonsters');
       els.ambient = _el('emAmbient');
       els.village = _el('emVillage');
       els.mage = _el('emMage');
@@ -153740,9 +154475,11 @@ var EmberMathGame = (function () {
         try { events = E.step(eng, dt); } catch (e) { events = null; }
         _updateMage(dt, now);
         _syncDrops();
+        _syncMonsters();
         _syncHud();
         if (events) _handleEvents(events);
         _syncDrops();
+        _syncMonsters();
         _syncHud();
       }
     } catch (e) { _log(e); }
@@ -153792,7 +154529,7 @@ var EmberMathGame = (function () {
 
   function startLoop() {
     setLoopActive(true);
-    try { _syncHud(); _syncDrops(); } catch (e) { /* best-effort */ }
+    try { _syncHud(); _syncDrops(); _syncMonsters(); } catch (e) { /* best-effort */ }
   }
 
   function reloadSave() {
@@ -153822,6 +154559,8 @@ var EmberMathGame = (function () {
         misses: eng ? eng.misses : 0,
         level: eng ? eng.level : 1,
         drops: eng ? eng.drops.length : 0,
+        monsters: eng ? eng.monsters.length : 0,
+        targetKind: eng ? eng.targetKind : 'drop',
         mageX: mageX,
         mageWalking: mageWalking
       };
@@ -153849,7 +154588,7 @@ var EmberMathGame = (function () {
 
   var api = {
     init: initPhone,
-    render: function () { try { _syncHud(); _syncDrops(); } catch (e) { /* best-effort */ } },
+    render: function () { try { _syncHud(); _syncDrops(); _syncMonsters(); } catch (e) { /* best-effort */ } },
     pause: pauseGame,
     resume: resumeGame,
     toMenu: toMenu,
@@ -153886,6 +154625,47 @@ var EmberMathGame = (function () {
         return f ? f.id : null;
       } catch (e) { return null; }
     },
+    _spawnMonsterForTest: function (type) {
+      try {
+        if (!E || !eng) return null;
+        var m = E.forceSpawnMonster(eng, type || null);
+        _syncMonsters();
+        _syncHud();
+        return m ? m.id : null;
+      } catch (e) { return null; }
+    },
+    _forceMonsterArriveForTest: function () {
+      try {
+        if (!E || !eng) return null;
+        var id = E.forceMonsterArrive(eng);
+        if (id === null) return null;
+        var events = E.step(eng, 16);
+        _syncMonsters();
+        _syncHud();
+        _syncVillage();
+        _handleEvents(events);
+        _syncMonsters();
+        _syncHud();
+        _syncVillage();
+        return id;
+      } catch (e) { return null; }
+    },
+    _targetMonsterForTest: function (id) {
+      try {
+        if (!E || !eng) return false;
+        var ok = E.targetMonster(eng, id);
+        _syncHud();
+        _syncMonsters();
+        _syncDrops();
+        return ok;
+      } catch (e) { return false; }
+    },
+    _monstersForTest: function () {
+      try {
+        return eng ? eng.monsters.map(function (m) { return { id: m.id, type: m.type, name: m.name, x: m.x, y: m.y, text: m.problem.text, answer: m.problem.answer }; }) : [];
+      } catch (e) { return []; }
+    },
+    _themeTextForTest: function () { try { return _themeText(theme); } catch (e) { return null; } },
     _keyPressForTest: _keyPress,
     _setGradeForTest: _setGrade,
     _setDifficultyForTest: _setDifficulty,
