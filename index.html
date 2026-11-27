@@ -15959,14 +15959,22 @@ button.mr-setup-preview:focus-visible {
 }
 .em-mage-line b { color: #fff; }
 .em-change-mage { display: inline; margin: 0 0 0 4px; padding: 2px 6px; }
-.em-diff-row {
-  display: flex;
+.em-grade-label {
+  margin: 2px 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #fdba74;
+}
+.em-grade-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   justify-content: center;
   margin-bottom: 6px;
 }
-.em-diff-btn {
-  flex: 1;
+.em-grade-btn {
   padding: 9px 4px;
   border-radius: 10px;
   border: 2px solid rgba(253, 186, 116, 0.45);
@@ -15976,12 +15984,12 @@ button.mr-setup-preview:focus-visible {
   font-weight: 700;
   cursor: pointer;
 }
-.em-diff-btn.em-diff-active {
+.em-grade-btn.em-grade-active {
   background: #0284c7;
   border-color: #7dd3fc;
   color: #fff;
 }
-.em-diff-desc {
+.em-grade-desc {
   min-height: 34px;
   margin: 0 0 10px;
   font-size: 12.5px;
@@ -16178,6 +16186,29 @@ button.mr-setup-preview:focus-visible {
   box-shadow: 0 0 20px rgba(250, 204, 21, 0.95);
 }
 .em-drop--gold .em-drop-img { filter: drop-shadow(0 0 12px rgba(250, 204, 21, 0.9)); }
+/* Fire trail behind each falling drop (the trail is above the drop:
+   it falls downward, so the flame streaks behind it). */
+.em-drop::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 88%;
+  width: 24px;
+  height: 30px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: linear-gradient(0deg, rgba(249, 115, 22, 0.55), transparent 85%);
+  filter: blur(2px);
+  animation: em-trail-flicker 0.35s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes em-trail-flicker {
+  from { opacity: 0.65; transform: translateX(-50%) scaleY(1); }
+  to { opacity: 1; transform: translateX(-50%) scaleY(1.15); }
+}
+.em-drop--gold::before {
+  background: linear-gradient(0deg, rgba(250, 204, 21, 0.6), transparent 85%);
+}
 .em-drop-text {
   position: relative;
   z-index: 2;
@@ -16280,16 +16311,28 @@ button.mr-setup-preview:focus-visible {
   100% { transform: translate(-30%, -46px) scale(2.2); opacity: 0; }
 }
 
-/* The chosen mage, standing in front of the village. */
+/* The chosen mage, walking the village front. Position is driven
+   from JS (transform translateX + lean) — left stays 0 here. */
 .em-mage {
   position: absolute;
-  left: 50%;
+  left: 0;
   bottom: 0;
-  transform: translateX(-50%);
   width: 110px;
   height: 108px;
   z-index: 2;
   pointer-events: none;
+  will-change: transform;
+}
+.em-mage-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  width: 74px;
+  height: 10px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.55), transparent 70%);
+  z-index: -1;
 }
 .em-mage-wrap {
   position: absolute;
@@ -16300,6 +16343,15 @@ button.mr-setup-preview:focus-visible {
 @keyframes em-mage-bob {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-2px); }
+}
+/* Walking: a quicker stepping bob, so the mage reads as moving even
+   between patrol waypoints. Idle keeps the slow breathing bob. */
+.em-mage-wrap.em-mage--walking { animation: em-mage-walk 0.45s ease-in-out infinite; }
+@keyframes em-mage-walk {
+  0%, 100% { transform: translateY(0) rotate(0.6deg); }
+  25% { transform: translateY(-3px) rotate(-0.6deg); }
+  50% { transform: translateY(0) rotate(0.6deg); }
+  75% { transform: translateY(-3px) rotate(-0.6deg); }
 }
 .em-mage-wrap.em-mage--casting { animation: em-mage-thrust 0.6s ease-out; }
 @keyframes em-mage-thrust {
@@ -16377,6 +16429,128 @@ button.mr-setup-preview:focus-visible {
   100% { transform: translateY(-90px) scale(2.1); opacity: 0; }
 }
 
+/* Spell-burst particles (spawned by JS at a solved drop). The
+   --dx/--dy custom properties are set per particle. */
+.em-burst-bit {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: #7dd3fc;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.9);
+  animation: em-burst-fly 0.7s ease-out both;
+  z-index: 4;
+  pointer-events: none;
+}
+.em-burst-bit--gold {
+  background: #facc15;
+  box-shadow: 0 0 10px rgba(250, 204, 21, 0.95);
+}
+@keyframes em-burst-fly {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx, 0px), var(--dy, -30px)) scale(0.35); opacity: 0; }
+}
+
+/* Floating score/combo/level text at a solved drop or the mage. */
+.em-float-text {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 17px;
+  font-weight: 800;
+  color: #4ade80;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75), 0 0 8px rgba(0, 0, 0, 0.5);
+  animation: em-float-rise 1s ease-out both;
+  z-index: 4;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.em-float--gold { color: #facc15; font-size: 19px; }
+.em-float--combo { color: #fbbf24; font-size: 18px; }
+.em-float--level { color: #fff; font-size: 22px; }
+@keyframes em-float-rise {
+  0% { transform: translate(-50%, -30%) scale(0.85); opacity: 0; }
+  20% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+  100% { transform: translate(-50%, -160%) scale(1); opacity: 0; }
+}
+
+/* Golden cleansing rain: the whole field shakes and flashes. */
+.em-field-shake { animation: em-field-shake 0.5s ease-in-out; }
+@keyframes em-field-shake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-5px, 2px); }
+  40% { transform: translate(5px, -2px); }
+  60% { transform: translate(-4px, -1px); }
+  80% { transform: translate(3px, 1px); }
+}
+.em-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 40%, rgba(186, 230, 253, 0.9), rgba(56, 189, 248, 0.25) 60%, transparent 80%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+.em-flash--on { animation: em-flash-fade 0.6s ease-out both; }
+@keyframes em-flash-fade {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Level-up banner, centre field. */
+.em-levelup {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  transform: translate(-50%, -50%) scale(0.8);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #fef08a;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8), 0 0 22px rgba(250, 204, 21, 0.8);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+  white-space: nowrap;
+}
+.em-levelup--on { animation: em-levelup-pop 1.5s ease-out both; }
+@keyframes em-levelup-pop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+  18% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+  30% { transform: translate(-50%, -50%) scale(1); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Village fire glow + smoke that grow with the miss count. */
+.em-village-glow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 76px;
+  background: radial-gradient(ellipse at 50% 100%, rgba(249, 115, 22, 0.5), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+.em-field[data-misses="1"] .em-village-glow { opacity: 0.45; }
+.em-field[data-misses="2"] .em-village-glow { opacity: 0.75; }
+.em-field[data-misses="3"] .em-village-glow { opacity: 1; }
+.em-field[data-misses="2"] .em-house--burning .em-house-smoke { width: 16px; height: 16px; }
+.em-field[data-misses="3"] .em-house--burning .em-house-smoke { width: 20px; height: 20px; }
+
+/* Combo heat: the HUD combo turns gold and pulses at 3+. */
+.em-combo-hot #emCombo {
+  color: #facc15;
+  animation: em-combo-pulse 0.6s ease-in-out infinite;
+}
+@keyframes em-combo-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+}
+
 /* ---------- Answer row + keypad ---------- */
 .em-answer-row {
   position: relative;
@@ -16404,21 +16578,6 @@ button.mr-setup-preview:focus-visible {
   text-align: center;
 }
 .em-input:empty::after { content: '?'; color: rgba(125, 211, 252, 0.45); }
-.em-score-pop {
-  position: absolute;
-  right: 14px;
-  top: 2px;
-  font-size: 15px;
-  font-weight: 800;
-  color: #4ade80;
-  animation: em-pop-rise 0.9s ease-out both;
-  pointer-events: none;
-}
-@keyframes em-pop-rise {
-  0% { transform: translateY(6px); opacity: 0; }
-  25% { opacity: 1; }
-  100% { transform: translateY(-18px); opacity: 0; }
-}
 .em-shake { animation: em-shake-x 0.35s ease-in-out; }
 @keyframes em-shake-x {
   0%, 100% { transform: translateX(0); }
@@ -151194,33 +151353,89 @@ var EMData = (function () {
   var EM_APP_ID = 'embermath';
   var EM_ASSET_BASE = 'assets/ember-math/';
 
-  /* Difficulties (all free from the start). fallSpeed is the fraction
-     of the field height a drop crosses per second at level 1; spawn
-     is the ms between spawns at level 1. */
-  var DIFFICULTIES = {
-    easy: {
-      id: 'easy', name: 'Easy',
+  /* Grade levels (all free from the start) — they replace the old
+     Easy/Medium/Hard picker. fallSpeed is the fraction of the field
+     height a drop crosses per second at level 1; spawn is the ms
+     between spawns at level 1. gen is the per-operation spec the
+     engine uses so every problem is grade-appropriate and fair:
+       '+': a in [aMin, aMax], b in [bMin, bMax] with a + b <= sumMax
+       '-': a in [aMin, aMax], b in [0, a] (never negative)
+       '×': a in [aMin, aMax], b in [bMin, bMax] — or bSet (e.g. [2,5]);
+            ansMax caps a so the product stays in the grade's band
+            (2nd grade ×2/×5 never tops 20; 3rd grade never tops 99)
+       '÷': divisor in [dMin, dMax], quotient in [qMin, qMax],
+            a = divisor x quotient (always divides evenly) */
+  var GRADES = {
+    kinder: {
+      id: 'kinder', name: 'Kinder', short: 'Kinder',
+      ops: ['+'],
+      fallSpeed: 0.045, spawnMs: 3000,
+      desc: 'Counting and adding within 5. The embers drift down slowly.',
+      gen: { '+': { aMin: 0, aMax: 5, bMin: 0, bMax: 5, sumMax: 5 } }
+    },
+    first: {
+      id: 'first', name: '1st Grade', short: '1st',
       ops: ['+', '-'],
-      min: 1, max: 9,
       fallSpeed: 0.055, spawnMs: 2600,
-      desc: 'Add and subtract, numbers 1 to 9. The embers drift down slowly.'
+      desc: 'Add and subtract within 10.',
+      gen: {
+        '+': { aMin: 0, aMax: 10, bMin: 0, bMax: 10, sumMax: 10 },
+        '-': { aMin: 1, aMax: 10 }
+      }
     },
-    medium: {
-      id: 'medium', name: 'Medium',
+    second: {
+      id: 'second', name: '2nd Grade', short: '2nd',
       ops: ['+', '-', '\u00d7'],
-      min: 2, max: 12,
-      fallSpeed: 0.075, spawnMs: 2200,
-      desc: 'Add, subtract and multiply, numbers up to 12. The fire rain picks up.'
+      fallSpeed: 0.065, spawnMs: 2400,
+      desc: 'Add and subtract within 20, and times 2s and 5s.',
+      gen: {
+        '+': { aMin: 0, aMax: 20, bMin: 0, bMax: 20, sumMax: 20 },
+        '-': { aMin: 1, aMax: 20 },
+        '\u00d7': { aMin: 1, aMax: 10, bSet: [2, 5], ansMax: 20 }
+      }
     },
-    hard: {
-      id: 'hard', name: 'Hard',
+    third: {
+      id: 'third', name: '3rd Grade', short: '3rd',
       ops: ['+', '-', '\u00d7', '\u00f7'],
-      min: 3, max: 15,
+      fallSpeed: 0.075, spawnMs: 2200,
+      desc: 'Times and division tables up to 10, plus add and subtract.',
+      gen: {
+        '+': { aMin: 2, aMax: 50, bMin: 2, bMax: 50, sumMax: 99 },
+        '-': { aMin: 1, aMax: 50 },
+        '\u00d7': { aMin: 2, aMax: 10, bMin: 2, bMax: 10, ansMax: 99 },
+        '\u00f7': { dMin: 2, dMax: 10, qMin: 2, qMax: 10 }
+      }
+    },
+    fourth: {
+      id: 'fourth', name: '4th Grade', short: '4th',
+      ops: ['+', '-', '\u00d7', '\u00f7'],
+      fallSpeed: 0.085, spawnMs: 2000,
+      desc: 'Two-digit adding and subtracting, times and division to 12.',
+      gen: {
+        '+': { aMin: 10, aMax: 99, bMin: 10, bMax: 99, sumMax: 198 },
+        '-': { aMin: 10, aMax: 99 },
+        '\u00d7': { aMin: 2, aMax: 12, bMin: 2, bMax: 12 },
+        '\u00f7': { dMin: 2, dMax: 12, qMin: 2, qMax: 12 }
+      }
+    },
+    fifth: {
+      id: 'fifth', name: '5th Grade', short: '5th',
+      ops: ['+', '-', '\u00d7', '\u00f7'],
       fallSpeed: 0.095, spawnMs: 1900,
-      desc: 'All four operations, numbers up to 15. A full firestorm.'
+      desc: 'Multi-digit mixed operations — a full firestorm.',
+      gen: {
+        '+': { aMin: 10, aMax: 500, bMin: 10, bMax: 500, sumMax: 999 },
+        '-': { aMin: 10, aMax: 999 },
+        '\u00d7': { aMin: 3, aMax: 15, bMin: 3, bMax: 15 },
+        '\u00f7': { dMin: 3, dMax: 15, qMin: 3, qMax: 15 }
+      }
     }
   };
-  var DIFFICULTY_IDS = ['easy', 'medium', 'hard'];
+  var GRADE_IDS = ['kinder', 'first', 'second', 'third', 'fourth', 'fifth'];
+
+  /* Old difficulty ids, for save migration only: Easy -> First,
+     Medium -> Third, Hard -> Fifth. */
+  var DIFFICULTY_TO_GRADE = { easy: 'first', medium: 'third', hard: 'fifth' };
 
   /* Scoring: 10 points x the level multiplier per solve, plus a combo
      bonus of +2 for every combo step past the first. A golden drop
@@ -151308,9 +151523,15 @@ var EMData = (function () {
     return ART['mage' + m + 'Idle'];
   }
 
+  function gradeById(id) {
+    if (id && GRADES[id]) return GRADES[id];
+    return GRADES.first;
+  }
+
+  /* Back-compat alias: an old difficulty id resolves to its grade. */
   function difficultyById(id) {
-    if (id && DIFFICULTIES[id]) return DIFFICULTIES[id];
-    return DIFFICULTIES.easy;
+    if (id && DIFFICULTY_TO_GRADE[id]) return GRADES[DIFFICULTY_TO_GRADE[id]];
+    return gradeById(id);
   }
 
   function levelForSolved(solved) {
@@ -151323,13 +151544,13 @@ var EMData = (function () {
     return m > SPEED_MAX_MULT ? SPEED_MAX_MULT : m;
   }
 
-  function fallSpeedFor(difficultyId, level) {
-    var d = difficultyById(difficultyId);
+  function fallSpeedFor(gradeId, level) {
+    var d = gradeById(gradeId);
     return d.fallSpeed * speedMultForLevel(level);
   }
 
-  function spawnMsFor(difficultyId, level) {
-    var d = difficultyById(difficultyId);
+  function spawnMsFor(gradeId, level) {
+    var d = gradeById(gradeId);
     var ms = d.spawnMs / speedMultForLevel(level);
     return ms < 900 ? 900 : ms;
   }
@@ -151352,8 +151573,11 @@ var EMData = (function () {
     MAGE_IDS: MAGE_IDS,
     mageById: mageById,
     mageArt: mageArt,
-    DIFFICULTIES: DIFFICULTIES,
-    DIFFICULTY_IDS: DIFFICULTY_IDS,
+    DIFFICULTIES: GRADES,
+    DIFFICULTY_IDS: GRADE_IDS,
+    GRADES: GRADES,
+    GRADE_IDS: GRADE_IDS,
+    DIFFICULTY_TO_GRADE: DIFFICULTY_TO_GRADE,
     SCORING: SCORING,
     MAX_MISSES: MAX_MISSES,
     GOLDEN_CHANCE: GOLDEN_CHANCE,
@@ -151364,6 +151588,7 @@ var EMData = (function () {
     THEMES: THEMES,
     THEME_IDS: THEME_IDS,
     themeById: themeById,
+    gradeById: gradeById,
     difficultyById: difficultyById,
     levelForSolved: levelForSolved,
     speedMultForLevel: speedMultForLevel,
@@ -151388,11 +151613,12 @@ if (typeof window !== 'undefined') {
 // width/height, 0..1), so the engine is resolution-independent and
 // testable in node.
 //
-// Fairness (proven in the node tests):
+// Fairness (proven in the node tests, per grade):
 //  - division always divides evenly (a = divisor x quotient),
-//  - subtraction never goes negative at any level (a >= b always),
-//  - answers stay in sane ranges (Easy sums <= 18, products and
-//    quotients bounded by the difficulty max).
+//  - subtraction never goes negative at any grade (a >= b always),
+//  - answers stay in the grade's band (Kinder sums <= 5, 1st sums
+//    <= 10, 2nd sums <= 20 and x2/x5 only, 3rd tables to 10,
+//    4th two-digit and tables to 12, 5th multi-digit, answers <= 999).
 // Targeting: the lowest falling drop is auto-targeted; tapping a
 // drop targets it instead. A correct answer extinguishes the targeted
 // drop; a wrong answer shakes and resets the combo but the drop
@@ -151407,7 +151633,7 @@ var EMEngine = (function () {
 
   var D = null;
   try {
-    if (typeof EMData !== 'undefined' && EMData && EMData.DIFFICULTIES) D = EMData;
+    if (typeof EMData !== 'undefined' && EMData && EMData.GRADES) D = EMData;
   } catch (e) { D = null; }
   if (!D) {
     try {
@@ -151416,20 +151642,24 @@ var EMEngine = (function () {
   }
   if (!D) {
     D = {
-      DIFFICULTIES: {
-        easy: { id: 'easy', ops: ['+', '-'], min: 1, max: 9, fallSpeed: 0.055, spawnMs: 2600 },
-        medium: { id: 'medium', ops: ['+', '-', '\u00d7'], min: 2, max: 12, fallSpeed: 0.075, spawnMs: 2200 },
-        hard: { id: 'hard', ops: ['+', '-', '\u00d7', '\u00f7'], min: 3, max: 15, fallSpeed: 0.095, spawnMs: 1900 }
+      GRADES: {
+        kinder: { id: 'kinder', ops: ['+'], fallSpeed: 0.045, spawnMs: 3000, gen: { '+': { aMin: 0, aMax: 5, bMin: 0, bMax: 5, sumMax: 5 } } },
+        first: { id: 'first', ops: ['+', '-'], fallSpeed: 0.055, spawnMs: 2600, gen: { '+': { aMin: 0, aMax: 10, bMin: 0, bMax: 10, sumMax: 10 }, '-': { aMin: 1, aMax: 10 } } },
+        second: { id: 'second', ops: ['+', '-', '\u00d7'], fallSpeed: 0.065, spawnMs: 2400, gen: { '+': { aMin: 0, aMax: 20, bMin: 0, bMax: 20, sumMax: 20 }, '-': { aMin: 1, aMax: 20 }, '\u00d7': { aMin: 1, aMax: 10, bSet: [2, 5], ansMax: 20 } } },
+        third: { id: 'third', ops: ['+', '-', '\u00d7', '\u00f7'], fallSpeed: 0.075, spawnMs: 2200, gen: { '+': { aMin: 2, aMax: 50, bMin: 2, bMax: 50, sumMax: 99 }, '-': { aMin: 1, aMax: 50 }, '\u00d7': { aMin: 2, aMax: 10, bMin: 2, bMax: 10, ansMax: 99 }, '\u00f7': { dMin: 2, dMax: 10, qMin: 2, qMax: 10 } } },
+        fourth: { id: 'fourth', ops: ['+', '-', '\u00d7', '\u00f7'], fallSpeed: 0.085, spawnMs: 2000, gen: { '+': { aMin: 10, aMax: 99, bMin: 10, bMax: 99, sumMax: 198 }, '-': { aMin: 10, aMax: 99 }, '\u00d7': { aMin: 2, aMax: 12, bMin: 2, bMax: 12 }, '\u00f7': { dMin: 2, dMax: 12, qMin: 2, qMax: 12 } } },
+        fifth: { id: 'fifth', ops: ['+', '-', '\u00d7', '\u00f7'], fallSpeed: 0.095, spawnMs: 1900, gen: { '+': { aMin: 10, aMax: 500, bMin: 10, bMax: 500, sumMax: 999 }, '-': { aMin: 10, aMax: 999 }, '\u00d7': { aMin: 3, aMax: 15, bMin: 3, bMax: 15 }, '\u00f7': { dMin: 3, dMax: 15, qMin: 3, qMax: 15 } } }
       },
       SCORING: { BASE: 10, COMBO_STEP: 2, GOLDEN_PER_FLAKE: 25, SOLVES_PER_LEVEL: 5 },
       MAX_MISSES: 3, GOLDEN_CHANCE: 1 / 18,
       SPEED_PER_LEVEL: 0.12, SPEED_MAX_MULT: 2.2
     };
-    D.difficultyById = function (id) { return (id && D.DIFFICULTIES[id]) ? D.DIFFICULTIES[id] : D.DIFFICULTIES.easy; };
+    D.gradeById = function (id) { return (id && D.GRADES[id]) ? D.GRADES[id] : D.GRADES.first; };
+    D.difficultyById = D.gradeById;
     D.levelForSolved = function (s) { return 1 + Math.floor(Math.max(0, s || 0) / 5); };
     D.speedMultForLevel = function (l) { var m = 1 + 0.12 * Math.max(0, (l || 1) - 1); return m > 2.2 ? 2.2 : m; };
-    D.fallSpeedFor = function (id, l) { return D.difficultyById(id).fallSpeed * D.speedMultForLevel(l); };
-    D.spawnMsFor = function (id, l) { var ms = D.difficultyById(id).spawnMs / D.speedMultForLevel(l); return ms < 900 ? 900 : ms; };
+    D.fallSpeedFor = function (id, l) { return D.gradeById(id).fallSpeed * D.speedMultForLevel(l); };
+    D.spawnMsFor = function (id, l) { var ms = D.gradeById(id).spawnMs / D.speedMultForLevel(l); return ms < 900 ? 900 : ms; };
     D.scoreForSolve = function (level, combo) { return 10 * Math.max(1, level || 1) + 2 * (Math.max(1, combo || 1) - 1); };
   }
 
@@ -151454,29 +151684,47 @@ var EMEngine = (function () {
     return lo + Math.floor(_rngNext(s) * (hi - lo + 1));
   }
 
-  /* One problem. rngState is any object with a numeric .rng (the game
-     state, or a throwaway {rng: seed} in tests). Division always even,
-     subtraction never negative, answers in sane ranges. */
-  function generateProblem(difficultyId, rngState) {
-    var d = D.difficultyById(difficultyId);
+  /* One problem, from the grade's per-operation spec (em-data.js).
+     rngState is any object with a numeric .rng (the game state, or a
+     throwaway {rng: seed} in tests). Division always even,
+     subtraction never negative, answers inside the grade's band. */
+  function generateProblem(gradeId, rngState) {
+    var d = D.gradeById(gradeId);
     var s = rngState || { rng: 0x9E3779B9 };
     var op = d.ops[Math.floor(_rngNext(s) * d.ops.length)];
+    var spec = (d.gen && d.gen[op]) || {};
     var a, b, answer;
     if (op === '+') {
-      a = _randInt(s, d.min, d.max);
-      b = _randInt(s, d.min, d.max);
+      var aMin = (typeof spec.aMin === 'number') ? spec.aMin : 1;
+      var aMax = (typeof spec.aMax === 'number') ? spec.aMax : 9;
+      var bMin = (typeof spec.bMin === 'number') ? spec.bMin : 0;
+      var bMax = (typeof spec.bMax === 'number') ? spec.bMax : 9;
+      var sumMax = (typeof spec.sumMax === 'number') ? spec.sumMax : 18;
+      a = _randInt(s, aMin, aMax);
+      var bHi = Math.min(bMax, sumMax - a);
+      if (bHi < bMin) bHi = bMin;
+      b = _randInt(s, bMin, bHi);
       answer = a + b;
     } else if (op === '-') {
-      a = _randInt(s, d.min, d.max);
-      b = _randInt(s, d.min, a);
+      var sMin = (typeof spec.aMin === 'number') ? spec.aMin : 1;
+      var sMax = (typeof spec.aMax === 'number') ? spec.aMax : 9;
+      a = _randInt(s, sMin, sMax);
+      b = _randInt(s, 0, a);
       answer = a - b;
     } else if (op === '\u00d7') {
-      a = _randInt(s, d.min, d.max);
-      b = _randInt(s, d.min, d.max);
+      /* b first, then a capped so the product stays inside the
+         grade's answer band (ansMax): 2nd grade ×2/×5 never tops 20,
+         3rd grade 10×10 never tops 99. */
+      if (spec.bSet && spec.bSet.length) b = spec.bSet[Math.floor(_rngNext(s) * spec.bSet.length)];
+      else b = _randInt(s, spec.bMin || 2, spec.bMax || 9);
+      var aHi = spec.aMax || 9;
+      if (typeof spec.ansMax === 'number') aHi = Math.min(aHi, Math.floor(spec.ansMax / b));
+      if (aHi < (spec.aMin || 2)) aHi = spec.aMin || 2;
+      a = _randInt(s, spec.aMin || 2, aHi);
       answer = a * b;
     } else { /* division: pick divisor and quotient, a is the product */
-      b = _randInt(s, 2, d.max);
-      answer = _randInt(s, 1, d.max);
+      b = _randInt(s, spec.dMin || 2, spec.dMax || 10);
+      answer = _randInt(s, spec.qMin || 2, spec.qMax || 10);
       a = b * answer;
       op = '\u00f7';
     }
@@ -151485,11 +151733,15 @@ var EMEngine = (function () {
 
   function createGame(opts) {
     opts = opts || {};
-    var diff = (typeof opts.difficulty === 'string' && D.DIFFICULTIES[opts.difficulty])
-      ? opts.difficulty : 'easy';
+    var grade = (typeof opts.grade === 'string' && D.GRADES[opts.grade])
+      ? opts.grade : 'first';
+    if (grade === 'first' && typeof opts.difficulty === 'string' && D.DIFFICULTY_TO_GRADE && D.DIFFICULTY_TO_GRADE[opts.difficulty]) {
+      grade = D.DIFFICULTY_TO_GRADE[opts.difficulty];
+    }
     return {
       state: 'menu',
-      difficulty: diff,
+      grade: grade,
+      difficulty: grade,
       seed: _seedFrom(opts.seed),
       rng: _seedFrom(opts.seed),
       time: 0,
@@ -151519,8 +151771,8 @@ var EMEngine = (function () {
   function _spawnDrop(s, forceGolden) {
     var golden = !!forceGolden;
     if (!golden) golden = _rngNext(s) < D.GOLDEN_CHANCE;
-    var problem = generateProblem(s.difficulty, s);
-    var speed = D.fallSpeedFor(s.difficulty, _level(s));
+    var problem = generateProblem(s.grade, s);
+    var speed = D.fallSpeedFor(s.grade, _level(s));
     var drop = {
       id: s.nextDropId++,
       problem: problem,
@@ -151575,9 +151827,10 @@ var EMEngine = (function () {
     s.events.push({ type: 'dead', score: s.score, best: s.best, newBest: s.newBest });
   }
 
-  function startGame(s, difficulty) {
+  function startGame(s, grade) {
     if (!s) return;
-    if (difficulty && D.DIFFICULTIES[difficulty]) s.difficulty = difficulty;
+    if (grade && D.GRADES[grade]) { s.grade = grade; s.difficulty = grade; }
+    else if (grade && D.DIFFICULTY_TO_GRADE && D.DIFFICULTY_TO_GRADE[grade]) { s.grade = D.DIFFICULTY_TO_GRADE[grade]; s.difficulty = s.grade; }
     s.state = 'playing';
     s.time = 0;
     s.drops = [];
@@ -151726,7 +151979,7 @@ var EMEngine = (function () {
     s.spawnInMs -= dt;
     if (s.spawnInMs <= 0) {
       _spawnDrop(s, false);
-      s.spawnInMs = D.spawnMsFor(s.difficulty, _level(s));
+      s.spawnInMs = D.spawnMsFor(s.grade, _level(s));
       _retarget(s);
     }
     return s.events;
@@ -151758,7 +152011,7 @@ var EMEngine = (function () {
 
   function snapshot(s) {
     return JSON.parse(JSON.stringify({
-      state: s.state, difficulty: s.difficulty, time: +s.time.toFixed(3),
+      state: s.state, grade: s.grade, difficulty: s.grade, time: +s.time.toFixed(3),
       score: s.score, best: s.best, solved: s.solved, combo: s.combo,
       misses: s.misses, level: s.level, targetId: s.targetId,
       drops: s.drops.map(function (f) {
@@ -151799,10 +152052,15 @@ if (typeof window !== 'undefined') {
 // EmberMath save — persistent data + SaveRegistry entry.
 //
 // Key (jmf-embermath-save-v1, per the registry convention):
-//   best score, games played, total problems solved, last difficulty,
+//   best score, games played, total problems solved, last grade,
 //   chosen mage ('male' | 'female' | null when never chosen).
 // Auto-saved on game over and whenever the best changes; the menu
 // offers a delete-save (with confirm) that wipes the whole record.
+//
+// Grade migration (Nov 26, 2026): the old Easy/Medium/Hard picker
+// became grade levels. An old save's `difficulty` migrates silently:
+// easy -> first, medium -> third, hard -> fifth. A save that already
+// has a valid `grade` keeps it. Fresh saves default to First grade.
 //
 // UMD: global EMSave + module.exports. Never throws.
 var EMSave = (function () {
@@ -151810,7 +152068,10 @@ var EMSave = (function () {
 
   var SAVE_KEY = 'jmf-embermath-save-v1';
 
-  var DEFAULT_SAVE = { best: 0, games: 0, solved: 0, difficulty: 'easy', mage: null, theme: 'night' };
+  var GRADE_IDS = ['kinder', 'first', 'second', 'third', 'fourth', 'fifth'];
+  var DIFFICULTY_TO_GRADE = { easy: 'first', medium: 'third', hard: 'fifth' };
+
+  var DEFAULT_SAVE = { best: 0, games: 0, solved: 0, grade: 'first', mage: null, theme: 'night' };
 
   function _win() {
     try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
@@ -151860,15 +152121,20 @@ var EMSave = (function () {
   }
 
   function _withDefaults(saved) {
-    var out = _clone(DEFAULT_SAVE) || { best: 0, games: 0, solved: 0, difficulty: 'easy', mage: null, theme: 'night' };
+    var out = _clone(DEFAULT_SAVE) || { best: 0, games: 0, solved: 0, grade: 'first', mage: null, theme: 'night' };
     if (saved && typeof saved === 'object') {
       if (typeof saved.best === 'number' && isFinite(saved.best)) out.best = Math.max(0, Math.floor(saved.best));
       if (typeof saved.games === 'number' && isFinite(saved.games)) out.games = Math.max(0, Math.floor(saved.games));
       if (typeof saved.solved === 'number' && isFinite(saved.solved)) out.solved = Math.max(0, Math.floor(saved.solved));
-      if (typeof saved.difficulty === 'string' &&
-          (saved.difficulty === 'easy' || saved.difficulty === 'medium' || saved.difficulty === 'hard')) {
-        out.difficulty = saved.difficulty;
+      if (typeof saved.grade === 'string' && GRADE_IDS.indexOf(saved.grade) !== -1) {
+        out.grade = saved.grade;
+      } else if (typeof saved.difficulty === 'string' && DIFFICULTY_TO_GRADE[saved.difficulty]) {
+        /* Legacy save from the Easy/Medium/Hard era: migrate. */
+        out.grade = DIFFICULTY_TO_GRADE[saved.difficulty];
       }
+      /* Keep the migrated value in the legacy field too, so any
+         older reader sees a grade id it can map back. */
+      out.difficulty = out.grade;
       if (saved.mage === 'male' || saved.mage === 'female') out.mage = saved.mage;
       else if (saved.mage === null) out.mage = null;
       if (typeof saved.theme === 'string' &&
@@ -151897,14 +152163,19 @@ var EMSave = (function () {
     }
   }
   /* Record one finished game: games +1, solved += n, best updated.
-     Returns the saved record. */
-  function recordGame(score, solved, difficulty) {
+     Returns the saved record. grade accepts a grade id or a legacy
+     difficulty id (mapped). */
+  function recordGame(score, solved, grade) {
     try {
       var s = load();
       s.games = (s.games || 0) + 1;
       s.solved = (s.solved || 0) + (typeof solved === 'number' && isFinite(solved) ? Math.max(0, Math.floor(solved)) : 0);
       if (typeof score === 'number' && isFinite(score) && score > (s.best || 0)) s.best = Math.floor(score);
-      if (difficulty === 'easy' || difficulty === 'medium' || difficulty === 'hard') s.difficulty = difficulty;
+      if (typeof grade === 'string') {
+        if (GRADE_IDS.indexOf(grade) !== -1) s.grade = grade;
+        else if (DIFFICULTY_TO_GRADE[grade]) s.grade = DIFFICULTY_TO_GRADE[grade];
+        s.difficulty = s.grade;
+      }
       save(s);
       return s;
     } catch (e) {
@@ -151924,15 +152195,23 @@ var EMSave = (function () {
   function loadMage() {
     try { return load().mage || null; } catch (e) { return null; }
   }
-  function setDifficulty(difficulty) {
+  function setGrade(grade) {
     try {
-      if (difficulty !== 'easy' && difficulty !== 'medium' && difficulty !== 'hard') return false;
+      var g = grade;
+      if (typeof g !== 'string') return false;
+      if (DIFFICULTY_TO_GRADE[g]) g = DIFFICULTY_TO_GRADE[g];
+      if (GRADE_IDS.indexOf(g) === -1) return false;
       var s = load();
-      s.difficulty = difficulty;
+      s.grade = g;
+      s.difficulty = g;
       return save(s);
     } catch (e) {
       return false;
     }
+  }
+  /* Legacy alias: an old difficulty id maps to its grade. */
+  function setDifficulty(difficulty) {
+    return setGrade(difficulty);
   }
   function setTheme(theme) {
     try {
@@ -151975,6 +152254,7 @@ var EMSave = (function () {
     recordGame: recordGame,
     setMage: setMage,
     loadMage: loadMage,
+    setGrade: setGrade,
     setDifficulty: setDifficulty,
     setTheme: setTheme,
     loadTheme: loadTheme,
@@ -152000,6 +152280,7 @@ if (typeof window !== 'undefined') {
 //   crackle    — fire crackle (short crackling noise pops)
 //   wrong      — low buzz
 //   golden     — rising arpeggio (cleansing rain)
+//   levelup    — bright rising fanfare (level ramp)
 //   defeat     — low descending tone (the village burns down)
 //   click      — short UI blip
 // Every sound respects the shared sound toggle (BZSettings /
@@ -152168,6 +152449,12 @@ var EMAudio = (function () {
         _tone(ctx, 784, 0.14, 'triangle', 0.1, 0.16);
         _tone(ctx, 1046, 0.3, 'triangle', 0.11, 0.24);
         _noise(ctx, 0.5, 0.1, 'bandpass', 1400, 3200, 0.1);
+      } else if (kind === 'levelup') {
+        _tone(ctx, 523, 0.12, 'triangle', 0.1, 0);
+        _tone(ctx, 659, 0.12, 'triangle', 0.1, 0.08);
+        _tone(ctx, 784, 0.12, 'triangle', 0.1, 0.16);
+        _tone(ctx, 1046, 0.28, 'triangle', 0.12, 0.24);
+        _tone(ctx, 1318, 0.3, 'sine', 0.08, 0.3);
       } else if (kind === 'defeat') {
         _tone(ctx, 220, 0.9, 'sine', 0.11, 0, 55);
         _tone(ctx, 110, 0.9, 'triangle', 0.07, 0.1, 40);
@@ -152333,12 +152620,16 @@ var EmberMathGame = (function () {
         '<p class="em-tagline">Flaming drops rain on the village. Solve the math, and your mage\'s water spell puts each one out. Three drops through and the village burns down.</p>' +
         '<div class="em-best-line">Best: <span id="emMenuBest">0</span></div>' +
         '<div class="em-mage-line">Mage: <b id="emMenuMage">—</b> <button type="button" class="em-link-btn em-change-mage" id="emChangeMageBtn">Change mage</button></div>' +
-        '<div class="em-diff-row" id="emDiffRow" role="group" aria-label="Difficulty">' +
-          '<button type="button" class="em-diff-btn" data-diff="easy">Easy</button>' +
-          '<button type="button" class="em-diff-btn" data-diff="medium">Medium</button>' +
-          '<button type="button" class="em-diff-btn" data-diff="hard">Hard</button>' +
+        '<div class="em-grade-label">Grade level</div>' +
+        '<div class="em-grade-row" id="emGradeRow" role="group" aria-label="Grade level">' +
+          '<button type="button" class="em-grade-btn" data-grade="kinder">Kinder</button>' +
+          '<button type="button" class="em-grade-btn" data-grade="first">1st</button>' +
+          '<button type="button" class="em-grade-btn" data-grade="second">2nd</button>' +
+          '<button type="button" class="em-grade-btn" data-grade="third">3rd</button>' +
+          '<button type="button" class="em-grade-btn" data-grade="fourth">4th</button>' +
+          '<button type="button" class="em-grade-btn" data-grade="fifth">5th</button>' +
         '</div>' +
-        '<p class="em-diff-desc" id="emDiffDesc"></p>' +
+        '<p class="em-grade-desc" id="emGradeDesc"></p>' +
         '<div class="em-theme-label">Village theme</div>' +
         '<div class="em-theme-row" id="emThemeRow" role="group" aria-label="Village theme">' +
           '<button type="button" class="em-theme-btn" data-theme="night">Fire Night</button>' +
@@ -152354,6 +152645,7 @@ var EmberMathGame = (function () {
           '<p>Type the answer on the keypad and press SOLVE before the drop reaches the village. A right answer makes your mage cast a water spell that puts it out.</p>' +
           '<p>A drop that reaches the village sets a house on fire. Three burning houses and the village burns down — game over.</p>' +
           '<p>A rare golden drop turns into a cleansing rain that clears the whole sky when you solve it. Every 5 solves the fire rain falls faster and you level up.</p>' +
+          '<p>Pick your grade on the menu — Kinder through 5th Grade. Your mage walks the village front and hurries toward the drop you aim at, so the spell comes from where she stands.</p>' +
         '</div>' +
         '<button type="button" class="em-link-btn em-delete-btn" id="emDeleteBtn">Delete save</button>' +
         '<p class="em-delete-note" id="emDeleteNote" hidden>Tap again to erase your best score, stats and mage.</p>' +
@@ -152376,12 +152668,14 @@ var EmberMathGame = (function () {
       '<div class="em-field" id="emField">' +
         '<div class="em-ambient" id="emAmbient" aria-hidden="true"></div>' +
         '<div class="em-drops" id="emDrops"></div>' +
+        '<div class="em-village-glow" id="emVillageGlow" aria-hidden="true"></div>' +
         '<div class="em-village" id="emVillage" aria-hidden="true">' +
           '<span class="em-house"><i class="em-house-roof"></i><i class="em-house-body"></i><i class="em-house-fire"></i><i class="em-house-smoke"></i></span>' +
           '<span class="em-house"><i class="em-house-roof"></i><i class="em-house-body"></i><i class="em-house-fire"></i><i class="em-house-smoke"></i></span>' +
           '<span class="em-house"><i class="em-house-roof"></i><i class="em-house-body"></i><i class="em-house-fire"></i><i class="em-house-smoke"></i></span>' +
         '</div>' +
         '<div class="em-mage" id="emMage">' +
+          '<div class="em-mage-shadow" aria-hidden="true"></div>' +
           '<div class="em-mage-wrap" id="emMageWrap">' +
             '<img class="em-mage-img" id="emMageImg" src="' + ART.mageMaleIdle + '" alt="Your mage">' +
             '<div class="em-mage-fallback" id="emMageFallback" aria-hidden="true"></div>' +
@@ -152389,6 +152683,8 @@ var EmberMathGame = (function () {
           '<div class="em-blast" id="emBlast" aria-hidden="true"></div>' +
           '<div class="em-steam" id="emSteam" aria-hidden="true"></div>' +
         '</div>' +
+        '<div class="em-flash" id="emFlash" aria-hidden="true"></div>' +
+        '<div class="em-levelup" id="emLevelUp" aria-hidden="true">LEVEL UP!</div>' +
       '</div>' +
       '<div class="em-answer-row" id="emAnswerRow">' +
         '<span class="em-target-problem" id="emTargetProblem">—</span>' +
@@ -152438,8 +152734,8 @@ var EmberMathGame = (function () {
   var mount = null;
   var root = null;
   var eng = null;
-  var stats = { best: 0, games: 0, solved: 0, difficulty: 'easy', mage: null, theme: 'night' };
-  var difficulty = 'easy';
+  var stats = { best: 0, games: 0, solved: 0, grade: 'first', mage: null, theme: 'night' };
+  var grade = 'first';
   var mage = null;
   var theme = 'night';
   var paused = false;
@@ -152453,6 +152749,22 @@ var EmberMathGame = (function () {
   var deleteArmed = false;
   var dropEls = {};
   var magePose = 'idle';
+  /* Mage movement: the mage walks the village front (mageX is the
+     fraction of the field width, 0..1, measured at the mage's centre)
+     and hurries toward the currently targeted drop before casting.
+     Patrol waypoints are picked while no drop is targeted. */
+  var mageX = 0.5;
+  var mageTargetX = 0.5;
+  var magePatrolAt = 0;
+  var mageWalking = false;
+  var mageLean = 0;
+  var lastSolvePos = null;
+  var prevLevel = 1;
+  var MAGE_MIN_X = 0.16;
+  var MAGE_MAX_X = 0.84;
+  var MAGE_PATROL_SPEED = 0.10; /* field widths per second */
+  var MAGE_HURRY_SPEED = 0.38; /* field widths per second, toward a target */
+  var MAGE_PATROL_DWELL_MS = 1200;
 
   var els = {};
 
@@ -152469,9 +152781,16 @@ var EmberMathGame = (function () {
       var mod = _save();
       if (mod && typeof mod.load === 'function') stats = mod.load();
     } catch (e) { /* save is best-effort */ }
-    if (!stats || typeof stats !== 'object') stats = { best: 0, games: 0, solved: 0, difficulty: 'easy', mage: null, theme: 'night' };
-    if (stats.difficulty === 'easy' || stats.difficulty === 'medium' || stats.difficulty === 'hard') {
-      difficulty = stats.difficulty;
+    if (!stats || typeof stats !== 'object') stats = { best: 0, games: 0, solved: 0, grade: 'first', mage: null, theme: 'night' };
+    /* The save module migrates legacy Easy/Medium/Hard records to
+       grades on load; here we only accept a valid grade id. */
+    if (typeof stats.grade === 'string' &&
+        (stats.grade === 'kinder' || stats.grade === 'first' || stats.grade === 'second' ||
+         stats.grade === 'third' || stats.grade === 'fourth' || stats.grade === 'fifth')) {
+      grade = stats.grade;
+    } else if (typeof stats.difficulty === 'string') {
+      var map = { easy: 'first', medium: 'third', hard: 'fifth' };
+      grade = map[stats.difficulty] || 'first';
     }
     mage = (stats.mage === 'male' || stats.mage === 'female') ? stats.mage : null;
     theme = (stats.theme === 'night' || stats.theme === 'storm' || stats.theme === 'dawn' || stats.theme === 'festival') ? stats.theme : 'night';
@@ -152520,7 +152839,7 @@ var EmberMathGame = (function () {
     try {
       var mod = _save();
       if (mod && typeof mod.recordGame === 'function') {
-        stats = mod.recordGame(eng ? eng.score : 0, eng ? eng.solved : 0, difficulty);
+        stats = mod.recordGame(eng ? eng.score : 0, eng ? eng.solved : 0, grade);
       }
     } catch (e) { /* save is best-effort */ }
   }
@@ -152627,17 +152946,17 @@ var EmberMathGame = (function () {
     try {
       if (els.menuBest) els.menuBest.textContent = String(stats.best || 0);
       if (els.menuMage) els.menuMage.textContent = mage ? _mageDisplayName() : '—';
-      var btns = root ? root.querySelectorAll('.em-diff-btn') : [];
+      var btns = root ? root.querySelectorAll('.em-grade-btn') : [];
       var i, b;
       for (i = 0; i < btns.length; i++) {
         b = btns[i];
-        var active = b.getAttribute('data-diff') === difficulty;
-        try { b.classList.toggle('em-diff-active', active); } catch (e) { /* silent */ }
+        var active = b.getAttribute('data-grade') === grade;
+        try { b.classList.toggle('em-grade-active', active); } catch (e) { /* silent */ }
         try { b.setAttribute('aria-pressed', active ? 'true' : 'false'); } catch (e2) { /* silent */ }
       }
-      if (els.diffDesc) {
-        var d = D && D.difficultyById ? D.difficultyById(difficulty) : null;
-        els.diffDesc.textContent = d ? d.desc : '';
+      if (els.gradeDesc) {
+        var d = D && D.gradeById ? D.gradeById(grade) : null;
+        els.gradeDesc.textContent = d ? d.desc : '';
       }
       var themeBtns = root ? root.querySelectorAll('.em-theme-btn') : [];
       for (i = 0; i < themeBtns.length; i++) {
@@ -152672,6 +152991,11 @@ var EmberMathGame = (function () {
       if (els.score) els.score.textContent = String(eng.score);
       if (els.combo) els.combo.textContent = 'x' + eng.combo;
       if (els.level) els.level.textContent = String(eng.level);
+      /* Combo heat: the HUD combo turns gold and pulses at 3+, and
+         the mage's spell bursts grow with the streak. */
+      try {
+        if (root) root.classList.toggle('em-combo-hot', eng.combo >= 3);
+      } catch (e) { /* silent */ }
       var dots = root ? root.querySelectorAll('.em-miss-dot') : [];
       var i;
       for (i = 0; i < dots.length; i++) {
@@ -152697,6 +153021,10 @@ var EmberMathGame = (function () {
       for (i = 0; i < houses.length; i++) {
         try { houses[i].classList.toggle('em-house--burning', eng ? BURN_ORDER.indexOf(i) < eng.misses : false); } catch (e) { /* silent */ }
       }
+      /* Fire glow + smoke grow with the miss count (0..3). */
+      try {
+        if (els.field) els.field.setAttribute('data-misses', String(eng ? eng.misses : 0));
+      } catch (e2) { /* silent */ }
     } catch (e) { /* best-effort */ }
   }
 
@@ -152805,8 +153133,21 @@ var EmberMathGame = (function () {
     try {
       casting = true;
       _setMagePose('cast');
+      /* Aim the blast at the targeted drop: the spell comes from
+         where the mage actually stands, leaning toward the drop. */
       try {
-        if (els.blast) els.blast.classList.add('em-blast--on');
+        var ang = 0;
+        if (eng && eng.targetId) {
+          var t = null, i;
+          for (i = 0; i < eng.drops.length; i++) {
+            if (eng.drops[i].id === eng.targetId) { t = eng.drops[i]; break; }
+          }
+          if (t) ang = Math.max(-20, Math.min(20, (t.x - mageX) * 90));
+        }
+        if (els.blast) {
+          els.blast.style.transform = 'translateX(-50%) rotate(' + ang.toFixed(1) + 'deg)';
+          els.blast.classList.add('em-blast--on');
+        }
         if (els.mageWrap) els.mageWrap.classList.add('em-mage--casting');
       } catch (e) { /* silent */ }
       _steamPuffs(5);
@@ -152814,7 +153155,10 @@ var EmberMathGame = (function () {
       castTimer = setTimeout(function () {
         casting = false;
         try {
-          if (els.blast) els.blast.classList.remove('em-blast--on');
+          if (els.blast) {
+            els.blast.classList.remove('em-blast--on');
+            els.blast.style.transform = '';
+          }
           if (els.mageWrap) els.mageWrap.classList.remove('em-mage--casting');
         } catch (e3) { /* silent */ }
         _setMagePose(_magePoseForMisses());
@@ -152822,16 +153166,87 @@ var EmberMathGame = (function () {
     } catch (e) { /* best-effort */ }
   }
 
-  function _scorePop(text) {
+  /* Spell-burst particles at a field position (fractions 0..1).
+     Capped at 24 live bits so a golden clear never floods the DOM. */
+  function _burstParticles(xFrac, yFrac, n, golden) {
     try {
-      if (!els.answerRow) return;
+      if (!els.field) return;
+      var live = els.field.querySelectorAll('.em-burst-bit').length;
+      var count = Math.max(0, Math.min(n, 24 - live));
+      var i, bit;
+      for (i = 0; i < count; i++) {
+        bit = document.createElement('span');
+        bit.className = 'em-burst-bit' + (golden ? ' em-burst-bit--gold' : '');
+        bit.style.left = (xFrac * 100).toFixed(1) + '%';
+        bit.style.top = (yFrac * 100).toFixed(1) + '%';
+        var ang = Math.random() * Math.PI * 2;
+        var dist = 26 + Math.random() * 54;
+        bit.style.setProperty('--dx', (Math.cos(ang) * dist).toFixed(0) + 'px');
+        bit.style.setProperty('--dy', (Math.sin(ang) * dist - 18).toFixed(0) + 'px');
+        els.field.appendChild(bit);
+        (function (node) {
+          setTimeout(function () {
+            try { if (node.parentNode) node.parentNode.removeChild(node); } catch (e2) { /* silent */ }
+          }, 800);
+        })(bit);
+      }
+    } catch (e) { /* best-effort */ }
+  }
+
+  /* Floating text at a field position (fractions 0..1). cls is
+     '' (score, green), 'em-float--gold', 'em-float--combo' or
+     'em-float--level'. */
+  function _floatText(xFrac, yFrac, text, cls) {
+    try {
+      if (!els.field) return;
       var pop = document.createElement('span');
-      pop.className = 'em-score-pop';
+      pop.className = 'em-float-text' + (cls ? ' ' + cls : '');
       pop.textContent = text;
-      els.answerRow.appendChild(pop);
+      pop.style.left = (Math.max(0.06, Math.min(0.94, xFrac)) * 100).toFixed(1) + '%';
+      pop.style.top = (Math.max(0.06, Math.min(0.94, yFrac)) * 100).toFixed(1) + '%';
+      els.field.appendChild(pop);
       setTimeout(function () {
         try { if (pop.parentNode) pop.parentNode.removeChild(pop); } catch (e2) { /* silent */ }
-      }, 900);
+      }, 1100);
+    } catch (e) { /* best-effort */ }
+  }
+
+  /* Golden cleansing rain: the whole field shakes and flashes. */
+  function _goldenShock() {
+    try {
+      if (els.field) {
+        els.field.classList.remove('em-field-shake');
+        void els.field.offsetWidth;
+        els.field.classList.add('em-field-shake');
+        setTimeout(function () {
+          try { els.field.classList.remove('em-field-shake'); } catch (e2) { /* silent */ }
+        }, 600);
+      }
+      if (els.flash) {
+        els.flash.classList.remove('em-flash--on');
+        void els.flash.offsetWidth;
+        els.flash.classList.add('em-flash--on');
+        setTimeout(function () {
+          try { els.flash.classList.remove('em-flash--on'); } catch (e2) { /* silent */ }
+        }, 700);
+      }
+    } catch (e) { /* best-effort */ }
+  }
+
+  /* Level-up fanfare: banner + sound + floating text. */
+  function _levelUpFanfare(level) {
+    try {
+      _sfx('levelup');
+      if (els.levelUp) {
+        els.levelUp.textContent = 'LEVEL UP!  Level ' + level;
+        els.levelUp.classList.remove('em-levelup--on');
+        void els.levelUp.offsetWidth;
+        els.levelUp.classList.add('em-levelup--on');
+        setTimeout(function () {
+          try { els.levelUp.classList.remove('em-levelup--on'); } catch (e2) { /* silent */ }
+        }, 1500);
+      }
+      _floatText(0.5, 0.42, 'LEVEL UP!', 'em-float--level');
     } catch (e) { /* best-effort */ }
   }
 
@@ -152842,8 +153257,25 @@ var EmberMathGame = (function () {
       ev = events[i];
       if (ev.type === 'solved') {
         _cast();
-        if (ev.golden) { _sfx('golden'); _scorePop('+' + ev.gained + '  CLEANSING RAIN +' + ev.clearedPoints); }
-        else { _sfx('cast'); _sfx('correct'); _sfx('extinguish'); _scorePop('+' + ev.gained); }
+        var pos = lastSolvePos || { x: mageX, y: 0.55 };
+        var burstN = ev.combo >= 5 ? 14 : 8;
+        if (ev.golden) {
+          _sfx('golden');
+          _burstParticles(pos.x, pos.y, 16, true);
+          _floatText(pos.x, pos.y, '+' + ev.gained + '  CLEANSING RAIN +' + ev.clearedPoints, 'em-float--gold');
+          _goldenShock();
+        } else {
+          _sfx('cast'); _sfx('correct'); _sfx('extinguish');
+          _burstParticles(pos.x, pos.y, burstN, false);
+          _floatText(pos.x, pos.y, '+' + ev.gained, '');
+        }
+        if (ev.combo === 3 || ev.combo === 5 || ev.combo === 10) {
+          _floatText(mageX, 0.78, 'COMBO x' + ev.combo + '!', 'em-float--combo');
+        }
+        if (ev.level > prevLevel) {
+          prevLevel = ev.level;
+          _levelUpFanfare(ev.level);
+        }
       } else if (ev.type === 'wrong') {
         _sfx('wrong');
         try {
@@ -152888,8 +153320,17 @@ var EmberMathGame = (function () {
       runRecorded = false;
       deleteArmed = false;
       try { if (els.deleteNote) els.deleteNote.hidden = true; } catch (e) { /* silent */ }
-      E.startGame(eng, difficulty);
+      E.startGame(eng, grade);
       _clearDrops();
+      /* Fresh run: the mage starts mid-village and walks from there. */
+      mageX = 0.5;
+      mageTargetX = 0.5;
+      magePatrolAt = 0;
+      mageWalking = false;
+      mageLean = 0;
+      lastSolvePos = null;
+      prevLevel = 1;
+      _applyMageTransform();
       _setMagePose('idle');
       _applyTheme();
       _syncVillage();
@@ -152975,11 +153416,82 @@ var EmberMathGame = (function () {
     } catch (e) { /* best-effort */ }
   }
 
+  /* --- Mage movement: the mage walks the village front. ---
+     The art is front-facing (staff in hand), so "turning" reads as a
+     lean into the direction of travel plus the blast aiming at the
+     drop — no mirror flip, which would jump the staff to the other
+     side. Walking adds a faster bob; idle is the slow breathing bob. */
+
+  /* Position the mage from mageX (centre fraction of the field
+     width) with a lean into the direction of travel. Transform-only
+     (GPU-friendly); left stays 0 in CSS. */
+  function _applyMageTransform() {
+    try {
+      if (!els.mage || !els.field) return;
+      var fieldW = els.field.clientWidth || 360;
+      var mageW = els.mage.offsetWidth || 110;
+      var px = mageX * (fieldW - mageW);
+      els.mage.style.transform = 'translateX(' + px.toFixed(1) + 'px) rotate(' + mageLean.toFixed(1) + 'deg)';
+      try {
+        if (els.mageWrap) els.mageWrap.classList.toggle('em-mage--walking', mageWalking);
+      } catch (e) { /* silent */ }
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _clampMageX(x) {
+    if (x < MAGE_MIN_X) return MAGE_MIN_X;
+    if (x > MAGE_MAX_X) return MAGE_MAX_X;
+    return x;
+  }
+
+  /* One movement tick (dtMs, nowMs). The mage hurries toward the
+     currently targeted drop; with nothing targeted she patrols the
+     village front, pausing at each waypoint. Only called while
+     playing — the mage freezes on pause and on game over. */
+  function _updateMage(dtMs, nowMs) {
+    try {
+      if (!eng || !els.mage || !els.field) return;
+      var dtS = Math.max(0, Math.min(250, dtMs || 16)) / 1000;
+      var target = null, i;
+      if (eng.targetId) {
+        for (i = 0; i < eng.drops.length; i++) {
+          if (eng.drops[i].id === eng.targetId) { target = eng.drops[i]; break; }
+        }
+      }
+      var speed;
+      if (target) {
+        mageTargetX = _clampMageX(target.x);
+        speed = MAGE_HURRY_SPEED;
+      } else {
+        speed = MAGE_PATROL_SPEED;
+        if (Math.abs(mageTargetX - mageX) < 0.01 && nowMs - magePatrolAt >= MAGE_PATROL_DWELL_MS) {
+          mageTargetX = MAGE_MIN_X + Math.random() * (MAGE_MAX_X - MAGE_MIN_X);
+          magePatrolAt = nowMs;
+        }
+      }
+      var dx = mageTargetX - mageX;
+      var step = speed * dtS;
+      var moved = 0;
+      if (Math.abs(dx) <= step) {
+        moved = dx;
+        mageX = mageTargetX;
+      } else {
+        moved = (dx > 0 ? step : -step);
+        mageX += moved;
+      }
+      mageWalking = Math.abs(moved) > 0.0004;
+      var wantLean = mageWalking ? (dx > 0 ? 4 : -4) : 0;
+      mageLean += (wantLean - mageLean) * Math.min(1, dtS * 8);
+      if (Math.abs(mageLean) < 0.1) mageLean = 0;
+      _applyMageTransform();
+    } catch (e) { /* best-effort */ }
+  }
+
   function _keyPress(key) {
     try {
       if (!eng || eng.state !== 'playing' || paused) return;
       if (key >= '0' && key <= '9') {
-        if ((eng.input || '').length < 3) eng.input = (eng.input || '') + key;
+        if ((eng.input || '').length < 4) eng.input = (eng.input || '') + key;
         _syncHud();
       } else if (key === 'back') {
         eng.input = (eng.input || '').slice(0, -1);
@@ -152987,7 +153499,21 @@ var EmberMathGame = (function () {
       } else if (key === 'enter') {
         if (!eng.input) return;
         var out = null;
-        try { out = E.submitAnswer(eng, eng.input); } catch (e) { out = null; }
+        try {
+          /* Capture the targeted drop's position BEFORE the solve
+             removes it, so the burst + floating score land where the
+             drop was. */
+          if (eng && eng.targetId) {
+            var di;
+            for (di = 0; di < eng.drops.length; di++) {
+              if (eng.drops[di].id === eng.targetId) {
+                lastSolvePos = { x: eng.drops[di].x, y: eng.drops[di].y };
+                break;
+              }
+            }
+          }
+          out = E.submitAnswer(eng, eng.input);
+        } catch (e) { out = null; }
         _syncHud();
         _syncDrops();
         if (out) _handleEvents(eng.events);
@@ -152997,18 +153523,25 @@ var EmberMathGame = (function () {
     } catch (e) { /* input never throws */ }
   }
 
-  function _setDifficulty(id) {
+  function _setGrade(id) {
     try {
-      if (id !== 'easy' && id !== 'medium' && id !== 'hard') return;
-      difficulty = id;
+      if (id !== 'kinder' && id !== 'first' && id !== 'second' &&
+          id !== 'third' && id !== 'fourth' && id !== 'fifth') return;
+      grade = id;
       try {
         var mod = _save();
-        if (mod && typeof mod.setDifficulty === 'function') mod.setDifficulty(id);
-        stats.difficulty = id;
+        if (mod && typeof mod.setGrade === 'function') mod.setGrade(id);
+        stats.grade = id;
       } catch (e) { /* best-effort */ }
       _refreshMenu();
       _sfx('click');
     } catch (e) { /* best-effort */ }
+  }
+
+  /* Legacy alias: an old difficulty id maps to its grade. */
+  function _setDifficulty(id) {
+    var map = { easy: 'first', medium: 'third', hard: 'fifth' };
+    if (map[id]) _setGrade(map[id]);
   }
 
   function _bindUi() {
@@ -153020,7 +153553,9 @@ var EmberMathGame = (function () {
       els.overScreen = _el('emOverScreen');
       els.menuBest = _el('emMenuBest');
       els.menuMage = _el('emMenuMage');
-      els.diffDesc = _el('emDiffDesc');
+      els.gradeDesc = _el('emGradeDesc');
+      els.flash = _el('emFlash');
+      els.levelUp = _el('emLevelUp');
       els.howBox = _el('emHowBox');
       els.deleteNote = _el('emDeleteNote');
       els.score = _el('emScore');
@@ -153067,7 +153602,7 @@ var EmberMathGame = (function () {
       try {
         if (els.ambient) {
           var i, dot;
-          for (i = 0; i < 14; i++) {
+          for (i = 0; i < 20; i++) {
             dot = document.createElement('span');
             dot.className = 'em-ember-dot';
             dot.style.left = (Math.random() * 100).toFixed(1) + '%';
@@ -153114,7 +153649,7 @@ var EmberMathGame = (function () {
           if (els.deleteNote) els.deleteNote.hidden = true;
           var mod = _save();
           if (mod && typeof mod.deleteSave === 'function') stats = mod.deleteSave();
-          difficulty = 'easy';
+          grade = 'first';
           mage = null;
           theme = 'night';
           _applyTheme();
@@ -153147,14 +153682,14 @@ var EmberMathGame = (function () {
         }
       } catch (e) { /* best-effort */ }
       try {
-        var diffBtns = root ? root.querySelectorAll('.em-diff-btn') : [];
+        var gradeBtns = root ? root.querySelectorAll('.em-grade-btn') : [];
         var j;
-        for (j = 0; j < diffBtns.length; j++) {
+        for (j = 0; j < gradeBtns.length; j++) {
           (function (btn) {
             btn.addEventListener('click', function () {
-              try { _setDifficulty(btn.getAttribute('data-diff')); } catch (e2) { /* silent */ }
+              try { _setGrade(btn.getAttribute('data-grade')); } catch (e2) { /* silent */ }
             });
-          })(diffBtns[j]);
+          })(gradeBtns[j]);
         }
       } catch (e) { /* best-effort */ }
       try {
@@ -153203,6 +153738,7 @@ var EmberMathGame = (function () {
       if (eng && eng.state === 'playing' && !paused) {
         var events = null;
         try { events = E.step(eng, dt); } catch (e) { events = null; }
+        _updateMage(dt, now);
         _syncDrops();
         _syncHud();
         if (events) _handleEvents(events);
@@ -153229,7 +153765,7 @@ var EmberMathGame = (function () {
     } catch (e) { /* resolvers are best-effort */ }
     _loadStats();
     try {
-      if (E) eng = E.createGame({ best: stats.best || 0, difficulty: difficulty, seed: (Date.now() % 2147483647) || 1 });
+      if (E) eng = E.createGame({ best: stats.best || 0, grade: grade, seed: (Date.now() % 2147483647) || 1 });
     } catch (e) { eng = null; }
     _bindUi();
     _refreshMenu();
@@ -153277,14 +153813,17 @@ var EmberMathGame = (function () {
         screen: eng ? eng.state : 'menu',
         score: eng ? eng.score : 0,
         best: stats.best || 0,
-        difficulty: difficulty,
+        grade: grade,
+        difficulty: grade,
         mage: mage,
         theme: theme,
         paused: paused,
         overShown: overShown,
         misses: eng ? eng.misses : 0,
         level: eng ? eng.level : 1,
-        drops: eng ? eng.drops.length : 0
+        drops: eng ? eng.drops.length : 0,
+        mageX: mageX,
+        mageWalking: mageWalking
       };
     } catch (e) { return { screen: 'menu', score: 0, best: 0 }; }
   }
@@ -153303,7 +153842,8 @@ var EmberMathGame = (function () {
       engine: eng ? (E && typeof E.snapshot === 'function' ? E.snapshot(eng) : null) : null,
       audio: audio,
       artFiles: artFiles,
-      magePose: magePose
+      magePose: magePose,
+      mageState: { x: mageX, targetX: mageTargetX, walking: mageWalking, lean: mageLean }
     };
   }
 
@@ -153347,7 +153887,10 @@ var EmberMathGame = (function () {
       } catch (e) { return null; }
     },
     _keyPressForTest: _keyPress,
+    _setGradeForTest: _setGrade,
     _setDifficultyForTest: _setDifficulty,
+    _mageStateForTest: function () { return { x: mageX, targetX: mageTargetX, walking: mageWalking, lean: mageLean }; },
+    _gradeForTest: function () { return grade; },
     _chooseThemeForTest: _chooseTheme,
     _chooseMageForTest: _chooseMage,
     _mageForTest: function () { return mage; }
