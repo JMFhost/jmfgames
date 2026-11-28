@@ -17029,6 +17029,757 @@ button.mr-setup-preview:focus-visible {
 .em-drop--long { width: 96px; }
 .em-drop--long .em-drop-text { font-size: 12px; }
 </style>
+<style>
+/* source: tp-game.css */
+/* Tomodachi Pet — bright, colorful palette: candy pink, sunny
+   yellow, sky blue, mint green. Layout is 360x568-safe: the root is
+   a flex column that fills the phone section; the room flexes, the
+   action bar is compact, and nothing is positioned by fixed pixels
+   off the bottom. The shell's home pill sits in the bottom 44px —
+   the action bar carries 50px of bottom padding, so every button's
+   centre clears the strip. Pet motion is CSS transform/opacity
+   only (idle bob, dance, zoomies) — no layout animation.
+
+   LIFE-LIKE BEHAVIOR (Nov 27): the pet idles (breathes, blinks,
+   flicks, tilts, yawns), wanders inside its stage area on a JS
+   scheduler (transform on .tp-pet-mover, so wander never fights
+   the bob/dance animation on the <img>), reacts to real care
+   actions (feed bounce + hearts, toy play, tap jump + sparkles,
+   sleep Zzz + slow breathing, sick/sad droop), and the room has
+   ambient motes, mythical sparkles and a slow light shift. Every
+   behavior is gated by _behaviorAllowed() in tp-game.js: sleeping
+   pets don't wander/dance, sick/sad pets don't dance/sparkle, and
+   eggs only wobble. Ambient effects pause when the tab is hidden
+   (.tp-paused) or the pet sleeps (.tp-ambient-off). */
+
+.ph-splash--virtualpet {
+  background: linear-gradient(175deg, #fce7f3 0%, #fbbf24 45%, #7dd3fc 100%);
+}
+.ph-splash--virtualpet .ph-splash-game { color: #db2777; }
+
+.tp-root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--tp-room-bg, linear-gradient(180deg, #bae6fd 0%, #bbf7d0 55%, #86efac 100%));
+  color: var(--tp-ink, #14532d);
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.tp-root * { box-sizing: border-box; }
+
+.tp-topbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 8px 4px;
+  flex: 0 0 auto;
+}
+.tp-title {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 0;
+  flex: 1 1 auto;
+  color: var(--tp-ink, #14532d);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tp-wallet {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+.tp-chip {
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid var(--tp-accent, #16a34a);
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--tp-ink, #14532d);
+  white-space: nowrap;
+}
+.tp-iconbtn {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--tp-ink, #14532d);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+.tp-iconbtn.tp-off { opacity: 0.45; }
+
+.tp-screen { display: none; flex: 1 1 auto; min-height: 0; flex-direction: column; overflow: hidden; }
+.tp-screen.tp-show { display: flex; }
+
+/* --- pet select --- */
+.tp-select-inner {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 6px 12px 60px;
+}
+.tp-select-head { font-size: 18px; font-weight: 800; margin: 4px 0 2px; }
+.tp-select-sub { font-size: 13px; margin: 0 0 10px; opacity: 0.85; }
+.tp-pet-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.tp-pet-card {
+  border: 3px solid transparent;
+  border-radius: 16px;
+  background: var(--tp-card, rgba(255, 255, 255, 0.88));
+  padding: 10px 6px 8px;
+  cursor: pointer;
+  text-align: center;
+  color: var(--tp-ink, #14532d);
+  min-height: 118px;
+}
+.tp-pet-card.tp-owned { border-color: var(--tp-accent, #16a34a); }
+.tp-pet-card.tp-active { border-color: #f59e0b; box-shadow: 0 0 0 2px #fde68a; }
+.tp-pet-card.tp-locked { opacity: 0.75; cursor: default; }
+.tp-pet-card-art {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  overflow: hidden;
+}
+.tp-pet-card-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.tp-pet-card-art img.tp-hidden { display: none; }
+.tp-pet-card-name { display: block; font-weight: 800; font-size: 14px; }
+.tp-pet-card-species { display: block; font-size: 11px; opacity: 0.8; }
+.tp-pet-card-tag { display: block; font-size: 11px; font-weight: 700; margin-top: 2px; color: #b45309; }
+.tp-pet-card-lock { display: block; font-size: 11px; margin-top: 2px; }
+.tp-select-foot { margin-top: 12px; font-size: 12px; opacity: 0.85; }
+.tp-danger {
+  margin-top: 10px;
+  background: none;
+  border: 1px solid rgba(220, 38, 38, 0.5);
+  color: #b91c1c;
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* --- room view --- */
+.tp-room {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  overflow: hidden;
+}
+.tp-room-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.tp-room-bg.tp-hidden { display: none; }
+.tp-room-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+.tp-pet-name {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0 0 2px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  padding: 2px 12px;
+}
+.tp-pet-stage {
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  padding: 1px 10px;
+  margin-bottom: 2px;
+}
+.tp-mood {
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 20px;
+  margin: 2px 0 0;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+.tp-pet-stage-area {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: 6px 0 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Wander wrapper: the scheduler moves THIS (translate + flip) so
+   the idle/dance animations on the <img> underneath never fight it.
+   Bounds keep the pet inside the 200px area — never over the
+   name/mood pills above or the meters below. */
+.tp-pet-mover {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 1.8s ease-in-out;
+  will-change: transform;
+}
+.tp-pet-img {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+  display: block;
+  animation: tp-bob 2.4s ease-in-out infinite;
+}
+.tp-pet-img.tp-hidden { display: none; }
+.tp-pet-fallback {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 76px;
+  animation: tp-bob 2.4s ease-in-out infinite;
+}
+.tp-pet-fallback.tp-show { display: flex; }
+.tp-pet-stage-area.tp-dance .tp-pet-img,
+.tp-pet-stage-area.tp-dance .tp-pet-fallback { animation: tp-dance 0.9s ease-in-out infinite; }
+.tp-pet-stage-area.tp-zoomies .tp-pet-img,
+.tp-pet-stage-area.tp-zoomies .tp-pet-fallback { animation: tp-zoomies 0.7s ease-in-out infinite; }
+.tp-pet-stage-area.tp-sleeping .tp-pet-img,
+.tp-pet-stage-area.tp-sleeping .tp-pet-fallback { animation: tp-sleep-bob 3.2s ease-in-out infinite; }
+.tp-pet-stage-area.tp-reborn .tp-pet-img,
+.tp-pet-stage-area.tp-reborn .tp-pet-fallback {
+  filter: drop-shadow(0 0 14px rgba(251, 191, 36, 0.95)) drop-shadow(0 0 28px rgba(239, 68, 68, 0.6));
+}
+.tp-pet-stage-area.tp-scruffy .tp-pet-img,
+.tp-pet-stage-area.tp-scruffy .tp-pet-fallback { filter: saturate(0.55) brightness(0.92); }
+.tp-zzz {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #1e3a8a;
+  display: none;
+  animation: tp-zzz 2s ease-in-out infinite;
+}
+.tp-pet-stage-area.tp-sleeping .tp-zzz { display: block; }
+.tp-outfit-badge {
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  padding: 1px 8px;
+  display: none;
+}
+.tp-outfit-badge.tp-show { display: block; }
+
+/* --- life-like behavior: state classes (set by _renderRoom) --- */
+/* Egg: wobbles and cracks — no bob, no wander, no dance. */
+.tp-pet-stage-area.tp-egg .tp-pet-img,
+.tp-pet-stage-area.tp-egg .tp-pet-fallback { animation: tp-egg-wobble 2.8s ease-in-out infinite; }
+/* Sad: droop + a tear. Sick: droop + greenish tint. */
+.tp-pet-stage-area.tp-sad .tp-pet-img,
+.tp-pet-stage-area.tp-sad .tp-pet-fallback,
+.tp-pet-stage-area.tp-sick .tp-pet-img,
+.tp-pet-stage-area.tp-sick .tp-pet-fallback { animation: tp-droop 3s ease-in-out infinite; }
+.tp-pet-stage-area.tp-sick .tp-pet-img,
+.tp-pet-stage-area.tp-sick .tp-pet-fallback { filter: saturate(0.6) hue-rotate(-18deg) brightness(0.96); }
+/* Sleeping wins over egg-wobble and sad/sick droop: an asleep pet
+   breathes slowly, whatever else it is. (Equal specificity, so this
+   later rule is the one that applies.) */
+.tp-pet-stage-area.tp-sleeping.tp-egg .tp-pet-img,
+.tp-pet-stage-area.tp-sleeping.tp-egg .tp-pet-fallback,
+.tp-pet-stage-area.tp-sleeping.tp-sad .tp-pet-img,
+.tp-pet-stage-area.tp-sleeping.tp-sad .tp-pet-fallback,
+.tp-pet-stage-area.tp-sleeping.tp-sick .tp-pet-img,
+.tp-pet-stage-area.tp-sleeping.tp-sick .tp-pet-fallback { animation: tp-sleep-bob 3.2s ease-in-out infinite; }
+.tp-tear {
+  position: absolute;
+  top: 22px;
+  right: 34px;
+  font-size: 16px;
+  z-index: 2;
+  display: none;
+  pointer-events: none;
+}
+.tp-pet-stage-area.tp-sad .tp-tear,
+.tp-pet-stage-area.tp-sick .tp-tear { display: block; animation: tp-tear-drip 2.2s ease-in infinite; }
+/* Idle / reaction pulses: brief classes on the <img>, added by the
+   JS scheduler or a real care action, removed on a timeout. Each
+   replaces the bob for its (short) duration, then the bob resumes. */
+.tp-pet-img.tp-blink, .tp-pet-fallback.tp-blink { animation: tp-blink 0.24s ease-in-out; }
+.tp-pet-img.tp-flick, .tp-pet-fallback.tp-flick { animation: tp-flick 0.5s ease-in-out; }
+.tp-pet-img.tp-tilt, .tp-pet-fallback.tp-tilt { animation: tp-tilt 0.9s ease-in-out; }
+.tp-pet-img.tp-yawn, .tp-pet-fallback.tp-yawn { animation: tp-yawn 1.1s ease-in-out; }
+.tp-pet-img.tp-wobble, .tp-pet-fallback.tp-wobble { animation: tp-wobble 0.7s ease-in-out; }
+.tp-pet-img.tp-bounce, .tp-pet-fallback.tp-bounce { animation: tp-bounce 0.7s ease-in-out; }
+.tp-pet-img.tp-jump, .tp-pet-fallback.tp-jump { animation: tp-jump 0.6s ease-in-out; }
+.tp-pet-img.tp-hug, .tp-pet-fallback.tp-hug { animation: tp-hug 0.9s ease-in-out; }
+.tp-pet-img.tp-shake, .tp-pet-fallback.tp-shake { animation: tp-shake 0.5s ease-in-out; }
+.tp-pet-img.tp-cough, .tp-pet-fallback.tp-cough { animation: tp-cough 0.45s ease-in-out; }
+.tp-pet-img.tp-stretch, .tp-pet-fallback.tp-stretch { animation: tp-stretch 0.9s ease-in-out; }
+
+/* --- ambient layer: dust motes + mythical sparkles (inside the
+   pet area; transform/opacity only; paused when hidden/asleep) --- */
+.tp-ambient { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+.tp-mote {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.9);
+  opacity: 0.35;
+  animation: tp-mote-drift 9s ease-in-out infinite alternate;
+}
+.tp-mote-1 { left: 8%; top: 18%; animation-duration: 8s; }
+.tp-mote-2 { left: 82%; top: 12%; animation-duration: 11s; animation-delay: -3s; }
+.tp-mote-3 { left: 14%; top: 72%; animation-duration: 10s; animation-delay: -5s; }
+.tp-mote-4 { left: 76%; top: 68%; animation-duration: 9s; animation-delay: -2s; }
+.tp-mote-5 { left: 48%; top: 6%; width: 5px; height: 5px; animation-duration: 12s; animation-delay: -7s; }
+.tp-spark {
+  position: absolute;
+  font-size: 14px;
+  color: #fbbf24;
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.9);
+  opacity: 0;
+  pointer-events: none;
+}
+.tp-spark-1 { left: 12%; top: 22%; }
+.tp-spark-2 { left: 80%; top: 18%; animation-delay: -0.6s; }
+.tp-spark-3 { left: 88%; top: 52%; animation-delay: -1.1s; }
+.tp-spark-4 { left: 6%; top: 58%; animation-delay: -0.3s; }
+.tp-spark-5 { left: 30%; top: 8%; animation-delay: -1.4s; }
+.tp-spark-6 { left: 66%; top: 84%; animation-delay: -0.9s; }
+.tp-pet-stage-area.tp-sparkle .tp-spark { animation: tp-twinkle 1.8s ease-in-out infinite; }
+/* Gentle room light shift (behind the room content). */
+.tp-light {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 60% at 50% 0%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 60%);
+  animation: tp-light-shift 12s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+/* Reaction particles: hearts / sparkles / bubbles floating up. */
+.tp-fx { position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: visible; }
+.tp-fx span {
+  position: absolute;
+  bottom: 18%;
+  font-size: 20px;
+  animation: tp-float-up 1.4s ease-out forwards;
+  pointer-events: none;
+}
+/* Toy prop: shown in the room while the pet plays with a toy. */
+.tp-toy-prop {
+  position: absolute;
+  right: 4px;
+  bottom: 2px;
+  font-size: 34px;
+  z-index: 2;
+  display: block;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+}
+.tp-toy-prop[hidden] { display: none; }
+.tp-toy-prop.tp-rolling { animation: tp-roll 1.1s ease-in-out infinite alternate; }
+.tp-toy-prop.tp-bubbling { animation: tp-bob 1.6s ease-in-out infinite; }
+/* Ambient off (sleeping) and tab-hidden: freeze the room life. */
+.tp-root.tp-ambient-off .tp-ambient { opacity: 0; }
+.tp-root.tp-ambient-off .tp-light { animation-play-state: paused; opacity: 0.12; }
+.tp-root.tp-paused * { animation-play-state: paused !important; }
+
+@keyframes tp-egg-wobble {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(5deg) translateY(-2px); }
+}
+@keyframes tp-wobble {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-7deg); }
+  75% { transform: rotate(7deg); }
+}
+@keyframes tp-blink {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.12); }
+}
+@keyframes tp-flick {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-5deg); }
+  60% { transform: rotate(4deg); }
+}
+@keyframes tp-tilt {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-9deg) translateY(-3px); }
+}
+@keyframes tp-yawn {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(1.04, 1.09); }
+}
+@keyframes tp-bounce {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  40% { transform: translateY(-16px) scale(1.02, 1.02); }
+  70% { transform: translateY(0) scale(1.06, 0.94); }
+}
+@keyframes tp-jump {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  45% { transform: translateY(-22px) scale(1.03, 1.03); }
+  75% { transform: translateY(0) scale(1.08, 0.92); }
+}
+@keyframes tp-hug {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(1.08); }
+  70% { transform: scale(1.04); }
+}
+@keyframes tp-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px) rotate(-2deg); }
+  75% { transform: translateX(4px) rotate(2deg); }
+}
+@keyframes tp-cough {
+  0%, 100% { transform: translateX(0) scale(1); }
+  50% { transform: translateX(-3px) scale(0.98, 1.02); }
+}
+@keyframes tp-stretch {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(0.98, 1.07); }
+}
+@keyframes tp-droop {
+  0%, 100% { transform: translateY(3px) scale(0.98); }
+  50% { transform: translateY(6px) scale(0.97); }
+}
+@keyframes tp-tear-drip {
+  0% { opacity: 0; transform: translateY(0); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(14px); }
+}
+@keyframes tp-float-up {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-64px) scale(1.25); }
+}
+@keyframes tp-mote-drift {
+  0% { opacity: 0.2; transform: translate(0, 0); }
+  50% { opacity: 0.7; transform: translate(14px, -18px); }
+  100% { opacity: 0.25; transform: translate(-10px, -34px); }
+}
+@keyframes tp-twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.6) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.15) rotate(25deg); }
+}
+@keyframes tp-light-shift {
+  0% { opacity: 0.12; }
+  100% { opacity: 0.32; }
+}
+@keyframes tp-roll {
+  0% { transform: translateX(0) rotate(0deg); }
+  100% { transform: translateX(-34px) rotate(-320deg); }
+}
+
+@keyframes tp-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes tp-dance {
+  0%, 100% { transform: translateY(0) rotate(-6deg); }
+  50% { transform: translateY(-12px) rotate(6deg); }
+}
+@keyframes tp-zoomies {
+  0%, 100% { transform: translateX(-14px); }
+  50% { transform: translateX(14px); }
+}
+@keyframes tp-sleep-bob {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(3px) scale(1.02); }
+}
+@keyframes tp-zzz {
+  0% { opacity: 0; transform: translateY(6px); }
+  40% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
+
+/* meters */
+.tp-meters {
+  width: 100%;
+  max-width: 340px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+  background: rgba(255, 255, 255, 0.82);
+  border-radius: 14px;
+  padding: 8px 10px;
+  margin-top: 4px;
+}
+.tp-meter { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.tp-meter-label { flex: 0 0 auto; font-weight: 800; width: 74px; }
+.tp-meter-bar {
+  flex: 1 1 auto;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+.tp-meter-fill { display: block; height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+.tp-meter-fill.tp-good { background: #22c55e; }
+.tp-meter-fill.tp-ok { background: #f59e0b; }
+.tp-meter-fill.tp-low { background: #ef4444; }
+.tp-meter-num { flex: 0 0 auto; width: 24px; text-align: right; font-weight: 700; }
+
+/* action bar */
+.tp-actions {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 10px 12px 50px;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+.tp-btn {
+  min-height: 48px;
+  border-radius: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  background: var(--tp-card, rgba(255, 255, 255, 0.9));
+  color: var(--tp-ink, #14532d);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 6px 4px;
+}
+.tp-btn:active { transform: scale(0.96); }
+.tp-btn:disabled { opacity: 0.45; cursor: default; }
+.tp-btn.tp-primary { background: #f59e0b; border-color: #fde68a; color: #451a03; }
+.tp-btn.tp-wide { grid-column: span 3; }
+
+/* sheets + overlays */
+.tp-sheet {
+  position: absolute;
+  inset: auto 0 0 0;
+  max-height: 82%;
+  overflow-y: auto;
+  background: #fff;
+  color: #1f2937;
+  border-radius: 20px 20px 0 0;
+  padding: 14px 14px 56px;
+  z-index: 5;
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.25);
+}
+.tp-sheet[hidden] { display: none; }
+.tp-sheet h2 { margin: 0 0 4px; font-size: 18px; }
+.tp-sheet-sub { font-size: 13px; margin: 0 0 10px; opacity: 0.8; }
+.tp-shop-list { display: flex; flex-direction: column; gap: 8px; }
+.tp-shop-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+.tp-shop-info { flex: 1 1 auto; min-width: 0; }
+.tp-shop-name { font-weight: 800; font-size: 14px; }
+.tp-shop-desc { font-size: 12px; opacity: 0.8; }
+.tp-shop-price { font-weight: 800; font-size: 13px; white-space: nowrap; }
+.tp-buy {
+  flex: 0 0 auto;
+  min-width: 64px;
+  min-height: 40px;
+  border-radius: 10px;
+  border: none;
+  background: #16a34a;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+.tp-buy:disabled { opacity: 0.45; cursor: default; }
+.tp-buy.tp-owned { background: #9ca3af; }
+.tp-sheet-close {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 12px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  background: #f3f4f6;
+  font-weight: 800;
+  cursor: pointer;
+}
+.tp-room-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tp-room-card {
+  border: 3px solid transparent;
+  border-radius: 14px;
+  padding: 12px 8px;
+  cursor: pointer;
+  text-align: center;
+  font-weight: 800;
+  min-height: 64px;
+}
+.tp-room-card.tp-active { border-color: #f59e0b; }
+.tp-feed-list { display: flex; flex-direction: column; gap: 8px; }
+.tp-feed-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+.tp-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 170px;
+  transform: translateX(-50%);
+  background: rgba(17, 24, 39, 0.92);
+  color: #fff;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 8;
+  white-space: nowrap;
+  max-width: 92%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: none;
+}
+.tp-toast.tp-show { display: block; }
+
+/* mini-game overlay */
+.tp-minigame {
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.55);
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+.tp-minigame[hidden] { display: none; }
+.tp-mg-card {
+  width: 100%;
+  max-width: 340px;
+  background: #fff;
+  color: #1f2937;
+  border-radius: 18px;
+  padding: 14px;
+}
+.tp-mg-card h2 { margin: 0 0 2px; font-size: 18px; }
+.tp-mg-status { font-size: 14px; font-weight: 800; margin: 0 0 8px; }
+.tp-mg-area {
+  position: relative;
+  height: 190px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #bae6fd, #fde68a);
+  overflow: hidden;
+}
+.tp-mg-target {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.95);
+  font-size: 30px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.tp-mg-target:active { transform: scale(0.9); }
+.tp-mg-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.tp-mg-card-btn {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 2px solid #d1d5db;
+  background: #fbbf24;
+  font-size: 26px;
+  cursor: pointer;
+  padding: 0;
+}
+.tp-mg-card-btn.tp-flipped { background: #fff; }
+.tp-mg-card-btn.tp-matched { background: #bbf7d0; border-color: #16a34a; }
+.tp-mg-card-btn:disabled { cursor: default; }
+.tp-mg-foot { display: flex; gap: 8px; margin-top: 10px; }
+.tp-mg-foot .tp-sheet-close { margin-top: 0; flex: 1 1 auto; }
+
+/* stage-up celebration */
+.tp-celebrate {
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.6);
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.tp-celebrate[hidden] { display: none; }
+.tp-celebrate-card {
+  background: #fff;
+  color: #1f2937;
+  border-radius: 20px;
+  padding: 20px;
+  text-align: center;
+  max-width: 300px;
+}
+.tp-celebrate-card h2 { margin: 0 0 6px; font-size: 22px; }
+.tp-celebrate-card p { margin: 0 0 12px; font-size: 14px; }
+.tp-celebrate-emoji { font-size: 56px; display: block; margin-bottom: 6px; }
+
+@media (max-height: 600px) {
+  .tp-pet-stage-area { width: 140px; height: 140px; }
+  .tp-pet-img { width: 132px; height: 132px; }
+  .tp-pet-fallback { width: 124px; height: 124px; font-size: 64px; }
+  .tp-toy-prop { font-size: 28px; }
+  .tp-actions { padding-top: 6px; gap: 6px; }
+  .tp-btn { min-height: 44px; }
+}
+</style>
 </head>
 <body>
 <div id="ph-stage">
@@ -17156,6 +17907,12 @@ button.mr-setup-preview:focus-visible {
             <span class="ph-icon ph-icon-cards" aria-hidden="true"><span class="ph-fan"><i></i><i></i><i></i></span></span>
             <span class="ph-icon-label">Solitaire</span>
           </button>
+          <!-- VIRTUAL PET -->
+          <button type="button" class="ph-app-icon" data-app="virtualpet" aria-label="Virtual Pet">
+            <span class="ph-icon" style="background:linear-gradient(150deg,#f472b6 0%,#f59e0b 100%)" aria-hidden="true"><img src="assets/virtual-pet/icon.webp" alt=""></span>
+            <span class="ph-icon-label">Virtual Pet</span>
+          </button>
+          <!-- /VIRTUAL PET -->
           <button type="button" class="ph-app-icon" data-app="oath" aria-label="The Summoner's Oath">
             <span class="ph-icon ph-icon-oath" aria-hidden="true"><svg viewBox="0 0 48 48" width="38" height="38" aria-hidden="true" focusable="false"><circle cx="24" cy="24" r="17" fill="none" stroke="#f5b301" stroke-width="3.5"/><circle cx="24" cy="24" r="11" fill="none" stroke="#ffe08a" stroke-width="1.5" opacity="0.7"/><path d="M24 14 L26.4 21 L34 21 L28 25.6 L30.2 33 L24 28.8 L17.8 33 L20 25.6 L14 21 L21.6 21 Z" fill="#f5b301" stroke="#fff7cc" stroke-width="1" stroke-linejoin="round"/><circle cx="24" cy="5" r="2" fill="#ffe08a"/><circle cx="41" cy="18" r="1.6" fill="#ffe08a"/><circle cx="7" cy="30" r="1.6" fill="#ffe08a"/></svg></span>
             <span class="ph-icon-label">The Summoner's Oath</span>
@@ -17228,6 +17985,9 @@ button.mr-setup-preview:focus-visible {
       <!-- EMBER MATH -->
       <section id="app-embermath" class="ph-app" aria-label="Ember Math"></section>
       <!-- /EMBER MATH -->
+      <!-- VIRTUAL PET -->
+      <section id="app-virtualpet" class="ph-app" aria-label="Virtual Pet"></section>
+      <!-- /VIRTUAL PET -->
       <section id="app-settings" class="ph-app" aria-label="Settings">
         <div class="ph-panel">
           <h1 class="ph-panel-title">Settings</h1>
@@ -17658,7 +18418,7 @@ if (typeof window !== 'undefined') {
   /* Default home order: every icon alphabetical by display name
      (case-insensitive), games and utilities in one list. This list must
      match what sortHomeAlphabetical computes from the registered titles. */
-  var DEFAULT_HOME_ORDER = ['about', 'angrymonkeys', 'blockzen', 'blockfall', 'chess', 'chessquest', 'embermath', 'featherflight', 'lava', 'invesim', 'kindlekeep', 'settings', 'snake', 'solitaire', 'wordquest'];
+  var DEFAULT_HOME_ORDER = ['about', 'angrymonkeys', 'blockzen', 'blockfall', 'chess', 'chessquest', 'embermath', 'featherflight', 'lava', 'invesim', 'kindlekeep', 'settings', 'snake', 'solitaire', 'virtualpet', 'wordquest'];
   /* The pre-alphabetical default (games first, then utilities). A stored
      order identical to this list means the player never reorganized. */
   var LEGACY_DEFAULT_HOME_ORDER = ['angrymonkeys', 'blockfall', 'blockzen', 'chess', 'chessquest', 'invesim', 'kindlekeep', 'solitaire', 'about', 'settings'];
@@ -17684,6 +18444,7 @@ if (typeof window !== 'undefined') {
     solitaire: 'solitaire',
     snake: 'snake',
     embermath: 'ember-math',
+    virtualpet: 'virtual-pet',
     tycoon: 'tycoon-town',
     wordquest: 'word-quest'
   };
@@ -18417,7 +19178,8 @@ if (typeof window !== 'undefined') {
     'ph-splash--blockfall', 'ph-splash--chess', 'ph-splash--angrymonkeys',
     'ph-splash--kindlekeep', 'ph-splash--chessquest', 'ph-splash--mathrealms',
     'ph-splash--lava', 'ph-splash--casino', 'ph-splash--oath', 'ph-splash--snake',
-    'ph-splash--featherflight', 'ph-splash--wordquest', 'ph-splash--embermath'];
+    'ph-splash--featherflight', 'ph-splash--wordquest', 'ph-splash--embermath',
+    'ph-splash--virtualpet'];
   var SPLASH_THEMES = {
     blockzen: {
       cls: 'ph-splash--blockzen',
@@ -18708,6 +19470,32 @@ if (typeof window !== 'undefined') {
         { num: true, text: '+', x: 82, y: 4, d: 0.2 },
         { num: true, text: '5', x: 130, y: 16, d: 0.35 },
         { num: true, text: '=', x: 178, y: 8, d: 0.5 },
+        { star: true, x: 56, y: 66, s: 5, d: 0.4 },
+        { star: true, x: 150, y: 58, s: 4, d: 0.7 },
+        { star: true, x: 200, y: 100, s: 5, d: 1.0 },
+        { star: true, x: 24, y: 104, s: 4, d: 1.2 },
+        { ember: true, x: 104, y: 118, s: 6, d: 0.3 },
+        { ember: true, x: 122, y: 124, s: 5, d: 0.7 },
+        { ember: true, x: 140, y: 116, s: 6, d: 1.1 },
+        { flash: true, x: 24, y: 122, w: 200, h: 14, d: 1.9 }
+      ]
+    }
+    /* TOMODACHI PET (Nov 27, 2026): Tomodachi Pet — an egg hatches,
+       hearts float up, stars kindle, a flash as the pet grows up.
+       Motif 'tomodachipet' reuses the num/star/ember/flash renderer
+       branches (the num pieces carry an egg and hearts). Tagline
+       matches the game; timing exactly 3000ms via SPLASH_MS. The
+       ph-splash--tomodachipet background class lives in
+       tp-game.css. */
+    , virtualpet: {
+      cls: 'ph-splash--virtualpet',
+      tag: 'Hatch it. Raise it. Love it.',
+      motif: 'virtualpet',
+      pieces: [
+        { num: true, text: '\uD83E\uDD5A', x: 104, y: 30, d: 0.05 },
+        { num: true, text: '\u2764\uFE0F', x: 48, y: 8, d: 0.2 },
+        { num: true, text: '\u2764\uFE0F', x: 168, y: 12, d: 0.35 },
+        { num: true, text: '\u2764\uFE0F', x: 206, y: 48, d: 0.5 },
         { star: true, x: 56, y: 66, s: 5, d: 0.4 },
         { star: true, x: 150, y: 58, s: 4, d: 0.7 },
         { star: true, x: 200, y: 100, s: 5, d: 1.0 },
@@ -20136,6 +20924,26 @@ if (typeof window !== 'undefined') {
           if (typeof window !== 'undefined' && window.EmberMathWire &&
               typeof window.EmberMathWire.onClose === 'function') {
             window.EmberMathWire.onClose();
+          }
+        } catch (e) { /* never throws */ }
+      } });
+    /* TOMODACHI PET (Nov 27, 2026): Tomodachi Pet. Delegated to the
+       Tomodachi Pet wire, which no-ops until the game lands. Guarded
+       and tomodachipet-scoped; never throws. Do not init the wire here. */
+    PhoneShell.registerApp('virtualpet', { title: 'Virtual Pet', game: true, el: $('app-virtualpet'),
+      onOpen: function () {
+        try {
+          if (typeof window !== 'undefined' && window.TomodachiPetWire &&
+              typeof window.TomodachiPetWire.onOpen === 'function') {
+            window.TomodachiPetWire.onOpen();
+          }
+        } catch (e) { /* never throws */ }
+      },
+      onClose: function () {
+        try {
+          if (typeof window !== 'undefined' && window.TomodachiPetWire &&
+              typeof window.TomodachiPetWire.onClose === 'function') {
+            window.TomodachiPetWire.onClose();
           }
         } catch (e) { /* never throws */ }
       } });
@@ -29322,6 +30130,18 @@ var BZSettings = (function () {
       'rain, and a rare golden drop turns into a cleansing rain that ' +
       'clears the whole sky. Six difficulty levels from Very Easy to ' +
       'Super Hard, all free from the start.'));
+    body.appendChild(_el('p', 'bz-about-text',
+      'Virtual Pet is a colorful digital pet game built for touch. ' +
+      'Pick one of 12 pets — six starters and six mythical pets to ' +
+      'unlock — and raise it from an egg through baby, child and teen ' +
+      'to adult by feeding, playing, washing and tucking it in to ' +
+      'sleep. Your care shapes what it becomes: a bright adult, a ' +
+      'scruffy one you can win back, or — for Ember the phoenix — a ' +
+      'rebirth, brighter than ever. Play three mini-games to earn ' +
+      'coins, spend them in the shop on food, toys, outfits and room ' +
+      'decorations, and dress up four room themes. The pet keeps ' +
+      'living while you are away, but it never dies — it just gets ' +
+      'sad, and you can always cheer it back up.'));
     body.appendChild(_el('p', 'bz-about-text',
       'The green chart icon on the home screen opens the companion ' +
       'investing simulation in this same tab.'));
@@ -155381,6 +156201,3515 @@ var EmberMathWire = (function () {
 if (typeof module !== 'undefined' && module.exports) module.exports = EmberMathWire;
 if (typeof window !== 'undefined') {
   try { window.EmberMathWire = EmberMathWire; } catch (e) { /* best-effort */ }
+}
+</script>
+<script>
+// source: tp-data.js
+// TomodachiPet data — the ONE place the pets, stages, shop, rooms,
+// mini-games and art paths live.
+//
+// Tomodachi Pet: raise a colorful digital pet. It hatches from an
+// egg, grows Egg -> Baby -> Child -> Teen -> Adult, and reacts to how
+// you care for it. 12 pets total: 6 starters (free from the start)
+// and 6 mythical pets earned by good care (see MYTHICAL_UNLOCK in
+// tp-engine.js — no paywall, no real money, no ads in the game).
+//
+// Art lives at assets/virtual-pet/ (art workers generate it in
+// parallel). Files may not exist yet: the game NEVER assumes an <img>
+// loads — every image hides itself on error and a CSS/emoji fallback
+// shows instead. A missing art file is never a broken image.
+//
+// UMD: global TPData + module.exports. Never throws.
+var TPData = (function () {
+  'use strict';
+
+  var TP_TITLE = 'Virtual Pet';
+  var TP_SLUG = 'virtual-pet';
+  var TP_APP_ID = 'virtualpet';
+  var TP_ASSET_BASE = 'assets/virtual-pet/';
+
+  function _art(p) { return TP_ASSET_BASE + p; }
+
+  /* Growth stages. elapsedMs is the MINIMUM real time the pet must
+     spend in the stage before it can grow up; care is the care
+     points needed (each care action — feed, play, wash, a full
+     night's sleep, medicine — earns care points, see tp-engine.js).
+     Egg hatches after ~5 minutes of care; the whole journey to
+     Adult takes ~4 days of casual care (5 min + 12 h + 36 h + 48 h
+     minimum elapsed, with care-point totals a casual player clears
+     in the same window). */
+  var STAGES = {
+    egg:   { id: 'egg',   name: 'Egg',   next: 'baby',  elapsedMs: 5 * 60 * 1000,       care: 3 },
+    baby:  { id: 'baby',  name: 'Baby',  next: 'child', elapsedMs: 12 * 60 * 60 * 1000, care: 10 },
+    child: { id: 'child', name: 'Child', next: 'teen',  elapsedMs: 36 * 60 * 60 * 1000, care: 25 },
+    teen:  { id: 'teen',  name: 'Teen',  next: 'adult', elapsedMs: 48 * 60 * 60 * 1000, care: 45 },
+    adult: { id: 'adult', name: 'Adult', next: null,    elapsedMs: 0,                   care: 0 }
+  };
+  var STAGE_IDS = ['egg', 'baby', 'child', 'teen', 'adult'];
+
+  /* Adult forms. 'bright' = well cared for (average meter health
+     >= 55 during the teen stage); 'scruffy' = neglected (still
+     lovable, and winnable back — see tp-engine.js). Ember the
+     phoenix never goes scruffy: neglected, it is 'reborn' brighter
+     instead. form is null until the pet reaches Adult. */
+  var FORMS = { BRIGHT: 'bright', SCRUFFY: 'scruffy', REBORN: 'reborn' };
+
+  /* The 12 pets. modifiers are the per-pet personality rules the
+     engine applies (all small, all documented in tp-engine.js):
+       hungerDrain: extra hunger drain per hour (Pip is always hungry)
+       happinessDrain: happiness drain offset per hour (Lulu is calm)
+       playHappiness: extra happiness per play (Momo loves toys)
+       playCare: care points per play (Koko grows fastest when you play)
+       picky: non-favorite food gives half hunger (Bibi)
+       coinMult: mini-game coin multiplier (Zephyr fastest, Roro loves games)
+       mealBonus: extra hunger from meals (Orion loves big meals)
+       astraHeal: heals its own meters a little each day (Astra)
+       rebirth: never scruffy, reborn brighter instead (Ember)
+       treatFinder: hides treats around the room to find (Suki)
+     favoriteFood / favoriteToy are SHOP item ids. emoji is the
+     graceful fallback when the pet art file is missing. */
+  var PETS = {
+    pip: { id: 'pip', name: 'Pip', species: 'Chick', mythical: false,
+      colors: ['#ffd94d', '#fff3b0', '#f59e0b'],
+      desc: 'A sunny yellow chick — cheerful, and always hungry.',
+      personality: 'Cheerful, always hungry',
+      favoriteFood: 'food-berry', favoriteToy: 'toy-ball',
+      emoji: '\uD83D\uDC24', modifiers: { hungerDrain: 1 } },
+    momo: { id: 'momo', name: 'Momo', species: 'Bunny', mythical: false,
+      colors: ['#f9a8d4', '#fce7f3', '#ec4899'],
+      desc: 'A sweet pink bunny — loves toys more than anything.',
+      personality: 'Sweet, loves toys',
+      favoriteFood: 'food-carrot', favoriteToy: 'toy-plush',
+      emoji: '\uD83D\uDC30', modifiers: { playHappiness: 5 } },
+    koko: { id: 'koko', name: 'Koko', species: 'Dragon', mythical: false,
+      colors: ['#2dd4bf', '#ccfbf1', '#0d9488'],
+      desc: 'A playful teal dragon — grows fastest when you play.',
+      personality: 'Playful, grows fastest when you play',
+      favoriteFood: 'food-berry', favoriteToy: 'toy-ball',
+      emoji: '\uD83D\uDC32', modifiers: { playCare: 2 } },
+    bibi: { id: 'bibi', name: 'Bibi', species: 'Cat', mythical: false,
+      colors: ['#a78bfa', '#ede9fe', '#7c3aed'],
+      desc: 'A sleepy purple cat — a picky eater, but worth it.',
+      personality: 'Sleepy, picky eater',
+      favoriteFood: 'food-fish', favoriteToy: 'toy-wand',
+      emoji: '\uD83D\uDC31', modifiers: { picky: true } },
+    roro: { id: 'roro', name: 'Roro', species: 'Fox', mythical: false,
+      colors: ['#fb923c', '#ffedd5', '#ea580c'],
+      desc: 'A mischievous orange fox — loves mini-games.',
+      personality: 'Mischievous, loves mini-games',
+      favoriteFood: 'food-berry', favoriteToy: 'toy-ball',
+      emoji: '\uD83E\uDD8A', modifiers: { coinMult: 1.25 } },
+    lulu: { id: 'lulu', name: 'Lulu', species: 'Penguin', mythical: false,
+      colors: ['#60a5fa', '#dbeafe', '#2563eb'],
+      desc: 'A calm blue penguin — easy to keep happy.',
+      personality: 'Calm, easy to keep happy',
+      favoriteFood: 'food-fish', favoriteToy: 'toy-plush',
+      emoji: '\uD83D\uDC27', modifiers: { happinessDrain: -1 } },
+    ember: { id: 'ember', name: 'Ember', species: 'Phoenix', mythical: true, eggCost: 350,
+      colors: ['#ef4444', '#fbbf24', '#b45309'],
+      desc: 'A crimson-and-gold phoenix — bursts into flame and is reborn brighter when neglected instead of getting scruffy. Loves spicy food.',
+      personality: 'Fiery, reborn brighter',
+      favoriteFood: 'food-spicy', favoriteToy: 'toy-wand',
+      emoji: '\uD83D\uDD25', modifiers: { rebirth: true } },
+    astra: { id: 'astra', name: 'Astra', species: 'Unicorn', mythical: true, eggCost: 400,
+      colors: ['#ffffff', '#f0abfc', '#a78bfa'],
+      desc: 'A white unicorn with a rainbow mane — heals its own meters a little each day, and sparkles when happy. Loves stargazing at night.',
+      personality: 'Gentle, self-healing',
+      favoriteFood: 'food-star', favoriteToy: 'toy-plush',
+      emoji: '\uD83E\uDD84', modifiers: { astraHeal: 5 } },
+    zephyr: { id: 'zephyr', name: 'Zephyr', species: 'Pegasus', mythical: true, eggCost: 400,
+      colors: ['#7dd3fc', '#ffffff', '#0369a1'],
+      desc: 'A sky-blue pegasus with white wings — flies around the room when excited, and earns coins fastest in mini-games.',
+      personality: 'Breezy, fastest coin earner',
+      favoriteFood: 'food-berry', favoriteToy: 'toy-ball',
+      emoji: '\uD83D\uDC34', modifiers: { coinMult: 1.5 } },
+    suki: { id: 'suki', name: 'Suki', species: 'Kitsune', mythical: true, eggCost: 500,
+      colors: ['#fbbf24', '#fef3c7', '#b45309'],
+      desc: 'A golden nine-tailed fox — a trickster who hides treats around the room for you to find. Her tails glow as she grows.',
+      personality: 'Trickster, hides treats',
+      favoriteFood: 'food-cake', favoriteToy: 'toy-wand',
+      emoji: '\uD83E\uDD8A', modifiers: { treatFinder: true } },
+    orion: { id: 'orion', name: 'Orion', species: 'Griffin', mythical: true, eggCost: 500,
+      colors: ['#d97706', '#fef3c7', '#92400e'],
+      desc: 'A proud bronze-and-cream griffin — guards the room, and loves big meals.',
+      personality: 'Proud and brave, loves big meals',
+      favoriteFood: 'food-feast', favoriteToy: 'toy-ball',
+      emoji: '\uD83E\uDD85', modifiers: { mealBonus: 5 } },
+    nixie: { id: 'nixie', name: 'Nixie', species: 'Fairy Dragon', mythical: true, eggCost: 600,
+      colors: ['#2dd4bf', '#c4b5fd', '#7c3aed'],
+      desc: 'A tiny aqua-and-violet fairy dragon with butterfly wings — leaves glitter trails, and loves sweet food.',
+      personality: 'Tiny and magical, loves sweet food',
+      favoriteFood: 'food-cake', favoriteToy: 'toy-wand',
+      emoji: '\uD83E\uDD8B', modifiers: {} }
+  };
+  var PET_IDS = ['pip', 'momo', 'koko', 'bibi', 'roro', 'lulu',
+    'ember', 'astra', 'zephyr', 'suki', 'orion', 'nixie'];
+  var STARTER_IDS = ['pip', 'momo', 'koko', 'bibi', 'roro', 'lulu'];
+  var MYTHICAL_IDS = ['ember', 'astra', 'zephyr', 'suki', 'orion', 'nixie'];
+
+  function petById(id) {
+    if (id && PETS[id]) return PETS[id];
+    return null;
+  }
+  function stageById(id) {
+    if (id && STAGES[id]) return STAGES[id];
+    return STAGES.egg;
+  }
+
+  /* Art paths. Adult bright uses pet-<id>-adult.webp; scruffy uses
+     pet-<id>-adult-scruffy.webp (the UI falls back to the bright
+     adult art if the scruffy file is missing); reborn Ember uses the
+     bright adult art with a CSS rebirth glow. */
+  function petArt(petId, stage, form) {
+    var id = (petId && PETS[petId]) ? petId : 'pip';
+    var st = (stage && STAGES[stage]) ? stage : 'egg';
+    if (st === 'adult' && form === 'scruffy') return _art('pet-' + id + '-adult-scruffy.webp');
+    return _art('pet-' + id + '-' + st + '.webp');
+  }
+  function roomArt(roomId) {
+    var id = (roomId && ROOMS[roomId]) ? roomId : 'meadow';
+    return _art('room-' + id + '.webp');
+  }
+
+  var ART = {
+    icon: _art('icon.webp')
+  };
+  var ART_FILES = (function () {
+    var out = [ART.icon];
+    var i, s;
+    for (i = 0; i < PET_IDS.length; i++) {
+      for (s = 0; s < STAGE_IDS.length; s++) out.push(_art('pet-' + PET_IDS[i] + '-' + STAGE_IDS[s] + '.webp'));
+      out.push(_art('pet-' + PET_IDS[i] + '-adult-scruffy.webp'));
+    }
+    return out;
+  })();
+
+  /* Shop catalog. kind: 'food' | 'toy' | 'medicine' | 'outfit' |
+     'decor'. Food/toy/medicine are consumables (inventory counts);
+     outfits/decor are bought once and owned forever (cosmetic).
+     effect is what using the item does; favorite food/toy bonuses
+     are applied by the engine on top of these base numbers. */
+  var SHOP = {
+    'food-basic': { id: 'food-basic', kind: 'food', name: 'Pet Kibble', price: 5,
+      hunger: 25, desc: 'A simple, filling meal. One refills free every 4 hours.' },
+    'food-berry': { id: 'food-berry', kind: 'food', name: 'Berry Meal', price: 10,
+      hunger: 30, desc: 'Sweet berries. Pip, Koko, Roro and Zephyr love it.' },
+    'food-carrot': { id: 'food-carrot', kind: 'food', name: 'Carrot Crunch', price: 10,
+      hunger: 30, desc: 'Crunchy and sweet. Momo\u2019s favorite.' },
+    'food-fish': { id: 'food-fish', kind: 'food', name: 'Fish Treat', price: 10,
+      hunger: 30, desc: 'A tasty fish treat. Bibi and Lulu love it.' },
+    'food-spicy': { id: 'food-spicy', kind: 'food', name: 'Spicy Curry', price: 15,
+      hunger: 35, desc: 'Hot and fiery. Ember\u2019s favorite.' },
+    'food-star': { id: 'food-star', kind: 'food', name: 'Star Fruit', price: 15,
+      hunger: 35, desc: 'A glowing star fruit. Astra\u2019s favorite.' },
+    'food-cake': { id: 'food-cake', kind: 'food', name: 'Sweet Cake', price: 12,
+      hunger: 30, desc: 'A little frosted cake. Suki and Nixie love it.' },
+    'food-feast': { id: 'food-feast', kind: 'food', name: 'Big Feast', price: 25,
+      hunger: 45, desc: 'A huge feast. Orion\u2019s favorite.' },
+    'toy-ball': { id: 'toy-ball', kind: 'toy', name: 'Bouncy Ball', price: 30,
+      happiness: 15, desc: 'Boing! A very bouncy ball.' },
+    'toy-plush': { id: 'toy-plush', kind: 'toy', name: 'Plush Star', price: 60,
+      happiness: 20, desc: 'A soft, huggable star.' },
+    'toy-wand': { id: 'toy-wand', kind: 'toy', name: 'Bubble Wand', price: 40,
+      happiness: 18, desc: 'Blows a cloud of bubbles.' },
+    'med-basic': { id: 'med-basic', kind: 'medicine', name: 'Pet Medicine', price: 20,
+      desc: 'Cures sickness and cleans up (+20 Cleanliness).' },
+    'outfit-hat': { id: 'outfit-hat', kind: 'outfit', name: 'Sunny Hat', price: 50,
+      desc: 'A bright sunny hat for your pet.' },
+    'outfit-bow': { id: 'outfit-bow', kind: 'outfit', name: 'Pink Bow', price: 50,
+      desc: 'A sweet pink bow.' },
+    'outfit-scarf': { id: 'outfit-scarf', kind: 'outfit', name: 'Star Scarf', price: 80,
+      desc: 'A cozy scarf with little stars.' },
+    'outfit-cape': { id: 'outfit-cape', kind: 'outfit', name: 'Rainbow Cape', price: 120,
+      desc: 'A flowing rainbow cape. Very fancy.' },
+    'decor-plant': { id: 'decor-plant', kind: 'decor', name: 'Flower Pot', price: 40,
+      desc: 'A cheerful flower pot for the room.' },
+    'decor-rug': { id: 'decor-rug', kind: 'decor', name: 'Star Rug', price: 60,
+      desc: 'A soft rug with stars.' },
+    'decor-lights': { id: 'decor-lights', kind: 'decor', name: 'Fairy Lights', price: 80,
+      desc: 'Twinkling fairy lights for the room.' }
+  };
+  var SHOP_IDS = Object.keys(SHOP);
+  var SHOP_ORDER = ['food-basic', 'food-berry', 'food-carrot', 'food-fish',
+    'food-spicy', 'food-star', 'food-cake', 'food-feast',
+    'toy-ball', 'toy-wand', 'toy-plush', 'med-basic',
+    'outfit-hat', 'outfit-bow', 'outfit-scarf', 'outfit-cape',
+    'decor-plant', 'decor-rug', 'decor-lights'];
+
+  function shopItemById(id) {
+    if (id && SHOP[id]) return SHOP[id];
+    return null;
+  }
+
+  /* Room themes — all free, switchable any time. Each carries its
+     own accent colors so the whole room re-skins. */
+  var ROOMS = {
+    meadow: { id: 'meadow', name: 'Sunny Meadow', art: _art('room-meadow.webp'),
+      desc: 'Green grass, blue sky, sunshine.',
+      css: { bg: 'linear-gradient(180deg,#bae6fd 0%,#bbf7d0 55%,#86efac 100%)',
+        accent: '#16a34a', ink: '#14532d', card: 'rgba(255,255,255,0.85)' } },
+    candy: { id: 'candy', name: 'Candy Land', art: _art('room-candy.webp'),
+      desc: 'Pink frosting, sprinkles, lollipops.',
+      css: { bg: 'linear-gradient(180deg,#fbcfe8 0%,#fde68a 55%,#f9a8d4 100%)',
+        accent: '#db2777', ink: '#831843', card: 'rgba(255,255,255,0.88)' } },
+    ocean: { id: 'ocean', name: 'Ocean Blue', art: _art('room-ocean.webp'),
+      desc: 'Deep blue water, bubbles, coral.',
+      css: { bg: 'linear-gradient(180deg,#7dd3fc 0%,#38bdf8 55%,#0369a1 100%)',
+        accent: '#0369a1', ink: '#0c4a6e', card: 'rgba(255,255,255,0.88)' } },
+    sunset: { id: 'sunset', name: 'Sunset Glow', art: _art('room-sunset.webp'),
+      desc: 'Orange skies, purple clouds, golden light.',
+      css: { bg: 'linear-gradient(180deg,#fdba74 0%,#f472b6 55%,#7c3aed 100%)',
+        accent: '#ea580c', ink: '#431407', card: 'rgba(255,255,255,0.88)' } }
+  };
+  var ROOM_IDS = ['meadow', 'candy', 'ocean', 'sunset'];
+
+  function roomById(id) {
+    if (id && ROOMS[id]) return ROOMS[id];
+    return ROOMS.meadow;
+  }
+
+  /* Mini-games. target is the score needed to WIN (coins + hearts);
+     a lower score still earns a small consolation. reward is the
+     coin payout for a win. */
+  var MINIGAMES = {
+    'tap-treat': { id: 'tap-treat', name: 'Tap the Treat', target: 8, seconds: 10, reward: 10,
+      desc: 'Treats pop up around the room — tap 8 in 10 seconds!' },
+    'catch-bubble': { id: 'catch-bubble', name: 'Catch the Bubble', target: 10, seconds: 15, reward: 15,
+      desc: 'Bubbles float up — pop 10 in 15 seconds!' },
+    'memory': { id: 'memory', name: 'Memory Match', target: 4, seconds: 0, reward: 20,
+      desc: 'Flip the cards and match all 4 pairs!' }
+  };
+  var MINIGAME_IDS = ['tap-treat', 'catch-bubble', 'memory'];
+
+  function minigameById(id) {
+    if (id && MINIGAMES[id]) return MINIGAMES[id];
+    return null;
+  }
+
+  var api = {
+    TP_TITLE: TP_TITLE,
+    TP_SLUG: TP_SLUG,
+    TP_APP_ID: TP_APP_ID,
+    TP_ASSET_BASE: TP_ASSET_BASE,
+    STAGES: STAGES,
+    STAGE_IDS: STAGE_IDS,
+    FORMS: FORMS,
+    PETS: PETS,
+    PET_IDS: PET_IDS,
+    STARTER_IDS: STARTER_IDS,
+    MYTHICAL_IDS: MYTHICAL_IDS,
+    petById: petById,
+    stageById: stageById,
+    petArt: petArt,
+    roomArt: roomArt,
+    ART: ART,
+    ART_FILES: ART_FILES,
+    SHOP: SHOP,
+    SHOP_IDS: SHOP_IDS,
+    SHOP_ORDER: SHOP_ORDER,
+    shopItemById: shopItemById,
+    ROOMS: ROOMS,
+    ROOM_IDS: ROOM_IDS,
+    roomById: roomById,
+    MINIGAMES: MINIGAMES,
+    MINIGAME_IDS: MINIGAME_IDS,
+    minigameById: minigameById
+  };
+  return api;
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = TPData;
+if (typeof window !== 'undefined') {
+  try { window.TPData = TPData; } catch (e) { /* best-effort */ }
+}
+</script>
+<script>
+// source: tp-engine.js
+// TomodachiPet engine — PURE logic, NO DOM.
+//
+// A pet lives in real time: meters drain from timestamps, growth
+// needs care points + elapsed time, and the pet NEVER dies — meters
+// floor at 15, a sad pet can always be cheered back up.
+//
+// MYTHICAL UNLOCK RULE (final, Nov 27, 2026 — no paywall, no real
+// money): a mythical egg becomes purchasable with coins when EITHER
+//   (a) any starter pet reaches Adult in BRIGHT form, OR
+//   (b) the player has earned 100 lifetime hearts.
+// Both paths land in ~4-5 days of casual play: Adult bright takes
+// ~4 days of care (see growth pacing below), and hearts accrue at
+// ~20/day casually (+2 per mini-game win, +2 per stage-up, +5 for an
+// Adult bright, +1 per daily check-in). Once unlocked, each mythical
+// egg costs coins (Ember 350 … Nixie 600, see tp-data.js).
+//
+// GROWTH PACING (exact — stage needs BOTH the elapsed time AND the
+// care points; care points come from care actions):
+//   Egg -> Baby:   5 min elapsed  +  3 care points
+//   Baby -> Child: 12 h elapsed   + 10 care points
+//   Child -> Teen: 36 h elapsed   + 25 care points
+//   Teen -> Adult: 48 h elapsed   + 45 care points
+//   Total minimum: 96 h 5 min (~4 days) of casual care. A casual
+//   player doing ~15 care actions a day clears every care total in
+//   the same window, so elapsed time is the binding constraint.
+//
+// METER DRAIN (per hour of real time, applied from timestamps):
+//   Hunger -6, Happiness -5, Energy -4, Cleanliness -3.
+//   Floor: every meter stops at 15 — NEVER 0, the pet NEVER dies.
+//   Sleeping: Energy +30/hr (auto-wake at 100), other meters drain
+//   at half rate. Sick: Happiness drains double.
+//   Personality modifiers (tp-data.js): Pip hunger -7/hr, Lulu
+//   happiness -4/hr.
+//
+// BRIGHT vs SCRUFFY: during each stage the engine samples the pet's
+// average meter health (at most one sample per 5 min). At the
+// Teen -> Adult step, average >= 55 becomes BRIGHT, below becomes
+// SCRUFFY. A scruffy adult is still lovable — and winnable back:
+// keeping its average meter health >= 70 for a full day flips it
+// bright (see winBack check in applyTime).
+// EMBER REBIRTH: Ember never goes scruffy. A neglected Ember is
+// 'reborn' at Adult instead — meters reset to 80, rebirths +1, and a
+// 'rebirth' event fires. A well-cared Ember is bright like any pet.
+//
+// SICKNESS: Cleanliness < 25 continuously for > 6 h makes the pet
+// sick (happiness drains double, the pet looks ill). Medicine cures
+// it (+20 Cleanliness). Washing clears the low-cleanliness clock.
+//
+// ECONOMY: coins start at 50. Mini-game win: +reward coins (+2
+// consolation on a loss), +2 hearts on a win. Favorite food: +10
+// hunger over base and +1 heart. Daily check-in: +25 coins +1 heart
+// once per calendar day (streak bonus +15 coins at 3+ days, +35 at
+// 7+ days). ASTRA heals +5 to all meters once per calendar day.
+// SUKI hides a treat: +8 coins, findable once per 4 h.
+// One free basic meal refills every 4 h (max 3 banked).
+//
+// UMD: global TPEngine + module.exports. Never throws.
+var TPEngine = (function () {
+  'use strict';
+
+  var D = null;
+  try {
+    if (typeof TPData !== 'undefined' && TPData && TPData.PETS) D = TPData;
+  } catch (e) { D = null; }
+  if (!D) {
+    try {
+      if (typeof require === 'function') D = require('./tp-data.js');
+    } catch (e) { /* fall through to the literal fallback */ }
+  }
+  if (!D) {
+    /* Minimal fallback so the engine still loads standalone in node
+       without tp-data.js (tests always load the real data). */
+    D = {
+      PETS: { pip: { id: 'pip', name: 'Pip', mythical: false, favoriteFood: 'food-berry', favoriteToy: 'toy-ball', modifiers: { hungerDrain: 1 } } },
+      PET_IDS: ['pip'], STARTER_IDS: ['pip'], MYTHICAL_IDS: [],
+      STAGES: {
+        egg: { id: 'egg', next: 'baby', elapsedMs: 300000, care: 3 },
+        baby: { id: 'baby', next: 'child', elapsedMs: 43200000, care: 10 },
+        child: { id: 'child', next: 'teen', elapsedMs: 129600000, care: 25 },
+        teen: { id: 'teen', next: 'adult', elapsedMs: 172800000, care: 45 },
+        adult: { id: 'adult', next: null, elapsedMs: 0, care: 0 }
+      },
+      SHOP: {
+        'food-basic': { id: 'food-basic', kind: 'food', price: 5, hunger: 25 },
+        'food-berry': { id: 'food-berry', kind: 'food', price: 10, hunger: 30 },
+        'food-spicy': { id: 'food-spicy', kind: 'food', price: 15, hunger: 35 },
+        'food-feast': { id: 'food-feast', kind: 'food', price: 25, hunger: 45 },
+        'food-cake': { id: 'food-cake', kind: 'food', price: 12, hunger: 30 },
+        'toy-ball': { id: 'toy-ball', kind: 'toy', price: 30, happiness: 15 },
+        'toy-plush': { id: 'toy-plush', kind: 'toy', price: 60, happiness: 20 },
+        'toy-wand': { id: 'toy-wand', kind: 'toy', price: 40, happiness: 18 },
+        'med-basic': { id: 'med-basic', kind: 'medicine', price: 20 }
+      },
+      MINIGAMES: {
+        'tap-treat': { id: 'tap-treat', target: 8, reward: 10 },
+        'catch-bubble': { id: 'catch-bubble', target: 10, reward: 15 },
+        'memory': { id: 'memory', target: 4, reward: 20 }
+      },
+      ROOMS: { meadow: { id: 'meadow' } }
+    };
+    D.petById = function (id) { return (id && D.PETS[id]) ? D.PETS[id] : null; };
+    D.stageById = function (id) { return (id && D.STAGES[id]) ? D.STAGES[id] : D.STAGES.egg; };
+    D.shopItemById = function (id) { return (id && D.SHOP[id]) ? D.SHOP[id] : null; };
+    D.minigameById = function (id) { return (id && D.MINIGAMES[id]) ? D.MINIGAMES[id] : null; };
+    D.roomById = function (id) { return (id && D.ROOMS[id]) ? D.ROOMS[id] : D.ROOMS.meadow; };
+  }
+
+  var METER_FLOOR = 15;
+  var METER_MAX = 100;
+  var BRIGHT_THRESHOLD = 55;   /* teen-stage avg meter health for bright adult */
+  var WINBACK_THRESHOLD = 70;  /* scruffy adult avg for a full day -> bright */
+  var WINBACK_MS = 24 * 60 * 60 * 1000;
+  var SICK_CLEAN_BELOW = 25;
+  var SICK_AFTER_MS = 6 * 60 * 60 * 1000;
+  var SAMPLE_MIN_MS = 5 * 60 * 1000;
+  var FREE_MEAL_EVERY_MS = 4 * 60 * 60 * 1000;
+  var FREE_MEAL_MAX = 3;
+  var TREAT_EVERY_MS = 4 * 60 * 60 * 1000;
+  var TREAT_COINS = 8;
+  var CHECKIN_COINS = 25;
+  var CHECKIN_HEARTS = 1;
+  var HEARTS_TO_UNLOCK = 100;
+  var DRAIN = { hunger: 6, happiness: 5, energy: 4, cleanliness: 3 }; /* per hour */
+  var SLEEP_ENERGY_PER_HOUR = 30;
+  var START_COINS = 50;
+
+  function _now(now) {
+    if (typeof now === 'number' && isFinite(now) && now > 0) return now;
+    return Date.now();
+  }
+  function _clampMeter(v) {
+    if (typeof v !== 'number' || !isFinite(v)) return METER_FLOOR;
+    if (v < METER_FLOOR) return METER_FLOOR;
+    if (v > METER_MAX) return METER_MAX;
+    return v;
+  }
+  function _dayString(now) {
+    var d = new Date(now);
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  }
+  function _mod(pet) {
+    var def = (pet && pet.petId) ? D.petById(pet.petId) : null;
+    return (def && def.modifiers) || {};
+  }
+
+  function createPet(petId, now) {
+    var t = _now(now);
+    var def = D.petById(petId);
+    if (!def) return null;
+    return {
+      petId: def.id,
+      stage: 'egg',
+      form: null, /* 'bright' | 'scruffy' | 'reborn' once Adult */
+      meters: { hunger: 85, happiness: 85, energy: 85, cleanliness: 85 },
+      carePoints: 0,
+      stageEnteredAt: t,
+      bornAt: t,
+      lastTick: t,
+      careSum: 0,
+      careSamples: 0,
+      lastSampleAt: t,
+      sick: false,
+      lowCleanSince: null,
+      sleeping: false,
+      sleepStartedAt: null,
+      stageUps: 0,
+      rebirths: 0,
+      lastAstraHealDay: null,
+      lastTreatAt: null,
+      winBackSince: null,
+      equippedOutfit: null
+    };
+  }
+
+  function createProfile(opts) {
+    opts = opts || {};
+    var t = _now(opts.now);
+    var starter = (typeof opts.petId === 'string' && D.petById(opts.petId) && !D.petById(opts.petId).mythical)
+      ? opts.petId : 'pip';
+    var pet = createPet(starter, t);
+    var pets = {};
+    pets[starter] = pet;
+    return {
+      version: 1,
+      activePetId: starter,
+      pets: pets,
+      coins: START_COINS,
+      hearts: 0,
+      lifetimeHearts: 0,
+      inventory: { 'food-basic': 3, 'food-berry': 1 },
+      ownedOutfits: [],
+      ownedDecor: [],
+      roomTheme: 'meadow',
+      lastCheckInDay: null,
+      checkInStreak: 0,
+      nextFreeMealAt: t + FREE_MEAL_EVERY_MS,
+      createdAt: t,
+      totalCareActions: 0,
+      minigamesWon: 0,
+      minigamesPlayed: 0
+    };
+  }
+
+  function activePet(profile) {
+    if (!profile || !profile.pets) return null;
+    return profile.pets[profile.activePetId] || null;
+  }
+
+  function _meanMeters(pet) {
+    var m = pet.meters;
+    return (m.hunger + m.happiness + m.energy + m.cleanliness) / 4;
+  }
+
+  /* Sample the pet's average meter health for the bright/scruffy
+     (and win-back) averages. Throttled: at most one sample per
+     5 minutes of real time, so a player hammering actions cannot
+     inflate the average. */
+  function _sampleCare(pet, now) {
+    if (!pet) return;
+    if (now - (pet.lastSampleAt || 0) < SAMPLE_MIN_MS) return;
+    pet.lastSampleAt = now;
+    pet.careSum += _meanMeters(pet);
+    pet.careSamples += 1;
+  }
+  function _careAverage(pet) {
+    if (!pet || !pet.careSamples) return _meanMeters(pet);
+    return pet.careSum / pet.careSamples;
+  }
+
+  function _addHearts(profile, n) {
+    if (!profile || !n) return;
+    profile.hearts = (profile.hearts || 0) + n;
+    profile.lifetimeHearts = (profile.lifetimeHearts || 0) + n;
+  }
+  function _addCoins(profile, n) {
+    if (!profile) return;
+    profile.coins = Math.max(0, (profile.coins || 0) + n);
+  }
+  function _addCare(profile, pet, n, now) {
+    if (!pet) return;
+    pet.carePoints = (pet.carePoints || 0) + n;
+    if (profile) profile.totalCareActions = (profile.totalCareActions || 0) + 1;
+    _sampleCare(pet, now);
+  }
+
+  /* --- mythical unlock --- */
+  function mythicalUnlocked(profile) {
+    if (!profile) return false;
+    if ((profile.lifetimeHearts || 0) >= HEARTS_TO_UNLOCK) return true;
+    var ids = Object.keys(profile.pets || {});
+    for (var i = 0; i < ids.length; i++) {
+      var p = profile.pets[ids[i]];
+      if (!p) continue;
+      var def = D.petById(p.petId);
+      if (def && !def.mythical && p.stage === 'adult' && p.form === 'bright') return true;
+    }
+    return false;
+  }
+  function mythicalUnlockReason(profile) {
+    if (!profile) return 'none';
+    if ((profile.lifetimeHearts || 0) >= HEARTS_TO_UNLOCK) return 'hearts';
+    var ids = Object.keys(profile.pets || {});
+    for (var i = 0; i < ids.length; i++) {
+      var p = profile.pets[ids[i]];
+      if (!p) continue;
+      var def = D.petById(p.petId);
+      if (def && !def.mythical && p.stage === 'adult' && p.form === 'bright') return 'adult-bright';
+    }
+    return 'none';
+  }
+
+  /* --- growth --- */
+  /* Non-adult stage-up. The Adult step is handled inline in
+     _tryGrowth (it needs the teen-stage care average BEFORE the
+     reset below, to decide bright / scruffy / reborn). */
+  function _stageUp(pet, profile, now, events) {
+    var cur = D.stageById(pet.stage);
+    if (!cur.next || cur.next === 'adult') return false;
+    var next = cur.next;
+    pet.stage = next;
+    pet.stageEnteredAt = now;
+    pet.carePoints = 0;
+    pet.careSum = 0;
+    pet.careSamples = 0;
+    pet.lastSampleAt = now;
+    pet.stageUps = (pet.stageUps || 0) + 1;
+    if (profile) _addHearts(profile, 2);
+    events.push({ type: 'stage-up', stage: next, petId: pet.petId });
+    return true;
+  }
+
+  /* Growth needs BOTH elapsed time AND care points in the stage.
+     Loops so a long absence can cross several stages at once. The
+     teen-stage care average is read BEFORE the reset, so the
+     bright / scruffy / reborn call uses the teen numbers. */
+  function _tryGrowth(pet, profile, now, events) {
+    if (!pet) return;
+    var guard = 0;
+    while (guard++ < 8) {
+      var cur = D.stageById(pet.stage);
+      if (!cur.next) return;
+      var elapsed = now - (pet.stageEnteredAt || now);
+      if (elapsed < cur.elapsedMs) return;
+      if ((pet.carePoints || 0) < cur.care) return;
+      if (cur.next === 'adult') {
+        var avg = _careAverage(pet);
+        var mod = _mod(pet);
+        var form;
+        if (avg >= BRIGHT_THRESHOLD) form = 'bright';
+        else if (mod.rebirth) form = 'reborn';
+        else form = 'scruffy';
+        pet.stage = 'adult';
+        pet.stageEnteredAt = now;
+        pet.carePoints = 0;
+        pet.careSum = 0;
+        pet.careSamples = 0;
+        pet.lastSampleAt = now;
+        pet.stageUps = (pet.stageUps || 0) + 1;
+        pet.form = form;
+        if (profile) _addHearts(profile, 5);
+        if (form === 'reborn') {
+          pet.meters = { hunger: 80, happiness: 80, energy: 80, cleanliness: 80 };
+          pet.sick = false;
+          pet.lowCleanSince = null;
+          pet.rebirths = (pet.rebirths || 0) + 1;
+          events.push({ type: 'rebirth', stage: 'adult', form: 'reborn', petId: pet.petId });
+        }
+        events.push({ type: 'stage-up', stage: 'adult', form: form, petId: pet.petId });
+        return;
+      }
+      _stageUp(pet, profile, now, events);
+    }
+  }
+
+  /* A scruffy adult can win bright back: keep its average meter
+     health >= 70 for a full day (sampled like the teen average). */
+  function _winBackCheck(pet, profile, now, events) {
+    if (!pet || pet.stage !== 'adult' || pet.form !== 'scruffy') return;
+    if (_meanMeters(pet) >= WINBACK_THRESHOLD) {
+      if (!pet.winBackSince) pet.winBackSince = now;
+      else if (now - pet.winBackSince >= WINBACK_MS) {
+        pet.form = 'bright';
+        pet.winBackSince = null;
+        pet.careSum = 0;
+        pet.careSamples = 0;
+        if (profile) _addHearts(profile, 5);
+        events.push({ type: 'win-back', stage: 'adult', form: 'bright', petId: pet.petId });
+      }
+    } else {
+      pet.winBackSince = null;
+    }
+  }
+
+  /* Apply real-time drain + growth + sickness + freebies for ONE
+     pet. dt is capped at 48 h so a long absence is fair (meters
+     floor at 15 anyway; the cap keeps sleep-refill math sane). */
+  function _applyPetTime(pet, profile, now, events) {
+    if (!pet) return;
+    var last = pet.lastTick || now;
+    var dtMs = now - last;
+    if (dtMs < 0) dtMs = 0;
+    if (dtMs > 48 * 60 * 60 * 1000) dtMs = 48 * 60 * 60 * 1000;
+    var dtH = dtMs / 3600000;
+    var mod = _mod(pet);
+    var m = pet.meters;
+    if (dtH > 0) {
+      if (pet.sleeping) {
+        m.energy = _clampMeter(m.energy + SLEEP_ENERGY_PER_HOUR * dtH);
+        var half = 0.5;
+        m.hunger = _clampMeter(m.hunger - (DRAIN.hunger + (mod.hungerDrain || 0)) * half * dtH);
+        m.happiness = _clampMeter(m.happiness - Math.max(0, DRAIN.happiness + (mod.happinessDrain || 0)) * half * dtH);
+        m.cleanliness = _clampMeter(m.cleanliness - DRAIN.cleanliness * half * dtH);
+        if (m.energy >= METER_MAX) {
+          pet.sleeping = false;
+          pet.sleepStartedAt = null;
+          events.push({ type: 'woke', petId: pet.petId, reason: 'rested' });
+        }
+      } else {
+        var sickMult = pet.sick ? 2 : 1;
+        m.hunger = _clampMeter(m.hunger - (DRAIN.hunger + (mod.hungerDrain || 0)) * dtH);
+        m.happiness = _clampMeter(m.happiness - Math.max(0, DRAIN.happiness + (mod.happinessDrain || 0)) * sickMult * dtH);
+        m.energy = _clampMeter(m.energy - DRAIN.energy * dtH);
+        m.cleanliness = _clampMeter(m.cleanliness - DRAIN.cleanliness * dtH);
+      }
+      _sampleCare(pet, now);
+    }
+    pet.lastTick = now;
+    /* Sickness clock: cleanliness under 25 for > 6 h straight. */
+    if (m.cleanliness < SICK_CLEAN_BELOW) {
+      if (!pet.lowCleanSince) pet.lowCleanSince = now;
+      else if (!pet.sick && now - pet.lowCleanSince > SICK_AFTER_MS) {
+        pet.sick = true;
+        events.push({ type: 'sick', petId: pet.petId });
+      }
+    } else {
+      pet.lowCleanSince = null;
+    }
+    /* Astra heals a little each day (once per calendar day). */
+    if (mod.astraHeal) {
+      var day = _dayString(now);
+      if (pet.lastAstraHealDay !== day) {
+        pet.lastAstraHealDay = day;
+        m.hunger = _clampMeter(m.hunger + mod.astraHeal);
+        m.happiness = _clampMeter(m.happiness + mod.astraHeal);
+        m.energy = _clampMeter(m.energy + mod.astraHeal);
+        m.cleanliness = _clampMeter(m.cleanliness + mod.astraHeal);
+        events.push({ type: 'astra-heal', petId: pet.petId, amount: mod.astraHeal });
+      }
+    }
+    _winBackCheck(pet, profile, now, events);
+    _tryGrowth(pet, profile, now, events);
+  }
+
+  /* Advance the whole profile to `now`: every owned pet drains,
+     free meals refill, growth/sickness resolve. Returns events. */
+  function applyTime(profile, now) {
+    var events = [];
+    if (!profile) return events;
+    var t = _now(now);
+    var ids = Object.keys(profile.pets || {});
+    for (var i = 0; i < ids.length; i++) {
+      _applyPetTime(profile.pets[ids[i]], profile, t, events);
+    }
+    /* Free basic meal: one every 4 h, banked up to 3. */
+    if (!profile.nextFreeMealAt) profile.nextFreeMealAt = t + FREE_MEAL_EVERY_MS;
+    var guard = 0;
+    while (profile.nextFreeMealAt <= t && guard++ < 24) {
+      profile.nextFreeMealAt += FREE_MEAL_EVERY_MS;
+      var count = (profile.inventory && profile.inventory['food-basic']) || 0;
+      if (count < FREE_MEAL_MAX) {
+        profile.inventory = profile.inventory || {};
+        profile.inventory['food-basic'] = count + 1;
+        events.push({ type: 'free-meal', count: profile.inventory['food-basic'] });
+      }
+    }
+    if (guard >= 24) profile.nextFreeMealAt = t + FREE_MEAL_EVERY_MS;
+    return events;
+  }
+
+  /* --- care actions (all take effect through applyTime first) --- */
+  function feed(profile, itemId, now) {
+    var t = _now(now);
+    if (!profile) return { ok: false, reason: 'no-profile' };
+    var pet = activePet(profile);
+    if (!pet) return { ok: false, reason: 'no-pet' };
+    applyTime(profile, t);
+    var item = D.shopItemById(itemId);
+    if (!item || item.kind !== 'food') return { ok: false, reason: 'not-food' };
+    var inv = (profile.inventory && profile.inventory[itemId]) || 0;
+    if (inv <= 0) return { ok: false, reason: 'none-owned' };
+    if (pet.sleeping) return { ok: false, reason: 'sleeping' };
+    var def = D.petById(pet.petId);
+    var favorite = def && def.favoriteFood === itemId;
+    var gain = item.hunger || 0;
+    if (favorite) gain += 10;
+    if (def && def.modifiers && def.modifiers.mealBonus) gain += def.modifiers.mealBonus;
+    if (def && def.modifiers && def.modifiers.picky && !favorite) gain = Math.floor(gain / 2);
+    profile.inventory[itemId] = inv - 1;
+    pet.meters.hunger = _clampMeter(pet.meters.hunger + gain);
+    if (favorite) _addHearts(profile, 1);
+    _addCare(profile, pet, 1, t);
+    return { ok: true, gained: gain, favorite: !!favorite, hunger: pet.meters.hunger,
+      hearts: favorite ? 1 : 0 };
+  }
+
+  /* Play a mini-game. `won` is whether the player hit the game's
+     target; `score` is the raw score (used for the happiness bump).
+     Coins: win = reward (Zephyr x1.5, Roro x1.25), loss = +2. */
+  function play(profile, gameId, won, score, now) {
+    var t = _now(now);
+    if (!profile) return { ok: false, reason: 'no-profile' };
+    var pet = activePet(profile);
+    if (!pet) return { ok: false, reason: 'no-pet' };
+    applyTime(profile, t);
+    var game = D.minigameById(gameId);
+    if (!game) return { ok: false, reason: 'no-game' };
+    if (pet.sleeping) return { ok: false, reason: 'sleeping' };
+    profile.minigamesPlayed = (profile.minigamesPlayed || 0) + 1;
+    var def = D.petById(pet.petId);
+    var mod = (def && def.modifiers) || {};
+    var happy = 5 + Math.min(10, Math.max(0, score || 0));
+    if (mod.playHappiness) happy += mod.playHappiness;
+    pet.meters.happiness = _clampMeter(pet.meters.happiness + happy);
+    var coins = 2;
+    var hearts = 0;
+    if (won) {
+      profile.minigamesWon = (profile.minigamesWon || 0) + 1;
+      coins = game.reward || 0;
+      if (mod.coinMult) coins = Math.floor(coins * mod.coinMult);
+      hearts = 2;
+      _addHearts(profile, hearts);
+    }
+    _addCoins(profile, coins);
+    _addCare(profile, pet, mod.playCare || 1, t);
+    return { ok: true, won: !!won, coins: coins, hearts: hearts,
+      happiness: pet.meters.happiness, totalCoins: profile.coins };
+  }
+
+  /* Use a toy from inventory: a happiness boost. */
+  function useToy(profile, itemId, now) {
+    var t = _now(now);
+    if (!profile) return { ok: false, reason: 'no-profile' };
+    var pet = activePet(profile);
+    if (!pet) return { ok: false, reason: 'no-pet' };
+    applyTime(profile, t);
+    var item = D.shopItemById(itemId);
+    if (!item || item.kind !== 'toy') return { ok: false, reason: 'not-toy' };
+    var inv = (profile.inventory && profile.inventory[itemId]) || 0;
+    if (inv <= 0) return { ok: false, reason: 'none-owned' };
+    if (pet.sleeping) return { ok: false, reason: 'sleeping' };
+    var def = D.petById(pet.petId);
+    var favorite = def && def.favoriteToy === itemId;
+    var gain = (item.happiness || 0) + (favorite ? 5 : 0);
+    profile.inventory[itemId] = inv - 1;
+    pet.meters.happiness = _clampMeter(pet.meters.happiness + gain);
+    if (favorite) _addHearts(profile, 1);
+    _addCare(profile, pet, 1, t);
+    return { ok: true, gained: gain, favorite: !!favorite,
+      happiness: pet.meters.happiness, hearts: favorite ? 1 : 0 };
+  }
+
+  function wash(profile, now) {
+    var t = _now(now);
+    if (!profile) return { ok: false, reason: 'no-profile' };
+    var pet = activePet(profile);
+    if (!pet) return { ok: false, reason: 'no-pet' };
+    applyTime(profile, t);
+    if (pet.sleeping) return { ok: false, reason: 'sleeping' };
+    pet.meters.cleanliness = _clampMeter(pet.meters.cleanliness + 40);
+    pet.meters.happiness = _clampMeter(pet.meters.happiness + 5);
+    pet.lowCleanSince = null;
+    _addCare(profile, pet, 1, t);
+    return { ok: true, cleanliness: pet.meters.cleanliness };
+  }
+
+  function sleep(profile, now) {
+    var t = _now(now);
+    if (!profile) return { ok: false, reason: 'no-profile' };
+    var pet = activePet(profile);
+    if (!pet) return { ok: false, reason: 'no-pet' };
+    applyTime(profile, t);
+    if (pet.sleeping) return { ok: false, reason: 'already-sleeping' };
+    pet.sleeping = true;
+    pet.sleepStartedAt = t;
+    return { ok: true, sleeping: true };
+  }
+
+  function wake(profile, now) {
+    var t = _now(now);
+    if (!profile) return { ok: false, reason: 'no-profile' };
+    var pet = activePet(profile);
+    if (!pet) return { ok: false, reason: 'no-pet' };
+    applyTime(profile, t);
+    if (!pet.sleeping) return { ok: false, reason: 'not-sleeping' };
+    pet.sleeping = false;
+    pet.sleepStartedAt = null;
+    _addCare(profile, pet, 1, t);
+    return { ok: true, sleeping: false, energy: pet.meters.energy };
+  }
+
+  function giveMedicine(profile, now) {
+    var t = _now(now);
+    if (!profile) return { ok: false, reason: 'no-profile' };
+    var pet = activePet(profile);
+    if (!pet) return { ok: false, reason: 'no-pet' };
+    applyTime(profile, t);
+    var inv = (profile.inventory && profile.inventory['med-basic']) || 0;
+    if (inv <= 0) return { ok: false, reason: 'none-owned' };
+    if (!pet.sick && pet.meters.cleanliness >= 90) return { ok: false, reason: 'not-needed' };
+    profile.inventory['med-basic'] = inv - 1;
+    pet.sick = false;
+    pet.lowCleanSince = null;
+    pet.meters.cleanliness = _clampMeter(pet.meters.cleanliness + 20);
+    _addCare(profile, pet, 1, t);
+    return { ok: true, sick: false, cleanliness: pet.meters.cleanliness };
+  }
+
+  /* Suki hides treats: +8 coins, once per 4 h, Suki only. */
+  function findTreat(profile, now) {
+    var t = _now(now);
+    if (!profile) return { ok: false, reason: 'no-profile' };
+    var pet = activePet(profile);
+    if (!pet) return { ok: false, reason: 'no-pet' };
+    var mod = _mod(pet);
+    if (!mod.treatFinder) return { ok: false, reason: 'not-suki' };
+    if (pet.lastTreatAt && t - pet.lastTreatAt < TREAT_EVERY_MS) {
+      return { ok: false, reason: 'too-soon', nextInMs: TREAT_EVERY_MS - (t - pet.lastTreatAt) };
+    }
+    pet.lastTreatAt = t;
+    _addCoins(profile, TREAT_COINS);
+    pet.meters.happiness = _clampMeter(pet.meters.happiness + 3);
+    return { ok: true, coins: TREAT_COINS, totalCoins: profile.coins };
+  }
+
+  /* --- shop --- */
+  function buyItem(profile, itemId, now) {
+    var t = _now(now);
+    if (!profile) return { ok: false, reason: 'no-profile' };
+    applyTime(profile, t);
+    var item = D.shopItemById(itemId);
+    if (!item) return { ok: false, reason: 'no-item' };
+    if (item.kind === 'outfit') {
+      if ((profile.ownedOutfits || []).indexOf(itemId) !== -1) return { ok: false, reason: 'already-owned' };
+    }
+    if (item.kind === 'decor') {
+      if ((profile.ownedDecor || []).indexOf(itemId) !== -1) return { ok: false, reason: 'already-owned' };
+    }
+    if ((profile.coins || 0) < item.price) return { ok: false, reason: 'insufficient-funds', price: item.price, coins: profile.coins || 0 };
+    profile.coins -= item.price;
+    if (item.kind === 'outfit') {
+      profile.ownedOutfits = profile.ownedOutfits || [];
+      profile.ownedOutfits.push(itemId);
+    } else if (item.kind === 'decor') {
+      profile.ownedDecor = profile.ownedDecor || [];
+      profile.ownedDecor.push(itemId);
+    } else {
+      profile.inventory = profile.inventory || {};
+      profile.inventory[itemId] = ((profile.inventory[itemId] || 0) + 1);
+    }
+    return { ok: true, itemId: itemId, kind: item.kind, coins: profile.coins };
+  }
+
+  function buyMythicalEgg(profile, petId, now) {
+    var t = _now(now);
+    if (!profile) return { ok: false, reason: 'no-profile' };
+    applyTime(profile, t);
+    var def = D.petById(petId);
+    if (!def || !def.mythical) return { ok: false, reason: 'not-mythical' };
+    if (profile.pets[petId]) return { ok: false, reason: 'already-owned' };
+    if (!mythicalUnlocked(profile)) return { ok: false, reason: 'locked', heartsNeeded: HEARTS_TO_UNLOCK - (profile.lifetimeHearts || 0) };
+    var cost = def.eggCost || 0;
+    if ((profile.coins || 0) < cost) return { ok: false, reason: 'insufficient-funds', price: cost, coins: profile.coins || 0 };
+    profile.coins -= cost;
+    profile.pets[petId] = createPet(petId, t);
+    return { ok: true, petId: petId, coins: profile.coins };
+  }
+
+  function selectPet(profile, petId, now) {
+    var t = _now(now);
+    if (!profile) return { ok: false, reason: 'no-profile' };
+    applyTime(profile, t);
+    if (!profile.pets[petId]) return { ok: false, reason: 'not-owned' };
+    profile.activePetId = petId;
+    return { ok: true, petId: petId };
+  }
+
+  function setRoomTheme(profile, roomId) {
+    if (!profile) return { ok: false, reason: 'no-profile' };
+    var room = D.roomById(roomId);
+    if (!room) return { ok: false, reason: 'no-room' };
+    profile.roomTheme = room.id;
+    return { ok: true, roomId: room.id };
+  }
+
+  function equipOutfit(profile, outfitId) {
+    if (!profile) return { ok: false, reason: 'no-profile' };
+    var pet = activePet(profile);
+    if (!pet) return { ok: false, reason: 'no-pet' };
+    if (outfitId !== null && (profile.ownedOutfits || []).indexOf(outfitId) === -1) {
+      return { ok: false, reason: 'not-owned' };
+    }
+    pet.equippedOutfit = outfitId;
+    return { ok: true, outfitId: outfitId };
+  }
+
+  /* Daily check-in: +25 coins +1 heart, once per calendar day.
+     Consecutive-day streak: 3+ days pays +15 extra coins, 7+ days
+     pays +35 extra. */
+  function checkIn(profile, now) {
+    var t = _now(now);
+    if (!profile) return { ok: false, reason: 'no-profile' };
+    applyTime(profile, t);
+    var day = _dayString(t);
+    if (profile.lastCheckInDay === day) return { ok: false, reason: 'already-checked-in' };
+    var yesterday = _dayString(t - 24 * 60 * 60 * 1000);
+    var streak = (profile.lastCheckInDay === yesterday) ? ((profile.checkInStreak || 0) + 1) : 1;
+    profile.checkInStreak = streak;
+    profile.lastCheckInDay = day;
+    var bonus = streak >= 7 ? 35 : (streak >= 3 ? 15 : 0);
+    var coins = CHECKIN_COINS + bonus;
+    _addCoins(profile, coins);
+    _addHearts(profile, CHECKIN_HEARTS);
+    return { ok: true, coins: coins, hearts: CHECKIN_HEARTS, streak: streak, totalCoins: profile.coins };
+  }
+
+  /* Pet mood for the UI: sleeping / sick / hungry / dirty / tired /
+     sad / happy / excited. First match wins. */
+  function moodOf(pet) {
+    if (!pet) return 'happy';
+    var m = pet.meters;
+    if (pet.sleeping) return 'sleeping';
+    if (pet.sick) return 'sick';
+    if (m.hunger <= 25) return 'hungry';
+    if (m.cleanliness <= 25) return 'dirty';
+    if (m.energy <= 25) return 'tired';
+    if (m.happiness <= 30) return 'sad';
+    if (m.happiness >= 85 && m.hunger >= 70) return 'excited';
+    return 'happy';
+  }
+
+  /* No-death invariant check: every meter >= floor, pet never dies. */
+  function isAlive(profile) {
+    if (!profile) return false;
+    var ids = Object.keys(profile.pets || {});
+    for (var i = 0; i < ids.length; i++) {
+      var p = profile.pets[ids[i]];
+      if (!p) continue;
+      var m = p.meters;
+      if (m.hunger < METER_FLOOR || m.happiness < METER_FLOOR ||
+          m.energy < METER_FLOOR || m.cleanliness < METER_FLOOR) return false;
+    }
+    return true;
+  }
+
+  function snapshot(profile) {
+    try { return JSON.parse(JSON.stringify(profile)); } catch (e) { return null; }
+  }
+
+  var api = {
+    DATA: D,
+    METER_FLOOR: METER_FLOOR,
+    METER_MAX: METER_MAX,
+    BRIGHT_THRESHOLD: BRIGHT_THRESHOLD,
+    WINBACK_THRESHOLD: WINBACK_THRESHOLD,
+    WINBACK_MS: WINBACK_MS,
+    SICK_CLEAN_BELOW: SICK_CLEAN_BELOW,
+    SICK_AFTER_MS: SICK_AFTER_MS,
+    HEARTS_TO_UNLOCK: HEARTS_TO_UNLOCK,
+    START_COINS: START_COINS,
+    createPet: createPet,
+    createProfile: createProfile,
+    activePet: activePet,
+    applyTime: applyTime,
+    feed: feed,
+    play: play,
+    useToy: useToy,
+    wash: wash,
+    sleep: sleep,
+    wake: wake,
+    giveMedicine: giveMedicine,
+    findTreat: findTreat,
+    buyItem: buyItem,
+    buyMythicalEgg: buyMythicalEgg,
+    selectPet: selectPet,
+    setRoomTheme: setRoomTheme,
+    equipOutfit: equipOutfit,
+    checkIn: checkIn,
+    mythicalUnlocked: mythicalUnlocked,
+    mythicalUnlockReason: mythicalUnlockReason,
+    moodOf: moodOf,
+    isAlive: isAlive,
+    snapshot: snapshot
+  };
+  return api;
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = TPEngine;
+if (typeof window !== 'undefined') {
+  try { window.TPEngine = TPEngine; } catch (e) { /* best-effort */ }
+}
+</script>
+<script>
+// source: tp-save.js
+// TomodachiPet save — persistent profile + SaveRegistry entry.
+//
+// Key (jmf-phone-tomodachipet-save-v1, per the registry convention
+// — the 'jmf-phone-' prefix is REQUIRED for registration):
+//   version, activePetId, pets {id: pet state}, coins, hearts,
+//   lifetimeHearts, inventory, ownedOutfits, ownedDecor, roomTheme,
+//   lastCheckInDay, checkInStreak, nextFreeMealAt, totals.
+// Auto-saved on every action and on an interval by the game; the
+// select screen offers a delete-save (with confirm) that wipes the
+// whole record and starts over with a fresh egg.
+//
+// Old-save tolerance: a save with no version (or a partial shape)
+// loads with defaults filled in for every missing field; unknown
+// pet ids / room ids / shop ids are dropped, never crash the load.
+// Pet ids and stage ids never change, so no migration is needed
+// when numbers (drain rates, prices, pacing) change — an existing
+// save loads with its pets, stage and form intact.
+//
+// UMD: global TPSave + module.exports. Never throws.
+var TPSave = (function () {
+  'use strict';
+
+  var SAVE_KEY = 'jmf-phone-virtualpet-save-v1';
+  var SAVE_VERSION = 1;
+
+  var PET_IDS = ['pip', 'momo', 'koko', 'bibi', 'roro', 'lulu',
+    'ember', 'astra', 'zephyr', 'suki', 'orion', 'nixie'];
+  var STAGE_IDS = ['egg', 'baby', 'child', 'teen', 'adult'];
+  var FORM_IDS = ['bright', 'scruffy', 'reborn'];
+  var ROOM_IDS = ['meadow', 'candy', 'ocean', 'sunset'];
+  var SHOP_IDS = ['food-basic', 'food-berry', 'food-carrot', 'food-fish',
+    'food-spicy', 'food-star', 'food-cake', 'food-feast',
+    'toy-ball', 'toy-wand', 'toy-plush', 'med-basic',
+    'outfit-hat', 'outfit-bow', 'outfit-scarf', 'outfit-cape',
+    'decor-plant', 'decor-rug', 'decor-lights'];
+
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+  function _store() {
+    try {
+      if (typeof localStorage !== 'undefined' && localStorage) return localStorage;
+      var w = _win();
+      if (w && w.localStorage) return w.localStorage;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _lsGet(key) {
+    try {
+      var store = _store();
+      if (!store) return null;
+      var raw = store.getItem(key);
+      return (typeof raw === 'string' && raw) ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function _lsSet(key, value) {
+    try {
+      var store = _store();
+      if (!store) return false;
+      store.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  function _lsRemove(key) {
+    try {
+      var store = _store();
+      if (!store) return false;
+      store.removeItem(key);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  function _clone(obj) {
+    try { return JSON.parse(JSON.stringify(obj)); } catch (e) { return null; }
+  }
+  function _num(v, fallback, min) {
+    if (typeof v === 'number' && isFinite(v)) {
+      var n = Math.floor(v);
+      return (typeof min === 'number' && n < min) ? min : n;
+    }
+    return fallback;
+  }
+  function _isId(v, list) {
+    return typeof v === 'string' && list.indexOf(v) !== -1;
+  }
+
+  function _defaultPet(petId, now) {
+    return {
+      petId: petId, stage: 'egg', form: null,
+      meters: { hunger: 85, happiness: 85, energy: 85, cleanliness: 85 },
+      carePoints: 0, stageEnteredAt: now, bornAt: now, lastTick: now,
+      careSum: 0, careSamples: 0, lastSampleAt: now,
+      sick: false, lowCleanSince: null, sleeping: false,
+      sleepStartedAt: null, stageUps: 0, rebirths: 0,
+      lastAstraHealDay: null, lastTreatAt: null, winBackSince: null,
+      equippedOutfit: null
+    };
+  }
+
+  function _defaultProfile(now) {
+    var pets = {};
+    pets.pip = _defaultPet('pip', now);
+    return {
+      version: SAVE_VERSION,
+      activePetId: 'pip',
+      pets: pets,
+      coins: 50,
+      hearts: 0,
+      lifetimeHearts: 0,
+      inventory: { 'food-basic': 3, 'food-berry': 1 },
+      ownedOutfits: [],
+      ownedDecor: [],
+      roomTheme: 'meadow',
+      lastCheckInDay: null,
+      checkInStreak: 0,
+      nextFreeMealAt: now + 4 * 60 * 60 * 1000,
+      createdAt: now,
+      totalCareActions: 0,
+      minigamesWon: 0,
+      minigamesPlayed: 0
+    };
+  }
+
+  function _meter(v, fallback) {
+    if (typeof v === 'number' && isFinite(v)) {
+      if (v < 15) return 15;
+      if (v > 100) return 100;
+      return v;
+    }
+    return fallback;
+  }
+
+  function _withDefaults(saved, now) {
+    var t = (typeof now === 'number' && isFinite(now) && now > 0) ? now : Date.now();
+    var out = _defaultProfile(t);
+    if (!saved || typeof saved !== 'object') return out;
+    out.coins = _num(saved.coins, out.coins, 0);
+    out.hearts = _num(saved.hearts, 0, 0);
+    out.lifetimeHearts = _num(saved.lifetimeHearts, out.hearts, 0);
+    if (out.lifetimeHearts < out.hearts) out.lifetimeHearts = out.hearts;
+    out.checkInStreak = _num(saved.checkInStreak, 0, 0);
+    if (typeof saved.lastCheckInDay === 'string' && saved.lastCheckInDay) out.lastCheckInDay = saved.lastCheckInDay;
+    if (_isId(saved.roomTheme, ROOM_IDS)) out.roomTheme = saved.roomTheme;
+    out.nextFreeMealAt = _num(saved.nextFreeMealAt, out.nextFreeMealAt, 0) || out.nextFreeMealAt;
+    out.createdAt = _num(saved.createdAt, t, 0) || t;
+    out.totalCareActions = _num(saved.totalCareActions, 0, 0);
+    out.minigamesWon = _num(saved.minigamesWon, 0, 0);
+    out.minigamesPlayed = _num(saved.minigamesPlayed, 0, 0);
+    if (saved.inventory && typeof saved.inventory === 'object') {
+      var inv = {};
+      var k;
+      for (k in saved.inventory) {
+        if (_isId(k, SHOP_IDS)) {
+          var n = _num(saved.inventory[k], 0, 0);
+          if (n > 0) inv[k] = n;
+        }
+      }
+      out.inventory = inv;
+    }
+    if (Array.isArray(saved.ownedOutfits)) {
+      out.ownedOutfits = saved.ownedOutfits.filter(function (id) { return _isId(id, SHOP_IDS); });
+    }
+    if (Array.isArray(saved.ownedDecor)) {
+      out.ownedDecor = saved.ownedDecor.filter(function (id) { return _isId(id, SHOP_IDS); });
+    }
+    /* Pets: keep only known pet ids, fill every missing field. */
+    if (saved.pets && typeof saved.pets === 'object') {
+      var pets = {};
+      var ids = Object.keys(saved.pets);
+      for (var i = 0; i < ids.length; i++) {
+        var id = ids[i];
+        if (!_isId(id, PET_IDS)) continue;
+        var sp = saved.pets[id];
+        if (!sp || typeof sp !== 'object') continue;
+        var p = _defaultPet(id, t);
+        p.stage = _isId(sp.stage, STAGE_IDS) ? sp.stage : 'egg';
+        p.form = _isId(sp.form, FORM_IDS) ? sp.form : null;
+        if (sp.meters && typeof sp.meters === 'object') {
+          p.meters.hunger = _meter(sp.meters.hunger, 85);
+          p.meters.happiness = _meter(sp.meters.happiness, 85);
+          p.meters.energy = _meter(sp.meters.energy, 85);
+          p.meters.cleanliness = _meter(sp.meters.cleanliness, 85);
+        }
+        p.carePoints = _num(sp.carePoints, 0, 0);
+        p.stageEnteredAt = _num(sp.stageEnteredAt, t, 0) || t;
+        p.bornAt = _num(sp.bornAt, t, 0) || t;
+        p.lastTick = _num(sp.lastTick, t, 0) || t;
+        p.careSum = (typeof sp.careSum === 'number' && isFinite(sp.careSum)) ? Math.max(0, sp.careSum) : 0;
+        p.careSamples = _num(sp.careSamples, 0, 0);
+        p.lastSampleAt = _num(sp.lastSampleAt, t, 0) || t;
+        p.sick = !!sp.sick;
+        p.lowCleanSince = (typeof sp.lowCleanSince === 'number' && isFinite(sp.lowCleanSince)) ? sp.lowCleanSince : null;
+        p.sleeping = !!sp.sleeping;
+        p.sleepStartedAt = (typeof sp.sleepStartedAt === 'number' && isFinite(sp.sleepStartedAt)) ? sp.sleepStartedAt : null;
+        p.stageUps = _num(sp.stageUps, 0, 0);
+        p.rebirths = _num(sp.rebirths, 0, 0);
+        if (typeof sp.lastAstraHealDay === 'string') p.lastAstraHealDay = sp.lastAstraHealDay;
+        p.lastTreatAt = (typeof sp.lastTreatAt === 'number' && isFinite(sp.lastTreatAt)) ? sp.lastTreatAt : null;
+        p.winBackSince = (typeof sp.winBackSince === 'number' && isFinite(sp.winBackSince)) ? sp.winBackSince : null;
+        if (typeof sp.equippedOutfit === 'string' && _isId(sp.equippedOutfit, SHOP_IDS)) p.equippedOutfit = sp.equippedOutfit;
+        else if (sp.equippedOutfit === null) p.equippedOutfit = null;
+        pets[id] = p;
+      }
+      if (Object.keys(pets).length) out.pets = pets;
+    }
+    if (_isId(saved.activePetId, PET_IDS) && out.pets[saved.activePetId]) out.activePetId = saved.activePetId;
+    else out.activePetId = Object.keys(out.pets)[0];
+    out.version = SAVE_VERSION;
+    return out;
+  }
+
+  function load(now) { return _withDefaults(_lsGet(SAVE_KEY), now); }
+  function save(data, now) {
+    if (!data || typeof data !== 'object') return false;
+    return _lsSet(SAVE_KEY, _withDefaults(data, now));
+  }
+  function deleteSave() {
+    try { _lsRemove(SAVE_KEY); } catch (e) { /* best-effort */ }
+    return _defaultProfile(Date.now());
+  }
+  function hasSave() {
+    try { return !!_lsGet(SAVE_KEY); } catch (e) { return false; }
+  }
+
+  /* SaveRegistry entry: Settings builds its saves section data-driven
+     from owners(), so Tomodachi Pet appears there with no Settings edit. */
+  try {
+    if (typeof SaveRegistry !== 'undefined' && SaveRegistry &&
+        typeof SaveRegistry.register === 'function') {
+      SaveRegistry.register({
+        id: 'virtualpet',
+        name: 'Virtual Pet',
+        keys: [SAVE_KEY]
+      });
+    }
+  } catch (e) { /* registry is best-effort */ }
+
+  return {
+    SAVE_KEY: SAVE_KEY,
+    SAVE_VERSION: SAVE_VERSION,
+    load: load,
+    save: save,
+    deleteSave: deleteSave,
+    hasSave: hasSave,
+    defaultProfile: function (now) { return _clone(_defaultProfile((typeof now === 'number' && now > 0) ? now : Date.now())); }
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = TPSave;
+if (typeof window !== 'undefined') {
+  try { window.TPSave = TPSave; } catch (e) { /* best-effort */ }
+}
+</script>
+<script>
+// source: tp-audio.js
+// TomodachiPetAudio — WebAudio synth SFX only. NO music files, NO
+// music track of its own: the phone's shared shell music keeps
+// playing while the game is open (shell music only, per the standing
+// rule).
+//
+// Sounds (all synthesised, nothing to download):
+//   chirp    — happy pet chirp (two rising notes)
+//   eat      — munching (short low pops)
+//   coin     — coin ding (bright two-note)
+//   stageup  — growth fanfare (rising arpeggio)
+//   wash     — splashy wash (filtered noise sweep)
+//   sleep    — soft lullaby notes (slow descending)
+//   sick     — low worried tone
+//   unlock   — mythical-egg fanfare (sparkle arpeggio)
+//   click    — short UI blip
+// Every sound respects the shared sound toggle (BZSettings /
+// BZAudio). No AudioContext, no sound — degrade silently, never throw.
+//
+// UMD: global TPAudio + module.exports. Never throws.
+var TPAudio = (function () {
+  'use strict';
+
+  var _ctx = null;
+  var _musicOn = true;
+
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+  function _bzAudio() {
+    try {
+      var w = _win();
+      if (w && w.BZAudio) return w.BZAudio;
+      if (typeof BZAudio !== 'undefined' && BZAudio) return BZAudio;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _settings() {
+    try {
+      var w = _win();
+      if (w && w.BZSettings && typeof w.BZSettings.readSettings === 'function') return w.BZSettings.readSettings();
+      if (typeof BZSettings !== 'undefined' && BZSettings && typeof BZSettings.readSettings === 'function') return BZSettings.readSettings();
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _audioCtx() {
+    try {
+      if (_ctx) return _ctx;
+      var w = _win();
+      var AC = (w && (w.AudioContext || w.webkitAudioContext)) ||
+        (typeof AudioContext !== 'undefined' ? AudioContext : null) ||
+        (typeof webkitAudioContext !== 'undefined' ? webkitAudioContext : null);
+      if (!AC) return null;
+      _ctx = new AC();
+      return _ctx;
+    } catch (e) { return null; }
+  }
+
+  function isMusicOn() {
+    var bz = _bzAudio();
+    if (bz && typeof bz.isMusicOn === 'function') {
+      try { return !!bz.isMusicOn(); } catch (e) { /* fall through */ }
+    }
+    var s = _settings();
+    if (s && typeof s.music === 'boolean') return s.music;
+    return _musicOn;
+  }
+
+  /* Drives the SHARED shell music setting only — never starts, stops,
+     or silences any track of its own (Tomodachi Pet has none). */
+  function setMusic(on) {
+    _musicOn = !!on;
+    var bz = _bzAudio();
+    if (bz && typeof bz.setMusic === 'function') {
+      try { bz.setMusic(_musicOn); } catch (e) { /* fall through */ }
+      return _musicOn;
+    }
+    return _musicOn;
+  }
+
+  function toggleMusic() { return setMusic(!isMusicOn()); }
+
+  function isSoundOn() {
+    var s = _settings();
+    if (s && typeof s.sound === 'boolean') return s.sound;
+    var bz = _bzAudio();
+    if (bz && typeof bz.isSoundOn === 'function') {
+      try { return !!bz.isSoundOn(); } catch (e) { /* fall through */ }
+    }
+    return true;
+  }
+
+  function setSound(on) {
+    var bz = _bzAudio();
+    if (bz && typeof bz.setSound === 'function') {
+      try { bz.setSound(!!on); } catch (e) { /* best-effort */ }
+    }
+    return isSoundOn();
+  }
+
+  /* Call on open / first tap. Shell music is already playing; there
+     is no Tomodachi Pet track to start. */
+  function ensureStarted() { return isMusicOn(); }
+
+  /* Call on game close. No-op: there is no track to pause and the
+     shell music keeps playing across open/close. */
+  function stop() { return; }
+
+  function _tone(ctx, freq, dur, type, vol, when, slideTo) {
+    try {
+      var o = ctx.createOscillator();
+      var g = ctx.createGain();
+      o.type = type || 'sine';
+      var t0 = ctx.currentTime + (when || 0);
+      o.frequency.setValueAtTime(freq, t0);
+      if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol || 0.08, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start(t0);
+      o.stop(t0 + dur + 0.05);
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _noise(ctx, dur, vol, filterType, freqFrom, freqTo, when) {
+    try {
+      var len = Math.max(1, Math.floor(ctx.sampleRate * dur));
+      var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      var data = buf.getChannelData(0);
+      for (var i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+      var src = ctx.createBufferSource();
+      src.buffer = buf;
+      var filt = ctx.createBiquadFilter();
+      filt.type = filterType || 'bandpass';
+      var t0 = ctx.currentTime + (when || 0);
+      filt.frequency.setValueAtTime(freqFrom || 1200, t0);
+      if (freqTo) filt.frequency.exponentialRampToValueAtTime(freqTo, t0 + dur);
+      filt.Q.value = 0.9;
+      var g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol || 0.12, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      src.connect(filt);
+      filt.connect(g);
+      g.connect(ctx.destination);
+      src.start(t0);
+      src.stop(t0 + dur + 0.05);
+    } catch (e) { /* best-effort */ }
+  }
+
+  function playSfx(kind) {
+    if (!isSoundOn()) return;
+    var ctx = _audioCtx();
+    if (!ctx) return;
+    try {
+      if (ctx.state === 'suspended' && typeof ctx.resume === 'function') ctx.resume();
+      if (kind === 'chirp') {
+        _tone(ctx, 880, 0.12, 'sine', 0.09, 0, 1320);
+        _tone(ctx, 1318, 0.18, 'sine', 0.08, 0.1, 1760);
+      } else if (kind === 'eat') {
+        _tone(ctx, 220, 0.08, 'triangle', 0.1, 0);
+        _tone(ctx, 180, 0.08, 'triangle', 0.1, 0.1);
+        _tone(ctx, 240, 0.1, 'triangle', 0.09, 0.2);
+      } else if (kind === 'coin') {
+        _tone(ctx, 988, 0.1, 'sine', 0.09, 0);
+        _tone(ctx, 1318, 0.22, 'sine', 0.09, 0.08);
+      } else if (kind === 'stageup') {
+        _tone(ctx, 523, 0.12, 'triangle', 0.1, 0);
+        _tone(ctx, 659, 0.12, 'triangle', 0.1, 0.08);
+        _tone(ctx, 784, 0.12, 'triangle', 0.1, 0.16);
+        _tone(ctx, 1046, 0.3, 'triangle', 0.12, 0.24);
+        _tone(ctx, 1318, 0.3, 'sine', 0.08, 0.3);
+      } else if (kind === 'wash') {
+        _noise(ctx, 0.4, 0.12, 'bandpass', 900, 2600);
+        _noise(ctx, 0.3, 0.08, 'highpass', 3000, 5000, 0.15);
+      } else if (kind === 'sleep') {
+        _tone(ctx, 659, 0.3, 'sine', 0.07, 0);
+        _tone(ctx, 523, 0.3, 'sine', 0.07, 0.25);
+        _tone(ctx, 392, 0.5, 'sine', 0.06, 0.5);
+      } else if (kind === 'sick') {
+        _tone(ctx, 196, 0.4, 'sawtooth', 0.06, 0, 147);
+      } else if (kind === 'unlock') {
+        _tone(ctx, 523, 0.12, 'triangle', 0.1, 0);
+        _tone(ctx, 659, 0.12, 'triangle', 0.1, 0.08);
+        _tone(ctx, 784, 0.12, 'triangle', 0.1, 0.16);
+        _tone(ctx, 1046, 0.12, 'triangle', 0.1, 0.24);
+        _tone(ctx, 1318, 0.35, 'triangle', 0.12, 0.32);
+        _tone(ctx, 1568, 0.4, 'sine', 0.09, 0.38);
+        _noise(ctx, 0.5, 0.06, 'bandpass', 2000, 4000, 0.2);
+      } else if (kind === 'click') {
+        _tone(ctx, 740, 0.07, 'sine', 0.06, 0);
+      } else {
+        _tone(ctx, 660, 0.12, 'sine', 0.07, 0);
+      }
+    } catch (e) { /* best-effort */ }
+  }
+
+  function debugState() {
+    return {
+      musicOn: isMusicOn(),
+      soundOn: isSoundOn(),
+      track: null,
+      hasAudioContext: !!_ctx
+    };
+  }
+
+  var api = {
+    isMusicOn: isMusicOn,
+    setMusic: setMusic,
+    toggleMusic: toggleMusic,
+    isSoundOn: isSoundOn,
+    setSound: setSound,
+    ensureStarted: ensureStarted,
+    stop: stop,
+    playSfx: playSfx,
+    blip: playSfx,
+    debugState: debugState
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  if (typeof window !== 'undefined' && window) {
+    window.TPAudio = api;
+    window.__TP_AUDIO__ = api;
+  }
+  return api;
+})();
+</script>
+<script>
+// source: tp-game.js
+// TomodachiPetGame — Tomodachi Pet UI: pet select, room view, meters,
+// feed/play/wash/sleep, shop, room themes, mini-games, stage-up
+// celebrations.
+//
+// Owns the DOM inside #app-tomodachipet. All logic goes through
+// TPEngine; all persistence through TPSave; all sound through
+// TPAudio (WebAudio synth SFX only, no music files — the phone's
+// shared shell music keeps playing while the game is open).
+//
+// Art (assets/virtual-pet/) degrades gracefully: every <img> hides
+// itself on error and a CSS/emoji fallback shows instead (pet emoji,
+// room gradient). A missing art file is never a broken image.
+//
+// UMD: global TomodachiPetGame (+ window.__TP__ verification handle).
+// Never throws at boot; degrades gracefully if art/audio/save are
+// missing.
+var TomodachiPetGame = (function () {
+  'use strict';
+
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+  function _resolve(name) {
+    try {
+      var w = _win();
+      if (w && w[name]) return w[name];
+    } catch (e) { /* fall through */ }
+    try {
+      if (typeof globalThis !== 'undefined' && globalThis[name]) return globalThis[name];
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  function _log(e) {
+    try {
+      if (typeof console !== 'undefined' && console && console.error) console.error('[tp-game]', e);
+    } catch (e2) { /* logging is best-effort */ }
+  }
+  function _el(id) {
+    try { return document.getElementById(id); } catch (e) { return null; }
+  }
+  function _data() { return _resolve('TPData'); }
+  function _engineMod() { return _resolve('TPEngine'); }
+  function _saveMod() { return _resolve('TPSave'); }
+  function _audioMod() { return _resolve('TPAudio'); }
+
+  var D = _data();
+  var E = _engineMod();
+  var SAVE = _saveMod();
+  var AUDIO = _audioMod();
+
+  var ASSET_BASE = (D && D.TP_ASSET_BASE) || 'assets/virtual-pet/';
+  var PETS = (D && D.PETS) || {};
+  var PET_IDS = (D && D.PET_IDS) || ['pip'];
+  var STARTER_IDS = (D && D.STARTER_IDS) || ['pip'];
+  var MYTHICAL_IDS = (D && D.MYTHICAL_IDS) || [];
+  var SHOP = (D && D.SHOP) || {};
+  var SHOP_ORDER = (D && D.SHOP_ORDER) || [];
+  var ROOMS = (D && D.ROOMS) || {};
+  var ROOM_IDS = (D && D.ROOM_IDS) || ['meadow'];
+  var MINIGAMES = (D && D.MINIGAMES) || {};
+
+  var MOOD_TEXT = {
+    sleeping: 'Zzz… fast asleep. Energy is refilling.',
+    sick: 'Feeling sick… give some medicine!',
+    hungry: 'Grumble… so hungry!',
+    dirty: 'Ew, all dirty! Time for a wash.',
+    tired: 'So sleepy…',
+    sad: 'Feeling sad. Play together to cheer up!',
+    happy: 'Happy to see you!',
+    excited: 'So excited! Let\u2019s play!'
+  };
+
+  var profile = null;
+  var mount = null;
+  var screen = 'room'; /* 'select' | 'room' */
+  var tickTimer = null;
+  var loopActive = false;
+  var toastTimer = null;
+  var mg = null; /* active mini-game state */
+  var lastSavedAt = 0;
+
+  /* --- life-like behavior state (presentation only; no engine rules) --- */
+  var LOW_METER = 30; /* a meter at/below this counts as "low" (sad) */
+  var TOY_EMOJI = { 'toy-ball': '\u26BD', 'toy-plush': '\uD83E\uDDB8', 'toy-wand': '\uD83E\uDEF6' };
+  var behaviorTimer = null;
+  var toyTimer = null;
+  var wanderPos = { x: 0, y: 0, face: 1 };
+
+  function _petDef(id) {
+    if (D && typeof D.petById === 'function') return D.petById(id);
+    return PETS[id] || null;
+  }
+  function _roomDef(id) {
+    if (D && typeof D.roomById === 'function') return D.roomById(id);
+    return ROOMS[id] || ROOMS.meadow;
+  }
+  function _shopItem(id) {
+    if (D && typeof D.shopItemById === 'function') return D.shopItemById(id);
+    return SHOP[id] || null;
+  }
+  function _minigame(id) {
+    if (D && typeof D.minigameById === 'function') return D.minigameById(id);
+    return MINIGAMES[id] || null;
+  }
+  function _activePet() {
+    try {
+      if (E && typeof E.activePet === 'function') return E.activePet(profile);
+    } catch (e) { /* fall through */ }
+    if (profile && profile.pets) return profile.pets[profile.activePetId] || null;
+    return null;
+  }
+  function _sfx(kind) {
+    try {
+      var a = _audioMod() || AUDIO;
+      if (a && typeof a.playSfx === 'function') a.playSfx(kind);
+    } catch (e) { /* best-effort */ }
+  }
+  function _save() {
+    try {
+      var s = _saveMod() || SAVE;
+      if (!s || typeof s.save !== 'function' || !profile) return;
+      s.save(profile);
+      lastSavedAt = Date.now();
+    } catch (e) { /* best-effort */ }
+  }
+  function _esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* --- markup --- */
+  var MARKUP =
+    '<div class="tp-root" id="tpRoot">' +
+    '<div class="tp-topbar" id="topbar">' +
+      '<h1 class="tp-title" id="tpTitle">Virtual Pet</h1>' +
+      '<span class="tp-wallet"><span class="tp-chip" id="tpCoinsChip" title="Coins">\uD83E\uDE99 0</span>' +
+      '<span class="tp-chip" id="tpHeartsChip" title="Hearts">\u2764\uFE0F 0</span></span>' +
+      '<button type="button" class="tp-iconbtn" id="tpPetsBtn" title="My pets" aria-label="My pets">\uD83D\uDC3E</button>' +
+      '<button type="button" class="tp-iconbtn" id="tpSoundBtn" title="Sound" aria-label="Sound">\uD83D\uDD0A</button>' +
+    '</div>' +
+    '<div class="tp-screen tp-select" id="tpSelectScreen">' +
+      '<div class="tp-select-inner">' +
+        '<h2 class="tp-select-head">Choose your pet</h2>' +
+        '<p class="tp-select-sub">Six starters are free. Mythical pets unlock when you raise a starter to a bright Adult — or earn 100 hearts.</p>' +
+        '<div class="tp-pet-grid" id="tpPetGrid"></div>' +
+        '<p class="tp-select-foot" id="tpSelectFoot"></p>' +
+        '<button type="button" class="tp-danger" id="tpDeleteBtn">Delete save &amp; start over</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="tp-screen tp-room-screen" id="tpRoomScreen">' +
+      '<div class="tp-room" id="tpRoom">' +
+        '<img class="tp-room-bg" id="tpRoomBg" src="" alt="">' +
+        '<div class="tp-light" aria-hidden="true"></div>' +
+        '<div class="tp-room-inner">' +
+          '<p class="tp-pet-name" id="tpPetName">Pip</p>' +
+          '<p class="tp-pet-stage" id="tpPetStage">Egg</p>' +
+          '<p class="tp-mood" id="tpMood">Happy to see you!</p>' +
+          '<div class="tp-pet-stage-area" id="tpPetArea">' +
+            '<div class="tp-ambient" id="tpAmbient" aria-hidden="true">' +
+              '<span class="tp-mote tp-mote-1"></span><span class="tp-mote tp-mote-2"></span>' +
+              '<span class="tp-mote tp-mote-3"></span><span class="tp-mote tp-mote-4"></span>' +
+              '<span class="tp-mote tp-mote-5"></span>' +
+              '<span class="tp-spark tp-spark-1">\u2726</span><span class="tp-spark tp-spark-2">\u2726</span>' +
+              '<span class="tp-spark tp-spark-3">\u2726</span><span class="tp-spark tp-spark-4">\u2726</span>' +
+              '<span class="tp-spark tp-spark-5">\u2726</span><span class="tp-spark tp-spark-6">\u2726</span>' +
+            '</div>' +
+            '<span class="tp-outfit-badge" id="tpOutfitBadge"></span>' +
+            '<span class="tp-zzz" aria-hidden="true">Z z z</span>' +
+            '<span class="tp-tear" aria-hidden="true">\uD83D\uDCA7</span>' +
+            '<span class="tp-pet-mover" id="tpPetMover">' +
+            '<img class="tp-pet-img" id="tpPetImg" src="" alt="Your pet">' +
+            '<span class="tp-pet-fallback" id="tpPetFallback" aria-hidden="true"></span>' +
+            '</span>' +
+            '<span class="tp-toy-prop" id="tpToyProp" aria-hidden="true" hidden></span>' +
+            '<div class="tp-fx" id="tpFx" aria-hidden="true"></div>' +
+          '</div>' +
+          '<div class="tp-meters" id="tpMeters">' +
+            '<div class="tp-meter"><span class="tp-meter-label">\uD83C\uDF56 Hunger</span><span class="tp-meter-bar"><span class="tp-meter-fill" id="tpMHunger"></span></span><span class="tp-meter-num" id="tpNumHunger">0</span></div>' +
+            '<div class="tp-meter"><span class="tp-meter-label">\uD83D\uDE0A Happy</span><span class="tp-meter-bar"><span class="tp-meter-fill" id="tpMHappy"></span></span><span class="tp-meter-num" id="tpNumHappy">0</span></div>' +
+            '<div class="tp-meter"><span class="tp-meter-label">\u26A1 Energy</span><span class="tp-meter-bar"><span class="tp-meter-fill" id="tpMEnergy"></span></span><span class="tp-meter-num" id="tpNumEnergy">0</span></div>' +
+            '<div class="tp-meter"><span class="tp-meter-label">\uD83E\uDDFC Clean</span><span class="tp-meter-bar"><span class="tp-meter-fill" id="tpMClean"></span></span><span class="tp-meter-num" id="tpNumClean">0</span></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="tp-actions">' +
+        '<button type="button" class="tp-btn" id="tpFeedBtn">\uD83C\uDF56 Feed</button>' +
+        '<button type="button" class="tp-btn" id="tpPlayBtn">\uD83C\uDFB2 Play</button>' +
+        '<button type="button" class="tp-btn" id="tpWashBtn">\uD83E\uDDFC Wash</button>' +
+        '<button type="button" class="tp-btn" id="tpSleepBtn">\uD83D\uDE34 Sleep</button>' +
+        '<button type="button" class="tp-btn" id="tpShopBtn">\uD83D\uDED2 Shop</button>' +
+        '<button type="button" class="tp-btn" id="tpRoomBtn">\uD83C\uDFE0 Room</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="tp-sheet" id="tpSheet" hidden></div>' +
+    '<div class="tp-minigame" id="tpMinigame" hidden></div>' +
+    '<div class="tp-celebrate" id="tpCelebrate" hidden></div>' +
+    '<div class="tp-toast" id="tpToast" role="status"></div>' +
+    '</div>';
+
+  function _click(id, fn) {
+    try {
+      var el = _el(id);
+      if (el && el.addEventListener) el.addEventListener('click', function (ev) {
+        try { ev.preventDefault(); } catch (e) { /* ignore */ }
+        try { fn(); } catch (e) { _log(e); }
+      });
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _toast(msg) {
+    try {
+      var t = _el('tpToast');
+      if (!t) return;
+      t.textContent = msg;
+      t.classList.add('tp-show');
+      if (toastTimer) { try { clearTimeout(toastTimer); } catch (e) { /* ignore */ } }
+      toastTimer = setTimeout(function () {
+        try { t.classList.remove('tp-show'); } catch (e) { /* ignore */ }
+      }, 2200);
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _armImgFallback(img, fallbackEl) {
+    try {
+      if (!img) return;
+      img.addEventListener('error', function () {
+        try { img.classList.add('tp-hidden'); } catch (e) { /* ignore */ }
+        if (fallbackEl) { try { fallbackEl.classList.add('tp-show'); } catch (e) { /* ignore */ } }
+      });
+      img.addEventListener('load', function () {
+        try { img.classList.remove('tp-hidden'); } catch (e) { /* ignore */ }
+        if (fallbackEl) { try { fallbackEl.classList.remove('tp-show'); } catch (e) { /* ignore */ } }
+      });
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _meterClass(v) {
+    if (v <= 25) return 'tp-low';
+    if (v < 60) return 'tp-ok';
+    return 'tp-good';
+  }
+  function _setMeter(fillId, numId, v) {
+    try {
+      var f = _el(fillId);
+      if (f) {
+        f.style.width = Math.round(v) + '%';
+        f.className = 'tp-meter-fill ' + _meterClass(v);
+      }
+      var n = _el(numId);
+      if (n) n.textContent = String(Math.round(v));
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _applyRoomTheme() {
+    try {
+      var root = _el('tpRoot');
+      var room = _roomDef(profile ? profile.roomTheme : 'meadow');
+      if (!root || !room) return;
+      var css = room.css || {};
+      root.style.setProperty('--tp-room-bg', css.bg || '');
+      root.style.setProperty('--tp-accent', css.accent || '#16a34a');
+      root.style.setProperty('--tp-ink', css.ink || '#14532d');
+      root.style.setProperty('--tp-card', css.card || 'rgba(255,255,255,0.88)');
+      var bg = _el('tpRoomBg');
+      if (bg) {
+        var src = (D && typeof D.roomArt === 'function') ? D.roomArt(room.id) : (ASSET_BASE + 'room-' + room.id + '.webp');
+        if (bg.getAttribute('src') !== src) bg.setAttribute('src', src);
+      }
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _petArtSrc(pet) {
+    try {
+      if (D && typeof D.petArt === 'function') return D.petArt(pet.petId, pet.stage, pet.form);
+    } catch (e) { /* fall through */ }
+    return ASSET_BASE + 'pet-' + pet.petId + '-' + pet.stage + '.webp';
+  }
+
+  function _renderWallet() {
+    try {
+      var c = _el('tpCoinsChip');
+      if (c) c.textContent = '\uD83E\uDE99 ' + (profile ? (profile.coins || 0) : 0);
+      var h = _el('tpHeartsChip');
+      if (h) h.textContent = '\u2764\uFE0F ' + (profile ? (profile.hearts || 0) : 0);
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _renderRoom() {
+    var pet = _activePet();
+    if (!pet || !profile) return;
+    var def = _petDef(pet.petId) || {};
+    try {
+      var name = _el('tpPetName');
+      if (name) name.textContent = def.name || pet.petId;
+      var stageEl = _el('tpPetStage');
+      if (stageEl) {
+        var stageName = pet.stage.charAt(0).toUpperCase() + pet.stage.slice(1);
+        var formName = '';
+        if (pet.stage === 'adult' && pet.form === 'bright') formName = ' \u2022 Bright Adult';
+        else if (pet.stage === 'adult' && pet.form === 'scruffy') formName = ' \u2022 Scruffy Adult';
+        else if (pet.stage === 'adult' && pet.form === 'reborn') formName = ' \u2022 Reborn Adult';
+        stageEl.textContent = stageName + formName;
+      }
+      var mood = 'happy';
+      try {
+        if (E && typeof E.moodOf === 'function') mood = E.moodOf(pet);
+      } catch (e) { /* default stands */ }
+      var moodEl = _el('tpMood');
+      if (moodEl) moodEl.textContent = MOOD_TEXT[mood] || MOOD_TEXT.happy;
+      var area = _el('tpPetArea');
+      var bstate = _behaviorState(pet);
+      if (area) {
+        area.classList.toggle('tp-sleeping', !!pet.sleeping);
+        /* Dance is mood-driven AND state-gated: an egg, sick, sad or
+           sleeping pet never dances, even if the mood says excited. */
+        area.classList.toggle('tp-dance', mood === 'excited' && _behaviorAllowed(bstate, 'dance'));
+        area.classList.toggle('tp-zoomies', mood === 'excited' && pet.stage === 'child' && _behaviorAllowed(bstate, 'dance'));
+        area.classList.toggle('tp-scruffy', pet.form === 'scruffy');
+        area.classList.toggle('tp-reborn', pet.form === 'reborn');
+        area.classList.toggle('tp-egg', pet.stage === 'egg');
+        area.classList.toggle('tp-sick', !!pet.sick);
+        area.classList.toggle('tp-sad', bstate.sad && !pet.sick && !pet.sleeping);
+        /* Mythical sparkles only when happy and healthy. */
+        area.classList.toggle('tp-sparkle', _behaviorAllowed(bstate, 'sparkle'));
+      }
+      var root = _el('tpRoot');
+      if (root) root.classList.toggle('tp-ambient-off', !!pet.sleeping);
+      var img = _el('tpPetImg');
+      var fb = _el('tpPetFallback');
+      if (img) {
+        var src = _petArtSrc(pet);
+        if (img.getAttribute('src') !== src) img.setAttribute('src', src);
+        img.alt = (def.name || 'Pet') + ' (' + pet.stage + ')';
+      }
+      if (fb) {
+        fb.textContent = def.emoji || '\uD83E\uDD5A';
+        fb.style.background = (def.colors && def.colors[1]) || '#fde68a';
+      }
+      var badge = _el('tpOutfitBadge');
+      if (badge) {
+        var outfit = pet.equippedOutfit ? _shopItem(pet.equippedOutfit) : null;
+        if (outfit) {
+          badge.textContent = outfit.name;
+          badge.classList.add('tp-show');
+        } else {
+          badge.classList.remove('tp-show');
+        }
+      }
+      var m = pet.meters;
+      _setMeter('tpMHunger', 'tpNumHunger', m.hunger);
+      _setMeter('tpMHappy', 'tpNumHappy', m.happiness);
+      _setMeter('tpMEnergy', 'tpNumEnergy', m.energy);
+      _setMeter('tpMClean', 'tpNumClean', m.cleanliness);
+      var sleepBtn = _el('tpSleepBtn');
+      if (sleepBtn) sleepBtn.textContent = pet.sleeping ? '\u2600\uFE0F Wake up' : '\uD83D\uDE34 Sleep';
+      var asleep = !!pet.sleeping;
+      var feedBtn = _el('tpFeedBtn');
+      if (feedBtn) feedBtn.disabled = asleep;
+      var playBtn = _el('tpPlayBtn');
+      if (playBtn) playBtn.disabled = asleep;
+      var washBtn = _el('tpWashBtn');
+      if (washBtn) washBtn.disabled = asleep;
+    } catch (e) { _log(e); }
+    _renderWallet();
+  }
+
+  /* --- life-like behavior: pure gate + wander math + scheduler ---
+     Presentation ONLY: nothing here touches meters, growth, unlocks,
+     shop or saves (those live in tp-engine.js, untouched).
+
+     _behaviorState(pet) reduces a pet to what behavior needs:
+     sleeping / sick / stage / mythical / sad (any meter <= 30) /
+     happy (happiness >= 70). _behaviorAllowed(state, kind) is the
+     SINGLE gate every behavior checks:
+       wander  — never while sleeping, never as an egg
+       dance   — never sleeping / sick / sad / egg
+       sparkle — mythical + happy only, never sleeping / sick / sad / egg
+       toy     — never while sleeping, never as an egg
+       blink/flick/tilt/yawn — never sleeping, never as an egg
+       wobble  — eggs only (an egg wobbles and cracks instead)
+       breathe — always (slow while asleep, via the sleep CSS)
+       hearts  — ambient hearts only when awake, healthy and happy
+       motes   — ambient dust, paused only while asleep
+     Node tests (gates/tp-behavior.test.js) exercise this gate
+     directly; the browser proof exercises it through the UI. */
+  function _behaviorState(pet, mythicalOverride) {
+    var m = (pet && pet.meters) || {};
+    var vals = [m.hunger, m.happiness, m.energy, m.cleanliness];
+    var sad = false;
+    for (var i = 0; i < vals.length; i++) {
+      if (typeof vals[i] === 'number' && vals[i] <= LOW_METER) { sad = true; break; }
+    }
+    var mythical = mythicalOverride;
+    if (typeof mythical !== 'boolean') {
+      var def = (pet && pet.petId) ? _petDef(pet.petId) : null;
+      mythical = !!(def && def.mythical);
+    }
+    return {
+      sleeping: !!(pet && pet.sleeping),
+      sick: !!(pet && pet.sick),
+      stage: (pet && pet.stage) || 'egg',
+      egg: !pet || pet.stage === 'egg',
+      mythical: mythical,
+      sad: sad,
+      happy: typeof m.happiness === 'number' && m.happiness >= 70
+    };
+  }
+  function _behaviorAllowed(state, kind) {
+    if (!state) return false;
+    if (kind === 'breathe') return true;
+    if (kind === 'wobble') return !!state.egg;
+    if (kind === 'motes') return !state.sleeping;
+    if (kind === 'hearts') return !state.sleeping && !state.sick && !state.sad;
+    if (kind === 'wander') return !state.sleeping && !state.egg;
+    if (kind === 'dance') return !state.sleeping && !state.sick && !state.sad && !state.egg;
+    if (kind === 'sparkle') return !state.sleeping && !state.sick && !state.sad && !state.egg && !!state.mythical && !!state.happy;
+    if (kind === 'toy') return !state.sleeping && !state.egg;
+    if (kind === 'blink' || kind === 'flick' || kind === 'tilt' || kind === 'yawn') {
+      return !state.sleeping && !state.egg;
+    }
+    return false;
+  }
+  function _toyEmoji(itemId) { return TOY_EMOJI[itemId] || '\uD83E\uDDB8'; }
+
+  /* Wander bounds from the live layout: the pet may move only as
+     far as the stage area is bigger than the pet image (capped at
+     24px x / 12px y), so it can never leave the area or overlap the
+     name/mood pills, the meters, or the action buttons. Read once
+     per wander step — never per frame. */
+  function _wanderBounds() {
+    try {
+      var area = _el('tpPetArea');
+      var img = _el('tpPetImg');
+      if (area && img && area.clientWidth > 0) {
+        var pw = img.clientWidth || 150;
+        var ph = img.clientHeight || 150;
+        var mx = Math.max(0, Math.min(24, (area.clientWidth - pw) / 2 - 2));
+        var my = Math.max(0, Math.min(12, (area.clientHeight - ph) / 2 - 2));
+        return { minX: -mx, maxX: mx, minY: -my, maxY: my };
+      }
+    } catch (e) { /* fall through to the safe default */ }
+    return { minX: -24, maxX: 24, minY: -12, maxY: 12 };
+  }
+  /* Pure wander target: r1/r2 in [0,1). Mirrors the pick when it
+     would land too close to the current spot, so the pet visibly
+     moves; face follows the walk direction (1 = right, -1 = left). */
+  function _wanderTarget(cur, bounds, r1, r2) {
+    cur = cur || { x: 0, y: 0, face: 1 };
+    bounds = bounds || { minX: -24, maxX: 24, minY: -12, maxY: 12 };
+    var x = bounds.minX + r1 * (bounds.maxX - bounds.minX);
+    var y = bounds.minY + r2 * (bounds.maxY - bounds.minY);
+    if (bounds.maxX - bounds.minX > 16 && Math.abs(x - cur.x) < 8) x = -x;
+    if (bounds.maxY - bounds.minY > 10 && Math.abs(y - cur.y) < 5) y = -y;
+    if (x < bounds.minX) x = bounds.minX;
+    if (x > bounds.maxX) x = bounds.maxX;
+    if (y < bounds.minY) y = bounds.minY;
+    if (y > bounds.maxY) y = bounds.maxY;
+    /* Round first, then face from the ROUNDED spot: -0.48 rounds to
+       0 (no move), so the face must stay put, not flip left. */
+    x = Math.round(x);
+    y = Math.round(y);
+    if (x === 0) x = 0; /* normalize -0 */
+    if (y === 0) y = 0;
+    var face = (x > cur.x) ? 1 : (x < cur.x) ? -1 : (cur.face || 1);
+    return { x: x, y: y, face: face };
+  }
+  function _applyMover() {
+    try {
+      var mover = _el('tpPetMover');
+      if (mover) mover.style.transform = 'translate(' + wanderPos.x + 'px,' + wanderPos.y + 'px) scaleX(' + wanderPos.face + ')';
+    } catch (e) { /* best-effort */ }
+  }
+  function _doWander(state, targetOverride) {
+    if (!_behaviorAllowed(state, 'wander')) return false;
+    var t = targetOverride || _wanderTarget(wanderPos, _wanderBounds(), Math.random(), Math.random());
+    wanderPos = { x: t.x, y: t.y, face: t.face };
+    _applyMover();
+    return true;
+  }
+  function _sheetOpen() {
+    try {
+      var s = _el('tpSheet');
+      return !!(s && !s.hidden);
+    } catch (e) { return false; }
+  }
+  /* Brief pulse animation on the pet image (blink/flick/tilt/yawn/
+     bounce/jump/hug/shake/cough/stretch/wobble). The class replaces
+     the idle bob for its short duration, then the bob resumes. */
+  function _pulseAnim(cls, ms) {
+    try {
+      var img = _el('tpPetImg');
+      var fb = _el('tpPetFallback');
+      [img, fb].forEach(function (el) {
+        if (!el || !el.classList) return;
+        el.classList.remove(cls);
+        try { void el.offsetWidth; } catch (e) { /* ignore */ }
+        el.classList.add(cls);
+      });
+      setTimeout(function () {
+        try {
+          if (img) img.classList.remove(cls);
+          if (fb) fb.classList.remove(cls);
+        } catch (e) { /* ignore */ }
+      }, ms || 600);
+    } catch (e) { /* best-effort */ }
+  }
+  /* Floating reaction particle (heart / sparkle / bubble). Capped
+     at 6 live nodes; CSS animates transform/opacity only. */
+  function _spawnFx(symbol) {
+    try {
+      var fx = _el('tpFx');
+      if (!fx || typeof document === 'undefined' || !document.createElement) return;
+      while (fx.children.length >= 6) fx.removeChild(fx.firstChild);
+      var s = document.createElement('span');
+      s.textContent = symbol;
+      s.style.left = (18 + Math.random() * 64) + '%';
+      fx.appendChild(s);
+      setTimeout(function () {
+        try { if (s.parentNode) s.parentNode.removeChild(s); } catch (e) { /* ignore */ }
+      }, 1500);
+    } catch (e) { /* best-effort */ }
+  }
+  function _burstFx(symbols) {
+    for (var i = 0; i < symbols.length; i++) {
+      (function (sym, delay) {
+        setTimeout(function () { _spawnFx(sym); }, delay);
+      })(symbols[i], i * 130);
+    }
+  }
+  /* Reactions — each wired to a REAL care action, never a fake timer. */
+  function _react(kind) {
+    var pet = _activePet();
+    if (!pet) return;
+    var state = _behaviorState(pet);
+    if (kind === 'fed') {
+      if (state.sleeping) return;
+      _pulseAnim('tp-bounce', 700);
+      _burstFx(['\u2764\uFE0F', '\u2764\uFE0F', '\uD83D\uDC96']);
+    } else if (kind === 'win') {
+      if (state.sleeping) return;
+      _pulseAnim('tp-bounce', 700);
+      _burstFx(['\u2764\uFE0F', '\u2728', '\u2764\uFE0F']);
+    } else if (kind === 'wash') {
+      if (state.sleeping) return;
+      _pulseAnim('tp-shake', 500);
+      _burstFx(['\u2728', '\u2728', '\uD83D\uDCA7']);
+    } else if (kind === 'medicine') {
+      _pulseAnim('tp-bounce', 700);
+      _burstFx(['\uD83D\uDC9A', '\u2764\uFE0F']);
+    } else if (kind === 'wake') {
+      _pulseAnim('tp-stretch', 900);
+    }
+  }
+  /* Toy play: the bought toy appears in the room and the pet
+     interacts with it — ball rolls and the pet chases it, plush
+     gets hugged, wand blows bubbles. The engine already consumed
+     the toy and raised happiness; this is the visible play. */
+  function _playWithToy(itemId) {
+    var pet = _activePet();
+    if (!pet) return;
+    var state = _behaviorState(pet);
+    var prop = _el('tpToyProp');
+    if (!prop) return;
+    if (!_behaviorAllowed(state, 'toy')) {
+      /* An egg can't play with toys — it wobbles instead. */
+      _pulseAnim('tp-wobble', 700);
+      return;
+    }
+    prop.textContent = _toyEmoji(itemId);
+    prop.hidden = false;
+    prop.className = 'tp-toy-prop' +
+      (itemId === 'toy-ball' ? ' tp-rolling' : '') +
+      (itemId === 'toy-wand' ? ' tp-bubbling' : '');
+    if (itemId === 'toy-ball') {
+      _doWander(state, { x: 30, y: 8, face: 1 }); /* chase the ball */
+      _pulseAnim('tp-bounce', 700);
+    } else if (itemId === 'toy-plush') {
+      _doWander(state, { x: 26, y: 6, face: 1 }); /* walk over and hug */
+      _pulseAnim('tp-hug', 900);
+      _burstFx(['\u2764\uFE0F', '\u2764\uFE0F']);
+    } else {
+      _burstFx(['\uD83E\uDEF6', '\uD83E\uDEF6', '\uD83E\uDEF6', '\u2728']);
+    }
+    if (toyTimer) { try { clearTimeout(toyTimer); } catch (e) { /* ignore */ } }
+    toyTimer = setTimeout(function () {
+      try {
+        prop.hidden = true;
+        prop.className = 'tp-toy-prop';
+      } catch (e) { /* ignore */ }
+    }, 3200);
+  }
+  /* Tap the pet: excited jump + sparkles, eyes/head follow the tap
+     briefly (the mover leans toward the tap point, then wanders
+     back). Sleeping pets are left alone; sick/sad pets get hearts
+     instead of sparkles. */
+  function _onPetTap(ev) {
+    var pet = _activePet();
+    if (!pet || screen !== 'room') return;
+    var state = _behaviorState(pet);
+    if (state.sleeping) return;
+    try {
+      var img = _el('tpPetImg');
+      var dx = 0, dy = 0;
+      if (ev && img && img.getBoundingClientRect) {
+        var r = img.getBoundingClientRect();
+        var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        dx = Math.max(-14, Math.min(14, (ev.clientX - cx) / 4));
+        dy = Math.max(-10, Math.min(10, (ev.clientY - cy) / 4));
+      }
+      var base = { x: wanderPos.x, y: wanderPos.y, face: wanderPos.face };
+      wanderPos = { x: base.x + Math.round(dx), y: base.y + Math.round(dy), face: dx < 0 ? -1 : (dx > 0 ? 1 : base.face) };
+      _applyMover();
+      setTimeout(function () {
+        wanderPos = base;
+        _applyMover();
+      }, 650);
+    } catch (e) { /* best-effort */ }
+    _pulseAnim('tp-jump', 600);
+    if (state.sad || state.sick) _burstFx(['\uD83D\uDC96']);
+    else _burstFx(['\u2728', '\uD83D\uDC96', '\u2728']);
+    _sfx('chirp');
+  }
+  /* Idle scheduler: picks one idle action on a varying timer
+     (2.5–5.5s, never metronomic) and wanders on ~55% of ticks.
+     Pauses when the room isn't showing, a sheet/mini-game is open,
+     or the tab is hidden. A sleeping pet only breathes (CSS); a
+     sick pet occasionally coughs; an egg only wobbles (CSS). */
+  function _scheduleBehavior(ms) {
+    try {
+      if (behaviorTimer) { clearTimeout(behaviorTimer); behaviorTimer = null; }
+      behaviorTimer = setTimeout(_behaviorTick, ms);
+    } catch (e) { /* best-effort */ }
+  }
+  function _behaviorTick() {
+    behaviorTimer = null;
+    var pet = _activePet();
+    if (!pet || !profile) { _scheduleBehavior(4000); return; }
+    if (screen !== 'room' || mg || _sheetOpen()) { _scheduleBehavior(4000); return; }
+    try {
+      if (typeof document !== 'undefined' && document.hidden) { _scheduleBehavior(4000); return; }
+    } catch (e) { /* best-effort */ }
+    var state = _behaviorState(pet);
+    var roll = Math.random();
+    if (state.sleeping) {
+      /* Sleeping pets only breathe — slow CSS bob + Zzz. Nothing else. */
+    } else if (state.sick && roll < 0.3) {
+      _pulseAnim('tp-cough', 450);
+    } else if (roll < 0.35 && _behaviorAllowed(state, 'blink')) {
+      _pulseAnim('tp-blink', 240);
+    } else if (roll < 0.55 && _behaviorAllowed(state, 'flick')) {
+      _pulseAnim('tp-flick', 500);
+    } else if (roll < 0.70 && _behaviorAllowed(state, 'tilt')) {
+      _pulseAnim('tp-tilt', 900);
+    } else if (roll < 0.85 && _behaviorAllowed(state, 'yawn')) {
+      _pulseAnim('tp-yawn', 1100);
+    }
+    if (_behaviorAllowed(state, 'hearts') && (pet.meters.happiness || 0) >= 75 && Math.random() < 0.3) {
+      _spawnFx('\u2764\uFE0F');
+    }
+    if (Math.random() < 0.55) _doWander(state);
+    _scheduleBehavior(2500 + Math.random() * 3000);
+  }
+
+  function _renderSelect() {
+    try {
+      var grid = _el('tpPetGrid');
+      if (!grid || !profile) return;
+      var unlocked = false;
+      try {
+        if (E && typeof E.mythicalUnlocked === 'function') unlocked = E.mythicalUnlocked(profile);
+      } catch (e) { /* default stands */ }
+      var html = '';
+      var i, id, def, owned, active, locked;
+      for (i = 0; i < PET_IDS.length; i++) {
+        id = PET_IDS[i];
+        def = _petDef(id) || { name: id, species: '', emoji: '\uD83E\uDD5A', colors: ['#fde68a'] };
+        owned = !!(profile.pets && profile.pets[id]);
+        active = profile.activePetId === id;
+        locked = !!(def.mythical && !owned && !unlocked);
+        var art = (D && typeof D.petArt === 'function') ? D.petArt(id, 'adult', null) : (ASSET_BASE + 'pet-' + id + '-adult.webp');
+        var cardCls = 'tp-pet-card' + (owned ? ' tp-owned' : '') + (active ? ' tp-active' : '') + (locked ? ' tp-locked' : '');
+        html += '<button type="button" class="' + cardCls + '" data-pet="' + _esc(id) + '"' + (locked ? ' disabled' : '') + '>' +
+          '<span class="tp-pet-card-art" style="background:' + _esc((def.colors && def.colors[1]) || '#fde68a') + '">' +
+            '<img src="' + _esc(art) + '" alt="" onerror="this.classList.add(\'tp-hidden\')">' +
+            '<span aria-hidden="true">' + _esc(def.emoji || '') + '</span>' +
+          '</span>' +
+          '<span class="tp-pet-card-name">' + _esc(def.name || id) + '</span>' +
+          '<span class="tp-pet-card-species">' + _esc(def.species || '') + (def.mythical ? ' \u2728 Mythical' : '') + '</span>';
+        if (active) html += '<span class="tp-pet-card-tag">\u2764\uFE0F With you now</span>';
+        else if (owned) html += '<span class="tp-pet-card-tag">Tap to switch</span>';
+        else if (locked) html += '<span class="tp-pet-card-lock">\uD83D\uDD12 Locked — raise a starter to a bright Adult, or earn 100 hearts (' + (profile.lifetimeHearts || 0) + '/100)</span>';
+        else if (def.mythical) html += '<span class="tp-pet-card-lock">Egg in the Shop: ' + (def.eggCost || 0) + ' coins</span>';
+        else html += '<span class="tp-pet-card-tag">Tap to hatch</span>';
+        html += '</button>';
+      }
+      grid.innerHTML = html;
+      var cards = grid.querySelectorAll('[data-pet]');
+      for (i = 0; i < cards.length; i++) {
+        (function (card) {
+          card.addEventListener('click', function () {
+            try { _choosePet(card.getAttribute('data-pet')); } catch (e) { _log(e); }
+          });
+        })(cards[i]);
+      }
+      var foot = _el('tpSelectFoot');
+      if (foot) {
+        var saved = lastSavedAt ? new Date(lastSavedAt).toLocaleTimeString() : 'just now';
+        foot.textContent = 'Auto-saved ' + saved + ' \u2022 Coins ' + (profile.coins || 0) +
+          ' \u2022 Hearts ' + (profile.hearts || 0) + ' (' + (profile.lifetimeHearts || 0) + ' lifetime)' +
+          ' \u2022 ' + (profile.pets ? Object.keys(profile.pets).length : 0) + ' of 12 pets';
+      }
+    } catch (e) { _log(e); }
+  }
+
+  function _showScreen(name) {
+    screen = name;
+    try {
+      var sel = _el('tpSelectScreen');
+      var room = _el('tpRoomScreen');
+      if (sel) sel.classList.toggle('tp-show', name === 'select');
+      if (room) room.classList.toggle('tp-show', name === 'room');
+      if (name === 'select') _renderSelect();
+      else _renderRoom();
+    } catch (e) { /* best-effort */ }
+    /* The idle scheduler only runs in the room; restart it on entry
+       so a returning pet is alive again within ~1.5s. */
+    _scheduleBehavior(name === 'room' ? 1500 : 6000);
+  }
+
+  function _choosePet(petId) {
+    if (!profile || !petId) return;
+    _sfx('click');
+    if (profile.pets && profile.pets[petId]) {
+      var r = null;
+      try {
+        if (E && typeof E.selectPet === 'function') r = E.selectPet(profile, petId, Date.now());
+      } catch (e) { /* fall through */ }
+      if (r && !r.ok) { _toast('Could not switch pets.'); return; }
+      _save();
+      _sfx('chirp');
+      _showScreen('room');
+      return;
+    }
+    var def = _petDef(petId);
+    if (!def) return;
+    if (def.mythical) { _toast('That mythical egg is still locked.'); return; }
+    /* A new starter hatches as a fresh egg. */
+    try {
+      if (E && typeof E.createPet === 'function') {
+        var pet = E.createPet(petId, Date.now());
+        if (pet) profile.pets[petId] = pet;
+      }
+    } catch (e) { /* fall through */ }
+    if (!profile.pets[petId]) return;
+    profile.activePetId = petId;
+    _save();
+    _sfx('stageup');
+    _toast('A new egg! Say hello to ' + (def.name || petId) + '!');
+    _showScreen('room');
+  }
+
+  /* --- sheets --- */
+  function _closeSheet() {
+    try {
+      var s = _el('tpSheet');
+      if (s) s.hidden = true;
+    } catch (e) { /* best-effort */ }
+  }
+  function _openSheet(html) {
+    try {
+      var s = _el('tpSheet');
+      if (!s) return;
+      s.innerHTML = html;
+      s.hidden = false;
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _showFeedSheet() {
+    var pet = _activePet();
+    if (!pet || !profile) return;
+    _sfx('click');
+    var def = _petDef(pet.petId) || {};
+    var inv = profile.inventory || {};
+    var html = '<h2>\uD83C\uDF56 Feed ' + _esc(def.name || '') + '</h2>' +
+      '<p class="tp-sheet-sub">Favorite food gives +10 extra and a heart. One free kibble refills every 4 hours.</p><div class="tp-feed-list">';
+    var any = false;
+    var ids = Object.keys(inv);
+    var i, item, count;
+    for (i = 0; i < ids.length; i++) {
+      item = _shopItem(ids[i]);
+      count = inv[ids[i]] || 0;
+      if (!item || item.kind !== 'food' || count <= 0) continue;
+      any = true;
+      var fav = def.favoriteFood === item.id;
+      html += '<div class="tp-feed-row"><div class="tp-shop-info"><div class="tp-shop-name">' + _esc(item.name) +
+        (fav ? ' \u2764\uFE0F Favorite' : '') + '</div><div class="tp-shop-desc">+' + (item.hunger + (fav ? 10 : 0)) +
+        ' Hunger \u2022 x' + count + '</div></div>' +
+        '<button type="button" class="tp-buy" data-feed="' + _esc(item.id) + '">Feed</button></div>';
+    }
+    if (!any) html += '<p class="tp-sheet-sub">No food yet — visit the Shop, or wait for a free kibble.</p>';
+    /* Toys live here too: quick happiness boosters. */
+    for (i = 0; i < ids.length; i++) {
+      item = _shopItem(ids[i]);
+      count = inv[ids[i]] || 0;
+      if (!item || item.kind !== 'toy' || count <= 0) continue;
+      any = true;
+      var favT = def.favoriteToy === item.id;
+      html += '<div class="tp-feed-row"><div class="tp-shop-info"><div class="tp-shop-name">' + _esc(item.name) +
+        (favT ? ' \u2764\uFE0F Favorite toy' : '') + '</div><div class="tp-shop-desc">+' + (item.happiness + (favT ? 5 : 0)) +
+        ' Happiness \u2022 x' + count + '</div></div>' +
+        '<button type="button" class="tp-buy" data-toy="' + _esc(item.id) + '">Play with</button></div>';
+    }
+    html += '</div>';
+    if (pet.sick) {
+      var med = inv['med-basic'] || 0;
+      html += '<p class="tp-sheet-sub">Your pet is sick! Medicine: ' + med + ' owned.</p>';
+      html += '<button type="button" class="tp-buy" data-med="1"' + (med <= 0 ? ' disabled' : '') + '>Give medicine (cures sickness)</button>';
+    }
+    html += '<button type="button" class="tp-sheet-close" data-close="1">Done</button>';
+    _openSheet(html);
+    _wireSheetButtons();
+  }
+
+  function _showShopSheet() {
+    if (!profile) return;
+    _sfx('click');
+    var unlocked = false;
+    try {
+      if (E && typeof E.mythicalUnlocked === 'function') unlocked = E.mythicalUnlocked(profile);
+    } catch (e) { /* default stands */ }
+    var html = '<h2>\uD83D\uDED2 Shop</h2>' +
+      '<p class="tp-sheet-sub">You have ' + (profile.coins || 0) + ' coins. Earn more in mini-games and daily check-ins.</p>';
+    if (MYTHICAL_IDS.length) {
+      html += '<h2>\u2728 Mythical eggs</h2>';
+      if (!unlocked) {
+        html += '<p class="tp-sheet-sub">Locked — raise any starter to a bright Adult, or earn 100 hearts (' +
+          (profile.lifetimeHearts || 0) + '/100).</p>';
+      } else {
+        html += '<div class="tp-shop-list">';
+        var mi, mdef, ownedM;
+        for (mi = 0; mi < MYTHICAL_IDS.length; mi++) {
+          mdef = _petDef(MYTHICAL_IDS[mi]) || {};
+          ownedM = !!(profile.pets && profile.pets[MYTHICAL_IDS[mi]]);
+          html += '<div class="tp-shop-row"><div class="tp-shop-info"><div class="tp-shop-name">' +
+            _esc(mdef.name || MYTHICAL_IDS[mi]) + ' egg ' + _esc(mdef.emoji || '') + '</div><div class="tp-shop-desc">' +
+            _esc(mdef.desc || '') + '</div></div>' +
+            (ownedM ? '<button type="button" class="tp-buy tp-owned" disabled>Owned</button>'
+              : '<button type="button" class="tp-buy" data-egg="' + _esc(MYTHICAL_IDS[mi]) + '">' + (mdef.eggCost || 0) + ' coins</button>') +
+            '</div>';
+        }
+        html += '</div>';
+      }
+    }
+    html += '<h2>Food, toys &amp; more</h2><div class="tp-shop-list">';
+    var i, item, owned;
+    for (i = 0; i < SHOP_ORDER.length; i++) {
+      item = _shopItem(SHOP_ORDER[i]);
+      if (!item) continue;
+      owned = false;
+      if (item.kind === 'outfit') owned = (profile.ownedOutfits || []).indexOf(item.id) !== -1;
+      if (item.kind === 'decor') owned = (profile.ownedDecor || []).indexOf(item.id) !== -1;
+      var count = (profile.inventory && profile.inventory[item.id]) || 0;
+      html += '<div class="tp-shop-row"><div class="tp-shop-info"><div class="tp-shop-name">' + _esc(item.name) + '</div>' +
+        '<div class="tp-shop-desc">' + _esc(item.desc || '') + (count > 0 ? ' \u2022 Owned x' + count : '') + '</div></div>' +
+        '<span class="tp-shop-price">' + item.price + ' coins</span>' +
+        (owned ? '<button type="button" class="tp-buy tp-owned" disabled>Owned</button>'
+          : '<button type="button" class="tp-buy" data-buy="' + _esc(item.id) + '"' + ((profile.coins || 0) < item.price ? ' disabled' : '') + '>Buy</button>') +
+        '</div>';
+    }
+    html += '</div><button type="button" class="tp-sheet-close" data-close="1">Done</button>';
+    _openSheet(html);
+    _wireSheetButtons();
+  }
+
+  function _showRoomSheet() {
+    if (!profile) return;
+    _sfx('click');
+    var html = '<h2>\uD83C\uDFE0 Room</h2><p class="tp-sheet-sub">Pick a theme — all free, switch any time.</p><div class="tp-room-grid">';
+    var i, room;
+    for (i = 0; i < ROOM_IDS.length; i++) {
+      room = _roomDef(ROOM_IDS[i]) || {};
+      var css = room.css || {};
+      var active = profile.roomTheme === room.id;
+      html += '<button type="button" class="tp-room-card' + (active ? ' tp-active' : '') + '" data-room="' + _esc(room.id) +
+        '" style="background:' + _esc(css.bg || '#bbf7d0') + ';color:' + _esc(css.ink || '#14532d') + '">' +
+        _esc(room.name || room.id) + '<br><span style="font-size:12px;font-weight:400">' + _esc(room.desc || '') + '</span></button>';
+    }
+    html += '</div>';
+    var pet = _activePet();
+    if ((profile.ownedOutfits || []).length && pet) {
+      html += '<h2>Outfits</h2><div class="tp-shop-list">';
+      for (i = 0; i < profile.ownedOutfits.length; i++) {
+        var outfit = _shopItem(profile.ownedOutfits[i]);
+        if (!outfit) continue;
+        var equipped = pet.equippedOutfit === outfit.id;
+        html += '<div class="tp-shop-row"><div class="tp-shop-info"><div class="tp-shop-name">' + _esc(outfit.name) + '</div></div>' +
+          '<button type="button" class="tp-buy' + (equipped ? ' tp-owned' : '') + '" data-outfit="' + _esc(outfit.id) + '">' +
+          (equipped ? 'Wearing' : 'Wear') + '</button></div>';
+      }
+      html += '</div>';
+    }
+    if ((profile.ownedDecor || []).length) {
+      html += '<h2>Decorations</h2><p class="tp-sheet-sub">';
+      var names = [];
+      for (i = 0; i < profile.ownedDecor.length; i++) {
+        var dec = _shopItem(profile.ownedDecor[i]);
+        if (dec) names.push(dec.name);
+      }
+      html += _esc(names.join(', ') || 'None yet.') + '</p>';
+    }
+    html += '<button type="button" class="tp-sheet-close" data-close="1">Done</button>';
+    _openSheet(html);
+    _wireSheetButtons();
+  }
+
+  function _wireSheetButtons() {
+    try {
+      var sheet = _el('tpSheet');
+      if (!sheet) return;
+      var btns = sheet.querySelectorAll('button');
+      for (var i = 0; i < btns.length; i++) {
+        (function (btn) {
+          btn.addEventListener('click', function () {
+            try {
+              if (btn.getAttribute('data-close')) { _closeSheet(); return; }
+              var feedId = btn.getAttribute('data-feed');
+              if (feedId) { _doFeed(feedId); return; }
+              var toyId = btn.getAttribute('data-toy');
+              if (toyId) { _doToy(toyId); return; }
+              if (btn.getAttribute('data-med')) { _doMedicine(); return; }
+              var buyId = btn.getAttribute('data-buy');
+              if (buyId) { _doBuy(buyId); return; }
+              var eggId = btn.getAttribute('data-egg');
+              if (eggId) { _doBuyEgg(eggId); return; }
+              var roomId = btn.getAttribute('data-room');
+              if (roomId) { _doRoom(roomId); return; }
+              var outfitId = btn.getAttribute('data-outfit');
+              if (outfitId) { _doOutfit(outfitId); return; }
+            } catch (e) { _log(e); }
+          });
+        })(btns[i]);
+      }
+    } catch (e) { /* best-effort */ }
+  }
+
+  /* --- actions --- */
+  function _afterAction(beforeStage, beforeForm) {
+    _save();
+    _renderRoom();
+    var pet = _activePet();
+    if (pet && (pet.stage !== beforeStage || pet.form !== beforeForm)) {
+      _celebrate(pet, beforeStage);
+    }
+  }
+
+  function _doFeed(itemId) {
+    var pet = _activePet();
+    if (!pet) return;
+    var beforeStage = pet.stage, beforeForm = pet.form;
+    var r = null;
+    try {
+      if (E && typeof E.feed === 'function') r = E.feed(profile, itemId, Date.now());
+    } catch (e) { /* fall through */ }
+    if (!r || !r.ok) {
+      if (r && r.reason === 'sleeping') _toast('Shh… your pet is sleeping.');
+      else if (r && r.reason === 'none-owned') _toast('You don\u2019t have any of those — visit the Shop!');
+      else _toast('Could not feed right now.');
+      return;
+    }
+    _sfx('eat');
+    _toast(r.favorite ? 'Yum! Favorite food! +1 \u2764\uFE0F' : 'Nom nom! Hunger +' + r.gained);
+    _closeSheet();
+    _afterAction(beforeStage, beforeForm);
+    _react('fed');
+  }
+
+  function _doToy(itemId) {
+    var pet = _activePet();
+    if (!pet) return;
+    var beforeStage = pet.stage, beforeForm = pet.form;
+    var r = null;
+    try {
+      if (E && typeof E.useToy === 'function') r = E.useToy(profile, itemId, Date.now());
+    } catch (e) { /* fall through */ }
+    if (!r || !r.ok) { _toast('Could not play with that right now.'); return; }
+    _sfx('chirp');
+    _toast(r.favorite ? 'Favorite toy! So happy! +1 \u2764\uFE0F' : 'So much fun! Happiness +' + r.gained);
+    _closeSheet();
+    _afterAction(beforeStage, beforeForm);
+    _playWithToy(itemId);
+  }
+
+  function _doMedicine() {
+    var pet = _activePet();
+    if (!pet) return;
+    var r = null;
+    try {
+      if (E && typeof E.giveMedicine === 'function') r = E.giveMedicine(profile, Date.now());
+    } catch (e) { /* fall through */ }
+    if (!r || !r.ok) { _toast('No medicine, or your pet doesn\u2019t need it.'); return; }
+    _sfx('chirp');
+    _toast('All better! \u2764\uFE0F');
+    _closeSheet();
+    _afterAction(pet.stage, pet.form);
+    _react('medicine');
+  }
+
+  function _doBuy(itemId) {
+    var r = null;
+    try {
+      if (E && typeof E.buyItem === 'function') r = E.buyItem(profile, itemId, Date.now());
+    } catch (e) { /* fall through */ }
+    if (!r || !r.ok) {
+      if (r && r.reason === 'insufficient-funds') _toast('Not enough coins — play a mini-game!');
+      else if (r && r.reason === 'already-owned') _toast('You already own that.');
+      else _toast('Could not buy that.');
+      return;
+    }
+    _sfx('coin');
+    var item = _shopItem(itemId);
+    _toast('Bought ' + (item ? item.name : itemId) + '!');
+    _save();
+    _renderWallet();
+    _showShopSheet();
+  }
+
+  function _doBuyEgg(petId) {
+    var r = null;
+    try {
+      if (E && typeof E.buyMythicalEgg === 'function') r = E.buyMythicalEgg(profile, petId, Date.now());
+    } catch (e) { /* fall through */ }
+    if (!r || !r.ok) {
+      if (r && r.reason === 'insufficient-funds') _toast('Not enough coins for that egg yet.');
+      else if (r && r.reason === 'locked') _toast('That mythical egg is still locked.');
+      else _toast('Could not buy that egg.');
+      return;
+    }
+    _sfx('unlock');
+    var def = _petDef(petId);
+    _toast('A mythical egg! ' + (def ? def.name : petId) + ' will hatch soon!');
+    _save();
+    _renderWallet();
+    _showShopSheet();
+  }
+
+  function _doRoom(roomId) {
+    try {
+      if (E && typeof E.setRoomTheme === 'function') E.setRoomTheme(profile, roomId);
+    } catch (e) { /* best-effort */ }
+    _sfx('click');
+    _applyRoomTheme();
+    _save();
+    _closeSheet();
+    _toast('Room changed!');
+  }
+
+  function _doOutfit(outfitId) {
+    var pet = _activePet();
+    if (!pet) return;
+    try {
+      if (E && typeof E.equipOutfit === 'function') E.equipOutfit(profile, outfitId);
+    } catch (e) { /* best-effort */ }
+    _sfx('click');
+    _save();
+    _renderRoom();
+    _showRoomSheet();
+  }
+
+  function _doWash() {
+    var pet = _activePet();
+    if (!pet) return;
+    var beforeStage = pet.stage, beforeForm = pet.form;
+    var r = null;
+    try {
+      if (E && typeof E.wash === 'function') r = E.wash(profile, Date.now());
+    } catch (e) { /* fall through */ }
+    if (!r || !r.ok) {
+      if (r && r.reason === 'sleeping') _toast('Shh… your pet is sleeping.');
+      else _toast('Could not wash right now.');
+      return;
+    }
+    _sfx('wash');
+    _toast('Squeaky clean! \u2728');
+    _afterAction(beforeStage, beforeForm);
+    _react('wash');
+  }
+
+  function _doSleepToggle() {
+    var pet = _activePet();
+    if (!pet) return;
+    if (pet.sleeping) {
+      var r = null;
+      try {
+        if (E && typeof E.wake === 'function') r = E.wake(profile, Date.now());
+      } catch (e) { /* fall through */ }
+      if (!r || !r.ok) { _toast('Your pet is still sleeping…'); return; }
+      _sfx('chirp');
+      _toast('Good morning! Energy ' + Math.round(pet.meters.energy));
+      _afterAction(pet.stage, pet.form);
+      _react('wake');
+    } else {
+      var r2 = null;
+      try {
+        if (E && typeof E.sleep === 'function') r2 = E.sleep(profile, Date.now());
+      } catch (e) { /* fall through */ }
+      if (!r2 || !r2.ok) { _toast('Could not sleep right now.'); return; }
+      _sfx('sleep');
+      _toast('Night night… Zzz');
+      _afterAction(pet.stage, pet.form);
+    }
+  }
+
+  function _doTreat() {
+    var r = null;
+    try {
+      if (E && typeof E.findTreat === 'function') r = E.findTreat(profile, Date.now());
+    } catch (e) { /* fall through */ }
+    if (!r || !r.ok) return;
+    _sfx('coin');
+    _toast('Suki found a hidden treat! +' + r.coins + ' coins!');
+    _save();
+    _renderWallet();
+    _renderRoom();
+  }
+
+  /* --- mini-games --- */
+  function _showPlaySheet() {
+    var pet = _activePet();
+    if (!pet) return;
+    _sfx('click');
+    var html = '<h2>\uD83C\uDFB2 Play together</h2>' +
+      '<p class="tp-sheet-sub">Win a mini-game for coins and hearts. ' +
+      'Your pet loves playing with you!</p><div class="tp-shop-list">';
+    var ids = ['tap-treat', 'catch-bubble', 'memory'];
+    var i, g;
+    for (i = 0; i < ids.length; i++) {
+      g = _minigame(ids[i]);
+      if (!g) continue;
+      html += '<div class="tp-shop-row"><div class="tp-shop-info"><div class="tp-shop-name">' +
+        _esc(g.name) + '</div><div class="tp-shop-desc">' + _esc(g.desc || '') +
+        ' Win: +' + g.reward + ' coins, +2 \u2764\uFE0F</div></div>' +
+        '<button type="button" class="tp-buy" data-game="' + _esc(g.id) + '">Play</button></div>';
+    }
+    var def = _petDef(pet.petId) || {};
+    if (def.modifiers && def.modifiers.treatFinder) {
+      html += '<div class="tp-shop-row"><div class="tp-shop-info"><div class="tp-shop-name">\uD83D\uDD0E Find a hidden treat</div>' +
+        '<div class="tp-shop-desc">Suki hides treats around the room. +8 coins, once every 4 hours.</div></div>' +
+        '<button type="button" class="tp-buy" data-treat="1">Find</button></div>';
+    }
+    html += '</div><button type="button" class="tp-sheet-close" data-close="1">Done</button>';
+    _openSheet(html);
+    try {
+      var sheet = _el('tpSheet');
+      var btns = sheet.querySelectorAll('button');
+      for (i = 0; i < btns.length; i++) {
+        (function (btn) {
+          btn.addEventListener('click', function () {
+            try {
+              if (btn.getAttribute('data-close')) { _closeSheet(); return; }
+              var gid = btn.getAttribute('data-game');
+              if (gid) { _closeSheet(); _startMinigame(gid); return; }
+              if (btn.getAttribute('data-treat')) { _closeSheet(); _doTreat(); return; }
+            } catch (e) { _log(e); }
+          });
+        })(btns[i]);
+      }
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _endMinigame(gameId, score) {
+    if (!mg) return;
+    try {
+      if (mg.timer) clearTimeout(mg.timer);
+      if (mg.spawner) clearInterval(mg.spawner);
+    } catch (e) { /* ignore */ }
+    var g = _minigame(gameId);
+    var won = !!g && score >= (g.target || 0);
+    var pet = _activePet();
+    var beforeStage = pet ? pet.stage : null;
+    var beforeForm = pet ? pet.form : null;
+    var r = null;
+    try {
+      if (E && typeof E.play === 'function') r = E.play(profile, gameId, won, score, Date.now());
+    } catch (e) { /* fall through */ }
+    mg = null;
+    try {
+      var m = _el('tpMinigame');
+      if (m) m.hidden = true;
+    } catch (e) { /* ignore */ }
+    if (r && r.ok) {
+      _sfx(won ? 'coin' : 'click');
+      _toast(won ? 'You won! +' + r.coins + ' coins, +2 \u2764\uFE0F' : 'Good try! +' + r.coins + ' coins');
+      if (won) _react('win');
+    }
+    _afterAction(beforeStage, beforeForm);
+  }
+
+  function _startMinigame(gameId) {
+    var g = _minigame(gameId);
+    if (!g || !profile) return;
+    var box = _el('tpMinigame');
+    if (!box) return;
+    _closeSheet();
+    if (gameId === 'memory') { _startMemory(g); return; }
+    var seconds = g.seconds || 10;
+    var target = g.target || 8;
+    var emoji = gameId === 'catch-bubble' ? '\uD83E\uDEF0' : '\uD83C\uDF6A';
+    box.innerHTML =
+      '<div class="tp-mg-card"><h2>' + _esc(g.name) + '</h2>' +
+      '<p class="tp-mg-status" id="tpMgStatus">Score 0 / ' + target + ' \u2022 ' + seconds + 's left</p>' +
+      '<div class="tp-mg-area" id="tpMgArea"></div>' +
+      '<div class="tp-mg-foot"><button type="button" class="tp-sheet-close" id="tpMgQuit">Quit</button></div></div>';
+    box.hidden = false;
+    mg = { gameId: gameId, score: 0, target: target, left: seconds, timer: null, spawner: null };
+    var status = _el('tpMgStatus');
+    var area = _el('tpMgArea');
+    function tickStatus() {
+      if (status) status.textContent = 'Score ' + mg.score + ' / ' + target + ' \u2022 ' + mg.left + 's left';
+    }
+    function spawnOne() {
+      if (!mg || !area) return;
+      try {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'tp-mg-target';
+        b.textContent = emoji;
+        b.style.left = (4 + Math.random() * 72) + '%';
+        b.style.top = (6 + Math.random() * 62) + '%';
+        b.addEventListener('click', function () {
+          try {
+            if (!mg) return;
+            mg.score += 1;
+            _sfx('click');
+            tickStatus();
+            if (b.parentNode) b.parentNode.removeChild(b);
+            if (mg.score >= target) _endMinigame(gameId, mg.score);
+          } catch (e) { /* ignore */ }
+        });
+        area.appendChild(b);
+        setTimeout(function () {
+          try { if (b.parentNode) b.parentNode.removeChild(b); } catch (e) { /* ignore */ }
+        }, gameId === 'catch-bubble' ? 1400 : 950);
+      } catch (e) { /* best-effort */ }
+    }
+    mg.spawner = setInterval(spawnOne, gameId === 'catch-bubble' ? 600 : 700);
+    spawnOne();
+    mg.timer = setInterval(function () {
+      try {
+        if (!mg) return;
+        mg.left -= 1;
+        tickStatus();
+        if (mg.left <= 0) _endMinigame(gameId, mg.score);
+      } catch (e) { /* ignore */ }
+    }, 1000);
+    var quit = _el('tpMgQuit');
+    if (quit) quit.addEventListener('click', function () {
+      try { if (mg) _endMinigame(gameId, mg.score); } catch (e) { /* ignore */ }
+    });
+  }
+
+  function _startMemory(g) {
+    var box = _el('tpMinigame');
+    if (!box) return;
+    var faces = ['\uD83C\uDF53', '\u2B50', '\uD83D\uDC9B', '\uD83C\uDF6A'];
+    var deck = faces.concat(faces);
+    for (var i = deck.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = deck[i]; deck[i] = deck[j]; deck[j] = tmp;
+    }
+    var html = '<div class="tp-mg-card"><h2>' + _esc(g.name) + '</h2>' +
+      '<p class="tp-mg-status" id="tpMgStatus">Find all 4 pairs!</p><div class="tp-mg-grid" id="tpMgGrid">';
+    for (i = 0; i < deck.length; i++) {
+      html += '<button type="button" class="tp-mg-card-btn" data-face="' + _esc(deck[i]) + '" data-idx="' + i + '">?</button>';
+    }
+    html += '</div><div class="tp-mg-foot"><button type="button" class="tp-sheet-close" id="tpMgQuit">Quit</button></div></div>';
+    box.innerHTML = html;
+    box.hidden = false;
+    mg = { gameId: 'memory', score: 0, target: 4, left: 0, timer: null, spawner: null,
+      first: null, lock: false, matched: 0, moves: 0 };
+    var grid = _el('tpMgGrid');
+    var status = _el('tpMgStatus');
+    var btns = grid.querySelectorAll('.tp-mg-card-btn');
+    for (i = 0; i < btns.length; i++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          try {
+            if (!mg || mg.lock || btn.disabled) return;
+            var face = btn.getAttribute('data-face');
+            btn.textContent = face;
+            btn.classList.add('tp-flipped');
+            btn.disabled = true;
+            _sfx('click');
+            if (!mg.first) { mg.first = btn; return; }
+            mg.moves += 1;
+            var first = mg.first;
+            mg.first = null;
+            if (first.getAttribute('data-face') === face) {
+              mg.matched += 1;
+              mg.score = mg.matched;
+              first.classList.add('tp-matched');
+              btn.classList.add('tp-matched');
+              if (status) status.textContent = 'Matched ' + mg.matched + ' / 4 pairs!';
+              if (mg.matched >= 4) {
+                setTimeout(function () { _endMinigame('memory', 4); }, 450);
+              }
+            } else {
+              mg.lock = true;
+              setTimeout(function () {
+                try {
+                  first.textContent = '?';
+                  first.classList.remove('tp-flipped');
+                  first.disabled = false;
+                  btn.textContent = '?';
+                  btn.classList.remove('tp-flipped');
+                  btn.disabled = false;
+                  if (mg) mg.lock = false;
+                } catch (e) { /* ignore */ }
+              }, 750);
+            }
+          } catch (e) { /* ignore */ }
+        });
+      })(btns[i]);
+    }
+    var quit = _el('tpMgQuit');
+    if (quit) quit.addEventListener('click', function () {
+      try { if (mg) _endMinigame('memory', mg.matched); } catch (e) { /* ignore */ }
+    });
+  }
+
+  /* --- celebration --- */
+  function _celebrate(pet, fromStage) {
+    try {
+      var box = _el('tpCelebrate');
+      if (!box || !pet) return;
+      var def = _petDef(pet.petId) || {};
+      var stageName = pet.stage.charAt(0).toUpperCase() + pet.stage.slice(1);
+      var msg;
+      if (pet.stage === 'adult' && pet.form === 'reborn') {
+        msg = (def.name || 'Your pet') + ' burst into flame and was REBORN — brighter than ever!';
+      } else if (pet.stage === 'adult' && pet.form === 'scruffy') {
+        msg = (def.name || 'Your pet') + ' grew into a scruffy Adult. Still lovable — keep the meters high for a day to win a bright coat back!';
+      } else if (pet.stage === 'adult') {
+        msg = (def.name || 'Your pet') + ' is a bright Adult! All that good care paid off!';
+      } else {
+        msg = (def.name || 'Your pet') + ' grew into a ' + stageName + '!';
+      }
+      box.innerHTML = '<div class="tp-celebrate-card"><span class="tp-celebrate-emoji">' + _esc(def.emoji || '\uD83E\uDD5A') + '</span>' +
+        '<h2>' + (pet.stage === 'adult' ? 'All grown up!' : 'Stage up!') + '</h2><p>' + _esc(msg) + '</p>' +
+        '<button type="button" class="tp-sheet-close" id="tpCelebOk" style="margin-top:0">Yay!</button></div>';
+      box.hidden = false;
+      _sfx('stageup');
+      var ok = _el('tpCelebOk');
+      if (ok) ok.addEventListener('click', function () {
+        try { box.hidden = true; } catch (e) { /* ignore */ }
+      });
+    } catch (e) { /* best-effort */ }
+  }
+
+  /* --- time tick --- */
+  function _tick() {
+    if (!profile) return;
+    try {
+      var events = [];
+      if (E && typeof E.applyTime === 'function') events = E.applyTime(profile, Date.now()) || [];
+      var pet = _activePet();
+      for (var i = 0; i < events.length; i++) {
+        var ev = events[i];
+        if (ev.type === 'stage-up') { _celebrate(pet, null); _sfx('stageup'); }
+        else if (ev.type === 'rebirth') { _celebrate(pet, null); }
+        else if (ev.type === 'win-back') { _toast('Your pet\u2019s coat turned bright again!'); _sfx('stageup'); }
+        else if (ev.type === 'sick') { _toast('Your pet is feeling sick…'); _sfx('sick'); }
+        else if (ev.type === 'woke') { _toast('Your pet woke up rested!'); }
+        else if (ev.type === 'free-meal') { _toast('A free kibble appeared!'); }
+      }
+      if (events.length) _save();
+      if (screen === 'room') _renderRoom();
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _checkIn() {
+    try {
+      var r = null;
+      if (E && typeof E.checkIn === 'function') r = E.checkIn(profile, Date.now());
+      if (r && r.ok) {
+        _toast('Daily check-in! +' + r.coins + ' coins, +1 \u2764\uFE0F (day ' + r.streak + ')');
+        _sfx('coin');
+        _save();
+      }
+    } catch (e) { /* best-effort */ }
+  }
+
+  function _loadProfile() {
+    try {
+      var s = _saveMod() || SAVE;
+      if (s && typeof s.load === 'function') profile = s.load();
+    } catch (e) { profile = null; }
+    if (!profile) {
+      try {
+        if (E && typeof E.createProfile === 'function') profile = E.createProfile({});
+      } catch (e) { /* fall through */ }
+    }
+    if (!profile) profile = { activePetId: 'pip', pets: {}, coins: 50, hearts: 0, lifetimeHearts: 0, inventory: {}, ownedOutfits: [], ownedDecor: [], roomTheme: 'meadow' };
+  }
+
+  function _syncSoundBtn() {
+    try {
+      var btn = _el('tpSoundBtn');
+      if (!btn) return;
+      var on = true;
+      try {
+        var a = _audioMod() || AUDIO;
+        if (a && typeof a.isSoundOn === 'function') on = !!a.isSoundOn();
+      } catch (e) { /* default stands */ }
+      btn.textContent = on ? '\uD83D\uDD0A' : '\uD83D\uDD07';
+      btn.classList.toggle('tp-off', !on);
+    } catch (e) { /* best-effort */ }
+  }
+
+  function init(m) {
+    try {
+      if (typeof document === 'undefined' || !document) return false;
+      mount = m || _el('app-virtualpet');
+      if (!mount) return false;
+      mount.innerHTML = MARKUP;
+      /* First-time players pick their starter: a fresh profile (no save
+         yet) opens on the pet-select screen instead of auto-assigning Pip. */
+      var hadSave = false;
+      try { var sm0 = _saveMod() || SAVE; hadSave = !!(sm0 && typeof sm0.hasSave === 'function' && sm0.hasSave()); } catch (e0) { hadSave = false; }
+      _loadProfile();
+      _applyRoomTheme();
+      _armImgFallback(_el('tpRoomBg'), null);
+      _armImgFallback(_el('tpPetImg'), _el('tpPetFallback'));
+      try {
+        var events = [];
+        if (E && typeof E.applyTime === 'function') events = E.applyTime(profile, Date.now()) || [];
+        var pet = _activePet();
+        for (var i = 0; i < events.length; i++) {
+          if (events[i].type === 'stage-up' || events[i].type === 'rebirth') {
+            /* Celebrate on open only if the pet JUST grew — the tick
+               handles the rest; keep boot quiet. */
+          }
+        }
+      } catch (e) { /* best-effort */ }
+      _save();
+      _checkIn();
+      _showScreen(hadSave ? 'room' : 'select');
+      _renderWallet();
+      _syncSoundBtn();
+      _click('tpPetsBtn', function () { _sfx('click'); _showScreen(screen === 'select' ? 'room' : 'select'); });
+      _click('tpSoundBtn', function () {
+        try {
+          var a = _audioMod() || AUDIO;
+          if (a && typeof a.setSound === 'function') a.setSound(!a.isSoundOn());
+        } catch (e) { /* best-effort */ }
+        _syncSoundBtn();
+      });
+      _click('tpFeedBtn', function () { _showFeedSheet(); });
+      _click('tpPlayBtn', function () { _showPlaySheet(); });
+      _click('tpWashBtn', function () { _doWash(); });
+      _click('tpSleepBtn', function () { _doSleepToggle(); });
+      _click('tpShopBtn', function () { _showShopSheet(); });
+      _click('tpRoomBtn', function () { _showRoomSheet(); });
+      /* Tapping the pet itself: excited jump + sparkles, and the pet
+         looks toward the tap briefly (see _onPetTap). */
+      try {
+        var area0 = _el('tpPetArea');
+        if (area0 && area0.addEventListener) {
+          area0.addEventListener('click', function (ev) {
+            try { _onPetTap(ev); } catch (e) { _log(e); }
+          });
+        }
+      } catch (e) { /* best-effort */ }
+      _scheduleBehavior(1800);
+      _click('tpDeleteBtn', function () {
+        try {
+          var ok = true;
+          if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
+            ok = window.confirm('Delete your Virtual Pet save and start over with a new egg?');
+          }
+          if (!ok) return;
+          var s = _saveMod() || SAVE;
+          if (s && typeof s.deleteSave === 'function') s.deleteSave();
+          _loadProfile();
+          _applyRoomTheme();
+          _save();
+          _showScreen('select');
+          _toast('Fresh start! A new egg is waiting.');
+        } catch (e) { _log(e); }
+      });
+      try {
+        document.addEventListener('visibilitychange', function () {
+          try {
+            var r = _el('tpRoot');
+            if (r) r.classList.toggle('tp-paused', !!document.hidden);
+            if (!document.hidden) _tick();
+          } catch (e) { /* best-effort */ }
+        });
+      } catch (e) { /* best-effort */ }
+      try {
+        if (typeof window !== 'undefined' && window && typeof window.addEventListener === 'function') {
+          window.addEventListener('keydown', function (ev) {
+            try {
+              if (ev && ev.key === 'Escape') { _closeSheet(); }
+            } catch (e2) { /* ignore */ }
+          });
+        }
+      } catch (e) { /* best-effort */ }
+      return true;
+    } catch (e) {
+      _log(e);
+      return false;
+    }
+  }
+
+  function setLoopActive(on) {
+    loopActive = !!on;
+    try {
+      if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+      if (loopActive) {
+        tickTimer = setInterval(_tick, 30000);
+        _scheduleBehavior(1500);
+      } else if (behaviorTimer) {
+        clearTimeout(behaviorTimer);
+        behaviorTimer = null;
+      }
+    } catch (e) { /* best-effort */ }
+  }
+  function startLoop() { setLoopActive(true); }
+  function pause() {
+    try {
+      if (mg) _endMinigame(mg.gameId, mg.score || 0);
+    } catch (e) { /* best-effort */ }
+    try {
+      if (behaviorTimer) { clearTimeout(behaviorTimer); behaviorTimer = null; }
+      if (toyTimer) { clearTimeout(toyTimer); toyTimer = null; }
+    } catch (e) { /* best-effort */ }
+    setLoopActive(false);
+  }
+  function render() {
+    try {
+      _tick();
+      if (screen === 'select') _renderSelect();
+      else _renderRoom();
+    } catch (e) { /* best-effort */ }
+  }
+  function reloadSave() {
+    try {
+      _loadProfile();
+      _applyRoomTheme();
+      if (screen === 'select') _renderSelect();
+      else _renderRoom();
+    } catch (e) { /* best-effort */ }
+  }
+  function toMenu() {
+    try {
+      _closeSheet();
+      _showScreen('select');
+    } catch (e) { /* best-effort */ }
+  }
+  function syncAudio() { _syncSoundBtn(); }
+  function state() {
+    try {
+      var pet = _activePet();
+      return {
+        screen: screen,
+        petId: pet ? pet.petId : null,
+        stage: pet ? pet.stage : null,
+        form: pet ? pet.form : null,
+        coins: profile ? (profile.coins || 0) : 0,
+        hearts: profile ? (profile.hearts || 0) : 0,
+        meters: pet ? pet.meters : null
+      };
+    } catch (e) { return { screen: screen, petId: null, stage: null, form: null, coins: 0, hearts: 0, meters: null }; }
+  }
+  function debugState() {
+    return {
+      screen: screen,
+      loopActive: loopActive,
+      profile: profile ? { activePetId: profile.activePetId, coins: profile.coins, hearts: profile.hearts, pets: Object.keys(profile.pets || {}) } : null
+    };
+  }
+
+  var api = {
+    init: init,
+    render: render,
+    pause: pause,
+    setLoopActive: setLoopActive,
+    startLoop: startLoop,
+    reloadSave: reloadSave,
+    toMenu: toMenu,
+    syncAudio: syncAudio,
+    state: state,
+    debugState: debugState,
+    _profileForTest: function () { return profile; },
+    _tickForTest: function () { _tick(); },
+    /* Life-like behavior (pure, node-testable): the state gate, the
+       wander-target math, and the toy emoji mapping. */
+    behaviorAllowed: function (state, kind) { return _behaviorAllowed(state, kind); },
+    behaviorState: function (pet, mythicalOverride) { return _behaviorState(pet, mythicalOverride); },
+    wanderTarget: function (cur, bounds, r1, r2) { return _wanderTarget(cur, bounds, r1, r2); },
+    toyEmoji: function (itemId) { return _toyEmoji(itemId); }
+  };
+  return api;
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = TomodachiPetGame;
+if (typeof window !== 'undefined') {
+  try { window.TomodachiPetGame = TomodachiPetGame; } catch (e) { /* best-effort */ }
+}
+</script>
+<script>
+// source: tp-wire.js
+// TomodachiPetWire — mounts Tomodachi Pet into #app-tomodachipet and
+// owns the shell hooks.
+//
+// Boot (at eval, BZ pattern): expose window.__TP__, mount the game
+// via TomodachiPetGame.init, inject the header Music toggle, and stop
+// the tick loop until the game opens (a 30s interval behind a hidden
+// section is cheap, but there is nothing to tick while hidden).
+// onOpen re-starts the loop + re-renders and re-syncs audio; onClose
+// auto-pauses (finishes any open mini-game) + stops the loop. The
+// shell music keeps playing — Tomodachi Pet has no music track of
+// its own.
+//
+// The header has TWO toggles, both publishing to the ONE shared
+// jmf-phone-settings-v1 store (two-way sync with Settings + the home
+// row): ♪ (injected here) — music, via TPAudio (BZAudio.setMusic
+// + store); 🔊/🔇 (in the markup) — sound, via the game's own mute
+// button. This wire only re-marks the sound button when the setting
+// changes elsewhere.
+// SaveRegistry hooks: reinit resets the save and returns to the
+// pet-select screen; reload re-reads storage and refreshes the view.
+//
+// UMD: global TomodachiPetWire (+ window.__TP__ verification handle).
+// Never throws.
+var TomodachiPetWire = (function () {
+  'use strict';
+
+  function _win() {
+    try { return (typeof window !== 'undefined' && window) ? window : null; } catch (e) { return null; }
+  }
+
+  function _log(e) {
+    try {
+      if (typeof console !== 'undefined' && console && console.error) console.error('[tp-wire]', e);
+    } catch (e2) { /* logging is best-effort */ }
+  }
+
+  function _resolveGame() {
+    try {
+      var w = _win();
+      if (w && w.TomodachiPetGame) return w.TomodachiPetGame;
+      if (typeof TomodachiPetGame !== 'undefined' && TomodachiPetGame) return TomodachiPetGame;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _resolveAudio() {
+    try {
+      var w = _win();
+      if (w && w.TPAudio) return w.TPAudio;
+      if (typeof TPAudio !== 'undefined' && TPAudio) return TPAudio;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _resolveSettings() {
+    try {
+      var w = _win();
+      if (w && w.BZSettings) return w.BZSettings;
+      if (typeof BZSettings !== 'undefined' && BZSettings) return BZSettings;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _resolveSave() {
+    try {
+      var w = _win();
+      if (w && w.TPSave) return w.TPSave;
+      if (typeof TPSave !== 'undefined' && TPSave) return TPSave;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  function _setAttr(el, name, value) {
+    try { if (el && el.setAttribute) el.setAttribute(name, value); } catch (e) { /* silent */ }
+  }
+
+  /* Header Music toggle (♪). Mirrors em-wire.js _injectMusicButton:
+     the button carries the state itself (♪ bright = on, dimmed = off),
+     flips from the stored truth (never a stale closure), and re-marks
+     on 'bz:settings-changed' so Settings / the home row / this button
+     stay in sync. Never throws; a missing topbar skips quietly. */
+  function _injectMusicButton(mount) {
+    try {
+      if (!mount || typeof mount.querySelector !== 'function') return;
+      var topbar = null;
+      try { topbar = mount.querySelector('#topbar'); } catch (e) { topbar = null; }
+      if (!topbar) return;
+      if (typeof document === 'undefined' || !document ||
+          typeof document.createElement !== 'function') return;
+      var kids = topbar.children || [];
+      for (var i = 0; i < kids.length; i++) {
+        try {
+          if (kids[i].getAttribute &&
+              kids[i].getAttribute('data-tp-music-toggle') !== null) return;
+        } catch (e) { /* keep scanning */ }
+      }
+      var audio = _resolveAudio();
+      var settings = _resolveSettings();
+      var win = _win();
+      var btn = document.createElement('button');
+      try { btn.className = 'tp-iconbtn'; } catch (e) { /* silent */ }
+      try { btn.id = 'tpMusicBtn'; } catch (e) { /* silent */ }
+      try { btn.type = 'button'; } catch (e) { /* silent */ }
+      try { btn.title = 'Music'; } catch (e) { /* silent */ }
+      _setAttr(btn, 'data-tp-music-toggle', 'music');
+      _setAttr(btn, 'role', 'switch');
+      _setAttr(btn, 'aria-label', 'Music');
+      function readState() {
+        try {
+          if (audio && typeof audio.isMusicOn === 'function') return !!audio.isMusicOn();
+        } catch (e) { /* fall through */ }
+        try {
+          if (settings && typeof settings.readSettings === 'function') {
+            var value = settings.readSettings().music;
+            if (typeof value === 'boolean') return value;
+          }
+        } catch (e2) { /* fall through */ }
+        return true;
+      }
+      function mark(on) {
+        try { btn.textContent = '\u266A'; } catch (e) { /* silent */ }
+        try {
+          if (btn.classList) btn.classList.toggle('tp-off', !on);
+        } catch (e) { /* silent */ }
+        _setAttr(btn, 'aria-checked', on ? 'true' : 'false');
+      }
+      var available = !!(audio && typeof audio.setMusic === 'function');
+      mark(readState());
+      if (!available) {
+        try { btn.disabled = true; } catch (e) { /* silent */ }
+        _setAttr(btn, 'aria-disabled', 'true');
+      }
+      try {
+        if (btn.addEventListener) {
+          btn.addEventListener('click', function () {
+            try {
+              if (!available) return;
+              var next = !readState();
+              try { audio.setMusic(next); } catch (e) { /* still persist */ }
+              mark(next);
+            } catch (e3) { /* a click handler must never throw */ }
+          });
+        }
+      } catch (e) { /* a button without listeners still renders */ }
+      try {
+        if (win && typeof win.addEventListener === 'function') {
+          var eventName = 'bz:settings-changed';
+          try {
+            if (settings && typeof settings.SETTINGS_CHANGED_EVENT === 'string') {
+              eventName = settings.SETTINGS_CHANGED_EVENT;
+            }
+          } catch (e) { /* default event name stands */ }
+          var onSettingsChanged = function () {
+            try {
+              if (typeof btn.isConnected === 'boolean' && !btn.isConnected) {
+                try {
+                  if (typeof win.removeEventListener === 'function') {
+                    win.removeEventListener(eventName, onSettingsChanged);
+                  }
+                } catch (e2) { /* silent */ }
+                return;
+              }
+              mark(readState());
+              var game = _resolveGame();
+              if (game && typeof game.syncAudio === 'function') {
+                try { game.syncAudio(); } catch (e3) { /* best-effort */ }
+              }
+            } catch (e4) { /* never throw */ }
+          };
+          win.addEventListener(eventName, onSettingsChanged);
+        }
+      } catch (e) { /* the button works without the sync listener */ }
+      try {
+        var soundBtn = null;
+        try { soundBtn = topbar.querySelector('#tpSoundBtn'); } catch (e) { soundBtn = null; }
+        if (soundBtn && soundBtn.parentNode === topbar &&
+            typeof topbar.insertBefore === 'function') {
+          topbar.insertBefore(btn, soundBtn);
+        } else if (typeof topbar.appendChild === 'function') {
+          topbar.appendChild(btn);
+        }
+      } catch (e) {
+        _log(e);
+      }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  function _mount() {
+    try {
+      if (typeof document === 'undefined' || !document) return null;
+      return document.getElementById('app-virtualpet');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function boot() {
+    try {
+      if (typeof window === 'undefined' || typeof document === 'undefined') return;
+      try {
+        window.__TP__ = window.__TP__ || {};
+        if (window.TomodachiPetGame) window.__TP__.game = window.TomodachiPetGame;
+        if (window.TPSave) window.__TP__.save = window.TPSave;
+      } catch (e) {
+        _log(e);
+      }
+      var mount = _mount();
+      var game = _resolveGame();
+      if (!game || !mount) return;
+      var ok = false;
+      try { ok = game.init(mount); } catch (e) { _log(e); return; }
+      if (!ok) return;
+      _injectMusicButton(mount);
+      /* The game is not open yet: stop its tick loop until onOpen. */
+      try {
+        if (typeof game.setLoopActive === 'function') game.setLoopActive(false);
+      } catch (e) { /* best-effort */ }
+      try {
+        if (typeof SaveRegistry !== 'undefined' && SaveRegistry &&
+            typeof SaveRegistry.extend === 'function') {
+          SaveRegistry.extend('virtualpet', { reinit: reinit, reload: reload });
+        }
+      } catch (e) { /* registry is best-effort */ }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  function onOpen() {
+    try {
+      var game = _resolveGame();
+      if (!game) return;
+      try {
+        if (typeof game.startLoop === 'function') game.startLoop();
+      } catch (e) { /* best-effort */ }
+      try {
+        if (typeof game.render === 'function') game.render();
+      } catch (e) { /* the loop re-renders */ }
+      try {
+        if (typeof game.syncAudio === 'function') game.syncAudio();
+      } catch (e) { /* best-effort */ }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  function onClose() {
+    try {
+      var audio = _resolveAudio();
+      try {
+        if (audio && typeof audio.stop === 'function') audio.stop();
+      } catch (e) { /* audio stop is a no-op (shell music only) */ }
+      var game = _resolveGame();
+      if (!game) return;
+      try {
+        if (typeof game.pause === 'function') game.pause();
+      } catch (e) { /* auto-pause is best-effort */ }
+      try {
+        if (typeof game.setLoopActive === 'function') game.setLoopActive(false);
+      } catch (e) { /* best-effort */ }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  /* Settings "delete save": wipe the save, refresh the pet select. */
+  function reinit() {
+    try {
+      var save = _resolveSave();
+      if (save) {
+        try {
+          if (typeof save.deleteSave === 'function') save.deleteSave();
+        } catch (e) { /* best-effort */ }
+      }
+      var game = _resolveGame();
+      if (game) {
+        try {
+          if (typeof game.reloadSave === 'function') game.reloadSave();
+        } catch (e) { /* best-effort */ }
+        try {
+          if (typeof game.toMenu === 'function') game.toMenu();
+        } catch (e) { /* best-effort */ }
+      }
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  /* Settings "reload save": re-read storage and refresh the view. */
+  function reload() {
+    try {
+      var game = _resolveGame();
+      if (game && typeof game.reloadSave === 'function') game.reloadSave();
+    } catch (e) {
+      _log(e);
+    }
+  }
+
+  var api = {
+    boot: boot,
+    onOpen: onOpen,
+    onClose: onClose,
+    reinit: reinit,
+    reload: reload
+  };
+
+  try {
+    boot();
+  } catch (e) {
+    _log(e);
+  }
+
+  return api;
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = TomodachiPetWire;
+if (typeof window !== 'undefined') {
+  try { window.TomodachiPetWire = TomodachiPetWire; } catch (e) { /* best-effort */ }
 }
 </script>
 </body>
